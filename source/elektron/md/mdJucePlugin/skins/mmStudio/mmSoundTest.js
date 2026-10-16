@@ -80,11 +80,13 @@ const screen = (name, mid) => {
 	stateCtx.mid = mid;
 	vm.runInContext(`var ED=ED||{},drawn=[],labelled="";var grid=()=>{},railDraw=()=>{},cssv=()=>"#000",inkA=()=>"#000",label=(g,t)=>{labelled=t},
 		line=(g,W,f)=>{let far=f(0);for(let x=0;x<W;x++){const y=f(x);if(Math.abs(y-mid)>Math.abs(far-mid))far=y}drawn.push(far)};`
-		+ (stateCtx.V ? "" : sound.slice(sound.indexOf("const V=(pg)"), sound.indexOf("function railDraw")).replace(/^const /gm, "var ")) + sound.slice(a, b) + `;this.E={ED,get drawn(){return drawn},get labelled(){return labelled},reset(){drawn=[];labelled=""}};`, stateCtx);
+		+ (stateCtx.V ? "" : sound.slice(sound.indexOf("const V=(pg)"), sound.indexOf("function railDraw")).replace(/^const /gm, "var ")
+			+ "\n" + sound.split("\n").filter(l => /^(const dpWave=|function wfDP\(|function hashN\()/.test(l)).join("\n").replace(/^const /gm, "var ") + "\n") + sound.slice(a, b) + `;this.E={ED,get drawn(){return drawn},get labelled(){return labelled},reset(){drawn=[];labelled=""}};`, stateCtx);
 	return stateCtx.E;
 };
 /* a canvas context that draws nothing */
 const G2D = new Proxy({}, { get: () => () => {}, set: () => true });
+const MACH_P = m => T.MACH[m].p;
 const box = (m, pg, name, v) => { P.S.sel = 0; P.S.tracks[0].m = m; const i = pg === "SYN" ? T.MACH[m].p.indexOf(name) : T.FIXED[pg].indexOf(name); const mt = P.meta(0, pg, i); return { mt, text: P.fmt(mt, v) }; };
 {
 	/* B-148: BOFS and WOFS are -64 to +63 (64 no sweep), the envelope drawn up for +, down for - */
@@ -121,6 +123,26 @@ const box = (m, pg, name, v) => { P.S.sel = 0; P.S.tracks[0].m = m; const i = pg
 	const E = screen("fm", 0), c = { dataset: { k: "1FRQ 1FIN 1ENV 1FB" } };
 	box("FM+STAT", "SYN", "1FRQ", 0); P.S.tracks[0].v.SYN[0] = 64; E.reset(); E.ED.fm.draw(G2D, 200, 100, c);
 	check(E.labelled === "1FRQ 5/8" && E.ED.fm.frq("1FRQ").r === 5 / 8, "the FM screen's label and ratio are the machine's: " + E.labelled);
+}
+{
+	/* B-150: the DigiPRO waves as the machine names them (OS 1.32B: 71 = D36, 127 = D64; 10 = S03, 34 = S09, 102 = S26, 126 = S32) */
+	const at = (m, n, vs) => vs.map(v => box(m, "SYN", n, v).text).join(" ");
+	const dd = ["DPRO-DDRW.WAV1", "DPRO-DDRW.WAV2", "DPRO-DENS.WAVE"].map(k => at(...k.split("."), [0, 1, 2, 71, 111, 127]));
+	check(dd.every(x => x === "D01 D01 D02 D36 D56 D64"), "DPRO-DDRW WAV1 WAV2 and DPRO-DENS WAVE: D01-D64, two values a wave: " + dd[0]);
+	const { mt } = box("DPRO-DDRW", "SYN", "WAV1", 0);
+	check(mt.max === 127 && mt.tab.length === 64 && stepTab(mt.tab, 70, 1) === 72 && stepTab(mt.tab, 71, -1) === 68, "a step is one wave (two values), the full value to the machine");
+	/* DPRO-WAVE WAVE: an enumeration of the catalogue (32 waves); the host turns the machine's value into its index */
+	const cat = JSON.parse(fs.readFileSync(path.join(__dirname, "../../../../../../doc/modern-ux/mm-catalogue.json"), "utf8"));
+	const wv = box("DPRO-WAVE", "SYN", "WAVE", 0).mt, catWaves = cat.machines.find(m => m.name === "DPRO-WAVE").enums["0"];
+	check(wv.en && wv.en.length === 32 && P.maxOf(wv) === 31 && wv.en[0] === "S01" && wv.en[31] === "S32", "DPRO-WAVE WAVE: S01-S32, every one reachable");
+	check(JSON.stringify(catWaves) === JSON.stringify(wv.en), "the catalogue names the same 32 waves (mmSynthEnum)");
+	const idx = v => Math.min(31, Math.floor(v * 32 / 128)); /* mmConvert.js valueToPage */
+	check([10, 34, 102, 126].map(v => P.fmt(wv, idx(v))).join(" ") === "S03 S09 S26 S32", "the machine's 10 34 102 126 are S03 S09 S26 S32 on the page");
+	const E = screen("morph", 0), lab = (m, vals) => { box(m, "SYN", MACH_P(m)[0], 0); Object.entries(vals).forEach(([n, v]) => P.S.tracks[0].v.SYN[MACH_P(m).indexOf(n)] = v); E.reset(); E.ED.morph.draw(G2D, 200, 100); return E.labelled; };
+	check(lab("DPRO-DDRW", { WAV1: 71, WAV2: 127, MIX: 30 }) === "D36 ↔ D64 · mix 30", "the DDRW screen names its waves as the machine: " + E.labelled);
+	check(lab("DPRO-WAVE", { WAVE: 31, WPM: 0 }) === "S32 → S01", "the DPRO-WAVE screen morphs S32 into S01: " + E.labelled);
+	const W = screen("enswave", 0); box("DPRO-DENS", "SYN", "WAVE", 0); P.S.tracks[0].v.SYN[3] = 71; W.reset(); W.ED.enswave.draw(G2D, 200, 100);
+	check(W.labelled === "wave D36", "the DENS wave screen: " + W.labelled);
 }
 
 console.log(failures ? `FAIL (${failures})` : "PASS");

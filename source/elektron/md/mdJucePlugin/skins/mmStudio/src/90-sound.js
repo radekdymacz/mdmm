@@ -53,15 +53,17 @@ ED.chord={draw(g,W,H){const ink=cssv("--ink"),offs=["PCH2","PCH3","PCH4"].map(p=
   for(let k=0;k<25;k++){if([1,3,6,8,10].includes(k%12))continue;g.strokeStyle=ink;g.lineWidth=1;g.strokeRect(wx+.5,y0+.5,kw-1,wh-1);if(k===0||offs.includes(k)){g.fillStyle=ink;g.beginPath();g.arc(wx+kw/2,y0+wh-10,4.5,0,7);g.fill()}wx+=kw}
   wx=8;for(let k=0;k<25;k++){if(![1,3,6,8,10].includes(k%12)){wx+=kw;continue}g.fillStyle=ink;g.fillRect(wx-kw*.3,y0,kw*.6,wh*.58);if(offs.includes(k)){g.fillStyle=cssv("--scr");g.beginPath();g.arc(wx,y0+wh*.45,3.5,0,7);g.fill()}}
   label(g,"C + "+(offs.length?offs.join(" "):"no other notes"))}};
-/* the ensemble's wave: saw through square to spikes (WAVE), PW mutates it; DPRO-DENS: one of the 64 waves */
+/* the ensemble's wave: saw through square to spikes (WAVE), PW mutates it; DPRO-DENS: one of the 64 waves, D01-D64 */
+/* a DigiPRO wave knob as the machine names it (B-150: 40-data.js WAVD, WAVS): {i: its index, t: D01 / S01} */
+const dpWave=n=>{const tab=TAB[trk(S.sel).m+"."+n];if(tab){const e=tabAt(tab,sv(n));return{i:e.r,t:e.t}}const i=clamp(sv(n),0,31);return{i,t:WAVS[i]}};
 ED.enswave={draw(g,W,H){const ink=cssv("--ink"),m=trk(S.sel).m;grid(g,W,H);
-  if(m==="DPRO-DENS"){const a=sv("WAVE");line(g,W,x=>H/2+4-wfDP(a,(x/W*2)%1)*(H/2-24),ink,2);label(g,"wave "+(a+1));return}
+  if(m==="DPRO-DENS"){const a=dpWave("WAVE");line(g,W,x=>H/2+4-wfDP(a.i,(x/W*2)%1)*(H/2-24),ink,2);label(g,"wave "+a.t);return}
   const w=sv("WAVE")/127,pw=.5+(sv("PW")-64)/140;railDraw(g,W,H);
   line(g,W,x=>{const p=(x/W*2)%1,saw=1-2*p,sq=p<pw?1:-1,spk=p<.08?1:-.25;const v=w<.5?saw+(sq-saw)*w*2:sq+(spk-sq)*(w-.5)*2;return H/2+2-v*(H/2-24)},ink,2);label(g,w<.35?"saw":w<.65?"square":"spikes")},
  handles(W,H){return trk(S.sel).m==="DPRO-DENS"?[]:[railH(W,H,"SYN","WAVE")]}};
-/* DPRO-WAVE: WAVE morphing into the next at WP; DPRO-DDRW: two waves mixed (MIX) */
-ED.morph={draw(g,W,H){const m=trk(S.sel).m,dd=m==="DPRO-DDRW",a=dd?sv("WAV1"):sv("WAVE"),b=dd?sv("WAV2"):(a+1)%32,mix=(dd?sv("MIX"):sv("WP"))/127,ink=cssv("--ink");grid(g,W,H);
-  line(g,W,x=>{const p=(x/W*2)%1;return H/2+4-((1-mix)*wfDP(a,p)+mix*wfDP(b,p))*(H/2-24)},ink,2);label(g,dd?`wave ${a+1} ↔ ${b+1} · mix ${sv("MIX")}`:`wave ${a+1} → ${b+1}${sv("WPM")?" · sweeps":""}`)},
+/* DPRO-WAVE: WAVE (S01-S32) morphing into the next at WP; DPRO-DDRW: two waves (D01-D64) mixed (MIX) */
+ED.morph={draw(g,W,H){const m=trk(S.sel).m,dd=m==="DPRO-DDRW",a=dpWave(dd?"WAV1":"WAVE"),b=dd?dpWave("WAV2"):{i:(a.i+1)%32,t:WAVS[(a.i+1)%32]},bi=b.i,mix=(dd?sv("MIX"):sv("WP"))/127,ink=cssv("--ink");grid(g,W,H);
+  line(g,W,x=>{const p=(x/W*2)%1;return H/2+4-((1-mix)*wfDP(a.i,p)+mix*wfDP(bi,p))*(H/2-24)},ink,2);label(g,dd?`${a.t} ↔ ${b.t} · mix ${sv("MIX")}`:`${a.t} → ${b.t}${sv("WPM")?" · sweeps":""}`)},
  handles(W,H){const dd=trk(S.sel).m==="DPRO-DDRW";return[{x:u7(sv(dd?"MIX":"WP"))*W,y:20,k:dd?"MIX":"WP",drag:x=>sset(dd?"MIX":"WP",x/W*127)}]}};
 /* DPRO-BBOX: one hit, from STRT on (the key picks the drum) */
 ED.drum={draw(g,W,H){const ink=cssv("--ink"),s0=u7(sv("STRT"))*.5,f=.6+u7(sv("PTCH"))*1.2;grid(g,W,H);railDraw(g,W,H);

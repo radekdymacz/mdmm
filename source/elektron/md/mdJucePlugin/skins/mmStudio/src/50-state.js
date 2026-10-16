@@ -38,7 +38,7 @@ function pidLabel(t,pid){const[pg]=pid.split(".");return pg+" "+pname(t,pid)}
 function destNames(t,pidx){const pg=LPAGES[pidx];if(pg==="PTCH")return PTCHD;if(pg==="MID")return FIXED.MID;const a=[...pnames(t,pg)].map(n=>n||"—");while(a.length<8)a.push("—");return a}
 function meta(t,pg,i){const tr=trk(t),name=pnames(t,pg)[i];
  if(pg.startsWith("LF")){if(i===0)return{name,en:LPAGES};if(i===1)return{name,en:destNames(t,tr.v[pg][0])};if(i===2)return{name,en:LTRIG};if(i===3)return{name,en:LWAVE};if(i===4)return{name,en:LMULT};return{name,max:127}}
- if(pg==="SYN"){const tab=TAB[tr.m+"."+name];if(tab)return{name,max:127,tab};const en=EN[tr.m+"."+name]||EN[name];if(en)return{name,en};if(tr.m==="DPRO-WAVE"&&name==="WAVE")return{name,max:31}}
+ if(pg==="SYN"){const tab=TAB[tr.m+"."+name];if(tab)return{name,max:127,tab};const en=EN[tr.m+"."+name]||EN[name];if(en)return{name,en}}
  return{name,max:127,signed:SIGNED.has(name)||(pg==="SYN"&&/^PCH/.test(name))}}
 /* LEN (P7): a click steps a page and goes round (16 32 48 64 16 ...), shift-click back; a scroll one step, 2-64.
    It used to stop at 64: a click on the factory patterns' LEN 64 did nothing. */
