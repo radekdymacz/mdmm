@@ -2,9 +2,9 @@
 
 // 0.8 (WP4): what the standalone's AUDIO / MIDI panel says about a MIDI loop (B-154) and about an input that stays on
 // NONE (B-155), as plain values: tested by mdMidiLoopTest (no JUCE, no ROM, no ports).
-//   - midiLoop::warning: a MIDI port that is switched on as an input and also chosen as the output. Whatever the
-//     editor sends (its notes, CCs, clock and transport) comes straight back in, through macOS's IAC driver or a
-//     loopMIDI port. Found by WP2 (B-154): the noise comes only with the app's MIDI out fed back into its in. Two
+//   - midiLoop::warning: a virtual loopback bus (macOS IAC, Windows loopMIDI, Linux Midi Through) that is switched on
+//     as an input and also chosen as the output. Whatever the editor sends (its notes, CCs, clock and transport) comes
+//     straight back in. A real port in and out (an interface, a machine) never warns. Found by WP2 (B-154): the noise comes only with the app's MIDI out fed back into its in. Two
 //     different buses are no loop. The names are compared as the system lists them (case, spaces at the ends and
 //     doubled spaces do not matter).
 //   - audioInput::note: why the External Input drop-down went back to NONE: macOS microphone permission, the
@@ -21,9 +21,10 @@ namespace mdJucePlugin
 	{
 		enum class Family
 		{
-			Other,
+			Hardware,	// a real port (USB or DIN interface, a machine): its output goes out to a cable, never back in
 			Iac,		// macOS: "IAC Driver Bus 1"
-			LoopMidi	// Windows: "loopMIDI Port"
+			LoopMidi,	// Windows: "loopMIDI Port"
+			Through		// Linux (ALSA): "Midi Through Port-0"
 		};
 
 		// The name without spaces at the ends, doubled spaces and capitals.
@@ -53,26 +54,33 @@ namespace mdJucePlugin
 				return Family::LoopMidi;
 			if(n.find("iac driver") != std::string::npos || n.rfind("iac ", 0) == 0)
 				return Family::Iac;
-			return Family::Other;
+			if(n.find("midi through") != std::string::npos)
+				return Family::Through;
+			return Family::Hardware;
 		}
 
-		// "" when nothing loops, otherwise the line the panel shows. _enabledInputs: the names of the inputs that are
-		// on; _output: the name of the chosen output ("" = none).
+		// "" when nothing loops, otherwise the line the panel shows. Only a virtual loopback bus loops: what is sent to it
+		// is what its input hears (macOS IAC bus, Windows loopMIDI port, Linux Midi Through). A real port with the same
+		// name as input and output (an interface, a machine) is two cables, no loop, and never warns. CoreMIDI and WinMM
+		// give a port's input and its output different identifiers, so a bus is the same bus when its name is the same.
+		// _enabledInputs: the names of the inputs that are on; _output: the name of the chosen output ("" = none).
 		inline std::string warning(const std::vector<std::string>& _enabledInputs, const std::string& _output)
 		{
 			const auto out = normalised(_output);
-			if(out.empty())
+			const auto family = familyOf(_output);
+			if(out.empty() || family == Family::Hardware)
 				return {};
 			const bool loops = std::any_of(_enabledInputs.begin(), _enabledInputs.end(),
 				[&](const std::string& _in) { return normalised(_in) == out; });
 			if(!loops)
 				return {};
 			const char* what = "port";
-			switch(familyOf(_output))
+			switch(family)
 			{
 			case Family::Iac: what = "IAC bus"; break;
 			case Family::LoopMidi: what = "loopMIDI port"; break;
-			case Family::Other: break;
+			case Family::Through: what = "port"; break;
+			case Family::Hardware: break;
 			}
 			return "MIDI loop: " + _output + " is on as an input and is also the output. Everything the editor sends "
 				"comes straight back in and the sound can turn to noise. Switch the input off, or send to another "

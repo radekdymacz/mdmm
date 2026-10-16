@@ -7,8 +7,8 @@ const AUD={schema:"gm-audio/devices",version:1,standalone:true,driver:{id:"CoreA
  latencyMs:11.3,running:true,midiInputs:[{id:"iac",name:"IAC Driver Bus 1",on:false},{id:"tm1",name:"Elektron TM-1",on:true}],
  midiOutput:{id:"",list:[{id:"iac",name:"IAC Driver Bus 1"},{id:"tm1",name:"Elektron TM-1"}]},bluetooth:true,error:"",setupError:"",inputPermission:"granted",inputNote:"",midiLoop:""};
 let audStats={directions:{inHost:{total:0,types:{}},outHost:{total:0,types:{}}},dropped:{scheduled:0,external:0,allocation:0}};
-/* the MIDI loop of the plug-in (mdMidiLoop.h): an input that is on and is also the output */
-function audLoop(D){const o=D.midiOutput.list.find(x=>x.id===D.midiOutput.id),i=o&&D.midiInputs.find(x=>x.on&&x.id===o.id);return i?"MIDI loop: "+o.name+" is on as an input and is also the output. Everything the editor sends comes straight back in and the sound can turn to noise. Switch the input off, or send to another "+(/^IAC/.test(o.name)?"IAC bus":"port")+".":""}
+/* the MIDI loop of the plug-in (mdMidiLoop.h): a virtual loopback bus (IAC, loopMIDI, Midi Through) on as an input and the output; a real port never warns */
+function audLoop(D){const o=D.midiOutput.list.find(x=>x.id===D.midiOutput.id),i=o&&/iac driver|loopmidi|midi through/i.test(o.name)&&D.midiInputs.find(x=>x.on&&x.name===o.name);return i?"MIDI loop: "+o.name+" is on as an input and is also the output. Everything the editor sends comes straight back in and the sound can turn to noise. Switch the input off, or send to another "+(/^IAC/.test(o.name)?"IAC bus":"port")+".":""}
 let audMeterT=0,audStatsT=0;
 function audioDoc(){return HOST.audioDoc?HOST.audioDoc():AUD}
 function audioMeter(on){if(HOST.audioMeter)return HOST.audioMeter(on);clearInterval(audMeterT);if(on)audMeterT=setInterval(()=>audioLevel(!AUD.input.id?0:(AUD.input.muted?.01:.04)+Math.random()*.12),120);clearInterval(audStatsT);if(on&&typeof audioStats==="function")audStatsT=setInterval(()=>{const h=audStats.directions.inHost,o=audStats.directions.outHost;h.total+=AUD.midiInputs.some(x=>x.on)?24:0;o.total+=AUD.midiOutput.id?24:0;audStats.directions.inHost.types={clock:h.total};audioStats(audStats)},1000)}
