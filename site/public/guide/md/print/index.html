@@ -144,7 +144,7 @@
 <p>Click the <b class="gd-ui">Kit</b> field of the LCD to open the kit library. Chapter 3 describes it.</p>
 <p>The machine's song menu is the <b class="gd-ui">Songs</b> column of the Song workspace: load, save, save to another slot with a name, copy, paste, clear and rename. Chapter 9 describes it.</p>
 <h4 class="gd-h3">TRIG keys</h4>
-<p>The steps of the grid are the TRIG keys. Click a step to turn its trig on or off. Select a step (⌘-click) and click the small ⋯ on it for its menu, or right-click the step.</p>
+<p>The steps of the grid are the TRIG keys. Click an empty step to draw a trig. Click a trig to select it, and it stays selected: <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> removes it and the arrows move the selection. Double-click a trig to remove it. Select more steps with ⌘-click, then click the small ⋯ on a selected step for its menu, or right-click the step.</p>
 <p>To play a first beat:</p>
 <ol class="gd-steps"><li>Open the Sequence workspace and select a track in the rail.</li><li>Click four empty steps of that track. Each lights as a trig.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The pattern plays with your trigs.</li><li>Press the same key to stop.</li></ol>
 <figure class="gd-shot"><img src="/guide/shots/md-step-grid.webp" width="1440" height="924" alt="The step grid with trigs"><figcaption>The step grid with trigs</figcaption></figure>
@@ -229,7 +229,7 @@
 <div class="gd-body gd-prose"><h2>QUICK START</h2>
 <p>This is a first session. It loads a kit, places trigs, plays them and changes a sound.</p>
 <h4 class="gd-h3">Playing and tweaking drum sounds</h4>
-<ol class="gd-steps"><li>Click the <b class="gd-ui">Kit</b> field of the LCD. The kit library opens.</li><li>Click a kit. The machine loads it at once. If you have unsaved changes, the editor asks first.</li><li>Press <kbd class="gd-key">[ESC]</kbd>, then press <kbd class="gd-key">[1]</kbd> for the Sequence workspace.</li><li>Click steps in the grid. Each click turns a trig on or off. Each row of the grid is a track.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The pattern plays with your trigs. Press it again to stop.</li><li>Click a track in the rail to select it. Press the keys A to L to play it by hand.</li><li>Press <kbd class="gd-key">[2]</kbd> for the Sound workspace. Drag a value box to change the sound of the selected track.</li></ol>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Kit</b> field of the LCD. The kit library opens.</li><li>Click a kit. The machine loads it at once. If you have unsaved changes, the editor asks first.</li><li>Press <kbd class="gd-key">[ESC]</kbd>, then press <kbd class="gd-key">[1]</kbd> for the Sequence workspace.</li><li>Click steps in the grid. A click on an empty step draws a trig. A click on a trig selects it. Double-click a trig to remove it. Each row of the grid is a track.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The pattern plays with your trigs. Press it again to stop.</li><li>Click a track in the rail to select it. Press the keys A to L to play it by hand.</li><li>Press <kbd class="gd-key">[2]</kbd> for the Sound workspace. Drag a value box to change the sound of the selected track.</li></ol>
 <figure class="gd-shot"><img src="/guide/shots/md-sound-groups.webp" width="1440" height="924" alt="The Sound workspace"><figcaption>The Sound workspace</figcaption></figure>
 <p>Turn a value in small steps when you need them. Hold <kbd class="gd-key">[⇧]</kbd> and drag for fine steps. Scroll the wheel over a box for one step a notch, and hold <kbd class="gd-key">[⇧]</kbd> for ten. Double-click a box to set it back to 64.</p>
 <figure class="gd-shot"><img src="/guide/shots/md-sound-knob-steps.webp" width="1440" height="924" alt="One notch of the wheel and a drag on a value box"><figcaption>One notch of the wheel and a drag on a value box</figcaption></figure>
@@ -804,7 +804,7 @@
 <h4 class="gd-h3">Lock a parameter</h4>
 <ol class="gd-steps"><li>Select the track.</li><li>In the rail under <b class="gd-ui">Lock parameter</b>, click the key of the parameter. The keys are in three groups: <b class="gd-ui">Synth</b>, <b class="gd-ui">Effects</b> and <b class="gd-ui">Routing</b>. A number on a key tells how many steps it has locked.</li><li>Drag over the bars of the <b class="gd-ui">Lock lane</b>. Each step with a trig takes the value where the pointer crosses it. Steps with no trig are hatched and take no lock.</li><li>Hold <kbd class="gd-key">[⇧]</kbd> and drag to draw a ramp, a straight line from where you press to where you let go.</li><li>To move one lock, scroll on its step. Four values a notch, or one with <kbd class="gd-key">[⇧]</kbd>.</li></ol>
 <figure class="gd-shot"><img src="/guide/shots/md-lock-lane.webp" width="1440" height="924" alt="The lock lane"><figcaption>The lock lane</figcaption></figure>
-<p>The lane shows the value locked on each step, and a dashed line shows the value of the kit. A bipolar parameter draws from the centre: up for right or boost, down for left or cut.</p>
+<p>The lane shows the value locked on each step, and a solid line shows the value of the kit, with its number at the right end of the lane. Rest the pointer on a step, or select it, to read its lock as a number at the top of its bar. Drag the line itself to change the kit value of the parameter on that track, the value the <b class="gd-ui">Sound</b> page changes. The whole drag is one undo step and draws no lock. A click on or near the line, without moving up or down, still sets a lock on that step. A bipolar parameter draws from the centre: up for right or boost, down for left or cut.</p>
 <h4 class="gd-h3">The lock count</h4>
 <p>The <b class="gd-light">&lt;LOCKS&gt;</b> field of the LCD and the header of the lane count the locked parameters, for example 41 / 64. The count turns to a warning from 52. At 64 the editor refuses a new lock and tells you to clear a lane first.</p>
 <h4 class="gd-h3">Locks in CLASSIC</h4>
@@ -1579,6 +1579,13 @@
 <figure class="gd-shot"><img src="/guide/shots/e2e-md-sound-note-light.webp" width="1440" height="924" alt="The track rail and the mixer light of a track that plays"><figcaption>The track rail and the mixer light of a track that plays</figcaption></figure>
 <ol class="gd-steps"><li>Click the <b class="gd-ui">Sound</b> tab.</li><li>Play the note of track 3 from a MIDI keyboard on a channel other than the base channel. No track lights.</li><li>Play it on the base channel. The number of track 3 on the rail lights for a moment, then goes out.</li><li>Click the <b class="gd-ui">Mix</b> tab and play track 3 again. Its light on the strip lights and no other does.</li></ol>
 <p>The notes that play each track are set in &quot;MAP EDITOR&quot; in chapter 10.</p>
+</div></section>
+<section class="gd-sec" id="the-selected-track-follows-the-last-track-played">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>THE SELECTED TRACK FOLLOWS THE LAST TRACK PLAYED</h2>
+<p>The machine has no such function. With it on, the track you select changes to the last track you played from a MIDI keyboard. It is off until you turn it on, and the project keeps the choice.</p>
+<ol class="gd-steps"><li>Open the engine menu and choose <b class="gd-ui">FOLLOW PLAYED TRACK: OFF</b>. It reads <b class="gd-ui">FOLLOW PLAYED TRACK: ON</b>.</li><li>Play the note of track 5 from a MIDI keyboard on the base channel. Track 5 is selected.</li><li>Play the note of another track on a channel outside the four base channels. The selection stays where it was.</li><li>Choose the entry again to turn it off.</li></ol>
+<p>The notes that play each track are set in &quot;MAP EDITOR&quot; in chapter 10. The keys of the computer keyboard and the audition of a sample never move the selection.</p>
 </div></section>
 <section class="gd-sec" id="the-cpu-meter-and-the-speed-ups">
 <aside class="gd-margin"></aside>

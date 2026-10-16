@@ -830,6 +830,10 @@
               }
             }
           }
+        },
+        "followPlayed": {
+          "type": "boolean",
+          "description": "I-003: the selected track follows the last track played from a MIDI controller; absent: off."
         }
       }
     },
@@ -6020,6 +6024,30 @@
             },
             "mutes": {
               "type": "array"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "setup: I-003: the selected track follows the last track played from a MIDI controller (kept with the project; the plug-in says it again in the setup document as followPlayed)",
+          "required": ["op", "on"],
+          "properties": {
+            "op": {
+              "const": "followSet"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "on": {
+              "type": ["boolean", "integer"]
             }
           },
           "additionalProperties": false

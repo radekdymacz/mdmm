@@ -2121,6 +2121,26 @@ namespace
 		desk.onPageMessage(cmd(R"({"op":"soloSet","id":8,"tracks":[],"mutes":[4]})"));
 		check(desk.setup().solo.empty() && desk.setup().solo.mutes.empty() && saved.back().find("solo") == nullptr,
 			"no solo: no mutes of the person's kept, and the setup says no solo");
+
+		// I-003: FOLLOW PLAYED TRACK is kept with the project (followPlayed), off by default and read leniently
+		check(!desk.setup().followPlayed && saved.back().find("followPlayed") == nullptr, "follow: off by default, and not written while off");
+		const auto m = saved.size();
+		desk.onPageMessage(cmd(R"({"op":"followSet","id":9,"on":true})"));
+		check(desk.setup().followPlayed && saved.size() == m + 1 && saved.back().find("followPlayed") && saved.back().find("followPlayed")->asBool(), "followSet on: kept with the project");
+		desk.onPageMessage(cmd(R"({"op":"followSet","id":10,"on":true})"));
+		check(saved.size() == m + 1, "the same value again saves nothing");
+		const auto savedOn = saved.back();
+		page.clear();
+		check(desk.loadSetup(deskSetupToJson({})).empty() && !desk.setup().followPlayed, "a project without it: off");
+		desk.tick();
+		check(last("setup") && last("setup")->find("doc")->find("followPlayed") == nullptr, "and the page is told");
+		check(desk.loadSetup(savedOn).empty() && desk.setup().followPlayed, "a project that has it: on");
+		desk.tick();
+		check(last("setup")->find("doc")->find("followPlayed")->asBool(), "and the page is told");
+		check(desk.loadSetup(*elektronData::json::parse(R"({"schema":"md-desk/setup","version":1.1,"followPlayed":"yes","future":{"a":1}})")).size() == 1 && !desk.setup().followPlayed,
+			"a value that is not a boolean is off, said, and a member it does not know is ignored");
+		desk.onPageMessage(cmd(R"({"op":"followSet","id":11,"on":false})"));
+		check(!desk.setup().followPlayed, "followSet off");
 	}
 
 	// P4: which trig a knob turn locks while live recording.

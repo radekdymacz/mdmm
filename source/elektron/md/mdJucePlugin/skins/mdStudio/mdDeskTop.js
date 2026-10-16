@@ -78,7 +78,7 @@ const LIFE = {
 	ready: { label: "READY", led: "on" } };
 const lifeOf = l => LIFE[l] || LIFE.booting;
 /* the engine menu's own entries (not engines) */
-const ENGINE_ACTIONS = ["global", "audio", "rom", "import", "export", "reset", "memoryKeep"];
+const ENGINE_ACTIONS = ["global", "audio", "rom", "import", "export", "reset", "memoryKeep", "followPlayed"];
 function engineLabel() {
 	const e = lifeOf(V.lifecycle);
 	if (V.lifecycle === "ready") return [V.caps.label || e.label, e.led, V.caps.about || ""];
@@ -140,6 +140,7 @@ document.addEventListener("change", e => {
 	if (v === "rom") romMenu();
 	else if (v === "global") { sel.value = V.caps.engine; openGlobal(); }
 	else if (v === "audio") { sel.value = V.caps.engine; openAudio(); }
+	else if (v === "followPlayed") { sel.value = V.caps.engine; renderEngine(); cmd("followSet", { on: !Follow.on }, undefined, undefined, r => { if (r.ok) { Follow.on = !Follow.on; renderFollowMenu(); } }); }
 	else if (v === "memoryKeep") { sel.value = V.caps.engine; renderEngine(); cmd("memoryKeep", { on: !Memory.keep }); }
 	else if (Syx.menu(v)) { sel.value = V.caps.engine; renderEngine(); }	/* IMPORT SYSEX…, EXPORT SYSEX…, RESET MACHINE… (wave 6) */
 	else if ((machineState().engines || []).some(x => x.id === v)) cmd("engine", { kind: v });
@@ -159,6 +160,26 @@ function renderMemoryMenu() {
 		: "New sessions start from factory memory. Click to keep what you save on the machine for new sessions.");
 }
 Bridge.onMessage(m => { if (m.type === "machineMemory") { Object.assign(Memory, { keep: !!m.keep, available: !!m.available, saved: !!m.saved, note: m.note || "" }); renderMemoryMenu(); } });
+
+/* I-003: the engine menu's FOLLOW PLAYED TRACK (off by default, kept with the project in the editor's setup: followPlayed). On:
+   a note from a MIDI controller (the plug-in's midiIn; never the editor's own audition or keyboard) that the map gives a
+   track selects that track, as a click on it does. Shown once the plug-in has said the setup. */
+const Follow = { on: false };
+function renderFollowMenu() {
+	const o = document.querySelector('#engsel option[value="followPlayed"]'); if (!o) return;
+	o.hidden = false; o.textContent = "FOLLOW PLAYED TRACK: " + (Follow.on ? "ON" : "OFF");
+	o.title = Follow.on ? "The selected track follows the last track played from a MIDI controller. Click to turn it off."
+		: "Click to make the selected track follow the last track played from a MIDI controller.";
+}
+function takeFollowSetup(doc) { Follow.on = doc?.followPlayed === true; renderFollowMenu(); }
+/* the key map plays on the four base channels (base to base + 3, B-163); a note elsewhere plays nothing */
+function followNote(m) {
+	if (!Follow.on || V.caps.engine === "hw") return;
+	const g = Docs.global; if (!g || !(g.baseChannel >= 0 && g.baseChannel <= 12) || !(m.ch >= g.baseChannel && m.ch < g.baseChannel + 4)) return;
+	const t = g.keymap?.[m.note]; if (!Number.isInteger(t) || t < 0 || t > 15 || S.sel === t) return;	/* an unmapped note is null */
+	if (S.multi.size) S.multi = new Set();
+	select(t);
+}
 
 /* I-002: a note from a MIDI keyboard (the plug-in's midiIn) on the global's base channel plays the track its map gives
    (GLOBAL › Map editor); that track's number on the rail and its Mix trig square light for a moment, as a trig does. Notes that

@@ -184,7 +184,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.46 | Swing step pattern (which steps swing) | Swing trigs | ✅ | Sequence: Swing in the trig types under the grid, then click or drag steps with a trig; a teal mark on the step | swingStep; a swing mark needs a trig, as accent and slide. | 1 | pass (e2e-md-seq-trig-types) |
 | p.46 | Per-track swing | Swing tracks | ✅ | Sequence: Swing in the trig types, This track: each track's own swing steps | All tracks share the SWG amount, as on the machine. | 1 | pass (e2e-md-seq-trig-types) |
 | p.47 | Copy / paste / clear swing | Swing clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Swing ticked); a selection's copy includes swing marks | With EDIT ALL on, the swing row is the pattern's. | 1 | pass (e2e-md-seq-swing-copy) |
-| p.47 | Parameter locks, grid: hold TRIG + knob | Lock a value | ✅ | Lock lane: drag over a step; parameter keys | 64 budget meter on LCD. | 2 | pass (e2e-md-seq-lock-lane) |
+| p.47 | Parameter locks, grid: hold TRIG + knob | Lock a value | ✅ | Lock lane: drag over a step; parameter keys | 64 budget meter on LCD. | 3 | pass (e2e-md-seq-lock-lane) |
 | p.48 | View a step's locks (hold TRIG) | Inspect | ✅ | Lock lane shows each step's value; chips show counts |  | 1 | pass (e2e-md-seq-lock-lane) |
 | p.48 | Remove all locks of a step / one lock | Unlock | ✅ | Step menu; Alt-drag lane erase; Alt+clear key |  | 2 | pass (e2e-md-seq-lock-lane) |
 | p.48 | 64 locked parameters per pattern | Budget | ✅ | LCD Locks counter, refuses past 64 |  | 1 | pass (e2e-md-seq-lock-budget) |
@@ -244,7 +244,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.67 | General sysex receive (any time) | Import | ✅ | Engine menu: IMPORT SYSEX… / drop a .syx: preview by kind and slot, then report |  | 3 | pass (e2e-md-lib-syx-import) |
 | p.68 | Original place receive (ORIG) | Same slot | ✅ | Import SysEx | Default. | 1 | stub-only |
 | p.68 | Specific place receive (SPEC) | Relocate | ✅ | Import SysEx: PLACE row, Specific place, the first slot per kind; the grid shows where each item lands; Import asks before it lands on a slot that holds data | Each kind has its own first slot; items keep their order and gaps. | 1 | pass (e2e-md-lib-syx-place) |
-| p.69 | Sysex verify (VERF) | Check without writing | ✅ | Import SysEx: Verify only beside Import: nothing is written, each slot is read and compared (= the same, ≠ different, ? no answer) | Works with Specific place too. | 2 | pass (e2e-md-lib-syx-verify) |
+| p.69 | Sysex verify (VERF) | Check without writing | ✅ | Import SysEx: Verify only beside Import: nothing is written, each slot is read and compared (= the same, ≠ different, ? no answer) | Works with Specific place too. Beside it, the tick Read back and compare (on by default, kept): off, the import ends after Send and the report says not read back. | 3 | pass (e2e-md-lib-syx-verify) |
 | p.75 | Tempo in INTERNAL / EXTERNAL | Sync | ✅ | GLOBAL > Sync |  | 1 | pass (md-global-panel) |
 | p.76 | Control in ON / OFF (start, stop, continue) | CTRL IN | ✅ | GLOBAL > Sync |  | 1 | pass (md-global-panel) |
 | p.77 | Tempo out (send clock) | TEMPO OUT | ✅ | GLOBAL > Sync |  | 2 | pass (e2e-md-global-tempo-out) |
@@ -404,7 +404,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p. | Select, copy and paste steps | Select steps with the mouse, copy, paste and clear them, to one track or several. | ✅ | Cmd-click, Cmd-drag, the top bar's Copy, Paste, Clr; Cmd+C, Cmd+V |  | 4 | pass (e2e-md-seq-select-copy-paste) |
 | p. | Copy, Paste and Clear what | Choose what a copy, paste or clear takes: trigs, locks, the sound, the whole track. | ✅ | The what menu on Copy, Paste and Clear |  | 2 | pass (md-copy-what-menu) |
 | p. | Drop a file on the window | Drop a SysEx file (or, on the Machinedrum, a sample) on the editor. | ✅ | The window itself | macOS | 2 | pass (e2e-md-drop-syx) |
-| p. | SysEx import with a preview | Look inside a SysEx file before you send it: tick the kinds, choose where each goes, read the report. | ✅ | Engine menu: IMPORT SYSEX… |  | 5 | pass (e2e-md-lib-syx-import) |
+| p. | SysEx import with a preview | Look inside a SysEx file before you send it: tick the kinds, choose where each goes, read the report. | ✅ | Engine menu: IMPORT SYSEX… |  | 6 | pass (e2e-md-lib-syx-import) |
 | p. | Notes from a MIDI keyboard light the track | The track you play lights on the rail and in the mixer. | ✅ | Rail numbers, Mix LEDs |  | 1 | pass (e2e-md-sound-note-light) |
 | p. | The CPU meter and the speed-ups | No such function. A meter shows how much of the audio time the emulation takes, with the speed-ups to switch. | ✅ | The CPU meter beside the version; Developer › Speed-ups |  | 2 | pass (e2e-md-top-cpu-meter) |
 | p. | The output meter and volume | Two bars and a volume line at the end of the LCD. | ✅ | The LCD's right end |  | 1 | pass (e2e-md-lcd-volume) |
@@ -416,18 +416,19 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p. | Kit and song slots | The kit library and the song slots: load, copy, paste, rename and clear a slot, each undoable. | ✅ | The kit on the LCD; Song workspace |  | 4 | pass (e2e-md-lib-kit-copy-paste-undo) |
 | p. | What you draw is what plays | What you enter in the sequencer is what the machine plays. | ✅ | Sequence: the grid or the roll; Alt+Delete clears the pattern; Cmd+Z takes it back | e2e: drawn, played, cleared, undone, each checked on the machine's output | 1 | pass (md-real-sequence-drawn) |
 | p. | Clear (was Revert track) | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Sound: Clear key at the right end of the MUTATE bar, next to R |  | 1 | pass (e2e-md-sound-revert-track) |
+| p. | The selected track follows the last track played | No such function. With it on, the track you select changes to the last one you played from a MIDI keyboard. | ✅ | Engine menu: FOLLOW PLAYED TRACK (off at first) | I-003 | 1 | – |
 
 ## Summary
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 289 |
+| ✅ Yes | 290 |
 | 🟡 Partial | 9 |
 | ❌ No | 6 |
 | ➖ Not applicable | 16 |
-| Total | 320 |
+| Total | 321 |
 
-Of the 304 applicable rows, 289 are fully covered, 9 partly, 6 not at all.
+Of the 305 applicable rows, 290 are fully covered, 9 partly, 6 not at all.
 
 ### Top gaps (our UI), most important first
 
