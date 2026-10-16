@@ -294,6 +294,7 @@ namespace pluginLib
 
 	protected:
 		synthLib::DeviceError m_deviceError = synthLib::DeviceError::None;
+		std::vector<uint8_t> m_lastGoodMachineState;	// saveChunkData: kept when a capture fails
 		std::unique_ptr<synthLib::Device> m_device;
 		std::unique_ptr<synthLib::Plugin> m_plugin;
 		std::vector<synthLib::SMidiEvent> m_midiOut;

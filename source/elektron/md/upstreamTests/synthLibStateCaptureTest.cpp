@@ -26,6 +26,7 @@ namespace
 		std::condition_variable condition;
 		bool encodeStarted = false;
 		bool allowEncode = false;
+		bool encodeResult = true;
 		std::function<void()> onCaptureDestroyed;
 	};
 
@@ -58,6 +59,8 @@ namespace
 				control->encodeStarted = true;
 				control->condition.notify_all();
 				control->condition.wait(lock, [&] { return control->allowEncode; });
+				if(!control->encodeResult)
+					return false;
 				_state.insert(_state.end(), payload.begin(), payload.end());
 				return true;
 			}
@@ -102,6 +105,21 @@ namespace
 	{
 		std::cerr << _message << '\n';
 		return 1;
+	}
+
+	// A save that fails leaves the caller's state as it was: never an envelope header without its payload
+	int testFailedSaveLeavesStateUntouched()
+	{
+		auto control = std::make_shared<CaptureControl>();
+		control->allowEncode = true;
+		control->encodeResult = false;
+		CaptureTestDevice device(control, {1, 2, 3});
+		synthLib::Plugin plugin(&device, [](synthLib::Device*) {});
+		std::vector<uint8_t> state{7, 8};
+		const bool ok = plugin.getState(state, synthLib::StateTypeGlobal);
+		if(ok || state != std::vector<uint8_t>{7, 8})
+			return fail("a failed save changed the caller's state");
+		return 0;
 	}
 
 	// A state save encodes without the process/device lock (the audio thread waits for it), and drops its
@@ -365,6 +383,8 @@ namespace
 int main()
 {
 	if(const auto result = testStateCaptureEncodesUnlocked())
+		return result;
+	if(const auto result = testFailedSaveLeavesStateUntouched())
 		return result;
 	if(const auto result = testStateCaptureInParts())
 		return result;

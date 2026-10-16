@@ -1,5 +1,6 @@
 #include "am29f.h"
 
+#include <algorithm>
 #include <cassert>
 
 #include "mc68k/logging.h"
@@ -102,7 +103,7 @@ namespace hwLib
 			m_buffer[i] = 0xff;
 
 		m_changedAt = _addr;
-		m_changedSize = _sizeInKb * 1024;
+		m_changedSize = _addr < m_size ? std::min<size_t>(_sizeInKb * 1024, m_size - _addr) : 0;
 
 		return true;
 	}

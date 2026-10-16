@@ -119,6 +119,12 @@ namespace
 
 int main()
 {
+	// the emulator logs every register and erase to stderr (MCLOG): the results are on stdout
+#ifdef _WIN32
+	std::freopen("NUL", "w", stderr);
+#else
+	std::freopen("/dev/null", "w", stderr);
+#endif
 	for(const bool fast : {true, false})
 	{
 		patchRam(md::MachineModel::Machinedrum, fast, "MD patch RAM");

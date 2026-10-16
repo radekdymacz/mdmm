@@ -800,6 +800,50 @@ int main()
 				!= std::string::npos,
 			"malformed Monomachine state did not retain a model-specific diagnostic");
 
+		// A host save while the patch RAM is written between every part (17 pieces: more than a hold may copy, so the
+		// copy never settles and ends in OneMomentCopy::finishWhole): the chunk is never empty, and it is the patch RAM
+		// of one moment (every written piece holds the same count), which a restore would put back
+		{
+			Harness writing;
+			writing.process(64);
+			std::atomic<bool> stop{false};
+			std::atomic<uint32_t> writes{0};
+			std::thread writer([&]
+			{
+				uint8_t count = 0;
+				while(!stop.load())
+				{
+					count = static_cast<uint8_t>(count % 255 + 1);
+					writing.processor.getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
+					{
+						if(auto* const device = dynamic_cast<md::Device*>(_device))
+							for(size_t i = 0; i < 17; ++i)
+								device->getHardware().getUC().pokePatchRamForTest(i * md::Microcontroller::g_patchRamMarkSize, count);
+					});
+					++writes;
+					std::this_thread::yield();
+				}
+			});
+			while(writes.load() < 50)
+				std::this_thread::yield();
+			const auto saved = serializedPluginState(writing.processor);	// requires a non-empty MIDI chunk
+			stop = true;
+			writer.join();
+			require(saved.size() > 2, "a save under constant writes gave a header-only chunk");
+			md::DecodedState decoded;
+			const std::vector<uint8_t> payload(saved.begin() + 2, saved.end());
+			require(md::decodeState(decoded, payload, rom, md::MachineModel::Machinedrum, synthLib::StateTypeGlobal)
+				&& decoded.patchRam.size() > 16 * md::Microcontroller::g_patchRamMarkSize,
+				"a save under constant writes did not restore as a machine state");
+			const auto first = decoded.patchRam[0];
+			bool oneMoment = first != 0;
+			for(size_t i = 1; i < 17; ++i)
+				oneMoment = oneMoment && decoded.patchRam[i * md::Microcontroller::g_patchRamMarkSize] == first;
+			require(oneMoment, "a save under constant writes was not the patch RAM of one moment");
+			std::cout << "  host save under constant patch RAM writes: " << saved.size() << " bytes, "
+				<< writes.load() << " writer holds, one moment (count " << static_cast<int>(first) << ")\n";
+		}
+
 		std::cout << "mdProjectStateRestoreTest: MD/MM PASS\n";
 		return 0;
 	}

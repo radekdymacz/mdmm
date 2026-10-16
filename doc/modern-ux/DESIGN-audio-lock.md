@@ -60,8 +60,16 @@ copied; when what is stale is no more than one part it is copied in that hold, a
 four full passes' worth of holds what is still stale is copied in one hold only when it is at most 4 parts (256 KiB,
 `OneMomentCopy::g_restLimit`); a larger rest goes on a part per hold for as many holds again and then the copy gives up
 (`Step::Busy`, nothing copied): the look and the sample flash copy return false and are tried again by the next look, the
-state save begins again (at most `DeviceStateCapture::g_restarts` times) and then fails rather than take the memory whole.
-So no hold copies more than 256 KiB, whatever the firmware writes (follow-ups 2026-10-16, branch fix/0.8-lock-followups;
+state save begins again (at most `DeviceStateCapture::g_restarts` times) and then finishes in one hold (below).
+**A state save under constant writes is never given up** (a lost save is a lost project: a header-only chunk reloads as
+"nothing to restore"). After the restarts `OneMomentCopy::finishWhole` copies everything stale in one hold, however large
+(at worst the 1 MiB patch RAM and, MD, the flash: a rare long hold, only when the firmware writes more than 4 parts between
+every two holds for about 5800 holds). The save is the memory as of that hold. Defence in depth: `Plugin::getState` leaves
+the caller's state untouched when it fails (no envelope header without a payload), and `Processor::saveChunkData` never
+writes an empty machine chunk: a failed capture saves the last good state and logs "SAVE FAILED" (no earlier state: the
+chunk is left out). mdProjectStateRestoreTest saves through the processor while a thread writes 17 pieces of patch RAM
+every hold: the chunk is never empty and is the patch RAM of one moment. So only the look and the sample flash copy give
+up (Busy: retried by the next look); no hold of those copies more than 256 KiB, whatever the firmware writes (follow-ups 2026-10-16, branch fix/0.8-lock-followups;
 mdStateCaptureTest writes 17 pieces of patch RAM between every part: gave up after 5800 holds, none over 64 KiB). The
 Monomachine's flash writes (programmed word, erased sector) mark their own 64 KiB piece, as the Machinedrum's do
 (`hwLib::Am29f::changedAt/changedSize`), so a firmware flash save during a copy re-copies one piece, not the whole flash;

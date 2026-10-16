@@ -53,6 +53,23 @@ namespace md
 		return ok;
 	}
 
+	OneMomentCopy::Step OneMomentCopy::finishWhole(Hardware& _hardware)
+	{
+		size_t bytes = 0;
+		for(auto& c : m_chunks)
+		{
+			if(!c.stale && markOf(_hardware, c) != c.mark)
+				c.stale = true;
+			if(!c.stale)
+				continue;
+			if(!copy(_hardware, c))
+				return Step::Failed;
+			bytes += c.size;
+		}
+		m_maxStepBytes = std::max(m_maxStepBytes, bytes);
+		return Step::Done;
+	}
+
 	OneMomentCopy::Step OneMomentCopy::step(Hardware& _hardware)
 	{
 		++m_steps;

@@ -109,16 +109,16 @@ namespace md
 		case OneMomentCopy::Step::Done:
 			break;
 		case OneMomentCopy::Step::Busy:
-			// written faster than it is copied: begin again (the hold stays one part); after a few tries the save fails
-			// rather than take the memory whole in one hold
-			if(++_capture.restarts > DeviceStateCapture::g_restarts)
+			// written faster than it is copied: begin again (the hold stays one part); after a few tries the rest is
+			// copied in this one hold, however large: a state save is never given up (a lost save is a lost project)
+			if(++_capture.restarts <= DeviceStateCapture::g_restarts)
 			{
-				_capture.copying = false;
-				_capture.failed = true;
-				return false;
+				startStateCapture(_capture);
+				return _capture.copying;
 			}
-			startStateCapture(_capture);
-			return _capture.copying;
+			if(_capture.copy.finishWhole(stateHardware) == OneMomentCopy::Step::Done)
+				break;
+			[[fallthrough]];
 		case OneMomentCopy::Step::Failed:
 			// a range the memory does not have: the whole memories, in this hold, as before the copy in parts
 			_capture.patchRam = stateHardware.copyPatchRam();
@@ -139,8 +139,6 @@ namespace md
 
 	bool DeviceStateCapture::encode(std::vector<uint8_t>& _state)
 	{
-		if(failed)
-			return false;
 		if(requestedState)
 		{
 			_state.insert(_state.end(), requestedState->begin(), requestedState->end());
