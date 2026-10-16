@@ -71,6 +71,11 @@ on more than 1 ms of work under the lock in any hold:
 | after, md | 138 to 7.5 (another agent's builds, then quiet) | 0.65 ms PASS | 2.2 ms |
 | after, mm | 7.5 to 6.3 | 0.09 ms PASS | 11.7 ms |
 
+After merging main (MD quantum 30 us, re-recorded goldens) one more hold showed: the start's memory made the factory
+baseline on first use, which copied the factory cache under the lock (1.02 ms of work at load 88). `md::Hardware` now
+makes the baseline of a given cache when it is built, off the lock. Then md: worst work 0.65 ms (load 3 to 23, two
+builds by the end), mm: 0.07 ms (load 23 to 17), PASS; goldens 30 of 30 against main's.
+
 The wall times above the work are the low-priority memory thread preempted while holding (the second way a short hold
 becomes a long wait, below). On macOS a real-time audio thread that waits lends its priority to that holder (measured
 14 us at load 90, below); on Linux and Windows it does not. Only steps 4 and 5 (copy jobs run by the audio thread, the
