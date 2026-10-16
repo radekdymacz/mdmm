@@ -105,6 +105,34 @@ namespace mdJucePlugin
 		return m;
 	}
 
+	elektronData::json::Value mixLevelsOf(AudioPluginAudioProcessor& _processor)
+	{
+		using Value = elektronData::json::Value;
+		namespace mm = mixMeters;
+		const auto l = _processor.takeMixLevels();
+		auto pairs = Value::array();
+		for(size_t p = 0; p < mm::g_pairs; ++p)
+		{
+			auto peak = Value::array();
+			auto rms = Value::array();
+			for(size_t ch = p * 2; ch < p * 2 + 2; ++ch)
+			{
+				peak.push(mm::toDb(l.peak[ch]));
+				rms.push(mm::toDb(l.rms[ch]));
+			}
+			auto o = Value::object();
+			o.set("on", l.on[p]);
+			o.set("clip", mm::clipped(std::max(l.peak[p * 2], l.peak[p * 2 + 1])));
+			o.set("peak", std::move(peak));
+			o.set("rms", std::move(rms));
+			pairs.push(std::move(o));
+		}
+		auto m = Value::object();
+		m.set("type", "mixLevels");
+		m.set("pairs", std::move(pairs));
+		return m;
+	}
+
 	elektronData::json::Value midiInOf(const midiIn::Note& _note)
 	{
 		auto m = elektronData::json::Value::object();
@@ -129,6 +157,37 @@ namespace mdJucePlugin
 		m.set("available", s.available);
 		m.set("saved", s.saved);
 		m.set("note", s.note);
+		return m;
+	}
+
+	elektronData::json::Value midiStatsOf(AudioPluginAudioProcessor& _processor)
+	{
+		using Value = elektronData::json::Value;
+		namespace mon = midiMonitor;
+		const auto c = _processor.midiMonitorCounts();
+		auto dirs = Value::object();
+		for(size_t d = 0; d < mon::g_directions; ++d)
+		{
+			auto types = Value::object();
+			for(size_t t = 0; t < mon::g_types; ++t)
+				types.set(mon::typeName(static_cast<mon::Type>(t)), static_cast<double>(c.type[d][t]));
+			auto channels = Value::array();
+			for(const auto n : c.channel[d])
+				channels.push(static_cast<double>(n));
+			auto o = Value::object();
+			o.set("total", static_cast<double>(c.total(static_cast<mon::Direction>(d))));
+			o.set("types", std::move(types));
+			o.set("channels", std::move(channels));
+			dirs.set(mon::directionName(static_cast<mon::Direction>(d)), std::move(o));
+		}
+		auto dropped = Value::object();
+		dropped.set("scheduled", static_cast<double>(c.dropped.scheduledOverflow));
+		dropped.set("external", static_cast<double>(c.dropped.externalIn));
+		dropped.set("allocation", static_cast<double>(c.dropped.allocationFallback));
+		auto m = Value::object();
+		m.set("type", "midiStats");
+		m.set("directions", std::move(dirs));
+		m.set("dropped", std::move(dropped));
 		return m;
 	}
 

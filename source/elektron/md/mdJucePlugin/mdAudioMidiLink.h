@@ -1,5 +1,7 @@
 #pragma once
 
+#include "mdMidiLoop.h"
+
 #include "deskHost/deskHost.h"
 
 #include "elektronData/json.h"
@@ -32,6 +34,9 @@ namespace mdJucePlugin
 	// Plug-in -> page:  {"type":"audio", "doc":{...}}, {"type":"audioLevel", "in":0..1},
 	//                   {"type":"result", "op":"audioSet", ...}   its errors are the only report of a failure
 	//                   (B-037: also a MIDI port the system did not open, mdMidiPortRefusal.h)
+	// The document also says (0.8, WP4): setupError (the device setup's error, B-155), inputPermission (the microphone:
+	// granted, denied, notAsked, unknown), inputNote (why the input is on NONE) and midiLoop (an input that is also the
+	// output, B-154), each "" when there is nothing to say.
 	// The start-up log (B-036, B-037): the standalone's devices as one line when the link starts and whenever they
 	// change (summary), and each MIDI port that did not open.
 	class AudioMidiLink final : juce::ChangeListener
@@ -56,6 +61,10 @@ namespace mdJucePlugin
 		// The standalone's audio and MIDI devices in one line: the driver, the device, its rate and buffer, running or
 		// not, the MIDI inputs (on or off) and the output. Empty in a plug-in (the host owns them).
 		std::string summary() const;
+		// 0.8 (WP4): the MIDI loop warning (B-154: an input that is also the output; "" = none), the text for an input that
+		// stays on NONE (B-155; "" = none) and the microphone permission the system holds.
+		std::string midiLoopWarning() const;
+		std::string inputNote() const;
 
 	private:
 		void changeListenerCallback(juce::ChangeBroadcaster*) override;
@@ -70,6 +79,8 @@ namespace mdJucePlugin
 		ToPage m_toPage;
 		Log m_log;
 		std::string m_logged;	// the summary last logged
+		std::string m_loopLogged;	// the loop warning last logged
+		std::string m_setupError;	// what the last audio device setup returned ("" = it applied)
 		juce::AudioDeviceManager* m_listening = nullptr;
 		juce::AudioDeviceManager::LevelMeter::Ptr m_inputLevel;
 		bool m_meter = false;

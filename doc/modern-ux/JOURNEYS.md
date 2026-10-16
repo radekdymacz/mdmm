@@ -154,6 +154,7 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 | Strip mute | md-mix-mute-solo PASS | mm-mix-level-mute PASS |
 | PAN / trim boxes | md-mix-pan-undo PASS | mm-mix-pan-undo PASS |
 | Outputs: OUT key / routing mode | md-mix-out-route PASS | mm-mix-routing PASS |
+| Output pair meters (I-032, 0.8) | none (no bus section on the MD Mix page) | mm-mix-meters PASS |
 | Master effects | md-mix-master-fx PASS | — |
 | MIDI track mutes (MUTE window) | — | mm-perform-midi-mutes PASS |
 
