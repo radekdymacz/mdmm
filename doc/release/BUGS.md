@@ -4,6 +4,16 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-165 · Monomachine Editor: at 1100 x 800 the Song page's song list is cut off on the right and its bottom row is clipped
+
+- **From:** found by Claude Code while checking the song row marks (I-039), 2026-10-16. Not a tester report; not caused by I-039 (the list is outside the arrangement).
+- **Setup:** Monomachine Editor, Song workspace, window 1100 x 800 (page tier, headless Chrome, stub host).
+- **What happens:** the Songs column's two-column song list runs past the right edge of the window (the second column is cut), and the last row of slots at the bottom is clipped. The arrangement is below the fold.
+- **What should happen:** the list fits the window at any supported size (as at 1500 x 1000), or scrolls; nothing is cut.
+- **Evidence:** screenshot songmarks-mm-1100x800.png (scratchpad of the 2026-10-16 session). The Machinedrum Editor at the same size shows the same single wide list layout; check it too.
+- **To check:** `.songui` layout breakpoints in `mmStudio/src/25-mm.css` and the shared `deskSongSlots.css`.
+- **Status:** open.
+
 ## B-164 · Monomachine: a lock the panel counts is not drawn in the lane ("12 on the machine, 16 in the editor", DEC shows nothing)
 
 - **From:** a beta tester on Discord, 2026-10-16 (0.7.0): "There are 12 plocks in this pattern. The top right says only 7. The editor shows that there are 16, it claims there are 4 on DEC but they do not show up or are implemented." Earlier: some trigs show a lock but cannot be identified.

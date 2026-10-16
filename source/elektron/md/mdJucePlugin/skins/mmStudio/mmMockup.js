@@ -1234,6 +1234,50 @@ const SongSlots = (() => {
 	return { init(h) { host = h; }, html, afterRender, busy, select, get sel() { return sel; }, get naming() { return naming; } };
 })();
 
+/* I-039: the marks on an arrangement cell. A row that holds a tempo, mutes or a transpose says so in its cell, as
+   short as it can be: the tempo as a number, mutes as "M" and their count, the row's transpose as +2 / -3, per-track
+   transpose (MM) as "T±". A row with none gets nothing, so a plain song looks as it did. The full detail is for the
+   cell's tooltip. A cell can be as narrow as 22 px (it is not wider than its pattern name), so the words cannot
+   always fit: the same marks are also short letter codes in the same small line (B tempo, M mutes, ± the row's
+   transpose, T single tracks, in that order, e.g. "BM±"), and fit() shows the words when every cell has room for them
+   and the codes when one has not: nothing is ever cut and no cell changes its height. Pure apart from fit(): a row in (MD: bpm, mutes; MM: also trn, ttr,
+   64 = no transpose), text out. Tested in node by deskSongMarksTest.js. */
+const SongMarks = (() => {
+	const sgn = n => (n > 0 ? "+" : "") + n;
+	/* kind "md": mute k is "Track k+1"; "mm": 0-5 are T1-T6, 6-11 are M1-M6 (the machine's MIDI tracks) */
+	const muteName = (kind, k) => kind === "mm" ? (k < 6 ? "T" + (k + 1) : "M" + (k - 5)) : "Track " + (k + 1);
+	function marks(r, kind) {
+		if (!r || r.type) return { text: "", title: "", any: false, codes: "" };
+		const text = [], tip = []; let codes = "";
+		if (r.bpm) { text.push(String(r.bpm)); tip.push("Tempo " + r.bpm + " BPM"); codes += "B"; }
+		const mutes = (r.mutes || []).slice().sort((a, b) => a - b);
+		if (mutes.length) { text.push("M" + mutes.length); tip.push("Muted: " + mutes.map(k => muteName(kind, k)).join(", ")); codes += "M"; }
+		const trn = (r.trn ?? 64) - 64;
+		if (trn) { text.push(sgn(trn)); tip.push("Transpose " + sgn(trn)); codes += "±"; }
+		const ttr = (r.ttr || []).map((v, k) => [k, v - 64]).filter(([, d]) => d);
+		if (ttr.length) { text.push("T±"); tip.push("Per track: " + ttr.map(([k, d]) => muteName(kind, k) + " " + sgn(d)).join(", ")); codes += "T"; }
+		return { text: text.join(" "), title: tip.join(" · "), any: text.length > 0, codes };
+	}
+	/* the cell's markup: the words and the codes in one element (a click on it opens Row > More); "" for a plain row */
+	function html(r, kind) {
+		const m = marks(r, kind);
+		return m.any ? `<i class="rmk" data-rowmarks="1"><span class="rt">${m.text}</span><span class="rg">${m.codes}</span></i>` : "";
+	}
+	/* the words when each cell's small line holds them, else the codes (re-run after a render and when the page resizes) */
+	function fit(grid) {
+		if (!grid) return;
+		grid.classList.add("rmkwide");
+		for (const s of grid.querySelectorAll(".scell small")) {
+			const c = s.parentNode, cs = getComputedStyle(c), room = c.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+			if (s.getBoundingClientRect().width > room + 0.5) { grid.classList.remove("rmkwide"); return; }
+		}
+	}
+	function watch(gridOf) {
+		if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("resize", () => fit(gridOf()));
+	}
+	return { marks, html, fit, watch };
+})();
+
 /* ---- shared/deskWhat.js ---- */
 "use strict";
 /* COPY / PASTE / CLEAR what (0.6 wave 4, doc/modern-ux/DESIGN-machine-menus.md 2): the machine's SUPER COPY and SUPER
@@ -4804,18 +4848,28 @@ ED.dist={k(){return(kget("AMP","DIST")-64)/63},
 ED.pan={draw(g,W,H){const ink=cssv("--ink");grid(g,W,H);g.font=SFONT;g.fillStyle=ink;g.fillText("L",6,H-6);g.fillText("R",W-12,H-6);g.fillStyle=inkA(.5);g.fillRect(W/2,20,1,H-30);
   const p=kget("AMP","PAN")-64;label(g,p?(p<0?"left "+(-p):"right "+p):"centre")},
  handles(W,H){return[{x:10+u7(kget("AMP","PAN"))*(W-20),y:H-10-u7(kget("AMP","VOL"))*(H-34),k:"PAN · VOL",drag:(x,y)=>{kset("AMP","PAN",(x-10)/(W-20)*127);kset("AMP","VOL",(H-10-y)/(H-34)*127)}}]}};
-/* FILTER ATK DEC: the filter's own envelope; BOFS moves the base (solid), WOFS the width (dashed). Both are signed
-   (B-148: -64 to +63, 64 = no sweep): up from the middle line for a positive offset, down for a negative one */
-ED.fenv={seg(W){const f=V("FLT");return{a:f[4]/127*W*.3,d:f[5]/127*W*.6}},
- geo(H){const T=22,B=H-10;return{M:(T+B)/2,A:(B-T)/2}},
- off:v=>(v-64)/64,
- draw(g,W,H){const f=V("FLT"),s=this.seg(W),G=this.geo(H),ink=cssv("--ink"),bo=this.off(f[6]),wo=this.off(f[7]);grid(g,W,H);
-  const env=x=>x<s.a?x/Math.max(1,s.a):Math.exp(-3*(x-s.a)/Math.max(4,s.d));
-  g.strokeStyle=inkA(.3);g.lineWidth=1;g.beginPath();g.moveTo(0,G.M+.5);g.lineTo(W,G.M+.5);g.stroke();
-  line(g,W,x=>G.M-env(x)*G.A*bo,ink,2.2);if(wo)line(g,W,x=>G.M-env(x)*G.A*wo,inkA(.6),1.5,[5,4]);
-  label(g,bo||wo?"solid = base · dashed = width":"no offset: the envelope does nothing")},
- handles(W,H){const s=this.seg(W),f=V("FLT"),G=this.geo(H),bo=this.off(f[6]);return[{x:Math.max(5,s.a),y:G.M-G.A*bo,k:"ATK · BOFS",drag:(x,y)=>{f[4]=clamp(Math.round(x/(W*.3)*127));f[6]=clamp(Math.round(64+(G.M-y)/G.A*64))}},
-  {x:s.a+Math.max(4,s.d)*.35,y:G.M-G.A*bo*Math.exp(-1.05),k:"DEC",drag:x=>f[5]=clamp(Math.round((x-s.a)/.35/(W*.6)*127))}]}};
+/* FILTER ATK DEC BOFS WOFS (I-043): the filter's own envelope in two panes of the one screen. The big pane is the reach:
+   BOFS (solid, the base) and WOFS (dashed, the width) each a row across the whole pane, -64 on the left edge, 0 on the
+   line, +63 on the right (B-148: 64 = no sweep), so a drag left or right covers the full range. The small square pane
+   at the right is the envelope's shape alone: ATK and DEC. */
+ED.fenv={geo(W,H){const side=clamp(Math.round(H*.62),56,Math.round(W*.4)),sx=W-side-4,bw=sx-8,P=5;
+  return{side,sx,sy:H-side-4,bw,P,iw:side-2*P,ih:side-2*P,x0:10,x1:Math.max(40,bw-10),rb:Math.round(H*.4),rw:Math.round(H*.72)}},
+ X(G,v){return G.x0+v/127*(G.x1-G.x0)},
+ V(G,x){return clamp(Math.round((x-G.x0)/(G.x1-G.x0)*127),0,127)},
+ shape(G,f){const a=f[4]/127*G.iw*.4,d=Math.max(4,f[5]/127*G.iw*.6);return{a,d,at:x=>x<a?x/Math.max(1,a):Math.exp(-3*(x-a)/d)}},
+ draw(g,W,H){const f=V("FLT"),G=this.geo(W,H),ink=cssv("--ink"),S0=this.shape(G,f),zx=this.X(G,64);
+  g.strokeStyle=inkA(.13);g.lineWidth=1;for(let i=1;i<4;i++){const y=Math.round(H*i/4)+.5;g.beginPath();g.moveTo(0,y);g.lineTo(G.bw,y);g.stroke()}
+  g.strokeStyle=inkA(.35);g.beginPath();g.moveTo(Math.round(zx)+.5,22);g.lineTo(Math.round(zx)+.5,H-14);g.stroke();
+  g.font=SFONT;g.fillStyle=inkA(.6);g.fillText("-64",G.x0-4,H-4);g.fillText("0",zx-2,H-4);g.fillText("+63",G.x1-12,H-4);
+  [["BOFS",f[6],G.rb,0],["WOFS",f[7],G.rw,1]].forEach(([n,v,y,dash])=>{const x=this.X(G,v),o=v-64;g.fillStyle=ink;g.font=SFONT;g.fillText(n+" "+(o>0?"+":"")+o,G.x0-4,y-9);
+   g.strokeStyle=dash?inkA(.6):ink;g.lineWidth=dash?1.5:2.2;g.setLineDash(dash?[5,4]:[]);g.beginPath();g.moveTo(zx,y);g.lineTo(x,y);g.stroke();g.setLineDash([])});
+  g.strokeStyle=inkA(.5);g.lineWidth=1;g.strokeRect(G.sx+.5,G.sy+.5,G.side-1,G.side-1);
+  g.save();g.translate(G.sx+G.P,G.sy+G.side-G.P);line(g,G.iw,x=>-S0.at(x)*G.ih,ink,2);g.restore();
+  label(g,f[6]===64&&f[7]===64?"no reach: the envelope does nothing":"how far it moves",8,15)},
+ handles(W,H){const f=V("FLT"),G=this.geo(W,H),S0=this.shape(G,f),bx=G.sx+G.P,by=G.sy+G.side-G.P;
+  return[{x:this.X(G,f[6]),y:G.rb,k:"BOFS",drag:x=>kset("FLT","BOFS",this.V(G,x))},{x:this.X(G,f[7]),y:G.rw,k:"WOFS",drag:x=>kset("FLT","WOFS",this.V(G,x))},
+   {x:bx+Math.max(0,S0.a),y:by-G.ih,k:"ATK",drag:x=>kset("FLT","ATK",(x-bx)/(G.iw*.4)*127)},
+   {x:bx+S0.a+S0.d*.35,y:by-Math.exp(-1.05)*G.ih,k:"DEC",drag:x=>kset("FLT","DEC",(x-bx-S0.a)/.35/(G.iw*.6)*127)}]}};
 /* EFFECTS EQF EQG: one band, boosted (up) or cut (down) */
 ED.eq={draw(g,W,H){const e=V("EFX"),mid=H/2+4;grid(g,W,H);line(g,W,x=>mid-(e[1]-64)/64*(mid-22)*Math.exp(-Math.pow((x/W-e[0]/127)*8,2)),cssv("--ink"),2);label(g,e[1]===64?"flat":e[1]>64?"boost":"cut")},
  handles(W,H){const e=V("EFX"),mid=H/2+4;return[{x:e[0]/127*W,y:mid-(e[1]-64)/64*(mid-22),k:"EQF · EQG",drag:(x,y)=>{e[0]=clamp(Math.round(x/W*127));e[1]=clamp(Math.round(64+(mid-y)/(mid-22)*64))}}]}};
@@ -4855,14 +4909,27 @@ ED.flt={resp(u,env){const f=V("FLT"),b=clamp((f[0]+(env?f[6]-64:0))/127,0,1),w=M
  handles(W,H){const f=V("FLT"),b=f[0]/127,lp=Math.min(1,b+f[1]/127),yy=u=>clamp(H/2+8-this.resp(u)*(H/4),6,H-6);
   return[{x:Math.max(6,b*W),y:yy(b),k:"BASE · HPQ",drag:(x,y)=>{f[0]=clamp(Math.round(x/W*127));f[2]=clamp(Math.round((H/2+8-y)/(H/2)*127))}},{x:Math.min(W-6,lp*W),y:yy(lp),k:"WDTH · LPQ",drag:(x,y)=>{f[1]=clamp(Math.round((x/W-f[0]/127)*127));f[3]=clamp(Math.round((H/2+8-y)/(H/2)*127))}}]}};
 function lfoCycle(v){const m=Math.pow(2,v[4]);return v[5]?2048/(v[5]*m):Infinity}
-ED.lfo={draw(g,W,H,c){const l=c.dataset.l,v=V(l),tr=trk(S.sel),ink=cssv("--ink"),N=32,cyc=lfoCycle(v),dep=.15+.85*v[7]/127;grid(g,W,H);
-  const trigs=[];for(let s=0;s<N;s++){const st=tr.steps[s%S.len];if(st&&!st.off&&st.l)trigs.push(s)}
-  const lastTrig=p=>{let t=null;for(const s of trigs)if(s<=p)t=s;return t};const mode=v[2];
-  line(g,W,x=>{const p=x/W*N;let ph;const lt=lastTrig(p);
-   if(mode===0||lt==null)ph=p/cyc;else if(mode===1)ph=(p-lt)/cyc;else if(mode===2)ph=lt/cyc;else{const lim=mode===3?1:.5;ph=Math.min(lim-.0001,(p-lt)/cyc)}
-   let o=lshape(v[3],((ph%1)+1)%1);if(v[6]){const il=Math.max(1,(128-v[6])/8);if(Math.floor(p/il)%2)o=0}return H/2+4-o*(H/2-16)*dep},ink,2);
-  trigs.forEach(s=>{const x=s/N*W;g.fillStyle=ink;g.fillRect(x,H-7,2,6)});
-  label(g,`${LTRIG[mode]} · ${cyc===Infinity?"stopped":"cycle "+(cyc>=1?Math.round(cyc*10)/10+" steps":Math.round(cyc*16)/16+" step")}`)}};
+/* I-042: the LFO as the track's locks change it. step(s) says whether pattern step s plays (locks only apply on a step
+   that plays), trig(s) whether it trigs the LFO, lock(i,s) the step's lock on the LFO's parameter i (2 TRIG, 3 WAVE, 4 MULT,
+   5 SPD, 6 INTL, 7 DPTH) or undefined. A lock holds for its own step: the phase runs on at that step's speed, the shape,
+   interval and depth are that step's. M samples across N steps; each is the output times its depth (-1 to 1). */
+function lfoTrace(v,N,M,len,step,trig,lock){const at=(i,s)=>{const x=step(s)?lock(i,s):undefined;return x==null?v[i]:x},out=new Array(M);let free=0,since=null,held=0;
+ for(let k=0;k<M;k++){const p=k/M*N,s=Math.floor(p),ps=s%len,first=k===0||Math.floor((k-1)/M*N)!==s;
+  if(first&&trig(ps)){since=0;held=free}
+  const mode=at(2,ps),spd=at(5,ps),cyc=spd?2048/(spd*Math.pow(2,at(4,ps))):Infinity,rate=cyc===Infinity?0:1/cyc,dep=.15+.85*at(7,ps)/127;let ph;
+  if(since==null||mode===0)ph=free;else if(mode===1)ph=since;else if(mode===2)ph=held;else ph=Math.min((mode===3?1:.5)-.0001,since);
+  let o=lshape(at(3,ps),((ph%1)+1)%1),il=at(6,ps);if(il){il=Math.max(1,(128-il)/8);if(Math.floor(p/il)%2)o=0}
+  out[k]=o*dep;const d=rate*N/M;free+=d;if(since!=null)since+=d}
+ return out}
+/* the locks of this track on LFO l: the parameter indices (2-7) that have any, and the steps (0..len-1) with one */
+function lfoLocks(t,l,len){const idx=[],steps=new Set(),tr=trk(t);for(let i=2;i<8;i++){const m=S.locks.get(lkKey(t,l+"."+i));if(!m)continue;let any=false;for(const s of m.keys()){const q=tr.steps[s];if(s<len&&q&&!q.off){any=true;steps.add(s)}}if(any)idx.push(i)}return{idx,steps}}
+ED.lfo={draw(g,W,H,c){const l=c.dataset.l,v=V(l),t=S.sel,tr=trk(t),ink=cssv("--ink"),N=Math.max(32,Math.min(64,S.len)),cyc=lfoCycle(v),LK=lfoLocks(t,l,S.len);grid(g,W,H);
+  const act=s=>{const q=tr.steps[s];return!!q&&!q.off},tg=s=>act(s)&&!!tr.steps[s].l;
+  const o=lfoTrace(v,N,Math.max(2,Math.floor(W)+1),S.len,act,tg,(i,s)=>S.locks.get(lkKey(t,l+"."+i))?.get(s)),sw=W/N;
+  g.fillStyle=inkA(.1);LK.steps.forEach(s=>{for(let r=s;r<N;r+=S.len)g.fillRect(Math.round(r*sw),0,Math.max(1,Math.round(sw)),H-2)});
+  line(g,W,x=>H/2+4-o[Math.min(o.length-1,Math.round(x))]*(H/2-16),ink,2);
+  for(let s=0;s<N;s++)if(tg(s%S.len)){const x=Math.round(s*sw);g.fillStyle=ink;const lk=LK.steps.has(s%S.len);g.fillRect(x,H-(lk?13:7),2,lk?12:6)}
+  label(g,`${LTRIG[v[2]]} · ${cyc===Infinity?"stopped":"cycle "+(cyc>=1?Math.round(cyc*10)/10+" steps":Math.round(cyc*16)/16+" step")}${LK.idx.length?" · locks "+LK.idx.map(i=>FIXED[l][i]).join(" "):""}`)}};
 function inputLabel(t){const tr=trk(t);if(!isFx(tr.m))return"—";if(tr.inp==null)return"none";if(tr.inp==="NEIBOR")return t===0?"NEIBOR (none)":"T"+t+" "+S.tracks[t-1].m;return tr.inp}
 /* each screen's help: its tooltip */
 const SND_TIP={uni:"The base saw (middle) and the unison pair either side: UNIW how far (sideways), UNIL how loud (up); dashed, the extended pair at twice the width (UNIX, never above UNIL). Drag the dot.",
@@ -4887,12 +4954,12 @@ const SND_TIP={uni:"The base saw (middle) and the unison pair either side: UNIW 
  dist:"Distortion, in to out (dashed = clean). Drag the dot up or down.",
  pan:"The track in the stereo field: PAN sideways, VOL up. Drag the dot.",
  flt:"The 24 dB gap filter: BASE is the high-pass, WDTH the gap to the low-pass, the dots up for HPQ and LPQ. Dashed: where the envelope takes it. Both follow the note unless KEY (Perform › Assign › KEY) switches one off: the label then says which is fixed.",
- fenv:"The filter's own envelope: ATK, DEC; BOFS how far it moves the base (solid), WOFS the width (dashed), -64 to +63: up for +, down for -, 0 none. Drag the dots.",
+ fenv:"The filter's own envelope. Big pane: BOFS how far it moves the base (solid) and WOFS the width (dashed), -64 on the left edge to +63 on the right, 0 on the line: drag a dot left or right. Small square: its shape, ATK and DEC.",
  eq:"One EQ band: EQF moves it, EQG boosts (up) or cuts (down). Drag the dot.",
  srr:"Sample-rate reduction: more SRR, longer held steps (the rail).",
  delay:"The repeats over one bar: DTIM apart (in 256ths: 64 = a beat), DSND how loud (below 0 keeps stereo, above ping-pongs), DFB how much each keeps.",
  dflt:"The repeats' band: DBAS the low edge, DWID up to the high edge. Drag the edges.",
- lfo:"The LFO over two bars, as the trig mode makes it (the ticks are this track's LFO trigs). Drag the ~ key onto any value to route it there."};
+ lfo:"The LFO across the pattern (two bars at least), as the trig mode makes it and as this track's locks on TRIG, WAVE, MULT, SPD, INTL and DPTH change it: a lock holds for its own step (shaded; the tick is taller). The ticks are this track's LFO trigs. Drag the ~ key onto any value to route it there."};
 const attrS=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 const sndPlot=(ed,pg,knobs,extra="")=>`<div class="plot" title="${attrS(SND_TIP[ed]||"Drag the dots.")}"><canvas class="ed" data-ed="${ed}" data-pg="${pg}" data-k="${knobs.join(" ")}" ${extra} aria-label="${attrS(SND_TIP[ed]||"")}"></canvas></div>`;
 /* a group's title: a MUTATE scope chip (its knobs join what R moves), or plain */
@@ -4918,7 +4985,7 @@ const sgRow=(list,cls)=>soundRow(list,cls,SND_ROW);
 function lfoGroup(t,k){const l="LF"+k,v=trk(t).v[l],dn=LPAGES[v[0]]?destNames(t,v[0]):["—"];
  return{key:"lfo",title:"LFO "+k,pg:l,idx:[4,5,6,7],knobs:[4,5,6,7].map(i=>FIXED[l][i]),n:4,w:4,tag:v[7]?"":"off",
   titleHtml:`<span class="lfohead"><button class="lfohandle" data-cord="${l}" title="Drag onto any value to route LFO ${k} there" aria-label="Route LFO ${k}">~${k}</button><button class="mutg" data-mutsg="${l}:lfo" aria-pressed="${S.mut.scope.has(l+":lfo")}" title="Add LFO ${k} to what Mutate moves (its PAGE and DEST stay)">LFO ${k}</button></span>`,
-  plot:`<div class="plot" title="${attrS(SND_TIP.lfo)}"><canvas class="ed" data-ed="lfo" data-l="${l}" aria-label="LFO ${k} over two bars, ticks = LFO trigs"></canvas></div>`,
+  plot:`<div class="plot" title="${attrS(SND_TIP.lfo)}"><canvas class="ed" data-ed="lfo" data-l="${l}" aria-label="LFO ${k} across the pattern with this track's locks, ticks = LFO trigs"></canvas></div>`,
   body:`<div class="lfobody"><div class="sgline lforoute"><select id="lp${k}" aria-label="LFO ${k} page">${LPAGES.map((p,i)=>opt(i,p==="MID"?"MIDI":p,v[0])).join("")}</select><span class="arrow">›</span><select id="ld${k}" aria-label="LFO ${k} destination">${dn.map((d,i)=>opt(i,d,v[1])).join("")}</select>
    <span class="seg" data-set="ltrig" data-l="${l}" title="TRIG: FREE runs on, TRIG restarts it on a trig, HOLD keeps the value a trig takes, ONE and HALF play one cycle or half of one">${LTRIG.map((n,i)=>`<button data-v="${i}" aria-pressed="${v[2]===i}">${n}</button>`).join("")}</span></div>
    <div class="shapes w11">${LWAVE.map((n,i)=>`<button data-lwave="${l}" data-w="${i}" aria-pressed="${v[3]===i}" title="${n}" aria-label="${n}">${shapeIcon(i)}</button>`).join("")}</div>
@@ -5532,15 +5599,17 @@ function renderSong(){songModeSync();S.songSel=Math.max(0,Math.min(S.songSel,S.s
  const lines=Math.ceil(200/16);
  $("#main").innerHTML=`<div class="songui lay2 withlib ${S.plays.songMode?"songmode":"patmode"}${S.plays.songMode&&S.playing?" songplaying":""}">${SongSlots.html()}<div class="songleft"><section class="card whatplays ${S.plays.songMode?"song":"pattern"} ${chain?"chainmode":""}">${head}${palette}</section>
    ${pick==="song"?`<section class="card"><header><h3>Selected row</h3><span class="rowacts"><button data-rowact="from" title="Play the song from this row (Enter): SONG mode, the row from its first step">▶ From here</button><button data-rowact="up" title="Move left">←</button><button data-rowact="down" title="Move right">→</button><button data-rowact="dup">Duplicate</button><button data-rowact="loop">Add loop</button><button data-rowact="del" class="danger">Delete</button></span></header><div class="insp">${insp}</div></section>`:""}</div>
-  <section class="card arrcard"><header><h3>Arrangement</h3><span class="arrstate" id="arrstate">${arrState()}</span><span class="note" title="${S.song.length} of 200 rows · T track transpose · M mutes · B tempo · ~ part">${S.song.length} of 200 rows<span class="gopt"> · T track transpose · M mutes · B tempo</span></span></header>
+  <section class="card arrcard"><header><h3>Arrangement</h3><span class="arrstate" id="arrstate">${arrState()}</span><span class="note" title="${S.song.length} of 200 rows · B tempo · M mutes · ± transpose · T per-track transpose · ~ part">${S.song.length} of 200 rows<span class="gopt"> · B tempo · M mutes · ± transpose · T per-track transpose</span></span></header>
    <div class="durbar" title="Song shape by time (length × repeats); in SONG mode it fills up to the row that plays">${S.song.map((r,i)=>r.type?`<i class="db dbm" data-i="${i}"></i>`:`<i class="db ${i===S.songSel?"sel":""}" data-row="${i}" data-i="${i}" style="flex:${rowLen(r)*r.rep} 1 0"></i>`).join("")}</div>
    <div class="slotgrid" id="tl">${Array.from({length:lines},(_,line)=>`<span class="sglab">${String(line*16+1).padStart(3,"0")}</span>${Array.from({length:16},(_,c)=>{const i=line*16+c,r=S.song[i];if(i>=200)return`<span></span>`;
      if(!r)return`<div class="scell empty" data-i="${i}"></div>`;
      const cls=`scell ${i===S.songSel?"sel":""} ${r.type?"cmd "+r.type:""} ${!r.type&&loopOf(i)>=0?"inloop":""}`;
      const txt=r.type==="end"?"END":r.type==="loop"?`↺${String(r.to+1).padStart(3,"0")}`:r.type==="jump"?`→${String(r.to+1).padStart(3,"0")}`:r.type==="halt"?"HALT":patName(r.pat);
-     const sub=r.type==="loop"?(r.count===Infinity?"∞":"×"+r.count):!r.type?`${r.rep>1?"×"+r.rep:""}${(r.trn??64)!==64?" "+((r.trn-64)>0?"+":"")+(r.trn-64):""}${hasTtr(r)?" T":""}${r.mutes?.length?" M":""}${r.bpm?" B":""}${r.ofs||r.len?"~":""}`:"";
-     return`<button class="${cls}" data-row="${i}" data-i="${i}" draggable="${r.type==="end"?"false":"true"}" title="Row ${String(i+1).padStart(3,"0")}${r.type?"":" · "+patName(r.pat)+" ×"+r.rep+" · "+rowLen(r)+" steps"}"><b>${txt}</b><small>${sub}</small></button>`}).join("")}`).join("")}</div></section></div>`;
- markSongRow(true);SongSlots.afterRender()}
+     const mk=SongMarks.marks(r,"mm");
+     const sub=r.type==="loop"?(r.count===Infinity?"∞":"×"+r.count):!r.type?`${r.rep>1?"×"+r.rep:""}${mk.any?(r.rep>1?" ":"")+SongMarks.html(r,"mm"):""}${r.ofs||r.len?"~":""}`:"";
+     return`<button class="${cls}" data-row="${i}" data-i="${i}" draggable="${r.type==="end"?"false":"true"}" title="Row ${String(i+1).padStart(3,"0")}${r.type?"":" · "+patName(r.pat)+" ×"+r.rep+" · "+rowLen(r)+" steps"+(mk.any?"\n"+mk.title+" · click the marks: Row > More":"")}"><b>${txt}</b><small>${sub}</small></button>`}).join("")}`).join("")}</div></section></div>`;
+ markSongRow(true);SongSlots.afterRender();SongMarks.fit(document.getElementById("tl"))}
+SongMarks.watch(()=>document.getElementById("tl"));
 /* The song slots (deskSongSlots.js, shared with the Machinedrum Editor): the host. The 24 songs are the machine's
    documents (S.songs: the host's view, MmView.songsOf; on its own the example's). Load is LOAD SONG, Save SAVE SONG
    (the song the machine holds, into its slot), the rest the library's slot ops (songCopy, songPaste, songCopyTo,
@@ -6257,6 +6326,7 @@ document.addEventListener("click",e=>{
   const cp=e.target.closest("[data-chainpad]");if(cp){chainPad(+cp.dataset.chainpad);return}
   const ca=e.target.closest("[data-chain]");if(ca){if(!ca.disabled)chainAct(ca.dataset.chain);return}
   const ap=e.target.closest("[data-addpat]");if(ap){if(S.song.length>=200){toast("A song holds 200 rows.");return}let at2=S.songSel+1;if(S.song[S.songSel]?.type==="end")at2=S.songSel;S.song.splice(at2,0,{pat:+ap.dataset.addpat,rep:1});S.songSel=at2;edit("rowInsert",{i:at2,row:S.song[at2]});render();return}
+  const rmk=e.target.closest("[data-rowmarks]");if(rmk){S.songSel=+rmk.closest(".scell").dataset.row;S.songMore=true;render();return}
   const rw=e.target.closest(".scell:not(.empty),.db[data-row]");if(rw){S.songSel=+rw.dataset.row;render();return}
   const ra=e.target.closest("[data-rowact]");if(ra){songAction(ra.dataset.rowact);return}
   const stp=e.target.closest("[data-step]");if(stp){songStep(stp.dataset.step,+stp.dataset.d*(e.shiftKey?10:1));return}
