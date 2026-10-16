@@ -421,7 +421,7 @@ const FOCUS_KEYS=["g","n","t","i","l","gv"];
 function focusedValue(){const el=document.activeElement,d=el&&el.dataset;if(!d||(d.g==null&&d.gv==null)||!$("#main")?.contains(el))return null;return FOCUS_KEYS.filter(k=>d[k]!=null).map(k=>`[data-${k}="${d[k]}"]`).join("")}
 function render(){const f=focusedValue();renderPage();if(f){const el=document.querySelector("#main "+f);if(el&&document.activeElement!==el)el.focus({preventScroll:true})}}
 function renderPage(){closePicker();closeK();const sl=$("#seqscroll")?.scrollLeft||0;renderTop();{const m=(S.ws==="seq"||S.ws==="sound")&&S.side==="midi";if(!m&&S.sel>5)S.sel-=6;if(m&&S.sel<6)S.sel+=6}const full=["mix","perform","song","control"].includes(S.ws);
- $("#body").className="body "+(full?"full ":"")+"ws-"+S.ws;$("#rail").hidden=full;if(!full)renderRail();renderSub();
+ $("#body").className="body "+(full?"full ":"")+"ws-"+S.ws;document.documentElement.classList.toggle("songpage",S.ws==="song");$("#rail").hidden=full;if(!full)renderRail();renderSub();
  ({control:renderControl,seq:renderSeq,sound:renderSound,mix:renderMix,perform:renderPerform,song:renderSong})[S.ws]();
  const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));if(S.learn)document.body.classList.add("learn");movePH(false);polyFollows();mixMetersSync()}
 /* 0.6 wave 9 (B-064): POLY plays the machine's track in focus; the synth track the person selects here (rail, Assign's

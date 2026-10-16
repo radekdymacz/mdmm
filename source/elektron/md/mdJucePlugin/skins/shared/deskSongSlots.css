@@ -1,7 +1,16 @@
 /* The Song page's song slots (deskSongSlots.js) and the PATTERN · CHAIN · SONG keys of its one palette (0.6 wave 1,
    doc/modern-ux/DESIGN-machine-menus.md §2, Song). Both editors: the same classes, the page's own tokens. */
 .songui.withlib{grid-template-columns:366px minmax(340px,400px) minmax(0,1fr)!important}
-@media (max-width:1100px){.songui.withlib{grid-template-columns:minmax(0,1fr)!important}}
+@media (max-width:1239px){.songui.withlib{grid-template-columns:minmax(0,1fr)!important}}
+/* B-165: the page asks for 1240 px (.app min-width; the Machinedrum page's html and body 1280), the plug-in's zoom gives it 1440
+   or more, but a user zoom above 100 % leaves less. The Song page then takes the window's width (its columns stack below
+   1240 px, the song list shows all its rows) instead of running past the right edge. The class comes from the page's script
+   (renderers set html.songpage on the Song workspace: no :has, WebKit 15 has none, B-054). */
+html.songpage,html.songpage body,html.songpage .app{min-width:0!important}
+/* the three columns at 1240 to 1400 px: the middle one gives room to the arrangement and the slots' labels (A01, END) are one
+   size smaller, so a slot shows its whole label (B-165: 22 px cells cut it) */
+@media (min-width:1240px) and (max-width:1400px){.songui.withlib{grid-template-columns:366px minmax(290px,320px) minmax(0,1fr)!important}
+.slotgrid .scell{padding-left:1px;padding-right:1px}.slotgrid .scell b{font-size:10px}}
 .songlib{border-top:0!important;padding-top:0!important;display:grid;gap:10px;align-content:start;padding-right:16px!important;border-right:2px solid var(--print)}
 .songui.withlib>.songlib{align-self:start!important;align-content:start!important;grid-template-rows:none!important;height:auto!important;grid-row:1/-1}
 .songlib .sltop{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -14,6 +23,8 @@
 .songlib .slacts button:disabled{opacity:.35;cursor:default}
 .songlib .danger:hover{background:var(--rec);color:#fff}
 .songlib .libgrid.songs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;max-height:calc(100vh - 330px);overflow:auto;align-content:start;padding:2px}
+/* stacked below 1240 px the page scrolls (#main): the list shows all its rows, no second scroll bar and no half row at its bottom */
+@media (max-width:1239px){.songlib .libgrid.songs{max-height:none;overflow:visible}}
 .songlib .ls{grid-template-columns:auto 1fr;column-gap:8px;align-items:center;padding:4px 7px}
 .songlib .ls .lsh{grid-row:1/3}
 .songlib .ls .lsl{grid-column:2;min-height:0}

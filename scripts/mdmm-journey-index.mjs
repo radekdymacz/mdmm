@@ -119,7 +119,7 @@ export function parseJourneys(src, machine, file) {
 		cpuMeterJourneys: (p) => [`${p}-top-cpu-meter`, `${p}-shots-cpu`],
 		speedUpsMenuJourney: (p) => [`${p}-dev-speedups`],
 		volumeJourneys: (p) => [`${p}-lcd-volume`],
-		fitJourneys: (p) => [`${p}-fit-workspaces`],
+		fitJourneys: (p) => [`${p}-fit-workspaces`, `${p}-fit-song`],
 	};
 	for (const m of code.matchAll(/\b(cpuMeterJourneys|speedUpsMenuJourney|volumeJourneys|fitJourneys)\(\s*"(\s*)"/g)) {
 		const open = m.index + m[1].length;
