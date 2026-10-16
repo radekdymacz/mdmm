@@ -19,20 +19,28 @@ const hasTtr=r=>r.ttr&&r.ttr.some(v=>v!==64);
    (the machine is in song mode). A key sets the machine's mode too (seqMode); a mode the machine reports moves the
    switch (songModeSync). The machine's chain comes from the host (MMView.show: machine.desk.chain, song mode); on its
    own the example engine plays it at the pattern ends (chainWrap). */
-S.songPick=null;S.songModeSeen=undefined;S.chainDraft=[];S.chainTimer=0;S.chainSent=false;S.chainWas=false;S.chainOwnEnd=false;S.chainPending=null;
+S.songPick=null;S.songModeSeen=undefined;S.chainDraft=[];S.chainTimer=0;S.chainSent=false;S.chainWas=false;S.chainOwnEnd=false;S.chainPending=null;S.chainWaitFrom=0;S.modeSentAt=-1e9;S.modeWanted=false;
 const SONG_PICKS=[["pattern","Pattern"],["chain","Chain"],["song","Song"]];
 /* B-162: the machine's chain ended without the page (a pattern pick, the LCD): the pads start over and the CHAIN key goes back to PATTERN.
    Not while the page's own chain or Clear is on its way (chainPending: until the machine shows it, 4 s at most), and not for the page's own Clear (chainOwnEnd) */
 function chainSync(){const c=S.plays.chain,act=!!(c&&c.active),p=S.chainPending;
- if(p&&(performance.now()>p.until||(p.patterns?act&&JSON.stringify(c.patterns)===JSON.stringify(p.patterns):!act)))S.chainPending=null;
+ /* a send waits for the machine to show it (8 s at most: a slow host) */
+ if(p&&(act&&p.patterns?JSON.stringify(c.patterns)===JSON.stringify(p.patterns):!p.patterns&&!act))S.chainPending=null;else if(p&&performance.now()>p.until)S.chainPending=null;
+ if(act&&!S.chainWas)S.chainOwnEnd=false;
  if(S.chainWas&&!act&&!S.chainTimer&&!S.chainPending){S.chainDraft=[];S.chainSent=false;if(!S.chainOwnEnd&&S.songPick==="chain")S.songPick="pattern";S.chainOwnEnd=false}
- if(act)S.chainOwnEnd=false;S.chainWas=act||(S.chainWas&&!c)}
+ /* a chain the machine plays that the pads do not show: the pads show it */
+ else if(act&&!S.chainTimer&&!S.chainPending&&JSON.stringify(S.chainDraft)!==JSON.stringify(c.patterns))S.chainDraft=c.patterns.slice();
+ S.chainWas=act||(S.chainWas&&!c)}
 /* the machine's chain changes between renders (the LCD, a pick): watched on its own clock, a render only when the page has to change */
-setInterval(()=>{const k=S.songPick+S.chainDraft.join();chainSync();if(S.ws==="song"&&k!==S.songPick+S.chainDraft.join())render()},300);
+setInterval(()=>{if(S.ws!=="song"){chainSync();return}const k=S.songPick+S.chainDraft.join();songModeSync();if(k!==S.songPick+S.chainDraft.join())render()},300);
 function songModeSync(){chainSync();const sm=!!S.plays.songMode,ch=!!S.plays.chain?.active;
  if(!SONG_PICKS.some(([k])=>k===S.songPick))S.songPick=sm?"song":ch?"chain":"pattern";
- if(S.songModeSeen!==sm){S.songModeSeen=sm;if(sm)S.songPick="song";else if(S.songPick==="song")S.songPick=ch?"chain":"pattern"}}
-function songPickSet(v){/* B-162: a chain still waiting for its 150 ms is not sent into the other mode */if(v!=="chain"){clearTimeout(S.chainTimer);if(S.chainTimer)S.chainDraft=[];S.chainTimer=0}S.songPick=v;seqMode(v==="song");render()}/* B-072: every key sends the mode (a key pressed before the machine's answer to the one before was in S.plays sent nothing) */
+ if(S.songModeSeen!==sm){S.songModeSeen=sm;/* B-162: a report of the mode before the one just asked for is not the person's choice */
+  if(performance.now()-S.modeSentAt<2000&&sm!==S.modeWanted){}else if(sm)S.songPick="song";else if(S.songPick==="song")S.songPick=ch?"chain":"pattern"}
+ else if(performance.now()-S.modeSentAt>2000&&(S.songPick==="song")!==sm)S.songPick=sm?"song":ch?"chain":"pattern"}
+function songPickSet(v){/* B-162: a chain still waiting for its 150 ms is not sent into the other mode */if(v!=="chain"&&S.chainTimer){/* a pending Back/Clear that ends the chain still goes out (page and machine agree); an unsent chain is dropped */
+ const wasClear=S.chainDraft.length<2&&(S.plays.chain?.active||S.chainSent);clearTimeout(S.chainTimer);S.chainTimer=0;S.chainWaitFrom=0;
+ if(wasClear){S.chainOwnEnd=true;S.chainPending={until:performance.now()+8000};clearChain();S.chainSent=false}S.chainDraft=[]}S.songPick=v;S.modeSentAt=performance.now();S.modeWanted=v==="song";seqMode(v==="song");render()}/* B-072: every key sends the mode (a key pressed before the machine's answer to the one before was in S.plays sent nothing) */
 S.plays={chain:null,songMode:false,song:0};
 const nn2=i=>String(i+1).padStart(2,"0");
 /* what the machine plays: in song mode the song (the Monomachine keeps a chain there but plays the song,
@@ -50,10 +58,14 @@ function clearChain(){if(HOST.chainClear)return HOST.chainClear();S.plays.chain=
 /* every pad (and BACK) chains at once: the pads go out as the machine's chain 150 ms after the last click
    (the latest wins; the host also holds a chain back while the keys of the one before are on their way).
    Fewer than two pads: the chain the machine plays ends. */
-function chainSoon(){clearTimeout(S.chainTimer);
- S.chainTimer=setTimeout(()=>{S.chainTimer=0;const d=S.chainDraft.slice(),c=S.plays.chain;if(!canChain()||S.songPick!=="chain"||S.plays.songMode)return;
-  if(d.length>=2){if(!(c&&c.active&&c.patterns.length===d.length&&c.patterns.every((p,i)=>p===d[i]))){S.chainPending={patterns:d,until:performance.now()+4000};sendChain(d);S.chainSent=true}}
-  else if((c&&c.active)||S.chainSent){S.chainOwnEnd=!!(c&&c.active);S.chainPending={until:performance.now()+4000};clearChain();S.chainSent=false}},150)}
+function chainSoon(){clearTimeout(S.chainTimer);S.chainTimer=setTimeout(chainFire,150)}
+/* in SONG mode the chain gesture is not the machine's: right after SONG, then CHAIN the machine may not have left it yet; wait for it (2 s) */
+function chainFire(){S.chainTimer=0;if(!canChain()||S.songPick!=="chain")return;
+ if(S.plays.songMode){S.chainWaitFrom||=performance.now();if(performance.now()-S.chainWaitFrom<2000){S.chainTimer=setTimeout(chainFire,150);return}
+  S.chainWaitFrom=0;toast("The machine is still in SONG mode: the chain was not sent. Click a pad again.");return}
+ S.chainWaitFrom=0;const d=S.chainDraft.slice(),c=S.plays.chain;
+ if(d.length>=2){if(!(c&&c.active&&c.patterns.length===d.length&&c.patterns.every((p,i)=>p===d[i]))){S.chainPending={patterns:d,until:performance.now()+8000};sendChain(d);S.chainSent=true}}
+ else if((c&&c.active)||S.chainSent){S.chainOwnEnd=!!(c&&c.active);S.chainPending={until:performance.now()+8000};clearChain();S.chainSent=false}}
 function chainFooter(){const c=S.plays.chain,bn="ABCDEFGH"[S.bank],d=S.chainDraft;
  const known=!!c||!window.MMHost,active=!!(c&&c.active&&c.patterns.length),list=active?c.patterns:[],at=list.indexOf(S.pat),next=active?list[(at+1)%list.length]:null;
  /* what plays is the line above the pads (playsText); here: the pads' own state and the gestures */
@@ -89,9 +101,9 @@ function markSongRow(force){const st=document.getElementById("arrstate");if(st&&
  const pl=document.getElementById("songPlays");if(pl)pl.textContent=playsText();if(S.ws!=="song")return;
  $$(".scell.ph").forEach(c=>c.classList.remove("ph"));if(row>=0)document.querySelector(`.scell[data-i="${row}"]`)?.classList.add("ph");
  $$(".durbar .db").forEach(d=>{const i=+d.dataset.i;d.classList.toggle("past",row>=0&&i<row);d.classList.toggle("now",i===row)})}
-function chainPad(p){const n=S.chainDraft.indexOf(p),d=S.chainDraft;if(n>=0)d.splice(n,1);else if(d.length<16)d.push(p);render();chainSoon()}
-function chainAct(a){if(a==="undo"){S.chainDraft.pop();render();chainSoon();return}
- clearTimeout(S.chainTimer);S.chainTimer=0;S.chainDraft=[];render();if(S.plays.chain?.active||S.chainSent){S.chainOwnEnd=!!S.plays.chain?.active;S.chainPending={until:performance.now()+4000};clearChain();S.chainSent=false}}
+function chainPad(p){const n=S.chainDraft.indexOf(p),d=S.chainDraft;if(n>=0)d.splice(n,1);else if(d.length<16)d.push(p);chainSoon();render()}
+function chainAct(a){if(a==="undo"){S.chainDraft.pop();chainSoon();render();return}
+ clearTimeout(S.chainTimer);S.chainTimer=0;S.chainDraft=[];render();if(S.plays.chain?.active||S.chainSent){S.chainOwnEnd=!!S.plays.chain?.active;S.chainPending={until:performance.now()+8000};clearChain();S.chainSent=false}}
 function renderSong(){songModeSync();S.songSel=Math.max(0,Math.min(S.songSel,S.song.length-1));const sel=S.song[S.songSel]||S.song[0],pick=S.songPick,chain=pick==="chain",plays=playsOf();
  /* a chain is one bank's: another bank starts the draft over */
  S.chainDraft=S.chainDraft.filter(p=>p>>4===S.bank);
