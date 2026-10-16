@@ -207,6 +207,32 @@ const MdJourneys = (() => {
 			{ ...undoKey, say: "press Cmd+Z once: all four go", screen: c => ok(c.run.every(s => !pressed(cell(c.t, s))), "still lit"), machine: c => ok(c.run.every(s => !trigsOf(c.t).includes(s)), "pattern " + trigsOf(c.t).join(",")) }
 		]
 	};
+	/* I-036 (0.8): a click on a trig selects it and keeps the selection; an empty step still draws; ← → move the selection, Delete clears it, a double-click removes the trig */
+	const stepClickSelect = {
+		name: "md-step-click-select", proves: [],
+		steps: [
+			go("seq"), sel(() => soundTrack()),
+			{ say: "click an empty step: a trig is drawn there, nothing is selected", act: (u, c) => {
+				c.L = Math.min(V.length, V.len); c.t0 = trigsOf(c.t); c.s = [...Array(c.L - 2).keys()].find(s => !c.t0.includes(s) && !c.t0.includes(s + 1));
+				if (c.s == null) throw new Error("no two free steps in a row"); if (S.stepSel) clearSel(); document.activeElement?.blur?.(); u.click(cell(c.t, c.s)); },
+				screen: c => ok(pressed(cell(c.t, c.s)) && !S.stepSel, "lit " + pressed(cell(c.t, c.s)) + ", selection " + JSON.stringify(S.stepSel)), machine: c => ok(trigsOf(c.t).includes(c.s), "no trig") },
+			{ say: "click the trig: it stays, and it is selected (its step is marked, the selection is one step)", act: (u, c) => { c.u1 = V.undoCount; u.click(cell(c.t, c.s)); },
+				screen: c => ok(same(S.stepSel, { t: c.t, n: 1, from: c.s, to: c.s + 1 }) && $1(cell(c.t, c.s)).classList.contains("selx") && pressed(cell(c.t, c.s)), "selection " + JSON.stringify(S.stepSel)),
+				machine: c => ok(trigsOf(c.t).includes(c.s) && V.undoCount === c.u1, "trigs " + trigsOf(c.t).join(",") + ", undo steps " + c.u1 + " -> " + V.undoCount) },
+			{ say: "after a moment it is still selected (the release does not drop it)", act: () => sleep(300), screen: c => ok(same(S.stepSel, { t: c.t, n: 1, from: c.s, to: c.s + 1 }), "selection " + JSON.stringify(S.stepSel)) },
+			{ say: "press →: the selection moves one step, the trig stays", act: u => { document.activeElement?.blur?.(); u.key("ArrowRight"); },
+				screen: c => ok(S.stepSel?.from === c.s + 1 && S.stepSel?.n === 1, "selection " + JSON.stringify(S.stepSel)), machine: c => ok(trigsOf(c.t).includes(c.s), "trigs " + trigsOf(c.t).join(",")) },
+			{ say: "press ←, then double-click the trig: it is removed, nothing stays selected, one undo step", act: async (u, c) => { document.activeElement?.blur?.(); u.key("ArrowLeft"); await sleep(150); c.u2 = V.undoCount; u.dblclick(cell(c.t, c.s)); },
+				screen: c => ok(!pressed(cell(c.t, c.s)) && !S.stepSel, "lit " + pressed(cell(c.t, c.s)) + ", selection " + JSON.stringify(S.stepSel)),
+				machine: c => ok(!trigsOf(c.t).includes(c.s) && V.undoCount === c.u2 + 1, "trigs " + trigsOf(c.t).join(",") + ", undo steps " + c.u2 + " -> " + V.undoCount), within: 8000 },
+			{ ...undoKey, say: "press Cmd+Z: the trig is back", act: u => { document.activeElement?.blur?.(); u.key("z", { cmd: true }); }, machine: c => ok(trigsOf(c.t).includes(c.s), "trigs " + trigsOf(c.t).join(",")), within: 8000 },
+			{ say: "click the trig, press Delete: it is cleared (the selection's Delete)", act: async (u, c) => { await until(idle, 3000); u.click(cell(c.t, c.s)); await sleep(150); document.activeElement?.blur?.(); u.key("Delete"); },
+				machine: c => ok(!trigsOf(c.t).includes(c.s), "trigs " + trigsOf(c.t).join(",")), within: 8000 },
+			{ say: "press Cmd+Z, then Cmd+Z again: the track is as it was", act: async (u, c) => { document.activeElement?.blur?.(); await undoUntil(u, () => same(trigsOf(c.t), c.t0), 4); },
+				machine: c => ok(same(trigsOf(c.t), c.t0), "trigs " + trigsOf(c.t).join(",")), within: 8000 }
+		],
+		async tidy(u, c) { if (S.stepSel) clearSel(); if (c.t0 && !same(trigsOf(c.t), c.t0)) await undoUntil(u, () => same(trigsOf(c.t), c.t0), 4); }
+	};
 	const accentSlide = {
 		name: "md-seq-accent-slide", proves: ["MD-127", "MD-141"],
 		steps: [
@@ -3102,7 +3128,7 @@ const MdJourneys = (() => {
 		async tidy(u) { await closePops(u); u.click(tab("seq")); }
 	};
 	const all = [screensFit, ...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
-		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
+		paintUndo, stepClickSelect, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
 		genJourney("md-gen-mutate-undo", false, { proves: ["MD-X04", "MD-X05"] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: ["MD-X04"] }), genKeys, genModal, laneTools, gridFits,
 		shapeSound, typeValue, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
 		mixSolo, soloSaved, shiftMutes, allOff, fader, lev, outKey, masterFx,

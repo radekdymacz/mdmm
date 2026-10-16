@@ -1675,6 +1675,61 @@ const MmJourneys = (() => {
 	};
 	/* 0.6 review 2 (Radek: "make it simple and make it work"): the roll always draws, there is no mode. A click adds, a note's end
 	   lengthens it, its body moves it (across the steps, or its pitch), with a swing mark on the note; nothing stays selected */
+	/* ---------- 0.8: a note deleted leaves a gap (I-037); a click keeps the note selected, the arrows move it, a double-click deletes it (I-036) ---------- */
+	/* a double-click on the roll at (s, n): the click, then the dblclick event the browser sends after the second press */
+	const dblAt = async (u, t, s, n) => { const p = rollAt(t, s, n); u.click(p.c, {}, p.fx, p.fy); await sleep(80); const r = p.c.getBoundingClientRect();
+		p.c.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true, composed: true, view: window, detail: 2, clientX: r.left + p.fx * r.width, clientY: r.top + p.fy * r.height })); };
+	const noteOf = (t, s) => S().tracks[t].steps[s]?.n?.[0];
+	const deleteGap = {
+		name: "mm-roll-delete-gap", proves: [],
+		steps: [
+			go("seq"),
+			{ say: "pick a synth track with five empty steps in a row, the Len key at 1/8, click the first: a note of two steps (a NOTE OFF two steps on)", act: async (u, c) => {
+				c.t = [0, 1, 2, 3, 4, 5].find(t => freeRun(t, 5)); if (c.t == null) throw new Error("no synth track has ten free steps in a row"); if (S().side === "midi") u.click('[data-side="int"]'); u.click(rail(c.t)); await sleep(300);
+				c.l0 = S().rollLen; await drawLen(u, 2); c.run = freeRun(c.t, 5); c.n = freePitch(c.t, c.run[0]); c.t0 = trigsOf(c.t); c.o0 = offsOf(c.t); if (S().stepSel) clearSel(); clickAt(u, c.t, c.run[0], c.n); },
+				machine: c => ok(trigsOf(c.t).includes(c.run[0]) && offsOf(c.t).includes(c.run[2]), `trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 },
+			{ say: "click the step where it ends: a second note of two steps, the first now runs into it", act: (u, c) => { c.o1 = offsOf(c.t); clickAt(u, c.t, c.run[2], c.n); },
+				machine: c => ok(trigsOf(c.t).includes(c.run[2]) && !offsOf(c.t).includes(c.run[2]) && offsOf(c.t).includes(c.run[4]), `trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 },
+			{ say: "double-click the second note: it is deleted, and no NOTE OFF is written where it began (the first note keeps sounding through the gap, as on the machine); the NOTE OFF that only closed it goes too", act: async (u, c) => { if (S().stepSel) clearSel(); await dblAt(u, c.t, c.run[2], c.n); },
+				screen: c => ok(!S().tracks[c.t].steps[c.run[2]] && !S().tracks[c.t].steps[c.run[4]] && !S().stepSel, `steps ${JSON.stringify(S().tracks[c.t].steps.slice(c.run[0], c.run[4] + 1))}, selection ${JSON.stringify(S().stepSel)}`),
+				machine: c => ok(!trigsOf(c.t).includes(c.run[2]) && trigsOf(c.t).includes(c.run[0]) && same(offsOf(c.t), c.o1.filter(x => x !== c.run[2])), `trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")} (with the first note alone: ${c.o1.join(",")}), run ${c.run.join(",")}`), within: 15000 },
+			{ say: "Cmd+Z: the second note and its NOTE OFF are back, one undo step", act: u => { blur(); u.key("z", { cmd: true }); },
+				machine: c => ok(trigsOf(c.t).includes(c.run[2]) && offsOf(c.t).includes(c.run[4]) && !offsOf(c.t).includes(c.run[2]), `trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 },
+			{ say: "Alt-click the second note: the same, no NOTE OFF written", act: (u, c) => { if (S().stepSel) clearSel(); const p = rollAt(c.t, c.run[2], c.n); u.click(p.c, { alt: true }, p.fx, p.fy); },
+				machine: c => ok(!trigsOf(c.t).includes(c.run[2]) && same(offsOf(c.t), c.o1.filter(x => x !== c.run[2])), `trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 },
+			{ say: "Cmd+Z until the track is as before", act: async (u, c) => { await undoUntil(u, () => same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0), 5); },
+				machine: c => ok(same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0), `trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 }
+		],
+		async tidy(u, c) { if (S().stepSel) clearSel(); if (c.t0 && !(same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0))) await undoUntil(u, () => same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0)); if (c.l0) setRollLen(c.l0); }
+	};
+	const noteClickArrows = {
+		name: "mm-note-click-arrows", proves: [],
+		steps: [
+			go("seq"),
+			{ say: "pick a synth track with six empty steps in a row, the Len key at 1/16, click the first: a note", act: async (u, c) => {
+				c.t = [0, 1, 2, 3, 4].find(t => freeRun(t, 6)); if (c.t == null) throw new Error("no synth track (1-5) has six free steps in a row"); if (S().side === "midi") u.click('[data-side="int"]'); u.click(rail(c.t)); await sleep(300);
+				c.l0 = S().rollLen; await drawLen(u, 1); c.run = freeRun(c.t, 6); c.n = freePitch(c.t, c.run[0]); c.t0 = trigsOf(c.t); c.o0 = offsOf(c.t); if (S().stepSel) clearSel(); clickAt(u, c.t, c.run[0], c.n); },
+				machine: c => ok(trigsOf(c.t).includes(c.run[0]), `trigs ${trigsOf(c.t).join(",")}`), within: 15000 },
+			{ say: "click the note: it is selected, and stays selected after the release (no Cmd needed)", act: async (u, c) => { clickAt(u, c.t, c.run[0], c.n); await sleep(300); },
+				screen: c => ok(S().stepSel?.t === c.t && S().stepSel?.n === 1 && S().stepSel?.from === c.run[0] && trigsOf(c.t).includes(c.run[0]), "selection " + JSON.stringify(S().stepSel)) },
+			{ say: "press the up arrow: the note is a semitone higher, still selected", act: async (u, c) => { blur(); u.key("ArrowUp"); await sleep(300); },
+				screen: c => ok(noteOf(c.t, c.run[0]) === c.n + 1 && S().stepSel?.from === c.run[0] && S().sel === c.t, `note ${noteOf(c.t, c.run[0])}, selection ${JSON.stringify(S().stepSel)}, track ${S().sel}`),
+				machine: c => ok(trigsOf(c.t).includes(c.run[0]) && JSON.stringify(patDoc().tracks[c.t].notes).includes(String(c.n + 1)), "notes " + JSON.stringify(patDoc().tracks[c.t].notes)), within: 15000 },
+			{ say: "press the down arrow twice (the key released between): a semitone below where it began", act: async (u, c) => { blur(); u.key("ArrowDown"); await sleep(300); u.key("ArrowDown"); await sleep(300); },
+				screen: c => ok(noteOf(c.t, c.run[0]) === c.n - 1, `note ${noteOf(c.t, c.run[0])}`), within: 8000 },
+			{ say: "press Shift and the up arrow: an octave higher", act: async u => { blur(); u.key("ArrowUp", { shift: true }); await sleep(300); },
+				screen: c => ok(noteOf(c.t, c.run[0]) === c.n + 11 && S().sel === c.t, `note ${noteOf(c.t, c.run[0])}`), within: 8000 },
+			{ say: "Cmd+Z once: back one press only (an octave down), not all of them", act: async (u, c) => { await sleep(300); blur(); u.key("z", { cmd: true }); },
+				screen: c => ok(noteOf(c.t, c.run[0]) === c.n - 1, `note ${noteOf(c.t, c.run[0])}, began at ${c.n}`), within: 8000 },
+			{ say: "Cmd-click an empty step (a selection with no note), press the down arrow: the selection goes to the next track, as before", act: async (u, c) => { if (S().stepSel) clearSel(); const p = rollAt(c.t, c.run[3], c.n); u.click(p.c, { cmd: true }, p.fx, p.fy); await sleep(150); blur(); u.key("ArrowDown"); },
+				screen: c => ok(S().sel === c.t + 1 && S().stepSel?.t === c.t + 1 && noteOf(c.t, c.run[0]) === c.n - 1, `track ${S().sel}, selection ${JSON.stringify(S().stepSel)}, note ${noteOf(c.t, c.run[0])}`), within: 8000 },
+			{ say: "pick the track again, click the note and press Delete: it is gone", act: async (u, c) => { if (S().stepSel) clearSel(); u.click(rail(c.t)); await sleep(300); clickAt(u, c.t, c.run[0], noteOf(c.t, c.run[0])); await sleep(150); blur(); u.key("Delete"); },
+				machine: c => ok(!trigsOf(c.t).includes(c.run[0]), `trigs ${trigsOf(c.t).join(",")}`), screen: c => ok(!S().tracks[c.t].steps[c.run[0]], "still on the roll"), within: 15000 },
+			{ say: "Cmd+Z until the track is as before", act: async (u, c) => { await undoUntil(u, () => same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0), 8); },
+				machine: c => ok(same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0), `trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 }
+		],
+		async tidy(u, c) { if (S().stepSel) clearSel(); if (c.t0 && !(same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0))) await undoUntil(u, () => same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0), 8); if (c.l0) setRollLen(c.l0); }
+	};
 	const rollSimple = {
 		name: "mm-roll-simple", proves: ["MM-X23", "MM-076", "MM-078"],
 		steps: [
@@ -1688,11 +1743,11 @@ const MmJourneys = (() => {
 			{ say: "drag the note's end two steps right: it lasts three steps", act: (u, c) => dragAt(u, c.t, [c.run[0], c.n], [c.run[2], c.n, 5], {}, true),
 				screen: c => ok(!S().tracks[c.t].steps[c.run[1]] && !!S().tracks[c.t].steps[c.run[3]]?.off, "roll " + JSON.stringify(S().tracks[c.t].steps.slice(c.run[0], c.run[0] + 4))),
 				machine: c => ok(offsOf(c.t).includes(c.run[3]), `NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 },
-			{ say: "drag the note's body four steps right: it moves with its length, nothing stays selected", act: (u, c) => dragAt(u, c.t, [c.run[0], c.n], [c.run[4], c.n]),
-				screen: c => ok(!!S().tracks[c.t].steps[c.run[4]]?.n && !S().tracks[c.t].steps[c.run[0]]?.n && !S().stepSel, "roll " + JSON.stringify(S().tracks[c.t].steps.slice(c.run[0], c.run[0] + 8)) + ", selection " + JSON.stringify(S().stepSel)),
+			{ say: "drag the note's body four steps right: it moves with its length, and stays selected where it landed (I-036)", act: (u, c) => dragAt(u, c.t, [c.run[0], c.n], [c.run[4], c.n]),
+				screen: c => ok(!!S().tracks[c.t].steps[c.run[4]]?.n && !S().tracks[c.t].steps[c.run[0]]?.n && S().stepSel?.t === c.t && S().stepSel?.from === c.run[4], "roll " + JSON.stringify(S().tracks[c.t].steps.slice(c.run[0], c.run[0] + 8)) + ", selection " + JSON.stringify(S().stepSel)),
 				machine: c => ok(trigsOf(c.t).includes(c.run[4]) && !trigsOf(c.t).includes(c.run[0]) && offsOf(c.t).includes(c.run[7]), `pattern trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 },
 			{ say: "drag the note up one row: its pitch is one higher", act: (u, c) => dragAt(u, c.t, [c.run[4], c.n], [c.run[4], c.n + 1]),
-				screen: c => ok(same(S().tracks[c.t].steps[c.run[4]]?.n, [c.n + 1]) && !S().stepSel, "notes " + JSON.stringify(S().tracks[c.t].steps[c.run[4]]?.n)), within: 15000 },
+				screen: c => ok(same(S().tracks[c.t].steps[c.run[4]]?.n, [c.n + 1]) && S().stepSel?.from === c.run[4], "notes " + JSON.stringify(S().tracks[c.t].steps[c.run[4]]?.n)), within: 15000 },
 			{ say: "Cmd+Z until the track is as before", act: async (u, c) => { S().tracks[c.t].swing.delete(c.run[0]); await undoUntil(u, () => same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0), 5); },
 				machine: c => ok(same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0), `pattern trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 }
 		],
@@ -3748,7 +3803,7 @@ const MmJourneys = (() => {
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
 		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
-		blackKeys, rollPaint, rollDrawLength, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxPlace, resetEmpty, syxRunningReach];
+		blackKeys, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxPlace, resetEmpty, syxRunningReach];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
 	   its guard, "left:", names what stays). What back cannot put back, the journey keeps first (keep, keepMany) or is alone: true (doc/modern-ux/JOURNEYS.md, "Independent journeys") */
 	for (const j of all) { const own = j.tidy; j.tidy = async (u, c) => { try { if (own) await own(u, c); } finally { if (c.back0?.state && Journey.stateDiff(c.back0.state, state())) await back(u, c); } }; }

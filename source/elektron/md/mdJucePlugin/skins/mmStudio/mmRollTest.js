@@ -3,7 +3,7 @@
    what a note of a length is on the machine, measured on the firmware (mmDeskFirmwareTest notelength, lenprobe): a
    synth note sounds to the track's next NOTE OFF or trig, round the pattern's end; a MIDI note LEN ticks (6 a step),
    cut there too, LEN 127 until a NOTE OFF. Checked: where a note ends, the steps a length writes (the same rows the
-   firmware test stores and plays), a removed note leaving the one before it its length, the steps a selection of a
+   firmware test stores and plays), a removed note leaving a gap the one before it runs on through (no NOTE OFF), the steps a selection of a
    note takes, and the words of a length.
      node mmRollTest.js */
 const fs = require("fs"), path = require("path"), vm = require("vm");
@@ -70,17 +70,19 @@ const show = (a, len) => a.slice(0, len).map((x, i) => x ? i + (x.off ? ":OFF" :
 	check(same(R.setLen(m, 64, 0, 24, { kitLen: 127 }), { steps: [[24, OFF]], len: null, L: 24 }), "MIDI, 24 steps on a kit LEN of 127: the NOTE OFF only");
 }
 
-/* ---- removing a note ---- */
+/* ---- removing a note (I-037, 0.8: as the machine: no NOTE OFF is written, the note before runs on) ---- */
 {
 	const a = steps(16, { 0: N(48), 3: N(50), 5: OFF, 9: N(52) });
-	check(same(R.remove(a, 16, 3), [[3, OFF], [5, null]]), "the note before ran into it: a NOTE OFF where it began (it keeps its length), its own NOTE OFF gone");
+	let r = R.remove(a, 16, 3);
+	check(same(r, [[3, null], [5, null]]) && !r.some(([, v]) => v), "the note before ran into it: only the note and the NOTE OFF that closed it go, no new NOTE OFF");
+	const after = apply(a, r);
+	check(R.end(after, 16, 0) === 9 && !after.some(x => x?.off), "and the note before now sounds on through the gap, to the next trig on step 10");
 	check(same(R.remove(a, 16, 9), [[9, null]]), "after a NOTE OFF: just gone");
 	const b = steps(16, { 0: N(48), 4: N(50) });
-	check(same(R.remove(b, 16, 0), [[0, OFF]]) , "the first note when the last one runs round into it: it keeps its length too");
+	check(same(R.remove(b, 16, 0), [[0, null]]), "the first note when the last one runs round into it: just gone, no NOTE OFF");
 	check(same(R.remove(steps(16, { 4: N(50) }), 16, 4), [[4, null]]), "a track's only note: gone");
 	const m = steps(16, { 0: N(60), 8: N(62) });
-	check(same(R.remove(m, 16, 8, s => s === 0 ? 12 : 96), [[8, null]]) && same(R.remove(m, 16, 8, s => s === 0 ? 96 : 96), [[8, OFF]]),
-		"MIDI: a NOTE OFF only when the LEN of the note before went past it");
+	check(same(R.remove(m, 16, 8), [[8, null]]), "MIDI: gone, no NOTE OFF whatever the LEN of the note before");
 }
 
 /* ---- a note's steps for a selection ---- */
