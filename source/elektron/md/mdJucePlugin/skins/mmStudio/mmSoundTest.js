@@ -102,6 +102,8 @@ const box = (m, pg, name, v) => { P.S.sel = 0; P.S.tracks[0].m = m; const i = pg
 	const F = screen("flt", 0), fl = n => { E.reset(); F.ED.flt.draw(G2D, 200, H); return F.drawn.length; };
 	f[6] = 64; f[7] = 64; const none = fl(); f[6] = 30; const some = fl();
 	check(none === 1 && some === 2, `the filter curve's dashed envelope peak only with an offset (BOFS 0: ${none} line, BOFS -34: ${some})`);
+	const neutral = vm.runInContext("DEFV.FLT", stateCtx);
+	check(neutral[6] === 64 && neutral[7] === 64, "a cleared track's FILTER page holds BOFS and WOFS 64, no sweep (the firmware's machine change writes 64): " + neutral.join(" "));
 	const h = E.ED.fenv.handles(200, H)[0]; h.drag(h.x, mid - 20); check(f[6] > 64, "dragging the base handle up gives a positive BOFS (" + f[6] + ")");
 }
 {
