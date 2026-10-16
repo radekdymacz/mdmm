@@ -1,0 +1,369 @@
+{
+ "title": "AUDIO / MIDI: a real port as input and output (no warning)",
+ "about": "The AUDIO / MIDI panel (comma key) with a hardware port (Elektron TM-1) on as an input and chosen as the output: two cables, no loop, so no warning; the microphone is allowed, so no input note; the Monitor row counts.",
+ "boot": "stub",
+ "steps": [
+  {
+   "at": 500,
+   "send": [
+    {
+     "type": "audio",
+     "doc": {
+      "schema": "gm-audio/devices",
+      "version": 1,
+      "standalone": true,
+      "driver": {
+       "id": "CoreAudio",
+       "list": [
+        "CoreAudio"
+       ]
+      },
+      "output": {
+       "id": "MacBook Pro Speakers",
+       "list": [
+        "MacBook Pro Speakers",
+        "Audient iD14"
+       ]
+      },
+      "input": {
+       "id": "",
+       "list": [
+        "MacBook Pro Microphone",
+        "Audient iD14"
+       ],
+       "muted": true
+      },
+      "outputChannels": [
+       {
+        "name": "Output 1",
+        "on": true
+       },
+       {
+        "name": "Output 2",
+        "on": true
+       }
+      ],
+      "sampleRate": {
+       "value": 48000,
+       "list": [
+        44100,
+        48000,
+        96000
+       ]
+      },
+      "bufferSize": {
+       "value": 512,
+       "list": [
+        128,
+        256,
+        512,
+        1024
+       ]
+      },
+      "latencyMs": 11.3,
+      "running": true,
+      "midiInputs": [
+       {
+        "id": "iac1",
+        "name": "IAC Driver Bus 1",
+        "on": false
+       },
+       {
+        "id": "tm1",
+        "name": "Elektron TM-1",
+        "on": true
+       }
+      ],
+      "midiOutput": {
+       "id": "tm1",
+       "list": [
+        {
+         "id": "iac1",
+         "name": "IAC Driver Bus 1"
+        },
+        {
+         "id": "iac2",
+         "name": "IAC Driver Bus 2"
+        },
+        {
+         "id": "tm1",
+         "name": "Elektron TM-1"
+        }
+       ]
+      },
+      "bluetooth": true,
+      "setupError": "",
+      "inputPermission": "granted",
+      "inputNote": "",
+      "midiLoop": ""
+     }
+    },
+    {
+     "type": "midiStats",
+     "directions": {
+      "inHost": {
+       "total": 1200,
+       "types": {
+        "note": 40,
+        "cc": 8,
+        "pc": 0,
+        "clock": 1152,
+        "transport": 2,
+        "sysex": 0,
+        "other": 0
+       },
+       "channels": [
+        48,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      "inFirmware": {
+       "total": 1200,
+       "types": {
+        "note": 40,
+        "cc": 8,
+        "pc": 0,
+        "clock": 1152,
+        "transport": 2,
+        "sysex": 0,
+        "other": 0
+       },
+       "channels": [
+        48,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      "outMachine": {
+       "total": 1210,
+       "types": {
+        "note": 50,
+        "cc": 8,
+        "pc": 0,
+        "clock": 1152,
+        "transport": 2,
+        "sysex": 0,
+        "other": 0
+       },
+       "channels": [
+        58,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      "outHost": {
+       "total": 1210,
+       "types": {
+        "note": 50,
+        "cc": 8,
+        "pc": 0,
+        "clock": 1152,
+        "transport": 2,
+        "sysex": 0,
+        "other": 0
+       },
+       "channels": [
+        58,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     },
+     "dropped": {
+      "scheduled": 0,
+      "external": 0,
+      "allocation": 0
+     }
+    }
+   ]
+  },
+  {
+   "at": 1500,
+   "send": [
+    {
+     "type": "midiStats",
+     "directions": {
+      "inHost": {
+       "total": 1250,
+       "types": {
+        "note": 40,
+        "cc": 10,
+        "pc": 0,
+        "clock": 1200,
+        "transport": 2,
+        "sysex": 0,
+        "other": 0
+       },
+       "channels": [
+        50,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      "inFirmware": {
+       "total": 1250,
+       "types": {
+        "note": 40,
+        "cc": 10,
+        "pc": 0,
+        "clock": 1200,
+        "transport": 2,
+        "sysex": 0,
+        "other": 0
+       },
+       "channels": [
+        50,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      "outMachine": {
+       "total": 1262,
+       "types": {
+        "note": 52,
+        "cc": 10,
+        "pc": 0,
+        "clock": 1200,
+        "transport": 2,
+        "sysex": 0,
+        "other": 0
+       },
+       "channels": [
+        62,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      },
+      "outHost": {
+       "total": 1262,
+       "types": {
+        "note": 52,
+        "cc": 10,
+        "pc": 0,
+        "clock": 1200,
+        "transport": 2,
+        "sysex": 0,
+        "other": 0
+       },
+       "channels": [
+        62,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ]
+      }
+     },
+     "dropped": {
+      "scheduled": 0,
+      "external": 0,
+      "allocation": 0
+     }
+    }
+   ]
+  }
+ ]
+}
