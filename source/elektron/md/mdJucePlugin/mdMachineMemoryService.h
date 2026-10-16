@@ -47,12 +47,13 @@ namespace mdJucePlugin
 			// sample flash: only once the factory flash is known; the cycle of the flash's last write (0: none)
 			uint64_t* flashMark = nullptr;
 		};
-		// _heldMs: the plug-in's lock held, from taking it to releasing it
+		// A piece as of one moment, a part per hold of the plug-in's lock (md::OneMomentCopy). _heldMs: the longest hold,
+		// from taking the lock to releasing it
 		virtual bool look(const Piece& _piece, std::optional<uint64_t>& _machine, double& _heldMs) = 0;
 
 		// Sample flash: the flash's [_at, _at + _size), of a valid machine that is the one _machine names, as it was at
-		// one moment: one hold for a part up to 256 KiB, a larger copy a part per hold with the flash's write count
-		// checked (DESIGN-audio-lock.md step 1). _copyMs: the longest hold's copy.
+		// one moment: a part of up to 64 KiB per hold, the pieces written meanwhile copied again (md::OneMomentCopy,
+		// DESIGN-audio-lock.md). _copyMs: the longest hold's copy.
 		virtual bool copyFlash(uint8_t* _to, size_t _at, size_t _size, std::optional<uint64_t>& _machine, double& _copyMs) = 0;
 
 		// The memory a session starts with: the patch RAM, the sectors (the user flash, or the whole flash), and (sample

@@ -123,6 +123,8 @@ namespace md
 		, m_loaderRam(memorymap::g_loaderRam.size(), 0)
 		, m_internalSram(memorymap::g_internalSram.size(), 0)
 	{
+		m_patchRamMarks.assign((m_patchRam.size() + g_patchRamMarkSize - 1) / g_patchRamMarkSize, 0);
+		m_flashMarks.assign((m_flashData.size() + g_flashMarkSize - 1) / g_flashMarkSize, 0);
 		if(m_model == MachineModel::Machinedrum
 			&& _initialFlash.size() == m_flashData.size())
 			m_flashData = _initialFlash;
@@ -198,6 +200,7 @@ namespace md
 		std::unique_lock lock(m_patchRamMutex);
 		if(_offset < m_patchRam.size())
 			m_patchRam[_offset] = _value;
+		markPatchRam(_offset);
 	}
 
 	bool Microcontroller::patchRamEquals(const std::vector<uint8_t>& _data) const
@@ -212,6 +215,8 @@ namespace md
 			return false;
 		std::unique_lock lock(m_patchRamMutex);
 		m_patchRam = _data;
+		++m_patchRamWrites;
+		++m_patchRamEpoch;
 		return true;
 	}
 	std::vector<uint8_t> Microcontroller::copyFlashData() const
@@ -261,6 +266,7 @@ namespace md
 		m_flashDirty = _dirty;
 		m_lastFlashWriteCycle = getCycles();
 		++m_flashWrites;
+		++m_flashEpoch;
 		return true;
 	}
 
@@ -284,8 +290,10 @@ namespace md
 		// backing store. Conservatively restart each dirty-idle interval.
 		m_lastFlashWriteCycle = getCycles();
 		++m_flashWrites;
+		++m_flashEpoch;
 		_other.m_lastFlashWriteCycle = _other.getCycles();
 		++_other.m_flashWrites;
+		++_other.m_flashEpoch;
 		return true;
 	}
 
@@ -308,12 +316,15 @@ namespace md
 		// stores rather than an incrementally modified or concurrently exchanged one.
 		m_flashData.swap(_flash);
 		m_patchRam.swap(_patchRam);
+		++m_patchRamWrites;
+		++m_patchRamEpoch;
 		m_flashCommands = {};
 		m_immPageAddress = 0xffffffffu;
 		m_immPageData = nullptr;
 		m_flashDirty = _dirty;
 		m_lastFlashWriteCycle = getCycles();
 		++m_flashWrites;
+		++m_flashEpoch;
 		return StateImagePublishResult::Published;
 	}
 	void Microcontroller::readMidiOut(std::vector<synthLib::SMidiEvent>& _midiOut, const uint64_t _nativeOrigin)
@@ -775,6 +786,8 @@ namespace md
 		if(r.peripheral)								{ logPeripheral(_addr, _val, 1, true); return; }
 		if(!r.writable || !r.data || r.offset >= r.size)	return;
 		r.data[r.offset] = _val;
+		if(patchRam)
+			markPatchRam(r.offset);
 	}
 
 	void Microcontroller::write16Slow(const uint32_t _addr, const uint16_t _val)
@@ -798,6 +811,7 @@ namespace md
 						m_flashData[operation->offset] &= static_cast<uint8_t>(operation->value >> 8);
 						m_flashData[operation->offset + 1] &= static_cast<uint8_t>(operation->value);
 						changed = true;
+						markFlash(operation->offset, 2);
 					}
 					else if(operation->type == FlashCommandDecoder::Operation::Type::EraseSector)
 					{
@@ -811,6 +825,7 @@ namespace md
 							std::fill(m_flashData.begin() + begin, m_flashData.begin() + end,
 								uint8_t{0xff});
 							changed = true;
+							markFlash(begin, end - begin);
 						}
 					}
 					if(changed)
@@ -840,6 +855,7 @@ namespace md
 			m_flashDirty = true;
 			m_lastFlashWriteCycle = getCycles();
 			++m_flashWrites;
+			++m_flashEpoch;
 			m_immPageAddress = 0xffffffffu;
 			m_immPageData = nullptr;
 			return;
@@ -852,6 +868,8 @@ namespace md
 		if(r.peripheral)										{ logPeripheral(_addr, _val, 2, true); return; }
 		if(!r.writable || !r.data || (r.offset + 1) >= r.size)	return;
 		storeBe16(r.data + r.offset, _val);
+		if(patchRam)
+			markPatchRam(r.offset, 2);
 	}
 
 	uint16_t Microcontroller::readImm16(const uint32_t _addr)

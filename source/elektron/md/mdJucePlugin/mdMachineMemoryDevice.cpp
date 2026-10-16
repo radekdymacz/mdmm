@@ -8,6 +8,7 @@
 #include "jucePluginLib/controller.h"
 
 #include "mdLib/mddevice.h"
+#include "mdLib/mdonemomentcopy.h"
 #include "mdLib/mdfactorybaseline.h"
 #include "mdLib/mdrom.h"
 #include "mdLib/mdmemorymap.h"
@@ -55,95 +56,111 @@ namespace mdJucePlugin
 		return true;
 	}
 
+	bool MachineMemoryDevice::copyAtOneMoment(std::vector<md::OneMomentCopy::Area> _areas, std::optional<uint64_t>& _machine,
+		double& _heldMs, double& _copyMs, const std::function<bool(md::Device&)>& _check,
+		const std::function<void(md::Device&)>& _last)
+	{
+		_heldMs = 0;
+		_copyMs = 0;
+		md::OneMomentCopy copy;
+		copy.begin(std::move(_areas));	// reserves: outside the lock
+		for(;;)
+		{
+			auto result = md::OneMomentCopy::Step::Failed;
+			const bool ok = m_processor.getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
+			{
+				const auto held = std::chrono::steady_clock::now();
+				struct Released
+				{
+					std::chrono::steady_clock::time_point from;
+					double& max;
+					~Released() { max = std::max(max, msBetween(from, std::chrono::steady_clock::now())); }
+				} released{held, _heldMs};
+				auto* const device = dynamic_cast<md::Device*>(_device);
+				if(!device || !device->isValid())
+					return false;
+				const auto machine = machineOf(*device);
+				if(_machine && *_machine != machine)
+					return false;
+				_machine = machine;
+				if(_check && !_check(*device))
+					return false;
+				const auto t0 = std::chrono::steady_clock::now();
+				result = copy.step(device->getHardware());
+				_copyMs = std::max(_copyMs, msBetween(t0, std::chrono::steady_clock::now()));
+				if(result == md::OneMomentCopy::Step::Done && _last)
+					_last(*device);
+				return true;
+			});
+			if(!ok || result == md::OneMomentCopy::Step::Failed)
+				return false;
+			if(result == md::OneMomentCopy::Step::Done)
+				return true;
+		}
+	}
+
 	bool MachineMemoryDevice::look(const Piece& _piece, std::optional<uint64_t>& _machine, double& _heldMs)
 	{
-		bool ok = false;
-		std::chrono::steady_clock::time_point held, released;
-		m_processor.getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
+		// the piece's buffers are the caller's: copied into vectors of ours, then out (the copy grows its buffers)
+		std::vector<uint8_t> patch, userFlash;
+		std::vector<md::OneMomentCopy::Area> areas;
+		if(_piece.patch && _piece.patchSize)
+			areas.push_back({false, &patch, _piece.patchAt, _piece.patchSize});
+		if(_piece.userFlash && _piece.userFlashSize)
 		{
-			held = std::chrono::steady_clock::now();
-			struct Released { std::chrono::steady_clock::time_point& at; ~Released() { at = std::chrono::steady_clock::now(); } } done{released};
-			auto* const device = dynamic_cast<md::Device*>(_device);
-			if(!device || !device->isValid() || device->isProjectStateRestorePending())
-				return;
-			auto& hw = device->getHardware();
+			const auto userBase = md::memorymap::g_flashFull.offset(md::memorymap::g_mmUserFlash.begin);
+			areas.push_back({true, &userFlash, userBase + _piece.userFlashAt, _piece.userFlashSize});
+		}
+		const auto check = [&](md::Device& _device)
+		{
+			if(_device.isProjectStateRestorePending())
+				return false;
+			auto& hw = _device.getHardware();
 			if(!hw.isFirmwareMidiReady())
-				return;
-			const auto machine = machineOf(*device);
-			if(_machine && *_machine != machine)
-				return;
-			_machine = machine;
-			if(_piece.flashMark)
-			{
-				if(!hw.factoryFlashBaseline() || hw.isFactoryFlashInitializationExpected())
-					return;
-				auto& uc = hw.getUC();
-				*_piece.flashMark = uc.flashDirty() ? uc.getCycles() - uc.flashIdleCycles() : 0;
-			}
-			if(_piece.patch && !hw.copyPatchRamRange(_piece.patch, _piece.patchAt, _piece.patchSize))
-				return;
+				return false;
+			// whether there is a factory baseline, without making one (that copies the factory cache): every hold
+			if(_piece.flashMark && (!hw.hasFactoryFlashBaseline() || hw.isFactoryFlashInitializationExpected()))
+				return false;
 			if(_piece.userFlash)
 			{
 				const auto userBase = md::memorymap::g_flashFull.offset(md::memorymap::g_mmUserFlash.begin);
-				if(!hw.getUC().copyFlashDataRangeRealtime(_piece.userFlash, userBase + _piece.userFlashAt, _piece.userFlashSize))
-					return;
+				if(hw.getUC().flashSize() < userBase + _piece.userFlashAt + _piece.userFlashSize)
+					return false;
 			}
-			ok = true;
-		});
-		_heldMs = msBetween(held, released);
-		return ok;
+			return true;
+		};
+		const auto last = [&](md::Device& _device)
+		{
+			if(!_piece.flashMark)
+				return;
+			auto& uc = _device.getHardware().getUC();
+			*_piece.flashMark = uc.flashDirty() ? uc.getCycles() - uc.flashIdleCycles() : 0;
+		};
+		double copyMs = 0;
+		if(!copyAtOneMoment(std::move(areas), _machine, _heldMs, copyMs, check, last))
+			return false;
+		if(_piece.patch && _piece.patchSize)
+			std::copy(patch.begin(), patch.end(), _piece.patch);
+		if(_piece.userFlash && _piece.userFlashSize)
+			std::copy(userFlash.begin(), userFlash.end(), _piece.userFlash);
+		return true;
 	}
 
-	// DESIGN-audio-lock.md step 1: a copy larger than one part is taken a part per hold, the plug-in's lock released
-	// between, and is the flash of one moment when the flash's write count did not move while it was taken (else it is
-	// taken again, a few times). _patch: the patch RAM copied in the last part's hold, with the check (startMemory).
+	// DESIGN-audio-lock.md: the flash (and with it the patch RAM: startMemory) as of one moment, a part per hold
 	bool MachineMemoryDevice::copyFlashInParts(uint8_t* const _to, const size_t _at, const size_t _size,
 		std::optional<uint64_t>& _machine, double& _copyMs, std::vector<uint8_t>* const _patch)
 	{
-		_copyMs = 0;
-		if(_size == 0)
-			return true;
-		for(uint32_t attempt = 0; attempt < g_flashCopyAttempts; ++attempt)
-		{
-			uint64_t writesAtStart = 0;
-			bool consistent = false;
-			bool ok = true;
-			for(size_t done = 0; ok && !consistent && done < _size;)
-			{
-				const auto part = std::min(g_flashCopyPart, _size - done);
-				const bool last = done + part >= _size;
-				ok = m_processor.getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
-				{
-					auto* const device = dynamic_cast<md::Device*>(_device);
-					if(!device || !device->isValid())
-						return false;
-					const auto machine = machineOf(*device);
-					if(_machine && *_machine != machine)
-						return false;
-					_machine = machine;
-					auto& hw = device->getHardware();
-					if(done == 0)
-						writesAtStart = hw.flashWrites();
-					const auto t0 = std::chrono::steady_clock::now();
-					if(part && !hw.getUC().copyFlashDataRangeRealtime(_to + done, _at + done, part))
-						return false;
-					if(last)
-					{
-						consistent = hw.flashWrites() == writesAtStart;
-						if(consistent && _patch)
-							hw.copyPatchRamTo(*_patch);
-					}
-					_copyMs = std::max(_copyMs, msBetween(t0, std::chrono::steady_clock::now()));
-					return true;
-				});
-				done += part;
-			}
-			if(!ok)
-				return false;
-			if(consistent)
-				return true;
-		}
-		return false;	// the firmware kept writing the flash: the caller tries again later, as for a machine that changed
+		std::vector<uint8_t> flash;
+		std::vector<md::OneMomentCopy::Area> areas;
+		if(_size)
+			areas.push_back({true, &flash, _at, _size});
+		if(_patch)
+			areas.push_back({false, _patch, 0, md::g_patchRamStateSize});
+		double heldMs = 0;
+		if(!copyAtOneMoment(std::move(areas), _machine, heldMs, _copyMs))
+			return false;
+		std::copy(flash.begin(), flash.end(), _to);
+		return true;
 	}
 
 	bool MachineMemoryDevice::copyFlash(uint8_t* _to, const size_t _at, const size_t _size, std::optional<uint64_t>& _machine, double& _copyMs)

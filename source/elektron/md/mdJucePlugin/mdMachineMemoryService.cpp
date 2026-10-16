@@ -831,7 +831,8 @@ namespace mdJucePlugin
 		}
 		if(_atomic)
 		{
-			// one hold: the patch RAM and the user flash as they are at one moment
+			// one piece: the patch RAM and the user flash as they are at one moment (taken a part per hold of the
+			// plug-in's lock by md::OneMomentCopy, DESIGN-audio-lock.md)
 			MachineMemoryPort::Piece all;
 			all.patch = patch.data();
 			all.patchSize = patch.size();
