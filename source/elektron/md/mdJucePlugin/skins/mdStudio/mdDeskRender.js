@@ -113,7 +113,7 @@ function render() {
 }
 function renderPage() {
 	endStaleRuns(); closePicker(); closeK(); const sl = $("#seqscroll")?.scrollLeft || 0; renderTop();
-	const full = S.ws === "mix" || S.ws === "song" || S.ws === "control"; $("#body").classList.toggle("full", full); $("#rail").hidden = full;
+	const full = S.ws === "mix" || S.ws === "song" || S.ws === "control"; $("#body").classList.toggle("full", full); document.documentElement.classList.toggle("songpage", S.ws === "song"); $("#rail").hidden = full;
 	if (!Base) { $("#main").innerHTML = ""; renderSub(); return; }	/* no document yet */
 	if (S.ws === "seq") genEnsure();	/* the GEN specs, the first time they show */
 	if (!full) renderRail(); renderSub();
