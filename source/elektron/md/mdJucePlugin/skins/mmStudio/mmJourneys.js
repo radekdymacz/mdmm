@@ -138,6 +138,15 @@ const MmJourneys = (() => {
 			{ say: "click ‹: back", act: async u => { u.click("#patPrev"); await confirmIfAsked(u); }, machine: c => ok(cur() === c.p0, "machine pattern " + cur()), within: 8000 }
 		]
 	};
+	/* I-041: ‹ › on the KIT field load the previous / next kit as a click in the kit chooser does (the machine asks first over unsaved edits) */
+	const kitStep = {
+		name: "mm-kit-step", proves: ["MM-093"],
+		steps: [
+			{ say: "click › next to the kit on the LCD", act: async (u, c) => { c.k0 = machine().kit.current; u.click("#kitNext"); await confirmIfAsked(u); }, machine: c => ok(machine().kit.current === (c.k0 + 1) % 128, "machine kit " + machine().kit.current), screen: c => ok(S().kit === (c.k0 + 1) % 128, "page kit " + S().kit), within: 10000 },
+			{ say: "click ‹: back", act: async u => { u.click("#kitPrev"); await confirmIfAsked(u); }, machine: c => ok(machine().kit.current === c.k0, "machine kit " + machine().kit.current), within: 10000 },
+			{ say: "the arrows did not open the kit chooser", screen: () => ok($1("#libpop").hidden, "chooser open") }
+		]
+	};
 	const wsKeys = {
 		name: "mm-keys-workspaces", proves: [],
 		steps: [["2", "sound"], ["3", "mix"], ["4", "perform"], ["5", "song"], ["1", "seq"]].map(([k, ws]) => ({ say: `press ${k}`, act: u => { blur(); u.key(k); }, screen: () => ok(S().ws === ws && !!$1("#main").firstElementChild, "workspace " + S().ws) }))
@@ -1759,6 +1768,22 @@ const MmJourneys = (() => {
 			{ say: "press A and S: the white keys still play C and D", act: async (u, c) => { notesOn.length = 0; for (const k of ["a", "s"]) { u.key(k); await sleep(250); } },
 				screen: c => ok(same(notesOn.slice(-2), [c.o, c.o + 2]), "pitches sent " + notesOn.join(",")) }
 		]
+	};
+	/* I-040: Z / X reach every MIDI note: X to the top (the A key plays 120, P and L stop at 127), Z to the bottom (A plays 0); the pitches sent are semitones from C3 (48), so 72, 79, 79 and -48, -46 */
+	const octaveRange = {
+		name: "mm-keys-octave-range", proves: ["MM-034", "MM-053"],
+		steps: [
+			go("seq"), sel(0),
+			{ say: "press X twelve times, then A, L and P", act: async (u, c) => { results.length = 0; notesOn.length = 0; blur(); for (let i = 0; i < 12; i++) u.key("x"); await sleep(200); for (const k of ["a", "l", "p"]) { u.key(k); await sleep(250); } },
+				screen: () => ok(KB.oct === 6 && same(notesOn.slice(-3), [72, 79, 79]), "octave " + KB.oct + ", pitches sent " + notesOn.join(",")) },
+			{ say: "press Z sixteen times, then A and S", act: async u => { notesOn.length = 0; for (let i = 0; i < 16; i++) u.key("z"); await sleep(200); for (const k of ["a", "s"]) { u.key(k); await sleep(250); } },
+				screen: () => ok(KB.oct === -4 && same(notesOn.slice(-2), [-48, -46]), "octave " + KB.oct + ", pitches sent " + notesOn.join(",")) },
+			{ say: "Perform: the Octave stepper goes down to the lowest and up to the highest keyboard", act: async u => { u.click(tab("perform")); await sleep(300); for (let i = 0; i < 8; i++) u.click('[data-kboct="-1"]'); await sleep(200); },
+				screen: () => ok(!!$1('.kb [data-key="0"]') && $1('[data-kboct="-1"]').disabled, "lowest key " + !!$1('.kb [data-key="0"]')) },
+			{ say: "up to the top", act: async u => { for (let i = 0; i < 8; i++) u.click('[data-kboct="1"]'); await sleep(200); },
+				screen: () => ok(!!$1('.kb [data-key="127"]') && !$1('.kb [data-key="128"]') && $1('[data-kboct="1"]').disabled, "highest key 127 " + !!$1('.kb [data-key="127"]')) }
+		],
+		async tidy(u) { KB.oct = 0; S().kbOct = 3; u.click(tab("seq")); }
 	};
 	/* four empty steps in a row (no note, no NOTE OFF) on track t */
 	const freeRun = (t, n = 4) => { const tr = trkOf(t), busy = t < 6 ? trigsOf(t) : midiTrigsOf(t); for (let s = 0; s + n <= S().len; s++) if ([...Array(n).keys()].every(k => !tr.steps[s + k] && !busy.includes(s + k))) return [...Array(n).keys()].map(k => s + k); return null; };
@@ -3988,7 +4013,7 @@ const MmJourneys = (() => {
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
 		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
-		blackKeys, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach];
+		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
 	   its guard, "left:", names what stays). What back cannot put back, the journey keeps first (keep, keepMany) or is alone: true (doc/modern-ux/JOURNEYS.md, "Independent journeys") */
 	for (const j of all) { const own = j.tidy; j.tidy = async (u, c) => { try { if (own) await own(u, c); } finally { if (c.back0?.state && Journey.stateDiff(c.back0.state, state())) await back(u, c); } }; }
