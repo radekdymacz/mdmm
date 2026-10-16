@@ -2136,8 +2136,12 @@ namespace
 			return !job.running();
 		}, 3600000);
 		const double t1 = secs();
-		std::printf("  import %s: read before %.1f s, sent in %.1f s, read back in %.1f s (emulated time)\n", _hw ? "over HW MIDI" : playing ? "while playing" : "stopped",
-			sendAt - t0, readAt - sendAt, t1 - readAt);
+		if(readAt < 0)	// I-038: no read-back phase
+			std::printf("  import %s: read before %.1f s, sent in %.1f s, not read back (emulated time)\n", _hw ? "over HW MIDI" : playing ? "while playing" : "stopped",
+				sendAt - t0, t1 - sendAt);
+		else
+			std::printf("  import %s: read before %.1f s, sent in %.1f s, read back in %.1f s (emulated time)\n", _hw ? "over HW MIDI" : playing ? "while playing" : "stopped",
+				sendAt - t0, readAt - sendAt, t1 - readAt);
 		if constexpr(std::is_same_v<R, Rig>)
 			if(playing)
 			{

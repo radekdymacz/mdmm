@@ -82,8 +82,12 @@ const Syx = (() => {
 	function outcomes(picked, report) {
 		const out = new Map(), listed = new Map((report?.items || []).map(i => [key(i.kind, i.slot), i]));
 		const slots = picked.filter(p => p.kind !== "other"), ok = report?.check ? "same" : "taken";
-		/* I-038: read back off: nothing was compared, so every item was only sent */
-		if (report?.readBack === false) { for (const p of picked) out.set(key(p.kind, p.slot), { outcome: "sent" }); return out; }
+		/* I-038: read back off: nothing was compared; each item says what went (sent, partly sent, not sent), an item the
+		   report does not name is unclear, and a command (other) is sent */
+		if (report?.readBack === false) {
+			for (const p of picked) { const l = listed.get(key(p.kind, p.slot)); out.set(key(p.kind, p.slot), p.kind === "other" ? { outcome: "sent" } : l ? { outcome: l.outcome, text: l.text } : { outcome: "unclear" }); }
+			return out;
+		}
 		const whole = (report?.[ok] || 0) + listed.size === slots.length;
 		for (const p of picked) {
 			const id = key(p.kind, p.slot), l = listed.get(id);
@@ -125,7 +129,7 @@ const Syx = (() => {
 			+ (kinds.wave?.on ? ". The waveforms are read from the machine first (an empty one answers nothing)." : ".");
 	}
 	const OUTCOME = { taken: ["taken", "✓"], converted: ["converted", "≈"], ignored: ["ignored", "✕"], differs: ["different", "≠"], changed: ["not comparable", "~"],
-		unknown: ["not comparable", "~"], "no reply": ["no answer", "?"], unclear: ["not known", "?"], sent: ["sent", "→"], same: ["the same as the file", "="] };
+		unknown: ["not comparable", "~"], "no reply": ["no answer", "?"], unclear: ["not known", "?"], sent: ["sent", "→"], "partly sent": ["partly sent", "~"], "not sent": ["not sent", "✕"], same: ["the same as the file", "="] };
 	const problem = o => o !== "taken" && o !== "sent" && o !== "same";
 	/* I-038: "Read back and compare", beside Verify only in the import footer; on by default. A person's preference, not the
 	   project's (the editor's setup, MDSK, is what a DAW project restores): kept in the page's storage, as the transport's
@@ -215,7 +219,7 @@ const Syx = (() => {
 			const mine = picks.filter(p => p.kind === k), bad = mine.filter(p => problem(res.get(key(k, p.slot))?.outcome)).length;
 			if (!mine.length) return { text: "not sent", bad: 0 };
 			if (k === "other") return { text: `${mine.length} sent`, bad: 0 };
-			if (rep?.report?.readBack === false) return { text: `${mine.length} sent · not read back`, bad: 0 };
+			if (rep?.report?.readBack === false) { const n = mine.length - bad; return { text: `${n} sent${bad ? ` · ${bad} not (all) sent` : ""} · not read back`, bad }; }
 			if (rep?.report?.check) return { text: `${mine.length - bad} the same${bad ? ` · ${bad} different or unread` : ""}`, bad };
 			return { text: `${mine.length - bad} taken${bad ? ` · ${bad} problem${bad > 1 ? "s" : ""}` : ""}`, bad };
 		}

@@ -93,10 +93,16 @@ check(M.slotLabel("song", 4) === "S05" && M.slotLabel("global", 7) === "G8", "so
 /* I-038: Read back and compare: a report of an import that was not read back says "sent", never "taken" */
 {
 	const picked = [{ kind: "kit", slot: 0 }, { kind: "kit", slot: 1 }, { kind: "other", slot: 0 }];
-	const r = M.outcomes(picked, { readBack: false, sent: 2, commands: 1, unsent: 0, items: [] });
+	const r = M.outcomes(picked, { readBack: false, sent: 2, commands: 1, unsent: 0, items: [{ kind: "kit", slot: 0, outcome: "sent" }, { kind: "kit", slot: 1, outcome: "sent" }] });
 	check([...r.values()].every(x => x.outcome === "sent"), "not read back: every item is sent (never taken, never unclear)");
 	check(M.OUTCOME.sent[0] === "sent" && ![...r.values()].some(x => x.outcome === "taken"), "not read back: nothing is called taken");
 	check(M.outcomes([{ kind: "kit", slot: 0 }], { taken: 1, items: [] }).get("kit:0").outcome === "taken", "read back (the default): unchanged");
+	/* per item: what really went */
+	const stopped = M.outcomes([{ kind: "kit", slot: 0 }, { kind: "kit", slot: 1 }, { kind: "kit", slot: 2 }, { kind: "pattern", slot: 4 }, { kind: "other", slot: 0 }], { readBack: false, sent: 1, partly: 1, notSent: 1, items: [
+		{ kind: "kit", slot: 0, outcome: "sent", text: "" }, { kind: "kit", slot: 1, outcome: "partly sent", text: "K02: only part" }, { kind: "kit", slot: 2, outcome: "not sent", text: "K03: not sent" }] });
+	check(stopped.get("kit:0").outcome === "sent" && stopped.get("kit:1").outcome === "partly sent" && stopped.get("kit:2").outcome === "not sent", "stopped, not read back: each item as the report says");
+	check(stopped.get("pattern:4").outcome === "unclear" && stopped.get("other:0").outcome === "sent", "an item the report does not name is unclear; a command is sent");
+	check(M.OUTCOME["partly sent"] && M.OUTCOME["not sent"], "partly sent and not sent have a mark");
 }
 /* the tick: on unless the person turned it off; remembered in the page's storage; a blocked storage means on */
 {
