@@ -98,7 +98,9 @@ function valueHTML(v) {
 	const below = bip ? v < 64 && v > 6 : v / 127 > .8;
 	return `<span class="vl" style="bottom:calc(${end} ${below ? "- 13px" : "+ 1px"})">${laneFmt(v)}</span>`;
 }
-function kitLabelHTML(base) { return `<span class="kvl" style="bottom:${kitLabelAt(base)}">${laneFmt(base)}</span>`; }
+/* near the top the number sits below the line and left of its key, so it never covers the top of a lock's bar */
+function kitLabelCls(base) { return base / 127 > .85 ? "kvl fl" : "kvl"; }
+function kitLabelHTML(base) { return `<span class="${kitLabelCls(base)}" style="bottom:${kitLabelAt(base)}">${laneFmt(base)}</span>`; }
 function kitLabelAt(base) { const f = base / 127; return `calc(3px + (100% - 6px) * ${f.toFixed(4)} ${f > .85 ? "- 15px" : "+ 3px"})`; }
 function syncScroll() { const a = $("#seqscroll"), b = $("#lanescroll"); if (!a || !b) return; a.onscroll = () => { b.scrollLeft = a.scrollLeft; }; b.onscroll = () => { a.scrollLeft = b.scrollLeft; }; }
 function refreshRow(i) { $$(`.st[data-t="${i}"]`).forEach(b => { const s = +b.dataset.s; b.className = stepCls(i, s); b.setAttribute("aria-pressed", V.tracks[i].trigs[s]); }); }

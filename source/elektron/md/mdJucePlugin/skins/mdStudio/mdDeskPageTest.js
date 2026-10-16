@@ -694,9 +694,17 @@ return { Bridge, cmd, asked, errors, banners, S, Drop, get V() { return V; }, se
 	check(!P.kitHit(at(141)) && !P.kitHit(at(151)) && !P.kitHit(at(60)), "141, 151 and 60 are off it");
 	check(!P.kitHit(Object.assign(at(146), { target: { closest: () => ({ querySelector: () => null }) } })), "a key without a line (no trig) has no zone");
 	check(!P.kitGrab(at(146, { altKey: true })) && !P.kitGrab(at(146, { shiftKey: true })) && !P.kitGrab(at(146, { button: 2 })) && !P.Held.now, "Alt (erase), Shift (ramp) and a right button never grab it");
+	/* a click on the line (released without moving more than 3 px) is the lane's: it locks the step at the value under the pointer, the kit value */
 	sent.length = 0;
-	check(P.kitGrab(at(146)) && P.Held.as("lane")?.kit && classes.has("kitdrag"), "a press on the line begins the drag (the lane's cursor follows)");
-	P.laneAt(at(100)); P.laneAt(at(60)); P.laneAt(at(60));
+	check(P.kitGrab(at(146.6)) && P.Held.as("lane")?.kit === "maybe" && !classes.has("kitdrag"), "a press on the line is a maybe-drag: nothing is written yet");
+	P.laneAt(at(148)); fire("document", "pointerup"); run();
+	check(sent.filter(m => m.op === "lock").length === 1 && sent.find(m => m.op === "lock").v === 64 && sent.find(m => m.op === "lock").s === 1 && !sent.some(m => m.op === "param") && !P.Held.now,
+		"released after a 2 px move it is a click: the step is locked at the kit value 64, no kit edit: " + sent.map(m => m.op + ":" + (m.v ?? "")).join(" "));
+	sent.length = 0;
+	check(P.kitGrab(at(146)) && P.Held.as("lane")?.kit === "maybe", "a press on the line begins as a maybe-drag");
+	P.laneAt(at(144)); check(P.Held.as("lane")?.kit === "maybe" && !classes.has("kitdrag"), "3 px of movement is still a click");
+	P.laneAt(at(100)); check(P.Held.as("lane")?.kit === true && classes.has("kitdrag"), "more than 3 px up or down is the kit drag (the lane's cursor follows)");
+	P.laneAt(at(60)); P.laneAt(at(60));
 	const params = sent.filter(m => m.op === "param");
 	check(sent.filter(m => m.op === "lock").length === 0, "dragging the line paints no lock: " + sent.map(m => m.op).join(" "));
 	check(params.length === 2 && params[0].t === 0 && params[0].i === 12 && params[0].v === 123 && params[1].v === 127, "the drag sets the track's FLTF kit value as the Sound page's knob does (param, index 12): " + JSON.stringify(params.map(m => m.v)));
@@ -713,6 +721,7 @@ return { Bridge, cmd, asked, errors, banners, S, Drop, get V() { return V; }, se
 	check(/>99</.test(P.valueHTML(99)) && /vl/.test(P.valueHTML(99)), "a lock's value is written as a number: " + P.valueHTML(99));
 	check(/0\.7795\) \+ 1px/.test(P.valueHTML(99)) && /0\.9449\) - 13px/.test(P.valueHTML(120)), "the number sits above a bar's end, below it near the top");
 	check(/>127</.test(P.kitLabelHTML(127)) && /- 15px/.test(P.kitLabelHTML(127)) && /\+ 3px/.test(P.kitLabelHTML(40)), "the kit line's number sits above the line, below it near the top");
+	check(/class="kvl fl"/.test(P.kitLabelHTML(127)) && /class="kvl"/.test(P.kitLabelHTML(40)), "near the top the kit's number moves left of its key (it never covers a bar's top)");
 	P.S.lane = "PAN";
 	check(P.laneFmt(64) === "0" && P.laneFmt(74) === "+10" && P.laneFmt(0) === "-64" && />\+10</.test(P.valueHTML(74)), "a signed parameter's numbers are -64 to +63 as the knob shows it");
 	P.S.lane = "FLTF"; delete P.Docs.kits[3]; delete P.Docs.patterns[5]; P.Overlay.clear(); P.setV(P.view()); for (const k of Object.keys(hooks)) delete hooks[k];

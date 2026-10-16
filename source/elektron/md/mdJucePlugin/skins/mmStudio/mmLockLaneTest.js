@@ -145,9 +145,17 @@ check(/of 62 locked parameters/.test(meterEl.title), "the lock meter's tooltip c
 	check(!M.kitHit(at(43)) && !M.kitHit(at(53)) && !M.kitHit(at(100)), "43, 53 and 100 are off it");
 	check(!M.kitHit(Object.assign(at(48), { target: { closest: () => ({ querySelector: () => null }) } })), "a key without a line (no trig) has no zone");
 	check(!M.kitGrab(at(48, { altKey: true })) && !M.kitGrab(at(48, { shiftKey: true })) && !M.kitGrab(at(48, { button: 2 })) && !M.laneNow(), "Alt (erase), Shift (ramp) and a right button never grab it");
+	/* a click on the line (released without moving more than 3 px) is the lane's: it locks the step at the value under the pointer, the kit value */
+	p.sent.length = 0; S.tracks[TRK].v.AMP[0] = 80; S.locks.delete(TRK + "|AMP.0");
+	const y80 = 124 - 6 - 110 * 80 / 127;	// the value 80 exactly
+	check(M.kitGrab(at(y80)) && M.laneNow()?.kit === "maybe" && !classes.has("kitdrag"), "a press on the line is a maybe-drag: nothing is written yet");
+	M.laneAt(at(y80 + 2)); M.endLaneDraw(); p.run();
+	check(ops().some(o => /"lock"/.test(o) && /"v":80\b/.test(o)) && !ops().some(o => /"param"/.test(o)) && !M.laneNow(), "released after a 2 px move it is a click: the step is locked at the kit value 80, no kit edit: " + ops().join(" ").slice(0, 100));
 	p.sent.length = 0; let commits = 0; const hc = M.HOST.commit; M.HOST.commit = () => { commits++; };
-	check(M.kitGrab(at(48)) && M.laneNow()?.kit && classes.has("kitdrag"), "a press on the line begins the drag (the lane's cursor follows)");
-	M.laneAt(at(20)); M.laneAt(at(5)); M.laneAt(at(5)); M.commit(); p.run();
+	check(M.kitGrab(at(48)) && M.laneNow()?.kit === "maybe", "a press on the line begins as a maybe-drag");
+	M.laneAt(at(45)); check(M.laneNow()?.kit === "maybe" && !classes.has("kitdrag"), "3 px of movement is still a click");
+	M.laneAt(at(20)); check(M.laneNow()?.kit === true && classes.has("kitdrag"), "more than 3 px up or down is the kit drag (the lane's cursor follows)");
+	M.laneAt(at(5)); M.laneAt(at(5)); M.commit(); p.run();
 	const prm = ops().filter(o => /"param"/.test(o));
 	check(!ops().some(o => /"lock"/.test(o)), "dragging the line paints no lock: " + ops().join(" ").slice(0, 120));
 	check(prm.length >= 1 && /"v":127\b/.test(prm[prm.length - 1]) && /"t":3,"page":1,"i":0/.test(prm[0]) && new Set(prm.map(o => JSON.parse(o).g)).size === 1 && S.tracks[TRK].v.AMP[0] === 127, "the drag sets the kit value like the knob (param intents on ATK, ending at 127, one gesture): " + prm.join(" "));
@@ -163,9 +171,11 @@ check(/of 62 locked parameters/.test(meterEl.title), "the lock meter's tooltip c
 	delete hooks["#lane"]; delete hooks["#lane .lb"]; delete hooks.under;
 	/* the numbers: a lock's at its bar's end, the kit's on the line; a list parameter shows its name, a signed one -64..+63 */
 	S.tracks[TRK].steps[2] = { n: [60], a: 1, f: 1, l: 1 }; lane("AMP.0", { 2: 90, 10: 30 }); S.tracks[TRK].v.AMP[0] = 80;
-	let html = draw("AMP.0");
+	let html = draw("AMP.0"); const m0 = M.laneMeta().m;
 	check(/<span class="vl"[^>]*>90<\/span>/.test(html) && /<span class="vl"[^>]*>30<\/span>/.test(html) && /<span class="kvl"[^>]*>80<\/span>/.test(html), "ATK: the locks' numbers 90 and 30 and the kit line's 80 are on the lane");
 	check((html.match(/class="kvl"/g) || []).length === 1 && html.lastIndexOf('class="kvl"') > html.lastIndexOf('data-s="10"'), "the kit number is once, at the lane's right end (the last key with a trig)");
+	check(/class="kvl fl"/.test(M.kitLabelHTML(m0, 127, 127)) && /class="kvl"/.test(M.kitLabelHTML(m0, 40, 127)), "near the top the kit's number moves left of its key");
+	check(!/<span>80/.test(html) && !/lbscale[^>]*><b>[^<]*<\/b><span/.test(html), "the scale on the left keeps its top and bottom numbers and no kit value (the line carries it)");
 	check(/<div class="base"/.test(html.slice(html.indexOf('data-s="2"'))), "the kit line is drawn on a key with a trig");
 	S.lane = "LF1.3"; S.lanePage = "LF1"; const m = M.laneMeta().m;
 	lane("LF1.3", { 2: 1, 10: 2 }); S.tracks[TRK].v.LF1[3] = 0; html = draw("LF1.3");
