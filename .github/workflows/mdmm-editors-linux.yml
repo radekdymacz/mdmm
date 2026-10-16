@@ -267,3 +267,77 @@ jobs:
           path: ${{ runner.temp }}/smoke
           if-no-files-found: warn
           retention-days: 14
+
+  # SteamOS 3 ("holo", the Steam Deck's Arch-based system; B-153). GitHub has no SteamOS runner, so the packaged
+  # tarballs are started in the Steam Deck Homebrew project's holo-base image: SteamOS's own userland (glibc and
+  # pacman repositories, os-release SteamOS 3.7.x), pinned by digest, on an Ubuntu runner. Two cases
+  # (scripts/linux/steamos_start_test.sh): "bare" (what a stock SteamOS desktop has that we can name with
+  # confidence, no GTK or WebKitGTK; informational, never fails, its result goes to the job summary) and
+  # "packages" (webkit2gtk-4.1 and gtk3 from pacman, then the same start test as above; must pass).
+  steamos:
+    name: Start the packaged standalones and VST3s (SteamOS 3 container)
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      # ghcr.io/steamdeckhomebrew/holo-base, the "latest" of 2026-10-16 (SteamOS 3.7.20, build 20260108.1, linux/amd64).
+      # Never a floating tag. Bump by hand: docker buildx imagetools inspect ghcr.io/steamdeckhomebrew/holo-base:latest
+      STEAMOS_IMAGE: ghcr.io/steamdeckhomebrew/holo-base@sha256:a0dd426efdb6add89648ce7c6fcd1a59ac0383da20146bff0f59ccaca3a902e2
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          sparse-checkout: scripts
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: linux-mdmm
+          path: ${{ runner.temp }}/linux-mdmm
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: linux-mdmm-vst3host
+          path: ${{ runner.temp }}/vst3host
+
+      - name: Case bare (no GTK, no WebKitGTK; informational)
+        continue-on-error: true
+        run: |
+          chmod +x "${RUNNER_TEMP}/vst3host/mdmmVst3EditorHost"
+          mkdir -p "${RUNNER_TEMP}/steamos-bare"
+          docker run --rm -v "${GITHUB_WORKSPACE}/scripts:/work/scripts:ro" \
+            -v "${RUNNER_TEMP}/linux-mdmm:/work/archives:ro" -v "${RUNNER_TEMP}/steamos-bare:/work/out" \
+            "${STEAMOS_IMAGE}" bash /work/scripts/linux/steamos_start_test.sh bare /work/archives /work/out /nonexistent
+          { echo "### SteamOS 3, bare (informational)"; cat "${RUNNER_TEMP}/steamos-bare/steamos-bare.md"; } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Case packages (webkit2gtk-4.1 and gtk3 from pacman; must pass)
+        run: |
+          mkdir -p "${RUNNER_TEMP}/steamos-packages"
+          docker run --rm -v "${GITHUB_WORKSPACE}/scripts:/work/scripts:ro" \
+            -v "${RUNNER_TEMP}/linux-mdmm:/work/archives:ro" -v "${RUNNER_TEMP}/vst3host:/work/vst3host:ro" \
+            -v "${RUNNER_TEMP}/steamos-packages:/work/out" -e GITHUB_STEP_SUMMARY=/work/out/step-summary.md \
+            "${STEAMOS_IMAGE}" bash /work/scripts/linux/steamos_start_test.sh packages /work/archives /work/out \
+            /work/vst3host/mdmmVst3EditorHost
+          status=$?
+          exit ${status}
+
+      - name: Summary of the packages case
+        if: always()
+        run: |
+          {
+            echo "### SteamOS 3, with packages (must pass)"
+            echo "Packages the case installed (webkit2gtk-4.1, gtk3 and what they pull in on top of the image):"
+            echo '```'
+            cat "${RUNNER_TEMP}/steamos-packages/steamos-packages-versions.txt" 2>/dev/null || true
+            echo '```'
+            cat "${RUNNER_TEMP}/steamos-packages/step-summary.md" 2>/dev/null || true
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: linux-mdmm-steamos
+          path: |
+            ${{ runner.temp }}/steamos-bare
+            ${{ runner.temp }}/steamos-packages
+          if-no-files-found: warn
+          retention-days: 14
