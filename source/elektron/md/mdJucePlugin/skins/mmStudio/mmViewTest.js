@@ -61,7 +61,7 @@ function page() {
 	const src = FILES.map(f => fs.readFileSync(f, "utf8").replace(/^"use strict";/, "") + (/mmAdapter/.test(f) ? hold : "")).join("\n;\n")
 		+ "\n;__start();\nreturn { S: () => S, Overlay, MmView, docStore, storeDoc, MM_SEAM, Dlg, Banner, mockup: { " +
 			"mutApply, genLive, genEnd, setMachine, songAction, secAction, setSel, clearSel, selCut, selDuplicate, selTrigs, selMark, selMove, selGrow, stepMenuItems, Keys, HOST, " +
-			"rollAdd, rollLen, rollRemove, editSpan, setRollLen, selMoveTo, selClear, noteSpans, vis } };";
+			"rollAdd, rollLen, rollRemove, editSpan, setRollLen, selMoveTo, selClear, pitchSel, rollDelNote, noteSpans, vis } };";
 	const out = new Function("scope", "with (scope) {\n" + src + "\n}")(scope);
 	const run = () => { for (let n = 0; timers.length && n < 10000; n++) timers.shift()(); };
 	run();
@@ -238,7 +238,7 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 }
 
 /* ---- the page's own gestures are intents (DESIGN-UNIFY.md phases 4 and 5): MUTATE, GEN, the machine picker, a song
-   row and the Sound page's CLEAR, through the mockup's functions; one gesture each ---- */
+   row and the Kit page's CLEAR, through the mockup's functions; one gesture each ---- */
 {
 	const p = loaded(), S = p.S(), M = p.mockup;
 	const sentOps = from => p.sent.slice(from).filter(m => m.op && !["ready", "audio"].includes(m.op));
@@ -256,7 +256,7 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 	p.host.commit();
 	at = p.sent.length;
 	M.secAction("clear"); p.run();
-	check(sentOps(at).map(m => m.op).join() === "clearSound", "Sound's CLEAR: clearSound");
+	check(sentOps(at).map(m => m.op).join() === "clearSound", "Kit's CLEAR: clearSound");
 	p.host.commit();
 	S.ws = "seq"; S.sel = 0;
 	at = p.sent.length;
@@ -391,10 +391,64 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 		"dragged longer than the room: up to the next trig on 9, the NOTE OFF on 7 gone: " + o.map(args).join("; "));
 	const ch = M.rollRemove(0, 8); M.editSpan(0, new Set(ch), true);
 	o = take();
-	check(!!T().steps[8]?.off && o.length === 1 && JSON.stringify(o[0].rows[0].steps) === '[[8,{"off":true}]]',
-		"a removed note the note on 5 ran into: a NOTE OFF in its place, so that one keeps its four steps: " + o.map(args).join("; "));
+	check(!T().steps[8] && o.length === 1 && JSON.stringify(o[0].rows[0].steps) === '[]',
+		"a removed note the note on 5 ran into (I-037): gone, and no NOTE OFF in its place: " + o.map(args).join("; "));
 	const sp = M.noteSpans(0).find(x => x.s === 4);
-	check(sp && sp.e === 8 && sp.wrap === 0, "the roll draws it four steps long: " + JSON.stringify(sp && { s: sp.s, e: sp.e }));
+	check(sp && (sp.e > 8 || sp.wrap > 0), "the note before runs on through the gap, as the machine plays it: " + JSON.stringify(sp && { s: sp.s, e: sp.e, wrap: sp.wrap }));
+	/* a NOTE OFF is a step of its own: removing the note it closed leaves it (the machine's way) */
+	put(0, { 4: N(50), 8: N(52), 10: { off: 1 } });
+	const ch2 = M.rollRemove(0, 8); M.editSpan(0, new Set(ch2), true);
+	o = take();
+	check(!T().steps[8] && T().steps[10]?.off && o.length === 1, "removing a note keeps the NOTE OFF on 11 (nothing else changes): " + o.map(args).join("; "));
+	/* a chord: deleting one pitch of the step keeps the step; the last one takes the step */
+	put(0, { 4: { n: [50, 54], a: 1, f: 1, l: 1 }, 10: null });
+	M.rollDelNote(0, { s: 4, k: 1 });
+	check(JSON.stringify(T().steps[4].n) === "[50]", "a chord note deleted: the other pitch stays on the step");
+	M.rollDelNote(0, { s: 4, k: 0 }); M.editSpan(0, new Set([4]), true); take();
+	check(!T().steps[4], "the last pitch deleted: the step is empty");
+	/* I-036: Delete on a selected note (selClear) writes nothing but the clear, no NOTE OFF before it */
+	put(0, { 4: N(50), 8: N(52) });
+	M.setSel({ t: 0, n: 1, from: 8, to: 9 }); take();
+	M.selClear();
+	o = take();
+	check(o.length === 1 && args(o[0]) === 'clearSteps {"t":0,"n":1,"from":8,"to":9}', "Delete on a selected note: clearSteps only, the note before keeps sounding (I-037): " + o.map(args).join("; "));
+	M.clearSel();
+	put(0, { 4: null, 8: null });
+	/* I-036: ↑ / ↓ with exactly one note selected change its pitch, ⇧ an octave; each press its own undo step (the key's release commits) */
+	put(0, { 4: N(50), 8: N(52) });
+	M.setSel({ t: 0, n: 1, from: 4, to: 5 }); take();
+	const up = M.Keys.byId("note-pitch"), oct = M.Keys.byId("note-octave"), mv = M.Keys.byId("track-prev-next");
+	check(!!up && !!oct && !!M.pitchSel() && M.pitchSel().s === 4 && up.keys.includes("ArrowUp") && oct.mod === "shift", "one note selected: the pitch keys have it (the keys' when() is pitchSel and selKeys)");
+	up.run({ key: "ArrowUp" });
+	o = take();
+	check(T().steps[4].n[0] === 51 && o.length === 1 && args(o[0]) === 'step {"t":0,"s":4,"v":{"a":1,"f":1,"l":1,"n":[51]}}' && JSON.stringify(S.stepSel) === '{"t":0,"n":1,"from":4,"to":5}',
+		"ArrowUp: a semitone up, one step intent, the note stays selected: " + o.map(args).join("; "));
+	p.host.commit(); take();
+	up.run({ key: "ArrowDown" }); const d1 = take(); p.host.commit(); up.run({ key: "ArrowDown" }); const d2 = take();
+	check(T().steps[4].n[0] === 49 && d1.length === 1 && d2.length === 1 && d1[0].g !== d2[0].g, "ArrowDown twice (the key released between): two semitones down, one intent each, each its own undo step (gesture): " + [...d1, ...d2].map(m => args(m) + " g" + m.g).join("; "));
+	/* a held key repeats: the note follows, and the hold is one undo step (the commit comes with the key's release) */
+	p.host.commit(); take();
+	const base = T().steps[4].n[0];
+	for (let k = 0; k < 3; k++) { up.run({ key: "ArrowUp", repeat: k > 0 }); p.run(); }
+	const held = p.sent.filter(m => /step$/.test(m.op || "")); p.sent.length = 0;
+	check(T().steps[4].n[0] === base + 3 && held.length === 3 && held.every(m => m.g === held[0].g), "a held ↑ (three repeats): the note is three semitones up, all under one gesture (one undo step): " + held.map(m => "g" + m.g).join(","));
+	up.run({ key: "ArrowDown" }); up.run({ key: "ArrowDown" }); up.run({ key: "ArrowDown" }); take(); p.host.commit();
+	oct.run({ key: "ArrowUp" });
+	check(T().steps[4].n[0] === 61, "Shift+ArrowUp: an octave up");
+	take();
+	S.tracks[0].steps[4].n = [127]; oct.run({ key: "ArrowUp" });
+	check(T().steps[4].n[0] === 127 && !take().length, "at the top of the range it stays (nothing sent)");
+	T().steps[4].n = [50];
+	/* a selection with no note, or two notes: the keys stay the track move */
+	M.setSel({ t: 0, n: 1, from: 5, to: 8 });
+	check(!M.pitchSel(), "no note in the selection: the pitch keys are off (↑ / ↓ move the track)");
+	M.setSel({ t: 0, n: 1, from: 4, to: 9 });
+	check(!M.pitchSel(), "two notes selected: off, too");
+	M.setSel({ t: 0, n: 2, from: 4, to: 5 });
+	check(!M.pitchSel(), "a note on two tracks selected: off");
+	M.clearSel();
+	check(!M.pitchSel(), "no selection: off");
+	put(0, { 4: null, 8: null });
 	put(0, { 14: N(48), 2: { off: 1 } });
 	const w = M.noteSpans(0).find(x => x.s === 14);
 	check(w && w.e === 16 && w.wrap === 2, "a note on step 15 of 16 with a NOTE OFF on step 3: drawn to the end and on at the start (two steps), as the machine plays it");
@@ -444,9 +498,9 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 	check(o.length === 1 && args(o[0]) === 'copyStepsTo {"t":0,"n":2,"from":0,"to":4,"at":4,"dt":0}' && S.stepSel.from === 4 && S.stepSel.to === 8, "⌘D: copyStepsTo right after the block, the selection on the copy: " + o.map(args).join("; "));
 	M.selCut();
 	o = take();
-	/* I-010: T2's note on step 4 ran into its trig on 8 (cut): it keeps its length, a NOTE OFF there, in the same gesture */
-	check(o.length === 3 && args(o[0]) === 'copySteps {"t":0,"n":2,"from":4,"to":8}' && args(o[1]) === 'clearSteps {"t":0,"n":2,"from":4,"to":8}' && args(o[2]) === 'step {"t":1,"s":7,"v":{"off":true}}'
-		&& o[0].g === o[1].g && o[1].g === o[2].g, "⌘X: copySteps then clearSteps in one gesture (one undo step), and the note before the block keeps its length (a NOTE OFF where it ended): " + o.map(args).join("; "));
+	/* I-037: T2's note on step 4 ran into its trig on 8 (cut): no NOTE OFF is written where the block was, the note before runs on */
+	check(o.length === 2 && args(o[0]) === 'copySteps {"t":0,"n":2,"from":4,"to":8}' && args(o[1]) === 'clearSteps {"t":0,"n":2,"from":4,"to":8}'
+		&& o[0].g === o[1].g, "⌘X: copySteps then clearSteps in one gesture (one undo step), no NOTE OFF written (the note before runs on through the gap): " + o.map(args).join("; "));
 	M.setSel({ t: 6, n: 1, from: 0, to: 1 });
 	M.secAction("paste");
 	check(!take().length, "a synth block onto a MIDI track: nothing sent (it says so)");

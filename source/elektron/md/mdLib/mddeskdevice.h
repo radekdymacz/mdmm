@@ -36,6 +36,22 @@ namespace md
 		// PLAY). Queued after a sequence still running. Needs the device lock.
 		bool sendPanelSequence(const std::vector<PanelPacket>& _states, uint32_t _holdFrames);
 
+		// DESIGN-audio-lock.md step 3: the same as commands for synthLib::Plugin::sendCommands, so the sender does
+		// not take the device lock (applyCommand runs them on the audio thread at the start of the next block, all
+		// of a sequence in the same block). A sequence is split into commands of 64 packets; all or none are queued
+		// on the machine, as sendPanelSequence does.
+		enum class CommandKind : uint32_t
+		{
+			PanelEvent = 1,			// a = row, b = mask: sendPanelEvent
+			PanelSequenceBegin,		// a = hold frames, b = the sequence's packets in all, data = the first packets
+			PanelSequenceMore		// a = hold frames, data = the next packets
+		};
+		static constexpr size_t PacketsPerCommand = synthLib::DeviceCommand::DataSize / 2;
+		static constexpr size_t PanelSequenceCapacity = 512;	// packets queued at most (m_panelSequence)
+		static synthLib::DeviceCommand panelEventCommand(uint8_t _row, uint8_t _mask);
+		static std::vector<synthLib::DeviceCommand> panelSequenceCommands(const std::vector<PanelPacket>& _states, uint32_t _holdFrames);
+		bool applyCommand(const synthLib::DeviceCommand& _command) override;
+
 		// MD OS 1.63 sequencer telemetry from emulated RAM, published by the audio
 		// thread after every block and read lock-free by editors (MD Desk). -1 =
 		// unknown: another firmware, or nothing published yet. Addresses: P0
@@ -124,6 +140,9 @@ namespace md
 
 	private:
 		void sendPanelPackets();
+		// sendPanelSequence in parts: drops what was sent, then says whether _count more packets fit; then append
+		bool beginPanelSequence(size_t _count);
+		void appendPanelSequence(const PanelPacket* _states, size_t _count, uint32_t _holdFrames);
 		void publishSequencerTelemetry(size_t _frames);
 		void scanSamples();
 
@@ -154,11 +173,12 @@ namespace md
 		const Hardware* m_bootAnimationOf = nullptr;
 		// 512: the MM SYSEX RECV macro alone is 29 keys, about 60 row states (MM-P2); the UNDO KIT route is up to
 		// 128 + 3 keys, about 262 states on the MM and 134 on the MD (MD-043, MM-102).
-		std::array<PanelPacket, 512> m_panelSequence{};
+		std::array<PanelPacket, PanelSequenceCapacity> m_panelSequence{};
 		size_t m_panelSequenceSize = 0;
 		size_t m_panelSequenceNext = 0;
-		std::array<uint32_t, 512> m_panelSequenceHolds{};
+		std::array<uint32_t, PanelSequenceCapacity> m_panelSequenceHolds{};
 		uint64_t m_panelSequenceAt = 0;
+		bool m_panelSequenceRefused = false;	// the sequence being applied as commands did not fit: its rest is dropped
 		uint64_t m_frames = 0;
 		bool m_silentOutput = false;
 	};

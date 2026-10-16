@@ -3,6 +3,70 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-044 · Name the workspaces as the manuals do: SEQUENCE becomes PATTERN, SOUND becomes KIT
+
+- **From:** a beta tester on Discord (suggestion to match the machines' manuals); decided by Radek, 2026-10-16.
+- **The idea:** the first two workspace tabs are called PATTERN and KIT in both editors. Labels only: the internal ids (`data-ws` seq / sound, the CSS classes, journey names, key ids, saved setup values) are unchanged, so saved projects and tests keep working. Keys 1-5 and the layout stay.
+- **Status:** built on branch `feat/0.8-tab-names`, not merged. Changed: the tab markup of both editors, the key view (group "Pattern", the workspace names), toasts, tooltips, journey narration, the guide (both editors), the feature rows' "where" fields, the site's front page captions. Left as they were: chapter titles of the manuals ("Sound synthesis: kits", the Sequencer chapters), the words "sound" and "sequencer" where they mean the machine's own, code comments, past release notes, and the site's screenshots (they show the old tab names until the next shoot).
+- **Release-note line:** The first two tabs are now called Pattern and Kit, as in the machines' manuals (they were Sequence and Sound). Nothing else changes.
+
+## I-043 · Filter envelope: a larger display with the full BOFS/WOFS range, the second window smaller (square) with attack and decay only
+
+- **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). The filter envelope display should be larger, and left/right on it show the full BOFS/WOFS range (-64 to +63, B-148); the second window smaller and square, with just attack and decay.
+- **Status:** done on branch `feat/0.8-mm-lfo-filter-views` (not merged). The filter envelope group keeps its place and size (no new panel; the screens of a row stay level): its one screen is now two panes. The big pane (left, about two thirds) holds BOFS (solid) and WOFS (dashed) as one row each, -64 on the left edge, 0 on the centre line, +63 on the right edge: a drag left or right reaches every value. The small square pane (right, 62 % of the screen's height at most 40 % of its width) draws the envelope's shape with ATK and DEC dots only. Reason for one screen with two panes and not two screens: the group has room for one screen under the page's layout rules, and a second screen would be a new panel. Left over: the big pane no longer draws the envelope curve scaled by BOFS (the Filter group's own screen keeps the dashed envelope-peak curve); say if the tester wants the curve back in the big pane. Page: `ED.fenv` (90-sound.js); `mmSoundTest`, journey `mm-sound-filter-env`; guide: chapter 7, Filter envelope.
+
+## I-042 · LFO preview: show the p-locked LFO values, not only the trig markers
+
+- **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). The LFO preview marks the trigs; it should draw the LFO as the locks change it.
+- **Status:** done on branch `feat/0.8-mm-lfo-filter-views` (not merged). The LFO screen now draws the pattern's whole length (32 steps at least, 64 at most; it was a fixed 32) with the locks of the selected track on the LFO's TRIG, WAVE, MULT, SPD, INTL and DPTH: a lock holds for its own step only (the phase runs on at that step's speed, in its shape and depth, then back), a lock on a step without a trig is ignored as on the machine. Locked steps are shaded, their tick is taller, the label names the locked parameters. It redraws when the page renders (opening KIT, any value change), not per frame. Left over: locks on PAGE and DEST (routing) are not drawn, and the picture shows the LFO's own output, not its effect on the target. Page: `lfoTrace`, `ED.lfo` (90-sound.js); `mmSoundTest`, journey `mm-sound-lfo-locks`; guide: chapter 8, LFO and parameter locks.
+
+## I-041 · Kit: left/right navigation like the pattern selector
+
+- **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). The pattern selector has previous/next arrows; the kit selector should too.
+- **Status:** done on branch `feat/0.8-octave-kitnav` (not merged): ‹ › sit in the KIT field of both editors, beside the name, and step to the previous / next kit (K01 follows the last kit) by the same load as a click in the kit chooser (the machine asks first over unsaved edits). The pattern field has no keys, so the kit has none. Page: `#kitPrev` / `#kitNext`; journeys `md-kit-step`, `mm-kit-step`.
+
+## I-040 · Computer keyboard: the octave range does not reach -2 to +8
+
+- **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). Z / X stop at -3 to +3 (`KEYS_OCT=[-3,3]`, `mmStudio/src/75-comforts.js:117`), seven octaves; the tester expects -2 to +8. The Perform page's own keyboard is clamped 0-6 (`130-main.js:207`).
+- **Open:** is -3..+3 a choice or the machine's limit? The note range is 0-127 (clamped in `keyNote`); -2..+8 is wider than the 128 notes from a C3 base, so the base or the range label may differ from what the tester sees. Check the Monomachine manual before calling it a bug.
+- **Status:** done on branch `feat/0.8-octave-kitnav` (not merged). The machine plays MIDI notes 0-127 (the core refuses others), so -3..+3 was a page choice. Monomachine Editor: Z / X now run -4 to +6 (the A key from MIDI 0 to 120, 11 octaves; the keys above it clamp at 127) and the Perform keyboard (four octaves) from MIDI 0 to the top, the last stop cut at 127. The tester's -2..+8 is those 11 octaves; the page names notes C-4 = MIDI 60, so the labels differ from the tester's (0-11 read LOW as before; the Z / X toast also gives the MIDI number). Machinedrum Editor: unchanged at -2..+2: its keys are pitch offsets of the track's own sound (PTCH, two octaves each way, mdDesk/mdDeskKeys.h), not notes. Journey `mm-keys-octave-range`.
+
+## I-039 · Song rows: show and edit mutes, transpose and tempo in the arrangement itself
+
+- **From:** a beta tester on Discord, 2026-10-16: loves Song mode and wants more song options: per-track mutes, per-track transpose and BPM per row.
+- **Today:** the editors have all three (feature rows MD-149/MD-157, MM-199/MM-263/MM-264/MM-266/MM-267, as on the machines: MD rows hold pattern, REP, BPM, offset, length, mutes; MM rows hold pattern, repeats, transpose, per-track transpose TR1-6 + six MIDI, offset/length, mutes 6 + 6, BPM). But the arrangement cell shows only the pattern name, `x` repeats and a `~` for offset/length (`mdDeskSong.js:116-120`, `120-song.js:125-128`); mutes and per-track transpose are behind the selected row's inspector > More (`data-rowmute`, `data-rowmore`), and the tempo behind a Keep toggle. The tester probably does not know they are there, or wants them at a glance.
+- **The idea:** small marks on the arrangement cells (a tempo number when the row sets one, a mute dot, a transpose number), without a new row above the grid; the inspector stays the place to edit. Needs Radek's call on the look.
+- **Status:** idea; first answer the tester that the options exist (Row > More), then decide on the marks.
+
+## I-038 · SysEx import: make the read-back (the second scan) optional
+
+- **From:** a beta tester on Discord, 2026-10-16: the second scan that verifies a SysEx transfer should be optional.
+- **Today:** an import is Read the slots (only when the editor does not know them yet), Send, Read back (`SyxJob`, `mdJucePlugin/mdSyxSession.h:49` phases Before / Sending / Reading; the page `skins/shared/deskSyx.js:308`). The read-back compares each slot with the file and fills the report; Verify only is a separate button. Both editors, one code path.
+- **The idea:** a tick "Read back and compare" on the import panel (on by default), off = Send then done, report says "not checked". Saves the read time (a pattern per 1.7 s at cable speed). Needs Radek's call where the tick sits.
+- **Decision (2026-10-16):** the tick sits beside Verify only in the import footer, on by default (PLAN-0.8 WP10 F).
+- **Status:** built on branch `feat/0.8-syx-readback-option`, not merged. The page sends `readBack: false` with `syxImport` when the tick is off (absent means on). Off: the Read the slots phase before still runs where the editor does not know a slot, Send, then done; the report is `{readBack: false, sent, commands, unsent}` and says "n sent, not read back", never "imported". The choice is kept in the page's storage (`deskSyx.readBack`), not in the editor setup: the setup (`MDSK`) is what a DAW project restores (modulators, knob CCs, solo), this is the person's habit, and the page already keeps such conveniences in storage (the transport's delayed start). Reset machine… and Verify only always read back. Tests: `syxImportTest` (job, both paths), `deskSyxTest.js` (tick, saved state, report), journeys `md-lib-syx-noreadback`, `mm-lib-syx-noreadback`.
+
+## I-037 · Piano roll: deleting a note should let the note before it fill the gap, not write a note off
+
+- **From:** a beta tester on Discord, 2026-10-16: deleting a note produces a note off, which is usually not wanted; the previous note filling the gap would fit better.
+- **Today (Monomachine only; the Machinedrum has no note off):** `MmRoll.remove` (`mmStudio/src/58-roll.js:41-43`, used by `rollRemove`, `70-seq.js:206`) puts a NOTE OFF where the removed note began when the note before it ran into it, so the earlier note keeps its length. The machine itself does not: a synth note sounds from its trig to the next NOTE OFF or trig (header of `58-roll.js`), so clearing a trig on the machine lets the earlier note run on.
+- **The idea:** the removal writes nothing but the removed trig (and, as now, its own closing NOTE OFF), as the machine does. Alt-click and the erase drag use the same function.
+- **Status:** built on branch `feat/0.8-mm-note-edit` (0.8, WP10 C; Radek left the call to Claude: A, machine-like). Deleting a note (Alt-click, the erase drag, a double-click, Delete / Clr / the step menu's Clear) writes no NOTE OFF; the note before runs on through the gap. A NOTE OFF that only closed the deleted note goes with it. Cut (⌘X) and a moved selection write none either (a NOTE OFF that only closed the cut or moved note goes with it). Tests: `mmRollTest`, `mmViewTest`, page journey `mm-roll-delete-gap`.
+
+## I-036 · Notes: a click keeps the note selected, arrows move it, Delete removes it, double-click removes a note
+
+- **From:** a beta tester on Discord, 2026-10-16: clicking a note should keep focus (now it needs a ⌘-click) so the up/down arrow keys move it; Delete while the note is held is awkward; maybe a double-click removes a note.
+- **Today:** a plain press on a step paints (toggles the trig) and ends the selection (Machinedrum `mdDeskGestures.js:218-221`; Monomachine step grid `clickStep`, `70-seq.js:101-106`); only ⌘-click selects. In the Monomachine piano roll a plain click already selects the note (`rollSelectDown`, `70-seq.js:225`). Up/Down with a selection moves the selection to the next track (`track-prev-next`, `75-comforts.js:145`), never the pitch; Delete clears the selection (`77-select.js:49`). There is no double-click on steps.
+- **The idea:** (1) a click on an existing trig selects it instead of removing it (the toggle moves to the empty step or the double-click); (2) Up/Down on one selected note changes its pitch (Monomachine; on the Machinedrum a trig has no pitch, so only left/right); (3) double-click removes.
+- **Status:** built on branch `feat/0.8-mm-note-edit` (0.8, WP10 D; Radek left the call to Claude: A). A click on a note (Monomachine roll) or a trig (Machinedrum grid) selects it and keeps the selection; an empty step still draws (drag-paint from an empty step kept); a double-click removes the note or trig (one undo step); Delete / Backspace remove the selection; Monomachine: ↑ / ↓ with exactly one note selected change its pitch a semitone (⇧ an octave), one undo step per press, otherwise ↑ / ↓ stay the track move; ⌘-click still adds to the selection. The Machinedrum has no pitch, so ← → move the selection as before. `clickStep` (70-seq.js) is not wired to the pointer any more and is left for the firmware self-test. Tests: `mmViewTest`, `mmKeysTest`, page journeys `mm-note-click-arrows`, `md-step-click-select`.
+
+## I-035 · Lock lane: a thicker kit-value line, drag it to change it, the value as a number on the line
+
+- **From:** a beta tester on Discord, 2026-10-16: the dashed line that shows the current parameter value should be thicker; it should be changeable by ⌘-drag (or similar) so all the editing happens in the lock window; the value should be a number below it instead of only on hover.
+- **Today:** the dashed line is `.lb .base` (a 1 px dashed border at 55 % opacity: `mdStudio/mdDesk.css:139,1152`, `mmStudio/src/*.css`), drawn per trig by `baseHTML` (`70-seq.js:83`) and `mdDeskSeq.js:87`. A lock's value is only in the tooltip (`title` "Locked 64" / "Kit value 64"); the kit value is in the lane's left scale (`.lbscale`, MM only) as a number. A plain drag draws locks (`laneAt`, `mdDeskGestures.js:11-18`); changing the kit value itself is done on the Sound page.
+- **The idea:** (1) 2 px line, full opacity; (2) ⌘-drag on the lane moves the kit value (the same value the Sound page edits), shown live; (3) the lane shows the number of the value under the pointer or of the selected step in a small readout under the lane, always visible.
+- **Status:** built on branch `feat/0.8-lock-lane-value` (0.8, WP10 E; Radek left the call to Claude: the line itself is dragged, no modifier, no new strip, the layout stays). The kit line is 2 px, solid, full strength, on every key with a trig (and on the Monomachine's ghost keys). Its number sits on it at the lane's right end (the last key with a trig), in the form the knob shows (a signed parameter -64..+63, a Monomachine list or table parameter by name). A lock's number sits at its bar's end while the pointer is on the step or the step is selected. A press within 4 px of the line grabs it (cursor ns-resize); dragging changes the kit value of the lane's parameter on the track, the edit the Sound page's knob makes, one undo step, and draws no lock (a press near the line is a click until it moves more than 3 px up or down: released before that it sets the lock like any click); the Monomachine's old kit number on the left scale is gone (the line carries it); Alt (erase) and Shift (ramp) presses stay the lane's, and a press anywhere else draws as before. Tests: `mdDeskPageTest`, `mmLockLaneTest`, page journeys `md-lane-kit-drag`, `mm-lane-kit-drag`; the journey hands keep 9 px off the line when they press the lane (`deskJourney.js` pointIn).
+
 ## I-034 · GEN settings: Keep on for every track by default, placed between the patterns and the mutes/solos
 
 - **From:** a beta tester on Discord, 2026-10-12 (0.5.1 / 0.6 line).
@@ -28,15 +92,15 @@
 
 - **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("a blue LED lit up on a track if it was triggered from another track").
 - **Today:** the rail lamps (I-028) light a track only for its own trigs (Monomachine `mmStudio/mmMockup.js` ~6239, Machinedrum `mdStudio/mdDeskTop.js:325`). A track that plays because of the Monomachine's kit Trig position (`trigpos`, Sequence > Trig setup: "Also play T2") or the Machinedrum's trig group (`trigGroup`, `mdDeskSound.js:82`) stays dark.
-- **The idea:** light that track's lamp too, in a second colour (blue, or the LCD ink), from the same data the lamps use: the step telemetry, the pattern and the kit's trig relations, no audio. One trig relation each, they do not chain (as the page says), so it stays one look-up a step.
-- **Status:** planned for 0.8 (WP9, doc/release/PLAN-0.8.md).
+- **The idea:** light that track's lamp too, in a second colour (blue, or the LCD ink), from the same data the lamps use: the step telemetry, the pattern and the kit's trig relations, no audio. Each track has one trig relation, and the forwarding follows on from track to track (T1 to T2 to T3, at most six hops), so it stays a short look-up a step.
+- **Status:** built on feat/0.8-mm-tester-items (WP9), Monomachine only. The data exists on the page: a track's `trigpos` (Sequence > Trig setup > Trig position) names the track its notes are forwarded to, and the forwarding follows on (T1 to T2 to T3, as the journey mm-seq-trig-setup shows). On Sequence and Sound, when a track's own trig lights its rail number, the tracks it forwards to light in blue (`trig2`, `--fwd`) unless they trig themselves on that step; a muted track or one a solo leaves out stays dark. Page only (`130-main.js` railLamps, fwdTargets; `20-mm.css`), journey `mm-seq-rail-lamps-forwarded`. The Machinedrum is not done: its trig group (`trigGroup`) is a different relation (one track's trig plays another's machine), to be decided; the Mix strip squares do not show it either.
 
 ## I-030 · Name the trig mark of the lock lane (red and green)
 
 - **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("in the locked parameters view some trigs were green and some were red at the top, what is that?").
 - **Today:** on the Monomachine's lock lane each step with a trig has a small mark at its top: red when the trig fires all three envelopes (AMP, FILTER, LFO), green when it fires only some of them or none (a trigless trig) (`mmStudio/mmStudio.css:1617-1619`, `src/50-state.js:55` stepKind). The step's tip says only "Locked …" or "Kit value …", and the guide's PARAMETER LOCKS section (`doc/guide/mm/13-parameter-locks.md`) does not mention the mark; the roll's step legend (?) names trigless trigs but not this mark.
 - **The idea:** say it where it shows: the lane step's tip adds "all envelopes" / "some envelopes" / "trigless", and one sentence in chapter 13 ("A red mark at the top of a bar: the trig fires every envelope; green: only some, or none"). No new control.
-- **Status:** planned for 0.8 (WP9, doc/release/PLAN-0.8.md).
+- **Status:** done on feat/0.8-mm-tester-items (WP9): the lane bar's tip ends with "all envelopes", "some envelopes" or "trigless" (`70-seq.js`), and doc/guide/mm/13-parameter-locks.md says what the red and green mark mean.
 
 ## I-029 · A quick way back to the original sound while you play with the Sound page
 
@@ -226,7 +290,7 @@
 
 - **From:** Discord tester B, 2026-10-07.
 - **Idea:** an option to switch the selected track (instrument focus) to the one last played from an external MIDI controller.
-- **Status:** new.
+- **Status:** done on `feat/0.8-follow-track` (WP7 of PLAN-0.8), not yet merged. Both editors: engine menu entry FOLLOW PLAYED TRACK: OFF / ON (off at first, no new control). On, a note from a MIDI controller (the plug-in's `midiIn`, host or port, never the editor's own keyboard or audition) selects the track it plays: Machinedrum, the track the Global key map gives the note on the four base channels; Monomachine, the synth track whose channel (base + t inside CHANNEL SPAN) it arrives on. Another channel or an unmapped note changes nothing. Kept with the project in the editor's setup (`followPlayed`, written only when on; no new chunk). Journeys md-follow-played-track, mm-follow-played-track; tests in mdDeskTest and mmDeskTest.
 
 ## I-002 · Show incoming notes on the Sound page
 

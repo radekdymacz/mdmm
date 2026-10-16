@@ -88,7 +88,9 @@ const pchRatio=e=>e.t.includes("/");
 /* B-150: DigiPRO waves. DPRO-DDRW WAV1 WAV2 and DPRO-DENS WAVE: D01-D64, two values a wave (71 = D36, 127 = D64);
    r: the wave's index. DPRO-WAVE WAVE is S01-S32, four values a wave (10 = S03, 126 = S32): an enumeration of the
    catalogue (mmSynthEnum), so the page holds its index (EN below) and the host sends the machine's value */
-const WAVD=Array.from({length:64},(_,k)=>({lo:k*2,t:"D"+String(k+1).padStart(2,"0"),r:k}));
+/* the 64 names are what the LCD writes above the number (OS 1.32B, mmEditorProbeFirmwareTest enums; names only) */
+const WAVDN="SINE HSIN TRI 2OID SQR SAW ISAW RND SYN1 SYN2 SYN3 SYN4 SYN5 SYN6 SYN7 SYN8 ORG1 ORG2 ORG3 ORG4 ORG5 ORG6 ORG7 ORG8 ORG9 ORGA ORGB ORGC ORGD ELP1 ELP2 ELP3 STR1 STR2 STR3 STR4 STR5 STR6 STR7 STR8 WND1 WND2 WND3 WND4 WND5 WND6 WND7 WND8 MALA MALO MALU MALÄ MALE MALI MALÅ MALÖ FEMA FEMO FEMU FEMÄ FEME FEMI FEMÅ FEMÖ".split(" ");
+const WAVD=Array.from({length:64},(_,k)=>({lo:k*2,t:"D"+String(k+1).padStart(2,"0"),n:WAVDN[k],r:k}));
 const WAVS=Array.from({length:32},(_,k)=>"S"+String(k+1).padStart(2,"0"));
 EN["DPRO-WAVE.WAVE"]=WAVS;
 const TAB={"FM+STAT.1FRQ":FMFRQ,"FM+STAT.2FRQ":FMFRQ,"FM+PAR.1FRQ":FMFRQ,"FM+PAR.2FRQ":FMFRQ,"FM+PAR.3FRQ":FMFRQ,"FM+DYN.1FRQ":FMDYN1,"FM+DYN.2FRQ":FMDYN2,

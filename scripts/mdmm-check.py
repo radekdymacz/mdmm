@@ -294,7 +294,7 @@ def check_map(rows):
 			problems.append(f"{path} takes {got}, not {want}")
 	# the design sources are not documentation: they take the tests and journeys of the page they make (the canonical
 	# sources used to fall to doc/* and select nothing; development-process-0.6.md finding 3)
-	for path, tests_want, page_want in [("source/elektron/md/mdJucePlugin/skins/mmStudio/src/70-seq.js", "mmViewPageTest", ["mm-seq-*"]),
+	for path, tests_want, page_want in [("source/elektron/md/mdJucePlugin/skins/mmStudio/src/70-seq.js", "mmViewPageTest", ["mm-note-*", "mm-roll-*", "mm-seq-*"]),
 			("source/elektron/md/mdJucePlugin/skins/mmStudio/src/120-song.js", "mmViewPageTest", ["mm-song-*"]),
 			("source/elektron/md/mdJucePlugin/skins/mmStudio/src/55-host.js", "mmViewPageTest", ["mm-*"]),
 			("source/elektron/md/mdJucePlugin/skins/mmStudio/src/25-mm.css", "deskCompatPageTest", ["mm-*"]),
@@ -309,8 +309,14 @@ def check_map(rows):
 	if p.ctest_all or p.ctest != ["mmDeskTest"] or p.page != ["mm-*"]:
 		problems.append(f"mmDeskEdit.cpp selects {p.ctest} (all: {p.ctest_all}), journeys {p.page}")
 	p = Plan(["source/elektron/md/mdJucePlugin/skins/mmStudio/src/70-seq.js", "source/elektron/md/mdJucePlugin/skins/mmStudio/mmMockup.js"], rows)
-	if p.page != ["mm-seq-*"]:
-		problems.append(f"a source with its generated page selects journeys {p.page}, not mm-seq-*")
+	if p.page != ["mm-note-*", "mm-roll-*", "mm-seq-*"]:
+		problems.append(f"a source with its generated page selects journeys {p.page}, not mm-note-*, mm-roll-*, mm-seq-*")
+	# the selection and comforts sources and the MD grid gestures run the new note-click journeys (I-036: mm-note-click-arrows, md-step-click-select)
+	for path, want in [("source/elektron/md/mdJucePlugin/skins/mmStudio/src/77-select.js", "mm-note-click-arrows"), ("source/elektron/md/mdJucePlugin/skins/mmStudio/src/75-comforts.js", "mm-note-click-arrows"),
+			("source/elektron/md/mdJucePlugin/skins/mdStudio/mdDeskGestures.js", "md-step-click-select")]:
+		p = Plan([path], rows)
+		if not any(fnmatch.fnmatch(want, g) for g in p.page):
+			problems.append(f"{path} selects journeys {p.page}, which do not include {want}")
 	# the preview's scenarios take their own check and nothing wider (a scenario is data the contract judges)
 	for path in ("doc/modern-ux/scenarios/md/busy.json", "doc/modern-ux/scenarios/mm/_machine.json", "scripts/mdmm-scenario.mjs"):
 		p = Plan([path], rows)

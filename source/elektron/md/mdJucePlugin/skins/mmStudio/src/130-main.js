@@ -38,7 +38,7 @@ function secAction(kind){const t=S.sel,tr=trk(t);
   if(kind==="clear"){A.assign=newAssign();editAssign(asgT(),A.assign);render();return}if(kind==="paste"){if(CLIP?.type!=="assign"){toast("Copy an assign first.");return}A.assign=JSON.parse(JSON.stringify(CLIP.a));editAssign(asgT(),A.assign);render();toast("Pasted the assign tabs.");return}}
  if(S.ws==="song"){const i=S.songSel,r=S.song[i];if(kind==="copy"){if(r.type==="end"){toast("END cannot be copied.");return}CLIP={type:"row",row:JSON.parse(JSON.stringify(r))};edit("copyRow",{i});toast("Copied row "+String(i+1).padStart(3,"0")+".");return}
   if(kind==="clear"){songAction("del");return}if(kind==="paste"){if(CLIP?.type!=="row"){toast("Copy a song row first.");return}if(S.song.length>=200){toast("A song holds 200 rows.");return}const at=r.type==="end"?i:i+1;S.song.splice(at,0,JSON.parse(JSON.stringify(CLIP.row)));S.songSel=at;edit("pasteRow",{i:at});render();return}}
- toast("Copy, clear and paste work in Sequence (page), Sound (machine), Perform (assign) and Song (row).")}
+ toast("Copy, clear and paste work in Pattern (page), Kit (machine), Perform (assign) and Song (row).")}
 
 /* ===== First run: firmware needed ===== */
 function firstRun(){if(HOST.firstRun)return HOST.firstRun();ask(`<div class="lcdbig">MONOMACHINE FIRMWARE NEEDED</div>
@@ -109,7 +109,8 @@ main.addEventListener("pointerdown",e=>{
  const c=e.target.closest("canvas.ed");if(c){const hh=nearest(c,e);if(!hh)return;active={c,k:hh.k,all:e.altKey&&!isMidiT(S.sel)};if(active.all)allTip();c.setPointerCapture(e.pointerId);e.preventDefault();redraw();return}
  const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el&&ValueEdit.isOpenClick(e)){e.preventDefault();ValueEdit.open(el,ValueBox);return}
  if(el){const t=el.dataset.t!=null?+el.dataset.t:S.sel;drag={el,x:e.clientX,y:e.clientY,v:getV(el),vert:el.classList.contains("fader"),hz:el.classList.contains("hz")&&el.getBoundingClientRect().width,mx:maxOf(ref(el)[2]),all:e.altKey&&!isMidiT(t)&&PAGES.includes(el.dataset.g)};if(drag.all)allTip();el.setPointerCapture(e.pointerId);el.classList.add("act");e.preventDefault();return}
- const lb=e.target.closest(".lb");if(lb){laneDraw=e.shiftKey&&!e.altKey?{ramp:true,touched:false}:{erase:e.altKey,touched:false};$("#lane").setPointerCapture(e.pointerId);laneAt(e);e.preventDefault();return}
+ const lb=e.target.closest(".lb");if(lb&&kitGrab(e))return
+ if(lb){laneDraw=e.shiftKey&&!e.altKey?{ramp:true,touched:false}:{erase:e.altKey,touched:false};$("#lane").setPointerCapture(e.pointerId);laneAt(e);e.preventDefault();return}
  const ac=e.target.closest(".ac");if(ac){const k=+ac.dataset.ac,a=trk(S.sel).arp;if(k>=a.len){a.len=k+1;edit("arp",{t:S.sel,field:"length",v:a.len});renderArp();return}arpDrag={k,y:e.clientY,moved:false};$("#arptrack").setPointerCapture(e.pointerId);e.preventDefault();return}
  if(e.target.closest("#joy")){joyDrag=true;$("#joy").setPointerCapture(e.pointerId);joyAt(e);e.preventDefault();return}
  if(e.target.closest("#splitm")){splitDrag=true;$("#splitm").setPointerCapture(e.pointerId);e.preventDefault();return}
@@ -128,7 +129,9 @@ main.addEventListener("pointermove",e=>{
  if(joyDrag){joyAt(e);return}
  if(splitDrag){const kb=$("#kb").getBoundingClientRect(),[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const i=clamp(Math.round((e.clientX-kb.left)/kb.width*whites.length),1,whites.length-1);if(S.multi.splitKey!==whites[i]){S.multi.splitKey=whites[i];$("#kb").innerHTML=renderKb();$("#splitm").setPointerCapture?.(e.pointerId)}return}
  if(kbDown){const k=document.elementFromPoint(e.clientX,e.clientY)?.closest(".kb [data-key]");if(k&&KBLIT.mouse!==+k.dataset.key)playKey(+k.dataset.key);return}
- const c=e.target.closest?.("canvas.ed");if(c)c.style.cursor=ED[c.dataset.ed]?.cursor?.(c,e)||(nearest(c,e)?"grab":"default")});
+ const c=e.target.closest?.("canvas.ed");if(c)c.style.cursor=ED[c.dataset.ed]?.cursor?.(c,e)||(nearest(c,e)?"grab":"default");
+ /* the kit line is grabbed with a vertical arrow */
+ const ln=$("#lane");if(ln)ln.classList.toggle("kithot",!e.altKey&&!e.shiftKey&&!!kitHit(e))});
 function allTip(){if(S.allTold)return;S.allTold=1;toast("Control All: this value moves on all six synth tracks by the same amount (MIDI tracks stay).")}
 function endDrag(e){trnUp();if(cord){cordEnd(e);return}if(rollDrag)rollUp();if(active){active=null;redraw()}if(drag){drag.el.classList.remove("act");drag=null}endLaneDraw();
  if(kbDown&&HOST.keyUp)HOST.keyUp();
@@ -204,7 +207,7 @@ document.addEventListener("click",e=>{
  const pmk=e.target.closest("[data-pmode]");if(pmk){S.mode=pmk.dataset.pmode;S.polyT=S.mode==="poly"?asgT():null;if(HOST.keyMode)HOST.keyMode(S.mode,asgT());if(S.mode==="poly")toast("POLY: T"+(asgT()+1)+" now plays six voices. The other five tracks are silent until you leave POLY.");render();return}
  const so2=e.target.closest("[data-strk]");if(so2){S.multi.splitTrack=clamp(S.multi.splitTrack+ +so2.dataset.strk,2,6);edit("multiTrig",{splitTrack:S.multi.splitTrack-1});render();return}
  const tm=e.target.closest("[data-tim]");if(tm){S.multi.timing=clamp(S.multi.timing+ +tm.dataset.tim,0,6);edit("multiTrig",{timing:S.multi.timing});render();return}
- const ko=e.target.closest("[data-kboct]");if(ko){S.kbOct=clamp(S.kbOct+ +ko.dataset.kboct,0,6);render();return}
+ const ko=e.target.closest("[data-kboct]");if(ko){S.kbOct=clamp(S.kbOct+ +ko.dataset.kboct,KBOCT[0],KBOCT[1]);render();return}
  const bd=e.target.closest("[data-band]");if(bd){S.mmapSel=+bd.dataset.band;render();return}
  const mr=e.target.closest("tr[data-mrow]");if(mr&&!e.target.closest("button,.pc,.kselbtn")){S.mmapSel=+mr.dataset.mrow;render();return}
  const mh=e.target.closest("[data-mhi]");if(mh){const i=+mh.dataset.i,r=S.mmap[i],lo=i?S.mmap[i-1].hi+1:0,nx=S.mmap[i+1];r.hi=clamp(r.hi+ +mh.dataset.mhi,lo,nx?nx.hi-1:127);edit("multiMap",{i,hi:r.hi});render();return}
@@ -238,6 +241,7 @@ document.addEventListener("click",e=>{
  if(e.target.closest("#undo")){undo();return}if(e.target.closest("#redo")){redo();return}
  const sc=e.target.closest("[data-sec]");if(sc){if(e.altKey&&sc.dataset.sec==="clear")clearPattern();else secAction(sc.dataset.sec);return}
  if(e.target.closest("#syncf.warn")){sendDialog();return}
+ if(e.target.closest("#kitPrev,#kitNext")){kitStep(e.target.closest("#kitNext")?1:-1);return}
  if(e.target.closest("#kitf")){toggleLib("kit");return}
  if(e.target.closest("#pat")){toggleLib("pat");return}
  if(e.target.closest("#learnkey")){S.learn=!S.learn;S.learnT=null;document.body.classList.toggle("learn",S.learn);renderTop();if(S.learn)toast("LEARN: click a value, then press 1-8 for a controller knob.");if(HOST.learning)HOST.learning(S.learn);return}
@@ -252,6 +256,7 @@ document.addEventListener("change",e=>{const id=e.target.id,v=e.target.value,tr=
  if(id==="engsel"){const btn=document.querySelector(".lcdeng");if(v==="global"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;openGlobal();return}if(v==="audio"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;openAudio();return}if(v==="rom"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.romManage)HOST.romManage();else firstRun();return}
   if(v==="import"||v==="export"||v==="reset"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;Syx.menu(v);return}
   if(v==="memoryKeep"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.memory)HOST.memory("keep");return}
+  if(v==="followPlayed"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.follow)HOST.follow();return}
   S.engine=v;S.pend=0;renderPst();if(HOST.engine)HOST.engine(v);else startEngine(v);return}
  let m=id.match(/^lp(\d)$/);if(m){editTrack(S.sel,()=>{const l=V("LF"+m[1]);l[0]=+v;l[1]=0});render();return}
  m=id.match(/^ld(\d)$/);if(m){editTrack(S.sel,()=>{V("LF"+m[1])[1]=+v});render();return}
@@ -271,18 +276,18 @@ Keys.bind({id:"close-dialog",scope:"any",keys:["Escape"],group:"Anywhere",does:"
 Keys.bind({id:"undo",scope:"any",keys:["Z"],mod:"cmd",group:"Anywhere",does:"Undo",modal:"panel",run:()=>undo()});
 Keys.bind({id:"redo",scope:"any",keys:["Z"],mod:"cmd+shift",group:"Anywhere",does:"Redo",modal:"panel",run:()=>redo()});
 Keys.bind({id:"redo-y",scope:"any",keys:["Y"],mod:"cmd",group:"Anywhere",does:"Redo",modal:"panel",run:()=>redo()});
-Keys.bind({id:"copy",scope:"any",keys:["C"],mod:"cmd",group:"Anywhere",does:"Copy (Sequence: the selected steps, or the page shown of the track; Sound: the machine; Perform: the assign; Song: the row)",run:()=>secAction("copy")});
-Keys.bind({id:"paste",scope:"any",keys:["V"],mod:"cmd",group:"Anywhere",does:"Paste (Sequence: at the selected step, the block from its first step and track; into every track marked for paste)",run:()=>secAction("paste")});
+Keys.bind({id:"copy",scope:"any",keys:["C"],mod:"cmd",group:"Anywhere",does:"Copy (Pattern: the selected steps, or the page shown of the track; Kit: the machine; Perform: the assign; Song: the row)",run:()=>secAction("copy")});
+Keys.bind({id:"paste",scope:"any",keys:["V"],mod:"cmd",group:"Anywhere",does:"Paste (Pattern: at the selected step, the block from its first step and track; into every track marked for paste)",run:()=>secAction("paste")});
 Keys.bind({id:"leave-learn",scope:"control",keys:["Escape"],group:"Anywhere",does:"Leave LEARN",mapping:true,when:()=>S.mapping&&S.learn,run:()=>leaveLearn()});
 Keys.bind({id:"learn-knob",scope:"control",keys:["1 – 8"],group:"Anywhere",does:"LEARN: the controller knob for the value clicked",mapping:true});
 Keys.bind({id:"audio-settings",scope:"any",keys:[","],group:"Anywhere",does:"AUDIO / MIDI settings (also in the engine menu)"});
 Keys.bind({id:"play-stop",scope:"any",keys:["Space"],group:"Transport",does:"Play / stop (paused: go on from the step)",run:()=>playButton()});
 Keys.bind({id:"record",scope:"any",keys:["Space"],code:"Space",mod:"alt",group:"Transport",does:"Live recording (RECORD + PLAY): Alt + play, the other Alt that is not \"all\". Again: recording off",run:()=>liveRecord()});
-["seq","sound","mix","perform","song","control"].forEach((ws,i)=>Keys.bind({id:"workspace-"+(i+1),scope:"any",keys:[String(i+1)],group:"Workspaces",does:["Sequence","Sound","Mix","Perform","Song","Control"][i],mapping:ws==="control",when:ws==="control"?()=>S.mapping:null,run:()=>goWs(ws)}));
-Keys.bind({id:"page-prev-next",scope:"seq",keys:["[","]"],group:"Sequence",does:"Previous / next page",when:()=>S.ws==="seq"&&pages16()>1,run:e=>{const n=pages16();S.viewAll=false;S.page=(S.page+(e.key==="]"?1:-1)+n)%n;render()}});
-Keys.bind({id:"delete",scope:"seq song",keys:["Delete","Backspace"],group:"Sequence",does:"Clear the selected steps; with none selected nothing (Clr clears the page shown, ⌥Delete the pattern). Song: delete the row",when:()=>(S.ws==="song"||S.ws==="seq")&&S.recMode!=="step"&&S.recMode!=="live",
+["seq","sound","mix","perform","song","control"].forEach((ws,i)=>Keys.bind({id:"workspace-"+(i+1),scope:"any",keys:[String(i+1)],group:"Workspaces",does:["Pattern","Kit","Mix","Perform","Song","Control"][i],mapping:ws==="control",when:ws==="control"?()=>S.mapping:null,run:()=>goWs(ws)}));
+Keys.bind({id:"page-prev-next",scope:"seq",keys:["[","]"],group:"Pattern",does:"Previous / next page",when:()=>S.ws==="seq"&&pages16()>1,run:e=>{const n=pages16();S.viewAll=false;S.page=(S.page+(e.key==="]"?1:-1)+n)%n;render()}});
+Keys.bind({id:"delete",scope:"seq song",keys:["Delete","Backspace"],group:"Pattern",does:"Clear the selected steps; with none selected nothing (Clr clears the page shown, ⌥Delete the pattern). Song: delete the row",when:()=>(S.ws==="song"||S.ws==="seq")&&S.recMode!=="step"&&S.recMode!=="live",
  run:()=>S.ws==="song"?songAction("del"):S.stepSel?secAction("clear"):toast(Modifiers.say("Nothing selected: ⌘-click or ⌘-drag steps first. Clr clears the page shown, ⌥Delete the whole pattern."))});
-Keys.bind({id:"clear-pattern",scope:"seq",keys:["Delete","Backspace"],mod:"alt",group:"All",does:"Sequence: clear the whole pattern: every track's notes, slides and locks (one undo step)",when:()=>S.ws==="seq",run:()=>clearPattern()});
+Keys.bind({id:"clear-pattern",scope:"seq",keys:["Delete","Backspace"],mod:"alt",group:"All",does:"Pattern: clear the whole pattern: every track's notes, slides and locks (one undo step)",when:()=>S.ws==="seq",run:()=>clearPattern()});
 Keys.bind({id:"clr-key-all",scope:"any",area:"Top bar",keys:["CLR"],mod:"alt",group:"All",does:"Click: clear the whole pattern, every track's notes, slides and locks (one undo step)"});
 Keys.bind({id:"song-row",scope:"song",keys:["ArrowLeft","ArrowRight"],group:"Song",does:"Previous / next row",when:()=>S.ws==="song",run:e=>{S.songSel=clamp(S.songSel+(e.key==="ArrowRight"?1:-1),0,S.song.length-1);render()}});
 Keys.bind({id:"value-up-down",scope:"any",keys:["ArrowUp","ArrowDown"],group:"Values",does:"A focused value, tempo or bar: one step (⇧: ×10, tempo: fine)"});
@@ -290,12 +295,13 @@ Keys.bind({id:"value-left-right",scope:"any",keys:["ArrowLeft","ArrowRight"],gro
 Keys.bind({id:"control-all",scope:"sound mix",area:"Values",keys:["drag a value"],mod:"alt",group:"All",does:"Control All: move that value on every synth track (an editor feature; the Monomachine has no such key)"});
 Keys.bind({id:"mkey-prepare",scope:"any",area:"Tracks",keys:["M key"],mod:"shift",group:"Anywhere",does:"Click: prepare that track's mute (+ / X); applied when ⇧ is let go"});
 Keys.bind({id:"ms-paint",scope:"any",area:"Tracks",keys:["drag M / S keys"],group:"Anywhere",does:"Mute (solo) or unmute every track the drag crosses, as the first key became"});
-Keys.bind({id:"roll-chord",scope:"seq",area:"Roll",keys:["roll"],mod:"shift",group:"Sequence",does:"Click: a chord note on the step"});
-Keys.bind({id:"roll-paint",scope:"seq",area:"Roll",keys:["roll"],group:"Sequence",does:"Click an empty step: a note there, as long as the Len key says; drag it up or down for its pitch, sideways to paint that note on every empty step crossed (the last one as long as the Len key says; one undo step)."});
-Keys.bind({id:"roll-erase",scope:"seq",area:"Roll",keys:["roll"],mod:"alt",group:"Sequence",does:"Click: delete a note, the note before it keeps its length (drag on: every step crossed loses its notes, one undo step), or a NOTE OFF on an empty step"});
-Keys.bind({id:"lane-draw",scope:"seq",area:"Lock lane",keys:["lock lane"],group:"Sequence",does:"Drag over the bars: lock the lane's parameter on each step with a trig"});
-Keys.bind({id:"lane-erase",scope:"seq",area:"Lock lane",keys:["lock lane"],mod:"alt",group:"Sequence",does:"Drag: erase locks"});
-Keys.bind({id:"lane-clear-all",scope:"seq",area:"Lock lane",keys:["lock lane clear"],mod:"alt",group:"Sequence",does:"Click: clear every lock of the track (all its parameters)"});
+Keys.bind({id:"roll-chord",scope:"seq",area:"Roll",keys:["roll"],mod:"shift",group:"Pattern",does:"Click: a chord note on the step"});
+Keys.bind({id:"roll-paint",scope:"seq",area:"Roll",keys:["roll"],group:"Pattern",does:"Click an empty step: a note there, as long as the Len key says; drag it up or down for its pitch, sideways to paint that note on every empty step crossed (the last one as long as the Len key says; one undo step)."});
+Keys.bind({id:"roll-erase",scope:"seq",area:"Roll",keys:["roll"],mod:"alt",group:"Pattern",does:"Click: delete a note, the earlier note runs on to the next trig or NOTE OFF, as on the machine; no NOTE OFF is written or taken away (drag on: every step crossed loses its notes, one undo step), or a NOTE OFF on an empty step"});
+Keys.bind({id:"roll-select-note",scope:"seq",area:"Roll",keys:["note"],group:"Pattern",does:"Click a note: select it (it stays selected: ↑ / ↓ its pitch, ⇧ an octave, Delete removes it). Double-click: delete it (one undo step)"});
+Keys.bind({id:"lane-draw",scope:"seq",area:"Lock lane",keys:["lock lane"],group:"Pattern",does:"Drag over the bars: lock the lane's parameter on each step with a trig"});
+Keys.bind({id:"lane-erase",scope:"seq",area:"Lock lane",keys:["lock lane"],mod:"alt",group:"Pattern",does:"Drag: erase locks"});
+Keys.bind({id:"lane-clear-all",scope:"seq",area:"Lock lane",keys:["lock lane clear"],mod:"alt",group:"Pattern",does:"Click: clear every lock of the track (all its parameters)"});
 
 /* a control surface: nothing selects on a drag but the text fields (the stylesheet has user-select none on the body,
    text on the fields); selectstart is refused outside them too (WebKit, the plug-in's engine) */
@@ -363,12 +369,15 @@ function stepShown(prev){if(S.step===prev)return;const pp=Math.floor(S.step/16);
  $("#tempoled").classList.toggle("on",S.step%4===0);setPos();queueMicrotask(movePH);
  if(S.ws==="perform"){const act=[0,1,2,3,4,5].filter(i=>{const st=S.tracks[i].steps[S.step];return st&&!st.off&&st.a&&audible(i)&&(S.mode!=="poly"||i===asgT())});flashTracks(act)}
  if(S.ws==="mix"&&S.playing&&S.step>=0)DeskTrig.light([0,1,2,3,4,5].filter(i=>{const st=S.tracks[i].steps[S.step];return st&&!st.off&&st.a&&audible(i)}));
- if((S.ws==="seq"||S.ws==="sound")&&S.playing&&S.step>=0)railLamps(side().filter(i=>{const st=trk(i).steps[S.step];return st&&!st.off&&(isMidiT(i)||st.a)&&audible(i)}))}
+ if((S.ws==="seq"||S.ws==="sound")&&S.playing&&S.step>=0){const own=side().filter(i=>{const st=trk(i).steps[S.step];return st&&!st.off&&(isMidiT(i)||st.a)&&audible(i)});railLamps(own);railLamps(fwdTargets(own).filter(i=>side().includes(i)),"trig2")}}
 /* I-028 (Discord 2026-10-12): on Sequence and Sound a rail track's number lights while its trig plays (the step
    telemetry and the pattern, no audio), as the Perform page's lamps; every lamp of a step in one frame */
 const RailLamps={due:null,off:new Map()};
-function railLamps(ts){if(!ts.length)return;const first=!RailLamps.due;RailLamps.due=new Set([...(RailLamps.due||[]),...ts]);if(!first)return;
- requestAnimationFrame(()=>{const due=RailLamps.due;RailLamps.due=null;for(const i of due){const l=$(`#rail .th[data-sel="${i}"]`);if(!l)continue;l.classList.add("trig");clearTimeout(RailLamps.off.get(i));RailLamps.off.set(i,setTimeout(()=>$(`#rail .th[data-sel="${i}"]`)?.classList.remove("trig"),110))}})}
+/* I-031: cls "trig2" (a second colour) lights a track that plays because another track's trig forwards to it (the kit's
+   Trig position, trigpos: the source's own trig makes the target play, and on to that track's own target) */
+function railLamps(ts,cls="trig"){if(!ts.length)return;const first=!RailLamps.due;RailLamps.due=RailLamps.due||new Map();for(const i of ts)RailLamps.due.set(i+cls,[i,cls]);if(!first)return;
+ requestAnimationFrame(()=>{const due=RailLamps.due;RailLamps.due=null;for(const[k,[i,c]]of due){const l=$(`#rail .th[data-sel="${i}"]`);if(!l)continue;l.classList.add(c);clearTimeout(RailLamps.off.get(k));RailLamps.off.set(k,setTimeout(()=>$(`#rail .th[data-sel="${i}"]`)?.classList.remove(c),110))}})}
+function fwdTargets(own){const out=new Set();for(const i of own){let c=i;for(let h=0;h<6;h++){const j=isMidiT(c)?null:trk(c).trigpos;if(j==null||j===i||out.has(j))break;out.add(j);c=j}}return[...out].filter(j=>!own.includes(j)&&audible(j))}
 /* the playhead's page while following: the sequencer only (renderPage's work for it), not the whole page */
 function followPage(){const sl=$("#seqscroll")?.scrollLeft||0;renderSeq();const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));movePH(false)}
 function stepMs(){const m={"1X":1,"2X":2,"3/4X":.75,"3/2X":1.5}[S.mult];return 60000/S.bpm/4/m}
@@ -528,7 +537,7 @@ function setRecord(mode,at=-1){const on=mode==="grid"||mode==="live",was=S.recMo
 /* an engine state's LCD label: [text, led "on" | "blink" | "off", tooltip] */
 function setEngineLabel(st,label){ENG[st]=label;if(S.eng===st)setEng(st)}
 /* a host's engine map ([{id, label, available, reason}]) in the engine menu, before the menu's own entries */
-function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const own=["audio","global","rom","import","export","reset","memoryKeep"];
+function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const own=["audio","global","rom","import","export","reset","memoryKeep","followPlayed"];
  for(const o of [...sel.options])if(!own.includes(o.value)&&!list.some(e=>e.id===o.value))o.remove();
  const first=[...sel.options].find(o=>own.includes(o.value))||null;
  for(const e of list){let o=sel.querySelector(`option[value="${e.id}"]`);if(!o){o=document.createElement("option");o.value=e.id}sel.insertBefore(o,first);o.textContent=e.label;o.disabled=!e.available;o.title=e.available?"":e.reason||""}
@@ -538,6 +547,16 @@ function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const ow
 function setMemory(m){S.mem=m;const k=document.querySelector('#engsel option[value="memoryKeep"]');if(!k)return;
  k.hidden=!m.available;k.textContent="KEEP MEMORY: "+(m.keep?"ON":"OFF");k.dataset.saved=m.saved?"1":"0";
  k.title=m.note||(m.keep?"New sessions without a DAW project start with what you saved on the machine. Click to turn it off.":"New sessions start from factory memory. Click to keep what you save on the machine for new sessions.")}
+/* I-003: the engine menu's FOLLOW PLAYED TRACK as the host says (on / off); shown once the host has said. The host
+   selects the track a MIDI controller played (selectTrack: the click on a track) */
+function setFollow(on){const k=document.querySelector('#engsel option[value="followPlayed"]');if(!k)return;
+ k.hidden=false;k.textContent="FOLLOW PLAYED TRACK: "+(on?"ON":"OFF");
+ k.title=on?"The selected track follows the last track played from a MIDI controller. Click to turn it off.":"Click to make the selected track follow the last track played from a MIDI controller."}
+/* I-003: the host's selectTrack: at most one selection per frame (the last note's track); a question open or LEARN
+   waiting for its note leaves the selection where it is */
+const FOLLOW={t:0,raf:0};
+function followSelect(t){FOLLOW.t=t;if(FOLLOW.raf)return;FOLLOW.raf=requestAnimationFrame(()=>{FOLLOW.raf=0;
+ if(FOLLOW.t===S.sel||!$("#dlg").hidden||GP.learn!=null)return;select(FOLLOW.t)})}
 /* the AUDIO / MIDI entry of the engine menu: only where the host has the devices (a standalone) */
 function setAudioEntry(on){const o=document.querySelector('#engsel option[value="audio"]');if(o)o.hidden=o.disabled=!on;Boot.midiRefresh()}
 /* the app sources and their links as the host's engine took them (ctlSetup() shape); the knob rows and their links stay */
@@ -599,7 +618,7 @@ window.MMView={
  setSongSteps:n=>{S.songSteps=n;const st=document.getElementById("arrstate");if(st&&st.textContent!==arrState())st.textContent=arrState()},
  setEng,dlgOpen:()=>!$("#dlg").hidden,setEngineLabel,setEngineTip,setEngines,setAudioEntry,setMemory,clearLearnTarget:()=>{S.learnT=null},setMapping,setModulation,setCtlSetup,disable,
  setRecord,setRecLock,
- setLcd,setKeyDown,setMidiHeld,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
+ setFollow,selectTrack:followSelect,setLcd,setKeyDown,setMidiHeld,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
  /* calls */
  render,renderTop,drawLib,toast,ask,redraw,movePH,setPos,flashTracks,goWs,clickStep,autoRange,kitSave,
  redrawAudio:()=>{if(AP.open)drawAudio()},audioLevel,openAudio};

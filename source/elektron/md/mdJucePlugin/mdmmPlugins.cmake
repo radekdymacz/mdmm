@@ -38,6 +38,7 @@ list(APPEND SOURCES
 	mdStandaloneApp.cpp
 	mdBootDiagnostics.cpp mdBootDiagnostics.h mdCpuLoad.h mdOutputLevel.h mdMidiIn.h mdMachineMemory.h
 	mdMachineMemoryService.cpp mdMachineMemoryService.h mdMachineMemoryDevice.cpp mdMachineMemoryDevice.h
+	mdMachineFacts.cpp mdMachineFacts.h
 	mdProcessArch.cpp mdProcessArch.h mdRosettaNotice.h
 	mdDeskSession.cpp mdDeskSession.h
 	mdMidiLearnCommands.cpp mdMidiLearnCommands.h
@@ -81,6 +82,7 @@ list(APPEND SOURCES
 	skins/mmStudio/mmKeysTest.js
 	skins/mmStudio/mmGenTest.js
 	skins/mmStudio/mmRollTest.js
+	skins/mmStudio/mmLockLaneTest.js
 	skins/mmStudio/mmSoundTest.js
 	skins/mmStudio/mmSelfTest.js
 	skins/mmStudio/mmJourneys.js
@@ -176,9 +178,9 @@ set(MD_NODE_TESTS "skins/mdStudio/mdDeskModelTest.js" "skins/mdStudio/mdDeskGenT
 set(MD_SELF_TESTS "skins/mdStudio/mdDeskSelfTest.js" "skins/shared/deskAudioSelfTest.js"
 	"skins/mdStudio/mdDeskJourneys.js" "skins/shared/deskJourney.js")
 set(MM_SELF_TESTS "skins/mmStudio/mmSelfTest.js" "skins/mmStudio/mmJourneys.js" "skins/shared/deskJourney.js")
-# the MM glob names its page files, so its node tests (mmConvertTest.js, mmKeysTest.js, mmGenTest.js, mmRollTest.js, mmSoundTest.js,
+# the MM glob names its page files, so its node tests (mmConvertTest.js, mmKeysTest.js, mmGenTest.js, mmRollTest.js, mmLockLaneTest.js, mmSoundTest.js,
 # mmViewTest.js and its fixture) never ship; checked to be there
-set(MM_NODE_TESTS "skins/mmStudio/mmConvertTest.js" "skins/mmStudio/mmKeysTest.js" "skins/mmStudio/mmGenTest.js" "skins/mmStudio/mmRollTest.js" "skins/mmStudio/mmSoundTest.js"
+set(MM_NODE_TESTS "skins/mmStudio/mmConvertTest.js" "skins/mmStudio/mmKeysTest.js" "skins/mmStudio/mmGenTest.js" "skins/mmStudio/mmRollTest.js" "skins/mmStudio/mmLockLaneTest.js" "skins/mmStudio/mmSoundTest.js"
 	"skins/mmStudio/mmViewTest.js" "skins/mmStudio/mmViewFixture.json")
 # the shared page files' node tests (never in a glob, so never shipped); checked to be there
 set(SHARED_NODE_TESTS "skins/shared/deskGenTest.js" "skins/shared/deskOverlayTest.js" "skins/shared/deskBridgeTest.js"

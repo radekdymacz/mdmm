@@ -7,7 +7,7 @@ The page has a top bar and a body. The top bar holds the five workspace tabs, th
 
 ![The Monomachine Editor](shot:mm-page-overview)
 
-The workspaces are **Sequence**, **Sound**, **Mix**, **Perform** and **Song**. Press {key:workspace-1} to {key:workspace-5} to go to one. A sixth workspace, **Control**, appears only when the plug-in has MIDI mapping on, and it is pressed with {key:workspace-6}.
+The workspaces are **Pattern**, **Kit**, **Mix**, **Perform** and **Song**. Press {key:workspace-1} to {key:workspace-5} to go to one. A sixth workspace, **Control**, appears only when the plug-in has MIDI mapping on, and it is pressed with {key:workspace-6}.
 
 ## MASTER VOLUME AND LCD
 <!-- rows: MM-012 MM-013 @428894 -->
@@ -39,7 +39,7 @@ To set the level of a track:
 
 To type a value:
 
-1. Click **Sound** and pick a track in the rail.
+1. Click **Kit** and pick a track in the rail.
 2. Hold [⌘] and click a value box. A field opens over it with the value it shows.
 3. Type a value and press [ENTER]. The box shows it and the machine has it.
 4. Hold [⌘] and click the box again and type 999. The field stays and refuses the value.
@@ -49,9 +49,9 @@ To type a value:
 The machine's accelerated edit, where you press a knob and turn it for larger steps, is a different gesture here. Hold [⇧] while you drag for fine steps, a quarter as fast. Hold [⇧] while you turn the wheel, or press Page Up or Page Down on a focused value, to step by ten.
 
 ## DATA PAGE
-<!-- rows: MM-017 MM-018 @317d98 -->
+<!-- rows: MM-017 MM-018 @ddd2a0 -->
 
-The machine has seven DATA pages for each track: SYN, AMP, FLT, EFX, LF1, LF2 and LF3. It shows one at a time on its eight knobs. The **Sound** workspace shows every page of the selected track at once, in groups of a few values. The **Sequence** workspace has the page tabs SYN, AMP, FLT, EFX, LF1, LF2 and LF3 in the track rail. They choose the parameters the lock lane edits.
+The machine has seven DATA pages for each track: SYN, AMP, FLT, EFX, LF1, LF2 and LF3. It shows one at a time on its eight knobs. The **Kit** workspace shows every page of the selected track at once, in groups of a few values. The **Pattern** workspace has the page tabs SYN, AMP, FLT, EFX, LF1, LF2 and LF3 in the track rail. They choose the parameters the lock lane edits.
 
 Pressing both DATA PAGE keys on the machine opens the multi envelope. In the editor the multi envelope is the first card of the **Perform** workspace. What it shapes depends on the multi trig mode of the kit, which the card names: see chapter 9.
 
@@ -95,13 +95,13 @@ To mute and solo tracks:
 NOTE: Mutes act on notes. A sound that already plays rings out.
 
 ## TEMPO KEY
-<!-- rows: MM-022 MM-023 @3b98f8 -->
+<!-- rows: MM-022 MM-023 @04f58f -->
 
 The <TEMPO> field of the LCD is the tempo window of the machine. Drag it up or down: a pixel is half a beat per minute, and [⇧] makes it a tenth. With the field focused, the arrow keys step it.
 
-To tap a tempo, press {key:tap-tempo-shift}. The editor uses the average of your last taps. On every workspace except **Sequence** a plain {key:tap-tempo} taps too. On **Sequence** that key switches the piano roll's Draw mode.
+To tap a tempo, press {key:tap-tempo-shift}. The editor uses the average of your last taps. On every workspace except **Pattern** a plain {key:tap-tempo} taps too. On **Pattern** that key switches the piano roll's Draw mode.
 
-To tap a tempo on **Sequence**:
+To tap a tempo on **Pattern**:
 
 1. Press {key:tap-tempo-shift} five times, about half a second apart.
 2. <TEMPO> follows your taps. Draw mode stays as it was.
@@ -142,9 +142,9 @@ The GLOBAL page opens over the workspace. It holds the eight global slots and th
 The sixteen TRIG keys play notes and set trigs. In the editor:
 
 - The keys {key:piano-white} play the selected synth track, from any workspace. They are the white keys C to D. {key:piano-black} are the black keys above them.
-- Press {key:octave-down} or {key:octave-up} to move the octave down or up, from −3 to +3. Press {key:velocity-down} or {key:velocity-up} to step the velocity through 20, 40, 60, 80, 100 and 127.
+- Press {key:octave-down} or {key:octave-up} to move the octave down or up, from −4 to +6. The A key then plays any note from MIDI 0 to 120, and the keys above it stop at 127. Press {key:velocity-down} or {key:velocity-up} to step the velocity through 20, 40, 60, 80, 100 and 127.
 - The on-screen keyboard in the **Perform** workspace plays notes by click or drag.
-- Clicking in the piano roll of the **Sequence** workspace plays the pitch.
+- Clicking in the piano roll of the **Pattern** workspace plays the pitch.
 
 To set a trig on a step, as the TRIG keys do in grid mode, click the piano roll, or open the step menu (the ⋯ on a selected step, or a right-click).
 
@@ -155,7 +155,7 @@ On the machine, [BANK] + [TRIG] picks a pattern. In the editor click the <PATTER
 
 To play notes from the keyboard:
 
-1. Click **Sequence** and pick track 1 in the rail.
+1. Click **Pattern** and pick track 1 in the rail.
 2. Press [A]. Track 1 plays.
 3. Press [W], [T] and [P]. They play C♯, F♯ and the D♯ an octave up from the [A] key's C. [A] and [S] still play C and D.
 
@@ -185,7 +185,7 @@ The machine's [ENTER/YES] and [EXIT/NO] confirm and cancel. The editor asks in d
 The arrow keys of the machine move the cursor and set the octave of the TRIG keys. In the editor {key:value-left-right} and {key:value-up-down} step a focused value, and {key:octave-down} and {key:octave-up} set the octave of the note keys.
 
 ## BANK KEYS
-<!-- rows: MM-035 MM-036 MM-037 MM-038 @97b554 -->
+<!-- rows: MM-035 MM-036 MM-037 MM-038 @711bcf -->
 
 The machine's BANK GROUP and BANK keys choose the pattern bank. The pattern chooser shows all eight banks A to H at once. Press {key:lib-bank} inside it to jump to a bank.
 
@@ -200,9 +200,9 @@ The machine's BANK GROUP and BANK keys choose the pattern bank. The pattern choo
 
 The keys that open the secondary windows, ARP, TRANSPOSE, SWING and SLIDE, are as follows.
 
-- **Arp** and **Transpose** are tabs of the dock in the **Sequence** workspace. The **Sound** workspace has keys that go to them.
-- Swing is **Swing** in the step menu of the **Sequence** workspace, and the <SWG> field of the LCD's second line.
-- Slide is **Slide** in the step menu of the **Sequence** workspace.
+- **Arp** and **Transpose** are tabs of the dock in the **Pattern** workspace. The **Kit** workspace has keys that go to them.
+- Swing is **Swing** in the step menu of the **Pattern** workspace, and the <SWG> field of the LCD's second line.
+- Slide is **Slide** in the step menu of the **Pattern** workspace.
 
 ## RECORD, PLAY AND STOP
 <!-- rows: MM-039 MM-040 MM-041 MM-042 MM-043 MM-044 @f9d2fa -->
@@ -215,14 +215,14 @@ The record and play keys are at the top right of the LCD.
 
 To record live:
 
-1. Click **Sequence** and pick track 1 in the rail.
+1. Click **Pattern** and pick track 1 in the rail.
 2. Press {key:record}. The machine plays and records.
 3. Play [A], [S] and [D]. The machine records the notes.
 4. Click the record key to switch recording off, then stop the machine.
 
 Grid recording is not needed to edit steps with the mouse. Hold [⇧] and click the record key while the machine is stopped to start step recording, the machine's [STOP] + [REC]. The key shows STEP. See "Step recording" in chapter 11.
 
-1. Click **Sequence** and pick a synth track whose first step is empty.
+1. Click **Pattern** and pick a synth track whose first step is empty.
 2. Hold [⇧] and click the record key while the machine is stopped. The cursor sits on step 1.
 3. Press [A]. The note is written to step 1 and the cursor moves on.
 4. Press [→] for a rest. The cursor moves to step 3.
@@ -255,16 +255,16 @@ COPY, CLEAR and PASTE are the three keys under the LCD, <COPY>, <CLR> and <PASTE
 
 | Workspace | They act on |
 |---|---|
-| **Sequence** | the selected steps, or else the page of steps shown |
-| **Sound** | the machine of the selected synth track, with all seven DATA pages |
+| **Pattern** | the selected steps, or else the page of steps shown |
+| **Kit** | the machine of the selected synth track, with all seven DATA pages |
 | **Perform** | the assign tabs of the selected track |
 | **Song** | the selected song row |
 
-{key:clear-pattern} on **Sequence** clears the whole pattern. Clicking <CLR> with [⌥] held does the same.
+{key:clear-pattern} on **Pattern** clears the whole pattern. Clicking <CLR> with [⌥] held does the same.
 
 To copy and paste steps:
 
-1. Click **Sequence**. Click a note with [⌘] held to select it.
+1. Click **Pattern**. Click a note with [⌘] held to select it.
 2. Press {key:copy}, or click <COPY> on the LCD.
 3. Click an empty step with [⌘] held, then press {key:paste}, or click <PASTE>. The note lands at the selected step.
 4. With nothing selected, {key:delete} clears nothing. Click <CLR> to clear the page shown.
@@ -273,17 +273,17 @@ To copy and paste steps:
 To paste the same steps into several tracks, select the steps, press {key:copy} and press [ESC]. Shift-click the headers of the tracks to mark them and press {key:paste}. Each marked track gets the copied steps.
 
 ## SCALE KEY
-<!-- rows: MM-045 MM-046 @e1f087 -->
+<!-- rows: MM-045 MM-046 @e83b74 -->
 
-The machine's [SCALE] key shows one page of 16 steps. In the editor press **Page** in the **Sequence** workspace, or press the square bracket keys, to step through the pages. Four lights show the pages the pattern has and which one is shown.
+The machine's [SCALE] key shows one page of 16 steps. In the editor press **Page** in the **Pattern** workspace, or press the square bracket keys, to step through the pages. Four lights show the pages the pattern has and which one is shown.
 
-1. Click **Sequence**, then switch **ALL** off. The roll shows one page of 16 steps.
+1. Click **Pattern**, then switch **ALL** off. The roll shows one page of 16 steps.
 2. Click **Page**. The next page shows, when the pattern is longer than 16 steps.
 3. Press {key:page-prev-next} to go back. Click **ALL** to show every step again.
 
 ![The pages of a pattern](shot:e2e-mm-seq-pages)
 
-[FUNCTION] + [SCALE] opens the scale set-up. In the editor its fields are in the LCD's second line on **Sequence**: <LEN> sets the pattern length and <SPD> the speed. Click a field to step it. Chapter 11 describes both.
+[FUNCTION] + [SCALE] opens the scale set-up. In the editor its fields are in the LCD's second line on **Pattern**: <LEN> sets the pattern length and <SPD> the speed. Click a field to step it. Chapter 11 describes both.
 
 1. Click <SPD> on the LCD four times. It reads 1X, 2X, 3/4X and 3/2X in turn.
 2. Click **×2** on the LCD. The pattern doubles and the new pages copy the first.
@@ -291,11 +291,11 @@ The machine's [SCALE] key shows one page of 16 steps. In the editor press **Page
 ## TRIG SELECT KEY
 <!-- rows: MM-047 MM-048 @565969 -->
 
-On the machine [TRIG SELECT] chooses which trig track the TRIG keys edit: AMP, FILTER, LFO or ALL. In the editor you choose the envelopes of a trig in the step menu of the **Sequence** workspace: **Envelopes**, then **Amp**, **Filter** or **LFO**. On a selection it sets every trig in it. A note that fires only some envelopes shows their letters on its bar. A trig that fires none is trigless.
+On the machine [TRIG SELECT] chooses which trig track the TRIG keys edit: AMP, FILTER, LFO or ALL. In the editor you choose the envelopes of a trig in the step menu of the **Pattern** workspace: **Envelopes**, then **Amp**, **Filter** or **LFO**. On a selection it sets every trig in it. A note that fires only some envelopes shows their letters on its bar. A trig that fires none is trigless.
 
 [FUNCTION] + [TRIG SELECT] edits the MIDI tracks. In the editor use the **Synth** and **MIDI** keys in the track rail, or the <SEQ> field in the LCD, to change between the six synth tracks and the six MIDI tracks.
 
-1. Click **Sequence**, pick track 1 and click **MIDI**. The rail shows the MIDI tracks M1 to M6, each with its own roll.
+1. Click **Pattern**, pick track 1 and click **MIDI**. The rail shows the MIDI tracks M1 to M6, each with its own roll.
 2. Click a note into each of the six MIDI tracks. Only that track changes.
 
 ![The MIDI tracks](shot:mm-midi-roll)
@@ -308,7 +308,7 @@ The SFX-6 has a keyboard and a joystick. The editor has the same functions on th
 - The **Keyboard** card plays notes. It has four modes: **Auto track**, **Multi trig**, **Multi map** and **Poly**.
 - The **Assign** card has a joystick pad. Drag the stick. It springs back when you let go. On the machine's tabletop models the pad sends pitch bend, CC 1 and CC 2.
 - **Multi trig** and **Multi map** are keys of the card.
-- The **Octave** stepper moves the on-screen keyboard.
+- The **Octave** stepper moves the on-screen keyboard over all 128 notes, from MIDI 0 up to 127.
 
 To use the Perform keyboard and joystick:
 

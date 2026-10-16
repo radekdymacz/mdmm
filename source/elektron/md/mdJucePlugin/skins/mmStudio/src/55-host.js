@@ -44,11 +44,13 @@
                                       shows their moving values with MMView.setModulation
      notes                            the host's words for the Control sources ({ccSource, appSource})
      engine(kind), firstRun(), bootScreen(on), renderPst(), engineLabels, menu(x, y) (the editor's menu at that point: the host draws it with DeskMenu, I-008)
-     syxChoose(), syxExport(request), syxStart(kinds, skip, {placeAt, checkOnly}), syxStop(), syxPlace(placeAt), syxExportInfo(),
+     syxChoose(), syxExport(request), syxStart(kinds, skip, {placeAt, checkOnly, readBack}), syxStop(), syxPlace(placeAt), syxExportInfo(),
      machineReset(how)   SysEx import and export (P7, B-019; 0.6: SPECIFIC place, VERIFY ONLY, kinds and ranges, Reset machine…): the host's file
                                       dialogs; the preview and progress come back through MMView
      removeRom(info)   REMOVE in the LOAD ROM card
      romManage()   LOAD ROM in the engine menu (a host shows which firmware runs, REPLACE and REMOVE; none: the start-up card)
+     follow()       I-003: the engine menu's FOLLOW PLAYED TRACK on / off; the state comes back with MMView.setFollow, and the
+                                      host selects the track a MIDI controller played with MMView.selectTrack
      memory(what)   I-024: "keep" (the engine menu's KEEP MEMORY on / off) or "factory" (RESET MACHINE…'s Start from
                                       factory memory, asked by the panel); the state comes back with MMView.setMemory
      chooseRom(), revealRom(), recheck()   the start-up card's keys (P7): the native file chooser for the

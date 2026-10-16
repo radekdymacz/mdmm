@@ -12,8 +12,8 @@
    (⌥ + play). ⌘ (Ctrl off a Mac) is the desktop's: ⌘Z ⌘⇧Z ⌘Y ⌘C ⌘V ⌘X ⌘D ⌘A, and on steps the selection. The view draws
    a keyboard from this map with what each key does on the page shown (or every page), the mouse's tricks per area, the
    tips, and every entry by group; holding or clicking a modifier shows its layer. */
-const KEY_GROUPS = ["Playing", "Selected track", "All", "Transport", "Workspaces", "Sequence", "Song", "Values", "Anywhere", "Kit library, pattern chooser", "Help"];
-const WS_NAMES = { seq: "Sequence", sound: "Sound", mix: "Mix", sampler: "Sampler", song: "Song", control: "Control" };
+const KEY_GROUPS = ["Playing", "Selected track", "All", "Transport", "Workspaces", "Pattern", "Song", "Values", "Anywhere", "Kit library, pattern chooser", "Help"];
+const WS_NAMES = { seq: "Pattern", sound: "Kit", mix: "Mix", sampler: "Sampler", song: "Song", control: "Control" };
 let keyView = null;
 function drawKeys() {
 	const pop = $("#keyspop"); if (!pop) return;
@@ -49,9 +49,10 @@ Keys.bind({ id: "zoom-reset", short: "Zoom 100 %", scope: "any", keys: ["0"], mo
    on the page (the "Mouse tricks" of the keyboard view). ===== */
 [
 	/* Sequence (mdDeskGestures.js, mdDeskSeq.js) */
-	["step-paint", "seq", "Steps", ["step"], "", "Sequence", "Click: trig on / off. Drag: every step crossed becomes what the first became (one undo step)"],
-	["lane-draw", "seq", "Lock lane", ["lock lane"], "", "Sequence", "Drag over the bars: lock the lane's parameter on each step with a trig"],
-	["page-key", "seq sampler", "Steps", ["Page key"], "shift", "Sequence", "Click: the previous page (a plain click: the next)"],
+	["step-paint", "seq", "Steps", ["step"], "", "Pattern", "Click an empty step: a trig there. Drag: every step crossed becomes what the first became (one undo step)"],
+	["step-select-trig", "seq", "Steps", ["trig"], "", "Pattern", "Click a trig: select it (it stays selected: Delete removes it, ← → move it). Double-click: remove it (one undo step)"],
+	["lane-draw", "seq", "Lock lane", ["lock lane"], "", "Pattern", "Drag over the bars: lock the lane's parameter on each step with a trig"],
+	["page-key", "seq sampler", "Steps", ["Page key"], "shift", "Pattern", "Click: the previous page (a plain click: the next)"],
 	/* the values (mdDeskGestures.js) */
 	["value-drag", "sound mix sampler control", "Values", ["value"], "", "Values", "Drag up / down or sideways: change it, a value a pixel"],
 	["value-fine", "sound mix sampler control", "Values", ["value"], "shift", "Values", "Drag: fine, a quarter as fast"],
@@ -64,7 +65,7 @@ Keys.bind({ id: "zoom-reset", short: "Zoom 100 %", scope: "any", keys: ["0"], mo
 	["lcd-len-inner", "any", "LCD", ["LEN"], "alt", "Anywhere", "Click or drag: the pattern's inner length instead of its total"],
 	["header-menu", "any", "Anywhere", ["right-click"], "", "Anywhere", "The editor's menu: zoom and window size, updates, the log folder, Developer"],
 	/* the GEN bar (mdDeskGenUi.js) */
-	["gen-value", "seq", "GEN bar", ["GEN value"], "", "Sequence", "Click: +1; ⇧-click: −1; drag up or down, or the wheel (⇧: 10)"],
+	["gen-value", "seq", "GEN bar", ["GEN value"], "", "Pattern", "Click: +1; ⇧-click: −1; drag up or down, or the wheel (⇧: 10)"],
 	["rkey", "any", "GEN bar", ["R key"], "", "Selected track", "Click: randomise the selected track, as R"],
 	/* tracks (mdDeskApp.js) */
 	["ms-click", "any", "Tracks", ["M / S key"], "", "Selected track", "Click: mute / solo that track"],

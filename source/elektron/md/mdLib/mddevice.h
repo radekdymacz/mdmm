@@ -12,6 +12,7 @@
 namespace md
 {
 	struct DevicePreparedStateTestAccess;
+	class DeviceStateCapture;
 
 	class Device : public synthLib::Device
 	{
@@ -116,6 +117,13 @@ namespace md
 		}
 		uint64_t deferredStateGeneration() const { return m_deferredStateGeneration; }
 		std::unique_ptr<PreparedState> takeFinishedDeferredState(uint64_t& _generation);
+		// takeFinishedDeferredState would give one now
+		bool isDeferredStateFinished() const
+		{
+			return m_deferredPreparedState && m_deferredPreparedState->m_hardware
+				&& m_restoreStatus == ProjectStateRestoreStatus::Initializing
+				&& !m_deferredPreparedState->m_hardware->isProjectStateRestorePending();
+		}
 		static std::unique_ptr<PreparedState> makeDeferredStateReboot(
 			const PreparedState& _validated);
 		// Requires exclusive access to this Device. A successful exchange leaves the
@@ -165,6 +173,30 @@ namespace md
 		void setExactEssiTiming(bool _on);
 		bool exactEssiTiming() const { return m_exactEssiTiming; }
 		uint64_t hardwareEpoch() const { return m_hardwareEpoch; }
+		// What a state save of this device depends on besides the patch RAM's bytes (DESIGN-audio-lock.md step 1):
+		// equal marks and an equal patch RAM (Hardware::patchRamEquals) give the same save, so a commit that must
+		// find the machine unchanged compares these under the lock instead of a whole getState. Same lock.
+		struct StateMark
+		{
+			uint64_t epoch = 0;
+			uint64_t generation = 0;
+			uint64_t flashWrites = 0;
+			ProjectStateRestoreStatus restoreStatus = ProjectStateRestoreStatus::Idle;
+			bool restorePending = false;
+			bool factoryBaseline = false;
+			bool candidate = false;
+
+			bool operator==(const StateMark& _other) const
+			{
+				return epoch == _other.epoch && generation == _other.generation && flashWrites == _other.flashWrites
+					&& restoreStatus == _other.restoreStatus && restorePending == _other.restorePending
+					&& factoryBaseline == _other.factoryBaseline && candidate == _other.candidate;
+			}
+			bool operator!=(const StateMark& _other) const { return !(*this == _other); }
+		};
+		StateMark stateMark() const;
+		// md::DeviceStateCapture, typed (beginStateCapture's): taken in parts with captureMore, under the same lock
+		std::unique_ptr<DeviceStateCapture> beginDeviceStateCapture(synthLib::StateType _type);
 		// I-024: this device among every device of the process (a rebooted or reinstalled machine is another one)
 		uint64_t deviceId() const { return m_sysexDeviceId; }
 		// All import lifecycle calls require the owning Plugin/processor lock.
@@ -227,6 +259,12 @@ namespace md
 
 	private:
 		friend struct DevicePreparedStateTestAccess;
+		friend class DeviceStateCapture;
+		// The capture in parts (mdstatecapture.cpp): the Hardware a save reads (a deferred candidate's while one
+		// prepares), the capture begun on it, and its next part
+		Hardware& stateCaptureHardware();
+		void startStateCapture(DeviceStateCapture& _capture);
+		bool continueStateCapture(DeviceStateCapture& _capture);
 		bool matchesUserSysexImport(const SysexImportTicket& ticket) const;
 
 		class StateTransactionImpl final : public synthLib::Device::StateTransaction

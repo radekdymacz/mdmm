@@ -6,10 +6,10 @@
    The page is classic scripts sharing one global scope, loaded in this order (sync-mdstudio-skin.py SCRIPTS):
      mdDeskApp.js         this file: the UI state S, the gesture slot (Held), commands (cmd), value access,
                           the controls' sync, the track keys
-     mdDeskSoundGroups.js the Sound page's tables (data: groups per machine, screens' help, machine notes)
+     mdDeskSoundGroups.js the Kit page's tables (data: groups per machine, screens' help, machine notes)
      mdDeskTop.js         the top bar, the LCD (line 2 too), the engine and capabilities, the rail, the transport
-     mdDeskSeq.js         Sequence: the grid, the lock lane, the page control
-     mdDeskSound.js       Sound: the groups and their rows
+     mdDeskSeq.js         Pattern: the grid, the lock lane, the page control
+     mdDeskSound.js       Kit: the groups and their rows
      mdDeskEditors.js     the canvas editors (ED): LFO, effects and routing, the synthesis screens
      mdDeskMix.js         Mix: strips, master effects and their editors
      mdDeskSampler.js     Sampler: slots, waveforms, audition, sample load, set-up, chops
@@ -299,7 +299,7 @@ function secAction(kind) {
 	if (S.ws === "sound") { const a = { k: V.kit, t: S.sel }; cmd(kind === "copy" ? "copySound" : kind === "clear" ? "clearSound" : "pasteSound", a); return; }
 	if (S.ws === "song") { const i = S.songSel;
 		if (kind === "copy") songCmd("copyRow", { i }); else if (kind === "clear") songAction("del"); else { const at = V.song[i]?.type === "end" ? i : i + 1; songCmd("pasteRow", { i: at }); S.songSel = at; } return; }
-	toast("Copy, clear and paste work in Sequence, Sound and Song.");
+	toast("Copy, clear and paste work in Pattern, Kit and Song.");
 }
 
 /* ===== The track keys (rail and Mix): mute, solo, select ===== */

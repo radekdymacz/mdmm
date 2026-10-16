@@ -8,6 +8,10 @@
 /* ===== The lock lane: draw (Alt erases), Shift: a ramp ===== */
 function laneAt(e) {
 	const d = Held.as("lane"); if (!d) return;
+	/* a press near the kit line is "maybe": moved more than KIT_MOVE px up or down it is the kit drag, released without
+	   that move it was a click on the lane (endLaneDraw) */
+	if (d.kit === "maybe") { if (Math.abs(e.clientY - d.y0) <= KIT_MOVE) return; Held.with("lane", { kit: true }); $("#lane").classList.add("kitdrag"); kitAt(e); return; }
+	if (d.kit) { kitAt(e); return; }
 	if (d.ramp) { rampAt(e); return; }
 	const lane = $("#lane"); if (!lane) return; const el = document.elementFromPoint(e.clientX, e.clientY)?.closest(".lb"); if (!el || !lane.contains(el)) return;
 	const s = +el.dataset.s, t = S.sel; if (!V.tracks[t].trigs[s]) return; const r = el.getBoundingClientRect(); const v = clamp(Math.round((r.bottom - 3 - e.clientY) / (r.height - 6) * 127));
@@ -16,7 +20,37 @@ function laneAt(e) {
 	el.querySelector("i")?.remove(); if (!d.erase) el.insertAdjacentHTML("beforeend", barHTML(v));
 	Held.with("lane", { touched: new Set(d.touched).add(s) }); renderTop();
 }
-function endLaneDraw() { const d = Held.as("lane"); if (!d) return; if (d.ramp) rampSend(); Held.end("lane"); Gesture.end(); refreshRow(S.sel); renderLane(); }
+function endLaneDraw() { let d = Held.as("lane"); if (!d) return;
+	if (d.kit === "maybe") { d = Held.with("lane", { kit: false, erase: false, ramp: false, touched: new Set() }); laneAt(d.down); }
+	if (d.ramp) rampSend(); Held.end("lane"); Gesture.end(); $("#lane")?.classList.remove("kitdrag"); refreshRow(S.sel); renderLane(); }
+
+/* ===== The lock lane's kit-value line (I-035): grab the line itself (a hit zone of KIT_HIT px each side of it) and
+   drag: the kit value of the lane's parameter on the selected track changes, the edit the Kit page's knob makes
+   (sendParam), one undo step for the drag. Nothing is locked while it is held. ===== */
+const KIT_HIT = 4, KIT_MOVE = 3;
+/* the line's y in a step's key (the .base: bottom 3px + (height - 6px) * kit / 127, 2 px thick) */
+function kitLineY(r) { const g = grp(S.sel, S.lane); return r.bottom - 3 - (r.height - 6) * ((g[S.lane] ?? 0) / 127) - 1; }
+/* the key under the pointer when the pointer is on its kit line, else null */
+function kitHit(e) {
+	const lane = $("#lane"); if (!lane || !lane.contains(e.target)) return null;
+	const el = e.target.closest(".lb"); if (!el || !el.querySelector(".base")) return null;
+	return Math.abs(e.clientY - kitLineY(el.getBoundingClientRect())) <= KIT_HIT ? el : null;
+}
+/* a plain press on the line may begin the drag (Alt erases and Shift ramps: those stay the lane's own) */
+function kitGrab(e) {
+	if (e.button !== 0 || e.altKey || e.shiftKey || !kitHit(e)) return false;
+	Held.begin("lane", { kit: "maybe", y0: e.clientY, down: { clientX: e.clientX, clientY: e.clientY } }); Gesture.begin(); grabPointer($("#lane"), e); e.preventDefault(); return true;
+}
+function kitAt(e) {
+	const el = $("#lane .lb"); if (!el) return; const r = el.getBoundingClientRect(), t = S.sel, g = grp(t, S.lane);
+	const v = clamp(Math.round((r.bottom - 3 - e.clientY) / (r.height - 6) * 127));
+	if (g[S.lane] === v) return;
+	sendParam(t, g === V.tracks[t].syn ? "syn" : g === V.tracks[t].fx ? "fx" : "rt", S.lane, v);
+	/* in place: the page's renders wait for the drag (Held) */
+	$$("#lane .base").forEach(b => b.style.setProperty("--bf", (v / 127).toFixed(4)));
+	const k = $("#lane .kvl"); if (k) { k.textContent = laneFmt(v); k.style.bottom = kitLabelAt(v); k.className = kitLabelCls(v); }
+	syncControls(); redraw();
+}
 
 /* ===== Song: a palette pad or an arrangement row dragged onto the grid ===== */
 document.addEventListener("dragstart", e => {
@@ -174,7 +208,8 @@ main.addEventListener("pointerdown", e => {
 	const c = e.target.closest("canvas.ed"); if (c) { const h = nearest(c, e); if (!h) return; Held.begin("editor", { c, k: h.k }); Gesture.begin(); grabPointer(c, e); e.preventDefault(); redraw(); return; }
 	const el = e.target.closest(".pc[data-g],.fader[data-g]"); if (el && ValueEdit.isOpenClick(e)) { e.preventDefault(); ValueEdit.open(el, ValueBox); return; }
 	if (el) { Held.begin("value", { el, x: e.clientX, y: e.clientY, v: getV(el), vert: el.classList.contains("fader") }); Gesture.begin(); grabPointer(el, e); el.classList.add("act"); e.preventDefault(); return; }
-	const lb = e.target.closest(".lb"); if (lb) { Held.begin("lane", { erase: e.altKey, ramp: e.shiftKey && !e.altKey, touched: new Set() }); Gesture.begin(); grabPointer($("#lane"), e); laneAt(e); e.preventDefault(); }
+	const lb = e.target.closest(".lb"); if (lb && kitGrab(e)) return;
+	if (lb) { Held.begin("lane", { erase: e.altKey, ramp: e.shiftKey && !e.altKey, touched: new Set() }); Gesture.begin(); grabPointer($("#lane"), e); laneAt(e); e.preventDefault(); }
 });
 main.addEventListener("pointermove", e => {
 	if (e.buttons === 0 && e.pointerType === "mouse" && dragging()) { endDrag(); return; }
@@ -185,6 +220,8 @@ main.addEventListener("pointermove", e => {
 	if (drag) { const fine = e.shiftKey ? .25 : 1, dx = e.clientX - drag.x, dy = drag.y - e.clientY; const d = drag.vert ? dy * 127 / 132 : (Math.abs(dx) >= Math.abs(dy) ? dx : dy); setV(drag.el, drag.v + d * fine); return; }
 	if (Held.as("lane")) { laneAt(e); return; }
 	const c = e.target.closest("canvas.ed"); if (c && ED[c.dataset.ed]) c.style.cursor = nearest(c, e) ? "grab" : "default";
+	/* the kit line is grabbed with a vertical arrow */
+	const ln = $("#lane"); if (ln) ln.classList.toggle("kithot", !e.altKey && !e.shiftKey && !!kitHit(e));
 });
 function endDrag() { if (Held.end("editor")) redraw(); const drag = Held.end("value"); if (drag) drag.el.classList.remove("act"); endLaneDraw(); Gesture.end(); }
 /* P7: a gesture ends wherever the button comes up (a pointerup outside #main left the drag on: every later
@@ -215,16 +252,30 @@ function paintStep(el) {
 	refreshRow(i);
 	if (!p.on) Held.with("paint", { locks: true });
 }
+/* the step the last press on the grid was on, and when: the second click of a double-click on an empty step must not remove the trig the first drew */
+let lastPaint = null;
+const DBL_MS = 400;
 main.addEventListener("pointerdown", e => {
 	const st = e.target.closest("#seq .st"); if (!st || e.button !== 0 || e.shiftKey || e.altKey || e.metaKey || e.ctrlKey || V.rec) return;
 	if (!V.loaded) { toast("The pattern is not loaded yet."); return; }
-	clearSel();	/* a plain press on a step paints, and ends the selection (DESIGN-step-selection.md §3) */
 	const i = +st.dataset.t, s = +st.dataset.s, mark = TT_MARK[S.tt];
+	/* I-036: a plain press on a step that has a trig selects it and keeps the selection (Delete clears it, a double-click removes it, ←/→ move it); no paint starts from it */
+	if (!mark && V.tracks[i].trigs[s]) { setSel({ t: i, n: 1, from: s, to: s + 1 }); if (i !== S.sel) select(i); e.preventDefault(); return; }
+	lastPaint = { t: i, s, at: Date.now() };
+	clearSel();	/* a press on an empty step paints, and ends the selection (DESIGN-step-selection.md §3) */
 	if (mark && !V.tracks[i].trigs[s]) { toast(`A ${mark.name.toLowerCase()} needs a trig: step ${s + 1} of track ${i + 1} has none.`); e.preventDefault(); return; }
 	Held.begin("paint", { on: mark ? !V.tracks[i][mark.set].has(s) : !V.tracks[i].trigs[s], mark, done: new Set(), first: i });
 	Gesture.begin(); grabPointer(main, e); e.preventDefault();
 	paintStep(st);
 }, true);
+/* I-036: a double-click on a trig removes it (the first click selected it): the steps cleared as the selection's Delete does, one undo step */
+main.addEventListener("dblclick", e => {
+	const st = e.target.closest("#seq .st"); if (!st || e.shiftKey || e.altKey || e.metaKey || e.ctrlKey || V.rec || !V.loaded || TT_MARK[S.tt]) return;
+	const i = +st.dataset.t, s = +st.dataset.s; if (!V.tracks[i].trigs[s]) return;
+	if (lastPaint && lastPaint.t === i && lastPaint.s === s && Date.now() - lastPaint.at < DBL_MS) return;
+	setSel({ t: i, n: 1, from: s, to: s + 1 }); selClear(); clearSel();
+	toast(`Removed the trig on track ${i + 1}, step ${s + 1} (⌘Z brings it back).`);
+});
 main.addEventListener("pointermove", e => {
 	if (!Held.as("paint")) return;
 	if (e.buttons === 0 && e.pointerType === "mouse") { endPaint(); return; }

@@ -5,12 +5,12 @@
    S.mut.scope (what MUTATE moves). The GEN and MUTATE values' drag is mdDeskGestures.js's. */
 
 /* ===== Generators and mutation (DESIGN-generators.md): the GEN bar, always on the Sequence page, and the
-   MUTATE bar, always on the Sound page. Both are live: a change writes at once, and a run of changes is one
+   MUTATE bar, always on the Kit page. Both are live: a change writes at once, and a run of changes is one
    gesture (one undo step) that one Undo takes back. The results come from mdDeskGen.js (pure); the page sends
    them as the two plain edits: steps (one pattern change, one dump) and params (one working-kit change, CCs).
    Alt is the global "all": Alt + a GEN change every track. One randomise action (R, the bars' R key) means what
-   the workspace edits: a new GEN variation of the selected track (Sequence, and every workspace but Sound), a fresh
-   mutation of the selected track from the trial's base (Sound); Alt+R or Alt-click on the R key: every track (the
+   the workspace edits: a new GEN variation of the selected track (Pattern, and every workspace but Kit), a fresh
+   mutation of the selected track from the trial's base (Kit); Alt+R or Alt-click on the R key: every track (the
    whole kit). ===== */
 S.gen = { specs: null, last: [], m: [], edited: [], run: null, kept: [] };
 S.mut = { amount: 20, seed: genSeed(), scope: new Set(["syn"]), trial: null, note: "" };
@@ -337,7 +337,7 @@ function mutTitle(x) { return ["syn", "fx", "rt"].includes(x.g) ? `<button class
 const dlgClosed = () => $("#dlg").hidden;
 const genRunOn = () => S.ws === "seq" && !!S.gen.run && S.gen.run.applied > 0 && S.gen.run.key === genKey();
 const mutRunOn = () => S.ws === "sound" && !!S.mut.trial && S.mut.trial.applied > 0 && S.mut.trial.key === mutKey();
-Keys.bind({ id: "randomise-track", short: "Randomise", scope: "any", keys: ["R"], code: "KeyR", when: () => dlgClosed() && !LIB.open, modal: "genpop", group: "Selected track", does: "Randomise the selected track: on Sound a fresh random sound (MUTATE, from the sound before the trial); everywhere else a new GEN variation, a new seed or random hits and rotation", run: () => randomise(false) });
-Keys.bind({ id: "randomise-all", short: "Randomise all", scope: "any", keys: ["R"], code: "KeyR", mod: "alt", modal: "genpop", when: () => dlgClosed() && !LIB.open, group: "All", does: "Randomise every track: on Sound the whole kit, everywhere else every track's GEN spec over the whole pattern", run: () => randomise(true) });
+Keys.bind({ id: "randomise-track", short: "Randomise", scope: "any", keys: ["R"], code: "KeyR", when: () => dlgClosed() && !LIB.open, modal: "genpop", group: "Selected track", does: "Randomise the selected track: on Kit a fresh random sound (MUTATE, from the sound before the trial); everywhere else a new GEN variation, a new seed or random hits and rotation", run: () => randomise(false) });
+Keys.bind({ id: "randomise-all", short: "Randomise all", scope: "any", keys: ["R"], code: "KeyR", mod: "alt", modal: "genpop", when: () => dlgClosed() && !LIB.open, group: "All", does: "Randomise every track: on Kit the whole kit, everywhere else every track's GEN spec over the whole pattern", run: () => randomise(true) });
 Keys.bind({ id: "gen-value-all", scope: "seq", area: "GEN", keys: ["GEN value"], mod: "alt", group: "All", does: "Change a GEN value: every track's spec, the whole pattern (one pattern change, one undo step per run)" });
-Keys.bind({ id: "rkey-all", scope: "any", area: "GEN", keys: ["R key"], mod: "alt", group: "All", does: "Click: randomise every track (Sound: the whole kit; MIDI and CTR tracks are left alone, VOL is kept)" });
+Keys.bind({ id: "rkey-all", scope: "any", area: "GEN", keys: ["R key"], mod: "alt", group: "All", does: "Click: randomise every track (Kit: the whole kit; MIDI and CTR tracks are left alone, VOL is kept)" });

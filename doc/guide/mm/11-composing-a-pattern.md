@@ -1,9 +1,9 @@
 # 11. Composing a pattern
 <!-- summary: Write notes in the piano roll or record them live, and copy, move and clear notes, pages, tracks and patterns. -->
 
-You write a pattern on the **Sequence** workspace. Press {key:workspace-1}, or click the **Sequence** tab. The rail on the left holds the tracks. The piano roll in the middle shows the notes of the selected track, one column to a step. Under the roll are the rows for the envelope trigs, slide and swing, and under them the lock lane.
+You write a pattern on the **Pattern** workspace. Press {key:workspace-1}, or click the **Pattern** tab. The rail on the left holds the tracks. The piano roll in the middle shows the notes of the selected track, one column to a step. Under the roll are the rows for the envelope trigs, slide and swing, and under them the lock lane.
 
-![The Sequence workspace](shot:mm-sequence-workspace)
+![The Pattern workspace](shot:mm-sequence-workspace)
 
 ## RECORDING PREPARATIONS
 <!-- rows: MM-171 @32dbed -->
@@ -30,7 +30,7 @@ On the machine you step through the grid with the trig keys. In the editor you d
 
 A drag or a paint is one undo step. {key:undo} takes it back whole.
 
-NOTE: With **Draw** dark, a drag in an empty place draws a box round notes and selects them, and a double-click adds a note.
+NOTE: With **Draw** dark, a drag in an empty place draws a box round notes and selects them.
 
 ![The piano roll](shot:mm-roll-draw)
 
@@ -42,7 +42,11 @@ Drag the end of a note to set its length. New notes take the length too. On a sy
 
 To set a NOTE OFF by hand, hold [⌥] and click an empty step. A NOTE OFF is a yellow mark.
 
-To delete a note, hold [⌥] and click it. The note before it keeps its length. Drag on with [⌥] held to delete every step the pointer crosses. One {key:undo} brings all of them back.
+To delete a note, double-click it, or hold [⌥] and click it. The earlier note runs on to the next trig or NOTE OFF, as on the machine. The editor writes no NOTE OFF and takes none away: a NOTE OFF goes only when you clear its own step. Drag on with [⌥] held to delete every step the pointer crosses. One {key:undo} brings all of them back.
+
+### Selecting a note
+
+Click a note to select it. It stays selected, with no [⌘] needed. {key:delete} removes it. With one note selected, [↑] and [↓] change its pitch by a semitone, and [⇧][↑] and [⇧][↓] by an octave. Hold a key and the note keeps moving; the whole hold is one undo step. With no note selected, [↑] and [↓] still move to the previous or next track. A double-click on an empty place draws one note: the second click does nothing.
 
 ### Chords
 
@@ -83,7 +87,7 @@ NOTE: While the machine takes an edit on its SYSEX RECV screen, ● waits, as �
 NOTE: Values you turn while the pattern records are locked. See "Parameter locks in live recording mode" in chapter 13.
 
 ## STEP RECORDING
-<!-- rows: MM-182 @f2e0cc -->
+<!-- rows: MM-182 @9f7cd1 -->
 
 In step recording you play one note for each step, and the machine moves on by itself. The tempo does not matter.
 
@@ -99,7 +103,7 @@ Select another synth track while step recording is on, and the machine records t
 You can also draw notes in the piano roll at any time.
 
 ## NOTE COPY
-<!-- rows: MM-183 @da0485 -->
+<!-- rows: MM-183 @15e623 -->
 
 You copy notes with a selection of steps. A selection holds steps of one track or of several tracks.
 
@@ -177,7 +181,7 @@ To copy only the notes with the step ruler:
 3. Click the target track in the rail, then click the first step of the ruler.
 4. Press {key:paste}.
 
-Press {key:select-all} to select the six tracks shown, and paste them as a block. To copy the machine of a track, use **Copy** and **Paste** on the **Sound** workspace.
+Press {key:select-all} to select the six tracks shown, and paste them as a block. To copy the machine of a track, use **Copy** and **Paste** on the **Kit** workspace.
 
 To copy a whole track with its machine, its arpeggiator, its transpose and its swing in one copy, use **Copy…** in the LCD's **▾** menu: see "Super copy".
 
@@ -210,7 +214,7 @@ NOTE: A pattern paste goes through the machine's SYSEX RECV. The editor does tha
 ## CLEAR PATTERN
 <!-- rows: MM-190 @83c282 -->
 
-In the pattern chooser, click the slot and then **Clear**, and answer the question. The slot reads EMPTY at once. Or, on **Sequence**, press {key:clear-pattern}. {key:undo} takes it back.
+In the pattern chooser, click the slot and then **Clear**, and answer the question. The slot reads EMPTY at once. Or, on **Pattern**, press {key:clear-pattern}. {key:undo} takes it back.
 
 Both clear the notes and locks of every track. The pattern keeps its link to the kit, as on the machine.
 

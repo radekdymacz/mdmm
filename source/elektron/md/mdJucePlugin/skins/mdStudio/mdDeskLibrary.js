@@ -144,6 +144,7 @@ Bridge.onMessage(m => {
 
 /* ----- mouse ----- */
 document.addEventListener("click", e => {
+	if (e.target.closest?.("#kitPrev, #kitNext")) { e.stopImmediatePropagation(); if (V.loaded) kitLoad((V.kit + (e.target.closest("#kitNext") ? 1 : -1) + 64) % 64); return; }	/* I-041: the KIT field's ‹ › load the previous / next of the 64 kits as a click in the chooser does */
 	if (e.target.closest?.("#kitf")) { e.stopImmediatePropagation(); toggleLib("kit"); return; }
 	if (e.target.closest?.("#pat")) { e.stopImmediatePropagation(); toggleLib("pat"); return; }
 	/* review 1 (B-094): every modal locks: a click outside the library no longer closes it (Esc, its close key) */

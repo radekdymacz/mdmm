@@ -71,9 +71,9 @@ Patterns that hold notes, spread over all 128, play the same way one after the o
 ## GEN ROLLS A RHYTHM
 <!-- rows: MM-X04 @32aa1d -->
 
-The machine has no such function: you set the hits by hand. The **GEN** bar on **Sequence** rolls a rhythm for the selected track from a few settings. It writes ordinary trigs, so you can edit the result as any other.
+The machine has no such function: you set the hits by hand. The **GEN** bar on **Pattern** rolls a rhythm for the selected track from a few settings. It writes ordinary trigs, so you can edit the result as any other.
 
-1. Press {key:workspace-1}, or click the **Sequence** tab, and pick a track on the rail.
+1. Press {key:workspace-1}, or click the **Pattern** tab, and pick a track on the rail.
 2. Read the **GEN** bar under the roll. It offers the generator of that track. Its modes are **EUCLID**, **RANDOM** and **KEEP**.
 3. Click the **R** key, or press {key:randomise-track}, until the notes change. Each press rolls a new variation.
 4. Click a value of the bar, for example **Hits** with a Euclid setting or **Density** with RANDOM, to change it. A click steps the value up, a [⇧]-click down.
@@ -81,27 +81,27 @@ The machine has no such function: you set the hits by hand. The **GEN** bar on *
 
 Hold [⌥] and the bar changes every track at once, over the whole pattern. **Defaults** puts the bar back to its starting values.
 
-![The Sound workspace after a roll of GEN and MUTATE](shot:e2e-mm-gen-mutate-undo)
+![The Kit workspace after a roll of GEN and MUTATE](shot:e2e-mm-gen-mutate-undo)
 
 ## MUTATE CHANGES A SOUND
-<!-- rows: MM-X05 @49dc6a -->
+<!-- rows: MM-X05 @1a0d71 -->
 
-The machine has no such function. **MUTATE** nudges the sound of the selected track at random. It sits at the top of **Sound**, beside the machine name.
+The machine has no such function. **MUTATE** nudges the sound of the selected track at random. It sits at the top of **Kit**, beside the machine name.
 
-1. Click the **Sound** tab and pick a track on the rail.
+1. Click the **Kit** tab and pick a track on the rail.
 2. Click the **R** key of **MUTATE**. The sound changes. Click it again for another roll.
 3. To keep the change to one part of the sound, click the chips of the **Scope**: **SYN**, **AMP**, **FLT**, **EFX**, **LFO**. Switch **FLT** on and **SYN** off, and only the filter moves.
 4. Click the **Amount** value to say how far a roll goes.
 5. Click **UNDO** in the top bar, or press {key:undo}, to bring the sound back.
 
-NOTE: A roll on **Sound** with {key:randomise-track} is always taken from the sound as it was before the trials, so repeated rolls do not wander off.
+NOTE: A roll on **Kit** with {key:randomise-track} is always taken from the sound as it was before the trials, so repeated rolls do not wander off.
 
 ## CLEAR
 <!-- rows: MM-X25 @715aac -->
 
 When you play with a sound, **Clear** puts the selected track back as the kit's slot stores it. On a synth track it restores the machine, the seven pages, the level, the outputs and input, the assign rows, the key tracking, portamento and legato switches and the track the notes are forwarded to. On a MIDI track it restores the MIDI page. The other tracks, the multi envelope, MULTI TRIG and the kit name stay as they are. The kit library's **Reload** loads the whole kit again. **Clear** does one track.
 
-1. Click the **Sound** tab and pick a track on the rail.
+1. Click the **Kit** tab and pick a track on the rail.
 2. Turn a few knobs. **Clear** turns on.
 3. Click **Clear**. The values are the stored ones, and the key is off again.
 4. Press {key:undo}. Your edits are back, and the key is on.
@@ -134,7 +134,7 @@ A drag, a paint or a run of rotates is one undo step. A kit you leave without sa
 
 Instead of turning a value, you can type it.
 
-1. Click the **Sound** tab and pick a track.
+1. Click the **Kit** tab and pick a track.
 2. Hold [⌘] and click a value box, for example in the filter. A field opens over it with the value it shows. Press [ENTER] on a focused box and the field opens as well.
 3. Type a number and press [ENTER]. The box shows it and the machine has it.
 4. A number out of range is refused: the field stays and nothing is sent. Press [ESC] to leave the field with the value as it was.
@@ -148,7 +148,7 @@ With a value focused, press {key:value-up-down} to step it, and [⇧] for larger
 
 Right-click a step in the roll or on a trig row. A menu offers what a step can do: its trig, accent or slide, copy, cut, paste here, duplicate, clear and the fill of every second or fourth step from it.
 
-1. Click the **Sequence** tab and pick a track.
+1. Click the **Pattern** tab and pick a track.
 2. Switch **Draw** on, and click an empty cell of the roll. A note is there.
 3. Right-click the note. Its menu opens.
 4. Choose **Slide**. The note slides.
@@ -161,7 +161,7 @@ Each choice is one undo step. {key:deselect} leaves the selection, and {key:undo
 
 You select steps with the mouse and copy, paste and clear them, in one track or in several.
 
-1. Click the **Sequence** tab and pick a track that has a note.
+1. Click the **Pattern** tab and pick a track that has a note.
 2. Hold [⌘] and click a note in the roll. It is selected. Hold [⌘] and drag to select a block of steps. Hold [⌘] and [⇧] and click a step of another track to take that track in.
 3. Press {key:copy}, or click **COPY** in the top bar.
 4. Hold [⌘] and click an empty step. Press {key:paste}, or click **PASTE**. The block lands there from its first step and track.
@@ -180,7 +180,7 @@ The machine's super copy and super clear choose the parts of a track to take. Th
 
 ![The Copy what window](shot:mm-copy-what)
 
-1. Click the **Sequence** tab and pick a track that has notes.
+1. Click the **Pattern** tab and pick a track that has notes.
 2. Click the arrow beside **COPY CLR PASTE** and choose **Copy…**, or press {key:copy-what}.
 3. Tick the parts to take: **Notes**, **Slide**, **Swing**, **Arp**, **Transpose**, **Machine + sound** and the others in the list. Click **Copy**.
 4. Pick the other track on the rail.
@@ -218,6 +218,18 @@ The track you play lights up. The number of the track on the rail and its light 
 2. Hold a key of the keyboard on the page with the mouse. The key is lit. Let go and it goes dark.
 3. Hold [A] on the computer keyboard. Its key is lit while you hold it.
 4. Play a MIDI keyboard on a channel the machine plays. The keys of the notes you hold are lit, and each goes dark when you let go of it. On a channel the machine does not play, none is lit.
+
+## THE SELECTED TRACK FOLLOWS THE LAST TRACK PLAYED
+<!-- rows: MM-X26 @dde272 -->
+
+The machine has no such function. With it on, the track you select changes to the last synth track you played from a MIDI keyboard. It is off until you turn it on, and the project keeps the choice.
+
+1. Open the engine menu and choose **FOLLOW PLAYED TRACK: OFF**. It reads **FOLLOW PLAYED TRACK: ON**.
+2. Play a MIDI keyboard on the channel of track 4. Track 4 is selected.
+3. Play it on a channel no synth track plays. The selection stays where it was.
+4. Choose the entry again to turn it off.
+
+A track's channel is the base channel plus the track's number, inside the CHANNEL SPAN of the global. The keys of the computer keyboard never move the selection. With the HW MIDI engine it does nothing, since the port then carries the machine's own MIDI. While a question is open, or LEARN waits for its note, the selection stays where it is.
 
 ## THE CPU METER AND THE SPEED-UPS
 <!-- rows: MM-X15 @9cd295 -->
@@ -272,7 +284,7 @@ The keyboard view shows a drawn keyboard with the words of each key, and a searc
 
 The letter keys play the selected track from any workspace.
 
-1. Click the **Sequence** tab and pick track 1 on the rail.
+1. Click the **Pattern** tab and pick track 1 on the rail.
 2. Press [A]. Track 1 plays a note.
 3. Press [W], [T] and [P] for the black keys. [A] and [S] are still the white keys C and D.
 4. Press {key:octave-down} or {key:octave-up} to move the octave, and {key:velocity-down} or {key:velocity-up} for the velocity.
@@ -285,7 +297,7 @@ On the Monomachine Editor [T] is a black key, so tap tempo is [B].
 Tap a key to the beat and the editor takes the tempo you tap.
 
 1. Press {key:tap-tempo} five times, about half a second apart. The tempo follows, for example 119 BPM.
-2. On **Sequence**, where [B] switches **Draw**, press {key:tap-tempo-shift}. It taps on every workspace.
+2. On **Pattern**, where [B] switches **Draw**, press {key:tap-tempo-shift}. It taps on every workspace.
 
 The tempo is the average of your last taps.
 
@@ -333,11 +345,11 @@ The kit library and the song slots work with the same keys: load, copy, paste, r
 ## PIANO ROLL
 <!-- rows: MM-X23 @610cab -->
 
-The roll on **Sequence** draws notes with a length and moves them. There is no mode to switch: it always draws. It writes the same step data as the machine's own entry.
+The roll on **Pattern** draws notes with a length and moves them. There is no mode to switch: it always draws. It writes the same step data as the machine's own entry.
 
 ![The piano roll](shot:mm-roll-draw)
 
-1. Click the **Sequence** tab and pick a track.
+1. Click the **Pattern** tab and pick a track.
 2. Set **Len** to 1/16.
 3. Click an empty cell. A note of that length is there, and a NOTE OFF on the step after it, so that it does not run into the next note.
 4. Click **Len** to 1/8 and click another cell. The note is two steps long.
@@ -350,13 +362,13 @@ The roll on **Sequence** draws notes with a length and moves them. There is no m
 On **Transpose**, click a key of its keyboard to set the transpose of the track. On a MIDI track the length is a number of ticks: a 1/16 note is 6, and three steps are 18.
 
 ## WHAT YOU DRAW IS WHAT PLAYS
-<!-- rows: MM-X24 @9c91af -->
+<!-- rows: MM-X24 @4a402a -->
 
 What you enter in the sequencer is what the machine plays. The notes you draw reach the machine, and when you clear the pattern the machine plays silence.
 
 ![Four notes drawn in an empty pattern](shot:mm-real-sequence-drawn)
 
-1. Click the **Sequence** tab.
+1. Click the **Pattern** tab.
 2. Click the pattern field of the LCD and pick a pattern with no notes.
 3. Pick track 1 in the rail.
 4. Click four cells of the piano roll. Each click draws a note.

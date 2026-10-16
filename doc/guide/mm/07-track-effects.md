@@ -1,7 +1,7 @@
 # 7. Track effects
 <!-- summary: The amp, filter, equaliser, sample rate reducer and delay that every track has after its machine. -->
 
-The sound of a machine passes through the same chain on every track: amp, filter, equaliser, sample rate reduction and delay. The chain is the same for every machine, so these parameters mean the same on every track. All of them are on the **Sound** workspace, in the groups under the machine's own. Select the track, press {key:workspace-2} and drag the values.
+The sound of a machine passes through the same chain on every track: amp, filter, equaliser, sample rate reduction and delay. The chain is the same for every machine, so these parameters mean the same on every track. All of them are on the **Kit** workspace, in the groups under the machine's own. Select the track, press {key:workspace-2} and drag the values.
 
 ![The amp, filter and effects groups](shot:mm-sound-effects)
 
@@ -13,7 +13,7 @@ A value box changes when you drag it, turn the wheel over it or press an arrow k
 LEVEL is the track's mix level, at the end of its path. It is the **LEVEL** fader of the track's strip in the **Mix** workspace. It can neither be locked on a step nor moved by an LFO. To balance tracks against each other use LEVEL. For movement inside the sound use VOL.
 
 ## AMP ENVELOPE
-<!-- rows: MM-114 MM-115 MM-116 MM-117 @48b3e6 -->
+<!-- rows: MM-114 MM-115 MM-116 MM-117 @b253a8 -->
 
 The **Envelope** group of the amp page holds four values.
 
@@ -28,20 +28,20 @@ ATK, DEC and REL are times. Each 8 more about doubles the time. ATK 64 reaches 9
 
 The picture shows the shape as the machine plays it, with the release dashed. Drag its dots to set the values.
 
-TIP: The **Trig setup** plate in the **Sequence** workspace draws the same envelope together with the portamento, and shows how long a gate really sounds in steps at the current tempo.
+TIP: The **Trig setup** plate in the **Pattern** workspace draws the same envelope together with the portamento, and shows how long a gate really sounds in steps at the current tempo.
 
 ## DISTORTION
-<!-- rows: MM-118 @6f9b6d -->
+<!-- rows: MM-118 @0ac7bb -->
 
 DIST is in the **Drive** group of the amp page. Drag the dot in its picture up or down, or use the value box. Above 0 it overloads the sound. Below 0 it adds headroom: the sound is quieter and cleaner.
 
 ## TRACK VOLUME
-<!-- rows: MM-119 @0c05c0 -->
+<!-- rows: MM-119 @9353a7 -->
 
 VOL is the volume of the voice. It is in the **Level · pan** group of the amp page, and it is the trim at the top of each strip in the **Mix** workspace, as AMP VOL. VOL comes before LEVEL in the path. Unlike LEVEL you can lock it on a step and an LFO can move it.
 
 ## PAN
-<!-- rows: MM-120 @9ce5d3 -->
+<!-- rows: MM-120 @234544 -->
 
 PAN places the track in the stereo field, from L64 to R63. It is in the **Level · pan** group and in each strip of the **Mix** workspace.
 
@@ -53,12 +53,12 @@ PAN places the track in the stereo field, from L64 to R63. It is in the **Level 
 ![The PAN bars of the strips in the Mix workspace](shot:e2e-mm-mix-pan-undo)
 
 ## PORTAMENTO
-<!-- rows: MM-121 @3f9482 -->
+<!-- rows: MM-121 @95a652 -->
 
-PORT sets how long the pitch glides from the note before to the next note. It is in the **Glide** group of the amp page and in the **Trig setup** plate of the **Sequence** workspace. In the plate, **Port** chooses when it glides: **ALWAYS** glides to every note, and **LEGATO** glides only between notes that overlap.
+PORT sets how long the pitch glides from the note before to the next note. It is in the **Glide** group of the amp page and in the **Trig setup** plate of the **Pattern** workspace. In the plate, **Port** chooses when it glides: **ALWAYS** glides to every note, and **LEGATO** glides only between notes that overlap.
 
 ## FILTER
-<!-- rows: MM-122 MM-123 MM-124 MM-125 @d80294 -->
+<!-- rows: MM-122 MM-123 MM-124 MM-125 @fe3fc6 -->
 
 The filter of each track is a 24 dB filter built from a high-pass and a low-pass. The **Filter** group of the filter page holds four values:
 
@@ -72,35 +72,37 @@ The filter of each track is a 24 dB filter built from a high-pass and a low-pass
 In the picture, drag the dots sideways for BASE and WDTH and up for HPQ and LPQ. A dashed line shows where the filter envelope takes the filter.
 
 ## FILTER ENVELOPE
-<!-- rows: MM-126 MM-127 @185dc1 -->
+<!-- rows: MM-126 MM-127 @1f635f -->
 
-The **Filter env** group holds ATK and DEC, the attack and decay times of the filter envelope, and BOFS and WOFS, how far the envelope moves BASE and WDTH: -64 to +63, up for a positive value, down for a negative one, 0 not at all.
+The **Filter env** group holds ATK and DEC, the attack and decay times of the filter envelope, and BOFS and WOFS, how far the envelope moves BASE and WDTH: -64 to +63, 0 not at all.
+
+The screen has two parts. The large part is for BOFS and WOFS: a line for each, solid for BOFS and dashed for WOFS, with -64 at the left edge, 0 on the vertical line and +63 at the right edge. Drag a dot left or right; it covers the whole range. The small square at the right shows the shape of the envelope only, with a dot for ATK and a dot for DEC.
 
 ## FILTER TRACKING
-<!-- rows: MM-128 @caaf38 -->
+<!-- rows: MM-128 @acbf71 -->
 
 Both filters follow the pitch of the notes. With tracking off a filter stays where BASE and WDTH put it, whatever note plays: under a low LPF the high notes go quiet, and a high HPF lets them through.
 
 The title of the **Filter** group shows the state: **KEY** with a lamp for HPF and one for LPF, lit while that filter follows the notes. The label of the filter's screen says which filter is fixed. The switches are on the **Perform** workspace, in the **Assign** card.
 
 1. Click **KEY** in the title of the **Filter** group. The **Perform** workspace opens on the **KEY** tab of the **Assign** card, for the same track.
-2. Click **HPF tracks keys** or **LPF tracks keys**. A lit key means the filter follows the keys. Click it and the key goes dark: that filter stops following the notes, and the **KEY** title of the **Filter** group on **Sound** shows it off.
+2. Click **HPF tracks keys** or **LPF tracks keys**. A lit key means the filter follows the keys. Click it and the key goes dark: that filter stops following the notes, and the **KEY** title of the **Filter** group on **Kit** shows it off.
 3. Press {key:undo} to switch it on again.
 
 ![Key tracking in the Filter group](shot:mm-sound-key-tracking)
 
 ## EQ
-<!-- rows: MM-129 @28f508 -->
+<!-- rows: MM-129 @7d53d5 -->
 
 The **EQ** group holds EQF, the frequency of the equaliser band, and EQG, its gain. A negative EQG cuts the band and a positive one boosts it.
 
 ## SAMPLE RATE REDUCTION
-<!-- rows: MM-130 @463561 -->
+<!-- rows: MM-130 @056b50 -->
 
 SRR, in its own group, reduces the sample rate of the track for a lo-fi sound. Drag its dot, or the value box.
 
 ## DELAY
-<!-- rows: MM-131 MM-132 MM-133 MM-134 @a99e04 -->
+<!-- rows: MM-131 MM-132 MM-133 MM-134 @263d0f -->
 
 Each track has its own delay, synchronised to the tempo. The **Delay** group holds three values and the **Delay filter** group two.
 

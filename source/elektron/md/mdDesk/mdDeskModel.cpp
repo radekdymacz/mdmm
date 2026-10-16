@@ -396,6 +396,8 @@ namespace mdDesk
 			{"knobs", Owner::Setup, Gate::None, -1, {{"ccs", ArgType::Array}}, "the eight knob rows' CCs"},
 			{"soloSet", Owner::Setup, Gate::None, -1, {{"tracks", ArgType::Array}, {"mutes", ArgType::Array, 0, 0, true}},
 				"the page's solo (the tracks soloed) and the mutes the person had before it, kept with the project; the plug-in says them again as {\"type\":\"solo\"}"},
+			{"followSet", Owner::Setup, Gate::None, -1, {{"on", ArgType::Bool}},
+				"I-003: the selected track follows the last track played from a MIDI controller (kept with the project; the plug-in says it again in the setup document as followPlayed)"},
 			// ---- P9: the samples the desk read (the emulated machine's memory), the desk's own ----
 			{"sampleName", Owner::Setup, Gate::None, -1, {{"slot", ArgType::Integer, 0, 47}, {"name", ArgType::Text}},
 				"Rename a ROM slot (B-128): the name (0x73), then the slot's own sample again as SDS into the same slot, so the audio stays as it was; refused when the slot's audio cannot be read (a real machine)"},

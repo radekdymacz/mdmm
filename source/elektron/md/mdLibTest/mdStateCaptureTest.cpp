@@ -8,6 +8,7 @@
 #include "mdLib/mdromdata.h"
 #include "mdLib/mdstate.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -98,20 +99,28 @@ namespace
 		std::vector<uint8_t> bytes;
 		double lockedMs = 0;
 		double encodeMs = 0;
+		int holds = 0;
 	};
 
 	CaptureResult captureState(md::Device& _device, const synthLib::StateType _type)
 	{
 		using clock = std::chrono::steady_clock;
 		CaptureResult result;
-		const auto t0 = clock::now();
-		auto capture = _device.beginStateCapture(_type);
+		// beginStateCapture with the first captureMore, then each captureMore, is one hold of the plug-in's lock
+		// (synthLib::Plugin::getState): lockedMs is the longest (DESIGN-audio-lock.md step 1: the MD flash a part a hold)
+		std::unique_ptr<synthLib::Device::StateCapture> capture;
+		for(bool more = true; more; ++result.holds)
+		{
+			const auto t0 = clock::now();
+			if(!capture)
+				capture = _device.beginStateCapture(_type);
+			more = capture && capture->captureMore();
+			result.lockedMs = std::max(result.lockedMs, std::chrono::duration<double, std::milli>(clock::now() - t0).count());
+		}
 		const auto t1 = clock::now();
 		if(!capture || !capture->encode(result.bytes))
 			result.bytes.clear();
-		const auto t2 = clock::now();
-		result.lockedMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
-		result.encodeMs = std::chrono::duration<double, std::milli>(t2 - t1).count();
+		result.encodeMs = std::chrono::duration<double, std::milli>(clock::now() - t1).count();
 		return result;
 	}
 
@@ -169,9 +178,54 @@ namespace
 		check(first.bytes == sparseExpected && again.bytes == sparseExpected,
 			"capture: sparse state against the factory baseline, byte for byte");
 		check(sameAsGetState(*cached, synthLib::StateTypeGlobal, sparseExpected), "capture: getState writes the same");
-		std::printf("  state save, MD from the factory cache, 16 sample sectors: under the lock %.2f ms then %.2f ms, "
+		std::printf("  state save, MD from the factory cache, 16 sample sectors: longest hold %.2f ms then %.2f ms (%d holds), "
 			"encode %.2f ms (first, decodes the cache) then %.2f ms\n",
-			first.lockedMs, again.lockedMs, first.encodeMs, again.encodeMs);
+			first.lockedMs, again.lockedMs, first.holds, first.encodeMs, again.encodeMs);
+		check(first.lockedMs < 1.0 && again.lockedMs < 1.0 && first.holds > 1, "capture: the MD flash is taken a part per hold, each under 1 ms");
+
+		// The flash written while the capture is taken in parts (DESIGN-audio-lock.md step 1): the capture begins
+		// again and saves the flash as it is after the write, never parts of before and after
+		{
+			auto capture = cached->beginStateCapture(synthLib::StateTypeGlobal);
+			const bool parts = capture && capture->captureMore() && capture->captureMore();
+			auto changed = flash;
+			for(size_t i = 0; i < md::g_uwFlashSectorSize; i += 13)
+				changed[90 * md::g_uwFlashSectorSize + i] ^= 0x5a;	// a sector the parts copied after the first ones
+			changed[2 * md::g_uwFlashSectorSize + 7] ^= 0x01;			// and one in the parts already copied
+			hardware.replaceFlashData(changed, true);
+			while(capture && capture->captureMore())
+			{
+			}
+			std::vector<uint8_t> bytes, expected;
+			check(parts && capture && capture->encode(bytes)
+				&& md::encodeStateWithFactoryBaseline(expected, hardware.copyPatchRam(), changed, factory, _rom,
+					md::MachineModel::Machinedrum, synthLib::StateTypeGlobal)
+				&& bytes == expected, "capture: a flash write during the parts begins the capture again (the flash after it)");
+			hardware.replaceFlashData(flash, true);
+		}
+
+		// The patch RAM written while the capture is taken in parts (md::OneMomentCopy): the piece written after it was
+		// copied is copied again, and the save is the patch RAM after the write
+		{
+			auto capture = cached->beginStateCapture(synthLib::StateTypeGlobal);
+			bool parts = capture != nullptr;
+			for(int i = 0; parts && i < 130; ++i)	// the flash's 128 parts and two of the patch RAM's
+				parts = capture->captureMore();
+			auto& uc = hardware.getUC();
+			const auto before = hardware.copyPatchRam();
+			uc.pokePatchRamForTest(0x123, static_cast<uint8_t>(before[0x123] ^ 0xa5));		// a piece copied already
+			uc.pokePatchRamForTest(0xf0000, static_cast<uint8_t>(before[0xf0000] ^ 0x3c));	// one not yet
+			while(capture && capture->captureMore())
+			{
+			}
+			std::vector<uint8_t> bytes, expected;
+			check(parts && capture && capture->encode(bytes)
+				&& md::encodeStateWithFactoryBaseline(expected, hardware.copyPatchRam(), flash, factory, _rom,
+					md::MachineModel::Machinedrum, synthLib::StateTypeGlobal)
+				&& bytes == expected, "capture: patch RAM written during the parts is saved as it is after the writes");
+			uc.pokePatchRamForTest(0x123, before[0x123]);
+			uc.pokePatchRamForTest(0xf0000, before[0xf0000]);
+		}
 
 		// No factory cache yet: a complete flash image
 		auto firstRun = makeDevice(_rom, md::MachineModel::Machinedrum, {});

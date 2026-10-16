@@ -56,7 +56,7 @@ function entries(Keys) {
 }
 
 /* ---- the guide's tables ---- */
-const GROUPS = ["Playing", "Selected track", "All", "Transport", "Workspaces", "Sequence", "Song", "Values", "Anywhere", "Kit library, pattern chooser", "Help"];
+const GROUPS = ["Playing", "Selected track", "All", "Transport", "Workspaces", "Pattern", "Song", "Values", "Anywhere", "Kit library, pattern chooser", "Help"];
 const AREAS = ["Steps", "Roll", "Lock lane", "GEN bar", "Tracks", "Values", "Top bar", "LCD", "Song", "Sampler", "Library"];
 const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const SYM = { cmd: "⌘", alt: "⌥", shift: "⇧" };
