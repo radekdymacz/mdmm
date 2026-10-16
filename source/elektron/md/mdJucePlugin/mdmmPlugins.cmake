@@ -36,7 +36,7 @@ list(APPEND SOURCES
 	mdEditorPages.cpp mdEditorPages.h
 	mdDeskHost.cpp mdDeskHost.h
 	mdStandaloneApp.cpp
-	mdBootDiagnostics.cpp mdBootDiagnostics.h mdCpuLoad.h mdOutputLevel.h mdMidiIn.h mdMachineMemory.h
+	mdBootDiagnostics.cpp mdBootDiagnostics.h mdCpuLoad.h mdOutputLevel.h mdMixMeters.h mdMidiIn.h mdMachineMemory.h
 	mdMachineMemoryService.cpp mdMachineMemoryService.h mdMachineMemoryDevice.cpp mdMachineMemoryDevice.h
 	mdMachineFacts.cpp mdMachineFacts.h
 	mdProcessArch.cpp mdProcessArch.h mdRosettaNotice.h
@@ -505,6 +505,13 @@ function(mdmm_plugin_targets)
 	add_test(NAME mdMidiInTest COMMAND mdMidiInTest)
 	set_tests_properties(mdMidiInTest PROPERTIES LABELS "UnitTest")
 	set_property(TARGET mdMidiInTest PROPERTY FOLDER "Elektron/test")
+
+	# I-032 (0.8, WP9): the Mix page's output meters (mdMixMeters.h, pure: peak and RMS per channel of the three pairs; no allocation; no ROM)
+	add_executable(mdMixMetersTest mdMixMetersTest.cpp mdMixMeters.h)
+	target_link_libraries(mdMixMetersTest PRIVATE Threads::Threads)
+	add_test(NAME mdMixMetersTest COMMAND mdMixMetersTest)
+	set_tests_properties(mdMixMetersTest PROPERTIES LABELS "UnitTest")
+	set_property(TARGET mdMixMetersTest PROPERTY FOLDER "Elektron/test")
 
 	# 0.8 (WP3): the MIDI monitor's counts (mdMidiMonitor.h, pure: by direction, type, channel; no allocation; no ROM)
 	add_executable(mdMidiMonitorTest mdMidiMonitorTest.cpp mdMidiMonitor.h)

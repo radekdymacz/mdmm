@@ -1262,6 +1262,15 @@ namespace
 		return out;
 	}
 
+	// I-032: the Mix page's meters: while the page says mixMeters on, a steady signal on A/B (loud) and C/D (quiet), E/F off,
+	// so the page tier's journey sees levels flow and stop (the real levels come from the plug-in's audio thread)
+	struct StubMix
+	{
+		bool on = false;
+		double at = -1000;
+	};
+	StubMix g_mix;
+
 	template<typename DeskT> void hostMessage(DeskT& _desk, mdJucePlugin::SyxWork<DeskT>& _syx, const Value& _message, double& _gainDb)
 	{
 		const auto op = deskCore::opOf(_message);
@@ -1325,6 +1334,9 @@ namespace
 		if(op == "outputGain")
 			if(const auto* db = _message.find("db"); db && db->isNumber())
 				_gainDb = db->asNumber();
+		if(op == "mixMeters")
+			if(const auto* on = _message.find("on"); on && on->isBool())
+				g_mix.on = on->asBool();
 		reply(_message, true, op == "memoryFactory" ? "The machine starts from factory memory." : "");
 		if(op == "memoryKeep" || op == "memoryFactory")
 		{
@@ -1336,8 +1348,40 @@ namespace
 		}
 	}
 
+	void stubMixLevels(const double _now)
+	{
+		if(!g_mix.on || _now - g_mix.at < 40 * g_timeScale)
+			return;
+		g_mix.at = _now;
+		const auto pair = [](const bool _on, const double _peak, const double _rms)
+		{
+			auto o = Value::object();
+			o.set("on", _on);
+			o.set("clip", false);
+			auto peak = Value::array();
+			auto rms = Value::array();
+			for(int c = 0; c < 2; ++c)
+			{
+				peak.push(_on ? _peak : -96.0);
+				rms.push(_on ? _rms : -96.0);
+			}
+			o.set("peak", std::move(peak));
+			o.set("rms", std::move(rms));
+			return o;
+		};
+		auto pairs = Value::array();
+		pairs.push(pair(true, -12.0, -20.0));
+		pairs.push(pair(true, -30.0, -40.0));
+		pairs.push(pair(false, -96.0, -96.0));
+		Value m = Value::object();
+		m.set("type", "mixLevels");
+		m.set("pairs", std::move(pairs));
+		toPage(m);
+	}
+
 	void periodic(const double _now, double& _cpuAt, double& _levelAt, const double _gainDb)
 	{
+		stubMixLevels(_now);
 		if(_now - _cpuAt >= 1000 * g_timeScale)
 		{
 			_cpuAt = _now;
