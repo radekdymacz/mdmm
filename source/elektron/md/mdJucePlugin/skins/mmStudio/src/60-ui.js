@@ -76,7 +76,7 @@ function renderTop(){
  $$("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.ws===S.ws));
  const lkk=$("#learnkey");if(lkk){lkk.setAttribute("aria-pressed",S.learn);lkk.classList.toggle("on",!!S.learn)}
  $("#platekey span").textContent=S.plate==="mk1"?"MKI":"MKII";
- const n=S.locks.size,m=$("#meter");$("#lockn").textContent=String(n).padStart(2,"0")+"/62";m.className="f meter"+(n>=62?" full":n>=52?" warn":"");
+ const n=S.locks.size,m=$("#meter");$("#lockn").textContent=String(n).padStart(2,"0")+"/62";m.title=`${n} of 62 locked parameters (the machine's limit). A parameter with any lock counts once.`;m.className="f meter"+(n>=62?" full":n>=52?" warn":"");
  $("#bpm").textContent=(S.tempoDraft??S.bpm).toFixed(1);$("#pat").textContent=patName(S.queued??S.pat);$("#pat").parentElement.classList.toggle("queued",S.queued!=null);songLcd();
  /* B-030: the host's tempo (in a DAW the machine follows): marked, and not edited here */
  $("#bpm").parentElement.classList.toggle("hosttempo",!!S.hostTempo);$("#bpm").title=S.hostTempo?"The DAW's tempo: the machine follows the host. Change it in the DAW.":"Drag up or down";
