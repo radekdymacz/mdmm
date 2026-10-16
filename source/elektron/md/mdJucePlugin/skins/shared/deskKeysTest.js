@@ -21,7 +21,7 @@ const Keys = ctx.Keys, Modifiers = ctx.Modifiers, ran = [];
 Modifiers.setPlatform(true);	/* a Mac first: ⌘ is metaKey */
 const setTop = id => { ctx.modalTop = id; };
 Keys.bind({ keys: ["Space"], group: "Transport", does: "play", run: () => ran.push("play") });
-Keys.bind({ keys: ["Delete", "Backspace"], group: "Sequence", does: "clear", run: () => ran.push("clear") });
+Keys.bind({ keys: ["Delete", "Backspace"], group: "Pattern", does: "clear", run: () => ran.push("clear") });
 Keys.bind({ keys: ["1"], group: "Workspaces", does: "seq", run: () => ran.push("ws1") });
 Keys.bind({ keys: ["Z"], mod: "cmd", group: "Anywhere", does: "undo", modal: "panel", run: () => ran.push("undo") });
 Keys.bind({ keys: ["T"], group: "Transport", does: "tap", when: () => Keys.free(), run: () => ran.push("tap") });

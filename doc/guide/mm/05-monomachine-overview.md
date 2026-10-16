@@ -4,34 +4,34 @@
 The Monomachine has six synth tracks. Each track has its own machine, filter, amp, effects, delay and three LFOs. The sequencer plays the six tracks from one pattern, and six MIDI tracks beside them. The keyboard can play the tracks one at a time, all together, or as a trigger for patterns.
 
 ## SIX INDIVIDUAL TRACKS
-<!-- rows: MM-084 @f950e1 -->
+<!-- rows: MM-084 @c7d5fc -->
 
 The six tracks are independent. A kit holds a machine for each and a full set of parameters. In the editor:
 
 - The track rail at the left lists the tracks T1 to T6 with their machines.
-- The **Sound** workspace edits the selected track.
+- The **Kit** workspace edits the selected track.
 - The **Mix** workspace shows the six tracks side by side, each with its own level, pan and routing.
 
 Chapter 6 describes the machines and kits.
 
 ## SIX TRACK SEQUENCING
-<!-- rows: MM-085 @255c32 -->
+<!-- rows: MM-085 @c5a94e -->
 
-A pattern holds the notes, the envelope trigs and the parameter locks of the six tracks. The **Sequence** workspace edits them: a piano roll for notes, with small marks on the notes for envelope trigs, slide, swing and locks, and a lock lane for the parameters. Chapters 10 to 15 describe the sequencer.
+A pattern holds the notes, the envelope trigs and the parameter locks of the six tracks. The **Pattern** workspace edits them: a piano roll for notes, with small marks on the notes for envelope trigs, slide, swing and locks, and a lock lane for the parameters. Chapters 10 to 15 describe the sequencer.
 
-![The Sequence workspace](shot:mm-sequence-workspace)
+![The Pattern workspace](shot:mm-sequence-workspace)
 
 ## MIDI SEQUENCING
-<!-- rows: MM-086 @8ba608 -->
+<!-- rows: MM-086 @f0bab4 -->
 
-Six more tracks in each pattern send MIDI notes. Click **MIDI** in the track rail of the **Sequence** workspace to edit them. The rail then lists M1 to M6, each with its MIDI channel. The **Sound** workspace shows the MIDI page of the selected MIDI track: note length and velocity, pitch bend and program change, and four controllers. Chapter 16 describes the MIDI sequencer.
+Six more tracks in each pattern send MIDI notes. Click **MIDI** in the track rail of the **Pattern** workspace to edit them. The rail then lists M1 to M6, each with its MIDI channel. The **Kit** workspace shows the MIDI page of the selected MIDI track: note length and velocity, pitch bend and program change, and four controllers. Chapter 16 describes the MIDI sequencer.
 
-1. Click **Sequence**, pick track 1 in the rail and check that **Draw** is lit.
+1. Click **Pattern**, pick track 1 in the rail and check that **Draw** is lit.
 2. Click **MIDI**. The rail lists M1 to M6, each with its own roll.
 3. Click a note into each of the six MIDI tracks. Only that track changes: no other MIDI track and no synth track.
 4. Hold [⇧] and click another pitch on a note of M1. The step holds a chord, and all its notes share one length.
 
-![The MIDI tracks in the Sequence workspace](shot:mm-midi-roll)
+![The MIDI tracks in the Pattern workspace](shot:mm-midi-roll)
 
 ## POLY MODE
 <!-- rows: MM-087 @f2f4d7 -->
@@ -45,7 +45,7 @@ In poly mode all six synth engines play one track, the track in focus, so it has
 
 ![Poly mode on track 3](shot:mm-perform-poly)
 
-The line under the keyboard modes names the poly track and says that the others are silent. Its key in the **Assign** card and its lamp under the keyboard read ×6. The keys and lamps of the other tracks dim, and so do their rows in the rail on **Sequence** and **Sound**.
+The line under the keyboard modes names the poly track and says that the others are silent. Its key in the **Assign** card and its lamp under the keyboard read ×6. The keys and lamps of the other tracks dim, and so do their rows in the rail on **Pattern** and **Kit**.
 
 Select another synth track, in the **Assign** card or in the rail, and poly mode moves to it. The first chord on the new track can sound as one note. The chords after it sound in full. A MIDI track selected in the rail leaves poly mode where it is.
 

@@ -551,10 +551,10 @@ const Journey = (() => {
 			{ say: "right-click the header's empty part: the editor's menu, its title the editor and version", act: hands => { if (menu.on()) closeDeskMenu(); hands.rightClick(menu.at); },
 				screen: () => menu.titled(product) },
 			/* the rail is on Sequence and Sound, not on Mix, Song or Control (where an earlier journey may have left the page) */
-			{ say: "Esc, then right-click the track rail (outside the header, no menu of its own; on Sequence when the workspace shown has no rail): the editor's menu there too",
+			{ say: "Esc, then right-click the track rail (outside the header, no menu of its own; on Pattern when the workspace shown has no rail): the editor's menu there too",
 				act: async hands => { hands.key("Escape"); await until(() => !menu.on(), 1000);
 					const shown = () => { const r = $q("#rail"); return !!r && !r.hidden && r.getBoundingClientRect().height > 0; };
-					if (!shown()) { hands.click('#tabs [data-ws="seq"]'); if (!await until(shown, 3000)) throw new Error("no track rail on Sequence"); }
+					if (!shown()) { hands.click('#tabs [data-ws="seq"]'); if (!await until(shown, 3000)) throw new Error("no track rail on Pattern"); }
 					hands.rightClick("#rail", {}, 0.5, 0.97); },
 				screen: () => menu.titled(product) },
 			{ say: "focus Zoom, press →: its submenu, its first entry focused", act: (hands, c) => { c.z0 = menu.zoomSays(); $q(menu.id("zoom")).focus(); hands.key("ArrowRight"); },

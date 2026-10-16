@@ -7,7 +7,7 @@ function ask(html,btns,cls="",item={}){Dlg.show(Object.assign(item,{draw:()=>dra
 function drawAsk(html,btns,cls){const d=$("#dlg");d.innerHTML=`<div class="dlgbox ${cls}" role="alertdialog" aria-modal="true">${/^<(p|div|ol|ul|h[1-6]|section|form)[\s>]/i.test(html)?html:`<p>${html}</p>`}<div class="btnrow">${btns.map(([t,c],i)=>`<button class="${c}" data-dlg="${i}">${t}</button>`).join("")}</div></div>`;d.hidden=false;d._btns=btns;d.querySelector(".btnrow button:last-child")?.focus()}
 
 /* ===== Honest machine state =====
-   Sound edits go out as CCs at once (Appendix B) but stay unsaved in the kit.
+   Kit edits go out as CCs at once (Appendix B) but stay unsaved in the kit.
    Pattern, kit and song DUMPS are different on the Monomachine: it only takes them on
    GLOBAL > FILE > SYSEX RECV while the screen says WAITING (P1-RESULT, GAP-REVIEW 3.1).
    EMU: the app drives that screen itself (the emulator can press the panel).
@@ -118,7 +118,7 @@ function ref(el){const d=el.dataset,t=d.t!=null?+d.t:S.sel,tr=trk(t),g=d.g;
   case"mmap":{const r=S.mmap[+d.i];return[r,d.n,{name:d.n,...{trn:{max:127,signed:1},ofs:{en:["---",...Array.from({length:64},(_,i)=>String(i).padStart(2,"0"))]},len:{max:64},tim:{en:["DIR","1","2","4","8","16","32"]}}[d.n]},t,g]}}}
 const getV=el=>{const[o,n]=ref(el);return o[n]};
 /* Control All (the Machinedrum's FUNCTION + a DATA ENTRY knob, manual p.37; an editor feature here, the
-   Monomachine has none): Alt held while dragging a Sound value, or a curve editor's handle, moves the same
+   Monomachine has none): Alt held while dragging a Kit value, or a curve editor's handle, moves the same
    value of every synth track by the same amount. A machine without that SYN parameter is left out, the
    MIDI tracks are never touched, a value that hits its end does not come back symmetrically. The host
    gets it as one kit edit per frame (edited "sound"): one undo step per gesture. */

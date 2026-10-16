@@ -6,11 +6,11 @@ A kit holds the sixteen sounds of the Machinedrum. For each track it stores the 
 In the editor the kit that plays is the working kit. Your edits change the working kit at once. They reach the stored slot only when you save.
 
 ## MACHINEDRUM KITS
-<!-- rows: MD-038 MD-055 @69da76 -->
+<!-- rows: MD-038 MD-055 @374c9d -->
 
 The **Kit** field of the LCD shows the working kit. Its chip says whether the kit is **saved** or **edited**. The chip turns to **edited** when you change the kit. Edits are lost when you load another kit, unless you save them first. The editor asks before it loses edits. Press [ESC] to cancel the question: nothing loads and your edits stay. [SPACE] presses the focused Cancel key.
 
-The kit library, the Sound workspace and the Mix workspace all read and write the whole kit. The Sound workspace holds the sounds, the Mix workspace the routing and the master effects.
+The kit library, the Kit workspace and the Mix workspace all read and write the whole kit. The Kit workspace holds the sounds, the Mix workspace the routing and the master effects.
 
 ## LOADING A KIT
 <!-- rows: MD-039 MD-040 @960d37 -->
@@ -92,11 +92,11 @@ A copy of the current kit includes the edits you have not saved. Pasting into th
 The slot is written as the machine's own CLEAR KIT leaves it: every track is GND-EMPTY at the same values (level 100, VOL 127), each track's LFO on its own track, the master effects at their start, and no name. The slot then reads EMPTY. Press {key:undo} to get the kit back.
 
 ## KIT ASSEMBLY
-<!-- rows: MD-047 MD-048 @a82e34 -->
+<!-- rows: MD-047 MD-048 @346ae9 -->
 
 Each track holds one machine. The machine decides which synthesis parameters the track has.
 
-1. Open the Sound workspace and select a track.
+1. Open the Kit workspace and select a track.
 2. Click the machine key at the left of the header. It shows the machine and its family. The picker opens.
 3. Click a family at the left: TRX, EFM, E12, P-I, GND, INP, MID, CTR, ROM or RAM.
 4. Click a machine. The track takes it at once.
@@ -131,9 +131,9 @@ The synthesis values stay as they are in both cases and go to the new machine.
 3. Press {key:undo} to take the change back.
 
 ## SETTING MUTE AND TRIG RELATIONS OF A KIT
-<!-- rows: MD-049 MD-050 @acb97e -->
+<!-- rows: MD-049 MD-050 @dcc92a -->
 
-A relation links one track to another. Both are set on the Sound workspace, in the **Relations** group at the right end of the last row.
+A relation links one track to another. Both are set on the Kit workspace, in the **Relations** group at the right end of the last row.
 
 - **Mute**: a trig on this track mutes the track you choose. Use it for an open and a closed hihat.
 - **Trig**: a trig on this track also trigs the track you choose. Use it to layer sounds. Trig relations do not chain.
@@ -148,17 +148,17 @@ Relations are part of the kit. Save the kit to keep them.
 ![The Relations group](shot:md-relations)
 
 ## COPY MACHINE
-<!-- rows: MD-051 @a75a93 -->
+<!-- rows: MD-051 @a1de5c -->
 
-1. Open the Sound workspace and select a track.
+1. Open the Kit workspace and select a track.
 2. Click **Copy** on the LCD, or press {key:copy}.
 
 This copies the machine of the track, its parameter values, its level and its LFO.
 
 ## PASTE MACHINE
-<!-- rows: MD-052 @cf61c4 -->
+<!-- rows: MD-052 @0a32b8 -->
 
-1. Select the track to paste onto, on the Sound workspace.
+1. Select the track to paste onto, on the Kit workspace.
 2. Click **Paste** on the LCD, or press {key:paste}.
 
 The track takes the copied machine, values, level and LFO. {key:undo} takes the paste back. The LFO now targets the track you pasted onto. You can paste as often as you like, onto any track and into any kit: the copy stays until you copy something else.
@@ -166,7 +166,7 @@ The track takes the copied machine, values, level and LFO. {key:undo} takes the 
 ## CLEAR MACHINE
 <!-- rows: MD-053 @ef736e -->
 
-1. Select a track on the Sound workspace.
+1. Select a track on the Kit workspace.
 2. Click the machine key at the left of the header. The picker opens.
 3. Choose **GND-EMPTY**. The track has no machine: the key shows GND-EMPTY.
 4. Press {key:undo} to take the clear back.
@@ -174,9 +174,9 @@ The track takes the copied machine, values, level and LFO. {key:undo} takes the 
 The key **Clr** on the LCD is a different thing. It sets every parameter of the track, its effects and its routing to neutral values and its level to 100, and the track keeps its machine.
 
 ## MACHINE PARAMETER EDITING
-<!-- rows: MD-054 @783241 -->
+<!-- rows: MD-054 @5ff1cd -->
 
-The Sound workspace shows the selected track's parameters in groups. Each group has a title, a small screen and value boxes. Every knob of the machine sits in one group.
+The Kit workspace shows the selected track's parameters in groups. Each group has a title, a small screen and value boxes. Every knob of the machine sits in one group.
 
 - The first row holds the synthesis groups of the machine, for example Pitch, Amp env and Tone.
 - The second row holds the track effects and the routing: chapters 4 and 5.

@@ -1,5 +1,5 @@
 /* ===== Sound by function (MM-PORT-PLAN e): every DATA page's knobs in small groups, data only =====
-   The Sound workspace shows the track's sound as groups of a few knobs, each with a title on a rule, a small
+   The Kit workspace shows the track's sound as groups of a few knobs, each with a title on a rule, a small
    screen where its knobs draw a picture and its boxes (90-sound.js lays them out). The SYNTHESIS page's groups
    are per machine, from the manual's Appendix A (what its knobs do: SWAVE-SAW's unison pair and its subs,
    SID's pulse and its modulation, FM+ per modulator, VO-6's vowel and consonant, an FX machine's effect and

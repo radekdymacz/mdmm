@@ -63,7 +63,7 @@
 <div class="gd-body gd-prose"><h2 id="machinedrum-kits-h">MACHINEDRUM KITS <a class="gd-anchor" href="#machinedrum-kits" aria-label="Link to MACHINEDRUM KITS">#</a></h2>
 <p class="gd-ref">MD manual pp.14, 21</p>
 <p>The <b class="gd-ui">Kit</b> field of the LCD shows the working kit. Its chip says whether the kit is <b class="gd-ui">saved</b> or <b class="gd-ui">edited</b>. The chip turns to <b class="gd-ui">edited</b> when you change the kit. Edits are lost when you load another kit, unless you save them first. The editor asks before it loses edits. Press <kbd class="gd-key">[ESC]</kbd> to cancel the question: nothing loads and your edits stay. <kbd class="gd-key">[SPACE]</kbd> presses the focused Cancel key.</p>
-<p>The kit library, the Sound workspace and the Mix workspace all read and write the whole kit. The Sound workspace holds the sounds, the Mix workspace the routing and the master effects.</p>
+<p>The kit library, the Kit workspace and the Mix workspace all read and write the whole kit. The Kit workspace holds the sounds, the Mix workspace the routing and the master effects.</p>
 </div></section>
 <section class="gd-sec" id="loading-a-kit" aria-labelledby="loading-a-kit-h">
 <div class="gd-body gd-prose"><h2 id="loading-a-kit-h">LOADING A KIT <a class="gd-anchor" href="#loading-a-kit" aria-label="Link to LOADING A KIT">#</a></h2>
@@ -113,7 +113,7 @@
 <div class="gd-body gd-prose"><h2 id="kit-assembly-h">KIT ASSEMBLY <a class="gd-anchor" href="#kit-assembly" aria-label="Link to KIT ASSEMBLY">#</a></h2>
 <p class="gd-ref">MD manual pp.17, 18</p>
 <p>Each track holds one machine. The machine decides which synthesis parameters the track has.</p>
-<ol class="gd-steps"><li>Open the Sound workspace and select a track.</li><li>Click the machine key at the left of the header. It shows the machine and its family. The picker opens.</li><li>Click a family at the left: TRX, EFM, E12, P-I, GND, INP, MID, CTR, ROM or RAM.</li><li>Click a machine. The track takes it at once.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to put the old machine back.</li></ol>
+<ol class="gd-steps"><li>Open the Kit workspace and select a track.</li><li>Click the machine key at the left of the header. It shows the machine and its family. The picker opens.</li><li>Click a family at the left: TRX, EFM, E12, P-I, GND, INP, MID, CTR, ROM or RAM.</li><li>Click a machine. The track takes it at once.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to put the old machine back.</li></ol>
 <p>Hover over a machine to see its name and the names of its knobs in the line under the grid.</p>
 <table class="gd-table"><thead><tr><th>Family</th><th>Machines</th></tr></thead><tbody><tr><td>TRX</td><td>analogue models</td></tr><tr><td>EFM</td><td>FM drums</td></tr><tr><td>E12</td><td>12-bit samples</td></tr><tr><td>P-I</td><td>physical models</td></tr><tr><td>GND</td><td>tone and noise</td></tr><tr><td>INP</td><td>external input</td></tr><tr><td>MID</td><td>MIDI out</td></tr><tr><td>CTR</td><td>control</td></tr><tr><td>ROM</td><td>ROM samples, on the UW models</td></tr><tr><td>RAM</td><td>RAM record and play, on the UW models</td></tr></tbody></table>
 <h4 class="gd-h3" id="keep-effects-and-routing">Keep effects and routing</h4>
@@ -125,7 +125,7 @@
 <section class="gd-sec" id="setting-mute-and-trig-relations-of-a-kit" aria-labelledby="setting-mute-and-trig-relations-of-a-kit-h">
 <div class="gd-body gd-prose"><h2 id="setting-mute-and-trig-relations-of-a-kit-h">SETTING MUTE AND TRIG RELATIONS OF A KIT <a class="gd-anchor" href="#setting-mute-and-trig-relations-of-a-kit" aria-label="Link to SETTING MUTE AND TRIG RELATIONS OF A KIT">#</a></h2>
 <p class="gd-ref">MD manual pp.18, 19</p>
-<p>A relation links one track to another. Both are set on the Sound workspace, in the <b class="gd-ui">Relations</b> group at the right end of the last row.</p>
+<p>A relation links one track to another. Both are set on the Kit workspace, in the <b class="gd-ui">Relations</b> group at the right end of the last row.</p>
 <ul class="gd-list"><li><b class="gd-ui">Mute</b>: a trig on this track mutes the track you choose. Use it for an open and a closed hihat.</li><li><b class="gd-ui">Trig</b>: a trig on this track also trigs the track you choose. Use it to layer sounds. Trig relations do not chain.</li></ul>
 <ol class="gd-steps"><li>Select the track that causes the effect.</li><li>Under <b class="gd-ui">Mute</b> or <b class="gd-ui">Trig</b>, open the menu and choose a track, or choose none.</li></ol>
 <ol class="gd-steps" start="3"><li>To remove a relation, choose none in the same menu.</li></ol>
@@ -135,25 +135,25 @@
 <section class="gd-sec" id="copy-machine" aria-labelledby="copy-machine-h">
 <div class="gd-body gd-prose"><h2 id="copy-machine-h">COPY MACHINE <a class="gd-anchor" href="#copy-machine" aria-label="Link to COPY MACHINE">#</a></h2>
 <p class="gd-ref">MD manual p.19</p>
-<ol class="gd-steps"><li>Open the Sound workspace and select a track.</li><li>Click <b class="gd-ui">Copy</b> on the LCD, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>.</li></ol>
+<ol class="gd-steps"><li>Open the Kit workspace and select a track.</li><li>Click <b class="gd-ui">Copy</b> on the LCD, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>.</li></ol>
 <p>This copies the machine of the track, its parameter values, its level and its LFO.</p>
 </div></section>
 <section class="gd-sec" id="paste-machine" aria-labelledby="paste-machine-h">
 <div class="gd-body gd-prose"><h2 id="paste-machine-h">PASTE MACHINE <a class="gd-anchor" href="#paste-machine" aria-label="Link to PASTE MACHINE">#</a></h2>
 <p class="gd-ref">MD manual p.20</p>
-<ol class="gd-steps"><li>Select the track to paste onto, on the Sound workspace.</li><li>Click <b class="gd-ui">Paste</b> on the LCD, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>.</li></ol>
+<ol class="gd-steps"><li>Select the track to paste onto, on the Kit workspace.</li><li>Click <b class="gd-ui">Paste</b> on the LCD, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>.</li></ol>
 <p>The track takes the copied machine, values, level and LFO. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes the paste back. The LFO now targets the track you pasted onto. You can paste as often as you like, onto any track and into any kit: the copy stays until you copy something else.</p>
 </div></section>
 <section class="gd-sec" id="clear-machine" aria-labelledby="clear-machine-h">
 <div class="gd-body gd-prose"><h2 id="clear-machine-h">CLEAR MACHINE <a class="gd-anchor" href="#clear-machine" aria-label="Link to CLEAR MACHINE">#</a></h2>
 <p class="gd-ref">MD manual p.20</p>
-<ol class="gd-steps"><li>Select a track on the Sound workspace.</li><li>Click the machine key at the left of the header. The picker opens.</li><li>Choose <b class="gd-ui">GND-EMPTY</b>. The track has no machine: the key shows GND-EMPTY.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the clear back.</li></ol>
+<ol class="gd-steps"><li>Select a track on the Kit workspace.</li><li>Click the machine key at the left of the header. The picker opens.</li><li>Choose <b class="gd-ui">GND-EMPTY</b>. The track has no machine: the key shows GND-EMPTY.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the clear back.</li></ol>
 <p>The key <b class="gd-ui">Clr</b> on the LCD is a different thing. It sets every parameter of the track, its effects and its routing to neutral values and its level to 100, and the track keeps its machine.</p>
 </div></section>
 <section class="gd-sec" id="machine-parameter-editing" aria-labelledby="machine-parameter-editing-h">
 <div class="gd-body gd-prose"><h2 id="machine-parameter-editing-h">MACHINE PARAMETER EDITING <a class="gd-anchor" href="#machine-parameter-editing" aria-label="Link to MACHINE PARAMETER EDITING">#</a></h2>
 <p class="gd-ref">MD manual p.21</p>
-<p>The Sound workspace shows the selected track's parameters in groups. Each group has a title, a small screen and value boxes. Every knob of the machine sits in one group.</p>
+<p>The Kit workspace shows the selected track's parameters in groups. Each group has a title, a small screen and value boxes. Every knob of the machine sits in one group.</p>
 <ul class="gd-list"><li>The first row holds the synthesis groups of the machine, for example Pitch, Amp env and Tone.</li><li>The second row holds the track effects and the routing: chapters 4 and 5.</li><li>The third row holds the LFO and the track's relations: chapter 7.</li></ul>
 <p>A group's screen is a picture of what its knobs do. Drag the dots on it to change the knobs. A dot on a rail at the foot of a screen is a knob the curve shows. Each screen has a help text; hover over it.</p>
 <p>Machines without a picture, such as MIDI out, show only boxes and a line about what the machine does.</p>

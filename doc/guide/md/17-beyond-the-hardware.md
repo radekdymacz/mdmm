@@ -60,13 +60,13 @@ The patterns of factory memory are in the editor, and they play. See "PATTERN QU
 4. Press {key:play-stop} again, and choose another pattern the same way.
 
 ## WHAT YOU DRAW PLAYS
-<!-- rows: MD-X24 @b7b866 -->
+<!-- rows: MD-X24 @750cad -->
 
 What you draw in the grid is what the machine plays. Four trigs drawn in an empty pattern sound when you press play, a cleared pattern plays silence, and an undo brings the trigs back.
 
 ![Four trigs drawn on track 1 of an empty pattern](shot:md-real-sequence-drawn)
 
-1. Click the **Sequence** tab.
+1. Click the **Pattern** tab.
 2. Click the pattern on the LCD and choose a pattern with no trigs.
 3. Pick a track on the rail.
 4. Click four steps on that track. Each becomes a trig.
@@ -81,29 +81,29 @@ What you draw in the grid is what the machine plays. Four trigs drawn in an empt
 ## GEN ROLLS A RHYTHM
 <!-- rows: MD-X04 @ea987e -->
 
-The machine has no such function: you set every hit by hand. The **GEN** bar on the **Sequence** workspace rolls a rhythm for the selected track from a few settings. **Random** rolls a new one, **Defaults** sets the generator the track's sound suits, and **Hits** says how many hits it holds. The key [R] rolls too. A whole roll is one undo step.
+The machine has no such function: you set every hit by hand. The **GEN** bar on the **Pattern** workspace rolls a rhythm for the selected track from a few settings. **Random** rolls a new one, **Defaults** sets the generator the track's sound suits, and **Hits** says how many hits it holds. The key [R] rolls too. A whole roll is one undo step.
 
 ## MUTATE CHANGES A SOUND
-<!-- rows: MD-X05 @d98851 -->
+<!-- rows: MD-X05 @ab980b -->
 
 The machine has no such function. **MUTATE** in the **GEN** bar nudges the sound of the tracks at random. The scope chips choose what moves, and the amount says how far. A mutation is one undo step.
 
-![MUTATE on the Sound workspace with only the effects chip lit](shot:e2e-md-gen-mutate-scope)
+![MUTATE on the Kit workspace with only the effects chip lit](shot:e2e-md-gen-mutate-scope)
 
-1. Click the **Sound** tab and pick a track on the rail.
+1. Click the **Kit** tab and pick a track on the rail.
 2. In **MUTATE**, switch the **FX** chip on and the **SYN** chip off. Only the effects move.
 3. Raise the amount by one step.
 4. Click **Random**. The effect values of the track change and the synth values stay.
 5. Press [⌘] [Z]. The sound is as it was.
 
-To mutate and roll together, pick a drum track on the **Sequence** workspace and click **Random** in the **GEN** bar until the rhythm changes. Then click the **Sound** tab and **Random** in **MUTATE**. Click **UNDO** once: the sound is back. Click it again: the rhythm is back.
+To mutate and roll together, pick a drum track on the **Pattern** workspace and click **Random** in the **GEN** bar until the rhythm changes. Then click the **Kit** tab and **Random** in **MUTATE**. Click **UNDO** once: the sound is back. Click it again: the rhythm is back.
 
 ## CLEAR
 <!-- rows: MD-X25 @8f52bc -->
 
 When you play with a sound, **Clear** puts the selected track back as the kit's slot stores it. It restores the machine, every value, the level, the LFO and the two relations of that track. The other tracks, the master effects and the kit name stay as they are. The kit library's **Reload** loads the whole kit again. **Clear** does one track.
 
-1. Click the **Sound** tab and pick a track on the rail.
+1. Click the **Kit** tab and pick a track on the rail.
 2. Turn a few knobs. **Clear** turns on.
 3. Click **Clear**. The values are the stored ones, and the key is off again.
 4. Press {key:undo}. Your edits are back, and the key is on.
@@ -131,7 +131,7 @@ The machine cannot take an edit back. In the editor every edit can be taken back
 
 ![The UNDO and REDO keys in the top bar](shot:e2e-md-top-undo-redo)
 
-1. Click an empty step on the **Sequence** workspace. It becomes a trig.
+1. Click an empty step on the **Pattern** workspace. It becomes a trig.
 2. Press {key:undo}. The trig goes.
 3. Press {key:redo}. The trig is back.
 4. Click **UNDO** in the top bar to take it back again, and **REDO** to put it back.
@@ -143,9 +143,9 @@ A drag, a paint or a run of rotates is one step. Each typed value is one step.
 
 Type a value into a knob instead of turning it.
 
-![A typed value in the Sound workspace](shot:e2e-md-sound-type-value)
+![A typed value in the Kit workspace](shot:e2e-md-sound-type-value)
 
-1. Click the **Sound** tab and pick a track on the rail.
+1. Click the **Kit** tab and pick a track on the rail.
 2. Click a value box with [⌘] held, or focus it and press [ENTER]. A field opens over the box with the value it shows.
 3. Type a value and press [ENTER]. The box shows it, and the machine has it.
 4. A value out of range, such as 128, is refused. The field stays open and nothing is sent.
@@ -158,7 +158,7 @@ With a value focused, the up and down arrow keys step it. Each typed value is on
 
 Right-click a step, or select it and click the **⋯** on it, for its menu: accent or slide, copy, paste and fill.
 
-1. Click the **Sequence** tab and pick a track on the rail.
+1. Click the **Pattern** tab and pick a track on the rail.
 2. Click an empty step to make a trig.
 3. Right-click the step. Its menu opens. The **⋯** on the selected step opens the same menu.
 4. Choose **Accent**. The step is an accent.
@@ -171,7 +171,7 @@ Right-click a step, or select it and click the **⋯** on it, for its menu: acce
 
 Select steps with the mouse, then copy, paste and clear them, on one track or on several. [⌘] click a step to select it, [⌘] drag to select a block. Use **Copy**, **Paste** and **Clr** in the top bar, or {key:copy} and {key:paste} on the keyboard. See "NOTE COPY" in chapter 8.
 
-1. Click the **Sequence** tab and pick a track on the rail.
+1. Click the **Pattern** tab and pick a track on the rail.
 2. [⌘] click a step with a trig. It is selected.
 3. Press {key:copy}, or click **Copy** in the top bar.
 4. [⌘] click an empty step of the same track.
@@ -219,7 +219,7 @@ The track you play from a MIDI keyboard lights on the track rail and in the mixe
 
 ![The track rail and the mixer light of a track that plays](shot:e2e-md-sound-note-light)
 
-1. Click the **Sound** tab.
+1. Click the **Kit** tab.
 2. Play the note of track 3 from a MIDI keyboard on a channel other than the base channel. No track lights.
 3. Play it on the base channel. The number of track 3 on the rail lights for a moment, then goes out.
 4. Click the **Mix** tab and play track 3 again. Its light on the strip lights and no other does.
