@@ -42,7 +42,7 @@ namespace synthLib
 		uint32_t line = 0;
 		uint64_t waits = 0, nanoseconds = 0, maxNanoseconds = 0;
 		// holds only: the holder's own CPU time in its longest (wall time minus the time it was preempted while
-		// holding); 0 where the thread clock is not known
+		// holding); the wall time where there is no thread clock (Windows)
 		uint64_t maxCpuNanoseconds = 0;
 	};
 
@@ -183,7 +183,8 @@ namespace synthLib
 		// A hold of the device lock off the audio thread, by its site. Called while still holding it (the lock
 		// serialises the writers)
 		void recordLockHold(uint64_t _nanoseconds, uint64_t _cpuNanoseconds, const char* _file, uint32_t _line) noexcept;
-		// The calling thread's CPU time (holds); 0 where not known (Windows)
+		// The calling thread's CPU time (holds); 0 where there is no fine thread clock (Windows: Plugin then records
+		// the wall time as the work)
 		static uint64_t threadCpuNanoseconds() noexcept;
 		void recordResampler(uint64_t _nanoseconds, uint64_t _deviceNanoseconds,
 			size_t _hostFrames, bool _resamplingActive) noexcept;

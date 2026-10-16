@@ -143,6 +143,9 @@ namespace md
 		// factoryFlashBaseline() would give one (the factory flash is ready and its cache or capture is there),
 		// without making it: for the facts the audio thread publishes
 		bool hasFactoryFlashBaseline() const;
+		// The same, never waiting (the audio thread's facts, DESIGN-audio-lock.md): when another thread holds the factory
+		// flash lock, the value the last call of either saw
+		bool hasFactoryFlashBaselineRealtime() const;
 		bool factoryFlashCacheReady();
 		bool isFactoryFlashCacheReady() const
 		{
@@ -402,6 +405,7 @@ namespace md
 		std::atomic<bool> m_factoryFlashReady{false};
 		std::atomic<bool> m_factoryFlashPreparationReady{false};
 		mutable std::mutex m_factoryFlashMutex;
+		mutable std::atomic<bool> m_factoryFlashBaselineSeen{false};	// hasFactoryFlashBaseline's last answer
 		std::vector<uint8_t> m_factoryFlashCache;
 		// Never null; immutable once its capture completes, so a state save shares it (FactoryFlashBaseline)
 		std::shared_ptr<std::vector<uint8_t>> m_factoryFlashBaseline;

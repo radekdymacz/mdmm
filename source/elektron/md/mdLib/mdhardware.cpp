@@ -670,7 +670,21 @@ namespace md
 		if(!m_factoryFlashReady.load(std::memory_order_acquire))
 			return false;
 		std::lock_guard lock(m_factoryFlashMutex);
-		return m_factoryBaseline || !m_factoryFlashCache.empty() || !m_factoryFlashBaseline->empty();
+		const bool has = m_factoryBaseline || !m_factoryFlashCache.empty() || !m_factoryFlashBaseline->empty();
+		m_factoryFlashBaselineSeen.store(has, std::memory_order_relaxed);
+		return has;
+	}
+
+	bool Hardware::hasFactoryFlashBaselineRealtime() const
+	{
+		if(!m_factoryFlashReady.load(std::memory_order_acquire))
+			return false;
+		std::unique_lock lock(m_factoryFlashMutex, std::try_to_lock);
+		if(!lock.owns_lock())
+			return m_factoryFlashBaselineSeen.load(std::memory_order_relaxed);
+		const bool has = m_factoryBaseline || !m_factoryFlashCache.empty() || !m_factoryFlashBaseline->empty();
+		m_factoryFlashBaselineSeen.store(has, std::memory_order_relaxed);
+		return has;
 	}
 
 	void Hardware::copyPatchRamTo(std::vector<uint8_t>& _out) const

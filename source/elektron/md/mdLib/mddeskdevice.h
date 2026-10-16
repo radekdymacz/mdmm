@@ -47,6 +47,7 @@ namespace md
 			PanelSequenceMore		// a = hold frames, data = the next packets
 		};
 		static constexpr size_t PacketsPerCommand = synthLib::DeviceCommand::DataSize / 2;
+		static constexpr size_t PanelSequenceCapacity = 512;	// packets queued at most (m_panelSequence)
 		static synthLib::DeviceCommand panelEventCommand(uint8_t _row, uint8_t _mask);
 		static std::vector<synthLib::DeviceCommand> panelSequenceCommands(const std::vector<PanelPacket>& _states, uint32_t _holdFrames);
 		bool applyCommand(const synthLib::DeviceCommand& _command) override;
@@ -172,10 +173,10 @@ namespace md
 		const Hardware* m_bootAnimationOf = nullptr;
 		// 512: the MM SYSEX RECV macro alone is 29 keys, about 60 row states (MM-P2); the UNDO KIT route is up to
 		// 128 + 3 keys, about 262 states on the MM and 134 on the MD (MD-043, MM-102).
-		std::array<PanelPacket, 512> m_panelSequence{};
+		std::array<PanelPacket, PanelSequenceCapacity> m_panelSequence{};
 		size_t m_panelSequenceSize = 0;
 		size_t m_panelSequenceNext = 0;
-		std::array<uint32_t, 512> m_panelSequenceHolds{};
+		std::array<uint32_t, PanelSequenceCapacity> m_panelSequenceHolds{};
 		uint64_t m_panelSequenceAt = 0;
 		bool m_panelSequenceRefused = false;	// the sequence being applied as commands did not fit: its rest is dropped
 		uint64_t m_frames = 0;

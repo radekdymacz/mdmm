@@ -4,6 +4,8 @@
 
 #include "mdLib/mddeskdevice.h"
 
+#include <algorithm>
+
 namespace mdJucePlugin
 {
 	MachineFacts machineFactsOf(synthLib::Device* const _device)
@@ -36,7 +38,7 @@ namespace mdJucePlugin
 		f.firmwareFingerprint = hw.firmwareFingerprint();
 		f.factoryFlashInitializationExpected = hw.isFactoryFlashInitializationExpected();
 		f.factoryFlashReadyForReboot = hw.isFactoryFlashReadyForReboot();
-		f.factoryFlashBaseline = hw.hasFactoryFlashBaseline();
+		f.factoryFlashBaseline = hw.hasFactoryFlashBaselineRealtime();	// never waits: on the audio thread
 		f.firmwareMidiReady = hw.isFirmwareMidiReady();
 		f.stalled = hw.schedulerStalled();
 		f.cycles = hw.hostCurrentCycle();
@@ -46,7 +48,10 @@ namespace mdJucePlugin
 		if(f.valid)
 			f.dspBooted = static_cast<uint8_t>((hw.getDspMixer().booted() ? 1 : 0) + (hw.getDspProducer().booted() ? 1 : 0));
 		if(desk)
+		{
 			f.audition = desk->auditionStatus();
+			f.panelPending = static_cast<uint32_t>(std::max(0, desk->getSequencerTelemetry()->panelPending.load(std::memory_order_relaxed)));
+		}
 		return f;
 	}
 }

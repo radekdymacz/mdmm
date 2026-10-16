@@ -192,7 +192,7 @@ namespace mdJucePlugin
 		}
 		editFlow::panelOut(states.size());
 		// 10 ms each, in machine time (the audio thread sends them).
-		return m_processor.sendDeskCommands(md::DeskDevice::panelSequenceCommands(states, md::g_samplerate * 10 / 1000));
+		return m_processor.sendDeskCommands(md::DeskDevice::panelSequenceCommands(states, md::g_samplerate * 10 / 1000), states.size());
 	}
 
 	bool MmStudioLink::pressBankTrigs(const uint8_t _bank, const std::vector<uint8_t>& _trigs) const
@@ -204,7 +204,7 @@ namespace mdJucePlugin
 		if(states.empty())
 			return false;
 		editFlow::panelOut(states.size());
-		return m_processor.sendDeskCommands(md::DeskDevice::panelSequenceCommands(states, md::g_samplerate * 10 / 1000));
+		return m_processor.sendDeskCommands(md::DeskDevice::panelSequenceCommands(states, md::g_samplerate * 10 / 1000), states.size());
 	}
 
 	mmDesk::Telemetry MmStudioLink::readTelemetry()

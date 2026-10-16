@@ -147,7 +147,7 @@ namespace mdJucePlugin
 			return false;
 		editFlow::panelOut(states.size());
 		// Held 40 ms each in machine time (the audio thread sends them).
-		return m_processor.sendDeskCommands(md::DeskDevice::panelSequenceCommands(states, md::g_samplerate * 40 / 1000));
+		return m_processor.sendDeskCommands(md::DeskDevice::panelSequenceCommands(states, md::g_samplerate * 40 / 1000), states.size());
 	}
 
 	bool StudioLink::turnKnob(const uint8_t _encoder, const int _steps) const
@@ -162,7 +162,7 @@ namespace mdJucePlugin
 		const std::vector<md::PanelPacket> steps(static_cast<size_t>(std::abs(_steps)),
 			md::PanelPacket{*command, static_cast<uint8_t>(_steps > 0 ? 0x01 : 0xff)});
 		editFlow::panelOut(steps.size());
-		return m_processor.sendDeskCommands(md::DeskDevice::panelSequenceCommands(steps, 1));
+		return m_processor.sendDeskCommands(md::DeskDevice::panelSequenceCommands(steps, 1), steps.size());
 	}
 
 	mdDesk::Telemetry StudioLink::readTelemetry()

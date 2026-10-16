@@ -149,8 +149,11 @@ namespace synthLib
 				if(m_start != std::chrono::steady_clock::time_point{})
 				{
 					const auto cpu = RealtimeInstrumentation::threadCpuNanoseconds();
-					m_plugin.m_realtimeInstrumentation.recordLockHold(static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
-						std::chrono::steady_clock::now() - m_start).count()), cpu >= m_startCpu ? cpu - m_startCpu : 0, m_file, m_line);
+					const auto wall = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+						std::chrono::steady_clock::now() - m_start).count());
+					// no thread clock (Windows: GetThreadTimes ticks in scheduler quanta): the wall time stands for the work
+					const auto work = cpu || m_startCpu ? (cpu >= m_startCpu ? cpu - m_startCpu : 0) : wall;
+					m_plugin.m_realtimeInstrumentation.recordLockHold(wall, work, m_file, m_line);
 				}
 				m_plugin.m_holderFile.store(m_outerFile, std::memory_order_relaxed);
 				m_plugin.m_holderLine.store(m_outerLine, std::memory_order_relaxed);
@@ -169,9 +172,9 @@ namespace synthLib
 		};
 		struct PublishOnExit
 		{
-			const Plugin& plugin;
-			explicit PublishOnExit(const Plugin& _plugin) : plugin(_plugin) {}
-			~PublishOnExit() { plugin.publishFacts(); }
+			const Plugin& m_plugin;
+			explicit PublishOnExit(const Plugin& _plugin) : m_plugin(_plugin) {}
+			~PublishOnExit() { m_plugin.publishFacts(); }
 		};
 		// Under m_lock: the latencies and the FactsCallback's facts
 		void publishFacts() const;
@@ -204,7 +207,9 @@ namespace synthLib
 		Device* m_device;
 		std::atomic<uint64_t> m_deviceGeneration{0};	// counts setDevice: a capture in parts knows its device was replaced
 
-		// sendCommands' queue: producers serialise on m_lockCommands, the holder of m_lock consumes
+		// sendCommands' queue: producers serialise on m_lockCommands, the holder of m_lock consumes. Lock order:
+		// m_lockCommands before m_lock (sendCommands' full-queue path), never the other way round: nothing holding
+		// m_lock (a withDeviceLocked callback, a FactsCallback, Device::applyCommand) may call sendCommands
 		std::array<DeviceCommand, CommandCapacity> m_commands{};
 		std::atomic<uint64_t> m_commandWrite{0};
 		std::atomic<uint64_t> m_commandRead{0};
