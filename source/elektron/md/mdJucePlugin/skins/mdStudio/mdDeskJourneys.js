@@ -1270,6 +1270,8 @@ const MdJourneys = (() => {
 			go("sound"),
 			{ say: "a MIDI keyboard plays track 3's note on another channel than the base: no track lights", act: async (u, c) => { c.g = Docs.global; c.n = c.g.keymap.indexOf(2); watchLit(c, "#rail .th", "hit"); window.gm.recv([{ type: "midiIn", ch: (c.g.baseChannel + 1) % 16, note: c.n, vel: 100 }]); await sleep(300); },
 				screen: c => ok(c.n >= 0 && c.lit.size === 0, "note " + c.n + ", lit " + [...c.lit]) },
+			{ say: "a note the map gives no track (null in the map) lights nothing", act: async (u, c) => { const free = c.g.keymap.findIndex(x => x == null); watchLit(c, "#rail .th", "hit"); if (free >= 0) window.gm.recv([{ type: "midiIn", ch: c.g.baseChannel, note: free, vel: 100 }]); await sleep(300); },
+				screen: c => ok(c.lit.size === 0, "lit " + [...c.lit]) },
 			{ say: "on the base channel: track 3's number on the rail lights for a moment", act: (u, c) => { watchLit(c, "#rail .th", "hit"); window.gm.recv([{ type: "midiIn", ch: c.g.baseChannel, note: c.n, vel: 100 }]); },
 				screen: c => ok(c.lit.has(2) && c.lit.size === 1, "lit " + [...c.lit]), within: 2000 },
 			{ say: "and goes out", screen: () => ok(!$1('#rail .th[data-sel="2"]').classList.contains("hit"), "still lit"), within: 2000 },
@@ -1279,6 +1281,43 @@ const MdJourneys = (() => {
 			{ say: "the square goes out by itself", screen: () => ok($all(".trigsq").every(e => e.getAnimations().length === 0), "still animating"), within: 2000 }
 		],
 		async tidy(u, c) { c?.obs?.disconnect(); }
+	};
+	/* I-003: FOLLOW PLAYED TRACK in the engine menu (off by default, kept in the editor's setup): a note from a MIDI controller
+	   (midiIn) that the key map gives a track on the four base channels selects that track; another channel does not */
+	const followKeyLabel = () => $1('#engsel option[value="followPlayed"]')?.textContent;
+	const followPlayed = {
+		name: "md-follow-played-track", proves: ["MD-X26"],
+		steps: [
+			go("sound"),
+			{ say: "track 1 is selected; the engine menu says FOLLOW PLAYED TRACK: OFF", act: async (u, c) => { c.g = Docs.global; c.t = 4; c.far = c.g.baseChannel + 4 <= 15 ? c.g.baseChannel + 4 : c.g.baseChannel - 1; u.click('#rail .th[data-sel="0"]'); await sleep(200); },
+				screen: () => ok(S.sel === 0 && followKeyLabel() === "FOLLOW PLAYED TRACK: OFF", "track " + S.sel + ", " + followKeyLabel()), within: 4000 },
+			{ say: "off: a MIDI keyboard plays track 5's note on the base channel: the selection stays", act: async (u, c) => { c.n = c.g.keymap.indexOf(c.t); window.gm.recv([{ type: "midiIn", ch: c.g.baseChannel, note: c.n, vel: 100 }]); await sleep(300); },
+				screen: c => ok(c.n >= 0 && S.sel === 0, "note " + c.n + ", track " + S.sel) },
+			{ say: "choose FOLLOW PLAYED TRACK in the engine menu: it reads ON, the plug-in keeps it", act: u => u.pick("engsel", "followPlayed"),
+				screen: () => ok(followKeyLabel() === "FOLLOW PLAYED TRACK: ON", followKeyLabel()), within: 4000 },
+			{ say: "on: track 5's note on the base channel selects track 5", act: (u, c) => window.gm.recv([{ type: "midiIn", ch: c.g.baseChannel, note: c.n, vel: 100 }]),
+				screen: c => ok(S.sel === c.t, "track " + S.sel), within: 2000 },
+			{ say: "track 3's note on the last of the four base channels selects track 3", act: async (u, c) => { window.gm.recv([{ type: "midiIn", ch: c.g.baseChannel + 3, note: c.g.keymap.indexOf(2), vel: 100 }]); },
+				screen: () => ok(S.sel === 2, "track " + S.sel), within: 2000 },
+			{ say: "a burst of 40 notes alternating track 5 and track 9, ending on 9: one selection, track 9", act: async (u, c) => { c.cnt = 0; const sl = window.select; window.select = t => { c.cnt++; sl(t); };
+					try { window.gm.recv(Array.from({ length: 40 }, (_, i) => ({ type: "midiIn", ch: c.g.baseChannel, note: c.g.keymap.indexOf(i % 2 ? 8 : 4), vel: 100 }))); await sleep(300); } finally { window.select = sl; } },
+				screen: c => ok(S.sel === 8 && c.cnt === 1, "track " + S.sel + ", " + c.cnt + " selections") },
+			{ say: "a question open: a note for track 3 leaves the selection", act: async (u, c) => { await u.pick("engsel", "reset"); await until(dlgShown, 3000); window.gm.recv([{ type: "midiIn", ch: c.g.baseChannel, note: c.g.keymap.indexOf(2), vel: 100 }]); await sleep(300); },
+				screen: () => ok(S.sel === 8 && dlgShown(), "track " + S.sel) },
+			{ say: "Cancel the question: the note selects track 3 again", act: async (u, c) => { u.click(dlgButton("Cancel")); await until(() => !dlgShown(), 3000); window.gm.recv([{ type: "midiIn", ch: c.g.baseChannel, note: c.g.keymap.indexOf(2), vel: 100 }]); },
+				screen: () => ok(S.sel === 2, "track " + S.sel), within: 2000 },
+			{ say: "LEARN waiting for a note: a note for track 5 leaves the selection", act: async (u, c) => { GP.learn = 4; window.gm.recv([{ type: "midiIn", ch: c.g.baseChannel, note: c.n, vel: 100 }]); await sleep(300); GP.learn = null; },
+				screen: () => ok(S.sel === 2, "track " + S.sel) },
+			{ say: "a note for track 9 on a channel outside the base channels: the selection stays", act: async (u, c) => { window.gm.recv([{ type: "midiIn", ch: c.far, note: c.g.keymap.indexOf(8), vel: 100 }]); await sleep(300); },
+				screen: () => ok(S.sel === 2, "track " + S.sel) },
+			{ say: "a note the map gives no track: the selection stays", act: async (u, c) => { const free = c.g.keymap.findIndex(x => x == null || x < 0); window.gm.recv([{ type: "midiIn", ch: c.g.baseChannel, note: free < 0 ? 127 : free, vel: 100 }]); await sleep(300); },
+				screen: () => ok(S.sel === 2, "track " + S.sel) },
+			{ say: "choose it again: OFF, and a note no longer moves the selection", act: async u => { await u.pick("engsel", "followPlayed"); await sleep(300); },
+				screen: c => ok(followKeyLabel() === "FOLLOW PLAYED TRACK: OFF", followKeyLabel()), within: 4000 },
+			{ say: "off again: track 5's note leaves track 3 selected", act: async (u, c) => { window.gm.recv([{ type: "midiIn", ch: c.g.baseChannel, note: c.n, vel: 100 }]); await sleep(300); },
+				screen: () => ok(S.sel === 2, "track " + S.sel) }
+		],
+		async tidy(u) { if (followKeyLabel() === "FOLLOW PLAYED TRACK: ON") await u.pick("engsel", "followPlayed"); }
 	};
 	const audioPanel = {
 		name: "md-audio-panel", proves: [],
@@ -3194,7 +3233,7 @@ const MdJourneys = (() => {
 		mixSolo, soloSaved, shiftMutes, allOff, fader, lev, outKey, masterFx,
 		songArrange, songChain, songPlayhead, songSlots, songKeys, shotsSongSlots, samplerSlots, samplerSetup, audition,
 		libDialog, kitCopy, kitRename, kitClear, patGo, patClear, dialogEsc,
-		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, noteLights, audioPanel, romCard, notePlay,
+		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, noteLights, followPlayed, audioPanel, romCard, notePlay,
 		lockRamp, pasteMany, mutScope, songInspector, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
 		syxImportMute, globalReset, shotsGlobal, shotsSound, shotsReview, shots, shotsSong, shotsImport, editorMenuJ, memoryJ, shotsMenu, ...cpuJs, ...volJs,
 		dropSyxJ, dropSampleJ, ...viewJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, modalLock, songFactoryPlay, lockKeysFit, resetFactory, resetEmpty, syxRunningReach];
