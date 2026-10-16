@@ -48,11 +48,14 @@ ED.pulse={duty(){const m=trk(S.sel).m,p=sv("PW");return m==="SID-6581"?clamp(p/1
 ED.sidwave={draw(g,W,H){const w=sv("WAVE"),pw=sv("PW")/127,ink=cssv("--ink");grid(g,W,H);
   line(g,W,x=>{const p=(x/W*3)%1;const v=[1-4*Math.abs(p-.5),2*p-1,p<pw?1:-1,((p*7)%1<.5?1:-1)*(p<.5?1:.4),RND[Math.floor(x/3)%8]][w]??0;return H/2+4-v*(H/2-22)},ink,2);
   label(g,EN["SID-6581.WAVE"][w]+(sv("MOD")?" · "+EN["SID-6581.MOD"][sv("MOD")]+(sv("MSRC")?" from PRCH":" from MFRQ"):""))}};
-/* SWAVE-ENS / DPRO-DENS: the chord from one track, C plus PCH2-4 */
-ED.chord={draw(g,W,H){const ink=cssv("--ink"),offs=["PCH2","PCH3","PCH4"].map(p=>sv(p)).filter(v=>v).map(v=>v-64);const kw=(W-16)/15,y0=24,wh=H-30;let wx=8;grid(g,W,H);
-  for(let k=0;k<25;k++){if([1,3,6,8,10].includes(k%12))continue;g.strokeStyle=ink;g.lineWidth=1;g.strokeRect(wx+.5,y0+.5,kw-1,wh-1);if(k===0||offs.includes(k)){g.fillStyle=ink;g.beginPath();g.arc(wx+kw/2,y0+wh-10,4.5,0,7);g.fill()}wx+=kw}
-  wx=8;for(let k=0;k<25;k++){if(![1,3,6,8,10].includes(k%12)){wx+=kw;continue}g.fillStyle=ink;g.fillRect(wx-kw*.3,y0,kw*.6,wh*.58);if(offs.includes(k)){g.fillStyle=cssv("--scr");g.beginPath();g.arc(wx,y0+wh*.45,3.5,0,7);g.fill()}}
-  label(g,"C + "+(offs.length?offs.join(" "):"no other notes"))}};
+/* SWAVE-ENS / DPRO-DENS: the chord from one track, C plus PCH2-4 as the machine reads them (B-151: 40-data.js PCHTAB):
+   OFF no note, a semitone on its key, an interval ratio on its nearest key, marked with a ring. Two octaves, C in the middle */
+ED.chord={notes(){return["PCH2","PCH3","PCH4"].map(p=>tabAt(PCHTAB,sv(p))).filter(e=>e.r!=null).map(e=>({k:12+Math.round(e.r),ratio:pchRatio(e),t:e.t}))},
+ draw(g,W,H){const ink=cssv("--ink"),N=this.notes(),kw=(W-16)/15,y0=24,wh=H-30;let wx=8;grid(g,W,H);
+  const mark=(x,y,r,n,on,off)=>{const ring=n.some(o=>o.ratio)&&!n.some(o=>!o.ratio);g.beginPath();g.arc(x,y,r,0,7);if(ring){g.strokeStyle=on;g.lineWidth=1.5;g.stroke()}else{g.fillStyle=on;g.fill()}};
+  for(let k=0;k<25;k++){if([1,3,6,8,10].includes(k%12))continue;g.strokeStyle=ink;g.lineWidth=1;g.strokeRect(wx+.5,y0+.5,kw-1,wh-1);const n=N.filter(o=>o.k===k);if(k===12)mark(wx+kw/2,y0+wh-10,4.5,[{}],ink);else if(n.length)mark(wx+kw/2,y0+wh-10,4.5,n,ink);wx+=kw}
+  wx=8;for(let k=0;k<25;k++){if(![1,3,6,8,10].includes(k%12)){wx+=kw;continue}g.fillStyle=ink;g.fillRect(wx-kw*.3,y0,kw*.6,wh*.58);const n=N.filter(o=>o.k===k);if(n.length)mark(wx,y0+wh*.45,3.5,n,cssv("--scr"))}
+  label(g,"C + "+(N.length?N.map(o=>o.t).join(" "):"no other notes"))}};
 /* the ensemble's wave: saw through square to spikes (WAVE), PW mutates it; DPRO-DENS: one of the 64 waves, D01-D64 */
 /* a DigiPRO wave knob as the machine names it (B-150: 40-data.js WAVD, WAVS): {i: its index, t: D01 / S01} */
 const dpWave=n=>{const tab=TAB[trk(S.sel).m+"."+n];if(tab){const e=tabAt(tab,sv(n));return{i:e.r,t:e.t}}const i=clamp(sv(n),0,31);return{i,t:WAVS[i]}};
@@ -190,7 +193,7 @@ const SND_TIP={uni:"The base saw (middle) and the unison pair either side: UNIW 
  sub:"The subs below the base (faint): SUB1 a sine one octave down, SUB2 two, SUBX a square one octave down. Drag a bar's top.",
  pulse:"Two cycles of the pulse: PW its width (SWAVE: 0 = square, either end a spike), dashed the PWAD sweep. The dot on the rail is PW.",
  sidwave:"The SID's waveform at PW; the modulation (RING, SYNC) and where its second frequency comes from in the title.",
- chord:"The notes one trig plays: C, and PCH2-4 semitones above it. Lock PCH2-4 per step to change chord.",
+ chord:"The notes one trig plays: C, and PCH2-4 up or down from it: OFF, -12 to +12 semitones, or an interval (2/3 to 3/2, a ring on the nearest key). Lock PCH2-4 per step to change chord.",
  enswave:"The ensemble's wave: WAVE from saw through square to spikes (the rail), PW mutates it.",
  morph:"Two cycles of the wave: WP morphs it into the next one (DPRO-DDRW: MIX blends WAV1 and WAV2). Drag the dot sideways.",
  drum:"One hit from STRT on (the rail); the key picks which of the 24 drums plays.",

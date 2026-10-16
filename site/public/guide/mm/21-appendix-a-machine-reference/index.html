@@ -79,7 +79,7 @@
 <section class="gd-sec" id="swave-ens" aria-labelledby="swave-ens-h">
 <div class="gd-body gd-prose"><h2 id="swave-ens-h">SWAVE-ENS <a class="gd-anchor" href="#swave-ens" aria-label="Link to SWAVE-ENS">#</a></h2>
 <p class="gd-ref">MM manual p.A-2</p>
-<p>An ensemble of oscillators. <b class="gd-light">&lt;PCH2&gt;</b> to <b class="gd-light">&lt;PCH4&gt;</b> pitch the extra voices, <b class="gd-light">&lt;WAVE&gt;</b> picks the wave and <b class="gd-light">&lt;CHRL&gt;</b> and <b class="gd-light">&lt;CHRW&gt;</b> set the chorus.</p>
+<p>An ensemble of oscillators. <b class="gd-light">&lt;PCH2&gt;</b> to <b class="gd-light">&lt;PCH4&gt;</b> pitch the extra voices: OFF, -12 to +12 semitones, or an interval (2/3, 3/4, 4/5, 5/6 below, 6/5, 5/4, 4/3, 3/2 above), <b class="gd-light">&lt;WAVE&gt;</b> picks the wave and <b class="gd-light">&lt;CHRL&gt;</b> and <b class="gd-light">&lt;CHRW&gt;</b> set the chorus.</p>
 </div></section>
 <section class="gd-sec" id="sid-6581" aria-labelledby="sid-6581-h">
 <div class="gd-body gd-prose"><h2 id="sid-6581-h">SID 6581 <a class="gd-anchor" href="#sid-6581" aria-label="Link to SID 6581">#</a></h2>
@@ -89,7 +89,7 @@
 <section class="gd-sec" id="dpro-wave" aria-labelledby="dpro-wave-h">
 <div class="gd-body gd-prose"><h2 id="dpro-wave-h">DPRO-WAVE <a class="gd-anchor" href="#dpro-wave" aria-label="Link to DPRO-WAVE">#</a></h2>
 <p class="gd-ref">MM manual p.A-4</p>
-<p>A wave player on the DigiPRO. <b class="gd-light">&lt;WAVE&gt;</b> picks the wave, <b class="gd-light">&lt;WP&gt;</b> shapes it, <b class="gd-light">&lt;SYNC&gt;</b> and <b class="gd-light">&lt;SFRQ&gt;</b> set oscillator sync.</p>
+<p>A wave player on the DigiPRO. <b class="gd-light">&lt;WAVE&gt;</b> picks one of the 32 waves, S01 to S32, <b class="gd-light">&lt;WP&gt;</b> shapes it, <b class="gd-light">&lt;SYNC&gt;</b> and <b class="gd-light">&lt;SFRQ&gt;</b> set oscillator sync.</p>
 </div></section>
 <section class="gd-sec" id="dpro-bbox" aria-labelledby="dpro-bbox-h">
 <div class="gd-body gd-prose"><h2 id="dpro-bbox-h">DPRO-BBOX <a class="gd-anchor" href="#dpro-bbox" aria-label="Link to DPRO-BBOX">#</a></h2>
@@ -99,27 +99,27 @@
 <section class="gd-sec" id="dpro-ddrw" aria-labelledby="dpro-ddrw-h">
 <div class="gd-body gd-prose"><h2 id="dpro-ddrw-h">DPRO-DDRW <a class="gd-anchor" href="#dpro-ddrw" aria-label="Link to DPRO-DDRW">#</a></h2>
 <p class="gd-ref">MM manual p.A-5</p>
-<p>A machine built on two waves. <b class="gd-light">&lt;WAV1&gt;</b> and <b class="gd-light">&lt;WAV2&gt;</b> pick them, <b class="gd-light">&lt;MIX&gt;</b> blends them and <b class="gd-light">&lt;TIME&gt;</b>, <b class="gd-light">&lt;BR1&gt;</b>, <b class="gd-light">&lt;WID&gt;</b> and <b class="gd-light">&lt;BR2&gt;</b> shape the draw between them.</p>
+<p>A machine built on two waves. <b class="gd-light">&lt;WAV1&gt;</b> and <b class="gd-light">&lt;WAV2&gt;</b> pick them from the 64 waves, D01 to D64, <b class="gd-light">&lt;MIX&gt;</b> blends them and <b class="gd-light">&lt;TIME&gt;</b>, <b class="gd-light">&lt;BR1&gt;</b>, <b class="gd-light">&lt;WID&gt;</b> and <b class="gd-light">&lt;BR2&gt;</b> shape the draw between them.</p>
 </div></section>
 <section class="gd-sec" id="dpro-dens" aria-labelledby="dpro-dens-h">
 <div class="gd-body gd-prose"><h2 id="dpro-dens-h">DPRO-DENS <a class="gd-anchor" href="#dpro-dens" aria-label="Link to DPRO-DENS">#</a></h2>
 <p class="gd-ref">MM manual p.A-5</p>
-<p>A stack of voices from one wave. <b class="gd-light">&lt;PCH2&gt;</b> to <b class="gd-light">&lt;PCH4&gt;</b> pitch the extra voices and <b class="gd-light">&lt;CHRL&gt;</b> and <b class="gd-light">&lt;CHRW&gt;</b> set the chorus.</p>
+<p>A stack of voices from one wave. <b class="gd-light">&lt;WAVE&gt;</b> picks it, D01 to D64. <b class="gd-light">&lt;PCH2&gt;</b> to <b class="gd-light">&lt;PCH4&gt;</b> pitch the extra voices as on SWAVE-ENS and <b class="gd-light">&lt;CHRL&gt;</b> and <b class="gd-light">&lt;CHRW&gt;</b> set the chorus.</p>
 </div></section>
 <section class="gd-sec" id="fm-stat" aria-labelledby="fm-stat-h">
 <div class="gd-body gd-prose"><h2 id="fm-stat-h">FM+STAT <a class="gd-anchor" href="#fm-stat" aria-label="Link to FM+STAT">#</a></h2>
 <p class="gd-ref">MM manual p.A-6</p>
-<p>A static FM machine. <b class="gd-light">&lt;1FRQ&gt;</b>, <b class="gd-light">&lt;1FIN&gt;</b>, <b class="gd-light">&lt;1ENV&gt;</b> and <b class="gd-light">&lt;1FB&gt;</b> set the first operator, <b class="gd-light">&lt;2FRQ&gt;</b> and <b class="gd-light">&lt;2VOL&gt;</b> the second, <b class="gd-light">&lt;TONE&gt;</b> the tone.</p>
+<p>A static FM machine. <b class="gd-light">&lt;1FRQ&gt;</b>, <b class="gd-light">&lt;1FIN&gt;</b>, <b class="gd-light">&lt;1ENV&gt;</b> and <b class="gd-light">&lt;1FB&gt;</b> set the first operator, <b class="gd-light">&lt;2FRQ&gt;</b> and <b class="gd-light">&lt;2VOL&gt;</b> the second, <b class="gd-light">&lt;TONE&gt;</b> the tone. <b class="gd-light">&lt;1FRQ&gt;</b> and <b class="gd-light">&lt;2FRQ&gt;</b> step through 24 frequencies, from 1/64 to 4 times the note.</p>
 </div></section>
 <section class="gd-sec" id="fm-par" aria-labelledby="fm-par-h">
 <div class="gd-body gd-prose"><h2 id="fm-par-h">FM+PAR <a class="gd-anchor" href="#fm-par" aria-label="Link to FM+PAR">#</a></h2>
 <p class="gd-ref">MM manual p.A-7</p>
-<p>A parallel FM machine. Three operators have a frequency and an envelope each, <b class="gd-light">&lt;TONE&gt;</b> sets the tone.</p>
+<p>A parallel FM machine. Three operators have a frequency and an envelope each, <b class="gd-light">&lt;TONE&gt;</b> sets the tone. <b class="gd-light">&lt;1FRQ&gt;</b>, <b class="gd-light">&lt;2FRQ&gt;</b> and <b class="gd-light">&lt;3FRQ&gt;</b> step through the same 24 frequencies as FM+STAT, 1/64 to 4.</p>
 </div></section>
 <section class="gd-sec" id="fm-dyn" aria-labelledby="fm-dyn-h">
 <div class="gd-body gd-prose"><h2 id="fm-dyn-h">FM+DYN <a class="gd-anchor" href="#fm-dyn" aria-label="Link to FM+DYN">#</a></h2>
 <p class="gd-ref">MM manual p.A-7</p>
-<p>A dynamic FM machine. The first operator has frequency, frequency envelope, volume and volume envelope, the second frequency, envelope and feedback.</p>
+<p>A dynamic FM machine. The first operator has frequency, frequency envelope, volume and volume envelope, the second frequency, envelope and feedback. <b class="gd-light">&lt;1FRQ&gt;</b> and <b class="gd-light">&lt;2FRQ&gt;</b> change in fine steps and show the frequency as the machine writes it, a fraction or a number.</p>
 </div></section>
 <section class="gd-sec" id="vo-6" aria-labelledby="vo-6-h">
 <div class="gd-body gd-prose"><h2 id="vo-6-h">VO-6 <a class="gd-anchor" href="#vo-6" aria-label="Link to VO-6">#</a></h2>
