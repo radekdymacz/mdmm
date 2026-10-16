@@ -19,7 +19,7 @@ source/elektron/md/mdJucePlugin/skins/mmStudio/src/52-gen.js	mmViewPageTest|mmCo
 source/elektron/md/mdJucePlugin/skins/mmStudio/src/76-gen.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-gen-*,mm-seq-*	-	no	2 2c 7d
 source/elektron/md/mdJucePlugin/skins/mmStudio/src/56-keys.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-keys-*	-	no	2 2c 7d
 source/elektron/md/mdJucePlugin/skins/mmStudio/src/58-roll.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-roll-*,mm-seq-*	-	no	2 2c 7d
-source/elektron/md/mdJucePlugin/skins/mmStudio/src/70-seq.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-seq-*	-	no	2 2c 7d
+source/elektron/md/mdJucePlugin/skins/mmStudio/src/70-seq.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmLockLaneTest|mmSoundTest	-	mm-seq-*	-	no	2 2c 7d
 source/elektron/md/mdJucePlugin/skins/mmStudio/src/85-sound-groups.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-sound-*	-	no	2 2c 7d
 source/elektron/md/mdJucePlugin/skins/mmStudio/src/90-sound.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-sound-*	-	no	2 2c 7d
 source/elektron/md/mdJucePlugin/skins/mmStudio/src/100-mix.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-mix-*	-	no	2 2c 7d
