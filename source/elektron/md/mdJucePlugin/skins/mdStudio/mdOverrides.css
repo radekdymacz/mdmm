@@ -379,14 +379,10 @@ html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[dat
 .lb:hover .vl~.kvl,.lb.vsel .vl~.kvl{visibility:hidden}
 
 /* I-039: the marks on an arrangement cell (tempo, mutes, transpose): the words in the small line when every cell has room for them
-   (SongMarks.fit puts .rmkwide on the grid), else four pips along the cell's foot; the cell keeps its height either way */
+   (SongMarks.fit puts .rmkwide on the grid), else short letter codes (B M ± T) in the same line; the cell keeps its height either way */
 .scell .rmk{font-style:normal;cursor:pointer}
 .scell .rmk .rt{display:none}
-.scell .rmk .rg{position:absolute;left:0;right:0;bottom:1px;display:flex;justify-content:center;gap:1px;height:6px;padding-top:2px;box-sizing:border-box}
-.scell .rmk .rg u{display:block;width:4px;height:4px;background:currentColor;text-decoration:none}
-.scell .rmk .rg .pb{border-radius:50%}
-.scell .rmk .rg .pt{clip-path:polygon(50% 0,100% 100%,0 100%)}
-.scell .rmk .rg .pk{background:none;border-radius:50%;box-shadow:inset 0 0 0 1px currentColor}
+.scell .rmk .rg{letter-spacing:-.6px}
 .slotgrid.rmkwide .rmk .rt{display:inline}
 .slotgrid.rmkwide .rmk .rg{display:none}
 .scell small{white-space:nowrap}

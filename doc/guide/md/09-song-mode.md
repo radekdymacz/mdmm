@@ -138,7 +138,7 @@ The marks under a pattern name say what else the row does.
 | HALT | the song halts |
 | END | the song ends |
 
-A row that has a tempo of its own or muted tracks shows it in its cell as well. A tempo shows as a number, muted tracks as M and how many, for example 120 M3. When the cells are too narrow for words, small marks along the foot of the cell stand for them: a filled dot for the tempo and a square for the mutes. Hold the pointer over the cell to read them in full. Click the marks to open **More** for that row. A row with neither looks as before.
+A row that has a tempo of its own or muted tracks shows it in its cell as well. A tempo shows as a number, muted tracks as M and how many, for example 120 M3. When the cells are too narrow for words, letters stand for them: B for the tempo and M for the mutes. Hold the pointer over the cell to read them in full. Click the marks to open **More** for that row. A row with neither looks as before.
 
 ### When the machine hears an edit
 

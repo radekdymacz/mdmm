@@ -33,13 +33,13 @@ check(text({ rep: 1, bpm: 120, mutes: [1, 2, 3], trn: 66 }, "mm") === "120 M3 +2
 check(text({ rep: 1, bpm: 87, mutes: [4], trn: 63, ttr: t }, "mm") === "87 M1 -1 T±", "all four: 87 M1 -1 T±");
 check(text({ rep: 1, bpm: 300, mutes: Array.from({ length: 16 }, (_, k) => k) }) === "300 M16", "the widest MD mark: 300 M16");
 
-/* ---- the pips and the markup ---- */
-const pips = (r, k = "md") => SongMarks.marks(r, k).pips;
-check(pips({ rep: 1 }) === "" && SongMarks.html({ rep: 1 }, "md") === "", "a plain row: no pips and no markup at all");
-check(pips({ rep: 1, bpm: 120, mutes: [1, 2, 3], trn: 66, ttr: t }, "mm") === "bmtk", "all four: pips in the order tempo, mutes, transpose, per track");
-check(pips({ rep: 1, mutes: [3] }) === "m" && pips({ rep: 1, bpm: 90 }) === "b", "one pip for one thing");
+/* ---- the letter codes and the markup ---- */
+const codes = (r, k = "md") => SongMarks.marks(r, k).codes;
+check(codes({ rep: 1 }) === "" && SongMarks.html({ rep: 1 }, "md") === "", "a plain row: no codes and no markup at all");
+check(codes({ rep: 1, bpm: 120, mutes: [1, 2, 3], trn: 66, ttr: t }, "mm") === "BM±T", "all four: codes in the order B tempo, M mutes, ± transpose, T per track");
+check(codes({ rep: 1, mutes: [3] }) === "M" && codes({ rep: 1, bpm: 90 }) === "B" && codes({ rep: 1, trn: 66 }, "mm") === "±" && codes({ rep: 1, ttr: t }, "mm") === "T", "one code for one thing");
 const h = SongMarks.html({ rep: 1, bpm: 120, mutes: [1] }, "md");
-check(/data-rowmarks="1"/.test(h) && /<span class="rt">120 M1<\/span>/.test(h) && /class="pb"/.test(h) && /class="pm"/.test(h) && !/class="pt"/.test(h), "the markup holds the words, the pips present and the click hook: " + h);
+check(/data-rowmarks="1"/.test(h) && /<span class="rt">120 M1<\/span>/.test(h) && /<span class="rg">BM<\/span>/.test(h), "the markup holds the words, the codes present and the click hook: " + h);
 
 /* ---- the tooltip ---- */
 const tip = SongMarks.marks({ rep: 1, bpm: 120, mutes: [7, 1], trn: 66, ttr: t }, "mm").title;

@@ -3369,7 +3369,7 @@ const MmJourneys = (() => {
 	const rowI = () => S().songSel;
 	const rowDoc = () => songDoc()?.rows[rowI()];
 	/* the marks a row's cell shows under its pattern name (its <small>: x2, the tempo, M1, +2, T±, ~) and what it says in big (its <b>: the pattern, HALT) */
-	const cellMarks = i => ($1(`#tl .scell[data-i="${i}"] small`)?.textContent || "").replace(/\s+/g, " ").trim();
+	const cellMarks = i => ($1(`#tl .scell[data-i="${i}"] small .rt`)?.textContent ?? $1(`#tl .scell[data-i="${i}"] small`)?.textContent ?? "").replace(/\s+/g, " ").trim();
 	const cellName = i => ($1(`#tl .scell[data-i="${i}"] b`)?.textContent || "").trim();
 	const hasMark = (marks, m) => new RegExp(`(^| )${m.replace("+", "\\+")}( |$)`).test(marks);
 	/* a row edit is a song dump through SYSEX RECV and its read-back: the next edit waits for it */
@@ -3409,16 +3409,16 @@ const MmJourneys = (() => {
 		steps: [
 			go("song"),
 			{ say: "SONG mode, add a row (pad A03): its cell has no marks; remember its height", act: async (u, c) => { c.r0 = JSON.stringify(songDoc()?.rows); c.m0 = machine().song?.songMode === true; const n0 = S().song.length; u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(300); u.click('[data-addpat="2"]'); await until(() => S().song.length === n0 + 1, 8000); await sleep(300); c.i = rowI(); if (S().songMore && $1("[data-rowmore]")) { u.click("[data-rowmore]"); await sleep(250); } c.cell = () => $1(`#tl .scell[data-i="${c.i}"]`); c.h0 = c.cell().getBoundingClientRect().height; },
-				screen: c => ok(!c.cell().querySelector(".rmk") && !/\n/.test(c.cell().title), "marks " + c.cell().querySelector(".rmk")?.textContent), within: 10000 },
+				screen: c => ok(!c.cell().querySelector(".rmk") && !/\n/.test(c.cell().title), "marks " + c.cell().querySelector(".rmk .rt")?.textContent), within: 10000 },
 			{ say: "Transpose + twice, Tempo Keep off, Mute T1, the row's track 3 + : the cell shows tempo, M1, +2 and T±, in that order", act: async (u, c) => { u.click('[data-step="trn"][data-d="1"]'); await sleep(250); u.click('[data-step="trn"][data-d="1"]'); await sleep(250); u.click("[data-bpmkeep]"); await until(() => S().song[c.i]?.bpm, 4000); c.t = S().song[c.i].bpm; if (!$1("[data-rowmute]")) { u.click("[data-rowmore]"); await sleep(300); } u.click('[data-rowmute="0"]'); await sleep(250); u.click('[data-ttr="2"][data-d="1"]'); await sleep(300); },
-				screen: c => ok(c.cell().querySelector(".rmk")?.textContent === `${c.t} M1 +2 T±`, "marks " + c.cell().querySelector(".rmk")?.textContent), within: 8000 },
+				screen: c => ok(c.cell().querySelector(".rmk .rt")?.textContent === `${c.t} M1 +2 T±`, "marks " + c.cell().querySelector(".rmk .rt")?.textContent), within: 8000 },
 			{ say: "the marks are whole (not cut), the cell is as tall as before, the tooltip tells the detail", act: () => {},
-				screen: c => { const wide = $1("#tl").classList.contains("rmkwide"), v = c.cell().querySelector(wide ? ".rmk .rt" : ".rmk .rg"), r = v.getBoundingClientRect(), cr = c.cell().getBoundingClientRect(), np = c.cell().querySelectorAll(".rmk .rg u").length; Journey.snapshot("mm-song-row-marks");
-					return ok(r.width > 0 && r.left >= cr.left - 1 && r.right <= cr.right + 1 && r.top >= cr.top - 1 && r.bottom <= cr.bottom + 1 && np === 4 && Math.abs(cr.height - c.h0) < 1 && /Tempo \d+ BPM/.test(c.cell().title) && /Muted: T1/.test(c.cell().title) && /Transpose \+2/.test(c.cell().title) && /Per track: T3 \+1/.test(c.cell().title), `${wide ? "words" : "pips"} ${Math.round(r.left - cr.left)}..${Math.round(r.right - cr.left)} of ${Math.round(cr.width)} wide, ${np} pips, height ${cr.height} (was ${c.h0}), title ${c.cell().title.replace(/\n/g, " | ")}`); } },
+				screen: c => { const wide = $1("#tl").classList.contains("rmkwide"), v = c.cell().querySelector(wide ? ".rmk .rt" : ".rmk .rg"), r = v.getBoundingClientRect(), cr = c.cell().getBoundingClientRect(), codes = c.cell().querySelector(".rmk .rg")?.textContent; Journey.snapshot("mm-song-row-marks");
+					return ok(r.width > 0 && r.left >= cr.left - 1 && r.right <= cr.right + 1 && r.top >= cr.top - 1 && r.bottom <= cr.bottom + 1 && codes === "BM±T" && Math.abs(cr.height - c.h0) < 1 && /Tempo \d+ BPM/.test(c.cell().title) && /Muted: T1/.test(c.cell().title) && /Transpose \+2/.test(c.cell().title) && /Per track: T3 \+1/.test(c.cell().title), `${wide ? "words" : "codes"} ${Math.round(r.left - cr.left)}..${Math.round(r.right - cr.left)} of ${Math.round(cr.width)} wide, codes ${codes}, height ${cr.height} (was ${c.h0}), title ${c.cell().title.replace(/\n/g, " | ")}`); } },
 			{ say: "click the marks with Row > More closed: it opens", act: async (u, c) => { if ($1("[data-rowmute]")) { u.click("[data-rowmore]"); await sleep(250); } c.closed = !$1("[data-rowmute]"); u.click(c.cell().querySelector($1("#tl").classList.contains("rmkwide") ? ".rmk .rt" : ".rmk .rg")); await sleep(300); },
 				screen: c => ok(c.closed && !!$1("[data-rowmute]") && !!$1("[data-ttr]"), "closed " + c.closed + ", mutes " + !!$1("[data-rowmute]")) },
 			{ say: "take them all off (transpose −2, track 3 −, unmute, Keep): the cell has no marks again", act: async (u, c) => { u.click('[data-step="trn"][data-d="-1"]'); await sleep(250); u.click('[data-step="trn"][data-d="-1"]'); await sleep(250); u.click('[data-ttr="2"][data-d="-1"]'); await sleep(250); u.click('[data-rowmute="0"]'); await sleep(250); u.click("[data-bpmkeep]"); await sleep(400); },
-				screen: c => ok(!c.cell().querySelector(".rmk"), "marks " + c.cell().querySelector(".rmk")?.textContent), within: 6000 }
+				screen: c => ok(!c.cell().querySelector(".rmk"), "marks " + c.cell().querySelector(".rmk .rt")?.textContent), within: 6000 }
 		],
 		async tidy(u, c) { const more = $1("[data-rowmore]"); if (S().songMore && more) u.click(more); if (c.r0) await undoUntil(u, () => JSON.stringify(songDoc()?.rows) === c.r0, 40); await sleep(300); if (c.m0 === false && machine().song?.songMode !== false) { u.click('[data-set="songpick"] button[data-v="pattern"]'); await sleep(1500); } }
 	};

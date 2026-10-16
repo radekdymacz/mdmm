@@ -226,7 +226,7 @@ The marks under a pattern name say what else the row does.
 | T± | single tracks are transposed |
 | ~ | the row plays part of its pattern |
 
-The marks come in that order, for example 120 M3 +2 T±. A row with none of them shows none. When the cells are too narrow for words, small marks along the foot of the cell stand for them: a filled dot for the tempo, a square for the mutes, a triangle for the transpose and a ring for single tracks. Hold the pointer over the cell to read them in full. Click the marks to open **More** for that row.
+The marks come in that order, for example 120 M3 +2 T±. A row with none of them shows none. When the cells are too narrow for words, letters stand for them, in the same order: B for the tempo, M for the mutes, ± for the transpose and T for single tracks, for example BM±. Hold the pointer over the cell to read them in full. Click the marks to open **More** for that row.
 
 On the machine a T replaces the TRN value. The editor shows both.
 
