@@ -8,6 +8,7 @@
 /* ===== The lock lane: draw (Alt erases), Shift: a ramp ===== */
 function laneAt(e) {
 	const d = Held.as("lane"); if (!d) return;
+	if (d.kit) { kitAt(e); return; }
 	if (d.ramp) { rampAt(e); return; }
 	const lane = $("#lane"); if (!lane) return; const el = document.elementFromPoint(e.clientX, e.clientY)?.closest(".lb"); if (!el || !lane.contains(el)) return;
 	const s = +el.dataset.s, t = S.sel; if (!V.tracks[t].trigs[s]) return; const r = el.getBoundingClientRect(); const v = clamp(Math.round((r.bottom - 3 - e.clientY) / (r.height - 6) * 127));
@@ -16,7 +17,35 @@ function laneAt(e) {
 	el.querySelector("i")?.remove(); if (!d.erase) el.insertAdjacentHTML("beforeend", barHTML(v));
 	Held.with("lane", { touched: new Set(d.touched).add(s) }); renderTop();
 }
-function endLaneDraw() { const d = Held.as("lane"); if (!d) return; if (d.ramp) rampSend(); Held.end("lane"); Gesture.end(); refreshRow(S.sel); renderLane(); }
+function endLaneDraw() { const d = Held.as("lane"); if (!d) return; if (d.ramp) rampSend(); Held.end("lane"); Gesture.end(); $("#lane")?.classList.remove("kitdrag"); refreshRow(S.sel); renderLane(); }
+
+/* ===== The lock lane's kit-value line (I-035): grab the line itself (a hit zone of KIT_HIT px each side of it) and
+   drag: the kit value of the lane's parameter on the selected track changes, the edit the Sound page's knob makes
+   (sendParam), one undo step for the drag. Nothing is locked while it is held. ===== */
+const KIT_HIT = 4;
+/* the line's y in a step's key (the .base: bottom 3px + (height - 6px) * kit / 127, 2 px thick) */
+function kitLineY(r) { const g = grp(S.sel, S.lane); return r.bottom - 3 - (r.height - 6) * ((g[S.lane] ?? 0) / 127) - 1; }
+/* the key under the pointer when the pointer is on its kit line, else null */
+function kitHit(e) {
+	const lane = $("#lane"); if (!lane || !lane.contains(e.target)) return null;
+	const el = e.target.closest(".lb"); if (!el || !el.querySelector(".base")) return null;
+	return Math.abs(e.clientY - kitLineY(el.getBoundingClientRect())) <= KIT_HIT ? el : null;
+}
+/* a plain press on the line begins the drag (Alt erases and Shift ramps: those stay the lane's own) */
+function kitGrab(e) {
+	if (e.button !== 0 || e.altKey || e.shiftKey || !kitHit(e)) return false;
+	Held.begin("lane", { kit: true }); Gesture.begin(); $("#lane").classList.add("kitdrag"); grabPointer($("#lane"), e); e.preventDefault(); return true;
+}
+function kitAt(e) {
+	const el = $("#lane .lb"); if (!el) return; const r = el.getBoundingClientRect(), t = S.sel, g = grp(t, S.lane);
+	const v = clamp(Math.round((r.bottom - 3 - e.clientY) / (r.height - 6) * 127));
+	if (g[S.lane] === v) return;
+	sendParam(t, g === V.tracks[t].syn ? "syn" : g === V.tracks[t].fx ? "fx" : "rt", S.lane, v);
+	/* in place: the page's renders wait for the drag (Held) */
+	$$("#lane .base").forEach(b => b.style.setProperty("--bf", (v / 127).toFixed(4)));
+	const k = $("#lane .kvl"); if (k) { k.textContent = laneFmt(v); k.style.bottom = kitLabelAt(v); }
+	syncControls(); redraw();
+}
 
 /* ===== Song: a palette pad or an arrangement row dragged onto the grid ===== */
 document.addEventListener("dragstart", e => {
@@ -174,7 +203,8 @@ main.addEventListener("pointerdown", e => {
 	const c = e.target.closest("canvas.ed"); if (c) { const h = nearest(c, e); if (!h) return; Held.begin("editor", { c, k: h.k }); Gesture.begin(); grabPointer(c, e); e.preventDefault(); redraw(); return; }
 	const el = e.target.closest(".pc[data-g],.fader[data-g]"); if (el && ValueEdit.isOpenClick(e)) { e.preventDefault(); ValueEdit.open(el, ValueBox); return; }
 	if (el) { Held.begin("value", { el, x: e.clientX, y: e.clientY, v: getV(el), vert: el.classList.contains("fader") }); Gesture.begin(); grabPointer(el, e); el.classList.add("act"); e.preventDefault(); return; }
-	const lb = e.target.closest(".lb"); if (lb) { Held.begin("lane", { erase: e.altKey, ramp: e.shiftKey && !e.altKey, touched: new Set() }); Gesture.begin(); grabPointer($("#lane"), e); laneAt(e); e.preventDefault(); }
+	const lb = e.target.closest(".lb"); if (lb && kitGrab(e)) return;
+	if (lb) { Held.begin("lane", { erase: e.altKey, ramp: e.shiftKey && !e.altKey, touched: new Set() }); Gesture.begin(); grabPointer($("#lane"), e); laneAt(e); e.preventDefault(); }
 });
 main.addEventListener("pointermove", e => {
 	if (e.buttons === 0 && e.pointerType === "mouse" && dragging()) { endDrag(); return; }
@@ -185,6 +215,8 @@ main.addEventListener("pointermove", e => {
 	if (drag) { const fine = e.shiftKey ? .25 : 1, dx = e.clientX - drag.x, dy = drag.y - e.clientY; const d = drag.vert ? dy * 127 / 132 : (Math.abs(dx) >= Math.abs(dy) ? dx : dy); setV(drag.el, drag.v + d * fine); return; }
 	if (Held.as("lane")) { laneAt(e); return; }
 	const c = e.target.closest("canvas.ed"); if (c && ED[c.dataset.ed]) c.style.cursor = nearest(c, e) ? "grab" : "default";
+	/* the kit line is grabbed with a vertical arrow */
+	const ln = $("#lane"); if (ln) ln.classList.toggle("kithot", !e.altKey && !e.shiftKey && !!kitHit(e));
 });
 function endDrag() { if (Held.end("editor")) redraw(); const drag = Held.end("value"); if (drag) drag.el.classList.remove("act"); endLaneDraw(); Gesture.end(); }
 /* P7: a gesture ends wherever the button comes up (a pointerup outside #main left the drag on: every later

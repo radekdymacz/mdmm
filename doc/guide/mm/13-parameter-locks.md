@@ -14,7 +14,7 @@ The lock lane is under the piano roll on **Sequence**. Press {key:workspace-1} a
 
 The rail on the left of the lane lists what you can lock. For a synth track the page keys are SYN, AMP, FLT, EFX, LF1, LF2 and LF3. For a MIDI track there is one key, MIDI PAGE. A green light on a page key means the page holds locks. Under the page keys are the parameters of the page. A number on a parameter key counts its locked steps.
 
-The lane shows one parameter at a time, the one lit in the rail. Each step with a trig has a bar. A dashed line across the lane marks the value of the kit. Hatched steps have no trig.
+The lane shows one parameter at a time, the one lit in the rail. Each step with a trig has a bar. A solid line across the lane marks the value of the kit, and its number sits on the line at the right end of the lane. Rest the pointer on a step, or select it, to read its lock as a number at the top of its bar. Drag the line itself to change the kit value of the parameter on that track, the value the knob changes. The whole drag is one undo step and draws no lock. Hatched steps have no trig.
 
 ## PARAMETER LOCKS IN GRID RECORDING MODE
 <!-- rows: MM-200 MM-201 MM-202 MM-203 MM-204 @ae7b8d -->
