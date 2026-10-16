@@ -32,6 +32,23 @@ namespace deskCore
 			else
 				_errors.emplace_back("$.followPlayed: expected true or false; off is used");
 		}
+
+		void readMappings(const json::Value& _doc, const SetupSpec& _spec, DeskSetup& _s, std::vector<std::string>& _errors)
+		{
+			if(const auto* m = _doc.find("mappings"))
+				_s.mappings = mappingsFromJson(*m, _spec.learn, _errors);
+		}
+
+		void writeMappings(const DeskSetup& _setup, const SetupSpec& _spec, json::Value& _d)
+		{
+			if(!_setup.mappings.empty())
+				_d.set("mappings", mappingsToJson(_setup.mappings, _spec.learn.pages > 0));
+		}
+	}
+
+	bool setupHasMappings(const json::Value& _doc)
+	{
+		return _doc.isObject() && _doc.find("mappings") != nullptr;
 	}
 
 	std::vector<std::string> validateKnobCcs(const std::vector<int>& _ccs)
@@ -61,6 +78,7 @@ namespace deskCore
 			s.modulators = modSetupRead(_doc, _errors, _spec.modulators);
 			readSolo(_doc, _spec, s, _errors);
 			readFollow(_doc, s, _errors);
+			readMappings(_doc, _spec, s, _errors);
 			return s;
 		}
 		if(name != _spec.schema)
@@ -98,6 +116,7 @@ namespace deskCore
 		}
 		readSolo(_doc, _spec, s, _errors);
 		readFollow(_doc, s, _errors);
+		readMappings(_doc, _spec, s, _errors);
 		return s;
 	}
 
@@ -110,6 +129,7 @@ namespace deskCore
 				d.set("solo", solo::toJson(_setup.solo));
 			if(_setup.followPlayed)
 				d.set("followPlayed", true);
+			writeMappings(_setup, _spec, d);
 			return d;
 		}
 		json::Value d = json::Value::object();
@@ -127,6 +147,7 @@ namespace deskCore
 			d.set("solo", solo::toJson(_setup.solo));
 		if(_setup.followPlayed)
 			d.set("followPlayed", true);
+		writeMappings(_setup, _spec, d);
 		return d;
 	}
 }

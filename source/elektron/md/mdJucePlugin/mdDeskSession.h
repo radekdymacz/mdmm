@@ -100,6 +100,17 @@ namespace mdJucePlugin
 	elektronData::json::Value midiHeldOf(const midiIn::Notes& _notes);
 	midiIn::Notes heldMidiNotesOf(AudioPluginAudioProcessor& _processor);
 	constexpr double g_midiHeldMs = 32;
+	// 0.8 (WP3): the MIDI monitor's counts ({"type":"midiStats","directions":{inHost, inFirmware, outMachine, outHost:
+	// {total, types, channels}},"dropped":{scheduled, external, allocation}}), once a second while the page is up (no lock:
+	// relaxed atomics, mdMidiMonitor.h). The pages do not read it yet (the monitor panel is WP4's).
+	elektronData::json::Value midiStatsOf(AudioPluginAudioProcessor& _processor);
+	constexpr double g_midiStatsMs = 1000;
+
+	// I-032 (0.8, WP9): the Mix page's output meters ({"type":"mixLevels","pairs":[{"on","clip","peak":[L,R],"rms":[L,R]} x3]},
+	// pairs A/B, C/D, E/F; dBFS to 0.1 dB, -96 for silence; the largest |sample| and the RMS since the last message), sent
+	// every g_mixLevelsMs only between the page's mixMeters on and off. Relaxed atomics (mdMixMeters.h), no lock.
+	elektronData::json::Value mixLevelsOf(AudioPluginAudioProcessor& _processor);
+	constexpr double g_mixLevelsMs = 40;
 
 	// P7: whether the machine follows the host's tempo and transport: in a DAW's plug-in only.
 
@@ -352,6 +363,9 @@ namespace mdJucePlugin
 
 		void onPageMessage(const Value& _message) override
 		{
+			// a page that starts says again whether it shows Mix (mixMeters), so the meters stop until it does
+			if(deskCore::opOf(_message) == "ready")
+				stopMixMeters();
 			if(m_desk->onPageMessage(_message))
 				return;
 			const auto* row = deskHost::commands().find(deskCore::opOf(_message));
@@ -386,6 +400,16 @@ namespace mdJucePlugin
 			case Action::OutputGain:
 				// the next outputLevel message (within g_outputLevelMs) brings the gain back to the page
 				setOutputGainDb(processor(), _message.find("db")->asNumber());
+				reply(_message, true, "");
+				break;
+			case Action::MixMeters:
+				{
+					const bool on = _message.find("on")->asBool();
+					if(on && !m_mixMeters)
+						processor().takeMixLevels();	// what an earlier window left is stale: the first message is of now
+					m_mixMeters = on;
+				}
+				processor().setMixMeterWanted(m_mixMeters);
 				reply(_message, true, "");
 				break;
 			case Action::MemoryKeep:
@@ -484,6 +508,12 @@ namespace mdJucePlugin
 			if(m_desk->pageSeen() && due(g_midiHeldMs))
 				if(const auto held = m_midiHeld.next(heldMidiNotesOf(processor())))
 					toPage(midiHeldOf(*held));
+			// 0.8 (WP3): the MIDI monitor's counts (no lock: relaxed atomics, mdMidiMonitor.h)
+			if(m_desk->pageSeen() && due(g_midiStatsMs))
+				toPage(midiStatsOf(processor()));
+			// I-032: the Mix page's output pair meters, while it is shown (no lock: relaxed atomics, mdMixMeters.h)
+			if(m_mixMeters && m_desk->pageSeen() && due(g_mixLevelsMs))
+				toPage(mixLevelsOf(processor()));
 			// I-021: the LCD's output meter and volume (no lock: one atomic swap, mdOutputLevel.h)
 			if(m_desk->pageSeen() && due(g_outputLevelMs))
 				toPage(outputLevelOf(processor()));
@@ -525,7 +555,11 @@ namespace mdJucePlugin
 		SyxWork<DeskT>& syx() { return m_syx; }
 		virtual const char* missingText() const = 0;
 		EngineT& currentEngine() { return *m_engine; }
-		void onDetach() override { m_desk->detachPage(); }
+		void onDetach() override
+		{
+			stopMixMeters();
+			m_desk->detachPage();
+		}
 
 	private:
 		// The desk's edges that are the session's: the page and the project's setup (the device
@@ -719,6 +753,12 @@ namespace mdJucePlugin
 		bool m_hostClockOn = true;	// review 1 (I-026): the machine follows the host's clock (its global's TEMPO IN EXT)
 		bool m_followReady = false;
 		HostTempo m_hostTempo;
+		bool m_mixMeters = false;	// I-032: the page shows Mix (its mixMeters command): mixLevels flow, the audio thread measures
+		void stopMixMeters()
+		{
+			m_mixMeters = false;
+			processor().setMixMeterWanted(false);
+		}
 		uint32_t m_memorySeen = 0;	// the machine memory status last published (0: publish again)
 		midiIn::HeldFeed m_midiHeld;
 		SyxWork<DeskT> m_syx;
