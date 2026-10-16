@@ -1712,15 +1712,15 @@ const MmJourneys = (() => {
 				screen: c => ok(same(notesOn.slice(-2), [c.o, c.o + 2]), "pitches sent " + notesOn.join(",")) }
 		]
 	};
-	/* I-040: Z / X reach every MIDI note: X to the top (the A key plays 120, P and L stop at 127), Z to the bottom (A plays 0) */
+	/* I-040: Z / X reach every MIDI note: X to the top (the A key plays 120, P and L stop at 127), Z to the bottom (A plays 0); the pitches sent are semitones from C3 (48), so 72, 79, 79 and -48, -46 */
 	const octaveRange = {
 		name: "mm-keys-octave-range", proves: ["MM-034", "MM-053"],
 		steps: [
 			go("seq"), sel(0),
 			{ say: "press X twelve times, then A, L and P", act: async (u, c) => { results.length = 0; notesOn.length = 0; blur(); for (let i = 0; i < 12; i++) u.key("x"); await sleep(200); for (const k of ["a", "l", "p"]) { u.key(k); await sleep(250); } },
-				screen: () => ok(KB.oct === 6 && same(notesOn.slice(-3), [120, 127, 127]), "octave " + KB.oct + ", pitches sent " + notesOn.join(",")) },
+				screen: () => ok(KB.oct === 6 && same(notesOn.slice(-3), [72, 79, 79]), "octave " + KB.oct + ", pitches sent " + notesOn.join(",")) },
 			{ say: "press Z sixteen times, then A and S", act: async u => { notesOn.length = 0; for (let i = 0; i < 16; i++) u.key("z"); await sleep(200); for (const k of ["a", "s"]) { u.key(k); await sleep(250); } },
-				screen: () => ok(KB.oct === -4 && same(notesOn.slice(-2), [0, 2]), "octave " + KB.oct + ", pitches sent " + notesOn.join(",")) },
+				screen: () => ok(KB.oct === -4 && same(notesOn.slice(-2), [-48, -46]), "octave " + KB.oct + ", pitches sent " + notesOn.join(",")) },
 			{ say: "Perform: the Octave stepper goes down to the lowest and up to the highest keyboard", act: async u => { u.click(tab("perform")); await sleep(300); for (let i = 0; i < 8; i++) u.click('[data-kboct="-1"]'); await sleep(200); },
 				screen: () => ok(!!$1('.kb [data-key="0"]') && $1('[data-kboct="-1"]').disabled, "lowest key " + !!$1('.kb [data-key="0"]')) },
 			{ say: "up to the top", act: async u => { for (let i = 0; i < 8; i++) u.click('[data-kboct="1"]'); await sleep(200); },

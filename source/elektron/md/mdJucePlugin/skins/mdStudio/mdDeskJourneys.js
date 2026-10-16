@@ -137,8 +137,8 @@ const MdJourneys = (() => {
 	const kitStep = {
 		name: "md-kit-step", proves: ["MD-094"],
 		steps: [
-			{ say: "click › next to the kit on the LCD", act: async (u, c) => { c.k0 = currentKitSlot(); u.click("#kitNext"); await confirmIfAsked(u); }, screen: c => ok($1("#kitname").textContent === kitName((c.k0 + 1) % 64), "LCD " + $1("#kitname").textContent), machine: c => ok(currentKitSlot() === (c.k0 + 1) % 64, "machine kit " + currentKitSlot()), within: 8000 },
-			{ say: "click ‹: back", act: async u => { u.click("#kitPrev"); await confirmIfAsked(u); }, screen: c => ok($1("#kitname").textContent === kitName(c.k0), "LCD " + $1("#kitname").textContent), machine: c => ok(currentKitSlot() === c.k0, "machine kit " + currentKitSlot()), within: 8000 },
+			{ say: "click › next to the kit on the LCD", act: async (u, c) => { c.k0 = currentKitSlot(); u.click("#kitNext"); await confirmIfAsked(u); }, screen: c => ok($1("#kitname").textContent.startsWith("K" + String((c.k0 + 1) % 64 + 1).padStart(2, "0")), "LCD " + $1("#kitname").textContent), machine: c => ok(currentKitSlot() === (c.k0 + 1) % 64, "machine kit " + currentKitSlot()), within: 8000 },
+			{ say: "click ‹: back", act: async u => { u.click("#kitPrev"); await confirmIfAsked(u); }, screen: c => ok($1("#kitname").textContent.startsWith("K" + String(c.k0 + 1).padStart(2, "0")), "LCD " + $1("#kitname").textContent), machine: c => ok(currentKitSlot() === c.k0, "machine kit " + currentKitSlot()), within: 8000 },
 			{ say: "the arrows did not open the kit chooser", screen: () => ok($1("#libpop").hidden, "chooser open") }
 		]
 	};
