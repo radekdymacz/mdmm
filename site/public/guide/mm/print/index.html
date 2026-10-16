@@ -57,7 +57,7 @@
 </header>
 <main id="main" class="gd-main gd-book">
 <div class="gd-page">
-<section class="gd-cover"><p class="gd-cnum">MM</p><h1>Monomachine Editor</h1><p class="gd-cover-sub">User guide · version 0.6.0</p><p class="gd-cover-note">Future Native Audio · mdmm.dev<br>The chapters follow the Monomachine manual's order. Every sentence is our own.</p></section>
+<section class="gd-cover"><p class="gd-cnum">MM</p><h1>Monomachine Editor</h1><p class="gd-cover-sub">User guide · version 0.7.0</p><p class="gd-cover-note">Future Native Audio · mdmm.dev<br>The chapters follow the Monomachine manual's order. Every sentence is our own.</p></section>
 <section class="gd-contents" style="page: contents"><div class="gd-runhead"><span>Contents</span><span>Monomachine Editor</span></div><h2>Contents</h2><ol class="gd-toc gd-toc-print">
 <li><a href="#c1"><span class="gd-tnum">1</span><span class="gd-ttitle">Introduction, philosophy, highlights</span><span class="gd-tsum">What the Monomachine is, what the Monomachine Editor adds to it, and how this guide writes about controls.</span></a></li>
 <li><a href="#c2"><span class="gd-tnum">2</span><span class="gd-ttitle">User interface and connectors</span><span class="gd-tsum">The Monomachine's panel, keyboard and sockets, and where each control is on the editor's page.</span></a></li>
@@ -625,7 +625,7 @@
 <section class="gd-sec" id="filter-envelope">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-31</span></span></aside>
 <div class="gd-body gd-prose"><h2>FILTER ENVELOPE</h2>
-<p>The <b class="gd-ui">Filter env</b> group holds ATK and DEC, the attack and decay times of the filter envelope, and BOFS and WOFS, how far the envelope moves BASE and WDTH.</p>
+<p>The <b class="gd-ui">Filter env</b> group holds ATK and DEC, the attack and decay times of the filter envelope, and BOFS and WOFS, how far the envelope moves BASE and WDTH: -64 to +63, up for a positive value, down for a negative one, 0 not at all.</p>
 </div></section>
 <section class="gd-sec" id="filter-tracking">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-31</span></span></aside>
@@ -1588,7 +1588,7 @@
 <section class="gd-sec" id="swave-ens">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.A-2</span></span></aside>
 <div class="gd-body gd-prose"><h2>SWAVE-ENS</h2>
-<p>An ensemble of oscillators. <b class="gd-light">&lt;PCH2&gt;</b> to <b class="gd-light">&lt;PCH4&gt;</b> pitch the extra voices, <b class="gd-light">&lt;WAVE&gt;</b> picks the wave and <b class="gd-light">&lt;CHRL&gt;</b> and <b class="gd-light">&lt;CHRW&gt;</b> set the chorus.</p>
+<p>An ensemble of oscillators. <b class="gd-light">&lt;PCH2&gt;</b> to <b class="gd-light">&lt;PCH4&gt;</b> pitch the extra voices: OFF, -12 to +12 semitones, or an interval (2/3, 3/4, 4/5, 5/6 below, 6/5, 5/4, 4/3, 3/2 above), <b class="gd-light">&lt;WAVE&gt;</b> picks the wave and <b class="gd-light">&lt;CHRL&gt;</b> and <b class="gd-light">&lt;CHRW&gt;</b> set the chorus.</p>
 </div></section>
 <section class="gd-sec" id="sid-6581">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.A-3</span></span></aside>
@@ -1598,7 +1598,7 @@
 <section class="gd-sec" id="dpro-wave">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.A-4</span></span></aside>
 <div class="gd-body gd-prose"><h2>DPRO-WAVE</h2>
-<p>A wave player on the DigiPRO. <b class="gd-light">&lt;WAVE&gt;</b> picks the wave, <b class="gd-light">&lt;WP&gt;</b> shapes it, <b class="gd-light">&lt;SYNC&gt;</b> and <b class="gd-light">&lt;SFRQ&gt;</b> set oscillator sync.</p>
+<p>A wave player on the DigiPRO. <b class="gd-light">&lt;WAVE&gt;</b> picks one of the 32 waves, S01 to S32, <b class="gd-light">&lt;WP&gt;</b> shapes it, <b class="gd-light">&lt;SYNC&gt;</b> and <b class="gd-light">&lt;SFRQ&gt;</b> set oscillator sync.</p>
 </div></section>
 <section class="gd-sec" id="dpro-bbox">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.A-4</span></span></aside>
@@ -1608,27 +1608,27 @@
 <section class="gd-sec" id="dpro-ddrw">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.A-5</span></span></aside>
 <div class="gd-body gd-prose"><h2>DPRO-DDRW</h2>
-<p>A machine built on two waves. <b class="gd-light">&lt;WAV1&gt;</b> and <b class="gd-light">&lt;WAV2&gt;</b> pick them, <b class="gd-light">&lt;MIX&gt;</b> blends them and <b class="gd-light">&lt;TIME&gt;</b>, <b class="gd-light">&lt;BR1&gt;</b>, <b class="gd-light">&lt;WID&gt;</b> and <b class="gd-light">&lt;BR2&gt;</b> shape the draw between them.</p>
+<p>A machine built on two waves. <b class="gd-light">&lt;WAV1&gt;</b> and <b class="gd-light">&lt;WAV2&gt;</b> pick them from the 64 waves, D01 to D64, <b class="gd-light">&lt;MIX&gt;</b> blends them and <b class="gd-light">&lt;TIME&gt;</b>, <b class="gd-light">&lt;BR1&gt;</b>, <b class="gd-light">&lt;WID&gt;</b> and <b class="gd-light">&lt;BR2&gt;</b> shape the draw between them.</p>
 </div></section>
 <section class="gd-sec" id="dpro-dens">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.A-5</span></span></aside>
 <div class="gd-body gd-prose"><h2>DPRO-DENS</h2>
-<p>A stack of voices from one wave. <b class="gd-light">&lt;PCH2&gt;</b> to <b class="gd-light">&lt;PCH4&gt;</b> pitch the extra voices and <b class="gd-light">&lt;CHRL&gt;</b> and <b class="gd-light">&lt;CHRW&gt;</b> set the chorus.</p>
+<p>A stack of voices from one wave. <b class="gd-light">&lt;WAVE&gt;</b> picks it, D01 to D64. <b class="gd-light">&lt;PCH2&gt;</b> to <b class="gd-light">&lt;PCH4&gt;</b> pitch the extra voices as on SWAVE-ENS and <b class="gd-light">&lt;CHRL&gt;</b> and <b class="gd-light">&lt;CHRW&gt;</b> set the chorus.</p>
 </div></section>
 <section class="gd-sec" id="fm-stat">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.A-6</span></span></aside>
 <div class="gd-body gd-prose"><h2>FM+STAT</h2>
-<p>A static FM machine. <b class="gd-light">&lt;1FRQ&gt;</b>, <b class="gd-light">&lt;1FIN&gt;</b>, <b class="gd-light">&lt;1ENV&gt;</b> and <b class="gd-light">&lt;1FB&gt;</b> set the first operator, <b class="gd-light">&lt;2FRQ&gt;</b> and <b class="gd-light">&lt;2VOL&gt;</b> the second, <b class="gd-light">&lt;TONE&gt;</b> the tone.</p>
+<p>A static FM machine. <b class="gd-light">&lt;1FRQ&gt;</b>, <b class="gd-light">&lt;1FIN&gt;</b>, <b class="gd-light">&lt;1ENV&gt;</b> and <b class="gd-light">&lt;1FB&gt;</b> set the first operator, <b class="gd-light">&lt;2FRQ&gt;</b> and <b class="gd-light">&lt;2VOL&gt;</b> the second, <b class="gd-light">&lt;TONE&gt;</b> the tone. <b class="gd-light">&lt;1FRQ&gt;</b> and <b class="gd-light">&lt;2FRQ&gt;</b> step through 24 frequencies, from 1/64 to 4 times the note.</p>
 </div></section>
 <section class="gd-sec" id="fm-par">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.A-7</span></span></aside>
 <div class="gd-body gd-prose"><h2>FM+PAR</h2>
-<p>A parallel FM machine. Three operators have a frequency and an envelope each, <b class="gd-light">&lt;TONE&gt;</b> sets the tone.</p>
+<p>A parallel FM machine. Three operators have a frequency and an envelope each, <b class="gd-light">&lt;TONE&gt;</b> sets the tone. <b class="gd-light">&lt;1FRQ&gt;</b>, <b class="gd-light">&lt;2FRQ&gt;</b> and <b class="gd-light">&lt;3FRQ&gt;</b> step through the same 24 frequencies as FM+STAT, 1/64 to 4.</p>
 </div></section>
 <section class="gd-sec" id="fm-dyn">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.A-7</span></span></aside>
 <div class="gd-body gd-prose"><h2>FM+DYN</h2>
-<p>A dynamic FM machine. The first operator has frequency, frequency envelope, volume and volume envelope, the second frequency, envelope and feedback.</p>
+<p>A dynamic FM machine. The first operator has frequency, frequency envelope, volume and volume envelope, the second frequency, envelope and feedback. <b class="gd-light">&lt;1FRQ&gt;</b> and <b class="gd-light">&lt;2FRQ&gt;</b> change in fine steps and show the frequency as the machine writes it, a fraction or a number.</p>
 </div></section>
 <section class="gd-sec" id="vo-6">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.A-8</span></span></aside>

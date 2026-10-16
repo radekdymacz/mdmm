@@ -1167,7 +1167,8 @@ namespace mmDesk
 		{
 			static const std::map<std::string, int> d{{"TUNE", 64}, {"INP", 100}, {"MIX", 64}, {"UNIL", 40}, {"UNIW", 20}, {"UNIX", 0},
 				{"SUB1", 30}, {"PW", 64}, {"VOC1", 64}, {"VOC2", 64}, {"V-SW", 1}, {"CVOL", 100}, {"LP", 127}, {"GATE", 127},
-				{"DEC", 64}, {"1ENV", 80}, {"TONE", 64}};
+				{"DEC", 64}, {"1ENV", 80}, {"TONE", 64},
+				{"PCH2", 63}, {"PCH3", 63}, {"PCH4", 63}};	// OFF (B-151: the firmware's own machine change sets 63)
 			const auto it = d.find(_name);
 			return it == d.end() ? 0 : it->second;
 		}

@@ -18,7 +18,7 @@ Pulse oscillators with unison and sub oscillators. <PW> sets the pulse width, <P
 ## SWAVE-ENS
 <!-- rows: MM-326 @6b1aa5 -->
 
-An ensemble of oscillators. <PCH2> to <PCH4> pitch the extra voices, <WAVE> picks the wave and <CHRL> and <CHRW> set the chorus.
+An ensemble of oscillators. <PCH2> to <PCH4> pitch the extra voices: OFF, -12 to +12 semitones, or an interval (2/3, 3/4, 4/5, 5/6 below, 6/5, 5/4, 4/3, 3/2 above), <WAVE> picks the wave and <CHRL> and <CHRW> set the chorus.
 
 ## SID 6581
 <!-- rows: MM-327 @965dcd -->
@@ -43,7 +43,7 @@ A machine built on two waves. <WAV1> and <WAV2> pick them from the 64 waves, D01
 ## DPRO-DENS
 <!-- rows: MM-331 @c2c1e2 -->
 
-A stack of voices from one wave. <WAVE> picks it, D01 to D64. <PCH2> to <PCH4> pitch the extra voices and <CHRL> and <CHRW> set the chorus.
+A stack of voices from one wave. <WAVE> picks it, D01 to D64. <PCH2> to <PCH4> pitch the extra voices as on SWAVE-ENS and <CHRL> and <CHRW> set the chorus.
 
 ## FM+STAT
 <!-- rows: MM-332 @6d4a3b -->

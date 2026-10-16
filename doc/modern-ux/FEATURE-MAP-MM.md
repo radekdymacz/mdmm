@@ -450,7 +450,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 |---|---|---|---|---|---|---|---|
 | SWAVE-SAW A-1 | UNIL, UNIW, UNIX, SUBX, SUB1, SUB2, TUNE | Eight saw oscillators | ✅ | Sound with unison and sub screens |  | 1 | pass (mm-machine-picker) |
 | SWAVE-PULSE A-2 | UNIL, UNIW, SUB1, SUB2, PW, PWAD, PWRS, TUNE | Pulse oscillators | ✅ | Sound with pulse screen |  | 1 | pass (mm-machine-picker) |
-| SWAVE-ENS A-2 | PCH2-4, WAVE, PW, CHRL, CHRW, TUNE | Chord ensemble | ✅ | Sound with chord keyboard | Offset-ratio options of PCH not modelled | 1 | pass (mm-machine-picker) |
+| SWAVE-ENS A-2 | PCH2-4, WAVE, PW, CHRL, CHRW, TUNE | Chord ensemble | ✅ | Sound with chord keyboard | PCH2-4 as the machine lists them: OFF, -12 to +12, the interval ratios (B-151) | 1 | pass (mm-machine-picker) |
 | SID 6581 A-3 | PW, PWAD, PWRS, WAVE, MOD, MSRC, MFRQ, TUNE | SID | ✅ | Sound with waveform and pulse screens |  | 1 | pass (mm-machine-picker) |
 | DPRO-WAVE A-4 | WAVE, WP, WPM, WPRS, SYNC, SFRQ, TUNE | Wave morph | ✅ | Sound > morph screen |  | 1 | pass (mm-machine-picker) |
 | DPRO-BBOX A-4 | PTCH, STRT, RTRG, RTIM; 24 drums by key | Beat box | ✅ | Sound; roll names the drums |  | 2 | pass (mm-machine-picker) |

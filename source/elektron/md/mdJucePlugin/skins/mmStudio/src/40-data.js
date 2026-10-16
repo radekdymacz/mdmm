@@ -52,7 +52,7 @@ const LMULT=["1X","2X","4X","8X","16X","32X","64X"];
 const CONS=["-","B","D","F","G","H","J","K","L","M","N","P","R","RR","S","SJ","T","TH","TJ","V","Z"];
 const EN={"SID-6581.WAVE":["TRI","SAW","PULS","MIX","NOIS"],"SID-6581.MOD":["OFF","RING","SYNC","R+S"],"SID-6581.MSRC":["MFRQ","PRCH"],
  PWRS:["OFF","ON"],WPRS:["OFF","ON"],STON:["OFF","ON"],"V-SW":["OFF","ON"],CONS};
-/* Value lists the machine shows (B-149, B-150): a value is 0-127 and goes to the machine as it is; the page shows
+/* Value lists the machine shows (B-149, B-150, B-151): a value is 0-127 and goes to the machine as it is; the page shows
    the entry it falls in, as the LCD writes it, and a step (wheel, arrows) moves one entry. An entry is {lo, t, r}: from
    value lo up to the next entry's lo, the text t, and r what a drawing needs (a ratio, semitones, a wave's index). Read
    on OS 1.32B from the LCD, every value 0-127 sent as its CC and the screen read back (mmEditorProbeFirmwareTest enums,
@@ -78,6 +78,13 @@ const FMDYN2=dynTab("0.0 .000 .001 .002 .003 .006 .008 .011 1/64 .019 .024 2.44 
  ".035 3.51 3.57 3.63 3.69 3.75 3.81 3.87 4.0 .041 .047 .054 1/16 .070 .079 .088 .097 .107 .118 .129 9/64 .152 .165 .177 .191 .205 .219 .234 1/4 .265 .282 .299 "+
  ".316 .334 .352 .371 .390 .410 .430 .451 .472 .494 .516 .539 9/16 .586 .610 .635 .660 .685 .711 .738 .765 .793 .821 .849 .878 .908 .938 .968 1.0 1.03 1.06 1.09 "+
  "1.12 1.16 1.19 1.23 1.26 1.30 1.33 1.37 1.41 1.44 1.48 1.52 1.56 1.60 1.64 1.68 1.72 1.76 1.80 1.84 1.89 1.93 1.97 2.02 2.06 2.11 2.15 2.20 2.25 2.29 2.34 2.39",100);
+/* B-151: SWAVE-ENS and DPRO-DENS PCH2 PCH3 PCH4, a chord note: 33 entries, OFF in the middle (63-65), semitones to
+   ±12 and interval ratios among them (2/3 3/4 4/5 5/6 below, 6/5 5/4 4/3 3/2 above); r: semitones (a ratio's 12 × log2),
+   null for OFF */
+const PCHTAB=tabRuns([[0,"-12"],[4,"-11"],[8,"-10"],[12,"-09"],[16,"-08"],[20,"2/3"],[24,"-07"],[28,"-06"],[32,"-05"],[35,"3/4"],[39,"-04"],[43,"4/5"],[47,"5/6"],[51,"-03"],
+ [55,"-02"],[59,"-01"],[63,"OFF"],[66,"+01"],[70,"+02"],[74,"+03"],[78,"6/5"],[82,"5/4"],[86,"+04"],[90,"4/3"],[94,"+05"],[97,"+06"],[101,"+07"],[105,"3/2"],
+ [109,"+08"],[113,"+09"],[117,"+10"],[121,"+11"],[125,"+12"]].map(([lo,t])=>[lo,t,t==="OFF"?null:t.includes("/")?12*Math.log2(num(t)):+t]));
+const pchRatio=e=>e.t.includes("/");
 /* B-150: DigiPRO waves. DPRO-DDRW WAV1 WAV2 and DPRO-DENS WAVE: D01-D64, two values a wave (71 = D36, 127 = D64);
    r: the wave's index. DPRO-WAVE WAVE is S01-S32, four values a wave (10 = S03, 126 = S32): an enumeration of the
    catalogue (mmSynthEnum), so the page holds its index (EN below) and the host sends the machine's value */
@@ -85,6 +92,7 @@ const WAVD=Array.from({length:64},(_,k)=>({lo:k*2,t:"D"+String(k+1).padStart(2,"
 const WAVS=Array.from({length:32},(_,k)=>"S"+String(k+1).padStart(2,"0"));
 EN["DPRO-WAVE.WAVE"]=WAVS;
 const TAB={"FM+STAT.1FRQ":FMFRQ,"FM+STAT.2FRQ":FMFRQ,"FM+PAR.1FRQ":FMFRQ,"FM+PAR.2FRQ":FMFRQ,"FM+PAR.3FRQ":FMFRQ,"FM+DYN.1FRQ":FMDYN1,"FM+DYN.2FRQ":FMDYN2,
+ "SWAVE-ENS.PCH2":PCHTAB,"SWAVE-ENS.PCH3":PCHTAB,"SWAVE-ENS.PCH4":PCHTAB,"DPRO-DENS.PCH2":PCHTAB,"DPRO-DENS.PCH3":PCHTAB,"DPRO-DENS.PCH4":PCHTAB,
  "DPRO-DDRW.WAV1":WAVD,"DPRO-DDRW.WAV2":WAVD,"DPRO-DENS.WAVE":WAVD};
 /* B-148: the filter envelope's BOFS and WOFS are -64 to +63 on the machine (OS 1.32B LCD at both ends; 64 = no sweep) */
 const SIGNED=new Set(["PAN","EQG","DIST","DSND","TUNE","PB","BOFS","WOFS"]);

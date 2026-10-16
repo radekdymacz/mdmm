@@ -72,7 +72,7 @@ check(plotted.length >= machines.length - 2, `the synthesis page draws a picture
    90-sound.js on its own, with a drawing that only records its lines ---- */
 const stateCtx = vm.createContext({ console });
 vm.runInContext([data, genBlock, mmGen, part("50-state.js")].join("\n").replace(/^"use strict";/m, "")
-	+ "\nthis.P = { S, meta, fmt, maxOf, tabStep };", stateCtx);
+	+ "\nthis.P = { S, meta, fmt, maxOf, tabStep, synDefaults };", stateCtx);
 const P = stateCtx.P, stepTab = P.tabStep;
 /* one screen editor (ED.<name>=... up to the next comment line) with the canvas helpers stubbed: line() records the y furthest from the middle line (mid) of its x */
 const screen = (name, mid) => {
@@ -143,6 +143,23 @@ const box = (m, pg, name, v) => { P.S.sel = 0; P.S.tracks[0].m = m; const i = pg
 	check(lab("DPRO-WAVE", { WAVE: 31, WPM: 0 }) === "S32 → S01", "the DPRO-WAVE screen morphs S32 into S01: " + E.labelled);
 	const W = screen("enswave", 0); box("DPRO-DENS", "SYN", "WAVE", 0); P.S.tracks[0].v.SYN[3] = 71; W.reset(); W.ED.enswave.draw(G2D, 200, 100);
 	check(W.labelled === "wave D36", "the DENS wave screen: " + W.labelled);
+}
+{
+	/* B-151: PCH2-4 of SWAVE-ENS and DPRO-DENS as the machine lists them (OS 1.32B, 33 entries, OFF at 63-65) */
+	const at = (m, n, vs) => vs.map(v => box(m, "SYN", n, v).text).join(" ");
+	const all = ["SWAVE-ENS", "DPRO-DENS"].flatMap(m => ["PCH2", "PCH3", "PCH4"].map(n => at(m, n, [0, 3, 4, 20, 63, 64, 65, 66, 78, 105, 125, 127])));
+	check(all.every(x => x === "-12 -12 -11 2/3 OFF OFF OFF +01 6/5 3/2 +12 +12"), "PCH2-4 on both machines: " + all[0]);
+	const { mt } = box("SWAVE-ENS", "SYN", "PCH2", 0), up = [];
+	for (let v = 63, k = 0; k < 16; k++) { v = stepTab(mt.tab, v, 1); up.push(P.fmt(mt, v)); }
+	check(up.join(" ") === "+01 +02 +03 6/5 5/4 +04 4/3 +05 +06 +07 3/2 +08 +09 +10 +11 +12" && !mt.signed && mt.tab.length === 33, "a step up from OFF: " + up.join(" "));
+	const down = []; for (let v = 63, k = 0; k < 16; k++) { v = stepTab(mt.tab, v, -1); down.push(P.fmt(mt, v)); }
+	check(down.join(" ") === "-01 -02 -03 5/6 4/5 -04 3/4 -05 -06 -07 2/3 -08 -09 -10 -11 -12", "a step down from OFF: " + down.join(" "));
+	const syn = P.synDefaults("SWAVE-ENS");
+	check(syn && syn.slice(0, 3).every(v => box("SWAVE-ENS", "SYN", "PCH2", v).text === "OFF"), "a new SWAVE-ENS starts with PCH2-4 OFF, as the machine's own machine change (63)");
+	const E = screen("chord", 0); box("SWAVE-ENS", "SYN", "PCH2", 0); Object.assign(P.S.tracks[0].v.SYN, { 0: 63, 1: 101, 2: 82 });
+	E.reset(); E.ED.chord.draw(G2D, 200, 100); const n = E.ED.chord.notes();
+	check(E.labelled === "C + +07 5/4" && JSON.stringify(n.map(o => [o.k, o.ratio])) === "[[19,false],[16,true]]", "the chord screen: OFF no note, +07 a fifth up, 5/4 on its nearest key (E) marked: " + E.labelled + " " + JSON.stringify(n));
+	Object.assign(P.S.tracks[0].v.SYN, { 0: 0, 1: 63, 2: 63 }); check(JSON.stringify(E.ED.chord.notes().map(o => o.k)) === "[0]", "-12 is the octave below, the first key");
 }
 
 console.log(failures ? `FAIL (${failures})` : "PASS");
