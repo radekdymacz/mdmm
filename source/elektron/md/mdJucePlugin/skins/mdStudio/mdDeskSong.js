@@ -27,7 +27,7 @@ function chainSync() {
 	const c = chainDoc(), act = !!(c && c.active), p = S.chainPending;
 	/* a send waits for the machine to show it (a slow host: while it still applies the keys, tx, the wait goes on) */
 	if (p && (act && p.patterns ? JSON.stringify(c.patterns) === JSON.stringify(p.patterns) : !p.patterns && !act)) S.chainPending = null;
-	else if (p && performance.now() > p.until) { if (machineState().desk?.tx) p.until = performance.now() + 1000; else S.chainPending = null; }
+	else if (p && performance.now() > p.until) { if (machineState().desk?.tx && performance.now() - (p.born ??= performance.now() - 4000) < 12000) p.until = performance.now() + 1000; else S.chainPending = null; }
 	if (act && !S.chainWas) S.chainOwnEnd = false;
 	if (S.chainWas && !act && !S.chainTimer && !S.chainPending) {
 		S.chainDraft = []; S.chainSent = false;
@@ -35,7 +35,11 @@ function chainSync() {
 		S.chainOwnEnd = false;
 	}
 	/* a chain the machine plays that the pads do not show (made elsewhere, or kept while another key was lit): the pads show it */
-	else if (act && !S.chainTimer && !S.chainPending && JSON.stringify(S.chainDraft) !== JSON.stringify(c.patterns)) S.chainDraft = c.patterns.slice();
+	else if (act && !S.chainTimer && !S.chainPending) {
+		/* only a chain of the bank the page shows: the draft of another bank is filtered away by renderSong, a refill would render every tick */
+		const mine = c.patterns.every(p => p >> 4 === S.bank) ? c.patterns : [];
+		if (JSON.stringify(S.chainDraft) !== JSON.stringify(mine)) S.chainDraft = mine.slice();
+	}
 	S.chainWas = act || (S.chainWas && !c);
 }
 /* the machine's chain changes between renders (the LCD, a pick): watched on its own clock, a render only when the page has to change */
@@ -59,7 +63,7 @@ function songPickSet(v) {
 	/* B-162: a chain still waiting for its 150 ms (chainSoon) is not sent into the other mode: its keys are PATTERN mode's gesture */
 	if (v !== "chain" && S.chainTimer) {
 		/* a pending Back/Clear that ends the chain still goes out (page and machine agree); an unsent chain is dropped */
-		const wasClear = S.chainDraft.length < 2 && (chainDoc()?.active || S.chainSent);
+		const wasClear = canDo(V, "chains") && S.chainDraft.length < 2 && (chainDoc()?.active || S.chainSent);
 		clearTimeout(S.chainTimer); S.chainTimer = 0; S.chainWaitFrom = 0;
 		if (wasClear) { S.chainOwnEnd = true; S.chainPending = { until: performance.now() + 4000 }; cmd("chainClear"); S.chainSent = false; }
 		S.chainDraft = [];
@@ -230,7 +234,7 @@ function clickSong(e) {
 	const ca = e.target.closest("[data-chain]"); if (ca) {
 		if (ca.disabled) return true;
 		if (ca.dataset.chain === "undo") { S.chainDraft.pop(); chainSoon(); render(); }
-		else if (ca.dataset.chain === "clear") { clearTimeout(S.chainTimer); S.chainDraft = []; render(); if (chainDoc()?.active || S.chainSent) { S.chainOwnEnd = !!chainDoc()?.active; S.chainPending = { until: performance.now() + 4000 }; cmd("chainClear"); S.chainSent = false; } S.chainTimer = 0; }
+		else if (ca.dataset.chain === "clear") { clearTimeout(S.chainTimer); S.chainTimer = 0; S.chainWaitFrom = 0; S.chainDraft = []; if (chainDoc()?.active || S.chainSent) { S.chainOwnEnd = !!chainDoc()?.active; S.chainPending = { until: performance.now() + 4000 }; cmd("chainClear"); S.chainSent = false; } render(); }
 		return true;
 	}
 	if (e.target.closest("[data-rowmore]")) { S.songMore = !S.songMore; render(); return true; }
