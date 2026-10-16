@@ -36,6 +36,7 @@ target_sources(mdLib PRIVATE
 	mdLib/mdsamplesnapshot.cpp mdLib/mdsamplesnapshot.h
 	mdLib/mdfactorybaseline.cpp mdLib/mdfactorybaseline.h
 	mdLib/mdstatecapture.cpp mdLib/mdstatecapture.h
+	mdLib/mdonemomentcopy.cpp mdLib/mdonemomentcopy.h
 	mdLib/mdpanelsequence.cpp mdLib/mdpanelsequence.h
 	mdLib/mdsequencerstate.h
 	mdLib/mmtelemetry.h

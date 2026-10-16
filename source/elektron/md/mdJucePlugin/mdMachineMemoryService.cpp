@@ -599,8 +599,9 @@ namespace mdJucePlugin
 		}
 		auto& patch = memory.patch;
 		auto& sectors = memory.sectors;
-		const auto& factory = memory.factory;
-		const auto& rom = memory.rom;
+		static const std::vector<uint8_t> none;
+		const auto& factory = memory.factory ? *memory.factory : none;
+		const auto& rom = memory.rom ? *memory.rom : none;
 		uint64_t romFingerprint = 0;
 		if(m_shape.sampleFlash)
 		{
@@ -830,7 +831,8 @@ namespace mdJucePlugin
 		}
 		if(_atomic)
 		{
-			// one hold: the patch RAM and the user flash as they are at one moment
+			// one piece: the patch RAM and the user flash as they are at one moment (taken a part per hold of the
+			// plug-in's lock by md::OneMomentCopy, DESIGN-audio-lock.md)
 			MachineMemoryPort::Piece all;
 			all.patch = patch.data();
 			all.patchSize = patch.size();

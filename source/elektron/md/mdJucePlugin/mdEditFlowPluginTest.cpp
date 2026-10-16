@@ -12,7 +12,8 @@
 // 1.0 (the F2 gate, scripts/mdmm-rt-check.sh --lock): the longest wait of processBlock for the synth lock while the
 // page edits (after the boot settled; the editor's session, the memory thread and the boot sample take the same lock)
 // is a pass/fail line: "synth lock wait ...: PASS" or FAIL (exit 1) above EDITFLOW_LOCK_WAIT_MS (default 1, as the
-// local gate's soak).
+// local gate's soak). Each wait is blamed on the holder's site; a panel event or a device command (the desk's
+// sends, queued for the audio thread) dropped while editing fails it too.
 
 #include "mdPluginProcessor.h"
 #include "mdController.h"
@@ -297,11 +298,9 @@ namespace
 		void pageText(const std::string& _json) { processor->getDeskHost()->session()->onPageMessage(parseJson(_json)); }
 		void page(const Value& _v) { processor->getDeskHost()->session()->onPageMessage(_v); }
 
-		template<typename T> T device(const std::function<T(md::DeskDevice&)>& _f, T _def)
-		{
-			return processor->getPlugin().withDeviceLocked([&](synthLib::Device* _d) { auto* d = dynamic_cast<md::DeskDevice*>(_d); return d ? _f(*d) : _def; });
-		}
-		uint64_t rxBytes() { return device<uint64_t>([](md::DeskDevice& _d) { return _d.getHardware().midiRxConsumedCount(); }, 0); }
+		// the facts, without the device lock: the test's own reads must not be what the audio thread waits for
+		uint64_t rxBytes() { return processor->machineFacts().midiRxConsumed; }
+		uint64_t panelDropped() { return processor->machineFacts().panelDropped; }
 		mdJucePlugin::Controller& controller() { return dynamic_cast<mdJucePlugin::Controller&>(processor->getController()); }
 
 		std::string lifecycle() const
@@ -559,6 +558,8 @@ int main(const int _argc, char** _argv)
 		auto& realtime = r.processor->getPlugin().getRealtimeInstrumentation();
 		realtime.setEnabled(true);
 		realtime.reset();
+		const auto panelDroppedStart = r.panelDropped();
+		const auto commandsDroppedStart = r.processor->getPlugin().getDroppedCommandCount();
 		if(const auto* rec = std::getenv("EDITFLOW_RECORD"))
 		{
 			// A fresh ready: everything a page gets, for replaying into the real page in a browser.
@@ -615,7 +616,32 @@ int main(const int _argc, char** _argv)
 			std::printf("synth lock wait while editing: max %.3f ms, %.1f ms in all over %llu blocks (limit %.1f ms): %s\n",
 				maxMs, static_cast<double>(snap.synthProcessLockWaitNanoseconds) / 1e6,
 				static_cast<unsigned long long>(snap.synthProcessCount), limitMs, pass ? "PASS" : "FAIL");
-			if(!pass)
+			// who held the lock when the audio thread waited (synthLib lock blame), then who held it at all while
+			// editing (the holds off the audio thread), the longest first
+			const auto sites = [](const auto& _table, const size_t _count, const char* _what)
+			{
+				std::vector<synthLib::RealtimeLockBlame> list(_table.begin(), _table.begin() + static_cast<std::ptrdiff_t>(_count));
+				std::sort(list.begin(), list.end(), [](const auto& _a, const auto& _b) { return _a.maxNanoseconds > _b.maxNanoseconds; });
+				for(const auto& b : list)
+				{
+					const std::string file = b.file ? b.file : "?";
+					const auto slash = file.find_last_of("/\\");
+					std::printf("  %s %s:%u: %llu, max %.3f ms (work %.3f ms), %.3f ms in all\n", _what,
+						(slash == std::string::npos ? file : file.substr(slash + 1)).c_str(), b.line,
+						static_cast<unsigned long long>(b.waits), static_cast<double>(b.maxNanoseconds) / 1e6,
+						static_cast<double>(b.maxCpuNanoseconds) / 1e6, static_cast<double>(b.nanoseconds) / 1e6);
+				}
+			};
+			sites(snap.lockBlame, snap.lockBlameCount, "lock wait blamed on");
+			sites(snap.lockHolds, snap.lockHoldCount, "lock held at");
+			// the edits must all reach the machine: none of the panel events the desk sent was dropped
+			const auto panelDroppedEnd = r.panelDropped();
+			const auto dropped = panelDroppedEnd >= panelDroppedStart ? panelDroppedEnd - panelDroppedStart : panelDroppedEnd;
+			std::printf("dropped panel events while editing: %llu: %s\n", static_cast<unsigned long long>(dropped), dropped ? "FAIL" : "PASS");
+			// and none of the commands the desk queued for the audio thread (DESIGN-audio-lock.md step 3)
+			const auto commandsDropped = r.processor->getPlugin().getDroppedCommandCount() - commandsDroppedStart;
+			std::printf("dropped device commands while editing: %llu: %s\n", static_cast<unsigned long long>(commandsDropped), commandsDropped ? "FAIL" : "PASS");
+			if(!pass || dropped || commandsDropped)
 				return 1;
 		}
 		if(!r.lastDocJson.empty())
