@@ -1755,6 +1755,8 @@ namespace
 				m->run(100);
 			}
 		}
+		// MM_ENUM_SETTLE: ms after each value before the LCD is read (default 60; a slow screen needs more)
+		const int settle = std::getenv("MM_ENUM_SETTLE") ? std::atoi(std::getenv("MM_ENUM_SETTLE")) : 60;
 		for(const int param : _params)
 		{
 			const auto cc = static_cast<uint8_t>(ed::mmParamCc(static_cast<uint8_t>(_page), static_cast<uint8_t>(param)));
@@ -1768,7 +1770,7 @@ namespace
 				if(v <= 127)
 				{
 					m->send({0xb0, cc, static_cast<uint8_t>(v)});
-					m->run(60);
+					m->run(settle);
 					now = lcdBits(*m);
 				}
 				if(v == 0) { last = now; continue; }
@@ -1777,11 +1779,11 @@ namespace
 					std::printf(" [%d-%d]", groupStart, v - 1);
 					// save the screen of this group
 					m->send({0xb0, cc, static_cast<uint8_t>(groupStart)});
-					m->run(60);
+					m->run(settle);
 					char n[64];
 					std::snprintf(n, sizeof(n), "/enum-m%d-p%d-i%d-g%02d.pgm", _machine, _page, param, group++);
 					md::test::panelImage(m->hardware(), _dir + n);
-					if(v <= 127) { m->send({0xb0, cc, static_cast<uint8_t>(v)}); m->run(60); }
+					if(v <= 127) { m->send({0xb0, cc, static_cast<uint8_t>(v)}); m->run(settle); }
 					groupStart = v;
 					last = now;
 				}

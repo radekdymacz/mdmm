@@ -48,17 +48,17 @@ A stack of voices from one wave. <PCH2> to <PCH4> pitch the extra voices and <CH
 ## FM+STAT
 <!-- rows: MM-332 @6d4a3b -->
 
-A static FM machine. <1FRQ>, <1FIN>, <1ENV> and <1FB> set the first operator, <2FRQ> and <2VOL> the second, <TONE> the tone.
+A static FM machine. <1FRQ>, <1FIN>, <1ENV> and <1FB> set the first operator, <2FRQ> and <2VOL> the second, <TONE> the tone. <1FRQ> and <2FRQ> step through 24 frequencies, from 1/64 to 4 times the note.
 
 ## FM+PAR
 <!-- rows: MM-333 @e2c56b -->
 
-A parallel FM machine. Three operators have a frequency and an envelope each, <TONE> sets the tone.
+A parallel FM machine. Three operators have a frequency and an envelope each, <TONE> sets the tone. <1FRQ>, <2FRQ> and <3FRQ> step through the same 24 frequencies as FM+STAT, 1/64 to 4.
 
 ## FM+DYN
 <!-- rows: MM-334 @f9b47d -->
 
-A dynamic FM machine. The first operator has frequency, frequency envelope, volume and volume envelope, the second frequency, envelope and feedback.
+A dynamic FM machine. The first operator has frequency, frequency envelope, volume and volume envelope, the second frequency, envelope and feedback. <1FRQ> and <2FRQ> change in fine steps and show the frequency as the machine writes it, a fraction or a number.
 
 ## VO-6
 <!-- rows: MM-335 @9cac6c -->
