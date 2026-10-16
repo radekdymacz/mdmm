@@ -737,6 +737,31 @@ const MmJourneys = (() => {
 		async tidy(u) { if (S().playing) { u.click("#play"); await sleep(500); } }
 	};
 
+	/* I-031 (Discord 2026-10-16): a track that plays because another track's trig forwards to it (the kit's Trig
+	   position) lights its rail number in a second colour, as "trig2"; the forwarding track keeps its own lamp */
+	const railLampsFwd = {
+		name: "mm-seq-rail-lamps-forwarded", proves: [],
+		steps: [
+			go("seq"),
+			{ say: "the synth tracks on the rail; pick a track with trigs and send its trig on to a track of its own", act: async (u, c) => {
+				if (S().side === "midi") u.click('[data-side="int"]');
+				const trig = (t, k) => { const st = S().tracks[t].steps[k]; return !!(st && !st.off && st.a); }, T = [0, 1, 2, 3, 4, 5];
+				/* the pair with the earliest step where a trigs and b does not (the stub plays slowly) */
+				const first = (a, b) => { for (let k = 0; k < S().len; k++) if (trig(a, k) && !trig(b, k)) return k; return 99; };
+				const best = T.flatMap(a => T.filter(b => b !== a).map(b => [a, b, first(a, b)])).sort((x, y) => x[2] - y[2])[0]; c.a = best[0]; c.b = best[1]; /* a step where a trigs and b does not */
+				u.click(rail(c.a)); await sleep(300); await dockOpen(u, "trig"); u.click(`[data-set="trigpos"] button[data-v="${c.b}"]`);
+				c.set = await until(() => S().tracks[c.a].trigpos === c.b, 4000); }, screen: c => ok(c.set, `T${c.a + 1} trig position ${S().tracks[c.a].trigpos}`) },
+			{ say: "press PLAY until the target's number lights in the second colour, the source's own lamp stays the first", act: async (u, c) => {
+				c.own = new Set(); c.fwd = new Set(); const ob = new MutationObserver(ms => { for (const m of ms) { const cl = m.target.classList; if (!cl) continue; if (cl.contains("trig")) c.own.add(+m.target.dataset.sel); if (cl.contains("trig2")) c.fwd.add(+m.target.dataset.sel); } });
+				ob.observe($1("#rail"), { subtree: true, attributes: true, attributeFilter: ["class"] });
+				if (!S().playing) u.click("#play"); await until(() => S().playing, 5000); await until(() => c.fwd.size > 0, 15000); ob.disconnect(); Journey.snapshot("mm-seq-rail-lamps-forwarded"); },
+				screen: c => ok(c.fwd.has(c.b) && !c.fwd.has(c.a) && c.own.has(c.a), `second colour on ${[...c.fwd]} (target T${c.b + 1}); first colour on ${[...c.own]} (source T${c.a + 1}); trigpos now ${S().tracks[c.a].trigpos}, ws ${S().ws}`) },
+			{ say: "press STOP, send the trig nowhere: no second-colour lamp stays, and after the change none lights", act: async (u, c) => { if (S().playing) u.click("#play"); await until(() => !S().playing, 5000); u.click(rail(c.a)); await sleep(300); u.click('[data-set="trigpos"] button[data-v=""]'); await until(() => S().tracks[c.a].trigpos == null, 4000); await sleep(400); },
+				screen: () => ok(!$1("#rail .th.trig2") && S().tracks.every(t => t.trigpos == null), "a second-colour lamp stays or a trig position is left") }
+		],
+		async tidy(u, c) { if (S().playing) { u.click("#play"); await sleep(500); } if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await back(u, c); }
+	};
+
 	/* ---------- Perform ---------- */
 	const poly = {
 		name: "mm-perform-poly", proves: ["MM-032", "MM-087", "MM-239"],
@@ -3862,7 +3887,7 @@ const MmJourneys = (() => {
 		async tidy(u) { await closeLib(u); u.click(tab("seq")); }
 	};
 	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
-		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixHeads, mixSolo, soloSaved, shiftMutes, routing, panTrim, msOff, msViews, railLamps,
+		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixHeads, mixSolo, soloSaved, shiftMutes, routing, panTrim, msOff, msViews, railLamps, railLampsFwd,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
