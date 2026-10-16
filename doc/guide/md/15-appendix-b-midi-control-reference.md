@@ -6,7 +6,7 @@ The Machinedrum is played and edited over MIDI. This chapter says which notes pl
 ## NOTE MAP
 <!-- rows: MD-276 @3e2712 -->
 
-By default the 16 tracks answer to notes from C2 upwards, one note a track. The 128 patterns answer to notes from E4 upwards, one note a pattern.
+By default the 16 tracks answer to the white keys from C2 to D4, one note a track, on the four channels from the base channel. The 128 patterns answer to notes from E4 upwards, one note a pattern.
 
 To see or change the map:
 
@@ -26,7 +26,7 @@ The sound parameters of the 16 tracks are reached by control change messages. Th
 
 In the editor you do not type these numbers. When you move a value on the **Kit** workspace, the editor sends the control change for it. A move on a track of each group of four, tracks 1, 5, 9 and 13, reaches the machine through its own channel.
 
-The editor also learns a controller of your own from the one you move, through its Control page.
+A DAW reaches the same parameters by host automation. Each track has host parameters for synthesis, effects, routing, level and mute, and a lane of automation sends the control change the knob would send.
 
 ## LEVEL AND MUTE
 <!-- rows: MD-278 @52366f -->
@@ -40,3 +40,9 @@ Each track has its own control change for its level. The mute of a track is a co
 
 The mute keys of the editor act on the machine's own memory of the mutes.
 
+
+## PROGRAM CHANGE
+A program change on one of the four channels selects a pattern when **Prg change in** is ON (chapter 10). With **Prg change out** ON the machine sends one when you choose a pattern.
+
+## MIDI OUT
+The machine's MIDI out carries notes, controllers, program changes, pitch bend, pressure, clock, start, stop and continue. It never carries SysEx.

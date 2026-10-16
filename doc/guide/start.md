@@ -12,7 +12,7 @@ Everything a first-time user needs for the Machinedrum Editor and the Monomachin
 
 ## Add your ROM
 
-The editors run the machine's real firmware. You bring your own: **Machinedrum OS 1.63** or **Monomachine SFX-60 OS 1.32B**, an 8 MiB image. No firmware is included and we cannot supply it.
+The editors run the machine's real firmware. You bring your own: **Machinedrum OS 1.63** or **Monomachine SFX-60 OS 1.32B**, an 8 MiB image. No firmware is included, and we cannot supply it or link to it: use the image from your own machine or your own source. A `.syx` file is not firmware, and the editor does not receive one: import it after the ROM is in, by dropping it on the window or with **IMPORT SYSEX…** in the engine menu.
 
 1. Open the editor. With no ROM there is no error pop-up. A start-up card says **Machinedrum firmware needed** (or Monomachine).
 2. Click the large area on the card: **Choose your Machinedrum OS 1.63 ROM (.bin or .zip, 8 MB)** (for the Monomachine, **Choose your Monomachine SFX-60 OS 1.32B ROM**). Under it, **Click here to choose the file**. The file chooser opens. Pick the `.bin`, or a `.zip` that holds it. On macOS you can also drop the `.bin` or `.zip` onto the window; a dropped `.syx` opens the SysEx import window and dropped samples go into the Sampler. On Windows and Linux use the file chooser.
@@ -35,7 +35,7 @@ Over HW MIDI, some controls are disabled because the machine has no MIDI message
 
 ## In a DAW
 
-After the installer, rescan plug-ins in your DAW. The plug-ins are called **Machinedrum Editor** and **Monomachine Editor** (by Future Native Audio), as VST3 and AU instruments. Up to 0.3.1 they were called Gearmulator MD and Gearmulator MM: the installer removes those, and projects saved with them open with the new names. If your DAW still lists the editor twice, delete the old-named `.vst3` and `.component` from `/Library/Audio/Plug-Ins` and `~/Library/Audio/Plug-Ins` by hand. (The installer does this for you; dragging in the `.dmg`'s files does not.) They follow the DAW's tempo and transport. The plug-in window shows the same editor, and the same start-up card if the ROM is missing.
+After the installer, rescan plug-ins in your DAW. The plug-ins are called **Machinedrum Editor** and **Monomachine Editor** (by Future Native Audio), as VST3 and AU instruments. Up to 0.3.1 they were called Gearmulator MD and Gearmulator MM: the installer removes those, and projects saved with them open with the new names. If your DAW still lists the editor twice, delete the old-named `.vst3` and `.component` from `/Library/Audio/Plug-Ins` and `~/Library/Audio/Plug-Ins` by hand. The installer removes the copies it can show are its own. A copy of the original Gearmulator MD or MM may stay, because it could be the original plug-in, and the files of the `.dmg` are not removed at all. They follow the DAW's tempo and transport. The plug-in window shows the same editor, and the same start-up card if the ROM is missing.
 
 If a DAW will not load the AU, macOS may have quarantined it. In Terminal run:
 
@@ -43,7 +43,60 @@ If a DAW will not load the AU, macOS may have quarantined it. In Terminal run:
 
 Use `Monomachine Editor.component` for the Monomachine, and `~/Library/Audio/Plug-Ins/Components` if you installed for yourself only. Then rescan plug-ins.
 
+**Logic Pro lists the editor twice, or loads the wrong one:** delete the old `GearmulatorMD.component` and `GearmulatorMM.component` from `/Library/Audio/Plug-Ins/Components` (and from `~/Library/Audio/Plug-Ins/Components`). The installer does not remove them. Then quit Logic and open it again so that it scans the plug-ins.
+
 **Both editors open at once in Ableton Live:** Live shows only the selected track's plug-in windows while **Auto-Hide Plug-In Windows** is on, so picking the Machinedrum track hides the Monomachine Editor and the other way round. In Live, open Settings > Plug-Ins, turn **Multiple Plug-In Windows** on and **Auto-Hide Plug-In Windows** off.
+
+## MIDI and sync
+
+The editors answer to MIDI as the machines do. This part says how to get MIDI in and out, which messages travel, and how the tempo is shared. The chapters named below have the detail.
+
+### Standalone: MIDI in and out
+
+1. Open the engine menu and choose **AUDIO/MIDI…**, or press [,].
+2. In the **MIDI** card switch on the input you play from. No MIDI input is on until you switch it on. The note under the **Input** row says why an audio input stays on NONE, for example when macOS has not been given microphone access.
+3. Choose the **Output** that should take the machine's own MIDI. Leave it on NONE if you do not need it.
+4. Look at the **Monitor** row. **IN** counts what reached the editor from a port, **OUT** what it sent. Hover a number to see the types: notes, controllers, program changes, clock, transport.
+
+A button pairs a Bluetooth MIDI device. The system opens its own pairing window.
+
+**A loop warning** appears in red under the output when a virtual bus is on as an input and is also the output: an IAC bus on macOS, a loopMIDI port on Windows, Midi Through on Linux. What the editor sends then comes straight back in, and the sound can turn to noise. Switch the input off, or send to another bus. A real port, such as a USB interface or a machine, never gives the warning. To play the standalone from a DAW over IAC, use one bus to send to the editor and a second bus for its output, or leave the output on NONE.
+
+**Windows:** a MIDI port belongs to one program at a time. A port that your DAW or another editor has open cannot be opened by the standalone, and the panel says so. Keep a port for each program, or use loopMIDI ports.
+
+In a plug-in the host routes MIDI, so this panel does not exist there.
+
+### What the machine sends
+
+The machine's own MIDI out reaches the standalone's output, and in a DAW the plug-in's MIDI output. It carries notes, controllers, program changes, pitch bend, pressure, clock, start, stop and continue. It never carries SysEx: dumps and answers between the editor and the machine do not leave it. In HW MIDI mode nothing changes.
+
+Clock and transport go out only when the machine is set to send them: **Tempo out** and **Ctrl out** in GLOBAL (Machinedrum, chapter 10; Monomachine, chapter 19).
+
+### Notes and the key map
+
+A note from a keyboard, a port or the DAW goes to the firmware's MIDI input, as it does on the real machine.
+
+- **Machinedrum:** a note plays the track the Global key map gives it, when it arrives on one of the four channels that start at the base channel. A note on another channel plays nothing, so a DAW drum track on channel 10 needs the base channel set to 7, 8, 9 or 10, or its notes sent on channels 1 to 4. A change in GLOBAL > Map editor takes effect at once, and a note that is no longer mapped stops playing. With GRID RECORD on, host notes do not write steps.
+- **Monomachine:** track t listens on the base channel plus t, as far as the channel span reaches. Six notes at one moment, one on each of the six channels, play six voices.
+
+See chapter 10 of the Machinedrum guide and chapter 19 of the Monomachine guide.
+
+### Program change
+
+A program change selects a pattern when **Prg change in** is on (Machinedrum, in GLOBAL > Control) or always on the base channel (Monomachine). In a DAW a clip or an automation lane can send it. **Prg change out** makes the machine send one when you choose a pattern.
+
+### Tempo: INT and EXT
+
+**Tempo in** in GLOBAL > Sync decides who keeps the time.
+
+- **EXT:** the machine follows the MIDI clock and transport. In a DAW it follows the host's tempo, loops and position, and the tempo shows as the host's. In the standalone it follows the clock that arrives at an input.
+- **INT:** the machine runs on its own tempo. No clock from the host or a port reaches it, and the host's Play does not start it. Use it when you only play notes into the machine.
+
+A new plug-in starts with EXT, and the project keeps what you choose. When the host stops, the Monomachine ends its held notes.
+
+### Controllers and host automation
+
+The machine answers to its own control change numbers (Machinedrum chapter 15, Monomachine chapter 22). In a DAW the same sound parameters are host parameters, per track, so a lane of automation moves a knob: synthesis, effects, routing, level and mute on the Machinedrum; synthesis, amplification, filter, effects, the three LFOs, level and mute on the Monomachine. Automation reaches the machine the way a control change does, and the knob follows.
 
 ## Workspaces
 
