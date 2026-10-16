@@ -19,12 +19,29 @@ const hasTtr=r=>r.ttr&&r.ttr.some(v=>v!==64);
    (the machine is in song mode). A key sets the machine's mode too (seqMode); a mode the machine reports moves the
    switch (songModeSync). The machine's chain comes from the host (MMView.show: machine.desk.chain, song mode); on its
    own the example engine plays it at the pattern ends (chainWrap). */
-S.songPick=null;S.songModeSeen=undefined;S.chainDraft=[];S.chainTimer=0;S.chainSent=false;
+S.songPick=null;S.songModeSeen=undefined;S.chainDraft=[];S.chainTimer=0;S.chainSent=false;S.chainWas=false;S.chainOwnEnd=false;S.chainPending=null;S.chainWaitFrom=0;S.modeSentAt=-1e9;S.modeWanted=false;
 const SONG_PICKS=[["pattern","Pattern"],["chain","Chain"],["song","Song"]];
-function songModeSync(){const sm=!!S.plays.songMode,ch=!!S.plays.chain?.active;
+/* B-162: the machine's chain ended without the page (a pattern pick, the LCD): the pads start over and the CHAIN key goes back to PATTERN.
+   Not while the page's own chain or Clear is on its way (chainPending: until the machine shows it, 4 s at most), and not for the page's own Clear (chainOwnEnd) */
+function chainSync(){const c=S.plays.chain,act=!!(c&&c.active),p=S.chainPending;
+ /* a send waits for the machine to show it (8 s at most: a slow host) */
+ if(p&&(act&&p.patterns?JSON.stringify(c.patterns)===JSON.stringify(p.patterns):!p.patterns&&!act))S.chainPending=null;else if(p&&performance.now()>p.until)S.chainPending=null;
+ if(act&&!S.chainWas)S.chainOwnEnd=false;
+ if(S.chainWas&&!act&&!S.chainTimer&&!S.chainPending){S.chainDraft=[];S.chainSent=false;if(!S.chainOwnEnd&&S.songPick==="chain")S.songPick="pattern";S.chainOwnEnd=false}
+ /* a chain the machine plays that the pads do not show: the pads show it */
+ else if(act&&!S.chainTimer&&!S.chainPending){/* only a chain of the bank the page shows (renderSong filters the draft to it; a refill would render every tick) */
+  const mine=c.patterns.every(p=>p>>4===S.bank)?c.patterns:[];if(JSON.stringify(S.chainDraft)!==JSON.stringify(mine))S.chainDraft=mine.slice()}
+ S.chainWas=act||(S.chainWas&&!c)}
+/* the machine's chain changes between renders (the LCD, a pick): watched on its own clock, a render only when the page has to change */
+setInterval(()=>{if(S.ws!=="song"){chainSync();return}const k=S.songPick+S.chainDraft.join();songModeSync();if(k!==S.songPick+S.chainDraft.join())render()},300);
+function songModeSync(){chainSync();const sm=!!S.plays.songMode,ch=!!S.plays.chain?.active;
  if(!SONG_PICKS.some(([k])=>k===S.songPick))S.songPick=sm?"song":ch?"chain":"pattern";
- if(S.songModeSeen!==sm){S.songModeSeen=sm;if(sm)S.songPick="song";else if(S.songPick==="song")S.songPick=ch?"chain":"pattern"}}
-function songPickSet(v){S.songPick=v;seqMode(v==="song");render()}/* B-072: every key sends the mode (a key pressed before the machine's answer to the one before was in S.plays sent nothing) */
+ if(S.songModeSeen!==sm){S.songModeSeen=sm;/* B-162: a report of the mode before the one just asked for is not the person's choice */
+  if(performance.now()-S.modeSentAt<2000&&sm!==S.modeWanted){}else if(sm)S.songPick="song";else if(S.songPick==="song")S.songPick=ch?"chain":"pattern"}
+ else if(performance.now()-S.modeSentAt>2000&&(S.songPick==="song")!==sm)S.songPick=sm?"song":ch?"chain":"pattern"}
+function songPickSet(v){/* B-162: a chain still waiting for its 150 ms is not sent into the other mode */if(v!=="chain"&&S.chainTimer){/* a pending Back/Clear that ends the chain still goes out (page and machine agree); an unsent chain is dropped */
+ const wasClear=canChain()&&S.chainDraft.length<2&&(S.plays.chain?.active||S.chainSent);clearTimeout(S.chainTimer);S.chainTimer=0;S.chainWaitFrom=0;
+ if(wasClear){S.chainOwnEnd=true;S.chainPending={until:performance.now()+8000};clearChain();S.chainSent=false}S.chainDraft=[]}S.songPick=v;S.modeSentAt=performance.now();S.modeWanted=v==="song";seqMode(v==="song");render()}/* B-072: every key sends the mode (a key pressed before the machine's answer to the one before was in S.plays sent nothing) */
 S.plays={chain:null,songMode:false,song:0};
 const nn2=i=>String(i+1).padStart(2,"0");
 /* what the machine plays: in song mode the song (the Monomachine keeps a chain there but plays the song,
@@ -42,10 +59,14 @@ function clearChain(){if(HOST.chainClear)return HOST.chainClear();S.plays.chain=
 /* every pad (and BACK) chains at once: the pads go out as the machine's chain 150 ms after the last click
    (the latest wins; the host also holds a chain back while the keys of the one before are on their way).
    Fewer than two pads: the chain the machine plays ends. */
-function chainSoon(){clearTimeout(S.chainTimer);
- S.chainTimer=setTimeout(()=>{const d=S.chainDraft.slice(),c=S.plays.chain;if(!canChain())return;
-  if(d.length>=2){if(!(c&&c.active&&c.patterns.length===d.length&&c.patterns.every((p,i)=>p===d[i]))){sendChain(d);S.chainSent=true}}
-  else if((c&&c.active)||S.chainSent){clearChain();S.chainSent=false}},150)}
+function chainSoon(){clearTimeout(S.chainTimer);S.chainTimer=setTimeout(chainFire,150)}
+/* in SONG mode the chain gesture is not the machine's: right after SONG, then CHAIN the machine may not have left it yet; wait for it (2 s) */
+function chainFire(){S.chainTimer=0;if(!canChain()||S.songPick!=="chain")return;
+ if(S.plays.songMode){S.chainWaitFrom||=performance.now();if(performance.now()-S.chainWaitFrom<2000){S.chainTimer=setTimeout(chainFire,150);return}
+  S.chainWaitFrom=0;toast("The machine is still in SONG mode: the chain was not sent. Click a pad again.");return}
+ S.chainWaitFrom=0;const d=S.chainDraft.slice(),c=S.plays.chain;
+ if(d.length>=2){if(!(c&&c.active&&c.patterns.length===d.length&&c.patterns.every((p,i)=>p===d[i]))){S.chainPending={patterns:d,until:performance.now()+8000};sendChain(d);S.chainSent=true}}
+ else if((c&&c.active)||S.chainSent){S.chainOwnEnd=!!(c&&c.active);S.chainPending={until:performance.now()+8000};clearChain();S.chainSent=false}}
 function chainFooter(){const c=S.plays.chain,bn="ABCDEFGH"[S.bank],d=S.chainDraft;
  const known=!!c||!window.MMHost,active=!!(c&&c.active&&c.patterns.length),list=active?c.patterns:[],at=list.indexOf(S.pat),next=active?list[(at+1)%list.length]:null;
  /* what plays is the line above the pads (playsText); here: the pads' own state and the gestures */
@@ -81,9 +102,9 @@ function markSongRow(force){const st=document.getElementById("arrstate");if(st&&
  const pl=document.getElementById("songPlays");if(pl)pl.textContent=playsText();if(S.ws!=="song")return;
  $$(".scell.ph").forEach(c=>c.classList.remove("ph"));if(row>=0)document.querySelector(`.scell[data-i="${row}"]`)?.classList.add("ph");
  $$(".durbar .db").forEach(d=>{const i=+d.dataset.i;d.classList.toggle("past",row>=0&&i<row);d.classList.toggle("now",i===row)})}
-function chainPad(p){const n=S.chainDraft.indexOf(p),d=S.chainDraft;if(n>=0)d.splice(n,1);else if(d.length<16)d.push(p);render();chainSoon()}
-function chainAct(a){if(a==="undo"){S.chainDraft.pop();render();chainSoon();return}
- clearTimeout(S.chainTimer);S.chainDraft=[];render();if(S.plays.chain?.active||S.chainSent){clearChain();S.chainSent=false}}
+function chainPad(p){const n=S.chainDraft.indexOf(p),d=S.chainDraft;if(n>=0)d.splice(n,1);else if(d.length<16)d.push(p);chainSoon();render()}
+function chainAct(a){if(a==="undo"){S.chainDraft.pop();chainSoon();render();return}
+ clearTimeout(S.chainTimer);S.chainTimer=0;S.chainWaitFrom=0;S.chainDraft=[];if(S.plays.chain?.active||S.chainSent){S.chainOwnEnd=!!S.plays.chain?.active;S.chainPending={until:performance.now()+8000};clearChain();S.chainSent=false}render()}
 function renderSong(){songModeSync();S.songSel=Math.max(0,Math.min(S.songSel,S.song.length-1));const sel=S.song[S.songSel]||S.song[0],pick=S.songPick,chain=pick==="chain",plays=playsOf();
  /* a chain is one bank's: another bank starts the draft over */
  S.chainDraft=S.chainDraft.filter(p=>p>>4===S.bank);
@@ -119,15 +140,17 @@ function renderSong(){songModeSync();S.songSel=Math.max(0,Math.min(S.songSel,S.s
  const lines=Math.ceil(200/16);
  $("#main").innerHTML=`<div class="songui lay2 withlib ${S.plays.songMode?"songmode":"patmode"}${S.plays.songMode&&S.playing?" songplaying":""}">${SongSlots.html()}<div class="songleft"><section class="card whatplays ${S.plays.songMode?"song":"pattern"} ${chain?"chainmode":""}">${head}${palette}</section>
    ${pick==="song"?`<section class="card"><header><h3>Selected row</h3><span class="rowacts"><button data-rowact="from" title="Play the song from this row (Enter): SONG mode, the row from its first step">▶ From here</button><button data-rowact="up" title="Move left">←</button><button data-rowact="down" title="Move right">→</button><button data-rowact="dup">Duplicate</button><button data-rowact="loop">Add loop</button><button data-rowact="del" class="danger">Delete</button></span></header><div class="insp">${insp}</div></section>`:""}</div>
-  <section class="card arrcard"><header><h3>Arrangement</h3><span class="arrstate" id="arrstate">${arrState()}</span><span class="note" title="${S.song.length} of 200 rows · T track transpose · M mutes · B tempo · ~ part">${S.song.length} of 200 rows<span class="gopt"> · T track transpose · M mutes · B tempo</span></span></header>
+  <section class="card arrcard"><header><h3>Arrangement</h3><span class="arrstate" id="arrstate">${arrState()}</span><span class="note" title="${S.song.length} of 200 rows · B tempo · M mutes · ± transpose · T per-track transpose · ~ part">${S.song.length} of 200 rows<span class="gopt"> · B tempo · M mutes · ± transpose · T per-track transpose</span></span></header>
    <div class="durbar" title="Song shape by time (length × repeats); in SONG mode it fills up to the row that plays">${S.song.map((r,i)=>r.type?`<i class="db dbm" data-i="${i}"></i>`:`<i class="db ${i===S.songSel?"sel":""}" data-row="${i}" data-i="${i}" style="flex:${rowLen(r)*r.rep} 1 0"></i>`).join("")}</div>
    <div class="slotgrid" id="tl">${Array.from({length:lines},(_,line)=>`<span class="sglab">${String(line*16+1).padStart(3,"0")}</span>${Array.from({length:16},(_,c)=>{const i=line*16+c,r=S.song[i];if(i>=200)return`<span></span>`;
      if(!r)return`<div class="scell empty" data-i="${i}"></div>`;
      const cls=`scell ${i===S.songSel?"sel":""} ${r.type?"cmd "+r.type:""} ${!r.type&&loopOf(i)>=0?"inloop":""}`;
      const txt=r.type==="end"?"END":r.type==="loop"?`↺${String(r.to+1).padStart(3,"0")}`:r.type==="jump"?`→${String(r.to+1).padStart(3,"0")}`:r.type==="halt"?"HALT":patName(r.pat);
-     const sub=r.type==="loop"?(r.count===Infinity?"∞":"×"+r.count):!r.type?`${r.rep>1?"×"+r.rep:""}${(r.trn??64)!==64?" "+((r.trn-64)>0?"+":"")+(r.trn-64):""}${hasTtr(r)?" T":""}${r.mutes?.length?" M":""}${r.bpm?" B":""}${r.ofs||r.len?"~":""}`:"";
-     return`<button class="${cls}" data-row="${i}" data-i="${i}" draggable="${r.type==="end"?"false":"true"}" title="Row ${String(i+1).padStart(3,"0")}${r.type?"":" · "+patName(r.pat)+" ×"+r.rep+" · "+rowLen(r)+" steps"}"><b>${txt}</b><small>${sub}</small></button>`}).join("")}`).join("")}</div></section></div>`;
- markSongRow(true);SongSlots.afterRender()}
+     const mk=SongMarks.marks(r,"mm");
+     const sub=r.type==="loop"?(r.count===Infinity?"∞":"×"+r.count):!r.type?`${r.rep>1?"×"+r.rep:""}${mk.any?(r.rep>1?" ":"")+SongMarks.html(r,"mm"):""}${r.ofs||r.len?"~":""}`:"";
+     return`<button class="${cls}" data-row="${i}" data-i="${i}" draggable="${r.type==="end"?"false":"true"}" title="Row ${String(i+1).padStart(3,"0")}${r.type?"":" · "+patName(r.pat)+" ×"+r.rep+" · "+rowLen(r)+" steps"+(mk.any?"\n"+mk.title+" · click the marks: Row > More":"")}"><b>${txt}</b><small>${sub}</small></button>`}).join("")}`).join("")}</div></section></div>`;
+ markSongRow(true);SongSlots.afterRender();SongMarks.fit(document.getElementById("tl"))}
+SongMarks.watch(()=>document.getElementById("tl"));
 /* The song slots (deskSongSlots.js, shared with the Machinedrum Editor): the host. The 24 songs are the machine's
    documents (S.songs: the host's view, MmView.songsOf; on its own the example's). Load is LOAD SONG, Save SAVE SONG
    (the song the machine holds, into its slot), the rest the library's slot ops (songCopy, songPaste, songCopyTo,

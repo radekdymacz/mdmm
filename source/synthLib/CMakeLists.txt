@@ -14,6 +14,7 @@ set(SOURCES
 	dac.cpp dac.h
 	device.cpp device.h
 	deviceException.cpp deviceException.h
+	deviceCommand.h
 	deviceTypes.h
 	functionRef.h
 	lv2PresetExport.cpp lv2PresetExport.h
@@ -26,6 +27,7 @@ set(SOURCES
 	midiTypes.h
 	os.cpp os.h
 	plugin.cpp plugin.h
+	seqlock.h
 	realtimeInstrumentation.cpp realtimeInstrumentation.h
 	performanceReport.cpp performanceReport.h
 	mameResamplers.cpp mameResamplers.h

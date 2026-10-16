@@ -207,7 +207,7 @@ document.addEventListener("click",e=>{
  const pmk=e.target.closest("[data-pmode]");if(pmk){S.mode=pmk.dataset.pmode;S.polyT=S.mode==="poly"?asgT():null;if(HOST.keyMode)HOST.keyMode(S.mode,asgT());if(S.mode==="poly")toast("POLY: T"+(asgT()+1)+" now plays six voices. The other five tracks are silent until you leave POLY.");render();return}
  const so2=e.target.closest("[data-strk]");if(so2){S.multi.splitTrack=clamp(S.multi.splitTrack+ +so2.dataset.strk,2,6);edit("multiTrig",{splitTrack:S.multi.splitTrack-1});render();return}
  const tm=e.target.closest("[data-tim]");if(tm){S.multi.timing=clamp(S.multi.timing+ +tm.dataset.tim,0,6);edit("multiTrig",{timing:S.multi.timing});render();return}
- const ko=e.target.closest("[data-kboct]");if(ko){S.kbOct=clamp(S.kbOct+ +ko.dataset.kboct,0,6);render();return}
+ const ko=e.target.closest("[data-kboct]");if(ko){S.kbOct=clamp(S.kbOct+ +ko.dataset.kboct,KBOCT[0],KBOCT[1]);render();return}
  const bd=e.target.closest("[data-band]");if(bd){S.mmapSel=+bd.dataset.band;render();return}
  const mr=e.target.closest("tr[data-mrow]");if(mr&&!e.target.closest("button,.pc,.kselbtn")){S.mmapSel=+mr.dataset.mrow;render();return}
  const mh=e.target.closest("[data-mhi]");if(mh){const i=+mh.dataset.i,r=S.mmap[i],lo=i?S.mmap[i-1].hi+1:0,nx=S.mmap[i+1];r.hi=clamp(r.hi+ +mh.dataset.mhi,lo,nx?nx.hi-1:127);edit("multiMap",{i,hi:r.hi});render();return}
@@ -226,6 +226,7 @@ document.addEventListener("click",e=>{
   const cp=e.target.closest("[data-chainpad]");if(cp){chainPad(+cp.dataset.chainpad);return}
   const ca=e.target.closest("[data-chain]");if(ca){if(!ca.disabled)chainAct(ca.dataset.chain);return}
   const ap=e.target.closest("[data-addpat]");if(ap){if(S.song.length>=200){toast("A song holds 200 rows.");return}let at2=S.songSel+1;if(S.song[S.songSel]?.type==="end")at2=S.songSel;S.song.splice(at2,0,{pat:+ap.dataset.addpat,rep:1});S.songSel=at2;edit("rowInsert",{i:at2,row:S.song[at2]});render();return}
+  const rmk=e.target.closest("[data-rowmarks]");if(rmk){S.songSel=+rmk.closest(".scell").dataset.row;S.songMore=true;render();return}
   const rw=e.target.closest(".scell:not(.empty),.db[data-row]");if(rw){S.songSel=+rw.dataset.row;render();return}
   const ra=e.target.closest("[data-rowact]");if(ra){songAction(ra.dataset.rowact);return}
   const stp=e.target.closest("[data-step]");if(stp){songStep(stp.dataset.step,+stp.dataset.d*(e.shiftKey?10:1));return}
@@ -241,6 +242,7 @@ document.addEventListener("click",e=>{
  if(e.target.closest("#undo")){undo();return}if(e.target.closest("#redo")){redo();return}
  const sc=e.target.closest("[data-sec]");if(sc){if(e.altKey&&sc.dataset.sec==="clear")clearPattern();else secAction(sc.dataset.sec);return}
  if(e.target.closest("#syncf.warn")){sendDialog();return}
+ if(e.target.closest("#kitPrev,#kitNext")){kitStep(e.target.closest("#kitNext")?1:-1);return}
  if(e.target.closest("#kitf")){toggleLib("kit");return}
  if(e.target.closest("#pat")){toggleLib("pat");return}
  if(e.target.closest("#learnkey")){S.learn=!S.learn;S.learnT=null;document.body.classList.toggle("learn",S.learn);renderTop();if(S.learn)toast("LEARN: click a value, then press 1-8 for a controller knob.");if(HOST.learning)HOST.learning(S.learn);return}
@@ -255,6 +257,7 @@ document.addEventListener("change",e=>{const id=e.target.id,v=e.target.value,tr=
  if(id==="engsel"){const btn=document.querySelector(".lcdeng");if(v==="global"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;openGlobal();return}if(v==="audio"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;openAudio();return}if(v==="rom"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.romManage)HOST.romManage();else firstRun();return}
   if(v==="import"||v==="export"||v==="reset"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;Syx.menu(v);return}
   if(v==="memoryKeep"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.memory)HOST.memory("keep");return}
+  if(v==="followPlayed"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.follow)HOST.follow();return}
   S.engine=v;S.pend=0;renderPst();if(HOST.engine)HOST.engine(v);else startEngine(v);return}
  let m=id.match(/^lp(\d)$/);if(m){editTrack(S.sel,()=>{const l=V("LF"+m[1]);l[0]=+v;l[1]=0});render();return}
  m=id.match(/^ld(\d)$/);if(m){editTrack(S.sel,()=>{V("LF"+m[1])[1]=+v});render();return}
@@ -535,7 +538,7 @@ function setRecord(mode,at=-1){const on=mode==="grid"||mode==="live",was=S.recMo
 /* an engine state's LCD label: [text, led "on" | "blink" | "off", tooltip] */
 function setEngineLabel(st,label){ENG[st]=label;if(S.eng===st)setEng(st)}
 /* a host's engine map ([{id, label, available, reason}]) in the engine menu, before the menu's own entries */
-function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const own=["audio","global","rom","import","export","reset","memoryKeep"];
+function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const own=["audio","global","rom","import","export","reset","memoryKeep","followPlayed"];
  for(const o of [...sel.options])if(!own.includes(o.value)&&!list.some(e=>e.id===o.value))o.remove();
  const first=[...sel.options].find(o=>own.includes(o.value))||null;
  for(const e of list){let o=sel.querySelector(`option[value="${e.id}"]`);if(!o){o=document.createElement("option");o.value=e.id}sel.insertBefore(o,first);o.textContent=e.label;o.disabled=!e.available;o.title=e.available?"":e.reason||""}
@@ -545,6 +548,16 @@ function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const ow
 function setMemory(m){S.mem=m;const k=document.querySelector('#engsel option[value="memoryKeep"]');if(!k)return;
  k.hidden=!m.available;k.textContent="KEEP MEMORY: "+(m.keep?"ON":"OFF");k.dataset.saved=m.saved?"1":"0";
  k.title=m.note||(m.keep?"New sessions without a DAW project start with what you saved on the machine. Click to turn it off.":"New sessions start from factory memory. Click to keep what you save on the machine for new sessions.")}
+/* I-003: the engine menu's FOLLOW PLAYED TRACK as the host says (on / off); shown once the host has said. The host
+   selects the track a MIDI controller played (selectTrack: the click on a track) */
+function setFollow(on){const k=document.querySelector('#engsel option[value="followPlayed"]');if(!k)return;
+ k.hidden=false;k.textContent="FOLLOW PLAYED TRACK: "+(on?"ON":"OFF");
+ k.title=on?"The selected track follows the last track played from a MIDI controller. Click to turn it off.":"Click to make the selected track follow the last track played from a MIDI controller."}
+/* I-003: the host's selectTrack: at most one selection per frame (the last note's track); a question open or LEARN
+   waiting for its note leaves the selection where it is */
+const FOLLOW={t:0,raf:0};
+function followSelect(t){FOLLOW.t=t;if(FOLLOW.raf)return;FOLLOW.raf=requestAnimationFrame(()=>{FOLLOW.raf=0;
+ if(FOLLOW.t===S.sel||!$("#dlg").hidden||GP.learn!=null)return;select(FOLLOW.t)})}
 /* the AUDIO / MIDI entry of the engine menu: only where the host has the devices (a standalone) */
 function setAudioEntry(on){const o=document.querySelector('#engsel option[value="audio"]');if(o)o.hidden=o.disabled=!on;Boot.midiRefresh()}
 /* the app sources and their links as the host's engine took them (ctlSetup() shape); the knob rows and their links stay */
@@ -606,7 +619,7 @@ window.MMView={
  setSongSteps:n=>{S.songSteps=n;const st=document.getElementById("arrstate");if(st&&st.textContent!==arrState())st.textContent=arrState()},
  setEng,dlgOpen:()=>!$("#dlg").hidden,setEngineLabel,setEngineTip,setEngines,setAudioEntry,setMemory,clearLearnTarget:()=>{S.learnT=null},setMapping,setModulation,setCtlSetup,disable,
  setRecord,setRecLock,
- setLcd,setKeyDown,setMidiHeld,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
+ setFollow,selectTrack:followSelect,setLcd,setKeyDown,setMidiHeld,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
  /* calls */
  render,renderTop,drawLib,toast,ask,redraw,movePH,setPos,flashTracks,goWs,clickStep,autoRange,kitSave,
  redrawAudio:()=>{if(AP.open)drawAudio()},audioLevel,openAudio};

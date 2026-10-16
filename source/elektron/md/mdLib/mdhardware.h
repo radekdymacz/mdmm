@@ -136,6 +136,21 @@ namespace md
 		// The ROM image, shared: a state capture keeps it alive while it encodes outside the device lock
 		std::shared_ptr<const Rom> sharedRom() const { return m_rom; }
 		bool flashDirty() const { return m_uc.flashDirty(); }
+		// Microcontroller::flashWrites: copies of the flash taken in parts check it did not move meanwhile
+		uint64_t flashWrites() const { return m_uc.flashWrites(); }
+		// Microcontroller::patchRamWrites (the pending overlay's patch RAM is replaced with a publish, which counts)
+		uint64_t patchRamWrites() const { return m_uc.patchRamWrites(); }
+		// Microcontroller::patchRamMark / flashMark: the write marks of the patch RAM copyPatchRamRange reads and of the flash
+		uint64_t patchRamMark(const size_t _offset) const { return m_uc.patchRamMark(_offset); }
+		uint64_t flashMark(const size_t _offset) const { return m_uc.flashMark(_offset); }
+		// The patch RAM copyPatchRam would give is _data (compared in place: no 1 MiB copy under the device lock)
+		bool patchRamEquals(const std::vector<uint8_t>& _data) const;
+		// factoryFlashBaseline() would give one (the factory flash is ready and its cache or capture is there),
+		// without making it: for the facts the audio thread publishes
+		bool hasFactoryFlashBaseline() const;
+		// The same, never waiting (the audio thread's facts, DESIGN-audio-lock.md): when another thread holds the factory
+		// flash lock, the value the last call of either saw
+		bool hasFactoryFlashBaselineRealtime() const;
 		bool factoryFlashCacheReady();
 		bool isFactoryFlashCacheReady() const
 		{
@@ -395,6 +410,7 @@ namespace md
 		std::atomic<bool> m_factoryFlashReady{false};
 		std::atomic<bool> m_factoryFlashPreparationReady{false};
 		mutable std::mutex m_factoryFlashMutex;
+		mutable std::atomic<bool> m_factoryFlashBaselineSeen{false};	// hasFactoryFlashBaseline's last answer
 		std::vector<uint8_t> m_factoryFlashCache;
 		// Never null; immutable once its capture completes, so a state save shares it (FactoryFlashBaseline)
 		std::shared_ptr<std::vector<uint8_t>> m_factoryFlashBaseline;

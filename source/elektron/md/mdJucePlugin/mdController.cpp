@@ -775,15 +775,12 @@ namespace mdJucePlugin
 	{
 		if(m_syntheticFirmwareReadyForTests)
 			return true;
-		bool ready = true;
-		getProcessor().getPlugin().withDeviceLocked(
-			[&ready](synthLib::Device* const _device)
-			{
-				if(const auto* const device = dynamic_cast<md::Device*>(_device))
-					ready = !device->isProjectStateRestorePending()
-						&& device->getHardware().isFirmwareMidiReady();
-			});
-		return ready;
+		// the facts the audio thread published (DESIGN-audio-lock.md step 2): no device lock per automation change
+		const auto* const processor = dynamic_cast<const AudioPluginAudioProcessor*>(&getProcessor());
+		if(!processor)
+			return true;
+		const auto f = processor->machineFacts();
+		return f.kind != MachineFacts::Kind::Machine || (!f.restorePending && f.firmwareMidiReady);
 	}
 
 	bool Controller::parseSysexMessage(const pluginLib::SysEx& _message,

@@ -226,6 +226,18 @@ The track you play from a MIDI keyboard lights on the track rail and in the mixe
 
 The notes that play each track are set in "MAP EDITOR" in chapter 10.
 
+## THE SELECTED TRACK FOLLOWS THE LAST TRACK PLAYED
+<!-- rows: MD-X26 @b03b3e -->
+
+The machine has no such function. With it on, the track you select changes to the last track you played from a MIDI keyboard. It is off until you turn it on, and the project keeps the choice.
+
+1. Open the engine menu and choose **FOLLOW PLAYED TRACK: OFF**. It reads **FOLLOW PLAYED TRACK: ON**.
+2. Play the note of track 5 from a MIDI keyboard on the base channel. Track 5 is selected.
+3. Play the note of another track on a channel outside the four base channels. The selection stays where it was.
+4. Choose the entry again to turn it off.
+
+The notes that play each track are set in "MAP EDITOR" in chapter 10. The keys of the computer keyboard and the audition of a sample never move the selection. Following replaces a selection of several tracks with the one track played. While a question is open, or LEARN waits for its note, the selection stays where it is.
+
 ## THE CPU METER AND THE SPEED-UPS
 <!-- rows: MD-X15 @ca9b71 -->
 

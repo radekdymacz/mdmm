@@ -550,6 +550,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | PIANO ROLL | Piano roll | Draw notes on a roll with a note length, move or box-select them and play chords; the roll writes the same step data as the machine's own entry. | ✅ | Pattern: the piano roll, Draw (B), Len | MM only | 5 | pass (e2e-mm-seq-transpose-keyboard) |
 | WHAT YOU DRAW IS WHAT PLAYS | What you draw is what plays | What you enter in the sequencer is what the machine plays. | ✅ | Pattern: the grid or the roll; Alt+Delete clears the pattern; Cmd+Z takes it back | e2e: drawn, played, cleared, undone, each checked on the machine's output | 1 | pass (mm-real-sequence-drawn) |
 | CLEAR | Clear (was Revert track) | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Kit: Clear key at the right end of the MUTATE bar, next to R |  | 1 | pass (e2e-mm-sound-revert-track) |
+|  | The selected track follows the last track played | No such function. With it on, the track you select changes to the last one you played from a MIDI keyboard. | ✅ | Engine menu: FOLLOW PLAYED TRACK (off at first) | I-003 | 1 | – |
 
 ## 24. Editor features with no manual counterpart (for orientation)
 
@@ -561,11 +562,11 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 361 |
+| ✅ | 362 |
 | 🟡 | 14 |
 | ❌ | 1 |
 | ➖ | 34 |
-| Total | 410 |
+| Total | 411 |
 
 ### Top gaps, ranked (our UI)
 

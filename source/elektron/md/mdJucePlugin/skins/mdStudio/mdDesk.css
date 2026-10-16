@@ -2331,3 +2331,12 @@ html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[dat
 .lb .kvl.fl{right:calc(100% + 2px)}
 /* the lock's number and the kit's never cover each other: the kit's goes while the lock's shows */
 .lb:hover .vl~.kvl,.lb.vsel .vl~.kvl{visibility:hidden}
+
+/* I-039: the marks on an arrangement cell (tempo, mutes, transpose): the words in the small line when every cell has room for them
+   (SongMarks.fit puts .rmkwide on the grid), else short letter codes (B M ± T) in the same line; the cell keeps its height either way */
+.scell .rmk{font-style:normal;cursor:pointer}
+.scell .rmk .rt{display:none}
+.scell .rmk .rg{letter-spacing:-.6px}
+.slotgrid.rmkwide .rmk .rt{display:inline}
+.slotgrid.rmkwide .rmk .rg{display:none}
+.scell small{white-space:nowrap}

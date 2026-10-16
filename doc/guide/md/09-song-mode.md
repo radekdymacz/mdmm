@@ -138,6 +138,8 @@ The marks under a pattern name say what else the row does.
 | HALT | the song halts |
 | END | the song ends |
 
+A row that has a tempo of its own or muted tracks shows it in its cell as well. A tempo shows as a number, muted tracks as M and how many, for example 120 M3. When the cells are too narrow for words, letters stand for them: B for the tempo and M for the mutes. Hold the pointer over the cell to read them in full. Click the marks to open **More** for that row. A row with neither looks as before.
+
 ### When the machine hears an edit
 
 The editor writes each edit into the song on the machine. An edit is heard from the next start of the song. The editor loads the song into the machine again when the machine is stopped.

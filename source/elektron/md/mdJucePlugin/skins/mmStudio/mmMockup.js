@@ -605,12 +605,12 @@ const MM_SEAM={
   "selectPattern","kit","tempo","mutes","keyMode","record","chain","chainClear","seqMode","loadSong","saveSong","waiting",
   "sendNow","playKey","keyUp","transport","noteOn","noteOff","joy","learning","learnTarget","learnBind","modulators",
   "engine","chooseRom","removeRom","romManage","syxChoose","syxExport","syxStart","syxStop","syxPlace","syxExportInfo","machineReset","revealRom",
-  "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","globalSlot","memory"],
+  "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","globalSlot","memory","follow"],
  "view":[
   "audible","soloed","engReady","asgT","noteName","pname","machName","kitName","gated","busy","sel","mode",
   "playing","step","tempo","engineState","kitState","learnTarget","learning","ctlSetup","show","startEmpty",
   "setPatternSlot","setKitSlot","setReading","setTempo","setSolo","setInput","setPlaying","setStep","setPausedStep","setSongRow","setSongSteps","setEng","dlgOpen",
-  "setEngineLabel","setEngineTip","setEngines","setAudioEntry","setMemory","clearLearnTarget","setMapping","setModulation",
+  "setEngineLabel","setEngineTip","setEngines","setAudioEntry","setMemory","setFollow","selectTrack","clearLearnTarget","setMapping","setModulation",
   "setCtlSetup","disable","setRecord","setRecLock","setLcd","setKeyDown","setMidiHeld","setPst","closeFirmwareDialog","bootRom",
   "bootInstalled","syxPreview","syxProgress","syxExported","syxExportInfo","render","renderTop","drawLib","toast","ask","redraw","movePH",
   "setPos","flashTracks","goWs","clickStep","autoRange","kitSave","redrawAudio","audioLevel","openAudio"]};
@@ -667,6 +667,8 @@ const MM_SEAM={
                                       dialogs; the preview and progress come back through MMView
      removeRom(info)   REMOVE in the LOAD ROM card
      romManage()   LOAD ROM in the engine menu (a host shows which firmware runs, REPLACE and REMOVE; none: the start-up card)
+     follow()       I-003: the engine menu's FOLLOW PLAYED TRACK on / off; the state comes back with MMView.setFollow, and the
+                                      host selects the track a MIDI controller played with MMView.selectTrack
      memory(what)   I-024: "keep" (the engine menu's KEEP MEMORY on / off) or "factory" (RESET MACHINE…'s Start from
                                       factory memory, asked by the panel); the state comes back with MMView.setMemory
      chooseRom(), revealRom(), recheck()   the start-up card's keys (P7): the native file chooser for the
@@ -1230,6 +1232,50 @@ const SongSlots = (() => {
 	}
 
 	return { init(h) { host = h; }, html, afterRender, busy, select, get sel() { return sel; }, get naming() { return naming; } };
+})();
+
+/* I-039: the marks on an arrangement cell. A row that holds a tempo, mutes or a transpose says so in its cell, as
+   short as it can be: the tempo as a number, mutes as "M" and their count, the row's transpose as +2 / -3, per-track
+   transpose (MM) as "T±". A row with none gets nothing, so a plain song looks as it did. The full detail is for the
+   cell's tooltip. A cell can be as narrow as 22 px (it is not wider than its pattern name), so the words cannot
+   always fit: the same marks are also short letter codes in the same small line (B tempo, M mutes, ± the row's
+   transpose, T single tracks, in that order, e.g. "BM±"), and fit() shows the words when every cell has room for them
+   and the codes when one has not: nothing is ever cut and no cell changes its height. Pure apart from fit(): a row in (MD: bpm, mutes; MM: also trn, ttr,
+   64 = no transpose), text out. Tested in node by deskSongMarksTest.js. */
+const SongMarks = (() => {
+	const sgn = n => (n > 0 ? "+" : "") + n;
+	/* kind "md": mute k is "Track k+1"; "mm": 0-5 are T1-T6, 6-11 are M1-M6 (the machine's MIDI tracks) */
+	const muteName = (kind, k) => kind === "mm" ? (k < 6 ? "T" + (k + 1) : "M" + (k - 5)) : "Track " + (k + 1);
+	function marks(r, kind) {
+		if (!r || r.type) return { text: "", title: "", any: false, codes: "" };
+		const text = [], tip = []; let codes = "";
+		if (r.bpm) { text.push(String(r.bpm)); tip.push("Tempo " + r.bpm + " BPM"); codes += "B"; }
+		const mutes = (r.mutes || []).slice().sort((a, b) => a - b);
+		if (mutes.length) { text.push("M" + mutes.length); tip.push("Muted: " + mutes.map(k => muteName(kind, k)).join(", ")); codes += "M"; }
+		const trn = (r.trn ?? 64) - 64;
+		if (trn) { text.push(sgn(trn)); tip.push("Transpose " + sgn(trn)); codes += "±"; }
+		const ttr = (r.ttr || []).map((v, k) => [k, v - 64]).filter(([, d]) => d);
+		if (ttr.length) { text.push("T±"); tip.push("Per track: " + ttr.map(([k, d]) => muteName(kind, k) + " " + sgn(d)).join(", ")); codes += "T"; }
+		return { text: text.join(" "), title: tip.join(" · "), any: text.length > 0, codes };
+	}
+	/* the cell's markup: the words and the codes in one element (a click on it opens Row > More); "" for a plain row */
+	function html(r, kind) {
+		const m = marks(r, kind);
+		return m.any ? `<i class="rmk" data-rowmarks="1"><span class="rt">${m.text}</span><span class="rg">${m.codes}</span></i>` : "";
+	}
+	/* the words when each cell's small line holds them, else the codes (re-run after a render and when the page resizes) */
+	function fit(grid) {
+		if (!grid) return;
+		grid.classList.add("rmkwide");
+		for (const s of grid.querySelectorAll(".scell small")) {
+			const c = s.parentNode, cs = getComputedStyle(c), room = c.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+			if (s.getBoundingClientRect().width > room + 0.5) { grid.classList.remove("rmkwide"); return; }
+		}
+	}
+	function watch(gridOf) {
+		if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("resize", () => fit(gridOf()));
+	}
+	return { marks, html, fit, watch };
 })();
 
 /* ---- shared/deskWhat.js ---- */
@@ -3813,14 +3859,14 @@ function liveRecord(){if(HOST.record)return HOST.record(true);S.rec=!S.rec;if(S.
 
 /* ---- the keyboard: two rows play the selected synth track chromatically, from any workspace, as a DAW's typing
    keyboard: A S D F G H J K L are the white keys C D E F G A B C D from C-3, W E · T Y U · O P the black keys above
-   them (C♯ D♯ · F♯ G♯ A♯ · C♯ D♯; R and I sit where a piano has no black key) (Z / X: the octave, −3 to +3; ⇧B taps
+   them (C♯ D♯ · F♯ G♯ A♯ · C♯ D♯; R and I sit where a piano has no black key) (Z / X: the octave, −4 to +6: the A key from MIDI 0 to 120, every note 0-127, I-040; ⇧B taps
    the tempo everywhere, B off Pattern, since T is F♯ here; MM-PORT-PLAN.md 2026-10-05), real MIDI notes on the track's own channel
    (GLOBAL › MIDI › CHANNELS: base + track), at KB.vel (C / V: 20 40 60 80 100 127; the machine hears it through
    ASSIGN › VEL). Each key is its own note on and off, so legato and the machine's note priority work as on a
    keyboard; while LIVE RECORDING the machine records them. MIDI tracks are not played (their notes go to the
    MIDI OUT only). Key repeat is ignored. ---- */
 /* a key (its letter) to semitones above the A key's note */
-const KEYS_PIANO={A:0,W:1,S:2,E:3,D:4,F:5,T:6,G:7,Y:8,H:9,U:10,J:11,K:12,O:13,L:14,P:15},KEYS_WHITE="ASDFGHJKL",KEYS_BLACK="WETYUOP",KEYS_OCT=[-3,3],KEYS_VELS=[20,40,60,80,100,127],KEYS_BASE=48;
+const KEYS_PIANO={A:0,W:1,S:2,E:3,D:4,F:5,T:6,G:7,Y:8,H:9,U:10,J:11,K:12,O:13,L:14,P:15},KEYS_WHITE="ASDFGHJKL",KEYS_BLACK="WETYUOP",KEYS_OCT=[-4,6],KEYS_VELS=[20,40,60,80,100,127],KEYS_BASE=48;
 const KB={oct:0,vel:100,held:new Map(),told:new Set()};
 function keyVel(v,d){const up=KEYS_VELS.find(x=>x>v),down=[...KEYS_VELS].reverse().find(x=>x<v);return d>0?up??KEYS_VELS[KEYS_VELS.length-1]:down??KEYS_VELS[0]}
 /* the keys that play and act on tracks: no dialog or panel open, no text field focused (the one rule of both editors, deskKeys.js) */
@@ -3833,7 +3879,7 @@ function homeUp(code){const h=KB.held.get(code);if(!h)return;KB.held.delete(code
 /* a host plays the machine (the note intent: pitch in semitones from KEYS_BASE, C3); the example only shows the track's lamp */
 function keyNote(t,n,vel){if(vel&&S.ws==="mix"&&!isMidiT(t)&&audible(t))DeskTrig.light([t]);if(HOST.noteOn){const p=n-KEYS_BASE;return vel?HOST.noteOn(t,p,vel):HOST.noteOff(t,p)}if(vel){flashTracks([t]);kbTell("eg","Example: in the plug-in the keys play the machine.")}}
 function kbVel(d){KB.vel=keyVel(KB.vel,d);toast(`Keyboard velocity ${KB.vel}`)}
-function kbOct(d){KB.oct=clamp(KB.oct+d,KEYS_OCT[0],KEYS_OCT[1]);toast(`Keyboard octave ${KB.oct>0?"+":""}${KB.oct}: A plays ${noteName(KEYS_BASE+12*KB.oct)}`)}
+function kbOct(d){KB.oct=clamp(KB.oct+d,KEYS_OCT[0],KEYS_OCT[1]);toast(`Keyboard octave ${KB.oct>0?"+":""}${KB.oct}: A plays ${noteName(KEYS_BASE+12*KB.oct)} (MIDI ${KEYS_BASE+12*KB.oct})`)}
 document.addEventListener("keyup",e=>homeUp(e.code));addEventListener("blur",()=>[...KB.held.keys()].forEach(homeUp));
 Keys.bind({id:"piano-run",scope:"any",keys:[...KEYS_WHITE,...KEYS_BLACK],group:"Playing",hidden:true,field:true,when:kbOn,run:homeDown,does:""});
 Keys.bind({id:"octave-down",scope:"any",keys:["Z"],group:"Playing",hidden:true,field:true,when:kbOn,run:()=>kbOct(-1),does:""});
@@ -3842,7 +3888,7 @@ Keys.bind({id:"velocity-down",scope:"any",keys:["C"],group:"Playing",hidden:true
 Keys.bind({id:"velocity-up",scope:"any",keys:["V"],group:"Playing",hidden:true,field:true,when:kbOn,run:()=>kbVel(1),does:""});
 Keys.bind({id:"piano-white",scope:"any",notes:"C D E F G A B C D",keys:["A S D F G H J K L"],group:"Playing",does:"Play the selected synth track: white keys C D E F G A B C D, real notes on its MIDI channel, from any workspace. While live recording the machine records them"});
 Keys.bind({id:"piano-black",scope:"any",notes:"C♯ D♯ F♯ G♯ A♯ C♯ D♯",keys:["W E T Y U O P"],group:"Playing",does:"The black keys above them: C♯ D♯ F♯ G♯ A♯ C♯ D♯, so the two rows play every semitone"});
-Keys.bind({id:"octave",scope:"any",keys:["Z","X"],group:"Playing",does:()=>`Octave down / up, −3 to +3 (now ${KB.oct>0?"+":""}${KB.oct}: A is ${noteName(KEYS_BASE+12*KB.oct)})`});
+Keys.bind({id:"octave",scope:"any",keys:["Z","X"],group:"Playing",does:()=>`Octave down / up, −4 to +6: every note 0-127 (now ${KB.oct>0?"+":""}${KB.oct}: A is ${noteName(KEYS_BASE+12*KB.oct)}, MIDI ${KEYS_BASE+12*KB.oct}). Perform: the Octave stepper moves the on-screen keyboard over the same notes`});
 Keys.bind({id:"velocity",scope:"any",keys:["C","V"],group:"Playing",does:()=>`Velocity down / up: 20 40 60 80 100 127 (now ${KB.vel})`});
 
 /* ---- the selected track's keys, the all keys, the step gestures ---- */
@@ -4802,18 +4848,28 @@ ED.dist={k(){return(kget("AMP","DIST")-64)/63},
 ED.pan={draw(g,W,H){const ink=cssv("--ink");grid(g,W,H);g.font=SFONT;g.fillStyle=ink;g.fillText("L",6,H-6);g.fillText("R",W-12,H-6);g.fillStyle=inkA(.5);g.fillRect(W/2,20,1,H-30);
   const p=kget("AMP","PAN")-64;label(g,p?(p<0?"left "+(-p):"right "+p):"centre")},
  handles(W,H){return[{x:10+u7(kget("AMP","PAN"))*(W-20),y:H-10-u7(kget("AMP","VOL"))*(H-34),k:"PAN · VOL",drag:(x,y)=>{kset("AMP","PAN",(x-10)/(W-20)*127);kset("AMP","VOL",(H-10-y)/(H-34)*127)}}]}};
-/* FILTER ATK DEC: the filter's own envelope; BOFS moves the base (solid), WOFS the width (dashed). Both are signed
-   (B-148: -64 to +63, 64 = no sweep): up from the middle line for a positive offset, down for a negative one */
-ED.fenv={seg(W){const f=V("FLT");return{a:f[4]/127*W*.3,d:f[5]/127*W*.6}},
- geo(H){const T=22,B=H-10;return{M:(T+B)/2,A:(B-T)/2}},
- off:v=>(v-64)/64,
- draw(g,W,H){const f=V("FLT"),s=this.seg(W),G=this.geo(H),ink=cssv("--ink"),bo=this.off(f[6]),wo=this.off(f[7]);grid(g,W,H);
-  const env=x=>x<s.a?x/Math.max(1,s.a):Math.exp(-3*(x-s.a)/Math.max(4,s.d));
-  g.strokeStyle=inkA(.3);g.lineWidth=1;g.beginPath();g.moveTo(0,G.M+.5);g.lineTo(W,G.M+.5);g.stroke();
-  line(g,W,x=>G.M-env(x)*G.A*bo,ink,2.2);if(wo)line(g,W,x=>G.M-env(x)*G.A*wo,inkA(.6),1.5,[5,4]);
-  label(g,bo||wo?"solid = base · dashed = width":"no offset: the envelope does nothing")},
- handles(W,H){const s=this.seg(W),f=V("FLT"),G=this.geo(H),bo=this.off(f[6]);return[{x:Math.max(5,s.a),y:G.M-G.A*bo,k:"ATK · BOFS",drag:(x,y)=>{f[4]=clamp(Math.round(x/(W*.3)*127));f[6]=clamp(Math.round(64+(G.M-y)/G.A*64))}},
-  {x:s.a+Math.max(4,s.d)*.35,y:G.M-G.A*bo*Math.exp(-1.05),k:"DEC",drag:x=>f[5]=clamp(Math.round((x-s.a)/.35/(W*.6)*127))}]}};
+/* FILTER ATK DEC BOFS WOFS (I-043): the filter's own envelope in two panes of the one screen. The big pane is the reach:
+   BOFS (solid, the base) and WOFS (dashed, the width) each a row across the whole pane, -64 on the left edge, 0 on the
+   line, +63 on the right (B-148: 64 = no sweep), so a drag left or right covers the full range. The small square pane
+   at the right is the envelope's shape alone: ATK and DEC. */
+ED.fenv={geo(W,H){const side=clamp(Math.round(H*.62),56,Math.round(W*.4)),sx=W-side-4,bw=sx-8,P=5;
+  return{side,sx,sy:H-side-4,bw,P,iw:side-2*P,ih:side-2*P,x0:10,x1:Math.max(40,bw-10),rb:Math.round(H*.4),rw:Math.round(H*.72)}},
+ X(G,v){return G.x0+v/127*(G.x1-G.x0)},
+ V(G,x){return clamp(Math.round((x-G.x0)/(G.x1-G.x0)*127),0,127)},
+ shape(G,f){const a=f[4]/127*G.iw*.4,d=Math.max(4,f[5]/127*G.iw*.6);return{a,d,at:x=>x<a?x/Math.max(1,a):Math.exp(-3*(x-a)/d)}},
+ draw(g,W,H){const f=V("FLT"),G=this.geo(W,H),ink=cssv("--ink"),S0=this.shape(G,f),zx=this.X(G,64);
+  g.strokeStyle=inkA(.13);g.lineWidth=1;for(let i=1;i<4;i++){const y=Math.round(H*i/4)+.5;g.beginPath();g.moveTo(0,y);g.lineTo(G.bw,y);g.stroke()}
+  g.strokeStyle=inkA(.35);g.beginPath();g.moveTo(Math.round(zx)+.5,22);g.lineTo(Math.round(zx)+.5,H-14);g.stroke();
+  g.font=SFONT;g.fillStyle=inkA(.6);g.fillText("-64",G.x0-4,H-4);g.fillText("0",zx-2,H-4);g.fillText("+63",G.x1-12,H-4);
+  [["BOFS",f[6],G.rb,0],["WOFS",f[7],G.rw,1]].forEach(([n,v,y,dash])=>{const x=this.X(G,v),o=v-64;g.fillStyle=ink;g.font=SFONT;g.fillText(n+" "+(o>0?"+":"")+o,G.x0-4,y-9);
+   g.strokeStyle=dash?inkA(.6):ink;g.lineWidth=dash?1.5:2.2;g.setLineDash(dash?[5,4]:[]);g.beginPath();g.moveTo(zx,y);g.lineTo(x,y);g.stroke();g.setLineDash([])});
+  g.strokeStyle=inkA(.5);g.lineWidth=1;g.strokeRect(G.sx+.5,G.sy+.5,G.side-1,G.side-1);
+  g.save();g.translate(G.sx+G.P,G.sy+G.side-G.P);line(g,G.iw,x=>-S0.at(x)*G.ih,ink,2);g.restore();
+  label(g,f[6]===64&&f[7]===64?"no reach: the envelope does nothing":"how far it moves",8,15)},
+ handles(W,H){const f=V("FLT"),G=this.geo(W,H),S0=this.shape(G,f),bx=G.sx+G.P,by=G.sy+G.side-G.P;
+  return[{x:this.X(G,f[6]),y:G.rb,k:"BOFS",drag:x=>kset("FLT","BOFS",this.V(G,x))},{x:this.X(G,f[7]),y:G.rw,k:"WOFS",drag:x=>kset("FLT","WOFS",this.V(G,x))},
+   {x:bx+Math.max(0,S0.a),y:by-G.ih,k:"ATK",drag:x=>kset("FLT","ATK",(x-bx)/(G.iw*.4)*127)},
+   {x:bx+S0.a+S0.d*.35,y:by-Math.exp(-1.05)*G.ih,k:"DEC",drag:x=>kset("FLT","DEC",(x-bx-S0.a)/.35/(G.iw*.6)*127)}]}};
 /* EFFECTS EQF EQG: one band, boosted (up) or cut (down) */
 ED.eq={draw(g,W,H){const e=V("EFX"),mid=H/2+4;grid(g,W,H);line(g,W,x=>mid-(e[1]-64)/64*(mid-22)*Math.exp(-Math.pow((x/W-e[0]/127)*8,2)),cssv("--ink"),2);label(g,e[1]===64?"flat":e[1]>64?"boost":"cut")},
  handles(W,H){const e=V("EFX"),mid=H/2+4;return[{x:e[0]/127*W,y:mid-(e[1]-64)/64*(mid-22),k:"EQF · EQG",drag:(x,y)=>{e[0]=clamp(Math.round(x/W*127));e[1]=clamp(Math.round(64+(mid-y)/(mid-22)*64))}}]}};
@@ -4853,14 +4909,27 @@ ED.flt={resp(u,env){const f=V("FLT"),b=clamp((f[0]+(env?f[6]-64:0))/127,0,1),w=M
  handles(W,H){const f=V("FLT"),b=f[0]/127,lp=Math.min(1,b+f[1]/127),yy=u=>clamp(H/2+8-this.resp(u)*(H/4),6,H-6);
   return[{x:Math.max(6,b*W),y:yy(b),k:"BASE · HPQ",drag:(x,y)=>{f[0]=clamp(Math.round(x/W*127));f[2]=clamp(Math.round((H/2+8-y)/(H/2)*127))}},{x:Math.min(W-6,lp*W),y:yy(lp),k:"WDTH · LPQ",drag:(x,y)=>{f[1]=clamp(Math.round((x/W-f[0]/127)*127));f[3]=clamp(Math.round((H/2+8-y)/(H/2)*127))}}]}};
 function lfoCycle(v){const m=Math.pow(2,v[4]);return v[5]?2048/(v[5]*m):Infinity}
-ED.lfo={draw(g,W,H,c){const l=c.dataset.l,v=V(l),tr=trk(S.sel),ink=cssv("--ink"),N=32,cyc=lfoCycle(v),dep=.15+.85*v[7]/127;grid(g,W,H);
-  const trigs=[];for(let s=0;s<N;s++){const st=tr.steps[s%S.len];if(st&&!st.off&&st.l)trigs.push(s)}
-  const lastTrig=p=>{let t=null;for(const s of trigs)if(s<=p)t=s;return t};const mode=v[2];
-  line(g,W,x=>{const p=x/W*N;let ph;const lt=lastTrig(p);
-   if(mode===0||lt==null)ph=p/cyc;else if(mode===1)ph=(p-lt)/cyc;else if(mode===2)ph=lt/cyc;else{const lim=mode===3?1:.5;ph=Math.min(lim-.0001,(p-lt)/cyc)}
-   let o=lshape(v[3],((ph%1)+1)%1);if(v[6]){const il=Math.max(1,(128-v[6])/8);if(Math.floor(p/il)%2)o=0}return H/2+4-o*(H/2-16)*dep},ink,2);
-  trigs.forEach(s=>{const x=s/N*W;g.fillStyle=ink;g.fillRect(x,H-7,2,6)});
-  label(g,`${LTRIG[mode]} · ${cyc===Infinity?"stopped":"cycle "+(cyc>=1?Math.round(cyc*10)/10+" steps":Math.round(cyc*16)/16+" step")}`)}};
+/* I-042: the LFO as the track's locks change it. step(s) says whether pattern step s plays (locks only apply on a step
+   that plays), trig(s) whether it trigs the LFO, lock(i,s) the step's lock on the LFO's parameter i (2 TRIG, 3 WAVE, 4 MULT,
+   5 SPD, 6 INTL, 7 DPTH) or undefined. A lock holds for its own step: the phase runs on at that step's speed, the shape,
+   interval and depth are that step's. M samples across N steps; each is the output times its depth (-1 to 1). */
+function lfoTrace(v,N,M,len,step,trig,lock){const at=(i,s)=>{const x=step(s)?lock(i,s):undefined;return x==null?v[i]:x},out=new Array(M);let free=0,since=null,held=0;
+ for(let k=0;k<M;k++){const p=k/M*N,s=Math.floor(p),ps=s%len,first=k===0||Math.floor((k-1)/M*N)!==s;
+  if(first&&trig(ps)){since=0;held=free}
+  const mode=at(2,ps),spd=at(5,ps),cyc=spd?2048/(spd*Math.pow(2,at(4,ps))):Infinity,rate=cyc===Infinity?0:1/cyc,dep=.15+.85*at(7,ps)/127;let ph;
+  if(since==null||mode===0)ph=free;else if(mode===1)ph=since;else if(mode===2)ph=held;else ph=Math.min((mode===3?1:.5)-.0001,since);
+  let o=lshape(at(3,ps),((ph%1)+1)%1),il=at(6,ps);if(il){il=Math.max(1,(128-il)/8);if(Math.floor(p/il)%2)o=0}
+  out[k]=o*dep;const d=rate*N/M;free+=d;if(since!=null)since+=d}
+ return out}
+/* the locks of this track on LFO l: the parameter indices (2-7) that have any, and the steps (0..len-1) with one */
+function lfoLocks(t,l,len){const idx=[],steps=new Set(),tr=trk(t);for(let i=2;i<8;i++){const m=S.locks.get(lkKey(t,l+"."+i));if(!m)continue;let any=false;for(const s of m.keys()){const q=tr.steps[s];if(s<len&&q&&!q.off){any=true;steps.add(s)}}if(any)idx.push(i)}return{idx,steps}}
+ED.lfo={draw(g,W,H,c){const l=c.dataset.l,v=V(l),t=S.sel,tr=trk(t),ink=cssv("--ink"),N=Math.max(32,Math.min(64,S.len)),cyc=lfoCycle(v),LK=lfoLocks(t,l,S.len);grid(g,W,H);
+  const act=s=>{const q=tr.steps[s];return!!q&&!q.off},tg=s=>act(s)&&!!tr.steps[s].l;
+  const o=lfoTrace(v,N,Math.max(2,Math.floor(W)+1),S.len,act,tg,(i,s)=>S.locks.get(lkKey(t,l+"."+i))?.get(s)),sw=W/N;
+  g.fillStyle=inkA(.1);LK.steps.forEach(s=>{for(let r=s;r<N;r+=S.len)g.fillRect(Math.round(r*sw),0,Math.max(1,Math.round(sw)),H-2)});
+  line(g,W,x=>H/2+4-o[Math.min(o.length-1,Math.round(x))]*(H/2-16),ink,2);
+  for(let s=0;s<N;s++)if(tg(s%S.len)){const x=Math.round(s*sw);g.fillStyle=ink;const lk=LK.steps.has(s%S.len);g.fillRect(x,H-(lk?13:7),2,lk?12:6)}
+  label(g,`${LTRIG[v[2]]} · ${cyc===Infinity?"stopped":"cycle "+(cyc>=1?Math.round(cyc*10)/10+" steps":Math.round(cyc*16)/16+" step")}${LK.idx.length?" · locks "+LK.idx.map(i=>FIXED[l][i]).join(" "):""}`)}};
 function inputLabel(t){const tr=trk(t);if(!isFx(tr.m))return"—";if(tr.inp==null)return"none";if(tr.inp==="NEIBOR")return t===0?"NEIBOR (none)":"T"+t+" "+S.tracks[t-1].m;return tr.inp}
 /* each screen's help: its tooltip */
 const SND_TIP={uni:"The base saw (middle) and the unison pair either side: UNIW how far (sideways), UNIL how loud (up); dashed, the extended pair at twice the width (UNIX, never above UNIL). Drag the dot.",
@@ -4885,12 +4954,12 @@ const SND_TIP={uni:"The base saw (middle) and the unison pair either side: UNIW 
  dist:"Distortion, in to out (dashed = clean). Drag the dot up or down.",
  pan:"The track in the stereo field: PAN sideways, VOL up. Drag the dot.",
  flt:"The 24 dB gap filter: BASE is the high-pass, WDTH the gap to the low-pass, the dots up for HPQ and LPQ. Dashed: where the envelope takes it. Both follow the note unless KEY (Perform › Assign › KEY) switches one off: the label then says which is fixed.",
- fenv:"The filter's own envelope: ATK, DEC; BOFS how far it moves the base (solid), WOFS the width (dashed), -64 to +63: up for +, down for -, 0 none. Drag the dots.",
+ fenv:"The filter's own envelope. Big pane: BOFS how far it moves the base (solid) and WOFS the width (dashed), -64 on the left edge to +63 on the right, 0 on the line: drag a dot left or right. Small square: its shape, ATK and DEC.",
  eq:"One EQ band: EQF moves it, EQG boosts (up) or cuts (down). Drag the dot.",
  srr:"Sample-rate reduction: more SRR, longer held steps (the rail).",
  delay:"The repeats over one bar: DTIM apart (in 256ths: 64 = a beat), DSND how loud (below 0 keeps stereo, above ping-pongs), DFB how much each keeps.",
  dflt:"The repeats' band: DBAS the low edge, DWID up to the high edge. Drag the edges.",
- lfo:"The LFO over two bars, as the trig mode makes it (the ticks are this track's LFO trigs). Drag the ~ key onto any value to route it there."};
+ lfo:"The LFO across the pattern (two bars at least), as the trig mode makes it and as this track's locks on TRIG, WAVE, MULT, SPD, INTL and DPTH change it: a lock holds for its own step (shaded; the tick is taller). The ticks are this track's LFO trigs. Drag the ~ key onto any value to route it there."};
 const attrS=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 const sndPlot=(ed,pg,knobs,extra="")=>`<div class="plot" title="${attrS(SND_TIP[ed]||"Drag the dots.")}"><canvas class="ed" data-ed="${ed}" data-pg="${pg}" data-k="${knobs.join(" ")}" ${extra} aria-label="${attrS(SND_TIP[ed]||"")}"></canvas></div>`;
 /* a group's title: a MUTATE scope chip (its knobs join what R moves), or plain */
@@ -4916,7 +4985,7 @@ const sgRow=(list,cls)=>soundRow(list,cls,SND_ROW);
 function lfoGroup(t,k){const l="LF"+k,v=trk(t).v[l],dn=LPAGES[v[0]]?destNames(t,v[0]):["—"];
  return{key:"lfo",title:"LFO "+k,pg:l,idx:[4,5,6,7],knobs:[4,5,6,7].map(i=>FIXED[l][i]),n:4,w:4,tag:v[7]?"":"off",
   titleHtml:`<span class="lfohead"><button class="lfohandle" data-cord="${l}" title="Drag onto any value to route LFO ${k} there" aria-label="Route LFO ${k}">~${k}</button><button class="mutg" data-mutsg="${l}:lfo" aria-pressed="${S.mut.scope.has(l+":lfo")}" title="Add LFO ${k} to what Mutate moves (its PAGE and DEST stay)">LFO ${k}</button></span>`,
-  plot:`<div class="plot" title="${attrS(SND_TIP.lfo)}"><canvas class="ed" data-ed="lfo" data-l="${l}" aria-label="LFO ${k} over two bars, ticks = LFO trigs"></canvas></div>`,
+  plot:`<div class="plot" title="${attrS(SND_TIP.lfo)}"><canvas class="ed" data-ed="lfo" data-l="${l}" aria-label="LFO ${k} across the pattern with this track's locks, ticks = LFO trigs"></canvas></div>`,
   body:`<div class="lfobody"><div class="sgline lforoute"><select id="lp${k}" aria-label="LFO ${k} page">${LPAGES.map((p,i)=>opt(i,p==="MID"?"MIDI":p,v[0])).join("")}</select><span class="arrow">›</span><select id="ld${k}" aria-label="LFO ${k} destination">${dn.map((d,i)=>opt(i,d,v[1])).join("")}</select>
    <span class="seg" data-set="ltrig" data-l="${l}" title="TRIG: FREE runs on, TRIG restarts it on a trig, HOLD keeps the value a trig takes, ONE and HALF play one cycle or half of one">${LTRIG.map((n,i)=>`<button data-v="${i}" aria-pressed="${v[2]===i}">${n}</button>`).join("")}</span></div>
    <div class="shapes w11">${LWAVE.map((n,i)=>`<button data-lwave="${l}" data-w="${i}" aria-pressed="${v[3]===i}" title="${n}" aria-label="${n}">${shapeIcon(i)}</button>`).join("")}</div>
@@ -5068,7 +5137,9 @@ function menvHint(){const m=S.multi.mode,play=S.mode!=="multi"&&m!==1;
  return`<b>${MTM[m]}:</b> ${MENV_SAY[m]}${play?` <span class="menvto">The keys play ${{normal:"AUTO TRACK",map:"MULTI MAP",poly:"POLY"}[S.mode]} now: choose <b>Multi trig</b> under Keyboard to hear it.</span>`:""}`}
 const MTM=["ALL TRK","SPLIT KEY","SEQ START","SEQ TRNSP"],TIMS=["DIRECT","1/16","2/16","4/16","8/16","16/16","32/16"];
 const isBlack=n=>[1,3,6,8,10].includes(n%12);
-function kbRange(){const lo=12*(S.kbOct+1);return[lo,lo+47]}
+/* the on-screen keyboard: four octaves from C (MIDI 0 at the lowest stop), the last stop cut at note 127 (I-040) */
+const KBOCT=[-1,6];
+function kbRange(){const lo=12*(S.kbOct+1);return[lo,Math.min(lo+47,127)]}
 function zoneOf(n){if(S.mode!=="multi"||S.multi.mode!==1)return null;return n>=S.multi.splitKey?"up":"lo"}
 function mapRow(n){let lo=0;for(let i=0;i<S.mmap.length;i++){const r=S.mmap[i];if(n>=lo&&n<=r.hi)return i;lo=r.hi+1}return -1}
 function renderKb(){const[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const ww=100/whites.length;let h="",wi=0;
@@ -5124,7 +5195,7 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
  const upper=`<div class="perf3">${menvH}
    <section class="card trkcard"><header><h3>Track</h3>${scope(shortM(tr.m),"These settings belong to the selected track")}</header>${selTrack}${tabsH}${padH}${rowsH}${extrasH}${hintH}</section>
    <div class="perfside">${mutesH}<section class="card kbcard"><header><h3>Keyboard</h3><span title="What the keys below play">plays · all keys</span></header>  <div class="perfbar kbtitle"><span class="keyrow">${PMODES.map(([k,n])=>`<button class="lkey" data-pmode="${k}" aria-pressed="${S.mode===k}"><i class="led"></i>${n}</button>`).join("")}</span>${mtCtl}
-   <span class="stepper" style="margin-left:auto"><span class="ilab">Octave</span><button data-kboct="-1" aria-label="Octave down">−</button><b class="mono">${noteName(kbRange()[0])}</b><button data-kboct="1" aria-label="Octave up">+</button></span></div>
+   <span class="stepper" style="margin-left:auto"><span class="ilab">Octave</span><button data-kboct="-1" aria-label="Octave down"${S.kbOct<=KBOCT[0]?" disabled":""}>−</button><b class="mono">${noteName(kbRange()[0])}</b><button data-kboct="1" aria-label="Octave up"${S.kbOct>=KBOCT[1]?" disabled":""}>+</button></span></div>
   <div class="hint kbhint">${S.mode==="poly"?polyHint(t):pm[2]} ${S.mode==="multi"?{0:"Notes go to all six tracks; each keeps its own arpeggiator.",1:`Keys from ${noteName(S.multi.splitKey)} play T${S.multi.splitTrack}-T6, keys below play T1-T${S.multi.splitTrack-1}. The multi envelope is not used here.`,2:"Each note restarts the pattern, transposed from C-4.",3:"The first note starts the pattern; later notes only transpose it, so the loop never breaks."}[S.multi.mode]:""}</div></section></div></div>`;
  $("#main").innerHTML=`<div class="perf ${S.mode==="map"?"map":""}">
   ${upper}
@@ -5407,12 +5478,29 @@ const hasTtr=r=>r.ttr&&r.ttr.some(v=>v!==64);
    (the machine is in song mode). A key sets the machine's mode too (seqMode); a mode the machine reports moves the
    switch (songModeSync). The machine's chain comes from the host (MMView.show: machine.desk.chain, song mode); on its
    own the example engine plays it at the pattern ends (chainWrap). */
-S.songPick=null;S.songModeSeen=undefined;S.chainDraft=[];S.chainTimer=0;S.chainSent=false;
+S.songPick=null;S.songModeSeen=undefined;S.chainDraft=[];S.chainTimer=0;S.chainSent=false;S.chainWas=false;S.chainOwnEnd=false;S.chainPending=null;S.chainWaitFrom=0;S.modeSentAt=-1e9;S.modeWanted=false;
 const SONG_PICKS=[["pattern","Pattern"],["chain","Chain"],["song","Song"]];
-function songModeSync(){const sm=!!S.plays.songMode,ch=!!S.plays.chain?.active;
+/* B-162: the machine's chain ended without the page (a pattern pick, the LCD): the pads start over and the CHAIN key goes back to PATTERN.
+   Not while the page's own chain or Clear is on its way (chainPending: until the machine shows it, 4 s at most), and not for the page's own Clear (chainOwnEnd) */
+function chainSync(){const c=S.plays.chain,act=!!(c&&c.active),p=S.chainPending;
+ /* a send waits for the machine to show it (8 s at most: a slow host) */
+ if(p&&(act&&p.patterns?JSON.stringify(c.patterns)===JSON.stringify(p.patterns):!p.patterns&&!act))S.chainPending=null;else if(p&&performance.now()>p.until)S.chainPending=null;
+ if(act&&!S.chainWas)S.chainOwnEnd=false;
+ if(S.chainWas&&!act&&!S.chainTimer&&!S.chainPending){S.chainDraft=[];S.chainSent=false;if(!S.chainOwnEnd&&S.songPick==="chain")S.songPick="pattern";S.chainOwnEnd=false}
+ /* a chain the machine plays that the pads do not show: the pads show it */
+ else if(act&&!S.chainTimer&&!S.chainPending){/* only a chain of the bank the page shows (renderSong filters the draft to it; a refill would render every tick) */
+  const mine=c.patterns.every(p=>p>>4===S.bank)?c.patterns:[];if(JSON.stringify(S.chainDraft)!==JSON.stringify(mine))S.chainDraft=mine.slice()}
+ S.chainWas=act||(S.chainWas&&!c)}
+/* the machine's chain changes between renders (the LCD, a pick): watched on its own clock, a render only when the page has to change */
+setInterval(()=>{if(S.ws!=="song"){chainSync();return}const k=S.songPick+S.chainDraft.join();songModeSync();if(k!==S.songPick+S.chainDraft.join())render()},300);
+function songModeSync(){chainSync();const sm=!!S.plays.songMode,ch=!!S.plays.chain?.active;
  if(!SONG_PICKS.some(([k])=>k===S.songPick))S.songPick=sm?"song":ch?"chain":"pattern";
- if(S.songModeSeen!==sm){S.songModeSeen=sm;if(sm)S.songPick="song";else if(S.songPick==="song")S.songPick=ch?"chain":"pattern"}}
-function songPickSet(v){S.songPick=v;seqMode(v==="song");render()}/* B-072: every key sends the mode (a key pressed before the machine's answer to the one before was in S.plays sent nothing) */
+ if(S.songModeSeen!==sm){S.songModeSeen=sm;/* B-162: a report of the mode before the one just asked for is not the person's choice */
+  if(performance.now()-S.modeSentAt<2000&&sm!==S.modeWanted){}else if(sm)S.songPick="song";else if(S.songPick==="song")S.songPick=ch?"chain":"pattern"}
+ else if(performance.now()-S.modeSentAt>2000&&(S.songPick==="song")!==sm)S.songPick=sm?"song":ch?"chain":"pattern"}
+function songPickSet(v){/* B-162: a chain still waiting for its 150 ms is not sent into the other mode */if(v!=="chain"&&S.chainTimer){/* a pending Back/Clear that ends the chain still goes out (page and machine agree); an unsent chain is dropped */
+ const wasClear=canChain()&&S.chainDraft.length<2&&(S.plays.chain?.active||S.chainSent);clearTimeout(S.chainTimer);S.chainTimer=0;S.chainWaitFrom=0;
+ if(wasClear){S.chainOwnEnd=true;S.chainPending={until:performance.now()+8000};clearChain();S.chainSent=false}S.chainDraft=[]}S.songPick=v;S.modeSentAt=performance.now();S.modeWanted=v==="song";seqMode(v==="song");render()}/* B-072: every key sends the mode (a key pressed before the machine's answer to the one before was in S.plays sent nothing) */
 S.plays={chain:null,songMode:false,song:0};
 const nn2=i=>String(i+1).padStart(2,"0");
 /* what the machine plays: in song mode the song (the Monomachine keeps a chain there but plays the song,
@@ -5430,10 +5518,14 @@ function clearChain(){if(HOST.chainClear)return HOST.chainClear();S.plays.chain=
 /* every pad (and BACK) chains at once: the pads go out as the machine's chain 150 ms after the last click
    (the latest wins; the host also holds a chain back while the keys of the one before are on their way).
    Fewer than two pads: the chain the machine plays ends. */
-function chainSoon(){clearTimeout(S.chainTimer);
- S.chainTimer=setTimeout(()=>{const d=S.chainDraft.slice(),c=S.plays.chain;if(!canChain())return;
-  if(d.length>=2){if(!(c&&c.active&&c.patterns.length===d.length&&c.patterns.every((p,i)=>p===d[i]))){sendChain(d);S.chainSent=true}}
-  else if((c&&c.active)||S.chainSent){clearChain();S.chainSent=false}},150)}
+function chainSoon(){clearTimeout(S.chainTimer);S.chainTimer=setTimeout(chainFire,150)}
+/* in SONG mode the chain gesture is not the machine's: right after SONG, then CHAIN the machine may not have left it yet; wait for it (2 s) */
+function chainFire(){S.chainTimer=0;if(!canChain()||S.songPick!=="chain")return;
+ if(S.plays.songMode){S.chainWaitFrom||=performance.now();if(performance.now()-S.chainWaitFrom<2000){S.chainTimer=setTimeout(chainFire,150);return}
+  S.chainWaitFrom=0;toast("The machine is still in SONG mode: the chain was not sent. Click a pad again.");return}
+ S.chainWaitFrom=0;const d=S.chainDraft.slice(),c=S.plays.chain;
+ if(d.length>=2){if(!(c&&c.active&&c.patterns.length===d.length&&c.patterns.every((p,i)=>p===d[i]))){S.chainPending={patterns:d,until:performance.now()+8000};sendChain(d);S.chainSent=true}}
+ else if((c&&c.active)||S.chainSent){S.chainOwnEnd=!!(c&&c.active);S.chainPending={until:performance.now()+8000};clearChain();S.chainSent=false}}
 function chainFooter(){const c=S.plays.chain,bn="ABCDEFGH"[S.bank],d=S.chainDraft;
  const known=!!c||!window.MMHost,active=!!(c&&c.active&&c.patterns.length),list=active?c.patterns:[],at=list.indexOf(S.pat),next=active?list[(at+1)%list.length]:null;
  /* what plays is the line above the pads (playsText); here: the pads' own state and the gestures */
@@ -5469,9 +5561,9 @@ function markSongRow(force){const st=document.getElementById("arrstate");if(st&&
  const pl=document.getElementById("songPlays");if(pl)pl.textContent=playsText();if(S.ws!=="song")return;
  $$(".scell.ph").forEach(c=>c.classList.remove("ph"));if(row>=0)document.querySelector(`.scell[data-i="${row}"]`)?.classList.add("ph");
  $$(".durbar .db").forEach(d=>{const i=+d.dataset.i;d.classList.toggle("past",row>=0&&i<row);d.classList.toggle("now",i===row)})}
-function chainPad(p){const n=S.chainDraft.indexOf(p),d=S.chainDraft;if(n>=0)d.splice(n,1);else if(d.length<16)d.push(p);render();chainSoon()}
-function chainAct(a){if(a==="undo"){S.chainDraft.pop();render();chainSoon();return}
- clearTimeout(S.chainTimer);S.chainDraft=[];render();if(S.plays.chain?.active||S.chainSent){clearChain();S.chainSent=false}}
+function chainPad(p){const n=S.chainDraft.indexOf(p),d=S.chainDraft;if(n>=0)d.splice(n,1);else if(d.length<16)d.push(p);chainSoon();render()}
+function chainAct(a){if(a==="undo"){S.chainDraft.pop();chainSoon();render();return}
+ clearTimeout(S.chainTimer);S.chainTimer=0;S.chainWaitFrom=0;S.chainDraft=[];if(S.plays.chain?.active||S.chainSent){S.chainOwnEnd=!!S.plays.chain?.active;S.chainPending={until:performance.now()+8000};clearChain();S.chainSent=false}render()}
 function renderSong(){songModeSync();S.songSel=Math.max(0,Math.min(S.songSel,S.song.length-1));const sel=S.song[S.songSel]||S.song[0],pick=S.songPick,chain=pick==="chain",plays=playsOf();
  /* a chain is one bank's: another bank starts the draft over */
  S.chainDraft=S.chainDraft.filter(p=>p>>4===S.bank);
@@ -5507,15 +5599,17 @@ function renderSong(){songModeSync();S.songSel=Math.max(0,Math.min(S.songSel,S.s
  const lines=Math.ceil(200/16);
  $("#main").innerHTML=`<div class="songui lay2 withlib ${S.plays.songMode?"songmode":"patmode"}${S.plays.songMode&&S.playing?" songplaying":""}">${SongSlots.html()}<div class="songleft"><section class="card whatplays ${S.plays.songMode?"song":"pattern"} ${chain?"chainmode":""}">${head}${palette}</section>
    ${pick==="song"?`<section class="card"><header><h3>Selected row</h3><span class="rowacts"><button data-rowact="from" title="Play the song from this row (Enter): SONG mode, the row from its first step">▶ From here</button><button data-rowact="up" title="Move left">←</button><button data-rowact="down" title="Move right">→</button><button data-rowact="dup">Duplicate</button><button data-rowact="loop">Add loop</button><button data-rowact="del" class="danger">Delete</button></span></header><div class="insp">${insp}</div></section>`:""}</div>
-  <section class="card arrcard"><header><h3>Arrangement</h3><span class="arrstate" id="arrstate">${arrState()}</span><span class="note" title="${S.song.length} of 200 rows · T track transpose · M mutes · B tempo · ~ part">${S.song.length} of 200 rows<span class="gopt"> · T track transpose · M mutes · B tempo</span></span></header>
+  <section class="card arrcard"><header><h3>Arrangement</h3><span class="arrstate" id="arrstate">${arrState()}</span><span class="note" title="${S.song.length} of 200 rows · B tempo · M mutes · ± transpose · T per-track transpose · ~ part">${S.song.length} of 200 rows<span class="gopt"> · B tempo · M mutes · ± transpose · T per-track transpose</span></span></header>
    <div class="durbar" title="Song shape by time (length × repeats); in SONG mode it fills up to the row that plays">${S.song.map((r,i)=>r.type?`<i class="db dbm" data-i="${i}"></i>`:`<i class="db ${i===S.songSel?"sel":""}" data-row="${i}" data-i="${i}" style="flex:${rowLen(r)*r.rep} 1 0"></i>`).join("")}</div>
    <div class="slotgrid" id="tl">${Array.from({length:lines},(_,line)=>`<span class="sglab">${String(line*16+1).padStart(3,"0")}</span>${Array.from({length:16},(_,c)=>{const i=line*16+c,r=S.song[i];if(i>=200)return`<span></span>`;
      if(!r)return`<div class="scell empty" data-i="${i}"></div>`;
      const cls=`scell ${i===S.songSel?"sel":""} ${r.type?"cmd "+r.type:""} ${!r.type&&loopOf(i)>=0?"inloop":""}`;
      const txt=r.type==="end"?"END":r.type==="loop"?`↺${String(r.to+1).padStart(3,"0")}`:r.type==="jump"?`→${String(r.to+1).padStart(3,"0")}`:r.type==="halt"?"HALT":patName(r.pat);
-     const sub=r.type==="loop"?(r.count===Infinity?"∞":"×"+r.count):!r.type?`${r.rep>1?"×"+r.rep:""}${(r.trn??64)!==64?" "+((r.trn-64)>0?"+":"")+(r.trn-64):""}${hasTtr(r)?" T":""}${r.mutes?.length?" M":""}${r.bpm?" B":""}${r.ofs||r.len?"~":""}`:"";
-     return`<button class="${cls}" data-row="${i}" data-i="${i}" draggable="${r.type==="end"?"false":"true"}" title="Row ${String(i+1).padStart(3,"0")}${r.type?"":" · "+patName(r.pat)+" ×"+r.rep+" · "+rowLen(r)+" steps"}"><b>${txt}</b><small>${sub}</small></button>`}).join("")}`).join("")}</div></section></div>`;
- markSongRow(true);SongSlots.afterRender()}
+     const mk=SongMarks.marks(r,"mm");
+     const sub=r.type==="loop"?(r.count===Infinity?"∞":"×"+r.count):!r.type?`${r.rep>1?"×"+r.rep:""}${mk.any?(r.rep>1?" ":"")+SongMarks.html(r,"mm"):""}${r.ofs||r.len?"~":""}`:"";
+     return`<button class="${cls}" data-row="${i}" data-i="${i}" draggable="${r.type==="end"?"false":"true"}" title="Row ${String(i+1).padStart(3,"0")}${r.type?"":" · "+patName(r.pat)+" ×"+r.rep+" · "+rowLen(r)+" steps"+(mk.any?"\n"+mk.title+" · click the marks: Row > More":"")}"><b>${txt}</b><small>${sub}</small></button>`}).join("")}`).join("")}</div></section></div>`;
+ markSongRow(true);SongSlots.afterRender();SongMarks.fit(document.getElementById("tl"))}
+SongMarks.watch(()=>document.getElementById("tl"));
 /* The song slots (deskSongSlots.js, shared with the Machinedrum Editor): the host. The 24 songs are the machine's
    documents (S.songs: the host's view, MmView.songsOf; on its own the example's). Load is LOAD SONG, Save SAVE SONG
    (the song the machine holds, into its slot), the rest the library's slot ops (songCopy, songPaste, songCopyTo,
@@ -5677,6 +5771,8 @@ function relinkCur(k){S.patKit[S.pat]=k}
 function kitLoad(k){if(HOST.kit)return HOST.kit("load",k);if(k===S.kit){if(S.kitState==="edited")kitReload();else toast(kitName(k)+" is already the current kit.");return}
  const go=()=>{S.kit=k;applyKit(kitData(k));S.workName=S.kits[k].name;relinkCur(k);setKitState("clean");demoRebase(true);tx();render();drawLib(true);toast("Loaded "+kitName(k)+". "+patName(S.pat)+" now uses it.")};
  if(S.kitState==="edited"){ask(`Load <b>${kitName(k)}</b>? Your edits to <b>${kitName(S.kit)}</b> are not saved on the machine. Without saving, they go to its UNDO KIT.`,[["Save and load","cream",()=>{saveKit();go()}],["Load without saving","danger",go],["Cancel","",()=>drawLib(true)]]);return}go()}
+/* ‹ › on the KIT field (I-041): the previous / next of the 128 kits, loaded as a click in the kit chooser loads it (over unsaved edits the machine asks first) */
+function kitStep(d){if(!engReady())return;kitLoad((S.kit+d+128)%128)}
 function kitSave(){saveKit();drawLib(true)}
 function kitSaveAs(k){if(HOST.kit)return HOST.kit("saveAs",k);if(k===S.kit){kitSave();return}
  const go=()=>{const from=S.kit;S.kits[k]={name:S.workName,empty:false,data:captureKit()};S.kit=k;relinkCur(k);setKitState("clean");demoRebase(true);tx();render();drawLib(true);toast("Saved as "+kitName(k)+". It is now the current kit; K"+nn(from)+" keeps its saved version.")};
@@ -6211,7 +6307,7 @@ document.addEventListener("click",e=>{
  const pmk=e.target.closest("[data-pmode]");if(pmk){S.mode=pmk.dataset.pmode;S.polyT=S.mode==="poly"?asgT():null;if(HOST.keyMode)HOST.keyMode(S.mode,asgT());if(S.mode==="poly")toast("POLY: T"+(asgT()+1)+" now plays six voices. The other five tracks are silent until you leave POLY.");render();return}
  const so2=e.target.closest("[data-strk]");if(so2){S.multi.splitTrack=clamp(S.multi.splitTrack+ +so2.dataset.strk,2,6);edit("multiTrig",{splitTrack:S.multi.splitTrack-1});render();return}
  const tm=e.target.closest("[data-tim]");if(tm){S.multi.timing=clamp(S.multi.timing+ +tm.dataset.tim,0,6);edit("multiTrig",{timing:S.multi.timing});render();return}
- const ko=e.target.closest("[data-kboct]");if(ko){S.kbOct=clamp(S.kbOct+ +ko.dataset.kboct,0,6);render();return}
+ const ko=e.target.closest("[data-kboct]");if(ko){S.kbOct=clamp(S.kbOct+ +ko.dataset.kboct,KBOCT[0],KBOCT[1]);render();return}
  const bd=e.target.closest("[data-band]");if(bd){S.mmapSel=+bd.dataset.band;render();return}
  const mr=e.target.closest("tr[data-mrow]");if(mr&&!e.target.closest("button,.pc,.kselbtn")){S.mmapSel=+mr.dataset.mrow;render();return}
  const mh=e.target.closest("[data-mhi]");if(mh){const i=+mh.dataset.i,r=S.mmap[i],lo=i?S.mmap[i-1].hi+1:0,nx=S.mmap[i+1];r.hi=clamp(r.hi+ +mh.dataset.mhi,lo,nx?nx.hi-1:127);edit("multiMap",{i,hi:r.hi});render();return}
@@ -6230,6 +6326,7 @@ document.addEventListener("click",e=>{
   const cp=e.target.closest("[data-chainpad]");if(cp){chainPad(+cp.dataset.chainpad);return}
   const ca=e.target.closest("[data-chain]");if(ca){if(!ca.disabled)chainAct(ca.dataset.chain);return}
   const ap=e.target.closest("[data-addpat]");if(ap){if(S.song.length>=200){toast("A song holds 200 rows.");return}let at2=S.songSel+1;if(S.song[S.songSel]?.type==="end")at2=S.songSel;S.song.splice(at2,0,{pat:+ap.dataset.addpat,rep:1});S.songSel=at2;edit("rowInsert",{i:at2,row:S.song[at2]});render();return}
+  const rmk=e.target.closest("[data-rowmarks]");if(rmk){S.songSel=+rmk.closest(".scell").dataset.row;S.songMore=true;render();return}
   const rw=e.target.closest(".scell:not(.empty),.db[data-row]");if(rw){S.songSel=+rw.dataset.row;render();return}
   const ra=e.target.closest("[data-rowact]");if(ra){songAction(ra.dataset.rowact);return}
   const stp=e.target.closest("[data-step]");if(stp){songStep(stp.dataset.step,+stp.dataset.d*(e.shiftKey?10:1));return}
@@ -6245,6 +6342,7 @@ document.addEventListener("click",e=>{
  if(e.target.closest("#undo")){undo();return}if(e.target.closest("#redo")){redo();return}
  const sc=e.target.closest("[data-sec]");if(sc){if(e.altKey&&sc.dataset.sec==="clear")clearPattern();else secAction(sc.dataset.sec);return}
  if(e.target.closest("#syncf.warn")){sendDialog();return}
+ if(e.target.closest("#kitPrev,#kitNext")){kitStep(e.target.closest("#kitNext")?1:-1);return}
  if(e.target.closest("#kitf")){toggleLib("kit");return}
  if(e.target.closest("#pat")){toggleLib("pat");return}
  if(e.target.closest("#learnkey")){S.learn=!S.learn;S.learnT=null;document.body.classList.toggle("learn",S.learn);renderTop();if(S.learn)toast("LEARN: click a value, then press 1-8 for a controller knob.");if(HOST.learning)HOST.learning(S.learn);return}
@@ -6259,6 +6357,7 @@ document.addEventListener("change",e=>{const id=e.target.id,v=e.target.value,tr=
  if(id==="engsel"){const btn=document.querySelector(".lcdeng");if(v==="global"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;openGlobal();return}if(v==="audio"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;openAudio();return}if(v==="rom"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.romManage)HOST.romManage();else firstRun();return}
   if(v==="import"||v==="export"||v==="reset"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;Syx.menu(v);return}
   if(v==="memoryKeep"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.memory)HOST.memory("keep");return}
+  if(v==="followPlayed"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.follow)HOST.follow();return}
   S.engine=v;S.pend=0;renderPst();if(HOST.engine)HOST.engine(v);else startEngine(v);return}
  let m=id.match(/^lp(\d)$/);if(m){editTrack(S.sel,()=>{const l=V("LF"+m[1]);l[0]=+v;l[1]=0});render();return}
  m=id.match(/^ld(\d)$/);if(m){editTrack(S.sel,()=>{V("LF"+m[1])[1]=+v});render();return}
@@ -6539,7 +6638,7 @@ function setRecord(mode,at=-1){const on=mode==="grid"||mode==="live",was=S.recMo
 /* an engine state's LCD label: [text, led "on" | "blink" | "off", tooltip] */
 function setEngineLabel(st,label){ENG[st]=label;if(S.eng===st)setEng(st)}
 /* a host's engine map ([{id, label, available, reason}]) in the engine menu, before the menu's own entries */
-function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const own=["audio","global","rom","import","export","reset","memoryKeep"];
+function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const own=["audio","global","rom","import","export","reset","memoryKeep","followPlayed"];
  for(const o of [...sel.options])if(!own.includes(o.value)&&!list.some(e=>e.id===o.value))o.remove();
  const first=[...sel.options].find(o=>own.includes(o.value))||null;
  for(const e of list){let o=sel.querySelector(`option[value="${e.id}"]`);if(!o){o=document.createElement("option");o.value=e.id}sel.insertBefore(o,first);o.textContent=e.label;o.disabled=!e.available;o.title=e.available?"":e.reason||""}
@@ -6549,6 +6648,16 @@ function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const ow
 function setMemory(m){S.mem=m;const k=document.querySelector('#engsel option[value="memoryKeep"]');if(!k)return;
  k.hidden=!m.available;k.textContent="KEEP MEMORY: "+(m.keep?"ON":"OFF");k.dataset.saved=m.saved?"1":"0";
  k.title=m.note||(m.keep?"New sessions without a DAW project start with what you saved on the machine. Click to turn it off.":"New sessions start from factory memory. Click to keep what you save on the machine for new sessions.")}
+/* I-003: the engine menu's FOLLOW PLAYED TRACK as the host says (on / off); shown once the host has said. The host
+   selects the track a MIDI controller played (selectTrack: the click on a track) */
+function setFollow(on){const k=document.querySelector('#engsel option[value="followPlayed"]');if(!k)return;
+ k.hidden=false;k.textContent="FOLLOW PLAYED TRACK: "+(on?"ON":"OFF");
+ k.title=on?"The selected track follows the last track played from a MIDI controller. Click to turn it off.":"Click to make the selected track follow the last track played from a MIDI controller."}
+/* I-003: the host's selectTrack: at most one selection per frame (the last note's track); a question open or LEARN
+   waiting for its note leaves the selection where it is */
+const FOLLOW={t:0,raf:0};
+function followSelect(t){FOLLOW.t=t;if(FOLLOW.raf)return;FOLLOW.raf=requestAnimationFrame(()=>{FOLLOW.raf=0;
+ if(FOLLOW.t===S.sel||!$("#dlg").hidden||GP.learn!=null)return;select(FOLLOW.t)})}
 /* the AUDIO / MIDI entry of the engine menu: only where the host has the devices (a standalone) */
 function setAudioEntry(on){const o=document.querySelector('#engsel option[value="audio"]');if(o)o.hidden=o.disabled=!on;Boot.midiRefresh()}
 /* the app sources and their links as the host's engine took them (ctlSetup() shape); the knob rows and their links stay */
@@ -6610,7 +6719,7 @@ window.MMView={
  setSongSteps:n=>{S.songSteps=n;const st=document.getElementById("arrstate");if(st&&st.textContent!==arrState())st.textContent=arrState()},
  setEng,dlgOpen:()=>!$("#dlg").hidden,setEngineLabel,setEngineTip,setEngines,setAudioEntry,setMemory,clearLearnTarget:()=>{S.learnT=null},setMapping,setModulation,setCtlSetup,disable,
  setRecord,setRecLock,
- setLcd,setKeyDown,setMidiHeld,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
+ setFollow,selectTrack:followSelect,setLcd,setKeyDown,setMidiHeld,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
  /* calls */
  render,renderTop,drawLib,toast,ask,redraw,movePH,setPos,flashTracks,goWs,clickStep,autoRange,kitSave,
  redrawAudio:()=>{if(AP.open)drawAudio()},audioLevel,openAudio};

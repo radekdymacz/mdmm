@@ -1,6 +1,7 @@
 #include "mddevice.h"
 
 #include "mdstate.h"
+#include "mdstatecapture.h"
 #include "mdromloader.h"
 #include "mdtypes.h"
 
@@ -237,7 +238,12 @@ namespace md
 	bool Device::getState(std::vector<uint8_t>& _state, synthLib::StateType _type)
 	{
 		auto capture = beginStateCapture(_type);
-		return capture && capture->encode(_state);
+		if(!capture)
+			return false;
+		while(capture->captureMore())
+		{
+		}
+		return capture->encode(_state);
 	}
 
 	bool Device::setState(const std::vector<uint8_t>& _state, synthLib::StateType _type)
@@ -327,9 +333,7 @@ namespace md
 	std::unique_ptr<Device::PreparedState> Device::takeFinishedDeferredState(
 		uint64_t& _generation)
 	{
-		if(!m_deferredPreparedState || !m_deferredPreparedState->m_hardware
-			|| m_restoreStatus != ProjectStateRestoreStatus::Initializing
-			|| m_deferredPreparedState->m_hardware->isProjectStateRestorePending())
+		if(!isDeferredStateFinished())
 			return {};
 		_generation = m_deferredStateGeneration;
 		m_restoreStatus = ProjectStateRestoreStatus::Finalizing;

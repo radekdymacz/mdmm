@@ -1,10 +1,12 @@
 #pragma once
 
 // md::Device's state save in two parts (codex review 2026-10, item 3): the capture under synthLib::Plugin's process
-// lock (Device::beginStateCapture) and the encode after it is released (DeviceStateCapture::encode). The fork's file
-// (doc/modern-ux/UPSTREAM.md); md::Device keeps the hook, its beginStateCapture override.
+// lock (Device::beginStateCapture, then captureMore until it is done) and the encode after it is released
+// (DeviceStateCapture::encode). The fork's file (doc/modern-ux/UPSTREAM.md); md::Device keeps the hook, its
+// beginStateCapture override.
 
 #include "mdhardware.h"
+#include "mdonemomentcopy.h"
 #include "mdstate.h"
 #include "mdtypes.h"
 
@@ -16,6 +18,7 @@
 
 namespace md
 {
+	class Device;
 	class FactoryFlashBaseline;
 
 	// What the save needs, copied or shared under the lock: only what the running machine can still change is copied
@@ -29,6 +32,13 @@ namespace md
 		DeviceStateCapture(MachineModel _model, synthLib::StateType _type) : model(_model), type(_type) {}
 
 		bool encode(std::vector<uint8_t>& _state) override;
+		// DESIGN-audio-lock.md: the memory the running machine can still change (the patch RAM and the MD flash or the
+		// MM user flash) is copied a part per hold, as of one moment (md::OneMomentCopy). When the device's Hardware
+		// changes meanwhile the capture begins again on the new one. Same lock as beginStateCapture; the device must
+		// still be the plug-in's (synthLib::Plugin::getState checks).
+		bool captureMore() override;
+
+		static constexpr uint32_t g_restarts = 4;
 
 		const MachineModel model;
 		const synthLib::StateType type;
@@ -41,5 +51,14 @@ namespace md
 		std::shared_ptr<FactoryFlashBaseline> factoryBaseline;
 		std::shared_ptr<const Rom> rom;
 		uint64_t romFingerprint = 0;
+
+		// The copy in parts (Device::continueStateCapture): which Hardware, and the copy
+		Device* device = nullptr;
+		const Hardware* hardware = nullptr;
+		uint64_t epoch = 0;
+		uint64_t generation = 0;
+		OneMomentCopy copy;
+		bool copying = false;
+		uint32_t restarts = 0;
 	};
 }
