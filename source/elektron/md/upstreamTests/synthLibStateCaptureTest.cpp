@@ -277,6 +277,7 @@ namespace
 	{
 		auto* first = new PartsTestDevice({1, 1, 1}, 3);
 		auto* second = new PartsTestDevice({2, 2}, 2);
+		const std::unique_ptr<PartsTestDevice> last(new PartsTestDevice({}, 0));	// the plug-in never deletes its last device
 		synthLib::Plugin plugin(first, [](synthLib::Device*) {});
 		bool swapped = false;
 		// the swap from inside a part (the lock is recursive): deterministic, between this part and the next
@@ -292,7 +293,7 @@ namespace
 		const bool ok = plugin.getState(saved, synthLib::StateTypeGlobal);
 		const std::vector<uint8_t> expected{1, synthLib::StateTypeGlobal, 2, 2};
 		const bool secondInstalled = plugin.getDevice() == second;
-		plugin.setDevice(new PartsTestDevice({}, 0));	// deletes the second (the plug-in never deletes its last device)
+		plugin.setDevice(last.get());	// deletes the second
 		if(!swapped || !secondInstalled || !ok || saved != expected)
 			return fail("a capture of a replaced device was not begun again on the new one");
 		return 0;
@@ -304,6 +305,7 @@ namespace
 	{
 		auto* first = new PartsTestDevice({3, 4, 5}, 2);
 		auto* second = new PartsTestDevice({}, 0);
+		const std::unique_ptr<PartsTestDevice> last(new PartsTestDevice({}, 0));	// the plug-in never deletes its last device
 		synthLib::Plugin plugin(first, [](synthLib::Device*) {});
 		bool preparedUnlocked = false, deletedUnlocked = false;
 		second->onSetState = [&] { preparedUnlocked = lockIsFree(plugin); };
@@ -312,7 +314,7 @@ namespace
 		const std::vector<uint8_t> expected{3, 4, 5};
 		const bool ok = plugin.getDevice() == second && second->received == expected;
 		second->onSetState = nullptr;
-		plugin.setDevice(new PartsTestDevice({}, 0));
+		plugin.setDevice(last.get());	// deletes the second
 		if(!ok)
 			return fail("setDevice did not give the new device the old one's state");
 		if(!preparedUnlocked)
@@ -330,15 +332,16 @@ namespace
 	int testFactsPublishedUnderTheLock()
 	{
 		auto* first = new PartsTestDevice({1}, 0);
+		const std::unique_ptr<PartsTestDevice> last(new PartsTestDevice({}, 0));	// the plug-in never deletes its last device
 		synthLib::Plugin plugin(first, [](synthLib::Device*) {});
 		int published = 0;
 		bool sameThread = true;
 		const auto caller = std::this_thread::get_id();
-		synthLib::Device* last = nullptr;
+		synthLib::Device* lastFacts = nullptr;
 		plugin.setFactsCallback([&](synthLib::Device* const _device)
 		{
 			++published;
-			last = _device;
+			lastFacts = _device;
 			sameThread = sameThread && std::this_thread::get_id() == caller;
 		});
 		const int installed = published;
@@ -346,9 +349,9 @@ namespace
 		const int afterCall = published;
 		auto* second = new PartsTestDevice({2}, 0);
 		plugin.setDevice(second);
-		const bool sawSecond = last == second;
+		const bool sawSecond = lastFacts == second;
 		plugin.setFactsCallback({});
-		plugin.setDevice(new PartsTestDevice({}, 0));
+		plugin.setDevice(last.get());
 		if(installed != 1 || afterCall != 2)
 			return fail("the facts were not published on install and after a locked call");
 		if(!sawSecond)

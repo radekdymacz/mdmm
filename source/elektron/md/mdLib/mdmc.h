@@ -206,7 +206,7 @@ namespace md
 		// Write marks by piece of memory (DESIGN-audio-lock.md, copies taken in parts): a number that moves whenever a
 		// byte of that piece may have changed (a write into it, or the whole memory replaced). A copy of a piece whose
 		// mark did not move since it was taken is still the memory as it is. Patch RAM in 16 KiB pieces, flash in
-		// 64 KiB (an erase or program of the Machinedrum marks its own pieces; any other flash change marks all).
+		// 64 KiB (an erase or program, Machinedrum or Monomachine, marks its own pieces; a replaced or exchanged image marks all).
 		// _offset: in the patch RAM (copyPatchRamRange) or the flash (copyFlashDataRangeRealtime). As patchRamWrites
 		static constexpr size_t g_patchRamMarkSize = 0x4000;
 		static constexpr size_t g_flashMarkSize = 0x10000;

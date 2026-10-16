@@ -114,6 +114,8 @@ namespace md
 			}
 		};
 		std::shared_ptr<const SequencerTelemetry> getSequencerTelemetry() const { return m_sequencerTelemetry; }
+		// the same, without a shared_ptr copy (the audio thread's facts read it every block); valid as long as the device
+		const SequencerTelemetry* sequencerTelemetryPtr() const { return m_sequencerTelemetry.get(); }
 		// P9: the UW's samples (elektronData/mdSamples.h) for the editor: every ROM slot from flash, the RAM
 		// buffers from DSP2's memory. The audio thread copies the raw memory a few chunks a block (md::SampleCopy,
 		// no allocation), only once someone has asked (SampleExchange::read) and when the memory changed and has
