@@ -146,9 +146,11 @@ function renderSong(){songModeSync();S.songSel=Math.max(0,Math.min(S.songSel,S.s
      if(!r)return`<div class="scell empty" data-i="${i}"></div>`;
      const cls=`scell ${i===S.songSel?"sel":""} ${r.type?"cmd "+r.type:""} ${!r.type&&loopOf(i)>=0?"inloop":""}`;
      const txt=r.type==="end"?"END":r.type==="loop"?`↺${String(r.to+1).padStart(3,"0")}`:r.type==="jump"?`→${String(r.to+1).padStart(3,"0")}`:r.type==="halt"?"HALT":patName(r.pat);
-     const sub=r.type==="loop"?(r.count===Infinity?"∞":"×"+r.count):!r.type?`${r.rep>1?"×"+r.rep:""}${(r.trn??64)!==64?" "+((r.trn-64)>0?"+":"")+(r.trn-64):""}${hasTtr(r)?" T":""}${r.mutes?.length?" M":""}${r.bpm?" B":""}${r.ofs||r.len?"~":""}`:"";
-     return`<button class="${cls}" data-row="${i}" data-i="${i}" draggable="${r.type==="end"?"false":"true"}" title="Row ${String(i+1).padStart(3,"0")}${r.type?"":" · "+patName(r.pat)+" ×"+r.rep+" · "+rowLen(r)+" steps"}"><b>${txt}</b><small>${sub}</small></button>`}).join("")}`).join("")}</div></section></div>`;
- markSongRow(true);SongSlots.afterRender()}
+     const mk=SongMarks.marks(r,"mm");
+     const sub=r.type==="loop"?(r.count===Infinity?"∞":"×"+r.count):!r.type?`${r.rep>1?"×"+r.rep:""}${mk.any?(r.rep>1?" ":"")+SongMarks.html(r,"mm"):""}${r.ofs||r.len?"~":""}`:"";
+     return`<button class="${cls}" data-row="${i}" data-i="${i}" draggable="${r.type==="end"?"false":"true"}" title="Row ${String(i+1).padStart(3,"0")}${r.type?"":" · "+patName(r.pat)+" ×"+r.rep+" · "+rowLen(r)+" steps"+(mk.any?"\n"+mk.title+" · click the marks: Row > More":"")}"><b>${txt}</b><small>${sub}</small></button>`}).join("")}`).join("")}</div></section></div>`;
+ markSongRow(true);SongSlots.afterRender();SongMarks.fit(document.getElementById("tl"))}
+SongMarks.watch(()=>document.getElementById("tl"));
 /* The song slots (deskSongSlots.js, shared with the Machinedrum Editor): the host. The 24 songs are the machine's
    documents (S.songs: the host's view, MmView.songsOf; on its own the example's). Load is LOAD SONG, Save SAVE SONG
    (the song the machine holds, into its slot), the rest the library's slot ops (songCopy, songPaste, songCopyTo,
