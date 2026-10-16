@@ -240,9 +240,10 @@ namespace mdJucePlugin
 		// Queue the chosen kinds (all when empty) but the items in _skip ("kit:3", "pattern:0", "other:1": kind and the
 		// slot it lands in, as the preview shows it), in file order. _machine is what the editor knows of the slots now
 		// (the before of the report). _checkOnly (VERIFY ONLY): nothing is sent; every chosen item's slot is read and
-		// compared with the file.
+		// compared with the file. _readBack (I-038, default on): false ends the import after Sending; the report says
+		// "not read back" and never "imported" (nothing is compared); the Read the slots phase before is the same.
 		std::string start(const std::vector<std::string>& _kinds, const std::set<std::string>& _skip, const Docs& _machine,
-			const bool _checkOnly = false)
+			const bool _checkOnly = false, const bool _readBack = true)
 		{
 			namespace ed = elektronData;
 			if(running())
@@ -250,6 +251,7 @@ namespace mdJucePlugin
 			if(m_bytes.empty())
 				return "Open a .syx file first.";
 			m_check = _checkOnly;
+			m_readBack = _checkOnly || _readBack;
 			std::set<size_t> chosen;
 			m_placedBytes.clear();
 			for(auto& i : m_items)
@@ -304,6 +306,7 @@ namespace mdJucePlugin
 			return "";
 		}
 		bool checkOnly() const { return m_check; }
+		bool readBack() const { return m_readBack; }
 		// The report's word for an item taken ("imported"; a reset's "cleared" or "restored").
 		void setWord(std::string _word) { m_word = std::move(_word); }
 
@@ -319,8 +322,8 @@ namespace mdJucePlugin
 			else if(m_phase == Phase::Sending)
 			{
 				m_queue.clear();
-				m_phase = Phase::Reading;
-				m_text = "Stopped: reading back what was sent.";
+				m_phase = m_readBack ? Phase::Reading : Phase::Done;
+				m_text = m_readBack ? "Stopped: reading back what was sent." : "Stopped: what was sent is not read back.";
 			}
 			else if(m_phase == Phase::Reading)
 			{
@@ -376,14 +379,14 @@ namespace mdJucePlugin
 				}
 				if(m_queue.empty() && !after.busy && after.queued == 0)
 				{
-					m_phase = Phase::Reading;
+					m_phase = m_readBack ? Phase::Reading : Phase::Done;
 					m_text = "";
 					now = true;
 					// Over HW MIDI the plug-in's wire paces at DIN speed behind the adapter: what was handed over is on
 					// the cable for its time yet (a full backup about 4 minutes), and a read-back asked now would wait
 					// behind it and time out. The reads start once it has passed (the cable's time from now: an upper
 					// bound, the dumps went to the wire at the earliest when the first was handed over).
-					if(_wire)
+					if(_wire && m_readBack)
 						m_quietAtMs = _nowMs + deskCore::DinPacer::wireMs(m_handedBytes);
 				}
 				if(now || (news && _nowMs - m_progressMs > 100))
@@ -505,11 +508,42 @@ namespace mdJucePlugin
 			else if(text.empty() && m_phase == Phase::Reading)
 				text = (m_check ? "Verify only: reading " : "Reading back ") + std::to_string(std::min(m_reading + 1, toRead)) + " of " + std::to_string(toRead);
 			m.set("check", m_check);
+			m.set("readBack", m_readBack);
 			if(m_phase == Phase::Done && m_check)
 			{
 				m.set("report", checkReport());
 				if(text.empty())
 					text = checkText();
+			}
+			else if(m_phase == Phase::Done && !m_readBack)
+			{
+				// I-038: nothing was read back, so nothing is said to be taken: the count sent, never "imported"
+				Value report = Value::object();
+				int sentItems = 0, sentOther = 0;
+				for(const auto& i : m_items)
+				{
+					if(!i.chosen || !i.sent)
+						continue;
+					if(i.kind == ed::SyxKind::Other)
+						++sentOther;
+					else
+						++sentItems;
+				}
+				report.set("readBack", false);
+				report.set("sent", sentItems);
+				report.set("commands", sentOther);
+				report.set("unsent", static_cast<int>(unsent()));
+				report.set("items", Value::array());
+				m.set("report", report);
+				if(text.empty())
+				{
+					text = std::to_string(sentItems) + " sent, not read back";
+					if(sentOther)
+						text += ", " + std::to_string(sentOther) + " other message" + (sentOther > 1 ? "s" : "") + " sent";
+					if(const auto u = unsent())
+						text += "; " + std::to_string(u) + " not sent (stopped)";
+					text += ". The machine's slots were not compared with the file.";
+				}
 			}
 			else if(m_phase == Phase::Done)
 			{
@@ -569,6 +603,8 @@ namespace mdJucePlugin
 		std::vector<std::pair<elektronData::SyxItem, elektronData::SyxOutcome>> outcomes() const
 		{
 			std::vector<std::pair<elektronData::SyxItem, elektronData::SyxOutcome>> out;
+			if(!m_readBack)
+				return out;	// nothing was read back: no outcome to give
 			for(const auto& i : m_items)
 				if(i.chosen && (i.sent || m_check) && i.kind != elektronData::SyxKind::Other)
 					out.push_back({{i.kind, i.target}, outcomeOf(i)});
@@ -899,6 +935,7 @@ namespace mdJucePlugin
 		bool m_fullBackup = false;
 		std::map<elektronData::SyxKind, int> m_place;	// SPECIFIC: each kind's first slot
 		std::map<size_t, Bytes> m_placedBytes;			// the messages that go placed, by index
+		bool m_readBack = true;						// I-038: false = Send, then done (not read back)
 		bool m_check = false;							// VERIFY ONLY: nothing sent, read and compared
 		std::string m_word = "imported";
 		elektronData::SyxFile m_file;

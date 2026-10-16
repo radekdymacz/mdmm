@@ -581,7 +581,7 @@
 		syxChoose() { send({ op: "chooseSyx" }); },
 		syxExport(request) { send(Object.assign({ op: "syxExport" }, request || {})); },
 		syxStart(kinds, skip, o = {}) {
-			send(Object.assign({ op: "syxImport", kinds, skip: skip || [] }, o.placeAt ? { placeAt: o.placeAt } : {}, o.checkOnly ? { checkOnly: true } : {}),
+			send(Object.assign({ op: "syxImport", kinds, skip: skip || [] }, o.placeAt ? { placeAt: o.placeAt } : {}, o.checkOnly ? { checkOnly: true } : {}, o.readBack === false ? { readBack: false } : {}),
 				{ onResult: r => { if (!r.ok) V().toast(r.errors[0]); } });
 		},
 		syxStop() { send({ op: "syxCancel" }); },

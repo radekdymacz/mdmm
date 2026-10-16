@@ -559,6 +559,50 @@ namespace
 		j3.step(m3, t3 += 10, false);
 		j3.cancel();
 		check(j3.phase() == Job::Phase::Reading, "Stop while sending: what went is read back");
+
+		// I-038: Read back and compare off: Send, then done; nothing is asked of the machine, nothing is called imported
+		FakeMachine m4;
+		m4.kits = machine.kits;
+		Job j4;
+		j4.open(file, "test.syx", known, {});
+		check(j4.start({"kit", "pattern", "other"}, {"kit:9"}, known, false, false).empty() && !j4.readBack(), "the import starts without the read-back");
+		double t4 = 0;
+		const auto p4 = drive(j4, m4, t4);
+		check(!j4.running() && j4.phase() == Job::Phase::Done, "without the read-back the import ends after Sending");
+		// the Read the slots phase before sending is the same as ever (slots the editor does not know); after the first dump nothing is asked
+		const auto& w4 = m4.wire;
+		const auto first4 = std::find(w4.begin(), w4.end(), ed::encodeMdKit(k1)) - w4.begin();
+		bool askedAfter = false;
+		size_t dumps = 0;
+		for(size_t i = static_cast<size_t>(first4); i < w4.size(); ++i)
+		{
+			if(w4[i] == ed::mdPatternRequest(5) || w4[i] == ed::mdKitRequest(1) || w4[i] == ed::mdKitRequest(2) || w4[i] == ed::mdKitRequest(3))
+				askedAfter = true;	// a kit or pattern request
+			else
+				++dumps;
+		}
+		check(!askedAfter, "no slot is asked for after the import is sent");
+		check(dumps == 5, "the file's five messages went (" + std::to_string(dumps) + ")");
+		check(j4.outcomes().empty(), "no outcome without a read-back");
+		const auto& l4 = p4.back();
+		const auto& r4 = *l4.find("report");
+		check(l4.find("phase")->asString() == "done" && !l4.find("readBack")->asBool() && !r4.find("readBack")->asBool()
+			&& r4.find("sent")->asNumber() == 4 && r4.find("commands")->asNumber() == 1 && r4.find("items")->asArray().empty(), "the report: 4 sent, 1 command, readBack false");
+		check(l4.find("text")->asString().find("not read back") != std::string::npos && l4.find("text")->asString().find("imported") == std::string::npos
+			&& l4.find("text")->asString().find("taken") == std::string::npos, "the summary says not read back, never imported: " + l4.find("text")->asString());
+		check(last.find("readBack")->asBool(), "the default run reported readBack true");
+
+		// Stop while sending, read-back off: done, nothing read
+		FakeMachine m5;
+		m5.manual = true;
+		Job j5;
+		j5.open(file, "test.syx", known, {});
+		j5.start({"kit"}, {}, known, false, false);
+		double t5 = 0;
+		j5.step(m5, t5 += 10, false);
+		j5.cancel();
+		check(j5.phase() == Job::Phase::Done && j5.progress().find("text")->asString().find("not read back") != std::string::npos,
+			"Stop while sending, read-back off: done, not read back");
 	}
 
 	// 0.6 (wave 6): SPECIFIC place, VERIFY ONLY, a part for an export, the DigiPRO messages.

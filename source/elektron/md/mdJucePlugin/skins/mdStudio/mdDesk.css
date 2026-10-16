@@ -1559,6 +1559,7 @@ body.deskmidi #main,body.deskmidi #rail{opacity:.3;pointer-events:none;transitio
 .syxfoot button.go{background:var(--cream,var(--lcd));color:var(--creamtext,var(--ink))}
 .syxfoot button.go.danger{background:var(--rec);color:#fff}
 .syxfoot button:disabled{opacity:.35;cursor:default}
+.syxfoot .syxrb{display:inline-flex;align-items:center;gap:6px;margin-right:6px;font:600 11px var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--print2);white-space:nowrap;cursor:pointer}
 .syxprob{font:500 12px var(--mono);color:var(--print2)}
 .syxprob summary{cursor:pointer}
 /* importing: the phases, the bar */
