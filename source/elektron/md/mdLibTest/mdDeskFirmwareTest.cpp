@@ -4980,7 +4980,7 @@ int main(const int _argc, char** _argv)
 	// as an audio thread: on a performance core when one is free (B-014 timing runs)
 	pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
 #endif
-	std::setvbuf(stdout, nullptr, _IOLBF, 0);
+	std::setvbuf(stdout, nullptr, _IONBF, 0);
 	if(_argc < 2)
 	{
 		std::puts("usage: mdDeskFirmwareTest <MD-1.63-ROM> "

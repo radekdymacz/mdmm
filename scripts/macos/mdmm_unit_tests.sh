@@ -19,6 +19,7 @@ cmake --build "${build_dir}" --parallel 4 --target \
   baseLibBinaryStreamTest \
   synthLibAudioTest \
   synthLibMidiQueueTest \
+  synthLibMidiClockTimingTest \
   mdLibTest \
   mdStateTest \
   mdStateCaptureTest \
@@ -57,6 +58,7 @@ for test_name in \
   baseLibBinaryStreamTest \
   synthLibAudioTest \
   synthLibMidiQueueTest \
+  synthLibMidiClockTimingTest \
   mdLibTests \
   mdStateTest \
   mdStateCaptureTest \
