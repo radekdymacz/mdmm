@@ -19,14 +19,14 @@ Tracks add into a bus in track order. An effect on a bus therefore hears only th
 ## FX MACHINES
 <!-- rows: MM-277 @f5476c -->
 
-An effect machine needs an input and a trig to work. When you choose an effect machine for a track on **Sound**, the editor sets its input and sets the amplitude envelope values DEC and REL to 127 so that the sound passes. The page tells you so. A trig on the track then opens the effect.
+An effect machine needs an input and a trig to work. When you choose an effect machine for a track on **Kit**, the editor sets its input and sets the amplitude envelope values DEC and REL to 127 so that the sound passes. The page tells you so. A trig on the track then opens the effect.
 
 ## AUDIO INPUTS
 <!-- rows: MM-278 MM-279 @458e30 -->
 
 An effect track has an **In** menu on its strip. The audio inputs are **INP A**, **INP B** and **INP AB**. The drawing shows a dashed line from the input jack to the track.
 
-To use an effect as a first stage in a chain, give the track the machine **THRU**. Choose it in the machine picker on **Sound**.
+To use an effect as a first stage in a chain, give the track the machine **THRU**. Choose it in the machine picker on **Kit**.
 
 NOTE: A synth track has no input. Its strip reads "synth · none".
 

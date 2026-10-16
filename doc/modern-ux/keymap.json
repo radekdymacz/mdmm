@@ -204,8 +204,19 @@
 				"step"
 			],
 			"mod": "",
-			"group": "Sequence",
-			"does": "Click: trig on / off. Drag: every step crossed becomes what the first became (one undo step)",
+			"group": "Pattern",
+			"does": "Click an empty step: a trig there. Drag: every step crossed becomes what the first became (one undo step)",
+			"area": "Steps"
+		},
+		{
+			"id": "step-select-trig",
+			"scope": "seq",
+			"keys": [
+				"trig"
+			],
+			"mod": "",
+			"group": "Pattern",
+			"does": "Click a trig: select it (it stays selected: Delete removes it, ← → move it). Double-click: remove it (one undo step)",
 			"area": "Steps"
 		},
 		{
@@ -215,7 +226,7 @@
 				"lock lane"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Drag over the bars: lock the lane's parameter on each step with a trig",
 			"area": "Lock lane"
 		},
@@ -226,7 +237,7 @@
 				"Page key"
 			],
 			"mod": "shift",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Click: the previous page (a plain click: the next)",
 			"area": "Steps"
 		},
@@ -336,7 +347,7 @@
 				"GEN value"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Click: +1; ⇧-click: −1; drag up or down, or the wheel (⇧: 10)",
 			"area": "GEN bar"
 		},
@@ -457,7 +468,7 @@
 				"Escape"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Back to Trig after Accent, Swing or Slide: a click on a step paints trigs again",
 			"short": "Trig",
 			"dispatched": true
@@ -483,7 +494,7 @@
 			],
 			"mod": "",
 			"group": "Selected track",
-			"does": "Randomise the selected track: on Sound a fresh random sound (MUTATE, from the sound before the trial); everywhere else a new GEN variation, a new seed or random hits and rotation",
+			"does": "Randomise the selected track: on Kit a fresh random sound (MUTATE, from the sound before the trial); everywhere else a new GEN variation, a new seed or random hits and rotation",
 			"code": "KeyR",
 			"short": "Randomise",
 			"modal": "genpop",
@@ -497,7 +508,7 @@
 			],
 			"mod": "alt",
 			"group": "All",
-			"does": "Randomise every track: on Sound the whole kit, everywhere else every track's GEN spec over the whole pattern",
+			"does": "Randomise every track: on Kit the whole kit, everywhere else every track's GEN spec over the whole pattern",
 			"code": "KeyR",
 			"short": "Randomise all",
 			"modal": "genpop",
@@ -522,7 +533,7 @@
 			],
 			"mod": "alt",
 			"group": "All",
-			"does": "Click: randomise every track (Sound: the whole kit; MIDI and CTR tracks are left alone, VOL is kept)",
+			"does": "Click: randomise every track (Kit: the whole kit; MIDI and CTR tracks are left alone, VOL is kept)",
 			"area": "GEN"
 		},
 		{
@@ -534,7 +545,7 @@
 			],
 			"mod": "alt",
 			"group": "Selected track",
-			"does": "Sequence: rotate the selected track one step earlier / later: trigs, accents and locks, wrapping at the length. Presses while ⌥ is down are one undo step. The one Alt that is not \"all\": FUNCTION + arrows on the machine",
+			"does": "Pattern: rotate the selected track one step earlier / later: trigs, accents and locks, wrapping at the length. Presses while ⌥ is down are one undo step. The one Alt that is not \"all\": FUNCTION + arrows on the machine",
 			"short": "Rotate ← / Rotate →",
 			"dispatched": true
 		},
@@ -557,7 +568,7 @@
 				"Escape"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Unmark the tracks marked for paste",
 			"short": "Unmark",
 			"dispatched": true
@@ -569,7 +580,7 @@
 				"wheel on a step"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Move its lock in the lane's parameter, 4 a notch (⇧: 1)",
 			"area": "Steps"
 		},
@@ -580,7 +591,7 @@
 				"lock lane"
 			],
 			"mod": "shift",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Drag: a ramp, a straight line from the press to the release (one undo step)",
 			"area": "Lock lane"
 		},
@@ -591,7 +602,7 @@
 				"track header"
 			],
 			"mod": "shift",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Click: mark the track for paste; ⌘V then pastes into every marked track (one undo step)",
 			"area": "Tracks"
 		},
@@ -602,7 +613,7 @@
 				"X"
 			],
 			"mod": "cmd",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Cut the selected steps (copy, then clear; one undo step)",
 			"short": "Cut",
 			"dispatched": true
@@ -614,7 +625,7 @@
 				"D"
 			],
 			"mod": "cmd",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Duplicate the selected steps right after themselves (the clipboard stays); again: once more",
 			"short": "Duplicate",
 			"dispatched": true
@@ -626,7 +637,7 @@
 				"A"
 			],
 			"mod": "cmd",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Select every step of every track up to the length (then ⌘C copies the pattern as a block)",
 			"short": "Select all",
 			"dispatched": true
@@ -639,7 +650,7 @@
 				"ArrowRight"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Move the selection a step earlier / later (one step selected: a cursor)",
 			"short": "Sel ← / Sel →",
 			"dispatched": true
@@ -652,7 +663,7 @@
 				"ArrowRight"
 			],
 			"mod": "shift",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Extend the selection a step earlier / later",
 			"short": "Grow ← / Grow →",
 			"dispatched": true
@@ -664,7 +675,7 @@
 				"Enter"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "The selected steps' trigs on, or off when each has one (one undo step)",
 			"short": "Trigs",
 			"dispatched": true
@@ -676,7 +687,7 @@
 				"Escape"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Clear the step selection",
 			"short": "Deselect",
 			"dispatched": true
@@ -688,7 +699,7 @@
 				"step"
 			],
 			"mod": "cmd",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Click: select the step (⌘V pastes there). Drag: select steps × tracks. Drag the selection: a copy where you let go",
 			"area": "Steps"
 		},
@@ -699,7 +710,7 @@
 				"step"
 			],
 			"mod": "cmd+shift",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Click: extend the selection to the step",
 			"area": "Steps"
 		},
@@ -710,7 +721,7 @@
 				"step ruler"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Click or drag: select steps of the selected track (down over the grid: more tracks); ⇧-click extends",
 			"area": "Steps"
 		},
@@ -721,7 +732,7 @@
 				"right-click a step"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "The step menu: trig, accent, slide, copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (the ⋯ on the selection; Ctrl-click on a Mac; the Menu key on a focused step)",
 			"area": "Steps"
 		},
@@ -892,7 +903,7 @@
 			],
 			"mod": "cmd",
 			"group": "Anywhere",
-			"does": "Copy (Sequence: the selected steps, or the track page shown; Sound: the sound; Song: the row)",
+			"does": "Copy (Pattern: the selected steps, or the track page shown; Kit: the sound; Song: the row)",
 			"short": "Copy",
 			"dispatched": true
 		},
@@ -904,7 +915,7 @@
 			],
 			"mod": "cmd",
 			"group": "Anywhere",
-			"does": "Paste (Sequence: at the selected step, the block from its first step and track)",
+			"does": "Paste (Pattern: at the selected step, the block from its first step and track)",
 			"short": "Paste",
 			"dispatched": true
 		},
@@ -954,7 +965,7 @@
 			],
 			"mod": "",
 			"group": "Workspaces",
-			"does": "Sequence",
+			"does": "Pattern",
 			"dispatched": true
 		},
 		{
@@ -965,7 +976,7 @@
 			],
 			"mod": "",
 			"group": "Workspaces",
-			"does": "Sound",
+			"does": "Kit",
 			"dispatched": true
 		},
 		{
@@ -1021,7 +1032,7 @@
 				"]"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Previous / next page",
 			"short": "Page − / Page +",
 			"dispatched": true
@@ -1034,7 +1045,7 @@
 				"Backspace"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Clear the selected steps; with none selected nothing (Clr clears the page shown, ⌥Delete the pattern). Song: delete the row",
 			"short": "Clear selected / Clear selected",
 			"dispatched": true
@@ -1048,7 +1059,7 @@
 			],
 			"mod": "alt",
 			"group": "All",
-			"does": "Sequence: clear the whole pattern: every track's trigs and locks",
+			"does": "Pattern: clear the whole pattern: every track's trigs and locks",
 			"short": "Clear pattern / Clear pattern",
 			"dispatched": true
 		},
@@ -1083,7 +1094,7 @@
 				"step"
 			],
 			"mod": "shift",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Click: accent",
 			"area": "Steps"
 		},
@@ -1094,7 +1105,7 @@
 				"step"
 			],
 			"mod": "alt+shift",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Click: slide",
 			"area": "Steps"
 		},
@@ -1105,7 +1116,7 @@
 				"lock lane"
 			],
 			"mod": "alt",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Drag: erase locks",
 			"area": "Lock lane"
 		},
@@ -1116,7 +1127,7 @@
 				"lock lane clear"
 			],
 			"mod": "alt",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Click: clear every lock of the track (all its parameters)",
 			"area": "Lock lane"
 		},
@@ -1201,7 +1212,7 @@
 			],
 			"mod": "",
 			"group": "Selected track",
-			"does": "Select the previous / next track (a focused value keeps ↑ / ↓ for itself). Sequence with selected steps: move the selection a track",
+			"does": "Select the previous / next track (a focused value keeps ↑ / ↓ for itself). Pattern with selected steps: move the selection a track",
 			"short": "Track − / Track +",
 			"dispatched": true
 		},
@@ -1794,7 +1805,7 @@
 				"GEN value"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Click: +1; ⇧-click: −1; drag up or down, or the wheel (⇧: 10)",
 			"area": "GEN bar"
 		},
@@ -1882,7 +1893,7 @@
 				"drag a note's end"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "The note's length (a NOTE OFF where it ends; a MIDI note's LEN, 6 a step); new notes get it too. Up to the track's next trig, past the pattern's end onto its start",
 			"area": "Roll"
 		},
@@ -2035,6 +2046,32 @@
 			"dispatched": true
 		},
 		{
+			"id": "note-pitch",
+			"scope": "seq",
+			"keys": [
+				"ArrowUp",
+				"ArrowDown"
+			],
+			"mod": "",
+			"group": "Pattern",
+			"does": "One note selected (click it): its pitch a semitone up / down, one undo step a press. Anything else selected: the track move below",
+			"short": "Note ↑ / ↓",
+			"dispatched": true
+		},
+		{
+			"id": "note-octave",
+			"scope": "seq",
+			"keys": [
+				"ArrowUp",
+				"ArrowDown"
+			],
+			"mod": "shift",
+			"group": "Pattern",
+			"does": "One note selected: its pitch an octave up / down",
+			"short": "Note ⇧↑ / ⇧↓",
+			"dispatched": true
+		},
+		{
 			"id": "track-prev-next",
 			"scope": "any",
 			"keys": [
@@ -2043,7 +2080,7 @@
 			],
 			"mod": "",
 			"group": "Selected track",
-			"does": "Select the previous / next track of the side shown (a focused value keeps ↑ / ↓ for itself). Sequence with selected steps: move the selection a track",
+			"does": "Select the previous / next track of the side shown (a focused value keeps ↑ / ↓ for itself). Pattern with selected steps: move the selection a track",
 			"dispatched": true
 		},
 		{
@@ -2078,7 +2115,7 @@
 			],
 			"mod": "alt",
 			"group": "Selected track",
-			"does": "Sequence: rotate the selected track one step earlier / later: notes, slides and locks, wrapping at the length. Presses while ⌥ is down are one undo step. The one Alt that is not \"all\": FUNCTION + arrows on the machine",
+			"does": "Pattern: rotate the selected track one step earlier / later: notes, slides and locks, wrapping at the length. Presses while ⌥ is down are one undo step. The one Alt that is not \"all\": FUNCTION + arrows on the machine",
 			"dispatched": true
 		},
 		{
@@ -2099,7 +2136,7 @@
 				"Escape"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Unmark the tracks marked for paste",
 			"dispatched": true
 		},
@@ -2110,7 +2147,7 @@
 				"wheel on a lock step"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Move its lock in the lane's parameter, 4 a notch (⇧: 1)",
 			"area": "Lock lane"
 		},
@@ -2121,7 +2158,7 @@
 				"lock lane"
 			],
 			"mod": "shift",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Drag: a ramp, a straight line from the press to the release (one undo step)",
 			"area": "Lock lane"
 		},
@@ -2132,7 +2169,7 @@
 				"track header"
 			],
 			"mod": "shift",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Click: mark the track for paste; ⌘V then pastes into every marked track (one undo step)",
 			"area": "Tracks"
 		},
@@ -2144,7 +2181,7 @@
 			],
 			"mod": "",
 			"group": "Selected track",
-			"does": "Randomise the selected track: on Sound a fresh random sound (MUTATE, from the sound before the trial); everywhere else a new GEN variation: a new seed, or random hits and rotation",
+			"does": "Randomise the selected track: on Kit a fresh random sound (MUTATE, from the sound before the trial); everywhere else a new GEN variation: a new seed, or random hits and rotation",
 			"code": "KeyR",
 			"short": "Randomise",
 			"modal": "genpop",
@@ -2158,7 +2195,7 @@
 			],
 			"mod": "alt",
 			"group": "All",
-			"does": "Randomise every track: on Sound every synth track's sound, everywhere else every GEN spec of the side shown over the whole pattern",
+			"does": "Randomise every track: on Kit every synth track's sound, everywhere else every GEN spec of the side shown over the whole pattern",
 			"code": "KeyR",
 			"short": "Randomise all",
 			"modal": "genpop",
@@ -2183,7 +2220,7 @@
 			],
 			"mod": "alt",
 			"group": "All",
-			"does": "Click: randomise every track (Sound: every synth track; VOL and TUNE stay)",
+			"does": "Click: randomise every track (Kit: every synth track; VOL and TUNE stay)",
 			"area": "GEN"
 		},
 		{
@@ -2193,7 +2230,7 @@
 				"X"
 			],
 			"mod": "cmd",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Cut the selected steps (copy, then clear; one undo step)",
 			"short": "Cut",
 			"dispatched": true
@@ -2205,7 +2242,7 @@
 				"D"
 			],
 			"mod": "cmd",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Duplicate the selected steps right after themselves (the clipboard stays); again: once more",
 			"short": "Duplicate",
 			"dispatched": true
@@ -2217,7 +2254,7 @@
 				"A"
 			],
 			"mod": "cmd",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Select every step of the six tracks shown (synth or MIDI) up to the length (then ⌘C copies them as a block)",
 			"short": "Select all",
 			"dispatched": true
@@ -2230,7 +2267,7 @@
 				"ArrowRight"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Move the selection a step earlier / later (one step selected: a cursor)",
 			"short": "Sel ← / Sel →",
 			"dispatched": true
@@ -2243,7 +2280,7 @@
 				"ArrowRight"
 			],
 			"mod": "shift",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Extend the selection a step earlier / later",
 			"short": "Grow ← / Grow →",
 			"dispatched": true
@@ -2255,7 +2292,7 @@
 				"Enter"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "A note on each empty selected step, or, when none is empty, the selected notes off (one undo step)",
 			"short": "Trigs",
 			"dispatched": true
@@ -2267,7 +2304,7 @@
 				"Escape"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Clear the step selection",
 			"short": "Deselect",
 			"dispatched": true
@@ -2279,7 +2316,7 @@
 				"step"
 			],
 			"mod": "cmd",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Click (roll or trig rows): select the step (⌘V pastes there). Drag: select steps. Drag the selection: a copy where you let go",
 			"area": "Roll"
 		},
@@ -2290,7 +2327,7 @@
 				"step"
 			],
 			"mod": "cmd+shift",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Click: extend the selection to the step (on another track's roll: the tracks between too)",
 			"area": "Roll"
 		},
@@ -2301,7 +2338,7 @@
 				"step ruler"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Click or drag: select steps of the selected track; ⇧-click extends",
 			"area": "Roll"
 		},
@@ -2312,7 +2349,7 @@
 				"right-click a step"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "The step menu: note on / off, NOTE OFF, a trigless trig, the envelopes a trig fires (Amp, Filter, LFO), slide, swing, a chord note (roll), copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (Ctrl-click on a Mac)",
 			"area": "Roll"
 		},
@@ -2679,7 +2716,7 @@
 			],
 			"mod": "cmd",
 			"group": "Anywhere",
-			"does": "Copy (Sequence: the selected steps, or the page shown of the track; Sound: the machine; Perform: the assign; Song: the row)",
+			"does": "Copy (Pattern: the selected steps, or the page shown of the track; Kit: the machine; Perform: the assign; Song: the row)",
 			"dispatched": true
 		},
 		{
@@ -2690,7 +2727,7 @@
 			],
 			"mod": "cmd",
 			"group": "Anywhere",
-			"does": "Paste (Sequence: at the selected step, the block from its first step and track; into every track marked for paste)",
+			"does": "Paste (Pattern: at the selected step, the block from its first step and track; into every track marked for paste)",
 			"dispatched": true
 		},
 		{
@@ -2757,7 +2794,7 @@
 			],
 			"mod": "",
 			"group": "Workspaces",
-			"does": "Sequence",
+			"does": "Pattern",
 			"dispatched": true
 		},
 		{
@@ -2768,7 +2805,7 @@
 			],
 			"mod": "",
 			"group": "Workspaces",
-			"does": "Sound",
+			"does": "Kit",
 			"dispatched": true
 		},
 		{
@@ -2824,7 +2861,7 @@
 				"]"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Previous / next page",
 			"dispatched": true
 		},
@@ -2836,7 +2873,7 @@
 				"Backspace"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Clear the selected steps; with none selected nothing (Clr clears the page shown, ⌥Delete the pattern). Song: delete the row",
 			"dispatched": true
 		},
@@ -2849,7 +2886,7 @@
 			],
 			"mod": "alt",
 			"group": "All",
-			"does": "Sequence: clear the whole pattern: every track's notes, slides and locks (one undo step)",
+			"does": "Pattern: clear the whole pattern: every track's notes, slides and locks (one undo step)",
 			"dispatched": true
 		},
 		{
@@ -2937,7 +2974,7 @@
 				"roll"
 			],
 			"mod": "shift",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Click: a chord note on the step",
 			"area": "Roll"
 		},
@@ -2948,7 +2985,7 @@
 				"roll"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Click an empty step: a note there, as long as the Len key says; drag it up or down for its pitch, sideways to paint that note on every empty step crossed (the last one as long as the Len key says; one undo step).",
 			"area": "Roll"
 		},
@@ -2959,8 +2996,19 @@
 				"roll"
 			],
 			"mod": "alt",
-			"group": "Sequence",
-			"does": "Click: delete a note, the note before it keeps its length (drag on: every step crossed loses its notes, one undo step), or a NOTE OFF on an empty step",
+			"group": "Pattern",
+			"does": "Click: delete a note, the earlier note runs on to the next trig or NOTE OFF, as on the machine; no NOTE OFF is written or taken away (drag on: every step crossed loses its notes, one undo step), or a NOTE OFF on an empty step",
+			"area": "Roll"
+		},
+		{
+			"id": "roll-select-note",
+			"scope": "seq",
+			"keys": [
+				"note"
+			],
+			"mod": "",
+			"group": "Pattern",
+			"does": "Click a note: select it (it stays selected: ↑ / ↓ its pitch, ⇧ an octave, Delete removes it). Double-click: delete it (one undo step)",
 			"area": "Roll"
 		},
 		{
@@ -2970,7 +3018,7 @@
 				"lock lane"
 			],
 			"mod": "",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Drag over the bars: lock the lane's parameter on each step with a trig",
 			"area": "Lock lane"
 		},
@@ -2981,7 +3029,7 @@
 				"lock lane"
 			],
 			"mod": "alt",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Drag: erase locks",
 			"area": "Lock lane"
 		},
@@ -2992,7 +3040,7 @@
 				"lock lane clear"
 			],
 			"mod": "alt",
-			"group": "Sequence",
+			"group": "Pattern",
 			"does": "Click: clear every lock of the track (all its parameters)",
 			"area": "Lock lane"
 		}

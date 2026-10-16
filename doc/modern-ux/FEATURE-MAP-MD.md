@@ -25,8 +25,8 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.4 | ENTER/YES, EXIT/NO, arrow keys | Menu navigation | ➖ | Not needed | Every menu is a native control. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – | n/a |
 | p.5 | LEVEL knob (per-track overall gain) | LEV, cannot be locked or LFO'd | ✅ | Mix: the LEV box above each strip's VOL fader (drag, wheel, arrows; double-click 100) | The kit's level of the track (`level`), sent as the track's level CC. Not lockable, as on the machine. The level CC measured on OS 1.63 (P9: 0 silent, 64 about 0.4 of 100, 127 about 1.6). | 1 | pass (e2e-md-mix-lev) |
 | p.5 | TEMPO key | Open tempo screen | ✅ | LCD: Tempo (drag), T key to tap | See §9. | 5 | pass (e2e-md-top-tempo-drag) |
-| p.5 | DATA ENTRY knobs (A-H), pressed = coarse | Eight parameter knobs | ✅ | Value boxes on Sound and Mix; drag, wheel, Shift = fine; ⌘-click or Enter: type a value | Wheel notch 1, Shift 10. | 3 | pass (e2e-md-sound-shape-undo) |
-| p.5 | SYNTHESIS/EFFECTS/ROUTING toggle | Switch knob page | ✅ | Sound page shows all three as groups | No page toggle; all pages in one view. | 1 | pass (md-sound-workspace) |
+| p.5 | DATA ENTRY knobs (A-H), pressed = coarse | Eight parameter knobs | ✅ | Value boxes on Kit and Mix; drag, wheel, Shift = fine; ⌘-click or Enter: type a value | Wheel notch 1, Shift 10. | 3 | pass (e2e-md-sound-shape-undo) |
+| p.5 | SYNTHESIS/EFFECTS/ROUTING toggle | Switch knob page | ✅ | Kit page shows all three as groups | No page toggle; all pages in one view. | 1 | pass (md-sound-workspace) |
 | p.5 | RECORD key (grid record on/off) | Toggle grid edit | ➖ | Grid is always editable | The step grid needs no mode. | – | n/a |
 | p.5 | RECORD + PLAY (live recording) | Live record | ✅ | REC button, Alt+Space | LCD top bar. | 1 | fail (e2e-md-seq-live-record-fail) |
 | p.5 | PLAY (second press pauses) | Start / pause | ✅ | Play key: ⇧-click or ⇧Space pauses (▶ blinks, the position holds), ▶ goes on; the ▶ menu (right-click or its ▾) | Pause and Continue are MIDI Stop and Continue on both engines (P1, P1b): with CTRL IN off the machine takes neither, and the editor says so. | 3 | pass (md-step-grid) |
@@ -36,10 +36,10 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.5 | KIT key (kit menu) / FUNCTION + KIT (song menu) | Open kit / song menus | ✅ | Kit: library popover. Song: the Songs column on the Song page (Load, Save, Save to…, Copy, Paste, Clear, Rename) | The song menu is the Songs column (0.6). | 1 | pass (md-kit-library) |
 | p.5 | TRIG keys 1-16 | Play tracks, place notes, pick patterns | ✅ | Step grid; piano keys A-L play the selected track | Right-click a step for its menu. | 2 | pass (md-step-grid) |
 | p.5 | SCALE SETUP key (page switch) | Pick pattern page | ✅ | Page key and page LEDs above the grid, [ and ] | ALL view shows every step. | 1 | pass (e2e-md-seq-pages) |
-| p.5 | <PATTERN PAGE> LEDs; MKI LEDs | Page indicator | ✅ | Page LEDs (four) in Sequence | MKI 32-step LEDs: see §13. | 1 | pass (md-sequence-workspace) |
+| p.5 | <PATTERN PAGE> LEDs; MKI LEDs | Page indicator | ✅ | Page LEDs (four) in Pattern | MKI 32-step LEDs: see §13. | 1 | pass (md-sequence-workspace) |
 | p.6 | Power switch, DC input | Power | ➖ |  |  | – | n/a |
 | p.6 | MIDI In / Out / Thru | MIDI ports | 🟡 | AUDIO/MIDI settings (standalone); HW MIDI engine; GLOBAL panel | Since 0.4.0 the machine's own MIDI out (notes, CCs, clock; never its SysEx) reaches the DAW's plug-in MIDI output and the standalone's MIDI output. Thru has no meaning in software. | – | n/a |
-| p.6 | Inputs A and B (audio in) | External audio | 🟡 | INP machines on Sound; audio input in settings | Input device choice in AUDIO/MIDI settings. | – | n/a |
+| p.6 | Inputs A and B (audio in) | External audio | 🟡 | INP machines on Kit; audio input in settings | Input device choice in AUDIO/MIDI settings. | – | n/a |
 | p.7 | Individual outputs A-F, main out, headphones | Output jacks | 🟡 | Mix: OUT key per track; Global: Routing; plug-in output buses | Output buses depend on the host. Headphones: N/A. | – | n/a |
 | p.7 | Rack mount kit, connecting, care, battery | Hardware | ➖ |  |  | – | n/a |
 
@@ -51,19 +51,19 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.9 | Four pattern-page boxes | Playback page | ✅ | Page LEDs; LCD Position |  | 1 | pass (md-sequence-workspace) |
 | p.9 | Transport symbols | Record/play/pause/stop | ✅ | Play key: blinks while paused; POSITION keeps the held step |  | 1 | pass (e2e-md-top-pause) |
 | p.9 | Kit name and number | Current kit | ✅ | LCD: Kit with saved/edited chip |  | 1 | pass (md-kit-library) |
-| p.9 | Synth, machine and page text | Focus info | ✅ | Sound: machine button, family; LCD line 2 |  | 1 | pass (md-lcd) |
+| p.9 | Synth, machine and page text | Focus info | ✅ | Kit: machine button, family; LCD line 2 |  | 1 | pass (md-lcd) |
 | p.9 | Level bar (overall volume of the track) | LEV meter | ✅ | Mix: the LEV box's bar shows the stored level | The box's fill is the level, as the LCD's bar. | 1 | pass (e2e-md-mix-lev) |
-| p.9 | Eight value boxes with 'clip' between dependent values | Parameter display | ✅ | Sound: an arch over the gap between two boxes the machine joins with a clip; each box of a pair names the other in its tooltip | Clips measured on the firmware for every machine and page (gapProbesFirmwareTest w12clip, elektronData::mdMachineClips) | 1 | pass (md-sound-clips) |
+| p.9 | Eight value boxes with 'clip' between dependent values | Parameter display | ✅ | Kit: an arch over the gap between two boxes the machine joins with a clip; each box of a pair names the other in its tooltip | Clips measured on the firmware for every machine and page (gapProbesFirmwareTest w12clip, elektronData::mdMachineClips) | 1 | pass (md-sound-clips) |
 | p.9 | Windows over the main screen, icon help, EXIT closes | Layer edit | ➖ | Popovers close with Esc |  | – | n/a |
 | p.10 | Load a kit and trig tracks (quick start) | Basic play | ✅ | Kit library; step grid; piano keys | See §4. | 1 | pass (md-quick-start) |
 | p.10 | Accelerated knob editing (pressed knob) | Coarse step | ✅ | Wheel with Shift = 10; Shift-drag = fine |  | 1 | pass (md-sound-knob-steps) |
-| p.11 | Hear a machine before loading it (EDIT KIT preview) | Preview default sound | ✅ | Sound > machine picker: ▶ on a machine key (or Space) plays it on the track; Enter or a click keeps it, Esc puts the old one back | The machine goes on the track and the track's note plays, so it is heard with the track's values (the machine's own preview plays its default sound). The audition and the pick are one undo step. Measured on OS 1.63 (P9): the note right behind the machine's SysEx plays the new machine. | 1 | pass (e2e-md-sound-audition) |
+| p.11 | Hear a machine before loading it (EDIT KIT preview) | Preview default sound | ✅ | Kit > machine picker: ▶ on a machine key (or Space) plays it on the track; Enter or a click keeps it, Esc puts the old one back | The machine goes on the track and the track's note plays, so it is heard with the track's values (the machine's own preview plays its default sound). The audition and the pick are one undo step. Measured on OS 1.63 (P9): the note right behind the machine's SysEx plays the new machine. | 1 | pass (e2e-md-sound-audition) |
 
 ## 3. Sound synthesis: kits (pp.13-21)
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys | E2E |
 |---|---|---|---|---|---|---|---|
-| p.14 | Kit contents (16 machines, params, track FX, routing, master FX, name) | The kit document | ✅ | Sound, Mix, kit library | Whole kit is read and written as a dump. | 1 | pass (md-kit-library) |
+| p.14 | Kit contents (16 machines, params, track FX, routing, master FX, name) | The kit document | ✅ | Kit, Mix, kit library | Whole kit is read and written as a dump. | 1 | pass (md-kit-library) |
 | p.14 | Load kit (64 slots) | LOAD KIT | ✅ | Kit library: click a slot (Enter) | Asks first over unsaved edits. | 1 | pass (e2e-md-lib-load-save-dialog) |
 | p.15 | Kits not linked to a pattern marked with a star | Unused-kit marker | ✅ | Kit library slot name ends with * | EXTENDED only. | 1 | pass (md-kit-library) |
 | p.15 | Save kit and choose slot | SAVE KIT | ✅ | Kit library: Save, Save as Knn | UNDO KIT keeps the overwritten kit. | 1 | pass (e2e-md-lib-load-save-dialog) |
@@ -72,39 +72,39 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.16 | Copy kit and paste to slot | Kit copy | ✅ | Kit library: Copy, Paste, drag onto slot (Cmd+C/V) |  | 1 | pass (e2e-md-lib-kit-copy-paste-undo) |
 | p.17 | Clear kit | CLEAR KIT | ✅ | Kit library: Clear (Delete) writes what the machine's CLEAR KIT leaves | Measured: every track GND-EMPTY at the same values, master effects at their start, name byte 0x7f (gapProbesFirmwareTest w12clearkit, elektronData::mdClearedKit) | 1 | pass (e2e-md-lib-kit-clear-undo) |
 | p.17 | Undo paste / clear kit | Undo | ✅ | Cmd+Z |  | 2 | pass (e2e-md-lib-kit-copy-paste-undo) |
-| p.17 | Kit assembly: pick MD-synth and machine per track | EDIT KIT | ✅ | Sound: machine button opens the picker by family | All 10 families. | 1 | pass (e2e-md-sound-machine-pick-undo) |
+| p.17 | Kit assembly: pick MD-synth and machine per track | EDIT KIT | ✅ | Kit: machine button opens the picker by family | All 10 families. | 1 | pass (e2e-md-sound-machine-pick-undo) |
 | p.18 | Load machine and keep track FX / routing | FUNCTION + ENTER | ✅ | Picker: 'Keep effects + routing' toggle (default on) | S.keepFx. | 1 | pass (e2e-md-sound-keep-clear) |
-| p.18 | Mute relation (mute group) | Track A mutes track B | ✅ | Sound: Relations > Mute | Shown as a note in the group box. | 1 | pass (md-relations) |
-| p.19 | Trig relation (layered drums, no chains) | Track A trigs track B | ✅ | Sound: Relations > Trig |  | 1 | pass (md-relations) |
-| p.19 | Copy machine | COPY MACHINE | ✅ | Sound: Cmd+C on a track | Copies model, values, level, LFO. | 1 | pass (e2e-md-sound-copy-paste) |
-| p.20 | Paste machine (many times, to other kits) | PASTE MACHINE | ✅ | Sound: Cmd+V | Clipboard stays. | 1 | pass (e2e-md-sound-copy-paste) |
+| p.18 | Mute relation (mute group) | Track A mutes track B | ✅ | Kit: Relations > Mute | Shown as a note in the group box. | 1 | pass (md-relations) |
+| p.19 | Trig relation (layered drums, no chains) | Track A trigs track B | ✅ | Kit: Relations > Trig |  | 1 | pass (md-relations) |
+| p.19 | Copy machine | COPY MACHINE | ✅ | Kit: Cmd+C on a track | Copies model, values, level, LFO. | 1 | pass (e2e-md-sound-copy-paste) |
+| p.20 | Paste machine (many times, to other kits) | PASTE MACHINE | ✅ | Kit: Cmd+V | Clipboard stays. | 1 | pass (e2e-md-sound-copy-paste) |
 | p.20 | Clear machine / undo | CLEAR MACHINE | ✅ | Machine picker: GND-EMPTY (the track has no machine); Cmd+Z undoes it | Clr on the Sound page is a different thing: it resets the sound to neutral values (the machine stays). | 1 | pass (e2e-md-sound-keep-clear) |
-| p.21 | Machine parameter editing (up to 8 knobs) | SYNTH page | ✅ | Sound: groups with canvases and boxes | Every knob sits in one group. | 4 | pass (e2e-md-sound-shape-undo) |
+| p.21 | Machine parameter editing (up to 8 knobs) | SYNTH page | ✅ | Kit: groups with canvases and boxes | Every knob sits in one group. | 4 | pass (e2e-md-sound-shape-undo) |
 | p.21 | Kit changes lost unless saved | Dirty warning | ✅ | Saved / edited chip on LCD kit field |  | 1 | pass (e2e-md-dialog-esc-space-cancel) |
 
 ## 4. Track effects (pp.22-24)
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys | E2E |
 |---|---|---|---|---|---|---|---|
-| p.22 | AMD: amplitude modulation depth | Tremolo depth | ✅ | Sound > Amp mod |  | 1 | pass (md-sound-workspace) |
-| p.22 | AMF: amplitude modulation frequency | Tremolo rate | ✅ | Sound > Amp mod |  | 1 | pass (md-sound-workspace) |
-| p.23 | EQF: EQ centre frequency | 1-band EQ | ✅ | Sound > EQ |  | 1 | pass (md-sound-workspace) |
-| p.23 | EQG: EQ gain | Boost/cut | ✅ | Sound > EQ | Bipolar in the lock lane. | 1 | pass (md-sound-workspace) |
-| p.23 | FLTF: filter base frequency | 24 dB filter | ✅ | Sound > Filter |  | 1 | pass (md-sound-workspace) |
-| p.23 | FLTW: filter width | Gap between HP and LP | ✅ | Sound > Filter |  | 1 | pass (md-sound-workspace) |
-| p.24 | FLTQ: filter Q | Resonance | ✅ | Sound > Filter |  | 1 | pass (md-sound-workspace) |
-| p.24 | SRR: sample rate reducer | Sample and hold | ✅ | Sound > Sample rate |  | 1 | pass (md-sound-workspace) |
+| p.22 | AMD: amplitude modulation depth | Tremolo depth | ✅ | Kit > Amp mod |  | 1 | pass (md-sound-workspace) |
+| p.22 | AMF: amplitude modulation frequency | Tremolo rate | ✅ | Kit > Amp mod |  | 1 | pass (md-sound-workspace) |
+| p.23 | EQF: EQ centre frequency | 1-band EQ | ✅ | Kit > EQ |  | 1 | pass (md-sound-workspace) |
+| p.23 | EQG: EQ gain | Boost/cut | ✅ | Kit > EQ | Bipolar in the lock lane. | 1 | pass (md-sound-workspace) |
+| p.23 | FLTF: filter base frequency | 24 dB filter | ✅ | Kit > Filter |  | 1 | pass (md-sound-workspace) |
+| p.23 | FLTW: filter width | Gap between HP and LP | ✅ | Kit > Filter |  | 1 | pass (md-sound-workspace) |
+| p.24 | FLTQ: filter Q | Resonance | ✅ | Kit > Filter |  | 1 | pass (md-sound-workspace) |
+| p.24 | SRR: sample rate reducer | Sample and hold | ✅ | Kit > Sample rate |  | 1 | pass (md-sound-workspace) |
 
 ## 5. Routing page (pp.25-27)
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys | E2E |
 |---|---|---|---|---|---|---|---|
-| p.25 | DIST: output distortion | After track FX | ✅ | Sound > Drive; Mix strip |  | 1 | pass (md-sound-workspace) |
-| p.25 | VOL: track volume (lockable) | Separate from LEV | ✅ | Mix fader; Sound > Level |  | 1 | pass (md-mix-strip) |
-| p.26 | PAN (-64 to +63) | Stereo position | ✅ | Mix strip; Sound > Level pan | No effect on A-F outputs; Mix shows it. | 1 | pass (e2e-md-mix-pan-undo) |
-| p.26 | DEL: delay send | To Rhythm Echo | ✅ | Mix strip; Sound > Sends | Greyed with a note on direct outputs. | 1 | pass (md-sound-workspace) |
-| p.27 | REV: reverb send | To Gate Box | ✅ | Mix strip; Sound > Sends | Same. | 1 | pass (md-sound-workspace) |
-| p.27 | LFOS, LFOD, LFOM on the routing page | LFO speed, depth, mix | ✅ | Sound > LFO (SPD, DEPTH, SHMIX) | Same kit parameters. | 1 | pass (md-sound-workspace) |
+| p.25 | DIST: output distortion | After track FX | ✅ | Kit > Drive; Mix strip |  | 1 | pass (md-sound-workspace) |
+| p.25 | VOL: track volume (lockable) | Separate from LEV | ✅ | Mix fader; Kit > Level |  | 1 | pass (md-mix-strip) |
+| p.26 | PAN (-64 to +63) | Stereo position | ✅ | Mix strip; Kit > Level pan | No effect on A-F outputs; Mix shows it. | 1 | pass (e2e-md-mix-pan-undo) |
+| p.26 | DEL: delay send | To Rhythm Echo | ✅ | Mix strip; Kit > Sends | Greyed with a note on direct outputs. | 1 | pass (md-sound-workspace) |
+| p.27 | REV: reverb send | To Gate Box | ✅ | Mix strip; Kit > Sends | Same. | 1 | pass (md-sound-workspace) |
+| p.27 | LFOS, LFOD, LFOM on the routing page | LFO speed, depth, mix | ✅ | Kit > LFO (SPD, DEPTH, SHMIX) | Same kit parameters. | 1 | pass (md-sound-workspace) |
 
 ## 6. Stereo master effects (pp.28-31)
 
@@ -115,23 +115,23 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.30 | Gate Box: DVOL, PRED, DEC, DAMP, HP, LP, GATE, LEV | Reverb | ✅ | Mix > Gate Box card |  | 1 | pass (md-master-effects) |
 | p.30 | Master EQ: LF, LG, HF, HG, PF, PG, PQ, GAIN | Shelves and parametric | ✅ | Mix > EQ card |  | 1 | pass (md-master-effects) |
 | p.31 | Dynamix: ATCK, REL, TRHD, RTIO, KNEE, HP, OUTG, MIX | Compressor | ✅ | Mix > Dynamix card |  | 1 | pass (md-master-effects) |
-| p.28 | Control master FX by CTR machines | CTR-RE, GB, EQ, DX locks | ✅ | Sound: CTR machine tables | Only way to lock master FX. | 1 | pass (e2e-md-sound-ctr-locks) |
+| p.28 | Control master FX by CTR machines | CTR-RE, GB, EQ, DX locks | ✅ | Kit: CTR machine tables | Only way to lock master FX. | 1 | pass (e2e-md-sound-ctr-locks) |
 
 ## 7. LFOs (pp.32-34)
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys | E2E |
 |---|---|---|---|---|---|---|---|
-| p.32 | LFO edit window (16 LFOs, one per track) | FUNCTION + SYNTH key | ✅ | Sound: LFO row for the selected track | One LFO per track as default. | 1 | pass (md-lfo) |
-| p.32 | TRACK target | Which track | ✅ | Sound > LFO target (first menu) |  | 1 | pass (md-lfo) |
-| p.32 | PARAM target (synth, FX, routing, other LFO) | Which parameter | ✅ | Sound > LFO target (second menu) | LFO-on-LFO via LFOS/LFOD/LFOM; higher-track rule is the firmware's. | 1 | pass (md-lfo) |
-| p.32 | SHP1: six shapes | Waveform 1 | ✅ | Sound > LFO shape keys |  | 1 | pass (md-lfo) |
-| p.32 | SHP2: inverted shapes | Waveform 2 | ✅ | Sound > LFO shape keys |  | 1 | pass (md-lfo) |
-| p.32 | UPDTE: FREE / TRIG / HOLD | Retrig behaviour | ✅ | Sound > LFO motion |  | 1 | pass (md-lfo) |
-| p.32 | SPEED (1/128 notes) | SPD | ✅ | Sound > LFO motion |  | 1 | pass (md-lfo) |
-| p.33 | DEPTH | Amount | ✅ | Sound > LFO motion |  | 1 | pass (md-lfo) |
-| p.33 | SHMIX | Waveform balance | ✅ | Sound > LFO shape |  | 1 | pass (md-lfo) |
+| p.32 | LFO edit window (16 LFOs, one per track) | FUNCTION + SYNTH key | ✅ | Kit: LFO row for the selected track | One LFO per track as default. | 1 | pass (md-lfo) |
+| p.32 | TRACK target | Which track | ✅ | Kit > LFO target (first menu) |  | 1 | pass (md-lfo) |
+| p.32 | PARAM target (synth, FX, routing, other LFO) | Which parameter | ✅ | Kit > LFO target (second menu) | LFO-on-LFO via LFOS/LFOD/LFOM; higher-track rule is the firmware's. | 1 | pass (md-lfo) |
+| p.32 | SHP1: six shapes | Waveform 1 | ✅ | Kit > LFO shape keys |  | 1 | pass (md-lfo) |
+| p.32 | SHP2: inverted shapes | Waveform 2 | ✅ | Kit > LFO shape keys |  | 1 | pass (md-lfo) |
+| p.32 | UPDTE: FREE / TRIG / HOLD | Retrig behaviour | ✅ | Kit > LFO motion |  | 1 | pass (md-lfo) |
+| p.32 | SPEED (1/128 notes) | SPD | ✅ | Kit > LFO motion |  | 1 | pass (md-lfo) |
+| p.33 | DEPTH | Amount | ✅ | Kit > LFO motion |  | 1 | pass (md-lfo) |
+| p.33 | SHMIX | Waveform balance | ✅ | Kit > LFO shape |  | 1 | pass (md-lfo) |
 | p.34 | Two LFOs on one target add up | Layering | ✅ | Set same target twice | Not drawn as a total. | 1 | pass (md-lfo) |
-| p.34 | Copy, paste, clear, undo of an LFO | LFO clipboard | ✅ | Sound: ⋯ on the LFO card: Copy LFO, Paste LFO, Clear LFO; LCD ▾ Copy… / Paste… / Clear… with LFO ticked; Cmd+Z | An LFO that moved its own track moves the track it is pasted on. | 1 | pass (md-lfo-menu) |
+| p.34 | Copy, paste, clear, undo of an LFO | LFO clipboard | ✅ | Kit: ⋯ on the LFO card: Copy LFO, Paste LFO, Clear LFO; LCD ▾ Copy… / Paste… / Clear… with LFO ticked; Cmd+Z | An LFO that moved its own track moves the track it is pasted on. | 1 | pass (md-lfo-menu) |
 
 ## 8. Pattern sequencer (pp.35-50)
 
@@ -160,7 +160,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.39 | Grid recording (trig toggle per step) | Compose | ✅ | Step grid click; drag paints | Undo is one step per drag. | 3 | pass (md-step-grid) |
 | p.39 | Pattern pages in grid mode | Switch page | ✅ | Page key |  | 1 | pass (e2e-md-seq-pages) |
 | p.39 | No save needed; copy before editing | Work in memory | ✅ | Library copy |  | 1 | pass (md-kit-reload) |
-| p.39 | FUNCTION + LEFT/RIGHT moves notes | Rotate | ✅ | Alt + arrows (Sequence) | Moves trigs, accents and locks, wrapping at the length; a run is one undo step. | 2 | pass (e2e-md-seq-rotate) |
+| p.39 | FUNCTION + LEFT/RIGHT moves notes | Rotate | ✅ | Alt + arrows (Pattern) | Moves trigs, accents and locks, wrapping at the length; a run is one undo step. | 2 | pass (e2e-md-seq-rotate) |
 | p.39 | MKI pattern page LEDs | 32 steps | ➖ |  | See §13. | – | n/a |
 | p.39 | Live recording, quantised | Play TRIG keys | ✅ | REC then click steps / piano keys | Quantised by the machine. | 1 | fail (e2e-md-seq-live-record-fail) |
 | p.40 | Remove notes while live recording (EXIT + TRIG) | Erase live | ✅ | Hold Delete while live recording: the selected track's trigs go as they play |  | 1 | pass (e2e-md-seq-live-erase) |
@@ -178,11 +178,11 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.45 | Mutes persist across patterns and modes | Behaviour | ✅ | Machine memory |  | 1 | pass (e2e-md-keys-mutes-persist) |
 | p.45 | Accent amount 0-15 | ACCENT level | ✅ | LCD ACC |  | 1 | pass (md-seq-swing-accent) |
 | p.45 | Accent trigs per step | Accent pattern | ✅ | Shift-click a step; Accent in the trig types under the grid, then click or drag steps | Honours EDIT ALL (All tracks · This track in the trig types). | 2 | pass (md-accent) |
-| p.45 | Accent pattern ALL vs per-track edit | EDIT ALL toggle | ✅ | Sequence: choose Accent, Swing or Slide in the trig types under the grid, then All tracks or This track | The pattern's EDIT ALL per mark (markMode). Measured (gapProbesFirmwareTest p7): any nonzero flag is ALL and reaches every track; there is no per-track take setting, so the design's track dots are not built. | 1 | pass (e2e-md-seq-trig-types) |
+| p.45 | Accent pattern ALL vs per-track edit | EDIT ALL toggle | ✅ | Pattern: choose Accent, Swing or Slide in the trig types under the grid, then All tracks or This track | The pattern's EDIT ALL per mark (markMode). Measured (gapProbesFirmwareTest p7): any nonzero flag is ALL and reaches every track; there is no per-track take setting, so the design's track dots are not built. | 1 | pass (e2e-md-seq-trig-types) |
 | p.46 | Copy / paste / clear accent pattern or track | Accent clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Accent ticked); a selection's copy includes accents | With EDIT ALL on, the accent row is the pattern's, shared by every track. | 2 | pass (md-copy-what-menu) |
 | p.46 | Swing amount 50-80 % | SWING level | ✅ | LCD SWG |  | 1 | pass (md-seq-swing-accent) |
-| p.46 | Swing step pattern (which steps swing) | Swing trigs | ✅ | Sequence: Swing in the trig types under the grid, then click or drag steps with a trig; a teal mark on the step | swingStep; a swing mark needs a trig, as accent and slide. | 1 | pass (e2e-md-seq-trig-types) |
-| p.46 | Per-track swing | Swing tracks | ✅ | Sequence: Swing in the trig types, This track: each track's own swing steps | All tracks share the SWG amount, as on the machine. | 1 | pass (e2e-md-seq-trig-types) |
+| p.46 | Swing step pattern (which steps swing) | Swing trigs | ✅ | Pattern: Swing in the trig types under the grid, then click or drag steps with a trig; a teal mark on the step | swingStep; a swing mark needs a trig, as accent and slide. | 1 | pass (e2e-md-seq-trig-types) |
+| p.46 | Per-track swing | Swing tracks | ✅ | Pattern: Swing in the trig types, This track: each track's own swing steps | All tracks share the SWG amount, as on the machine. | 1 | pass (e2e-md-seq-trig-types) |
 | p.47 | Copy / paste / clear swing | Swing clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Swing ticked); a selection's copy includes swing marks | With EDIT ALL on, the swing row is the pattern's. | 1 | pass (e2e-md-seq-swing-copy) |
 | p.47 | Parameter locks, grid: hold TRIG + knob | Lock a value | ✅ | Lock lane: drag over a step; parameter keys | 64 budget meter on LCD. | 3 | pass (e2e-md-seq-lock-lane) |
 | p.48 | View a step's locks (hold TRIG) | Inspect | ✅ | Lock lane shows each step's value; chips show counts |  | 1 | pass (e2e-md-seq-lock-lane) |
@@ -291,70 +291,70 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys | E2E |
 |---|---|---|---|---|---|---|---|
-| p.A-1 | TRX-BD Bass drum | PTCH DEC RAMP RDEC STRT NOIS HARM CLIP | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-1 | TRX-B2 Bass drum 2 | PTCH DEC RAMP HOLD TICK NOIS DIRT DIST | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-1 | TRX-SD Snare | PTCH DEC BUMP BENV SNAP TONE TUNE CLIP | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-1 | TRX-XT Tom | PTCH DEC RAMP RDEC DAMP DIST DTYP | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-1 | TRX-CP Clap | CLPY TONE HARD RICH RATE ROOM RSIZ RTUN | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-1 | TRX-RS Rim shot | PTCH DEC DIST | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-1 | TRX-CB Cow bell | PTCH DEC ENH DAMP TONE BUMP | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-1 | TRX-CH Closed hi-hat | GAP DEC HPF LPF MTAL | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-1 | TRX-OH Open hi-hat | GAP DEC HPF LPF MTAL | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-1 | TRX-CY Cymbal | RICH DEC TOP TTUN SIZE PEAK | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-1 | TRX-MA Maracas | ATT SUS REV DAMP RATL RTYP TONE HARD | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-1 | TRX-CL Claves | PTCH DEC DUAL ENH TUNE CLIC | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-1 | TRX-XC Congas | PTCH DEC RAMP RDEC DAMP DIST DTYP | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-4 | EFM-BD Bass drum | PTCH DEC RAMP RDEC MOD MFRQ MDEC MFB | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-4 | EFM-SD Snare | PTCH DEC NOISE NDEC MOD MFRQ MDEC HPF | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-4 | EFM-XT Tom | PTCH DEC RAMP RDEC MOD MFRQ MDEC CLIC | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-4 | EFM-CP Clap | PTCH DEC CLPS CDEC MOD MFRQ MDEC HPF | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-4 | EFM-RS Rim shot | PTCH DEC MOD HPF SNAR SPTC SDEC SMOD | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-4 | EFM-CB Cow bell | PTCH DEC SNAP FB MOD MFRQ MDEC | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-4 | EFM-HH Hi-hat | PTCH DEC TREM TFRQ MOD MFRQ MDEC FB | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-4 | EFM-CY Cymbal | PTCH DEC FB HPF MOD MFRQ MDEC | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-6 | E12-BD Bass drum | PTCH DEC SNAP SPLEN START RTRG RTIM BEND | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-6 | E12-SD Snare | PTCH DEC HP RING STRT RTRG RTIM BEND | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-6 | E12-HT High tom | PTCH DEC HP HPQ STRT RTRG RTIM BEND | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-6 | E12-LT Low tom | PTCH DEC HP HPQ STRT RTRG RTIM BEND | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-6 | E12-CP Clap | PTCH DEC HP HPQ STRT RTRG RTIM BEND | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-6 | E12-RS Rim shot | PTCH DEC HP RRTL STRT RTRG RTIM BEND | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-6 | E12-CB Cow bell | PTCH DEC HP HPQ STRT RTRG RTIM BEND | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-6 | E12-CH Closed hi-hat | PTCH DEC HP HPQ STRT RTRG RTIM BEND | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-6 | E12-OH Open hi-hat | PTCH DEC HP STOP STRT RTRG RTIM BEND | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-6 | E12-RC Ride | PTCH DEC HP BELL STRT RTRG RTIM BEND | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-6 | E12-CC Crash | PTCH DEC HP HPQ STRT RTRG RTIM BEND | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-6 | E12-BR Brushed snare | PTCH DEC HP REAL STRT RTRG RTIM BEND | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-6 | E12-TA Tambourine | PTCH DEC HP HPQ STRT RTRG RTIM BEND | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-6 | E12-TR Triangle | PTCH DEC HP HPQ STRT RTRG RTIM BEND | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-6 | E12-SH Shaker | PTCH DEC HP SLEW STRT RTRG RTIM BEND | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-6 | E12-BC Bongo conga | PTCH DEC HP BC STRT RTRG RTIM BEND | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-9 | P-I-BD Bass drum | PTCH DEC HARD HAMR TENS DAMP | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-9 | P-I-SD Snare | PTCH DEC HARD TENS RVOL RDEC RING | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-9 | P-I-MT Tom (PI-XT) | PTCH DEC HARD HAMR TUNE DAMP SIZE POS | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-9 | P-I-ML Metallica | PTCH DEC HARD TENS | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-9 | P-I-MA Maracas | DEC GRNS GLEN SIZE HARD | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-9 | P-I-RS Rim shot | PTCH DEC HARD RING RVOL RDEC | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-9 | P-I-HH Hi-hat | PTCH DEC CLSN RING AG AU BR CLOS | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-9 | P-I-RC Ride | PTCH DEC HARD RING AG AU BR GRAB | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-9 | P-I-CC Crash | PTCH DEC HARD RING AG AU BR GRAB | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-11 | GND-SIN Sinus | PTCH DEC RAMP RDEC | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-11 | GND-NS Noise | DEC | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-11 | GND-IM Impulse | UP UVAL DOWN DVAL | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-1 | TRX-BD Bass drum | PTCH DEC RAMP RDEC STRT NOIS HARM CLIP | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-1 | TRX-B2 Bass drum 2 | PTCH DEC RAMP HOLD TICK NOIS DIRT DIST | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-1 | TRX-SD Snare | PTCH DEC BUMP BENV SNAP TONE TUNE CLIP | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-1 | TRX-XT Tom | PTCH DEC RAMP RDEC DAMP DIST DTYP | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-1 | TRX-CP Clap | CLPY TONE HARD RICH RATE ROOM RSIZ RTUN | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-1 | TRX-RS Rim shot | PTCH DEC DIST | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-1 | TRX-CB Cow bell | PTCH DEC ENH DAMP TONE BUMP | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-1 | TRX-CH Closed hi-hat | GAP DEC HPF LPF MTAL | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-1 | TRX-OH Open hi-hat | GAP DEC HPF LPF MTAL | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-1 | TRX-CY Cymbal | RICH DEC TOP TTUN SIZE PEAK | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-1 | TRX-MA Maracas | ATT SUS REV DAMP RATL RTYP TONE HARD | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-1 | TRX-CL Claves | PTCH DEC DUAL ENH TUNE CLIC | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-1 | TRX-XC Congas | PTCH DEC RAMP RDEC DAMP DIST DTYP | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-4 | EFM-BD Bass drum | PTCH DEC RAMP RDEC MOD MFRQ MDEC MFB | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-4 | EFM-SD Snare | PTCH DEC NOISE NDEC MOD MFRQ MDEC HPF | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-4 | EFM-XT Tom | PTCH DEC RAMP RDEC MOD MFRQ MDEC CLIC | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-4 | EFM-CP Clap | PTCH DEC CLPS CDEC MOD MFRQ MDEC HPF | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-4 | EFM-RS Rim shot | PTCH DEC MOD HPF SNAR SPTC SDEC SMOD | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-4 | EFM-CB Cow bell | PTCH DEC SNAP FB MOD MFRQ MDEC | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-4 | EFM-HH Hi-hat | PTCH DEC TREM TFRQ MOD MFRQ MDEC FB | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-4 | EFM-CY Cymbal | PTCH DEC FB HPF MOD MFRQ MDEC | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-6 | E12-BD Bass drum | PTCH DEC SNAP SPLEN START RTRG RTIM BEND | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-6 | E12-SD Snare | PTCH DEC HP RING STRT RTRG RTIM BEND | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-6 | E12-HT High tom | PTCH DEC HP HPQ STRT RTRG RTIM BEND | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-6 | E12-LT Low tom | PTCH DEC HP HPQ STRT RTRG RTIM BEND | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-6 | E12-CP Clap | PTCH DEC HP HPQ STRT RTRG RTIM BEND | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-6 | E12-RS Rim shot | PTCH DEC HP RRTL STRT RTRG RTIM BEND | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-6 | E12-CB Cow bell | PTCH DEC HP HPQ STRT RTRG RTIM BEND | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-6 | E12-CH Closed hi-hat | PTCH DEC HP HPQ STRT RTRG RTIM BEND | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-6 | E12-OH Open hi-hat | PTCH DEC HP STOP STRT RTRG RTIM BEND | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-6 | E12-RC Ride | PTCH DEC HP BELL STRT RTRG RTIM BEND | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-6 | E12-CC Crash | PTCH DEC HP HPQ STRT RTRG RTIM BEND | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-6 | E12-BR Brushed snare | PTCH DEC HP REAL STRT RTRG RTIM BEND | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-6 | E12-TA Tambourine | PTCH DEC HP HPQ STRT RTRG RTIM BEND | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-6 | E12-TR Triangle | PTCH DEC HP HPQ STRT RTRG RTIM BEND | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-6 | E12-SH Shaker | PTCH DEC HP SLEW STRT RTRG RTIM BEND | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-6 | E12-BC Bongo conga | PTCH DEC HP BC STRT RTRG RTIM BEND | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-9 | P-I-BD Bass drum | PTCH DEC HARD HAMR TENS DAMP | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-9 | P-I-SD Snare | PTCH DEC HARD TENS RVOL RDEC RING | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-9 | P-I-MT Tom (PI-XT) | PTCH DEC HARD HAMR TUNE DAMP SIZE POS | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-9 | P-I-ML Metallica | PTCH DEC HARD TENS | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-9 | P-I-MA Maracas | DEC GRNS GLEN SIZE HARD | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-9 | P-I-RS Rim shot | PTCH DEC HARD RING RVOL RDEC | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-9 | P-I-HH Hi-hat | PTCH DEC CLSN RING AG AU BR CLOS | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-9 | P-I-RC Ride | PTCH DEC HARD RING AG AU BR GRAB | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-9 | P-I-CC Crash | PTCH DEC HARD RING AG AU BR GRAB | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-11 | GND-SIN Sinus | PTCH DEC RAMP RDEC | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-11 | GND-NS Noise | DEC | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-11 | GND-IM Impulse | UP UVAL DOWN DVAL | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
 | p.A-11 | GND-EMPTY Empty machine | none | ✅ | Machine picker | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-11 | INP-GA/GB Input gate A/B | VOL GATE ATCK HLD DEC | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-11 | INP-FA/FB Input filter follower A/B | ALEV GATE FATK FHLD FDEC FDPH FFRQ FQ | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-11 | INP-EA/EB Input envelope A/B | AVOL AHLD ADEC FQ FDPH FHLD FDEC FFRQ | ✅ | Sound: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-12 | MID-01 to MID-16 MIDI machines (synth, effect and routing pages) | NOTE N2 N3 LEN VEL PB MW AT; CC1-5 D/V; PCHG; LFO | ✅ | Sound: knob boxes (no picture); routing and effects pages as groups | Machine reference lists no extra gaps. | 1 | pass (md-sound-groups) |
-| p.A-12 | CTR-AL Control all | 8 params + TFX + routing pages for all tracks | ✅ | Sound: knob boxes (no picture); routing and effects pages as groups | Machine reference lists no extra gaps. | 1 | pass (md-sound-groups) |
-| p.A-12 | CTR-8P Control 8 parameters | P1-P8; TRK/PAR shortcuts | ✅ | Sound: knob boxes (no picture); routing and effects pages as groups | Machine reference lists no extra gaps. | 1 | pass (md-sound-groups) |
-| p.A-12 | CTR-RE Control Rhythm Echo | TIME MOD MFRQ FB FILTF FILTW MONO LEV | ✅ | Sound: group screens and boxes | Machine reference lists no extra gaps. | 1 | pass (md-sound-groups) |
-| p.A-12 | CTR-GB Control Gate Box | DVOL PRED DEC DAMP HP LP GATE LEV | ✅ | Sound: group screens and boxes | Machine reference lists no extra gaps. | 1 | pass (md-sound-groups) |
-| p.A-12 | CTR-EQ Control Master EQ | LF LG HF HG PF PG PQ GAIN | ✅ | Sound: group screens and boxes | Machine reference lists no extra gaps. | 1 | pass (md-sound-groups) |
-| p.A-12 | CTR-DX Control Dynamix | ATCK REL TRHD RTIO KNEE HP OUTG MIX | ✅ | Sound: group screens and boxes | Machine reference lists no extra gaps. | 1 | pass (md-sound-groups) |
-| p.A-15 | ROM-1 to ROM-24 ROM sample player | PTCH DEC HOLD BRR STRT END RTRG RTIM | ✅ | Sound: sample screen with STRT/END; Sampler tiles | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-15 | ROM-25 to ROM-48 ROM loop player (linear STRT, END) | PTCH DEC HOLD BRR STRT END RTRG RTIM | ✅ | Sound: sample screen with STRT/END; Sampler tiles | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
-| p.A-15 | RAM-R1 to R4 RAM record | MLEV MBAL ILEV IBAL CUE1 CUE2 LEN RATE | ✅ | Sound + Sampler: Set up sampling, recorder editor | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (e2e-md-sampler-setup-undo) |
-| p.A-15 | RAM-P1 to P4 RAM play | as ROM-25 to 48 | ✅ | Sound: sample screen with STRT/END; Sampler tiles | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-11 | INP-GA/GB Input gate A/B | VOL GATE ATCK HLD DEC | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-11 | INP-FA/FB Input filter follower A/B | ALEV GATE FATK FHLD FDEC FDPH FFRQ FQ | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-11 | INP-EA/EB Input envelope A/B | AVOL AHLD ADEC FQ FDPH FHLD FDEC FFRQ | ✅ | Kit: group screens and boxes | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-12 | MID-01 to MID-16 MIDI machines (synth, effect and routing pages) | NOTE N2 N3 LEN VEL PB MW AT; CC1-5 D/V; PCHG; LFO | ✅ | Kit: knob boxes (no picture); routing and effects pages as groups | Machine reference lists no extra gaps. | 1 | pass (md-sound-groups) |
+| p.A-12 | CTR-AL Control all | 8 params + TFX + routing pages for all tracks | ✅ | Kit: knob boxes (no picture); routing and effects pages as groups | Machine reference lists no extra gaps. | 1 | pass (md-sound-groups) |
+| p.A-12 | CTR-8P Control 8 parameters | P1-P8; TRK/PAR shortcuts | ✅ | Kit: knob boxes (no picture); routing and effects pages as groups | Machine reference lists no extra gaps. | 1 | pass (md-sound-groups) |
+| p.A-12 | CTR-RE Control Rhythm Echo | TIME MOD MFRQ FB FILTF FILTW MONO LEV | ✅ | Kit: group screens and boxes | Machine reference lists no extra gaps. | 1 | pass (md-sound-groups) |
+| p.A-12 | CTR-GB Control Gate Box | DVOL PRED DEC DAMP HP LP GATE LEV | ✅ | Kit: group screens and boxes | Machine reference lists no extra gaps. | 1 | pass (md-sound-groups) |
+| p.A-12 | CTR-EQ Control Master EQ | LF LG HF HG PF PG PQ GAIN | ✅ | Kit: group screens and boxes | Machine reference lists no extra gaps. | 1 | pass (md-sound-groups) |
+| p.A-12 | CTR-DX Control Dynamix | ATCK REL TRHD RTIO KNEE HP OUTG MIX | ✅ | Kit: group screens and boxes | Machine reference lists no extra gaps. | 1 | pass (md-sound-groups) |
+| p.A-15 | ROM-1 to ROM-24 ROM sample player | PTCH DEC HOLD BRR STRT END RTRG RTIM | ✅ | Kit: sample screen with STRT/END; Sampler tiles | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-15 | ROM-25 to ROM-48 ROM loop player (linear STRT, END) | PTCH DEC HOLD BRR STRT END RTRG RTIM | ✅ | Kit: sample screen with STRT/END; Sampler tiles | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
+| p.A-15 | RAM-R1 to R4 RAM record | MLEV MBAL ILEV IBAL CUE1 CUE2 LEN RATE | ✅ | Kit + Sampler: Set up sampling, recorder editor | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (e2e-md-sampler-setup-undo) |
+| p.A-15 | RAM-P1 to P4 RAM play | as ROM-25 to 48 | ✅ | Kit: sample screen with STRT/END; Sampler tiles | Group table in mdDeskSoundGroups.js; each knob is in one group. | 1 | pass (md-sound-groups) |
 | p.A-16 | RAM machines tutorial (record main out, play back) | Workflow | ✅ | Sampler: Set up sampling button, capture next loop | Page does steps 1-9. | 3 | pass (md-sampler-ram) |
 
 ## 15. Appendix B: MIDI control reference
@@ -375,12 +375,12 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.C-1 | Set active global 0x56 | Slot | ✅ | GLOBAL slot buttons |  | 1 | pass (e2e-md-global-channel-trig-slot) |
 | p.C-2 | Load pattern 0x57; load kit 0x58; save kit 0x59 | Select/save | ✅ | Pattern chooser; Kit library |  | 3 | pass (e2e-md-lib-load-save-dialog) |
 | p.C-2 | Set MIDI note mapping 0x5a | Map | ✅ | GLOBAL > Map editor | Via global dump. | 1 | pass (md-map-editor) |
-| p.C-2 | Assign machine 0x5b | Machine | ✅ | Sound machine picker |  | 1 | pass (e2e-md-sound-machine-pick-undo) |
+| p.C-2 | Assign machine 0x5b | Machine | ✅ | Kit machine picker |  | 1 | pass (e2e-md-sound-machine-pick-undo) |
 | p.C-2 | Set track routing 0x5c | Outputs | ✅ | Mix OUT; GLOBAL Routing |  | 1 | pass (e2e-md-mix-out-route) |
 | p.C-2 | Echo / gate / EQ / dynamix params 0x5d-0x60 | Master FX | ✅ | Mix cards |  | 1 | pass (md-master-effects) |
-| p.C-3 | Set tempo 0x61; set LFO 0x62 | Tempo, LFO | ✅ | LCD tempo; Sound LFO |  | 2 | pass (md-lfo) |
+| p.C-3 | Set tempo 0x61; set LFO 0x62 | Tempo, LFO | ✅ | LCD tempo; Kit LFO |  | 2 | pass (md-lfo) |
 | p.C-3 | Reset MIDI note map 0x64 | Defaults | ✅ | GLOBAL > Map editor > Reset map (asked first; Undo) | Writes Elektron's map in a global dump: the map 0x64 leaves (mdDeskFirmwareTest factoryglobal checks both). | 1 | pass (e2e-md-global-learn) |
-| p.C-3 | Trig group 0x65; mute group 0x66 | Relations | ✅ | Sound > Relations |  | 1 | pass (md-relations) |
+| p.C-3 | Trig group 0x65; mute group 0x66 | Relations | ✅ | Kit > Relations |  | 1 | pass (md-relations) |
 | p.C-3 | Pattern dump 0x67 / request 0x68 | Pattern | ✅ | Whole page |  | 1 | pass (md-pattern-chooser) |
 | p.C-3 | Song dump 0x69 / request 0x6a; load song 0x6c | Song | ✅ | Song page |  | 1 | pass (e2e-md-song-slots) |
 | p.C-3 | Set receive position 0x6b | SPEC receive | ❌ | None | See §10. | – | n/a |
@@ -395,8 +395,8 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p. | What you save stays for every new session | The machine keeps its kits, patterns, songs, globals and samples when it is switched off. | ✅ | By itself (a session without a DAW project, and the standalone, start from the saved memory); engine menu: KEEP MEMORY; Reset machine… > Start from factory memory… | I-024, doc/modern-ux/DESIGN-machine-memory.md | 1 | pass (e2e-md-engine-memory) |
 | p. | Factory songs play | The songs of factory memory are there and play: load one, SONG mode, PLAY. | ✅ | Song workspace: the song slots, Load; the arrangement follows the machine | e2e: every factory song | 2 | pass (md-real-song-playing) |
 | p. | Factory patterns play | The patterns of factory memory are there and play: pick one on the LCD, PLAY. | ✅ | The pattern chooser on the LCD | e2e: patterns spread over all 128 | 2 | pass (md-real-pattern-playing) |
-| p. | GEN rolls a rhythm | No such function: you set the hits by hand. The editor rolls a rhythm for you from a few settings. | ✅ | GEN bar on Sequence: Random, Defaults, Hits; R | One undo step | 4 | pass (e2e-md-gen-keys-r) |
-| p. | MUTATE changes a sound | No such function. The editor nudges the sound of the tracks at random, within a scope and an amount. | ✅ | GEN bar on Sequence: MUTATE, scope chips, amount | One undo step | 2 | pass (e2e-md-gen-mutate-scope) |
+| p. | GEN rolls a rhythm | No such function: you set the hits by hand. The editor rolls a rhythm for you from a few settings. | ✅ | GEN bar on Pattern: Random, Defaults, Hits; R | One undo step | 4 | pass (e2e-md-gen-keys-r) |
+| p. | MUTATE changes a sound | No such function. The editor nudges the sound of the tracks at random, within a scope and an amount. | ✅ | GEN bar on Pattern: MUTATE, scope chips, amount | One undo step | 2 | pass (e2e-md-gen-mutate-scope) |
 | p. | Solo | Solo plays one track alone; the mutes you had come back when you let go. | ✅ | Mix: S on the strip; the rail | The machine has mute only | 2 | pass (e2e-md-mix-mute-solo) |
 | p. | Undo and redo | No undo. Every edit of the editor can be taken back and done again, across kits, patterns and songs. | ✅ | UNDO and REDO in the top bar; Cmd+Z, Cmd+Shift+Z | The machine has no undo | 2 | pass (e2e-md-top-undo-redo) |
 | p. | Typed values | Type a value into a knob instead of turning it. | ✅ | Cmd-click or Enter on a value box; the arrow keys step it | A list takes its names | 2 | pass (e2e-md-sound-type-value) |
@@ -414,8 +414,8 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p. | Tap tempo | Tap B (Shift+B on every workspace) to set the tempo. | ✅ | The B key |  | 3 | pass (e2e-md-keys-tap-tempo) |
 | p. | Pattern queue and chooser | Pick any of the 128 patterns from the chooser; played while it runs, it waits for the end. | ✅ | The pattern on the LCD |  | 3 | pass (md-pattern-chooser) |
 | p. | Kit and song slots | The kit library and the song slots: load, copy, paste, rename and clear a slot, each undoable. | ✅ | The kit on the LCD; Song workspace |  | 4 | pass (e2e-md-lib-kit-copy-paste-undo) |
-| p. | What you draw is what plays | What you enter in the sequencer is what the machine plays. | ✅ | Sequence: the grid or the roll; Alt+Delete clears the pattern; Cmd+Z takes it back | e2e: drawn, played, cleared, undone, each checked on the machine's output | 1 | pass (md-real-sequence-drawn) |
-| p. | Clear (was Revert track) | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Sound: Clear key at the right end of the MUTATE bar, next to R |  | 1 | pass (e2e-md-sound-revert-track) |
+| p. | What you draw is what plays | What you enter in the sequencer is what the machine plays. | ✅ | Pattern: the grid or the roll; Alt+Delete clears the pattern; Cmd+Z takes it back | e2e: drawn, played, cleared, undone, each checked on the machine's output | 1 | pass (md-real-sequence-drawn) |
+| p. | Clear (was Revert track) | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Kit: Clear key at the right end of the MUTATE bar, next to R |  | 1 | pass (e2e-md-sound-revert-track) |
 | p. | The selected track follows the last track played | No such function. With it on, the track you select changes to the last one you played from a MIDI keyboard. | ✅ | Engine menu: FOLLOW PLAYED TRACK (off at first) | I-003 | 1 | – |
 
 ## Summary

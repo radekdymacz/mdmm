@@ -68,7 +68,7 @@ check(fxOnly.length === 8 && fxOnly.every(([, i]) => i >= 8 && i < 16), "scope f
 check(same(mutate(M({ tracks: [0, 4], groups: ["fx"] }), base, names).filter(([t]) => t === 0), fxOnly), "keyed by (track, param): another track in scope changes nothing for this one");
 const grp = (t, id) => id === "syn:pitch" ? ["PTCH", "RAMP", "RDEC"] : [];
 const gp = mutate(M({ groups: ["syn:pitch"] }), base, names, grp);
-check(same(gp.map(x => x[1]), [0, 2, 3]), "a Sound-page group: its knobs only");
+check(same(gp.map(x => x[1]), [0, 2, 3]), "a Kit-page group: its knobs only");
 const moved = base.map((tr, t) => ({ m: tr.m, v: tr.v.slice() }));
 for (const [t, i, v] of m40) moved[t].v[i] = v;
 const walk = mutate(M({ seed: 99 }), moved, names), again = mutate(M({ seed: 99 }), base, names);

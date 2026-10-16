@@ -57,7 +57,7 @@ const KeyView = (() => {
 	   the first words of what it does */
 	function shortOf(b, i) {
 		if (b.short) { const parts = b.short.split(" / "); return parts.length === b.keys.length || (parts.length > 1 && parts.length === capsOf(b).length) ? parts[Math.min(i, parts.length - 1)] : b.short; }
-		const t = textOf(b).replace(/^(Sequence|Song|Sound|Click|Drag): /, "").split(/[.:;(,]/)[0].trim();
+		const t = textOf(b).replace(/^(Pattern|Song|Kit|Click|Drag): /, "").split(/[.:;(,]/)[0].trim();
 		return t.length > 22 ? t.slice(0, 20).trim() + "…" : t;
 	}
 	const inScope = (b, page, all) => all || !b.scope || b.scope === "any" || b.scope.split(" ").includes(page);

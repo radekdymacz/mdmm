@@ -26,13 +26,13 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys | E2E |
 |---|---|---|---|---|---|---|---|
 | Conventions 1-1 | Key, knob, LED conventions | How the manual writes controls | ➖ | – | Documentation only | – | n/a |
-| Highlights 1-2 | 6 track internal sequencer with synthesis | Six sequenced mono synth tracks | ✅ | Sequence, Sound | `mmDesk` kit + pattern documents | 1 | pass (e2e-mm-seq-six-tracks) |
-| Highlights 1-2 | 6 track external MIDI sequencer | Six MIDI tracks per pattern | ✅ | Sequence, SYNTH / MIDI switch in the rail | Edits `p` tracks 6-11 | 1 | pass (mm-midi-roll) |
-| Highlights 1-2 | 5 Monosynths (SuperWave, SID, DigiPRO, FM+, VO) | Machine families | ✅ | Sound > machine picker | All 14 sound machines, see section 21 | 2 | pass (e2e-mm-sound-machine-pick-undo) |
-| Highlights 1-2 | Dynamically controlled stereo effects (FX machines) | Four FX machines plus reverb, chorus etc. | ✅ | Sound > machine picker, Mix > INPUT | See section 21 | 1 | pass (mm-mix-routing) |
-| Highlights 1-2 | 6 tape style tempo synced delays | One delay per track | ✅ | Sound > Effects (DTIM DSND DFB DBAS DWID) |  | 1 | pass (e2e-mm-seq-six-tracks) |
-| Highlights 1-2 | 18 tempo synced LFOs | 3 per track | ✅ | Sound > LFO 1-3 |  | 1 | pass (mm-sound-lfos) |
-| Highlights 1-2 | 12 arpeggiators | One per track, synth and MIDI | ✅ | Sequence dock > Arp |  | 1 | pass (e2e-mm-seq-arp-setup) |
+| Highlights 1-2 | 6 track internal sequencer with synthesis | Six sequenced mono synth tracks | ✅ | Pattern, Kit | `mmDesk` kit + pattern documents | 1 | pass (e2e-mm-seq-six-tracks) |
+| Highlights 1-2 | 6 track external MIDI sequencer | Six MIDI tracks per pattern | ✅ | Pattern, SYNTH / MIDI switch in the rail | Edits `p` tracks 6-11 | 1 | pass (mm-midi-roll) |
+| Highlights 1-2 | 5 Monosynths (SuperWave, SID, DigiPRO, FM+, VO) | Machine families | ✅ | Kit > machine picker | All 14 sound machines, see section 21 | 2 | pass (e2e-mm-sound-machine-pick-undo) |
+| Highlights 1-2 | Dynamically controlled stereo effects (FX machines) | Four FX machines plus reverb, chorus etc. | ✅ | Kit > machine picker, Mix > INPUT | See section 21 | 1 | pass (mm-mix-routing) |
+| Highlights 1-2 | 6 tape style tempo synced delays | One delay per track | ✅ | Kit > Effects (DTIM DSND DFB DBAS DWID) |  | 1 | pass (e2e-mm-seq-six-tracks) |
+| Highlights 1-2 | 18 tempo synced LFOs | 3 per track | ✅ | Kit > LFO 1-3 |  | 1 | pass (mm-sound-lfos) |
+| Highlights 1-2 | 12 arpeggiators | One per track, synth and MIDI | ✅ | Pattern dock > Arp |  | 1 | pass (e2e-mm-seq-arp-setup) |
 | Highlights 1-2 | Full real-time control | Every DATA value live | ✅ | Every value box, drag or wheel | Sent as CC while dragging | 1 | pass (e2e-mm-seq-six-tracks) |
 | Highlights 1-2 | DigiPRO user waveforms (MKII) | 64 user waveform slots | 🟡 | Export SysEx…: Waveforms W01 to W64, read from the machine into the .syx | An empty waveform answers nothing and is left out. | 1 | n/a |
 | +Drive 1-3 | Snapshots, Digibanks, 8192 waveforms | Optional storage drive | ➖ | – | Not emulated, see section 19 | – | n/a |
@@ -46,13 +46,13 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-4 | 3 LEVEL knob | Track level (CC 7) | ✅ | Mix > LEVEL fader per track |  | 2 | pass (e2e-mm-mix-level-mute) |
 | Front panel 1-4 | 4 DATA ENTRY knobs A-H | Eight parameters of the page | ✅ | Every value box (drag, wheel, arrows, double click resets; ⌘-click or Enter: type a value) |  | 3 | pass (e2e-mm-sound-shape-undo) |
 | Front panel 1-4 | 4 Accelerated edit (press and turn) | Bigger steps | 🟡 | Shift = fine, Page Up / Down = x10 | Different gesture | – | n/a |
-| Front panel 1-4 | 5 DATA PAGE keys, seven pages | SYN, AMP, FLT, EFX, LFO 1-3 | ✅ | Sound shows every page at once; lock lane page tabs |  | 1 | pass (e2e-mm-seq-locks) |
+| Front panel 1-4 | 5 DATA PAGE keys, seven pages | SYN, AMP, FLT, EFX, LFO 1-3 | ✅ | Kit shows every page at once; lock lane page tabs |  | 1 | pass (e2e-mm-seq-locks) |
 | Front panel 1-4 | 5 Both DATA PAGE keys open MULTI ENV | Multi envelope window | ✅ | Perform > Multi envelope |  | 1 | pass (mm-perform-menv) |
 | Front panel 1-4 | 6 TRACK keys, select | Pick the track in focus | ✅ | Rail, Up / Down keys, Mix node click |  | 1 | pass (e2e-mm-keys-track-select) |
 | Front panel 1-4 | 6 TRACK keys, mute / unmute (FUNCTION) | Mute a track | ✅ | M key per track, Perform > Mutes, key M | Shift + M prepares mutes | 7 | pass (e2e-mm-mix-level-mute) |
 | Front panel 1-4 | 6 TRACK LED colours | Active, muted, in focus | 🟡 | Rail row dims when muted, selected row lit |  | – | n/a |
 | Front panel 1-4 | 7 TEMPO key, tempo window | Tempo screen | ✅ | LCD > TEMPO (drag, arrows) |  | 1 | pass (e2e-mm-top-tempo-drag) |
-| Front panel 1-4 | 7 Tap tempo (FUNCTION + TEMPO) | Tap | ✅ | Shift + B on every workspace; plain B on the others than Sequence | On Sequence, B is the piano roll's Draw (`75-comforts.js`) | 2 | pass (e2e-mm-keys-tap-tempo) |
+| Front panel 1-4 | 7 Tap tempo (FUNCTION + TEMPO) | Tap | ✅ | Shift + B on every workspace; plain B on the others than Pattern | On Sequence, B is the piano roll's Draw (`75-comforts.js`) | 2 | pass (e2e-mm-keys-tap-tempo) |
 | Front panel 1-4 | 8 FUNCTION key (secondary functions) | Modifier | ➖ | – | Replaced by Alt, Shift, Cmd and buttons | – | n/a |
 | Front panel 1-4 | 9 KIT / SONG key | Kit menu or song menu | ✅ | LCD > KIT (kit library); Song workspace |  | 1 | pass (e2e-mm-lib-kit-load) |
 | Front panel 1-4 | 9 GLOBAL (FUNCTION + KIT / SONG) | Global menu | ✅ | GLOBAL key in the top bar (a page under the header), engine menu > GLOBAL…, link in the AUDIO / MIDI panel | 8 slots with Copy · Paste · Clear, Control, Sync, Routing, Audio (master tune), Control out 1 (`deskGlobal.js`, `117-global.js`) | 1 | pass (e2e-mm-global-page) |
@@ -67,14 +67,14 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-5 | 14 BANK GROUP A-D / E-H | Bank group | ✅ | Pattern chooser shows all 8 banks |  | 1 | pass (mm-pattern-chooser) |
 | Front panel 1-5 | 14 MUTE MODE (FUNCTION + BANK GROUP) | Mute window | ✅ | Perform > Mutes |  | 1 | pass (e2e-mm-perform-mutes) |
 | Front panel 1-5 | 15 BANK keys A-H | Pattern bank | ✅ | Pattern chooser |  | 1 | pass (mm-pattern-chooser) |
-| Front panel 1-5 | 15 BANK secondary: ARP, TRANSPOSE, SWING, SLIDE | Track settings windows | ✅ | Sequence dock > Arp, Transpose; step menu > Slide, Swing (marks on the notes in the roll); LCD SWG |  | 2 | pass (e2e-mm-seq-slide-swing) |
+| Front panel 1-5 | 15 BANK secondary: ARP, TRANSPOSE, SWING, SLIDE | Track settings windows | ✅ | Pattern dock > Arp, Transpose; step menu > Slide, Swing (marks on the notes in the roll); LCD SWG |  | 2 | pass (e2e-mm-seq-slide-swing) |
 | Front panel 1-5 | 16 REC key (grid recording) | Grid mode on / off | 🟡 | LCD record key | Stopped = grid record; the page's step editing does not need it | 1 | n/a |
 | Front panel 1-5 | 16 PLAY (pause on second press) | Start, pause | ✅ | LCD play key: ⇧-click or ⇧Space pauses (▶ blinks, the position holds), ▶ goes on; the ▶ menu (right-click or its ▾) | Over HW MIDI pause and Continue need GLOBAL › CONTROL IN › TRANSPORT = ACCEPT; the editor asks to set it. | 3 | stub-only (e2e-mm-seq-first-beat) |
 | Front panel 1-5 | 16 STOP; STOP twice rewinds and silences | Stop, reset | ✅ | Panic: ⌘. or the ▶ menu's Panic (All Notes Off on each track's channel, then STOP twice) |  | 3 | stub-only (e2e-mm-seq-first-beat) |
 | Front panel 1-5 | 16 REC + PLAY = live recording | Live recording | ✅ | Alt + Space, record key while playing | `record` op | 1 | pass (e2e-mm-seq-live-record) |
 | Front panel 1-5 | 16 STOP + REC = step recording | Step recording | ✅ | Shift-click REC (stopped), or the ▶ menu's Step record |  | 1 | pass (e2e-mm-seq-step-record) |
 | Front panel 1-5 | 16 Secondary: COPY, PASTE, CLEAR | Copy / paste / clear | ✅ | LCD COPY / CLR / PASTE, Cmd+C / V, Delete | Scope depends on the workspace; on Sequence it is the selected steps, else the page shown (`130-main.js` secAction) | 4 | pass (e2e-mm-seq-copy-paste-clear) |
-| Front panel 1-5 | 17 SCALE key: page of 16 steps | Track page | ✅ | Sequence PAGE key and 4 page LEDs, keys [ ] |  | 1 | pass (e2e-mm-seq-pages) |
+| Front panel 1-5 | 17 SCALE key: page of 16 steps | Track page | ✅ | Pattern PAGE key and 4 page LEDs, keys [ ] |  | 1 | pass (e2e-mm-seq-pages) |
 | Front panel 1-5 | 17 SCALE SETUP (FUNCTION + SCALE) | Length and speed | ✅ | LCD line 2 LEN, SPD |  | 1 | pass (e2e-mm-seq-scale-setup) |
 | Front panel 1-5 | 18 TRIG SELECT: AMP / FILTER / LFO / ALL | Trig track | ✅ | Step menu > Envelopes > Amp, Filter, LFO (on a selection: every trig); the roll marks a trig that fires only some (their letters on the note) | Different UI, same data | 1 | pass (mm-sequence-workspace) |
 | Front panel 1-5 | 18 MIDI SEQ mode (FUNCTION + TRIG SELECT) | Edit MIDI tracks | ✅ | SYNTH / MIDI switch |  | 1 | pass (mm-midi-roll) |
@@ -102,7 +102,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | LCD 1-10 | Record / play / pause / stop symbols | Status | ✅ | Play key: blinks while paused; POSITION keeps the held step |  | 1 | stub-only (e2e-mm-top-pause-fail) |
 | LCD 1-10 | Kit name and number | Current kit | ✅ | LCD KIT (saved / edited) |  | 1 | pass (e2e-mm-lcd-boxes) |
 | LCD 1-10 | Pattern index A01-H16 | Current pattern | ✅ | LCD PATTERN |  | 1 | pass (e2e-mm-top-pattern-next) |
-| LCD 1-10 | Machine of the track in focus | Machine | ✅ | Rail, Sound header |  | 1 | pass (e2e-mm-lcd-boxes) |
+| LCD 1-10 | Machine of the track in focus | Machine | ✅ | Rail, Kit header |  | 1 | pass (e2e-mm-lcd-boxes) |
 | Layer edit and windows 1-10 | Windows on top, keys still work below | Window behaviour | ➖ | – | Page dialogs | – | n/a |
 
 ## 4. Quick start (1-11 to 1-14)
@@ -113,7 +113,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Selecting and playing 1-11 | Pending pattern shown with arrow | Cued pattern | ✅ | Queued name blinks in the LCD |  | 1 | pass (e2e-mm-seq-queue-while-playing) |
 | Selecting and playing 1-11 | Play, pause, stop | Transport | ✅ | Play key: play, pause (⇧-click, ⇧Space), stop |  | 1 | stub-only (e2e-mm-top-pause-fail) |
 | Playing in multi trig 1-12 | Play MULTI TRIG from a keyboard | Multi trig | ✅ | Perform > Multi trig; MIDI channel 7 |  | 1 | pass (e2e-mm-perform-keys-channels) |
-| Exploring a pattern 1-12 | Try each track, tweak SYNTHESIS | Auditioning | ✅ | Sound; roll keys play the track |  | 1 | pass (e2e-mm-seq-pitch-keys) |
+| Exploring a pattern 1-12 | Try each track, tweak SYNTHESIS | Auditioning | ✅ | Kit; roll keys play the track |  | 1 | pass (e2e-mm-seq-pitch-keys) |
 | Grid recording 1-12 | Load kit for the pattern | LOAD KIT | ✅ | Kit library |  | 1 | pass (e2e-mm-lib-kit-load) |
 | Grid recording 1-12 | Add a note trig | Trig on | ✅ | Roll click |  | 5 | pass (e2e-mm-seq-first-beat) |
 | Grid recording 1-13 | Hold a trig, set pitch on the mini keyboard | Pitch of a trig | ✅ | Roll: click or drag for pitch |  | 1 | pass (e2e-mm-seq-pitch-keys) |
@@ -128,9 +128,9 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys | E2E |
 |---|---|---|---|---|---|---|---|
-| Six individual tracks 1-15 | Per track machine and effects | Multitimbral | ✅ | Sound, Mix |  | 1 | pass (mm-sound-workspace) |
-| Six track sequencing 1-15 | Notes, envelope trigs, parameters | Sequencer | ✅ | Sequence |  | 1 | pass (mm-sequence-workspace) |
-| MIDI sequencing 1-15 | Six MIDI tracks | MIDI seq | ✅ | Sequence (MIDI side) |  | 1 | pass (mm-midi-roll) |
+| Six individual tracks 1-15 | Per track machine and effects | Multitimbral | ✅ | Kit, Mix |  | 1 | pass (mm-sound-workspace) |
+| Six track sequencing 1-15 | Notes, envelope trigs, parameters | Sequencer | ✅ | Pattern |  | 1 | pass (mm-sequence-workspace) |
+| MIDI sequencing 1-15 | Six MIDI tracks | MIDI seq | ✅ | Pattern (MIDI side) |  | 1 | pass (mm-midi-roll) |
 | Poly mode 1-15 | One track with six voices | POLY | ✅ | Perform > Poly: the track selected (Assign's 1-6, the rail) plays six voices; ×6 on its key and lamp, the others dimmed | `poly {on, t}`; the other tracks silent (P10) | 2 | pass (mm-perform-poly) |
 | Multi trig mode 1-15 | All tracks from one source | MULTI TRIG | ✅ | Perform |  | 1 | pass (e2e-mm-perform-keys-channels) |
 | Multi map mode 1-15 | Keyboard triggers patterns | MULTI MAP | ✅ | Perform > Multi map |  | 1 | pass (e2e-mm-perform-keys-channels) |
@@ -141,7 +141,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys | E2E |
 |---|---|---|---|---|---|---|---|
 | Arrangement 1-17 | Machines grouped in Mono-synths | Families | ✅ | Machine picker families |  | 1 | pass (mm-machine-picker) |
-| Arrangement 1-17 | Track effects per track (filter, EQ, SRR, distortion, delay) | Effects | ✅ | Sound AMP, FLT, EFX |  | 1 | pass (mm-sound-workspace) |
+| Arrangement 1-17 | Track effects per track (filter, EQ, SRR, distortion, delay) | Effects | ✅ | Kit AMP, FLT, EFX |  | 1 | pass (mm-sound-workspace) |
 | Kits 1-18 | Kit holds machines, pages, LFOs, MIDI pages, routing, trig, multi env, name | Kit content | ✅ | Whole kit editable in the working kit | `WorkingKit` document | 1 | pass (e2e-mm-kit-parts) |
 | Link kits and patterns 1-18 | Pattern recalls its kit; same kit not reloaded | Link | ✅ | Pattern chooser shows kit per pattern | Dialog "Save kit, then switch" | 1 | pass (e2e-mm-lib-pattern-same-kit) |
 | Link kits and patterns 1-18 | Change which kit a pattern uses | Relink | ✅ | Pattern chooser: Alt-click a pattern, then its Kit list (patternKit); over the pattern that plays the kit loads at once, asked over unsaved edits | Measured: the dump carries the link; over the pattern that plays the machine loads the kit (gapProbesFirmwareTest w12patkit) | 1 | pass (e2e-mm-lib-pattern-kit) |
@@ -154,12 +154,12 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Undo kit 1-20 | UNDO KIT keeps lost edits | Safety slot | ✅ | Kit library: UNDO KIT (KIT > LOAD > UNDO KIT through the machine's keys; off over HW MIDI) | Measured: the lost kit plays again unsaved, its own slot current (gapProbesFirmwareTest w12undo) | 1 | pass (e2e-mm-lib-undo-kit) |
 | Copy kit 1-21 | Copy and paste kit slot | Kit copy | ✅ | Kit library Copy / Paste, drag a slot | Through SYSEX RECV | 1 | pass (e2e-mm-lib-kit-copy-paste-undo) |
 | Clear kit 1-21 | Clear kit slot | Kit clear | ✅ | Kit library Clear |  | 1 | pass (e2e-mm-lib-kit-clear-undo) |
-| Assigning a machine 1-22 | SYNTH, MACHINE, MIX columns in EDIT KIT | Machine picker | ✅ | Sound > machine key |  | 1 | pass (e2e-mm-kit-parts) |
+| Assigning a machine 1-22 | SYNTH, MACHINE, MIX columns in EDIT KIT | Machine picker | ✅ | Kit > machine key |  | 1 | pass (e2e-mm-kit-parts) |
 | Assigning a machine 1-22 | "Keep effects" vs init pages | Init data | ✅ | "Keep track effects + LFOs" toggle | `machine` op | 1 | pass (e2e-mm-kit-parts) |
-| Copy machine 1-23 | Machine and settings to another track or kit | Copy machine | ✅ | Sound COPY / PASTE | `copySound` | 1 | pass (e2e-mm-sound-copy-paste) |
-| Clear machine 1-24 | Back to GND-SIN | Clear machine | ✅ | Sound CLR |  | 1 | pass (mm-kit-library) |
+| Copy machine 1-23 | Machine and settings to another track or kit | Copy machine | ✅ | Kit COPY / PASTE | `copySound` | 1 | pass (e2e-mm-sound-copy-paste) |
+| Clear machine 1-24 | Back to GND-SIN | Clear machine | ✅ | Kit CLR |  | 1 | pass (mm-kit-library) |
 | Setting the mix bus 1-24 | OUT BUS per track | Mix bus | ✅ | Mix > Out AB CD EF | A track can feed two | 1 | pass (mm-mix-routing) |
-| Parameter editing 1-25 | 7 pages of 8, 56 parameters | Edit | ✅ | Sound |  | 1 | pass (mm-machine-picker) |
+| Parameter editing 1-25 | 7 pages of 8, 56 parameters | Edit | ✅ | Kit |  | 1 | pass (mm-machine-picker) |
 | Parameter editing 1-25 | TUNE on every synth machine | Fine tune | ✅ | SYN page TUNE (not on BeatBox) | Per the OS 1.32B screens | 1 | pass (mm-machine-picker) |
 | Parameter editing 1-25 | Kit changes are unsaved until SAVE | Dirty state | ✅ | KIT "edited / saved" |  | 1 | pass (e2e-mm-sound-machine-stays) |
 
@@ -168,33 +168,33 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys | E2E |
 |---|---|---|---|---|---|---|---|
 | Level 1-26 | LEV, not lockable | Track level | ✅ | Mix LEVEL |  | 1 | pass (e2e-mm-seq-locks) |
-| Amp envelope 1-26 | ATK | Attack | ✅ | Sound > Amp |  | 1 | pass (mm-sound-workspace) |
-| Amp envelope 1-27 | HOLD | Hold | ✅ | Sound > Amp |  | 1 | pass (mm-sound-workspace) |
-| Amp envelope 1-27 | DEC | Decay | ✅ | Sound > Amp |  | 1 | pass (mm-sound-workspace) |
-| Amp envelope 1-27 | REL | Release | ✅ | Sound > Amp |  | 1 | pass (mm-sound-workspace) |
-| Distortion 1-27 | DIST (headroom below 0) | Distortion | ✅ | Sound > Amp > Drive |  | 1 | pass (mm-sound-workspace) |
-| Track volume 1-28 | VOL (lockable) | Volume | ✅ | Sound > Amp; Mix trim |  | 1 | pass (mm-sound-workspace) |
-| Pan 1-29 | PAN | Stereo place | ✅ | Sound > Amp; Mix PAN |  | 1 | pass (e2e-mm-mix-pan-undo) |
-| Portamento 1-29 | PORT | Glide time | ✅ | Sound > Amp > Glide; Sequence > Trig setup |  | 2 | pass (mm-sound-workspace) |
-| Filter 1-30 | BASE | Filter base | ✅ | Sound > Filter |  | 1 | pass (mm-sound-workspace) |
-| Filter 1-30 | WDTH | Filter width | ✅ | Sound > Filter |  | 1 | pass (mm-sound-workspace) |
-| Filter 1-30 | HPQ | High pass Q | ✅ | Sound > Filter |  | 1 | pass (mm-sound-workspace) |
-| Filter 1-30 | LPQ | Low pass Q | ✅ | Sound > Filter |  | 1 | pass (mm-sound-workspace) |
-| Filter envelope 1-31 | ATK, DEC | Filter envelope | ✅ | Sound > Filter env |  | 1 | pass (mm-sound-workspace) |
-| Filter envelope 1-31 | BOFS, WOFS | Envelope offsets | ✅ | Sound > Filter env |  | 1 | pass (mm-sound-workspace) |
-| Filter tracking 1-31 | Filter follows pitch; switch off HPF / LPF | Key tracking | ✅ | Perform > Assign > KEY > HPF, LPF; KEY in Sound > Filter shows them and leads there | `assign` op | 1 | pass (mm-sound-key-tracking) |
-| EQ 1-32 | EQF, EQG | One band EQ | ✅ | Sound > Effects |  | 1 | pass (mm-sound-workspace) |
-| Sample rate reduction 1-32 | SRR | Lo-fi | ✅ | Sound > Effects |  | 1 | pass (mm-sound-workspace) |
-| Delay 1-33 | DSND (sign: stereo kept / ping-pong) | Delay send | ✅ | Sound > Effects; Mix trim |  | 1 | pass (mm-sound-workspace) |
-| Delay 1-33 | DTIM (256th notes) | Delay time | ✅ | Sound > Effects |  | 1 | pass (mm-sound-workspace) |
-| Delay 1-33 | DFB | Feedback | ✅ | Sound > Effects (warns above 64) |  | 1 | pass (mm-sound-workspace) |
-| Delay 1-33 | DBAS, DWID | Feedback filter | ✅ | Sound > Effects |  | 1 | pass (mm-sound-workspace) |
+| Amp envelope 1-26 | ATK | Attack | ✅ | Kit > Amp |  | 1 | pass (mm-sound-workspace) |
+| Amp envelope 1-27 | HOLD | Hold | ✅ | Kit > Amp |  | 1 | pass (mm-sound-workspace) |
+| Amp envelope 1-27 | DEC | Decay | ✅ | Kit > Amp |  | 1 | pass (mm-sound-workspace) |
+| Amp envelope 1-27 | REL | Release | ✅ | Kit > Amp |  | 1 | pass (mm-sound-workspace) |
+| Distortion 1-27 | DIST (headroom below 0) | Distortion | ✅ | Kit > Amp > Drive |  | 1 | pass (mm-sound-workspace) |
+| Track volume 1-28 | VOL (lockable) | Volume | ✅ | Kit > Amp; Mix trim |  | 1 | pass (mm-sound-workspace) |
+| Pan 1-29 | PAN | Stereo place | ✅ | Kit > Amp; Mix PAN |  | 1 | pass (e2e-mm-mix-pan-undo) |
+| Portamento 1-29 | PORT | Glide time | ✅ | Kit > Amp > Glide; Pattern > Trig setup |  | 2 | pass (mm-sound-workspace) |
+| Filter 1-30 | BASE | Filter base | ✅ | Kit > Filter |  | 1 | pass (mm-sound-workspace) |
+| Filter 1-30 | WDTH | Filter width | ✅ | Kit > Filter |  | 1 | pass (mm-sound-workspace) |
+| Filter 1-30 | HPQ | High pass Q | ✅ | Kit > Filter |  | 1 | pass (mm-sound-workspace) |
+| Filter 1-30 | LPQ | Low pass Q | ✅ | Kit > Filter |  | 1 | pass (mm-sound-workspace) |
+| Filter envelope 1-31 | ATK, DEC | Filter envelope | ✅ | Kit > Filter env |  | 1 | pass (mm-sound-workspace) |
+| Filter envelope 1-31 | BOFS, WOFS | Envelope offsets | ✅ | Kit > Filter env |  | 1 | pass (mm-sound-workspace) |
+| Filter tracking 1-31 | Filter follows pitch; switch off HPF / LPF | Key tracking | ✅ | Perform > Assign > KEY > HPF, LPF; KEY in Kit > Filter shows them and leads there | `assign` op | 1 | pass (mm-sound-key-tracking) |
+| EQ 1-32 | EQF, EQG | One band EQ | ✅ | Kit > Effects |  | 1 | pass (mm-sound-workspace) |
+| Sample rate reduction 1-32 | SRR | Lo-fi | ✅ | Kit > Effects |  | 1 | pass (mm-sound-workspace) |
+| Delay 1-33 | DSND (sign: stereo kept / ping-pong) | Delay send | ✅ | Kit > Effects; Mix trim |  | 1 | pass (mm-sound-workspace) |
+| Delay 1-33 | DTIM (256th notes) | Delay time | ✅ | Kit > Effects |  | 1 | pass (mm-sound-workspace) |
+| Delay 1-33 | DFB | Feedback | ✅ | Kit > Effects (warns above 64) |  | 1 | pass (mm-sound-workspace) |
+| Delay 1-33 | DBAS, DWID | Feedback filter | ✅ | Kit > Effects |  | 1 | pass (mm-sound-workspace) |
 
 ## 8. Low frequency oscillators (1-35 to 1-37)
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys | E2E |
 |---|---|---|---|---|---|---|---|
-| LFO 1-35 | PAGE and DEST (incl. PTCH, eight ranges, MIDI page, other LFOs) | Target | ✅ | Sound > LFO page and dest selects; drag the ~ handle onto a value |  | 1 | pass (mm-sound-lfos) |
+| LFO 1-35 | PAGE and DEST (incl. PTCH, eight ranges, MIDI page, other LFOs) | Target | ✅ | Kit > LFO page and dest selects; drag the ~ handle onto a value |  | 1 | pass (mm-sound-lfos) |
 | LFO 1-35 | TRIG: FREE, TRIG, HOLD, ONE, HALF | Trig mode | ✅ | LFO TRIG keys |  | 1 | pass (mm-sound-lfos) |
 | LFO 1-35 | WAVE, 11 shapes | Waveform | ✅ | 11 shape keys |  | 1 | pass (mm-sound-lfos) |
 | LFO 1-35 | MULT | Multiplier | ✅ | LFO MULT |  | 1 | pass (mm-sound-lfos) |
@@ -213,9 +213,9 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Assign 1-39 | Joystick R / L with MIRR | Joystick | ✅ | Assign tab JOY RL, Mirror |  | 1 | pass (e2e-mm-perform-assign) |
 | Assign 1-39 | Joystick U, D tabs | Joystick | ✅ | Assign tabs JOY U, JOY D |  | 1 | pass (e2e-mm-perform-assign) |
 | Assign 1-39 | Velocity assign | Velocity | ✅ | Assign tab VEL | Sequencer plays velocity 100 | 1 | pass (e2e-mm-perform-assign) |
-| Assign 1-40 | Key tracking assign | Key | ✅ | Perform > Assign > KEY; KEY in Sound > Filter leads there |  | 1 | pass (mm-sound-key-tracking) |
+| Assign 1-40 | Key tracking assign | Key | ✅ | Perform > Assign > KEY; KEY in Kit > Filter leads there |  | 1 | pass (mm-sound-key-tracking) |
 | Assign 1-39 | Copy, clear, paste, undo assign | Assign clipboard | ✅ | Perform COPY / CLR / PASTE |  | 1 | pass (e2e-mm-perform-assign) |
-| Trig track settings 1-40 | TRIG POS (forward notes, chainable) | Trig position | ✅ | Sequence dock > Trig setup | Dotted cord on Mix graph | 1 | pass (mm-trig-setup) |
+| Trig track settings 1-40 | TRIG POS (forward notes, chainable) | Trig position | ✅ | Pattern dock > Trig setup | Dotted cord on Mix graph | 1 | pass (mm-trig-setup) |
 | Trig track settings 1-41 | PORTAMENTO ALWAYS / ONLY LEGATO | Portamento mode | ✅ | Trig setup > Port |  | 1 | pass (e2e-mm-perform-menv-portamento) |
 | Trig track settings 1-41 | Legato trig modes AMP, FILTER, LFO | Legato | ✅ | Trig setup > Legato |  | 1 | pass (mm-trig-setup) |
 | Multi trig 1-41 | ALL TRK | All tracks play | ✅ | Perform > Multi trig |  | 1 | stub-only (e2e-mm-perform-multi-setup-fail) |
@@ -256,8 +256,8 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Live recording 1-49 | Record played notes, quantised | Live | ✅ | Alt + Space |  | 1 | pass (e2e-mm-seq-live-record) |
 | Live recording 1-49 | Chords recorded | Live chords | 🟡 | Played one key at a time | Chords are drawn with Shift-click in the roll | – | n/a |
 | Live recording 1-49 | Erase with EXIT | Live erase | ✅ | Hold Delete while live recording |  | 1 | pass (e2e-mm-seq-live-erase) |
-| Step recording 1-50 | Step-by-step input | Step rec | ✅ | Sequence: Shift-click REC; a played note writes the step under the cursor and moves on; → rest, ← back, Delete clears, Esc done |  | 1 | pass (e2e-mm-seq-step-record) |
-| Note copy 1-50 | Copy one trig with locks to another step | Note copy | ✅ | Sequence: Cmd-click a step (Ctrl on Windows and Linux), Cmd+C, select the target, Cmd+V; Cmd-drag drops a copy; Cmd+D duplicates | Notes, NOTE OFFs, envelope trigs, slides and locks go along (`77-select.js`, `copySteps`) | 5 | pass (e2e-mm-seq-paste-steps-keeps-page) |
+| Step recording 1-50 | Step-by-step input | Step rec | ✅ | Pattern: Shift-click REC; a played note writes the step under the cursor and moves on; → rest, ← back, Delete clears, Esc done |  | 1 | pass (e2e-mm-seq-step-record) |
+| Note copy 1-50 | Copy one trig with locks to another step | Note copy | ✅ | Pattern: Cmd-click a step (Ctrl on Windows and Linux), Cmd+C, select the target, Cmd+V; Cmd-drag drops a copy; Cmd+D duplicates | Notes, NOTE OFFs, envelope trigs, slides and locks go along (`77-select.js`, `copySteps`) | 5 | pass (e2e-mm-seq-paste-steps-keeps-page) |
 | Clear note parameter locks 1-50 | Clear locks of one note, undoable | Clear locks | ✅ | The step menu's Clear locks (keep the notes), on a step or a selection; one undo step | No key for the locks of one step alone | 1 | pass (e2e-mm-seq-clear-step-locks) |
 | Track page copy 1-51 | Copy a page to another page | Page copy | ✅ | LCD COPY on the page shown (no step selected), PASTE on another page; or select the steps | Steps, slides and locks (`130-main.js` secAction) | 1 | pass (e2e-mm-seq-copy-page) |
 | Clear track page 1-51 | Clear a page | Page clear | ✅ | CLR with a page shown |  | 1 | pass (e2e-mm-seq-copy-paste-clear) |
@@ -276,7 +276,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Tempo screen 1-56 | Integer and decimal tempo | Edit tempo | ✅ | Drag, arrows, Shift = 0.1 | 30-300 BPM | 1 | pass (e2e-mm-top-tempo-window) |
 | Tempo screen 1-56 | Delay change until FUNCTION released | Delayed change | ✅ | TEMPO window (a click on the tempo): Change on release; ⌥-drag the tempo does it once |  | 1 | pass (e2e-mm-top-tempo-release) |
 | Tempo screen 1-56 | Temporary +/-10 % shift | Nudge | ✅ | TEMPO window: −10 % / +10 % held, or the keys - and = held; back at the release |  | 1 | pass (e2e-mm-top-tempo-window) |
-| Tap tempo 1-56 | Average of taps | Tap | ✅ | Shift + B everywhere; B off Sequence | The last five taps are averaged; a pause of 2 s starts over | 2 | pass (e2e-mm-keys-tap-tempo) |
+| Tap tempo 1-56 | Average of taps | Tap | ✅ | Shift + B everywhere; B off Pattern | The last five taps are averaged; a pause of 2 s starts over | 2 | pass (e2e-mm-keys-tap-tempo) |
 | External synchronisation 1-56 | Internal or external MIDI clock; EXT shown | Sync | ✅ | GLOBAL > Sync > Tempo in (INT / EXT); in a DAW EXT follows the host (a new plug-in starts so), INT runs the machine on its own clock (`followHost`, review 1, I-026) | See Control In. INT is kept with the project; the host's clock and transport stop going to the machine (mmDeskFirmwareTest hostclock) | 1 | pass (e2e-mm-top-tempo-window) |
 | Tempo 1-57 | Songs store tempo changes | Song tempo | ✅ | Song row Tempo |  | 1 | pass (mm-song-workspace) |
 
@@ -285,7 +285,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys | E2E |
 |---|---|---|---|---|---|---|---|
 | Locks in grid mode 1-57 | Hold a trig, turn a knob | Lock | ✅ | Lane: draw; wheel; ramp with Shift |  | 1 | pass (e2e-mm-seq-lock-ramp-erase-wheel) |
-| Locks in grid mode 1-57 | Click a knob to lock its current value | Lock to current | ✅ | Sequence, Locks: select steps, then the lock key in the rail header locks the lane's parameter at its current (kit) value on each selected note; one undo step | No "lock current" click | 1 | pass (e2e-mm-seq-lock-current) |
+| Locks in grid mode 1-57 | Click a knob to lock its current value | Lock to current | ✅ | Pattern, Locks: select steps, then the lock key in the rail header locks the lane's parameter at its current (kit) value on each selected note; one undo step | No "lock current" click | 1 | pass (e2e-mm-seq-lock-current) |
 | Locks in grid mode 1-57 | View locks of a step | View | ✅ | Lane shows bars per parameter |  | 1 | pass (e2e-mm-seq-lock-lane) |
 | Locks in grid mode 1-57 | Remove one / all locks of a step | Remove | ✅ | One lock: Alt-drag on the lane; all locks of a step: the step menu's Clear locks |  | 1 | pass (e2e-mm-seq-clear-step-locks) |
 | Locks in grid mode 1-57 | Note copy and paste | Note copy | ✅ | See section 11 | Locks travel with the copied step | 1 | pass (e2e-mm-seq-copy-page) |
@@ -309,7 +309,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys | E2E |
 |---|---|---|---|---|---|---|---|
-| Arpeggiator 1-61 | 12 arpeggiators, one per track | Arp | ✅ | Sequence dock > Arp, any of 12 tracks |  | 1 | pass (e2e-mm-seq-arp) |
+| Arpeggiator 1-61 | 12 arpeggiators, one per track | Arp | ✅ | Pattern dock > Arp, any of 12 tracks |  | 1 | pass (e2e-mm-seq-arp) |
 | Arpeggiator 1-61 | SPD (6 = 16th) | Speed | ✅ | Arp SPD |  | 1 | pass (e2e-mm-seq-arp-setup) |
 | Arpeggiator 1-61 | MODE OFF, KEY, SID, ADD | Mode | ✅ | Arp Mode keys |  | 1 | pass (e2e-mm-seq-arp) |
 | Arpeggiator 1-62 | PLAY TRUE, UP, DOWN, CYCLE, RND | Direction | ✅ | Arp Play keys |  | 1 | pass (e2e-mm-seq-arp-setup) |
@@ -325,9 +325,9 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Transpose 1-64 | SCALE ---, FIX, MAJ, MIN | Scale | ✅ | Transpose Scale keys |  | 1 | pass (e2e-mm-seq-scale-setup) |
 | Transpose 1-64 | KEY for MAJ / MIN | Key | ✅ | Click the keyboard picture |  | 1 | pass (e2e-mm-seq-scale-setup) |
 | Swing 1-64 | Amount 50-80 %, per pattern | Swing | ✅ | LCD SWG |  | 1 | pass (e2e-mm-seq-scale-setup) |
-| Swing track 1-65 | Per-track swing steps, default every second 16th | Swing track | ✅ | Sequence: step menu > Swing on the selected steps (one undo step); a teal slant on the note of a trig that swings | Drag paints, one undo step | 1 | pass (e2e-mm-seq-slide-swing) |
+| Swing track 1-65 | Per-track swing steps, default every second 16th | Swing track | ✅ | Pattern: step menu > Swing on the selected steps (one undo step); a teal slant on the note of a trig that swings | Drag paints, one undo step | 1 | pass (e2e-mm-seq-slide-swing) |
 | Swing 1-65 | Copy, clear, paste, undo swing track | Swing clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Swing ticked): copy, paste, clear; Cmd+Z |  | 1 | pass (mm-copy-what) |
-| Slide 1-66 | Slide track per track | Slide | ✅ | Sequence: step menu > Slide on the selected steps; a small ramp on a note whose step slides and holds a lock; the lock lane draws the glide |  | 2 | pass (e2e-mm-seq-slide-swing) |
+| Slide 1-66 | Slide track per track | Slide | ✅ | Pattern: step menu > Slide on the selected steps; a small ramp on a note whose step slides and holds a lock; the lock lane draws the glide |  | 2 | pass (e2e-mm-seq-slide-swing) |
 | Slide 1-66 | Copy, clear, paste, undo slide | Slide clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Slide ticked): copy, paste, clear; Cmd+Z |  | 1 | pass (mm-copy-what) |
 | Mute mode 1-67 | Mute window, 6 + 6 | Mutes | ✅ | Perform > Mutes; rail M | MIDI mutes through the MUTE window keys | 2 | pass (e2e-mm-keys-mute) |
 | Mute mode 1-67 | Held changes until FUNCTION released | Prepared mutes | ✅ | Shift + M prepares, applies on release |  | 1 | pass (e2e-mm-mix-shift-mutes) |
@@ -448,29 +448,29 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys | E2E |
 |---|---|---|---|---|---|---|---|
-| SWAVE-SAW A-1 | UNIL, UNIW, UNIX, SUBX, SUB1, SUB2, TUNE | Eight saw oscillators | ✅ | Sound with unison and sub screens |  | 1 | pass (mm-machine-picker) |
-| SWAVE-PULSE A-2 | UNIL, UNIW, SUB1, SUB2, PW, PWAD, PWRS, TUNE | Pulse oscillators | ✅ | Sound with pulse screen |  | 1 | pass (mm-machine-picker) |
-| SWAVE-ENS A-2 | PCH2-4, WAVE, PW, CHRL, CHRW, TUNE | Chord ensemble | ✅ | Sound with chord keyboard | PCH2-4 as the machine lists them: OFF, -12 to +12, the interval ratios (B-151) | 1 | pass (mm-machine-picker) |
-| SID 6581 A-3 | PW, PWAD, PWRS, WAVE, MOD, MSRC, MFRQ, TUNE | SID | ✅ | Sound with waveform and pulse screens |  | 1 | pass (mm-machine-picker) |
-| DPRO-WAVE A-4 | WAVE, WP, WPM, WPRS, SYNC, SFRQ, TUNE | Wave morph | ✅ | Sound > morph screen |  | 1 | pass (mm-machine-picker) |
-| DPRO-BBOX A-4 | PTCH, STRT, RTRG, RTIM; 24 drums by key | Beat box | ✅ | Sound; roll names the drums |  | 2 | pass (mm-machine-picker) |
-| DPRO-DDRW A-5 | WAV1, MIX, WAV2, TIME, BR1, WID, BR2, TUNE | Doubledraw (MKII) | ✅ | Sound; MKII only | User waveforms cannot be loaded | 1 | pass (mm-machine-picker) |
-| DPRO-DENS A-5 | PCH2-4, WAVE, CHRL, CHRW, TUNE | Ensemble (MKII) | ✅ | Sound; MKII only |  | 1 | pass (mm-machine-picker) |
-| FM+STAT A-6 | 1FRQ, 1FIN, 1ENV, 1FB, 2FRQ, 2VOL, TONE, TUNE | FM static | ✅ | Sound > FM screen |  | 1 | pass (mm-machine-picker) |
-| FM+PAR A-7 | 1-3FRQ, 1-3ENV, TONE, TUNE | FM parallel | ✅ | Sound > FM blocks |  | 1 | pass (mm-machine-picker) |
-| FM+DYN A-7 | 1FRQ, 1FEN, 1VOL, 1VEN, 2FRQ, 2ENV, 2FB, TUNE | FM dynamic | ✅ | Sound |  | 1 | pass (mm-machine-picker) |
-| VO-6 A-8 | VOC1-2, V-SW, VOIC, CONS, CLEN, CVOL, TUNE | Voice | ✅ | Sound > vowel map; roll shows consonant |  | 2 | pass (mm-machine-picker) |
+| SWAVE-SAW A-1 | UNIL, UNIW, UNIX, SUBX, SUB1, SUB2, TUNE | Eight saw oscillators | ✅ | Kit with unison and sub screens |  | 1 | pass (mm-machine-picker) |
+| SWAVE-PULSE A-2 | UNIL, UNIW, SUB1, SUB2, PW, PWAD, PWRS, TUNE | Pulse oscillators | ✅ | Kit with pulse screen |  | 1 | pass (mm-machine-picker) |
+| SWAVE-ENS A-2 | PCH2-4, WAVE, PW, CHRL, CHRW, TUNE | Chord ensemble | ✅ | Kit with chord keyboard | PCH2-4 as the machine lists them: OFF, -12 to +12, the interval ratios (B-151) | 1 | pass (mm-machine-picker) |
+| SID 6581 A-3 | PW, PWAD, PWRS, WAVE, MOD, MSRC, MFRQ, TUNE | SID | ✅ | Kit with waveform and pulse screens |  | 1 | pass (mm-machine-picker) |
+| DPRO-WAVE A-4 | WAVE, WP, WPM, WPRS, SYNC, SFRQ, TUNE | Wave morph | ✅ | Kit > morph screen |  | 1 | pass (mm-machine-picker) |
+| DPRO-BBOX A-4 | PTCH, STRT, RTRG, RTIM; 24 drums by key | Beat box | ✅ | Kit; roll names the drums |  | 2 | pass (mm-machine-picker) |
+| DPRO-DDRW A-5 | WAV1, MIX, WAV2, TIME, BR1, WID, BR2, TUNE | Doubledraw (MKII) | ✅ | Kit; MKII only | User waveforms cannot be loaded | 1 | pass (mm-machine-picker) |
+| DPRO-DENS A-5 | PCH2-4, WAVE, CHRL, CHRW, TUNE | Ensemble (MKII) | ✅ | Kit; MKII only |  | 1 | pass (mm-machine-picker) |
+| FM+STAT A-6 | 1FRQ, 1FIN, 1ENV, 1FB, 2FRQ, 2VOL, TONE, TUNE | FM static | ✅ | Kit > FM screen |  | 1 | pass (mm-machine-picker) |
+| FM+PAR A-7 | 1-3FRQ, 1-3ENV, TONE, TUNE | FM parallel | ✅ | Kit > FM blocks |  | 1 | pass (mm-machine-picker) |
+| FM+DYN A-7 | 1FRQ, 1FEN, 1VOL, 1VEN, 2FRQ, 2ENV, 2FB, TUNE | FM dynamic | ✅ | Kit |  | 1 | pass (mm-machine-picker) |
+| VO-6 A-8 | VOC1-2, V-SW, VOIC, CONS, CLEN, CVOL, TUNE | Voice | ✅ | Kit > vowel map; roll shows consonant |  | 2 | pass (mm-machine-picker) |
 | VO-6 tutorial A-9 | Spell a word with locks | Tutorial | ✅ | Example in the mockup | Pattern recipe, doable with the lane | 1 | pass (mm-lock-lane) |
 | GND-GND A-10 | Silence | Ground | ✅ | Machine picker |  | 1 | pass (mm-machine-picker) |
 | GND-SIN A-10 | Sine, TUNE | Sine | ✅ | Machine picker |  | 1 | pass (mm-machine-picker) |
-| GND-NOIS A-10 | ST, RED, STON, TUNE | Noise | ✅ | Sound > noise screen |  | 1 | pass (mm-machine-picker) |
-| FX-THRU A-12 | INP | Pass through | ✅ | Sound; Mix IN |  | 1 | pass (mm-machine-picker) |
-| FX-REVERB A-12 | DEC, DAMP, GATE, MIX, HP, LP, INP | Gated reverb | ✅ | Sound > reverb screen |  | 1 | pass (mm-machine-picker) |
-| FX-CHORUS A-13 | DEL, DEP, SPD, MIX, FB, WID, LP, INP | Chorus | ✅ | Sound > sweep screen |  | 1 | pass (mm-machine-picker) |
-| FX-DYNAMIX A-13 | ATK, REL, THRS, MIX, RAT, GAIN, RMS, INP | Compressor | ✅ | Sound > compressor curve |  | 1 | pass (mm-machine-picker) |
-| FX-RINGMOD A-14 | WAVE, EXT, MIX, INP | Ring modulator | ✅ | Sound > carrier screen |  | 1 | pass (mm-machine-picker) |
-| FX-PHASER A-14 | CNTR, DEP, SPD, MIX, FB, WID | Phaser | ✅ | Sound > sweep screen |  | 1 | pass (mm-machine-picker) |
-| FX-FLANGER A-14, A-15 | DEL, DEP, SPD, MIX, FB, WID, INP | Flanger | ✅ | Sound > sweep screen |  | 1 | pass (mm-machine-picker) |
+| GND-NOIS A-10 | ST, RED, STON, TUNE | Noise | ✅ | Kit > noise screen |  | 1 | pass (mm-machine-picker) |
+| FX-THRU A-12 | INP | Pass through | ✅ | Kit; Mix IN |  | 1 | pass (mm-machine-picker) |
+| FX-REVERB A-12 | DEC, DAMP, GATE, MIX, HP, LP, INP | Gated reverb | ✅ | Kit > reverb screen |  | 1 | pass (mm-machine-picker) |
+| FX-CHORUS A-13 | DEL, DEP, SPD, MIX, FB, WID, LP, INP | Chorus | ✅ | Kit > sweep screen |  | 1 | pass (mm-machine-picker) |
+| FX-DYNAMIX A-13 | ATK, REL, THRS, MIX, RAT, GAIN, RMS, INP | Compressor | ✅ | Kit > compressor curve |  | 1 | pass (mm-machine-picker) |
+| FX-RINGMOD A-14 | WAVE, EXT, MIX, INP | Ring modulator | ✅ | Kit > carrier screen |  | 1 | pass (mm-machine-picker) |
+| FX-PHASER A-14 | CNTR, DEP, SPD, MIX, FB, WID | Phaser | ✅ | Kit > sweep screen |  | 1 | pass (mm-machine-picker) |
+| FX-FLANGER A-14, A-15 | DEL, DEP, SPD, MIX, FB, WID, INP | Flanger | ✅ | Kit > sweep screen |  | 1 | pass (mm-machine-picker) |
 
 ## 22. Appendix B: MIDI control reference (B-1 to B-6)
 
@@ -528,8 +528,8 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | MACHINE MEMORY | What you save stays for every new session | The machine keeps its kits, patterns, songs and globals when it is switched off. | ✅ | By itself (a session without a DAW project, and the standalone, start from the saved memory); engine menu: KEEP MEMORY; Reset machine… > Start from factory memory… | I-024, doc/modern-ux/DESIGN-machine-memory.md | 1 | pass (e2e-mm-engine-memory) |
 | FACTORY SONGS PLAY | Factory songs play | The songs of factory memory are there and play: load one, SONG mode, PLAY. | ✅ | Song workspace: the song slots, Load; the arrangement follows the machine | e2e: every factory song | 2 | pass (mm-real-song-playing) |
 | FACTORY PATTERNS PLAY | Factory patterns play | The patterns of factory memory are there and play: pick one on the LCD, PLAY. | ✅ | The pattern chooser on the LCD | e2e: patterns spread over all 128 | 2 | pass (mm-real-pattern-playing) |
-| GEN ROLLS A RHYTHM | GEN rolls a rhythm | No such function: you set the hits by hand. The editor rolls a rhythm for you from a few settings. | ✅ | GEN bar on Sequence: Random, Defaults, Hits; R | One undo step | 3 | pass (e2e-mm-gen-mutate-undo) |
-| MUTATE CHANGES A SOUND | MUTATE changes a sound | No such function. The editor nudges the sound of the tracks at random, within a scope and an amount. | ✅ | GEN bar on Sequence: MUTATE, scope chips, amount | One undo step | 2 | pass (e2e-mm-gen-mutate-undo) |
+| GEN ROLLS A RHYTHM | GEN rolls a rhythm | No such function: you set the hits by hand. The editor rolls a rhythm for you from a few settings. | ✅ | GEN bar on Pattern: Random, Defaults, Hits; R | One undo step | 3 | pass (e2e-mm-gen-mutate-undo) |
+| MUTATE CHANGES A SOUND | MUTATE changes a sound | No such function. The editor nudges the sound of the tracks at random, within a scope and an amount. | ✅ | GEN bar on Pattern: MUTATE, scope chips, amount | One undo step | 2 | pass (e2e-mm-gen-mutate-undo) |
 | SOLO | Solo | Solo plays one track alone; the mutes you had come back when you let go. | ✅ | Mix: S on the strip; the rail | The machine has mute only | 2 | pass (e2e-mm-mix-solo) |
 | UNDO AND REDO | Undo and redo | No undo. Every edit of the editor can be taken back and done again, across kits, patterns and songs. | ✅ | UNDO and REDO in the top bar; Cmd+Z, Cmd+Shift+Z | The machine has no undo | 2 | pass (e2e-mm-top-undo-redo) |
 | TYPED VALUES | Typed values | Type a value into a knob instead of turning it. | ✅ | Cmd-click or Enter on a value box; the arrow keys step it | A list takes its names | 2 | pass (e2e-mm-sound-type-value) |
@@ -547,9 +547,9 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | TAP TEMPO | Tap tempo | Tap B (Shift+B on every workspace) to set the tempo. | ✅ | The B key |  | 2 | pass (e2e-mm-keys-tap-tempo) |
 | PATTERN QUEUE AND CHOOSER | Pattern queue and chooser | Pick any of the 128 patterns from the chooser; played while it runs, it waits for the end. | ✅ | The pattern on the LCD |  | 3 | pass (mm-pattern-chooser) |
 | KIT AND SONG SLOTS | Kit and song slots | The kit library and the song slots: load, copy, paste, rename and clear a slot, each undoable. | ✅ | The kit on the LCD; Song workspace |  | 5 | pass (e2e-mm-song-slots) |
-| PIANO ROLL | Piano roll | Draw notes on a roll with a note length, move or box-select them and play chords; the roll writes the same step data as the machine's own entry. | ✅ | Sequence: the piano roll, Draw (B), Len | MM only | 5 | pass (e2e-mm-seq-transpose-keyboard) |
-| WHAT YOU DRAW IS WHAT PLAYS | What you draw is what plays | What you enter in the sequencer is what the machine plays. | ✅ | Sequence: the grid or the roll; Alt+Delete clears the pattern; Cmd+Z takes it back | e2e: drawn, played, cleared, undone, each checked on the machine's output | 1 | pass (mm-real-sequence-drawn) |
-| CLEAR | Clear (was Revert track) | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Sound: Clear key at the right end of the MUTATE bar, next to R |  | 1 | pass (e2e-mm-sound-revert-track) |
+| PIANO ROLL | Piano roll | Draw notes on a roll with a note length, move or box-select them and play chords; the roll writes the same step data as the machine's own entry. | ✅ | Pattern: the piano roll, Draw (B), Len | MM only | 5 | pass (e2e-mm-seq-transpose-keyboard) |
+| WHAT YOU DRAW IS WHAT PLAYS | What you draw is what plays | What you enter in the sequencer is what the machine plays. | ✅ | Pattern: the grid or the roll; Alt+Delete clears the pattern; Cmd+Z takes it back | e2e: drawn, played, cleared, undone, each checked on the machine's output | 1 | pass (mm-real-sequence-drawn) |
+| CLEAR | Clear (was Revert track) | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Kit: Clear key at the right end of the MUTATE bar, next to R |  | 1 | pass (e2e-mm-sound-revert-track) |
 |  | The selected track follows the last track played | No such function. With it on, the track you select changes to the last one you played from a MIDI keyboard. | ✅ | Engine menu: FOLLOW PLAYED TRACK (off at first) | I-003 | 1 | – |
 
 ## 24. Editor features with no manual counterpart (for orientation)

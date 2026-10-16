@@ -64,7 +64,7 @@
 </nav>
 <article class="gd-article">
 <header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">9</span><span class="gd-ctitle">Additional kit settings</span></h1><p class="gd-cmeta">MM manual pp.1-38 to 1-44</p></header>
-<div class="gd-intro gd-prose"><p>Besides the sound of each track, a kit holds settings for how the tracks are played: what the joystick, the velocity and the key position control, which track a trig also plays, how the portamento and legato behave, and how a single keyboard drives several tracks. The assign settings and the multi trig, multi map and multi envelope settings are on the <b class="gd-ui">Perform</b> workspace. Press <kbd class="gd-key">[4]</kbd>, or click the <b class="gd-ui">Perform</b> tab. The trig track settings are on <b class="gd-ui">Sequence</b>.</p></div>
+<div class="gd-intro gd-prose"><p>Besides the sound of each track, a kit holds settings for how the tracks are played: what the joystick, the velocity and the key position control, which track a trig also plays, how the portamento and legato behave, and how a single keyboard drives several tracks. The assign settings and the multi trig, multi map and multi envelope settings are on the <b class="gd-ui">Perform</b> workspace. Press <kbd class="gd-key">[4]</kbd>, or click the <b class="gd-ui">Perform</b> tab. The trig track settings are on <b class="gd-ui">Pattern</b>.</p></div>
 <section class="gd-sec" id="assign" aria-labelledby="assign-h">
 <div class="gd-body gd-prose"><h2 id="assign-h">ASSIGN <a class="gd-anchor" href="#assign" aria-label="Link to ASSIGN">#</a></h2>
 <p class="gd-ref">MM manual pp.1-38, 1-39, 1-40</p>
@@ -83,15 +83,15 @@
 <p>The VEL tab assigns the velocity of the notes you play to a parameter. The sequencer always plays its notes at velocity 100, so a velocity assign only responds to the keys.</p>
 <h4 class="gd-h3" id="key-tracking">KEY TRACKING</h4>
 <p>The KEY tab assigns the key you played last to a parameter. The value is low for the lowest key and near its maximum for the highest.</p>
-<p>Two keys on this tab, <b class="gd-ui">HPF tracks keys</b> and <b class="gd-ui">LPF tracks keys</b>, switch the key tracking of the high-pass and low-pass filters. <b class="gd-ui">KEY</b> in the title of the <b class="gd-ui">Filter</b> group on <b class="gd-ui">Sound</b> shows the two switches and opens this tab. Chapter 7 describes filter tracking.</p>
+<p>Two keys on this tab, <b class="gd-ui">HPF tracks keys</b> and <b class="gd-ui">LPF tracks keys</b>, switch the key tracking of the high-pass and low-pass filters. <b class="gd-ui">KEY</b> in the title of the <b class="gd-ui">Filter</b> group on <b class="gd-ui">Kit</b> shows the two switches and opens this tab. Chapter 7 describes filter tracking.</p>
 </div></section>
 <section class="gd-sec" id="trig-track-settings" aria-labelledby="trig-track-settings-h">
 <div class="gd-body gd-prose"><h2 id="trig-track-settings-h">TRIG TRACK SETTINGS <a class="gd-anchor" href="#trig-track-settings" aria-label="Link to TRIG TRACK SETTINGS">#</a></h2>
 <p class="gd-ref">MM manual pp.1-40, 1-41</p>
-<p>These settings belong to one track. They sit in the <b class="gd-ui">Trig setup</b> tab, in the header of the lock lane on <b class="gd-ui">Sequence</b>. A MIDI track has the <b class="gd-ui">MIDI page</b> tab in its place (see chapter 16).</p>
+<p>These settings belong to one track. They sit in the <b class="gd-ui">Trig setup</b> tab, in the header of the lock lane on <b class="gd-ui">Pattern</b>. A MIDI track has the <b class="gd-ui">MIDI page</b> tab in its place (see chapter 16).</p>
 <ol class="gd-steps"><li>Press <kbd class="gd-key">[1]</kbd>.</li><li>Select a synth track in the rail.</li><li>Click <b class="gd-ui">Trig setup</b> above the lock lane. The keys of the tab appear in the rail.</li></ol>
 <figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-trig-setup.webp" aria-label="Open the picture full size: The Trig setup tab"><img src="/guide/shots/mm-trig-setup.webp" width="1440" height="924" alt="The Trig setup tab" loading="lazy"></a><figcaption>The Trig setup tab</figcaption></figure>
-<p><b class="gd-ui">Trig position</b> chooses a second track that also plays this track's notes. The keys are T1 to T6, without the track itself, and a dash for none. The <b class="gd-ui">Mix</b> workspace draws the link as a dotted cord labelled TRIG and the target track.</p>
+<p><b class="gd-ui">Trig position</b> chooses a second track that also plays this track's notes. The keys are T1 to T6, without the track itself, and a dash for none. The <b class="gd-ui">Mix</b> workspace draws the link as a dotted cord labelled TRIG and the target track. On Pattern and Kit, the number of a track that plays only because another track forwards its trig lights in blue; a track with its own trig lights in the usual colour.</p>
 <p><b class="gd-ui">Port</b> sets how the portamento works.</p>
 <ul class="gd-list"><li><b class="gd-ui">ALWAYS</b>: the track glides to every note.</li><li><b class="gd-ui">LEGATO</b>: the track glides only between notes that overlap.</li></ul>
 <p>To change it, click the other <b class="gd-ui">Port</b> key. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes the change back.</p>

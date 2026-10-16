@@ -3,9 +3,9 @@
 
 The pattern sequencer plays 16 tracks, one step after another, in a loop. A pattern is up to 64 steps long. The Machinedrum holds 128 patterns in 8 banks of 16, A01 to H16. Each step can hold a trig, an accent, a slide and parameter locks.
 
-In the editor the sequencer is the **Sequence** workspace. Press {key:workspace-1}, or click the **Sequence** tab. The 16 tracks run down the page, the steps across it, 16 steps to a page. The lock lane lies under the steps. The LCD keeps the tempo, the pattern, the kit and the lock count on every workspace. Its second line holds the pattern's own values: <LEN>, <SPD>, <SWG>, <ACC> and <MODE>.
+In the editor the sequencer is the **Pattern** workspace. Press {key:workspace-1}, or click the **Pattern** tab. The 16 tracks run down the page, the steps across it, 16 steps to a page. The lock lane lies under the steps. The LCD keeps the tempo, the pattern, the kit and the lock count on every workspace. Its second line holds the pattern's own values: <LEN>, <SPD>, <SWG>, <ACC> and <MODE>.
 
-![The Sequence workspace](shot:md-sequence-workspace)
+![The Pattern workspace](shot:md-sequence-workspace)
 
 Keys are written as on a Mac. [⌘] is [CTRL] on Windows and Linux. [⌥] is [ALT]. The machine's [FUNCTION] key has no twin in the editor. Its second jobs follow [⌥] or have a control of their own, and each section says which.
 
@@ -22,7 +22,7 @@ In **EXTENDED** each pattern is linked to a kit, and the machine loads that kit 
 
 To change the mode:
 
-1. Open the **Sequence** workspace.
+1. Open the **Pattern** workspace.
 2. Click <MODE> on the second line of the LCD. It reads EXT or CLASSIC.
 
 In CLASSIC the lock lane is greyed and says "CLASSIC: locks muted". The locks are all still there. The pattern chooser and the kit library say which mode is on. In EXTENDED the chooser shows the kit of each pattern as K01 to K64.
@@ -123,7 +123,7 @@ NOTE: This is the machine's own STOP, which the editor presses for you. With a r
 ## PARAMETER TWEAKING
 <!-- rows: MD-100 MD-101 MD-102 @23ab91 -->
 
-On the machine you hold [FUNCTION] and turn a knob to move that parameter on all 16 tracks. In the editor you hold [⌥] and drag a value on **Sound** or **Mix**. The same knob moves on every track by the same amount.
+On the machine you hold [FUNCTION] and turn a knob to move that parameter on all 16 tracks. In the editor you hold [⌥] and drag a value on **Kit** or **Mix**. The same knob moves on every track by the same amount.
 
 To sweep the filters of all tracks, hold [⌥] and drag the FLTF or FLTW value.
 
@@ -163,7 +163,7 @@ Click <SPD> to step through the tempo multipliers 1X, 2X, 3/4X and 3/2X. Click w
 ![The scale fields on the LCD](shot:md-seq-scale)
 
 ## GRID RECORDING
-<!-- rows: MD-107 MD-108 MD-109 MD-110 @eb7b4b -->
+<!-- rows: MD-107 MD-108 MD-109 MD-110 @9b1e7a -->
 
 In grid recording you place the trigs one step at a time. The pattern plays while you work, and each change is in the pattern at once.
 
@@ -343,7 +343,7 @@ The mutes are the machine's. The editor reads them from the machine's memory, wh
 On the machine you can minimise the mute window. In the editor the keys are always on the page.
 
 ## ACCENT TRACK
-<!-- rows: MD-126 MD-127 MD-128 MD-129 @9d4e4c -->
+<!-- rows: MD-126 MD-127 MD-128 MD-129 @97ce5b -->
 
 An accent makes a step louder. The accent amount sets how much louder.
 
@@ -377,7 +377,7 @@ To copy, paste or clear the accents of a track, tick **Accent** in **Copy…**, 
 NOTE: While the accent is shared by all tracks, a paste or a clear of **Accent** changes it for every track.
 
 ## SWING
-<!-- rows: MD-130 MD-131 MD-132 MD-133 @fc4e72 -->
+<!-- rows: MD-130 MD-131 MD-132 MD-133 @ae3317 -->
 
 Swing delays the steps of the swing row. Click <SWG> on the LCD, or drag or scroll on it, to set the amount from 50 to 80 percent. Click with [⇧] to go down. At 50 percent nothing swings.
 
@@ -413,7 +413,7 @@ A parameter lock gives one parameter its own value on one step. The step has to 
 
 ![The lock lane](shot:md-lock-lane)
 
-The lane shows the value locked on each step, and a solid line shows the value of the kit, with its number at the right end of the lane. Rest the pointer on a step, or select it, to read its lock as a number at the top of its bar. Drag the line itself to change the kit value of the parameter on that track, the value the **Sound** page changes. The whole drag is one undo step and draws no lock. A click on or near the line, without moving up or down, still sets a lock on that step. A bipolar parameter draws from the centre: up for right or boost, down for left or cut.
+The lane shows the value locked on each step, and a solid line shows the value of the kit, with its number at the right end of the lane. Rest the pointer on a step, or select it, to read its lock as a number at the top of its bar. Drag the line itself to change the kit value of the parameter on that track, the value the **Kit** page changes. The whole drag is one undo step and draws no lock. A click on or near the line, without moving up or down, still sets a lock on that step. A bipolar parameter draws from the centre: up for right or boost, down for left or cut.
 
 ### The lock count
 
@@ -433,7 +433,7 @@ See "CLEAR NOTE PARAMETER LOCKS".
 While you record live, a value you move is locked.
 
 1. Start live recording. See "LIVE RECORDING".
-2. Move a value, for example on **Sound**.
+2. Move a value, for example on **Kit**.
 3. The machine locks the next trig whose step has not started. The editor marks that step and says which value it locked. A trig that is playing is too late.
 
 To take the locks of one value out while recording, as the machine does with [EXIT/NO] and a pressed DATA ENTRY knob:

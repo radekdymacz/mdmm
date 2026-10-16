@@ -53,8 +53,8 @@ Each editor has five workspaces. Switch with the tabs, or with the keys [1] to [
 
 | Workspace | What it shows |
 |---|---|
-| [1] Sequence | The step grid for all 16 tracks, with trigs, accents, slides and drawn parameter locks. A lock needs a trig on its step: the Machinedrum (OS 1.63) keeps a lock on a step without a trig but never plays it, so there are no trigless locks as on the Monomachine. |
-| [2] Sound | One track: its machine, effects, routing and LFO, grouped by function. |
+| [1] Pattern | The step grid for all 16 tracks, with trigs, accents, slides and drawn parameter locks. A lock needs a trig on its step: the Machinedrum (OS 1.63) keeps a lock on a step without a trig but never plays it, so there are no trigless locks as on the Monomachine. |
+| [2] Kit | One track: its machine, effects, routing and LFO, grouped by function. |
 | [3] Mix | A strip per track (level, pan, drive, sends, output, mute and solo) and the master effects. |
 | [4] Sampler | Sample slots as waveform tiles, loading and auditioning WAV or AIFF files, and a RAM view of steps. |
 | [5] Song | The arrangement: add patterns to the song, chain them and edit rows. |
@@ -63,16 +63,16 @@ Each editor has five workspaces. Switch with the tabs, or with the keys [1] to [
 
 | Workspace | What it shows |
 |---|---|
-| [1] Sequence | A piano roll with a lock lane. Click to add a note of the length you pick (1/16, 1/8 …), drag a note's end to lengthen it and its body to move it; marks on a note (slide, swing, envelopes) show only where it differs, and are set in the step menu. |
-| [2] Sound | One track's sound, grouped by function. |
+| [1] Pattern | A piano roll with a lock lane. Click to add a note of the length you pick (1/16, 1/8 …), drag a note's end to lengthen it and its body to move it; marks on a note (slide, swing, envelopes) show only where it differs, and are set in the step menu. |
+| [2] Kit | One track's sound, grouped by function. |
 | [3] Mix | Channel strips with pan, amp volume, distortion and delay send, one level fader, and the routing into the buses. |
 | [4] Perform | Keyboard modes, multi trig, multi map, multi envelope, assign and mutes. |
 | [5] Song | The arrangement: pick a song, add and edit rows. |
 
 ### More to know
 
-- **GEN** (Sequence): a rhythm generator per track. [R] rolls a new variation, [⌥] [R] does every track. One undo step.
-- **MUTATE** (Sound): vary a sound at random, then undo it.
+- **GEN** (Pattern): a rhythm generator per track. [R] rolls a new variation, [⌥] [R] does every track. One undo step.
+- **MUTATE** (Kit): vary a sound at random, then undo it.
 - **IMPORT SYSEX…** and **EXPORT SYSEX…**, in the engine menu (the engine name at the left of the LCD): open a `.syx` and choose what to import, or save a backup.
 - In a library, drag a kit (or pattern) slot onto another to copy it.
 - **Set up sampling** (Machinedrum, Sampler): one card that sets up the recorder and the player.

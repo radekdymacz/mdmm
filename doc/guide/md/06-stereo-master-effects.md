@@ -4,7 +4,7 @@
 The stereo master effects are four effects that work on the main outputs. The Rhythm Echo and the Gate Box take signal from the tracks through their **DEL** and **REV** sends. The master EQ and Dynamix work on the final stereo output.
 
 ## THE STEREO MASTER EFFECT SYSTEM
-<!-- rows: MD-070 MD-075 @c9dd2d -->
+<!-- rows: MD-070 MD-075 @91cf18 -->
 
 The master effects are on the Mix workspace, below the track strips. A line above them shows the signal path: sends, Rhythm Echo, Gate Box, master EQ, Dynamix, main out. Tracks on the individual outputs A to F skip this chain.
 
@@ -20,13 +20,13 @@ The four cards hold 32 values. Each one moves its own parameter of its own effec
 
 The master effects are part of the kit. Save the kit to keep your changes.
 
-You cannot lock the master effects on the Mix workspace. To change them from the sequencer, use a CTR machine on a track. The machines CTR-RE, CTR-GB, CTR-EQ and CTR-DX hold the parameters of the Rhythm Echo, the Gate Box, the master EQ and Dynamix. They make no sound. On the Sound workspace they show the same groups as the cards, and you lock their parameters in the lock lane like any other.
+You cannot lock the master effects on the Mix workspace. To change them from the sequencer, use a CTR machine on a track. The machines CTR-RE, CTR-GB, CTR-EQ and CTR-DX hold the parameters of the Rhythm Echo, the Gate Box, the master EQ and Dynamix. They make no sound. On the Kit workspace they show the same groups as the cards, and you lock their parameters in the lock lane like any other.
 
 To lock the Rhythm Echo time on a step:
 
-1. Click the **Sound** tab and select a track on the rail.
+1. Click the **Kit** tab and select a track on the rail.
 2. Choose CTR-RE in the machine menu of the track. The track now stands for the Rhythm Echo.
-3. Click the **Sequence** tab. Click a step of that track to put a trig on it.
+3. Click the **Pattern** tab. Click a step of that track to put a trig on it.
 4. Click the **TIME** key under **Lock parameter**, then drag across the lock lane over the trig. The step holds its own echo time.
 
 ![A control track for the Rhythm Echo, with a lock on TIME](shot:e2e-md-sound-ctr-locks)

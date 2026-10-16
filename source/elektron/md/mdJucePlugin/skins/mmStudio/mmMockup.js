@@ -90,7 +90,9 @@ const pchRatio=e=>e.t.includes("/");
 /* B-150: DigiPRO waves. DPRO-DDRW WAV1 WAV2 and DPRO-DENS WAVE: D01-D64, two values a wave (71 = D36, 127 = D64);
    r: the wave's index. DPRO-WAVE WAVE is S01-S32, four values a wave (10 = S03, 126 = S32): an enumeration of the
    catalogue (mmSynthEnum), so the page holds its index (EN below) and the host sends the machine's value */
-const WAVD=Array.from({length:64},(_,k)=>({lo:k*2,t:"D"+String(k+1).padStart(2,"0"),r:k}));
+/* the 64 names are what the LCD writes above the number (OS 1.32B, mmEditorProbeFirmwareTest enums; names only) */
+const WAVDN="SINE HSIN TRI 2OID SQR SAW ISAW RND SYN1 SYN2 SYN3 SYN4 SYN5 SYN6 SYN7 SYN8 ORG1 ORG2 ORG3 ORG4 ORG5 ORG6 ORG7 ORG8 ORG9 ORGA ORGB ORGC ORGD ELP1 ELP2 ELP3 STR1 STR2 STR3 STR4 STR5 STR6 STR7 STR8 WND1 WND2 WND3 WND4 WND5 WND6 WND7 WND8 MALA MALO MALU MALÄ MALE MALI MALÅ MALÖ FEMA FEMO FEMU FEMÄ FEME FEMI FEMÅ FEMÖ".split(" ");
+const WAVD=Array.from({length:64},(_,k)=>({lo:k*2,t:"D"+String(k+1).padStart(2,"0"),n:WAVDN[k],r:k}));
 const WAVS=Array.from({length:32},(_,k)=>"S"+String(k+1).padStart(2,"0"));
 EN["DPRO-WAVE.WAVE"]=WAVS;
 const TAB={"FM+STAT.1FRQ":FMFRQ,"FM+STAT.2FRQ":FMFRQ,"FM+PAR.1FRQ":FMFRQ,"FM+PAR.2FRQ":FMFRQ,"FM+PAR.3FRQ":FMFRQ,"FM+DYN.1FRQ":FMDYN1,"FM+DYN.2FRQ":FMDYN2,
@@ -154,7 +156,7 @@ function meta(t,pg,i){const tr=trk(t),name=pnames(t,pg)[i];
    It used to stop at 64: a click on the factory patterns' LEN 64 did nothing. */
 function lenStep(len,d,fine){if(fine)return clamp(len+d,2,64);const p=Math.ceil(len/16)+d;return(((p-1)%4+4)%4+1)*16}
 const maxOf=m=>m.en?m.en.length-1:m.max;
-function fmt(m,v){if(v==null)return"—";if(m.tab)return tabAt(m.tab,v).t;if(m.en)return m.en[clamp(v,0,m.en.length-1)];if(m.signed){const d=v-64;return(d>0?"+":"")+d}return String(v)}
+function fmt(m,v){if(v==null)return"—";if(m.tab){const e=tabAt(m.tab,v);return e.n?e.t+" "+e.n:e.t}if(m.en)return m.en[clamp(v,0,m.en.length-1)];if(m.signed){const d=v-64;return(d>0?"+":"")+d}return String(v)}
 function getP(t,pid){const[pg,i]=pid.split(".");return trk(t).v[pg]?.[+i]}
 function lkKey(t,pid){return t+"|"+pid}
 function setLock(t,pid,s,v,quiet){const k=lkKey(t,pid);if(!S.locks.has(k)){if(S.locks.size>=62){if(!quiet)toast("All 62 locked parameters are in use. Clear one before you lock a new parameter.");return false}S.locks.set(k,new Map())}S.locks.get(k).set(s,v);return true}
@@ -563,7 +565,7 @@ function mmNotesTag(sp,name=n=>String(n)){const n=sp&&sp.notes;if(!n||n.motion==
    trial's base, keyed by (seed, track, page × 8 + knob) so a scope change never reshuffles the others.
      spec: { tracks: [t...] (synth tracks 0..5), pages: ["SYN" | "AMP" | "FLT" | "EFX" | "LFO"...], amount 0..100, seed,
              protect: names never moved (default VOL and TUNE: the level and the tuning the notes rely on),
-             extra: { t: [[pg, i]...] } knobs of the groups in scope (a group's title on the Sound page), optional }
+             extra: { t: [[pg, i]...] } knobs of the groups in scope (a group's title on the Kit page), optional }
      base: the synth tracks before the trial: [{ m, v: { SYN: [8], AMP: [8], FLT, EFX, LF1, LF2, LF3 } }...]
      info(t, pg, i): { name, max } of that knob, or null where the machine has none
    -> [[t, pg, i, v]...] for every knob in scope (an unmoved one too, so a new seed from the base resets it).
@@ -907,7 +909,7 @@ const KeyView = (() => {
 	   the first words of what it does */
 	function shortOf(b, i) {
 		if (b.short) { const parts = b.short.split(" / "); return parts.length === b.keys.length || (parts.length > 1 && parts.length === capsOf(b).length) ? parts[Math.min(i, parts.length - 1)] : b.short; }
-		const t = textOf(b).replace(/^(Sequence|Song|Sound|Click|Drag): /, "").split(/[.:;(,]/)[0].trim();
+		const t = textOf(b).replace(/^(Pattern|Song|Kit|Click|Drag): /, "").split(/[.:;(,]/)[0].trim();
 		return t.length > 22 ? t.slice(0, 20).trim() + "…" : t;
 	}
 	const inScope = (b, page, all) => all || !b.scope || b.scope === "any" || b.scope.split(" ").includes(page);
@@ -1428,23 +1430,23 @@ const StepSel = (() => {
 	}
 
 	/* ---- the selection's keys (the same ids, keys and modifiers on both editors: deskKeymapTest.js). p: the page's
-	   {seqKeys(): its Sequence keys are on, has(): a selection, selKeys(): its keys may take the arrows and Enter (a
+	   {seqKeys(): its Pattern keys are on, has(): a selection, selKeys(): its keys may take the arrows and Enter (a
 	   selection, no other control focused), cut, duplicate, selectAll, move(ds), grow(ds), trigs, deselect,
 	   deselectWhen(), does: {id: words} for what the page says its own way, area: the pointer's area name} ---- */
 	function bind(Keys, p) {
 		const does = (id, words) => (p.does && p.does[id]) || words;
 		const area = p.area || "Steps";
-		Keys.bind({ id: "cut", short: "Cut", scope: "seq", keys: ["X"], mod: "cmd", group: "Sequence", does: does("cut", "Cut the selected steps (copy, then clear; one undo step)"), when: () => p.seqKeys() && p.has(), run: () => p.cut() });
-		Keys.bind({ id: "duplicate", short: "Duplicate", scope: "seq", keys: ["D"], mod: "cmd", group: "Sequence", does: does("duplicate", "Duplicate the selected steps right after themselves (the clipboard stays); again: once more"), when: () => p.seqKeys() && p.has(), run: () => p.duplicate() });
-		Keys.bind({ id: "select-all", short: "Select all", scope: "seq", keys: ["A"], mod: "cmd", group: "Sequence", does: does("select-all", "Select every step of every track up to the length (then ⌘C copies the pattern as a block)"), when: () => p.seqKeys(), run: () => p.selectAll() });
-		Keys.bind({ id: "sel-move", short: "Sel ← / Sel →", scope: "seq", keys: ["ArrowLeft", "ArrowRight"], group: "Sequence", does: does("sel-move", "Move the selection a step earlier / later (one step selected: a cursor)"), when: () => p.selKeys(), run: e => p.move(e.key === "ArrowRight" ? 1 : -1) });
-		Keys.bind({ id: "sel-extend", short: "Grow ← / Grow →", scope: "seq", keys: ["ArrowLeft", "ArrowRight"], mod: "shift", group: "Sequence", does: does("sel-extend", "Extend the selection a step earlier / later"), when: () => p.selKeys(), run: e => p.grow(e.key === "ArrowRight" ? 1 : -1) });
-		Keys.bind({ id: "sel-trigs", short: "Trigs", scope: "seq", keys: ["Enter"], group: "Sequence", does: does("sel-trigs", "The selected steps' trigs on, or off when each has one (one undo step)"), when: () => p.selKeys(), run: () => p.trigs() });
-		Keys.bind({ id: "deselect", short: "Deselect", scope: "seq", keys: ["Escape"], group: "Sequence", does: does("deselect", "Clear the step selection"), when: () => p.seqKeys() && p.has() && p.deselectWhen(), run: () => p.deselect() });
-		Keys.bind({ id: "step-select", scope: "seq", area, keys: ["step"], mod: "cmd", group: "Sequence", does: does("step-select", "Click: select the step (⌘V pastes there). Drag: select steps × tracks. Drag the selection: a copy where you let go") });
-		Keys.bind({ id: "step-extend", scope: "seq", area, keys: ["step"], mod: "cmd+shift", group: "Sequence", does: does("step-extend", "Click: extend the selection to the step") });
-		Keys.bind({ id: "ruler-select", scope: "seq", area, keys: ["step ruler"], group: "Sequence", does: does("ruler-select", "Click or drag: select steps of the selected track (down over the grid: more tracks); ⇧-click extends") });
-		Keys.bind({ id: "step-menu", scope: "seq", area, keys: ["right-click a step"], group: "Sequence", does: does("step-menu", "The step menu: trig, accent, slide, copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (the ⋯ on the selection; Ctrl-click on a Mac; the Menu key on a focused step)") });
+		Keys.bind({ id: "cut", short: "Cut", scope: "seq", keys: ["X"], mod: "cmd", group: "Pattern", does: does("cut", "Cut the selected steps (copy, then clear; one undo step)"), when: () => p.seqKeys() && p.has(), run: () => p.cut() });
+		Keys.bind({ id: "duplicate", short: "Duplicate", scope: "seq", keys: ["D"], mod: "cmd", group: "Pattern", does: does("duplicate", "Duplicate the selected steps right after themselves (the clipboard stays); again: once more"), when: () => p.seqKeys() && p.has(), run: () => p.duplicate() });
+		Keys.bind({ id: "select-all", short: "Select all", scope: "seq", keys: ["A"], mod: "cmd", group: "Pattern", does: does("select-all", "Select every step of every track up to the length (then ⌘C copies the pattern as a block)"), when: () => p.seqKeys(), run: () => p.selectAll() });
+		Keys.bind({ id: "sel-move", short: "Sel ← / Sel →", scope: "seq", keys: ["ArrowLeft", "ArrowRight"], group: "Pattern", does: does("sel-move", "Move the selection a step earlier / later (one step selected: a cursor)"), when: () => p.selKeys(), run: e => p.move(e.key === "ArrowRight" ? 1 : -1) });
+		Keys.bind({ id: "sel-extend", short: "Grow ← / Grow →", scope: "seq", keys: ["ArrowLeft", "ArrowRight"], mod: "shift", group: "Pattern", does: does("sel-extend", "Extend the selection a step earlier / later"), when: () => p.selKeys(), run: e => p.grow(e.key === "ArrowRight" ? 1 : -1) });
+		Keys.bind({ id: "sel-trigs", short: "Trigs", scope: "seq", keys: ["Enter"], group: "Pattern", does: does("sel-trigs", "The selected steps' trigs on, or off when each has one (one undo step)"), when: () => p.selKeys(), run: () => p.trigs() });
+		Keys.bind({ id: "deselect", short: "Deselect", scope: "seq", keys: ["Escape"], group: "Pattern", does: does("deselect", "Clear the step selection"), when: () => p.seqKeys() && p.has() && p.deselectWhen(), run: () => p.deselect() });
+		Keys.bind({ id: "step-select", scope: "seq", area, keys: ["step"], mod: "cmd", group: "Pattern", does: does("step-select", "Click: select the step (⌘V pastes there). Drag: select steps × tracks. Drag the selection: a copy where you let go") });
+		Keys.bind({ id: "step-extend", scope: "seq", area, keys: ["step"], mod: "cmd+shift", group: "Pattern", does: does("step-extend", "Click: extend the selection to the step") });
+		Keys.bind({ id: "ruler-select", scope: "seq", area, keys: ["step ruler"], group: "Pattern", does: does("ruler-select", "Click or drag: select steps of the selected track (down over the grid: more tracks); ⇧-click extends") });
+		Keys.bind({ id: "step-menu", scope: "seq", area, keys: ["right-click a step"], group: "Pattern", does: does("step-menu", "The step menu: trig, accent, slide, copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (the ⋯ on the selection; Ctrl-click on a Mac; the Menu key on a focused step)") });
 	}
 
 	/* the words of an entry's key (a pointer gesture's: "⌘⇧-click") */
@@ -1473,7 +1475,7 @@ const StepSel = (() => {
 	   top-right corner of the selection's last step that is on screen; a click opens the same step menu, right-click
 	   stays a shortcut. It floats (no row of its own, the layout stays), under the popovers and hidden while a dialog
 	   or a menu is open. It is placed frame by frame only while there is a selection (moreWake starts that, from the
-	   editors' syncSel, a scroll or a resize). o: {active(): a selection on the Sequence page; cells(): the selected
+	   editors' syncSel, a scroll or a resize). o: {active(): a selection on the Pattern page; cells(): the selected
 	   steps in order; clip(): the scrolling grid, the part of it on screen; open(x, y): the step menu there} ---- */
 	/* held: a press on the page (a click, a drag or a ⌘-drag over the steps) hides the key until the release, so it
 	   never sits under the pointer's path (it moves to the selection's last step as a drag grows the selection) */
@@ -1639,11 +1641,11 @@ if (typeof module !== "undefined") module.exports = { ValueEdit };
    letter off the piano row acts on the selected track (M, T; ↑ / ↓ pick it); Alt means all (Alt+M, Alt+Delete,
    Alt-drag, Alt-click). Two Alts are not "all", as on the machine: Alt+←/→ rotate (FUNCTION + arrows) and Alt+Space
    record (RECORD + PLAY). No ⇧ or ⌘ letter commands but the standard ⌘Z ⌘⇧Z ⌘Y ⌘C ⌘V. */
-const KEY_GROUPS=["Playing","Selected track","All","Transport","Workspaces","Sequence","Song","Values","Anywhere","Kit library, pattern chooser","Help"];
+const KEY_GROUPS=["Playing","Selected track","All","Transport","Workspaces","Pattern","Song","Values","Anywhere","Kit library, pattern chooser","Help"];
 /* B-018: ? opens the keyboard view both editors share (skins/shared/deskKeyView.js, DESIGN-keymap.md K-view): a drawn
    keyboard from this map with what each key does on the page shown (or every page), its layers, the mouse's tricks, the
    tips, and every entry by group (the list ? showed before). */
-const WS_NAMES={seq:"Sequence",sound:"Sound",mix:"Mix",perform:"Perform",song:"Song",control:"Control"};
+const WS_NAMES={seq:"Pattern",sound:"Kit",mix:"Mix",perform:"Perform",song:"Song",control:"Control"};
 let keyView=null;
 function drawKeys(){const pop=$("#keyspop");if(!pop)return;
  if(!keyView)keyView=KeyView.mount(pop,{entries:()=>Keys.list(),page:()=>S.ws,pageName:()=>WS_NAMES[S.ws]||"This page",mapping:()=>S.mapping,
@@ -1679,7 +1681,7 @@ Keys.bind({id:"zoom-reset",short:"Zoom 100 %",scope:"any",keys:["0"],mod:"cmd",g
  ["tempo-drag","any","Top bar",["tempo"],"","Transport","Drag up or down: the tempo, half a BPM a pixel (⇧: a tenth)"],
  ["lcd-value","any","LCD",["LCD value"],"","Anywhere","Click: its next value; ⇧-click the previous one; the wheel steps through them. SWING and PTRN: drag up or down"],
  ["header-menu","any","Anywhere",["right-click"],"","Anywhere","The editor's menu: zoom and window size, updates, the log folder, Developer"],
- ["gen-value","seq","GEN bar",["GEN value"],"","Sequence","Click: +1; ⇧-click: −1; drag up or down, or the wheel (⇧: 10)"],
+ ["gen-value","seq","GEN bar",["GEN value"],"","Pattern","Click: +1; ⇧-click: −1; drag up or down, or the wheel (⇧: 10)"],
  ["rkey","any","GEN bar",["R key"],"","Selected track","Click: randomise the selected track, as R (⌥-click: every track)"],
  ["ms-click","any","Tracks",["M / S key"],"","Selected track","Click: mute / solo that track"],
  ["song-steppers","song","Song",["row value − / +"],"shift","Song","Click: ten at a time"],
@@ -3157,7 +3159,7 @@ function ask(html,btns,cls="",item={}){Dlg.show(Object.assign(item,{draw:()=>dra
 function drawAsk(html,btns,cls){const d=$("#dlg");d.innerHTML=`<div class="dlgbox ${cls}" role="alertdialog" aria-modal="true">${/^<(p|div|ol|ul|h[1-6]|section|form)[\s>]/i.test(html)?html:`<p>${html}</p>`}<div class="btnrow">${btns.map(([t,c],i)=>`<button class="${c}" data-dlg="${i}">${t}</button>`).join("")}</div></div>`;d.hidden=false;d._btns=btns;d.querySelector(".btnrow button:last-child")?.focus()}
 
 /* ===== Honest machine state =====
-   Sound edits go out as CCs at once (Appendix B) but stay unsaved in the kit.
+   Kit edits go out as CCs at once (Appendix B) but stay unsaved in the kit.
    Pattern, kit and song DUMPS are different on the Monomachine: it only takes them on
    GLOBAL > FILE > SYSEX RECV while the screen says WAITING (P1-RESULT, GAP-REVIEW 3.1).
    EMU: the app drives that screen itself (the emulator can press the panel).
@@ -3268,7 +3270,7 @@ function ref(el){const d=el.dataset,t=d.t!=null?+d.t:S.sel,tr=trk(t),g=d.g;
   case"mmap":{const r=S.mmap[+d.i];return[r,d.n,{name:d.n,...{trn:{max:127,signed:1},ofs:{en:["---",...Array.from({length:64},(_,i)=>String(i).padStart(2,"0"))]},len:{max:64},tim:{en:["DIR","1","2","4","8","16","32"]}}[d.n]},t,g]}}}
 const getV=el=>{const[o,n]=ref(el);return o[n]};
 /* Control All (the Machinedrum's FUNCTION + a DATA ENTRY knob, manual p.37; an editor feature here, the
-   Monomachine has none): Alt held while dragging a Sound value, or a curve editor's handle, moves the same
+   Monomachine has none): Alt held while dragging a Kit value, or a curve editor's handle, moves the same
    value of every synth track by the same amount. A machine without that SYN parameter is left out, the
    MIDI tracks are never touched, a value that hits its end does not come back symmetrically. The host
    gets it as one kit edit per frame (edited "sound"): one undo step per gesture. */
@@ -3300,7 +3302,7 @@ function syncControls(){
   if(m.signed&&el.classList.contains("pc")){const q=v/mx*100;el.classList.add("bip");el.style.setProperty("--pl",Math.min(q,50.4)+"%");el.style.setProperty("--pw",Math.max(1.5,Math.abs(q-50.4))+"%")}
   /* a PAN bar reads as a mixer does: L / C / R */
   const txt=el.classList.contains("pan")&&m.signed?(v===64?"C":(v<64?"L":"R")+Math.abs(v-64)):fmt(m,v);
-  const b=el.querySelector("b");if(b)b.textContent=txt;el.setAttribute("aria-valuetext",txt);
+  const b=el.querySelector("b");const dw=!el.classList.contains("pan")&&m.tab&&v!=null?tabAt(m.tab,v):null,wn=dw&&dw.n;/* B-150: a D wave box shows the wave's name (the number is in the tip and the screen) */if(b){b.textContent=wn||txt;b.classList.toggle("long",!!wn)}if(wn)el.title=txt;el.setAttribute("aria-valuetext",txt);
   if(PAGES.includes(g)||g==="MID"){const pid=g+"."+n;el.classList.toggle("lk",S.locks.has(lkKey(t,pid)));const mb=modBy(t,g,+n);let md=el.querySelector(".mod");
    if(mb.length){if(!md){md=document.createElement("i");md.className="mod";el.appendChild(md)}md.textContent="~"+mb.join("");el.title=`Modulated by LFO ${mb.join(" + ")}`}else if(md)md.remove();
    const mp=S.ctl.links.filter(l=>l.t===t&&l.pid===pid);el.classList.toggle("mapped",mp.length>0)}});
@@ -3460,7 +3462,7 @@ function renderLane(){const lane=$("#lane");if(!lane)return;const t=S.sel,tr=trk
  const last=steps().filter(s=>{const q=tr.steps[s];return q&&!q.off}).pop();
  lane.innerHTML=`<div class="lbscale"><b>${fmt(m,mx)}</b><b>${fmt(m,0)}</b></div>`+steps().map(s=>{const st=tr.steps[s],on=st&&!st.off,v=lm?.get(s);
   const ghost=!on&&v!=null;/* a lock on a step without a trig: kept (a machine's backup holds them), the machine ignores it */
-  return`<div class="lb ${on||ghost?"":"none"} ${ghost?"ghost":""} ${on?"k-"+(isMidiT(t)?"full":stepKind(st)):""} ${gapC(s)} ${inSel(t,s)?"vsel":""} " data-s="${s}" title="${on?(v!=null?"Locked "+fmt(m,v):"Kit value "+fmt(m,base)):ghost?"Lock on a step without a trig: the machine ignores it ("+fmt(m,v)+"). Alt-click removes it.":"No trig here: add one (a trigless trig with alt-click keeps the envelopes quiet)"}">${on?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${v!=null?barHTML(v)+valueHTML(m,v,mx):""}${s===last?kitLabelHTML(m,base,mx):""}`:ghost?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${barHTML(v)}${valueHTML(m,v,mx)}`:""}</div>`}).join("");
+  return`<div class="lb ${on||ghost?"":"none"} ${ghost?"ghost":""} ${on?"k-"+(isMidiT(t)?"full":stepKind(st)):""} ${gapC(s)} ${inSel(t,s)?"vsel":""} " data-s="${s}" title="${on?(v!=null?"Locked "+fmt(m,v):"Kit value "+fmt(m,base))+(isMidiT(t)?"":{full:" · all envelopes",part:" · some envelopes",trigless:" · trigless"}[stepKind(st)]||""):ghost?"Lock on a step without a trig: the machine ignores it ("+fmt(m,v)+"). Alt-click removes it.":"No trig here: add one (a trigless trig with alt-click keeps the envelopes quiet)"}">${on?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${v!=null?barHTML(v)+valueHTML(m,v,mx):""}${s===last?kitLabelHTML(m,base,mx):""}`:ghost?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${barHTML(v)}${valueHTML(m,v,mx)}`:""}</div>`}).join("");
  requestAnimationFrame(drawSlides)}
 function drawSlides(){const svg=$("#lanesvg"),lane=$("#lane");if(!svg||!lane)return;const t=S.sel,tr=trk(t),lm=S.locks.get(lkKey(t,S.lane));svg.innerHTML="";if(!lm)return;
  const[pg,i]=S.lane.split("."),mx=maxOf(meta(t,pg,+i)),box=lane.getBoundingClientRect(),ink=cssv("--ink");let d="";const real=x=>{const q=tr.steps[x];return !!q&&!q.off},locked=[...lm.keys()].filter(real).sort((a,b)=>a-b);/* a slide runs between locks on steps with a trig: a lock on a step without one is never played, so no line starts or ends there */
@@ -3579,7 +3581,7 @@ function syncRollKeys(){const l=$("#rolllen");if(l)l.textContent=MmRoll.say(S.ro
 function setRollLen(L,say){L=clamp(Math.round(L),1,64);if(L!==S.rollLen){S.rollLen=L;rollPrefs();syncRollKeys()}if(say)toast(`New notes: ${MmRoll.say(L)}.`)}
 /* the Len key: the next (shift: the one before) of 1/16 1/8 1/4 1/2 1 bar, from where it is */
 function stepRollLen(back){const Ls=MmRoll.LENGTHS,n=back?[...Ls].reverse().find(x=>x<S.rollLen)??Ls[Ls.length-1]:Ls.find(x=>x>S.rollLen)??Ls[0];setRollLen(n,true)}
-Keys.bind({id:"roll-length",scope:"seq",area:"Roll",keys:["drag a note's end"],group:"Sequence",does:"The note's length (a NOTE OFF where it ends; a MIDI note's LEN, 6 a step); new notes get it too. Up to the track's next trig, past the pattern's end onto its start"});
+Keys.bind({id:"roll-length",scope:"seq",area:"Roll",keys:["drag a note's end"],group:"Pattern",does:"The note's length (a NOTE OFF where it ends; a MIDI note's LEN, 6 a step); new notes get it too. Up to the track's next trig, past the pattern's end onto its start"});
 const midiOf=t=>isMidiT(t)?{kitLen:trk(t).v.MID[0]}:null;
 /* changes ([step, value]) into the view; the steps changed */
 function rollPut(t,changes){const tr=trk(t);for(const[k,v] of changes){tr.steps[k]=v;if(!v||v.off){tr.slide.delete(k);clearStepLocks(t,k)}}return changes.map(([k])=>k)}
@@ -3814,7 +3816,7 @@ function liveRecord(){if(HOST.record)return HOST.record(true);S.rec=!S.rec;if(S.
 /* ---- the keyboard: two rows play the selected synth track chromatically, from any workspace, as a DAW's typing
    keyboard: A S D F G H J K L are the white keys C D E F G A B C D from C-3, W E · T Y U · O P the black keys above
    them (C♯ D♯ · F♯ G♯ A♯ · C♯ D♯; R and I sit where a piano has no black key) (Z / X: the octave, −3 to +3; ⇧B taps
-   the tempo everywhere, B off Sequence, since T is F♯ here; MM-PORT-PLAN.md 2026-10-05), real MIDI notes on the track's own channel
+   the tempo everywhere, B off Pattern, since T is F♯ here; MM-PORT-PLAN.md 2026-10-05), real MIDI notes on the track's own channel
    (GLOBAL › MIDI › CHANNELS: base + track), at KB.vel (C / V: 20 40 60 80 100 127; the machine hears it through
    ASSIGN › VEL). Each key is its own note on and off, so legato and the machine's note priority work as on a
    keyboard; while LIVE RECORDING the machine records them. MIDI tracks are not played (their notes go to the
@@ -3855,34 +3857,34 @@ function pitchSel(){const x=S.stepSel;if(!x||x.n!==1||S.ws!=="seq")return null;c
 function pitchSelMove(d){const h=pitchSel();if(!h)return;const st=trk(h.t).steps[h.s],ns=st.n.map(n=>n+d);
  if(ns.some(n=>n<0||n>127)){toast(`${tLabel(h.t)} step ${h.s+1}: ${noteName(d>0?127:0)} is as far as it goes.`);return}
  st.n=ns;editStep(h.t,h.s);autoRange(h.t);rerenderSeq();toast(`${tLabel(h.t)} step ${h.s+1}: ${ns.map(noteName).join(" ")}`)}
-Keys.bind({id:"note-pitch",short:"Note ↑ / ↓",scope:"seq",keys:["ArrowUp","ArrowDown"],group:"Sequence",does:"One note selected (click it): its pitch a semitone up / down, one undo step a press. Anything else selected: the track move below",
+Keys.bind({id:"note-pitch",short:"Note ↑ / ↓",scope:"seq",keys:["ArrowUp","ArrowDown"],group:"Pattern",does:"One note selected (click it): its pitch a semitone up / down, one undo step a press. Anything else selected: the track move below",
  when:()=>selKeys()&&!!pitchSel(),run:e=>pitchSelMove(e.key==="ArrowUp"?1:-1)});
-Keys.bind({id:"note-octave",short:"Note ⇧↑ / ⇧↓",scope:"seq",keys:["ArrowUp","ArrowDown"],mod:"shift",group:"Sequence",does:"One note selected: its pitch an octave up / down",
+Keys.bind({id:"note-octave",short:"Note ⇧↑ / ⇧↓",scope:"seq",keys:["ArrowUp","ArrowDown"],mod:"shift",group:"Pattern",does:"One note selected: its pitch an octave up / down",
  when:()=>selKeys()&&!!pitchSel(),run:e=>pitchSelMove(e.key==="ArrowUp"?12:-12)});
-Keys.bind({id:"track-prev-next",scope:"any",keys:["ArrowUp","ArrowDown"],group:"Selected track",does:"Select the previous / next track of the side shown (a focused value keeps ↑ / ↓ for itself). Sequence with selected steps: move the selection a track",
+Keys.bind({id:"track-prev-next",scope:"any",keys:["ArrowUp","ArrowDown"],group:"Selected track",does:"Select the previous / next track of the side shown (a focused value keeps ↑ / ↓ for itself). Pattern with selected steps: move the selection a track",
  when:()=>kbOn()&&$("#kpop").hidden&&S.ws!=="song",run:e=>{if(selKeys()){selMove(e.key==="ArrowDown"?1:-1,0);return}const sd=side(),i=sd.indexOf(S.sel);select(sd[((i<0?0:i)+(e.key==="ArrowDown"?1:5))%6])}});
 Keys.bind({id:"tap-tempo",scope:"any",keys:["B"],group:"Transport",does:"Tap tempo (the average of the last taps; T plays F♯ here).",when:kbOn,run:()=>tapTempo()});
 /* ⇧B taps on every workspace, Sequence included: the one tap chord of both editors (Radek, 2026-10-10) */
 Keys.bind({id:"tap-tempo-shift",short:"Tap",scope:"any",keys:["B"],mod:"shift",group:"Transport",does:"Tap tempo: ⇧B taps on every workspace of both editors",when:kbOn,run:()=>tapTempo()});
-Keys.bind({id:"rotate",scope:"seq",keys:["ArrowLeft","ArrowRight"],mod:"alt",group:"Selected track",does:"Sequence: rotate the selected track one step earlier / later: notes, slides and locks, wrapping at the length. Presses while ⌥ is down are one undo step. The one Alt that is not \"all\": FUNCTION + arrows on the machine",when:seqKeys,run:e=>rotateTrack(e.key==="ArrowRight"?1:-1)});
+Keys.bind({id:"rotate",scope:"seq",keys:["ArrowLeft","ArrowRight"],mod:"alt",group:"Selected track",does:"Pattern: rotate the selected track one step earlier / later: notes, slides and locks, wrapping at the length. Presses while ⌥ is down are one undo step. The one Alt that is not \"all\": FUNCTION + arrows on the machine",when:seqKeys,run:e=>rotateTrack(e.key==="ArrowRight"?1:-1)});
 Keys.bind({id:"unmute-all",scope:"any",keys:["0"],group:"All",does:"Unmute and unsolo every track",when:kbOn,run:()=>unmuteAll()});
-Keys.bind({id:"unmark-paste",scope:"seq",keys:["Escape"],group:"Sequence",does:"Unmark the tracks marked for paste",when:()=>seqKeys()&&S.marks.size>0,run:()=>{S.marks.clear();renderRail()}});
-Keys.bind({id:"lockstep-wheel",scope:"seq",area:"Lock lane",keys:["wheel on a lock step"],group:"Sequence",does:"Move its lock in the lane's parameter, 4 a notch (⇧: 1)"});
-Keys.bind({id:"lane-ramp",scope:"seq",area:"Lock lane",keys:["lock lane"],mod:"shift",group:"Sequence",does:"Drag: a ramp, a straight line from the press to the release (one undo step)"});
-Keys.bind({id:"track-mark-paste",scope:"seq",area:"Tracks",keys:["track header"],mod:"shift",group:"Sequence",does:"Click: mark the track for paste; ⌘V then pastes into every marked track (one undo step)"});
+Keys.bind({id:"unmark-paste",scope:"seq",keys:["Escape"],group:"Pattern",does:"Unmark the tracks marked for paste",when:()=>seqKeys()&&S.marks.size>0,run:()=>{S.marks.clear();renderRail()}});
+Keys.bind({id:"lockstep-wheel",scope:"seq",area:"Lock lane",keys:["wheel on a lock step"],group:"Pattern",does:"Move its lock in the lane's parameter, 4 a notch (⇧: 1)"});
+Keys.bind({id:"lane-ramp",scope:"seq",area:"Lock lane",keys:["lock lane"],mod:"shift",group:"Pattern",does:"Drag: a ramp, a straight line from the press to the release (one undo step)"});
+Keys.bind({id:"track-mark-paste",scope:"seq",area:"Tracks",keys:["track header"],mod:"shift",group:"Pattern",does:"Click: mark the track for paste; ⌘V then pastes into every marked track (one undo step)"});
 
 /* ---- 76-gen.js ---- */
 
 /* ===== GEN and MUTATE on the page (MM-PORT-PLAN.md d, the Machinedrum Editor's DESIGN-generators.md §5) =====
-   The GEN bar, always under the piano roll on Sequence (it holds the PAGE control too), and the MUTATE bar, always
-   over the Sound pages. Both are live: a change writes at once. A run of changes in one context (the workspace,
+   The GEN bar, always under the piano roll on Pattern (it holds the PAGE control too), and the MUTATE bar, always
+   over the Kit pages. Both are live: a change writes at once. A run of changes in one context (the workspace,
    the selected track, the pattern or the kit) is one gesture, one undo step: the commits after each click wait
    (genHeld, like rotate's rotHold) until the run ends, on another context, any other edit, undo or redo. Each change
    generates from the run's base, the pattern before it, so a value moved back gives its steps back. The results
    come from the pure functions (skins/shared/deskGen.js, 52-gen.js); here they become the view's own state, and
    GEN's are the steps intent of the tracks it wrote (their steps, slides and locks over the range, so a value moved
    back gives its steps back); MUTATE's are the params intent of the values it moved. Alt is the global "all": Alt + a GEN change
-   every track of the side shown over the whole pattern, Alt+R every track (Sound: every synth track). ===== */
+   every track of the side shown over the whole pattern, Alt+R every track (Kit: every synth track). ===== */
 S.gen={specs:null,last:[],m:[],run:null,session:null,kept:new Set()};
 S.mut={amount:20,seed:genSeed(),scope:new Set(["SYN"]),trial:null,note:""};
 S.genOwn=false;
@@ -4123,11 +4125,11 @@ document.addEventListener("pointermove",e=>{if(!gvDrag)return;if(e.buttons===0&&
  const n=document.querySelector(`.gv[data-gv="${gvDrag.k}"]`);if(n){n.dataset.dragged="1";gvDrag.v=n}});
 document.addEventListener("pointerup",gvEnd);document.addEventListener("pointercancel",gvEnd);addEventListener("blur",gvEnd);
 Keys.bind({id:"randomise-track",short:"Randomise",scope:"any",keys:["R"],code:"KeyR",group:"Selected track",modal:"genpop",when:()=>kbOn()||genDlgOpen(),run:()=>randomise(false),
- does:"Randomise the selected track: on Sound a fresh random sound (MUTATE, from the sound before the trial); everywhere else a new GEN variation: a new seed, or random hits and rotation"});
+ does:"Randomise the selected track: on Kit a fresh random sound (MUTATE, from the sound before the trial); everywhere else a new GEN variation: a new seed, or random hits and rotation"});
 Keys.bind({id:"randomise-all",short:"Randomise all",scope:"any",keys:["R"],code:"KeyR",mod:"alt",group:"All",modal:"genpop",when:()=>kbOn()||genDlgOpen(),run:()=>randomise(true),
- does:"Randomise every track: on Sound every synth track's sound, everywhere else every GEN spec of the side shown over the whole pattern"});
+ does:"Randomise every track: on Kit every synth track's sound, everywhere else every GEN spec of the side shown over the whole pattern"});
 Keys.bind({id:"gen-value-all",scope:"seq",area:"GEN",keys:["GEN value"],mod:"alt",group:"All",does:"Change a GEN value: every track of the side shown, the whole pattern (one undo step per run)"});
-Keys.bind({id:"rkey-all",scope:"any",area:"GEN",keys:["R key"],mod:"alt",group:"All",does:"Click: randomise every track (Sound: every synth track; VOL and TUNE stay)"});
+Keys.bind({id:"rkey-all",scope:"any",area:"GEN",keys:["R key"],mod:"alt",group:"All",does:"Click: randomise every track (Kit: every synth track; VOL and TUNE stay)"});
 
 /* ---- 79-lane.js ---- */
 /* The lane toolbox (Sequence, the Machinedrum Editor's mdDeskLaneTools.js): on the lock lane's title row, shapes and tools for the lane shown. The
@@ -4224,9 +4226,9 @@ function drawSel(g,G,t){for(const[b,dash] of [[S.stepSel,false],[selGhost,true]]
 function secLabels(){const sel=S.ws==="seq"&&!!S.stepSel,say=sel?selSay(S.stepSel):"";
  const cp=$('[data-sec="copy"]'),pa=$('[data-sec="paste"]'),c=$('[data-sec="clear"]');
  for(const b of [cp,pa,c])if(b)b.classList.toggle("onsel",sel&&!(b===c&&S.alt));
- if(cp)cp.title=sel?Modifiers.say(`Copy the selected steps, ${say} (⌘C)`):Modifiers.say("Copy (⌘C): Sequence, the selected track's page shown; Sound, the machine; Perform, the assign; Song, the row");
+ if(cp)cp.title=sel?Modifiers.say(`Copy the selected steps, ${say} (⌘C)`):Modifiers.say("Copy (⌘C): Pattern, the selected track's page shown; Kit, the machine; Perform, the assign; Song, the row");
  if(pa)pa.title=sel?Modifiers.say(`Paste at the selected step, ${say} (⌘V)`):Modifiers.say("Paste (⌘V)");
- if(c&&!S.alt)c.title=sel?`Clear the selected steps, ${say} (Delete). Alt: the whole pattern`:"Clear: Sequence, the selected track's page shown (Alt: the whole pattern); Sound, the machine; Song, the row"}
+ if(c&&!S.alt)c.title=sel?`Clear the selected steps, ${say} (Delete). Alt: the whole pattern`:"Clear: Pattern, the selected track's page shown (Alt: the whole pattern); Kit, the machine; Song, the row"}
 
 /* ---- the page's copy of what it put on the core's clipboard (CLIP, 130-main.js): a block of rows, so a paste
    says at once where it lands and whether a row fits the track's kind; a block of one row is a page too ---- */
@@ -4608,7 +4610,7 @@ function midiPanel(t){const tr=trk(t);
 
 /* ---- 85-sound-groups.js ---- */
 /* ===== Sound by function (MM-PORT-PLAN e): every DATA page's knobs in small groups, data only =====
-   The Sound workspace shows the track's sound as groups of a few knobs, each with a title on a rule, a small
+   The Kit workspace shows the track's sound as groups of a few knobs, each with a title on a rule, a small
    screen where its knobs draw a picture and its boxes (90-sound.js lays them out). The SYNTHESIS page's groups
    are per machine, from the manual's Appendix A (what its knobs do: SWAVE-SAW's unison pair and its subs,
    SID's pulse and its modulation, FM+ per modulator, VO-6's vowel and consonant, an FX machine's effect and
@@ -4732,7 +4734,7 @@ ED.chord={notes(){return["PCH2","PCH3","PCH4"].map(p=>tabAt(PCHTAB,sv(p))).filte
   label(g,"C + "+(N.length?N.map(o=>o.t).join(" "):"no other notes"))}};
 /* the ensemble's wave: saw through square to spikes (WAVE), PW mutates it; DPRO-DENS: one of the 64 waves, D01-D64 */
 /* a DigiPRO wave knob as the machine names it (B-150: 40-data.js WAVD, WAVS): {i: its index, t: D01 / S01} */
-const dpWave=n=>{const tab=TAB[trk(S.sel).m+"."+n];if(tab){const e=tabAt(tab,sv(n));return{i:e.r,t:e.t}}const i=clamp(sv(n),0,31);return{i,t:WAVS[i]}};
+const dpWave=n=>{const tab=TAB[trk(S.sel).m+"."+n];if(tab){const e=tabAt(tab,sv(n));return{i:e.r,t:e.n?e.t+" "+e.n:e.t}}const i=clamp(sv(n),0,31);return{i,t:WAVS[i]}};
 ED.enswave={draw(g,W,H){const ink=cssv("--ink"),m=trk(S.sel).m;grid(g,W,H);
   if(m==="DPRO-DENS"){const a=dpWave("WAVE");line(g,W,x=>H/2+4-wfDP(a.i,(x/W*2)%1)*(H/2-24),ink,2);label(g,"wave "+a.t);return}
   const w=sv("WAVE")/127,pw=.5+(sv("PW")-64)/140;railDraw(g,W,H);
@@ -4741,7 +4743,7 @@ ED.enswave={draw(g,W,H){const ink=cssv("--ink"),m=trk(S.sel).m;grid(g,W,H);
 /* DPRO-WAVE: WAVE (S01-S32) morphing into the next at WP; DPRO-DDRW: two waves (D01-D64) mixed (MIX) */
 ED.morph={draw(g,W,H){const m=trk(S.sel).m,dd=m==="DPRO-DDRW",a=dpWave(dd?"WAV1":"WAVE"),b=dd?dpWave("WAV2"):{i:(a.i+1)%32,t:WAVS[(a.i+1)%32]},bi=b.i,mix=(dd?sv("MIX"):sv("WP"))/127,ink=cssv("--ink");grid(g,W,H);
   line(g,W,x=>{const p=(x/W*2)%1;return H/2+4-((1-mix)*wfDP(a.i,p)+mix*wfDP(bi,p))*(H/2-24)},ink,2);label(g,dd?`${a.t} ↔ ${b.t} · mix ${sv("MIX")}`:`${a.t} → ${b.t}${sv("WPM")?" · sweeps":""}`)},
- handles(W,H){const dd=trk(S.sel).m==="DPRO-DDRW";return[{x:u7(sv(dd?"MIX":"WP"))*W,y:20,k:dd?"MIX":"WP",drag:x=>sset(dd?"MIX":"WP",x/W*127)}]}};
+ handles(W,H){const dd=trk(S.sel).m==="DPRO-DDRW";return[{x:u7(sv(dd?"MIX":"WP"))*W,y:38,k:dd?"MIX":"WP",drag:x=>sset(dd?"MIX":"WP",x/W*127)}]}};
 /* DPRO-BBOX: one hit, from STRT on (the key picks the drum) */
 ED.drum={draw(g,W,H){const ink=cssv("--ink"),s0=u7(sv("STRT"))*.5,f=.6+u7(sv("PTCH"))*1.2;grid(g,W,H);railDraw(g,W,H);
   for(let x=0;x<W;x++){const p=x/W+s0,v=Math.exp(-p*6)*Math.sin(p*90*f+Math.sin(p*400)*2);g.fillStyle=ink;g.fillRect(x,H/2-v*(H/2-24),1,1+Math.abs(v)*2)}label(g,"the key picks the drum")},
@@ -4923,7 +4925,7 @@ function lfoGroup(t,k){const l="LF"+k,v=trk(t).v[l],dn=LPAGES[v[0]]?destNames(t,
    <div class="ctl" style="grid-template-columns:repeat(4,minmax(0,1fr))">${[4,5,6,7].map(i=>pc(l,i,{t,label:FIXED[l][i]})).join("")}</div></div>`}}
 function machButton(m){return`<button class="machbtn" id="machbtn" aria-haspopup="dialog" aria-expanded="false" aria-label="Change machine"><span class="lcdtxt">${m}</span><span class="mfam">${famKey(m)}</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>`}
 /* the track's pattern settings live in the Sequence dock: one key each to go there */
-function sndDockKeys(t){const midi=isMidiT(t);return`<span class="snddock" title="Stored in the pattern (arpeggiator, transpose) or the kit (${midi?"the MIDI page":"trig setup"}): edit them in the Sequence workspace's dock">${[["arp","Arp"],["trn","Transpose"],[midi?"midipage":"trig",midi?"MIDI set":"Trig setup"]].map(([d,n])=>`<button class="ptog" data-snddock="${d}">${n}</button>`).join("")}</span>`}
+function sndDockKeys(t){const midi=isMidiT(t);return`<span class="snddock" title="Stored in the pattern (arpeggiator, transpose) or the kit (${midi?"the MIDI page":"trig setup"}): edit them in the Pattern workspace's dock">${[["arp","Arp"],["trn","Transpose"],[midi?"midipage":"trig",midi?"MIDI set":"Trig setup"]].map(([d,n])=>`<button class="ptog" data-snddock="${d}">${n}</button>`).join("")}</span>`}
 /* 0.6: Revert track. The selected track goes back as the kit's slot stores it (the core's revertTrack: a synth track's machine,
    pages, level, routing, assign rows, mask bits and forward; a MIDI track's MIDI page): one undo step. On while the track
    differs from the slot (the page's own units, as the library keeps the slot: S.kits[k].data). The library's Reload does the whole kit. */
@@ -5382,7 +5384,7 @@ DeskGlobal.host={view:()=>S.glob||null,cards:mmGlobalCards,click:mmGlobalClick,m
  copy:G=>{S.globClip=G.slot;if(HOST.library)HOST.library("globalCopy",{slot:G.slot});toast("Copied GLOBAL "+(G.slot+1)+".");drawGlobal()},
  paste:G=>{if(HOST.library)HOST.library("globalPaste",{slot:G.slot});else toast("Pasted GLOBAL "+(S.globClip+1)+" into GLOBAL "+(G.slot+1)+".")},
  canPaste:()=>S.glob?.clip!=null||(!HOST.library&&S.globClip!=null),
- back:()=>({seq:"Sequence",sound:"Sound",mix:"Mix",perform:"Perform",song:"Song",control:"Control"})[S.ws]||"",
+ back:()=>({seq:"Pattern",sound:"Kit",mix:"Mix",perform:"Perform",song:"Song",control:"Control"})[S.ws]||"",
  ask:(html,label,yes)=>ask(html,[[label,"danger",yes],["Cancel","",()=>{}]])};
 
 /* ---- 120-song.js ---- */
@@ -6042,7 +6044,7 @@ function secAction(kind){const t=S.sel,tr=trk(t);
   if(kind==="clear"){A.assign=newAssign();editAssign(asgT(),A.assign);render();return}if(kind==="paste"){if(CLIP?.type!=="assign"){toast("Copy an assign first.");return}A.assign=JSON.parse(JSON.stringify(CLIP.a));editAssign(asgT(),A.assign);render();toast("Pasted the assign tabs.");return}}
  if(S.ws==="song"){const i=S.songSel,r=S.song[i];if(kind==="copy"){if(r.type==="end"){toast("END cannot be copied.");return}CLIP={type:"row",row:JSON.parse(JSON.stringify(r))};edit("copyRow",{i});toast("Copied row "+String(i+1).padStart(3,"0")+".");return}
   if(kind==="clear"){songAction("del");return}if(kind==="paste"){if(CLIP?.type!=="row"){toast("Copy a song row first.");return}if(S.song.length>=200){toast("A song holds 200 rows.");return}const at=r.type==="end"?i:i+1;S.song.splice(at,0,JSON.parse(JSON.stringify(CLIP.row)));S.songSel=at;edit("pasteRow",{i:at});render();return}}
- toast("Copy, clear and paste work in Sequence (page), Sound (machine), Perform (assign) and Song (row).")}
+ toast("Copy, clear and paste work in Pattern (page), Kit (machine), Perform (assign) and Song (row).")}
 
 /* ===== First run: firmware needed ===== */
 function firstRun(){if(HOST.firstRun)return HOST.firstRun();ask(`<div class="lcdbig">MONOMACHINE FIRMWARE NEEDED</div>
@@ -6279,18 +6281,18 @@ Keys.bind({id:"close-dialog",scope:"any",keys:["Escape"],group:"Anywhere",does:"
 Keys.bind({id:"undo",scope:"any",keys:["Z"],mod:"cmd",group:"Anywhere",does:"Undo",modal:"panel",run:()=>undo()});
 Keys.bind({id:"redo",scope:"any",keys:["Z"],mod:"cmd+shift",group:"Anywhere",does:"Redo",modal:"panel",run:()=>redo()});
 Keys.bind({id:"redo-y",scope:"any",keys:["Y"],mod:"cmd",group:"Anywhere",does:"Redo",modal:"panel",run:()=>redo()});
-Keys.bind({id:"copy",scope:"any",keys:["C"],mod:"cmd",group:"Anywhere",does:"Copy (Sequence: the selected steps, or the page shown of the track; Sound: the machine; Perform: the assign; Song: the row)",run:()=>secAction("copy")});
-Keys.bind({id:"paste",scope:"any",keys:["V"],mod:"cmd",group:"Anywhere",does:"Paste (Sequence: at the selected step, the block from its first step and track; into every track marked for paste)",run:()=>secAction("paste")});
+Keys.bind({id:"copy",scope:"any",keys:["C"],mod:"cmd",group:"Anywhere",does:"Copy (Pattern: the selected steps, or the page shown of the track; Kit: the machine; Perform: the assign; Song: the row)",run:()=>secAction("copy")});
+Keys.bind({id:"paste",scope:"any",keys:["V"],mod:"cmd",group:"Anywhere",does:"Paste (Pattern: at the selected step, the block from its first step and track; into every track marked for paste)",run:()=>secAction("paste")});
 Keys.bind({id:"leave-learn",scope:"control",keys:["Escape"],group:"Anywhere",does:"Leave LEARN",mapping:true,when:()=>S.mapping&&S.learn,run:()=>leaveLearn()});
 Keys.bind({id:"learn-knob",scope:"control",keys:["1 – 8"],group:"Anywhere",does:"LEARN: the controller knob for the value clicked",mapping:true});
 Keys.bind({id:"audio-settings",scope:"any",keys:[","],group:"Anywhere",does:"AUDIO / MIDI settings (also in the engine menu)"});
 Keys.bind({id:"play-stop",scope:"any",keys:["Space"],group:"Transport",does:"Play / stop (paused: go on from the step)",run:()=>playButton()});
 Keys.bind({id:"record",scope:"any",keys:["Space"],code:"Space",mod:"alt",group:"Transport",does:"Live recording (RECORD + PLAY): Alt + play, the other Alt that is not \"all\". Again: recording off",run:()=>liveRecord()});
-["seq","sound","mix","perform","song","control"].forEach((ws,i)=>Keys.bind({id:"workspace-"+(i+1),scope:"any",keys:[String(i+1)],group:"Workspaces",does:["Sequence","Sound","Mix","Perform","Song","Control"][i],mapping:ws==="control",when:ws==="control"?()=>S.mapping:null,run:()=>goWs(ws)}));
-Keys.bind({id:"page-prev-next",scope:"seq",keys:["[","]"],group:"Sequence",does:"Previous / next page",when:()=>S.ws==="seq"&&pages16()>1,run:e=>{const n=pages16();S.viewAll=false;S.page=(S.page+(e.key==="]"?1:-1)+n)%n;render()}});
-Keys.bind({id:"delete",scope:"seq song",keys:["Delete","Backspace"],group:"Sequence",does:"Clear the selected steps; with none selected nothing (Clr clears the page shown, ⌥Delete the pattern). Song: delete the row",when:()=>(S.ws==="song"||S.ws==="seq")&&S.recMode!=="step"&&S.recMode!=="live",
+["seq","sound","mix","perform","song","control"].forEach((ws,i)=>Keys.bind({id:"workspace-"+(i+1),scope:"any",keys:[String(i+1)],group:"Workspaces",does:["Pattern","Kit","Mix","Perform","Song","Control"][i],mapping:ws==="control",when:ws==="control"?()=>S.mapping:null,run:()=>goWs(ws)}));
+Keys.bind({id:"page-prev-next",scope:"seq",keys:["[","]"],group:"Pattern",does:"Previous / next page",when:()=>S.ws==="seq"&&pages16()>1,run:e=>{const n=pages16();S.viewAll=false;S.page=(S.page+(e.key==="]"?1:-1)+n)%n;render()}});
+Keys.bind({id:"delete",scope:"seq song",keys:["Delete","Backspace"],group:"Pattern",does:"Clear the selected steps; with none selected nothing (Clr clears the page shown, ⌥Delete the pattern). Song: delete the row",when:()=>(S.ws==="song"||S.ws==="seq")&&S.recMode!=="step"&&S.recMode!=="live",
  run:()=>S.ws==="song"?songAction("del"):S.stepSel?secAction("clear"):toast(Modifiers.say("Nothing selected: ⌘-click or ⌘-drag steps first. Clr clears the page shown, ⌥Delete the whole pattern."))});
-Keys.bind({id:"clear-pattern",scope:"seq",keys:["Delete","Backspace"],mod:"alt",group:"All",does:"Sequence: clear the whole pattern: every track's notes, slides and locks (one undo step)",when:()=>S.ws==="seq",run:()=>clearPattern()});
+Keys.bind({id:"clear-pattern",scope:"seq",keys:["Delete","Backspace"],mod:"alt",group:"All",does:"Pattern: clear the whole pattern: every track's notes, slides and locks (one undo step)",when:()=>S.ws==="seq",run:()=>clearPattern()});
 Keys.bind({id:"clr-key-all",scope:"any",area:"Top bar",keys:["CLR"],mod:"alt",group:"All",does:"Click: clear the whole pattern, every track's notes, slides and locks (one undo step)"});
 Keys.bind({id:"song-row",scope:"song",keys:["ArrowLeft","ArrowRight"],group:"Song",does:"Previous / next row",when:()=>S.ws==="song",run:e=>{S.songSel=clamp(S.songSel+(e.key==="ArrowRight"?1:-1),0,S.song.length-1);render()}});
 Keys.bind({id:"value-up-down",scope:"any",keys:["ArrowUp","ArrowDown"],group:"Values",does:"A focused value, tempo or bar: one step (⇧: ×10, tempo: fine)"});
@@ -6298,13 +6300,13 @@ Keys.bind({id:"value-left-right",scope:"any",keys:["ArrowLeft","ArrowRight"],gro
 Keys.bind({id:"control-all",scope:"sound mix",area:"Values",keys:["drag a value"],mod:"alt",group:"All",does:"Control All: move that value on every synth track (an editor feature; the Monomachine has no such key)"});
 Keys.bind({id:"mkey-prepare",scope:"any",area:"Tracks",keys:["M key"],mod:"shift",group:"Anywhere",does:"Click: prepare that track's mute (+ / X); applied when ⇧ is let go"});
 Keys.bind({id:"ms-paint",scope:"any",area:"Tracks",keys:["drag M / S keys"],group:"Anywhere",does:"Mute (solo) or unmute every track the drag crosses, as the first key became"});
-Keys.bind({id:"roll-chord",scope:"seq",area:"Roll",keys:["roll"],mod:"shift",group:"Sequence",does:"Click: a chord note on the step"});
-Keys.bind({id:"roll-paint",scope:"seq",area:"Roll",keys:["roll"],group:"Sequence",does:"Click an empty step: a note there, as long as the Len key says; drag it up or down for its pitch, sideways to paint that note on every empty step crossed (the last one as long as the Len key says; one undo step)."});
-Keys.bind({id:"roll-erase",scope:"seq",area:"Roll",keys:["roll"],mod:"alt",group:"Sequence",does:"Click: delete a note, the earlier note runs on to the next trig or NOTE OFF, as on the machine; no NOTE OFF is written or taken away (drag on: every step crossed loses its notes, one undo step), or a NOTE OFF on an empty step"});
-Keys.bind({id:"roll-select-note",scope:"seq",area:"Roll",keys:["note"],group:"Sequence",does:"Click a note: select it (it stays selected: ↑ / ↓ its pitch, ⇧ an octave, Delete removes it). Double-click: delete it (one undo step)"});
-Keys.bind({id:"lane-draw",scope:"seq",area:"Lock lane",keys:["lock lane"],group:"Sequence",does:"Drag over the bars: lock the lane's parameter on each step with a trig"});
-Keys.bind({id:"lane-erase",scope:"seq",area:"Lock lane",keys:["lock lane"],mod:"alt",group:"Sequence",does:"Drag: erase locks"});
-Keys.bind({id:"lane-clear-all",scope:"seq",area:"Lock lane",keys:["lock lane clear"],mod:"alt",group:"Sequence",does:"Click: clear every lock of the track (all its parameters)"});
+Keys.bind({id:"roll-chord",scope:"seq",area:"Roll",keys:["roll"],mod:"shift",group:"Pattern",does:"Click: a chord note on the step"});
+Keys.bind({id:"roll-paint",scope:"seq",area:"Roll",keys:["roll"],group:"Pattern",does:"Click an empty step: a note there, as long as the Len key says; drag it up or down for its pitch, sideways to paint that note on every empty step crossed (the last one as long as the Len key says; one undo step)."});
+Keys.bind({id:"roll-erase",scope:"seq",area:"Roll",keys:["roll"],mod:"alt",group:"Pattern",does:"Click: delete a note, the earlier note runs on to the next trig or NOTE OFF, as on the machine; no NOTE OFF is written or taken away (drag on: every step crossed loses its notes, one undo step), or a NOTE OFF on an empty step"});
+Keys.bind({id:"roll-select-note",scope:"seq",area:"Roll",keys:["note"],group:"Pattern",does:"Click a note: select it (it stays selected: ↑ / ↓ its pitch, ⇧ an octave, Delete removes it). Double-click: delete it (one undo step)"});
+Keys.bind({id:"lane-draw",scope:"seq",area:"Lock lane",keys:["lock lane"],group:"Pattern",does:"Drag over the bars: lock the lane's parameter on each step with a trig"});
+Keys.bind({id:"lane-erase",scope:"seq",area:"Lock lane",keys:["lock lane"],mod:"alt",group:"Pattern",does:"Drag: erase locks"});
+Keys.bind({id:"lane-clear-all",scope:"seq",area:"Lock lane",keys:["lock lane clear"],mod:"alt",group:"Pattern",does:"Click: clear every lock of the track (all its parameters)"});
 
 /* a control surface: nothing selects on a drag but the text fields (the stylesheet has user-select none on the body,
    text on the fields); selectstart is refused outside them too (WebKit, the plug-in's engine) */
@@ -6372,12 +6374,15 @@ function stepShown(prev){if(S.step===prev)return;const pp=Math.floor(S.step/16);
  $("#tempoled").classList.toggle("on",S.step%4===0);setPos();queueMicrotask(movePH);
  if(S.ws==="perform"){const act=[0,1,2,3,4,5].filter(i=>{const st=S.tracks[i].steps[S.step];return st&&!st.off&&st.a&&audible(i)&&(S.mode!=="poly"||i===asgT())});flashTracks(act)}
  if(S.ws==="mix"&&S.playing&&S.step>=0)DeskTrig.light([0,1,2,3,4,5].filter(i=>{const st=S.tracks[i].steps[S.step];return st&&!st.off&&st.a&&audible(i)}));
- if((S.ws==="seq"||S.ws==="sound")&&S.playing&&S.step>=0)railLamps(side().filter(i=>{const st=trk(i).steps[S.step];return st&&!st.off&&(isMidiT(i)||st.a)&&audible(i)}))}
+ if((S.ws==="seq"||S.ws==="sound")&&S.playing&&S.step>=0){const own=side().filter(i=>{const st=trk(i).steps[S.step];return st&&!st.off&&(isMidiT(i)||st.a)&&audible(i)});railLamps(own);railLamps(fwdTargets(own).filter(i=>side().includes(i)),"trig2")}}
 /* I-028 (Discord 2026-10-12): on Sequence and Sound a rail track's number lights while its trig plays (the step
    telemetry and the pattern, no audio), as the Perform page's lamps; every lamp of a step in one frame */
 const RailLamps={due:null,off:new Map()};
-function railLamps(ts){if(!ts.length)return;const first=!RailLamps.due;RailLamps.due=new Set([...(RailLamps.due||[]),...ts]);if(!first)return;
- requestAnimationFrame(()=>{const due=RailLamps.due;RailLamps.due=null;for(const i of due){const l=$(`#rail .th[data-sel="${i}"]`);if(!l)continue;l.classList.add("trig");clearTimeout(RailLamps.off.get(i));RailLamps.off.set(i,setTimeout(()=>$(`#rail .th[data-sel="${i}"]`)?.classList.remove("trig"),110))}})}
+/* I-031: cls "trig2" (a second colour) lights a track that plays because another track's trig forwards to it (the kit's
+   Trig position, trigpos: the source's own trig makes the target play, and on to that track's own target) */
+function railLamps(ts,cls="trig"){if(!ts.length)return;const first=!RailLamps.due;RailLamps.due=RailLamps.due||new Map();for(const i of ts)RailLamps.due.set(i+cls,[i,cls]);if(!first)return;
+ requestAnimationFrame(()=>{const due=RailLamps.due;RailLamps.due=null;for(const[k,[i,c]]of due){const l=$(`#rail .th[data-sel="${i}"]`);if(!l)continue;l.classList.add(c);clearTimeout(RailLamps.off.get(k));RailLamps.off.set(k,setTimeout(()=>$(`#rail .th[data-sel="${i}"]`)?.classList.remove(c),110))}})}
+function fwdTargets(own){const out=new Set();for(const i of own){let c=i;for(let h=0;h<6;h++){const j=isMidiT(c)?null:trk(c).trigpos;if(j==null||j===i||out.has(j))break;out.add(j);c=j}}return[...out].filter(j=>!own.includes(j)&&audible(j))}
 /* the playhead's page while following: the sequencer only (renderPage's work for it), not the whole page */
 function followPage(){const sl=$("#seqscroll")?.scrollLeft||0;renderSeq();const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));movePH(false)}
 function stepMs(){const m={"1X":1,"2X":2,"3/4X":.75,"3/2X":1.5}[S.mult];return 60000/S.bpm/4/m}
