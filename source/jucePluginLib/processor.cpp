@@ -330,11 +330,23 @@ namespace pluginLib
 	void Processor::saveChunkData(baseLib::BinaryStream& s)
 	{
 		{
+			// never a header-only or empty machine chunk (a reload would read it as "nothing to restore" and the
+			// user's memory would be gone): a failed capture keeps the last good state, and says so
 			std::vector<uint8_t> buffer;
-			getPlugin().getState(buffer, synthLib::StateTypeGlobal);
-
-			baseLib::ChunkWriter cw(s, "MIDI", 1);
-			s.write(buffer);
+			if(getPlugin().getState(buffer, synthLib::StateTypeGlobal))
+			{
+				m_lastGoodMachineState = buffer;
+			}
+			else
+			{
+				buffer = m_lastGoodMachineState;
+				LOG("SAVE FAILED: the machine state could not be captured; " << (buffer.empty() ? "no earlier state to keep, the machine chunk is left out" : "the last good state is saved instead"));
+			}
+			if(!buffer.empty())
+			{
+				baseLib::ChunkWriter cw(s, "MIDI", 1);
+				s.write(buffer);
+			}
 		}
 		{
 			baseLib::ChunkWriter cw(s, "GAIN", 1);

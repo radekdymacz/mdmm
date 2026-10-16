@@ -231,8 +231,8 @@ namespace
 		}
 
 		// Written faster than it is copied (DESIGN-audio-lock.md, the rest): 17 pieces of the patch RAM (more than the
-		// 256 KiB one hold may copy) written between every part never settle. No hold copies more than that, and after
-		// a bounded number of holds the save fails rather than take the memory whole in one hold
+		// 256 KiB one hold may copy) written between every part never settle. The holds stay one part each through the
+		// restarts; then the save is finished in one hold, so it is never lost, and it is the memory as of that hold
 		{
 			auto capture = cached->beginStateCapture(synthLib::StateTypeGlobal);
 			auto* const typed = dynamic_cast<md::DeviceStateCapture*>(capture.get());
@@ -240,23 +240,29 @@ namespace
 			const auto patchBefore = hardware.copyPatchRam();
 			uint32_t holds = 0;
 			size_t worstBytes = 0;
+			size_t worstBeforeFinish = 0;
 			while(typed && holds < 20000)
 			{
 				for(size_t i = 0; i < 17; ++i)
 					uc.pokePatchRamForTest(i * md::Microcontroller::g_patchRamMarkSize, static_cast<uint8_t>(holds));
 				const bool more = capture->captureMore();
+				if(typed->restarts <= md::DeviceStateCapture::g_restarts && more)
+					worstBeforeFinish = std::max(worstBeforeFinish, typed->copy.maxStepBytes());
 				worstBytes = std::max(worstBytes, typed->copy.maxStepBytes());
 				++holds;
 				if(!more)
 					break;
 			}
-			std::vector<uint8_t> bytes;
-			std::printf("  state save with the patch RAM written faster than copied: gave up after %u holds, no hold copied more than %zu KiB\n",
-				holds, worstBytes / 1024);
-			check(typed && holds < 20000 && !capture->encode(bytes),
-				"capture: a memory written faster than it is copied fails after a bounded number of holds");
-			check(typed && worstBytes <= md::OneMomentCopy::g_restLimit,
-				"capture: no hold copies more than the rest limit (256 KiB)");
+			std::vector<uint8_t> bytes, expected;
+			std::printf("  state save with the patch RAM written faster than copied: finished after %u holds, the hold before the last "
+				"copied at most %zu KiB, the finishing hold %zu KiB\n", holds, worstBeforeFinish / 1024, worstBytes / 1024);
+			check(typed && holds < 20000 && capture->encode(bytes)
+				&& md::encodeStateWithFactoryBaseline(expected, hardware.copyPatchRam(), flash, factory, _rom,
+					md::MachineModel::Machinedrum, synthLib::StateTypeGlobal)
+				&& bytes == expected,
+				"capture: a memory written faster than it is copied is still saved, finished in one hold, as it is then");
+			check(typed && worstBeforeFinish <= md::OneMomentCopy::g_restLimit,
+				"capture: until the finishing hold, no hold copies more than the rest limit (256 KiB)");
 			for(size_t i = 0; i < 17; ++i)
 				uc.pokePatchRamForTest(i * md::Microcontroller::g_patchRamMarkSize, patchBefore[i * md::Microcontroller::g_patchRamMarkSize]);
 		}

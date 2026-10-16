@@ -38,6 +38,9 @@ namespace md
 		void begin(std::vector<Area> _areas);
 		// One hold's work, under the device lock, on the Hardware the copy is of
 		Step step(Hardware& _hardware);
+		// Everything stale copied in this hold, whatever its size (Done, or Failed); for a host state save, which must
+		// not be lost: a rare long hold beats a lost project
+		Step finishWhole(Hardware& _hardware);
 		bool empty() const { return m_chunks.empty(); }
 		uint32_t steps() const { return m_steps; }
 		// The most one step copied (bytes), over the steps so far: the longest hold's work

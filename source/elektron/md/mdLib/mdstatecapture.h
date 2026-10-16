@@ -39,7 +39,7 @@ namespace md
 		bool captureMore() override;
 
 		// The copy is begun again at most this many times (the hardware changed, or the memory was written faster than
-		// it is copied); then the save fails (encode: false)
+		// it is copied); then the rest is copied in one hold (OneMomentCopy::finishWhole)
 		static constexpr uint32_t g_restarts = 4;
 
 		const MachineModel model;
@@ -62,6 +62,5 @@ namespace md
 		OneMomentCopy copy;
 		bool copying = false;
 		uint32_t restarts = 0;
-		bool failed = false;	// gave up (Busy): encode fails
 	};
 }
