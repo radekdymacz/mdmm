@@ -42,6 +42,7 @@ list(APPEND SOURCES
 	mdProcessArch.cpp mdProcessArch.h mdRosettaNotice.h
 	mdDeskSession.cpp mdDeskSession.h
 	mdMidiLearnCommands.cpp mdMidiLearnCommands.h
+	mdLearnRouter.cpp mdLearnRouter.h mdLearnTable.h
 	mdPageEditor.cpp mdPageEditor.h mdPageZoom.h mdEditorMenu.h mdNoticeBook.h mdDroppedFiles.h
 	mdRomInstall.cpp mdRomInstall.h
 	mdSettingsMigration.cpp mdSettingsMigration.h
@@ -512,6 +513,38 @@ function(mdmm_plugin_targets)
 	add_test(NAME mdMidiMonitorTest COMMAND mdMidiMonitorTest)
 	set_tests_properties(mdMidiMonitorTest PROPERTIES LABELS "UnitTest")
 	set_property(TARGET mdMidiMonitorTest PROPERTY FOLDER "Elektron/test")
+
+	# 0.8 (MIDI Learn L1, doc/midilearn/DESIGN-learn-0.8.md "Tests" 1-3): the realtime router (mdLearnRouter.h, pure:
+	# a stand-in parameter, no JUCE, no ROM). The values, override, any channel, learning pulled by the message thread,
+	# no allocation on the audio path; then two threads under stress, and the same under ThreadSanitizer (macOS, that
+	# target only).
+	add_executable(mdLearnRouterTest mdLearnRouterTest.cpp mdLearnRouter.cpp mdLearnRouter.h mdLearnTable.h)
+	target_include_directories(mdLearnRouterTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
+	target_link_libraries(mdLearnRouterTest PRIVATE deskCore Threads::Threads)
+	add_test(NAME mdLearnRouterTest COMMAND mdLearnRouterTest)
+	set_tests_properties(mdLearnRouterTest PROPERTIES LABELS "UnitTest")
+	set_property(TARGET mdLearnRouterTest PROPERTY FOLDER "Elektron/test")
+
+	add_executable(mdLearnRouterStressTest mdLearnRouterStressTest.cpp mdLearnRouter.cpp mdLearnRouter.h mdLearnTable.h)
+	target_include_directories(mdLearnRouterStressTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
+	target_link_libraries(mdLearnRouterStressTest PRIVATE deskCore Threads::Threads)
+	add_test(NAME mdLearnRouterStressTest COMMAND mdLearnRouterStressTest 2)
+	set_tests_properties(mdLearnRouterStressTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+	set_property(TARGET mdLearnRouterStressTest PROPERTY FOLDER "Elektron/test")
+
+	# ThreadSanitizer: the stress test's sources instrumented, nothing else (deskCore is linked for a header's enum
+	# only). macOS with Clang, where TSan works out of the box; halt_on_error makes a report fail the test.
+	if(APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		add_executable(mdLearnRouterStressTestTsan mdLearnRouterStressTest.cpp mdLearnRouter.cpp mdLearnRouter.h mdLearnTable.h)
+		target_include_directories(mdLearnRouterStressTestTsan PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
+		target_link_libraries(mdLearnRouterStressTestTsan PRIVATE deskCore Threads::Threads)
+		target_compile_options(mdLearnRouterStressTestTsan PRIVATE -fsanitize=thread -O1 -g -fno-omit-frame-pointer)
+		target_link_options(mdLearnRouterStressTestTsan PRIVATE -fsanitize=thread)
+		add_test(NAME mdLearnRouterStressTestTsan COMMAND mdLearnRouterStressTestTsan 2)
+		set_tests_properties(mdLearnRouterStressTestTsan PROPERTIES LABELS "UnitTest" TIMEOUT 120
+			ENVIRONMENT "TSAN_OPTIONS=halt_on_error=1:abort_on_error=1")
+		set_property(TARGET mdLearnRouterStressTestTsan PROPERTY FOLDER "Elektron/test")
+	endif()
 
 	add_executable(mdProcessArchTest mdProcessArchTest.cpp mdProcessArch.cpp)
 	# the diagnostics builds' GEARMULATOR_MDMM_FAKE_ROSETTA

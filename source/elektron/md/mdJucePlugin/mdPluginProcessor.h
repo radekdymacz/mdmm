@@ -3,6 +3,7 @@
 #include "jucePluginEditorLib/pluginProcessor.h"
 #include "mdBootDiagnostics.h"
 #include "mdCpuLoad.h"
+#include "mdLearnRouter.h"
 #include "mdMidiIn.h"
 #include "mdMidiMonitor.h"
 #include "mdOutputLevel.h"
@@ -105,6 +106,14 @@ namespace mdJucePlugin
 		// 0.8 (WP3): the MIDI monitor (mdMidiMonitor.h). The hooks count on the audio thread; the rest is the message
 		// thread's, and takes no lock.
 		void midiTraffic(MidiTraffic _where, const synthLib::SMidiEvent& _ev) override;
+		// 0.8 (MIDI Learn L1, doc/midilearn/DESIGN-learn-0.8.md): the realtime router (mdLearnRouter.h). With MIDI
+		// mapping on (deskHost::midiMappingEnabled) the host's MIDI goes through it: a mapped CC moves its parameter
+		// and never reaches the firmware; while learning, CCs are captured for the session. Other sources are the base's.
+		bool consumeMidiIn(const synthLib::SMidiEvent& _ev) override;
+		LearnRouter& learnRouter() { return m_learnRouter; }
+		// The router's applier: a learned CC value onto its parameter through Parameter::setValue (the realtime
+		// host-automation entry). Audio thread; no lock, no allocation.
+		static bool applyLearnedCc(pluginLib::Parameter& _param, const LearnTarget& _target, uint8_t _value);
 		midiMonitor::Counts midiMonitorCounts();			// the counts and the drops
 		void logMidiMonitor(double _nowMs);						// the 10 s log line, when due (timerCallback)
 		const std::string& lastMidiLogLine() const { return m_midiLogLine; }
@@ -225,6 +234,7 @@ namespace mdJucePlugin
 		midiMonitor::LogPacer m_midiLogPacer;	// message thread
 		std::string m_midiLogLine;				// the last line logged, message thread
 		midiIn::Held m_midiHeld;
+		LearnRouter m_learnRouter{&applyLearnedCc};
 		uint64_t m_blockStartNs = 0;		// audio thread
 		static uint64_t cpuClockNs();
 		void recordBoot();
