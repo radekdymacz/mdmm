@@ -41,9 +41,18 @@ os="$(. /etc/os-release && echo "${PRETTY_NAME} ${VERSION_ID} (build ${BUILD_ID}
 
 install() {
 	pacman-key --init > /dev/null 2>&1 && pacman-key --populate holo archlinux > /dev/null 2>&1
-	pacman -Sy --noconfirm > /dev/null 2>&1 || { echo "pacman -Sy failed"; return 1; }
-	pacman -S --noconfirm --needed "$@" > "${out}/pacman-${mode}.txt" 2>&1 || { tail -n 20 "${out}/pacman-${mode}.txt"; return 1; }
-	tail -n 3 "${out}/pacman-${mode}.txt"
+	# Mirrors and keyservers fail now and then: three tries, so a network hiccup does not fail main's CI
+	local try
+	for try in 1 2 3; do
+		if pacman -Sy --noconfirm > /dev/null 2>&1 && pacman -S --noconfirm --needed "$@" > "${out}/pacman-${mode}.txt" 2>&1; then
+			tail -n 3 "${out}/pacman-${mode}.txt"
+			return 0
+		fi
+		echo "pacman install failed (try ${try} of 3)"
+		sleep $((try * 15))
+	done
+	tail -n 20 "${out}/pacman-${mode}.txt" 2>/dev/null
+	return 1
 }
 
 if [[ "${mode}" == "bare" ]]; then
