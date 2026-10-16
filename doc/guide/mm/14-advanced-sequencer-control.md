@@ -33,6 +33,12 @@ A trigless trig fires no envelope. It is there to carry a pitch or locks.
 Choose **Trigless trig** again to take it away, with its locks. The roll draws a trigless trig as a small hollow square in its step. Click or select it as any step. The step menu works on a selection as well.
 
 ## PITCHLESS TRIGS
-<!-- rows: MM-214 @356b68 -->
+<!-- rows: MM-214 @a925d9 -->
 
-A pitchless trig fires envelopes without a pitch of its own. The roll draws it as a dashed bar. Its envelopes are in the step menu, under **Envelopes**.
+A pitchless trig fires envelopes without a pitch of its own: it plays the note before it. On the machine you hold EXIT and press the trig.
+
+1. Right-click an empty step, or a note, and choose **Pitchless trig (the note before)**.
+2. An empty step gets a trig with all three envelope trigs. A note loses its note and keeps its envelope trigs and its locks.
+3. Choose **Pitchless trig** again to give the step a note of its own, the track's last pitch.
+
+The roll draws a pitchless trig as a dashed bar at the pitch it plays. Its envelopes are in the step menu, under **Envelopes**. The step menu works on a selection as well.

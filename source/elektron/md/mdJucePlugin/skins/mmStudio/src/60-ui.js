@@ -138,6 +138,8 @@ function setV(el,v){const[o,n,m,t,g]=ref(el);v=clamp(Math.round(v),g==="arp"&&n=
  if(g.startsWith("LF")&&(+el.dataset.n<2)){if(+el.dataset.n===0)o[1]=0;render();return}
  if(g==="arp"&&n==="len")renderArp();
  syncControls();redraw()}
+/* a step of a value box (wheel, arrows): d values, or on a list the machine shows (B-149) d entries */
+function stepV(el,d){const m=ref(el)[2],v=getV(el);setV(el,m.tab?tabStep(m.tab,v,d):v+d)}
 function pc(g,n,{t,label,cls="",extra=""}={}){if(n==null)return`<div class="pc empty" aria-hidden="true"></div>`;
  return`<div class="pc ${cls}" role="slider" tabindex="0" data-g="${g}" data-n="${n}"${t!=null?` data-t="${t}"`:""} ${extra} aria-label="${label||n}"><span>${label||n}</span><b></b></div>`}
 function page8(t,pg){const names=pnames(t,pg);return Array.from({length:8},(_,i)=>names[i]?pc(pg,i,{t,label:names[i]}):pc(0,null)).join("")}

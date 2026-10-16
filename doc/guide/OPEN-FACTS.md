@@ -30,7 +30,6 @@ doc/features/*.json are fixed, and the line is deleted here.
 - The machine count: MM-004 says 14, the picker lists 15 with GND-GND. No count written.
 - Song mode: what [SPACE] does after a second stop; whether a song goes on after a HALT row.
 - Song step menu Clear: does it drop only a step's locks (row kept partial).
-- MM-214: how to make a pitchless trig.
 - MM-169: lengthening with LEN copies lower pages (only x2 stated).
 - Which engines can mute MIDI tracks.
 - MM-187: track copy, which steps it writes.

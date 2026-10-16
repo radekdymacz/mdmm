@@ -53,7 +53,7 @@ const wheelHeld=()=>!!wheelLock&&performance.now()-wheelLock.at<WHEEL_RUN_MS;
 $("#main").addEventListener("wheel",e=>{const el=e.target.closest("#lane .lb");if(!el||S.ws!=="seq")return;const t=S.sel,s=+el.dataset.s,st=trk(t).steps[s],d=e.deltaY||(e.shiftKey?e.deltaX:0);
  if(!d||!st||st.off)return;e.preventDefault();const[pg,i]=S.lane.split("."),m=meta(t,pg,+i),mx=maxOf(m),now=performance.now(),key=t+"|"+S.lane+"|"+s;
  if(!wheelLock||wheelLock.key!==key||now-wheelLock.at>WHEEL_RUN_MS){commit();wheelLock={key}}wheelLock.at=now;clearTimeout(wheelEndT);wheelEndT=setTimeout(showHeld,WHEEL_RUN_MS+10);
- const had=S.locks.get(lkKey(t,S.lane))?.get(s),cur=had??getP(t,S.lane)??0,v=clamp(cur+(d<0?1:-1)*(e.shiftKey||mx<16?1:4),0,mx);if(had!=null&&v===had)return;
+ const had=S.locks.get(lkKey(t,S.lane))?.get(s),cur=had??getP(t,S.lane)??0,v=m.tab?tabStep(m.tab,cur,d<0?1:-1):clamp(cur+(d<0?1:-1)*(e.shiftKey||mx<16?1:4),0,mx);if(had!=null&&v===had)return;
  if(!setLock(t,S.lane,s,v))return;edit("lock",{t,...pidArgs(S.lane),s,v});renderTop();renderLane();toast(`${pidLabel(t,S.lane)} ${fmt(m,v)} · ${tLabel(t)}, step ${s+1}`)},{passive:false});
 
 /* ---- a ramp in the lock lane: ⇧-drag draws a straight line from the press to the pointer, shown as it moves; at
