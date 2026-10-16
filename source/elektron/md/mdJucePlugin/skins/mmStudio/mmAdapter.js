@@ -711,8 +711,8 @@
 		/* I-002, B-062: the notes a MIDI keyboard holds light the Perform keyboard's keys, those on a channel the machine
 		   plays (playedChannels) */
 		else if (m.type === "midiHeld") { const chs = playedChannels(); V().setMidiHeld((m.notes || []).filter(n => chs.has(n.ch)).map(n => n.note)); }
-		/* 0.8: the MIDI monitor's counts (midiStats); the monitor panel (WP4) reads them, the page does not yet */
-		else if (m.type === "midiStats") { /* not read yet */ }
+		/* 0.8: the MIDI monitor's counts (midiStats): the AUDIO / MIDI panel's Monitor row (WP4) */
+		else if (m.type === "midiStats") V().audioStats(m);
 		else if (m.type === "lcd") { lcdBits = Uint8Array.from(atob(m.bits || ""), c => c.charCodeAt(0)); showLcd(); }
 		else if (m.type === "mod") onMod(m);
 		else if (m.type === "solo") onSolo(m);
