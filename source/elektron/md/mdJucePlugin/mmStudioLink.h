@@ -78,7 +78,10 @@ namespace mdJucePlugin
 		std::shared_ptr<const md::MmTelemetry> m_telemetry;
 		// B-036: the front panel as the device publishes it (lock-free), for the LCD while the machine starts
 		std::shared_ptr<md::FrontPanelPublisher> m_panel;
-		double m_telemetryCheckedMs = -1e9;
+		// the device the handles above belong to (MachineFacts::deviceId): looked up again, under the device lock, only
+		// when the facts name another device (DESIGN-audio-lock.md step 2)
+		uint64_t m_handlesDevice = 0;
+		bool m_handlesKnown = false;
 		uint32_t m_workingKitSequence = 0;
 		const void* m_workingKitSource = nullptr;
 		std::shared_ptr<MmStudioLink*> m_alive;
