@@ -28,7 +28,7 @@ A model of the SID chip. <WAVE> picks the wave, <MOD> the modulation, <MSRC> and
 ## DPRO-WAVE
 <!-- rows: MM-328 @2e998d -->
 
-A wave player on the DigiPRO. <WAVE> picks the wave, <WP> shapes it, <SYNC> and <SFRQ> set oscillator sync.
+A wave player on the DigiPRO. <WAVE> picks one of the 32 waves, S01 to S32, <WP> shapes it, <SYNC> and <SFRQ> set oscillator sync.
 
 ## DPRO-BBOX
 <!-- rows: MM-329 @b47c7d -->
@@ -38,12 +38,12 @@ The beat box, a set of 24 drum sounds played by key. <PTCH> sets the pitch, <STR
 ## DPRO-DDRW
 <!-- rows: MM-330 @36350f -->
 
-A machine built on two waves. <WAV1> and <WAV2> pick them, <MIX> blends them and <TIME>, <BR1>, <WID> and <BR2> shape the draw between them.
+A machine built on two waves. <WAV1> and <WAV2> pick them from the 64 waves, D01 to D64, <MIX> blends them and <TIME>, <BR1>, <WID> and <BR2> shape the draw between them.
 
 ## DPRO-DENS
 <!-- rows: MM-331 @c2c1e2 -->
 
-A stack of voices from one wave. <PCH2> to <PCH4> pitch the extra voices and <CHRL> and <CHRW> set the chorus.
+A stack of voices from one wave. <WAVE> picks it, D01 to D64. <PCH2> to <PCH4> pitch the extra voices and <CHRL> and <CHRW> set the chorus.
 
 ## FM+STAT
 <!-- rows: MM-332 @6d4a3b -->
