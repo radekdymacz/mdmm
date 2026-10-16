@@ -1882,8 +1882,9 @@ const MdJourneys = (() => {
 		],
 		async tidy(u) { if (!$1("#syxpop").hidden) u.key("Escape"); }
 	};
+	/* alone: B-133 (OS 1.63 leaves its screen list with one node after the RECEIVING SAMPLE screen, so live recording is deaf until the machine starts again; the emulator keeps the hardware's behaviour), as md-sampler-rename */
 	const dropSampleJ = {
-		name: "md-drop-sample", proves: ["MD-191", "MD-X12"],
+		name: "md-drop-sample", alone: true, proves: ["MD-191", "MD-X12"],
 		needs: () => new URLSearchParams(location.search).get("wavfile") ? null
 			: "no sample for the run (GEARMULATOR_MDMM_WAV_FILE)",
 		steps: [
@@ -2609,7 +2610,7 @@ const MdJourneys = (() => {
 	   (mdDeskFirmwareTest recaftersample): nothing after this journey may meet that (the 0.6 e2e run: md-seq-live-record and
 	   md-seq-live-lock failed after it). */
 	const sampleRename = {
-		name: "md-sampler-rename", proves: ["MD-197"],
+		name: "md-sampler-rename", alone: true, proves: ["MD-197"],
 		steps: [
 			go("sampler"),
 			{ say: "click a ROM slot, click Rename, type a name and click Rename", act: async (u, c) => { const k = $all(".slotk.rom").find(b => !b.style.opacity) || $all(".slotk.rom")[0]; c.slot = +k.dataset.slot.slice(3); u.click(k); await sleep(300); results.length = 0; u.click(`[data-rename="${c.slot}"]`); await until(() => !!$1("#rname"), 2000); u.type("#rname", "jrny"); await sleep(100); u.click(dlgButton("Rename")); },

@@ -22,14 +22,6 @@ set_tests_properties(mdRamPackingTest PROPERTIES
 set_property(TARGET mdRamPackingTest PROPERTY FOLDER "Elektron/test")
 add_dependencies(mdLibTest mdRamPackingTest)
 
-# B-133: the screen list repair, a fake memory, no ROM
-add_executable(mdScreenListTest mdScreenListTest.cpp)
-target_link_libraries(mdScreenListTest PRIVATE mdLib)
-add_test(NAME mdScreenListTest COMMAND mdScreenListTest)
-set_tests_properties(mdScreenListTest PROPERTIES LABELS "UnitTest")
-set_property(TARGET mdScreenListTest PROPERTY FOLDER "Elektron/test")
-add_dependencies(mdLibTest mdScreenListTest)
-
 set_property(TARGET mdLibTest PROPERTY FOLDER "Elektron")
 
 add_executable(mdUartRegisterTest uartRegisterTest.cpp)
