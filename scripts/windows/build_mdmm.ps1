@@ -142,7 +142,9 @@ if (-not $TestOnly) {
             'mdDroppedFilesTest', 'mdProjectStateRestoreTest', 'mdProgramChangeFirmwareTest',
             'mdAudioProbePlugin_VST3', 'vst3ProgramChangeTest', 'mdProgramChangeProbe_VST3',
             # the headless audio core's (mdmm-audio-io.yml's until it was folded in here, DEV-CYCLE.md)
-            'mdUwFirmwareTest', 'dsp56kAccumulatorTests')
+            'mdUwFirmwareTest', 'dsp56kAccumulatorTests',
+            # B-044: the MIDI tests that ran on macOS and Linux only
+            'mdMidiInTest', 'midiRoutingMatrixTest', 'synthLibMidiClockTimingTest', 'midiLearnTest')
     }
     Invoke-Native -FilePath $cmake -Arguments (@(
         '--build', $BuildDir,
@@ -172,7 +174,7 @@ if ($WithTests) {
         '--test-dir', $BuildDir,
         '-C', $Configuration,
         '--output-on-failure',
-        '--tests-regex', '^(baseLibBinaryStreamTest|synthLibAudioTest|synthLibMidiQueueTest|synthLibStateCaptureTest|synthLibDeviceCommandTest|synthLibSeqlockTest|mdLibTests|mdStateCaptureTest|mdMemoryFastLaneTest|mdAudioQueueTest|mdAudioFirmwareTest|mdAudioIoLayoutTest|mdProcessorHooksTest|mdWindowsPolicyTest|mdMachineMidiOutTest|mdMachineMidiOutFirmwareTest_(md|mm)|mdProcessArchTest|mdRosettaNoticeTest|mdDroppedFilesTest|mdProjectStateRestoreTest|mdProgramChangeFirmwareTest|mdAudioProbePluginVST3IdentityTest|mdVst3ProgramChange(Test|OptOutTest)|(md|mm)JucePlugin_VST3ProgramChangeTest|mdUwFirmwareTest|dsp56300_accumulatorTests)$'
+        '--tests-regex', '^(baseLibBinaryStreamTest|synthLibAudioTest|synthLibMidiQueueTest|synthLibStateCaptureTest|synthLibDeviceCommandTest|synthLibSeqlockTest|mdLibTests|mdStateCaptureTest|mdMemoryFastLaneTest|mdAudioQueueTest|mdAudioFirmwareTest|mdAudioIoLayoutTest|mdProcessorHooksTest|mdWindowsPolicyTest|mdMachineMidiOutTest|mdMachineMidiOutFirmwareTest_(md|mm)|mdProcessArchTest|mdRosettaNoticeTest|mdDroppedFilesTest|mdProjectStateRestoreTest|mdProgramChangeFirmwareTest|mdAudioProbePluginVST3IdentityTest|mdVst3ProgramChange(Test|OptOutTest)|(md|mm)JucePlugin_VST3ProgramChangeTest|mdUwFirmwareTest|dsp56300_accumulatorTests|mdMidiInTest|midiRoutingMatrixTest|synthLibMidiClockTimingTest|midiLearnTests)$'
     )
     Invoke-Native -FilePath $ctest -Arguments @(
         '--test-dir', $BuildDir,

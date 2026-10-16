@@ -2639,7 +2639,7 @@ namespace
 
 int main(const int _argc, char** _argv)
 {
-	std::setvbuf(stdout, nullptr, _IOLBF, 0);
+	std::setvbuf(stdout, nullptr, _IONBF, 0);
 	if(_argc < 3)
 	{
 		std::puts("usage: mmEditorProbeFirmwareTest <ROM> <all|lcd|dumps|corpus|gate|recv|commands|kitsong|burst|macro|queue|screens|...> [outdir]");
