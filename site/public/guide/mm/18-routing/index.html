@@ -53,7 +53,7 @@
 <li><a href="/guide/mm/15-additional-sequencer-features/">15. Additional sequencer features</a></li>
 <li><a href="/guide/mm/16-the-midi-sequencer/">16. The MIDI sequencer</a></li>
 <li><a href="/guide/mm/17-the-song-mode/">17. The song mode</a></li>
-<li class="gd-side-cur"><a href="/guide/mm/18-routing/" aria-current="page">18. Routing</a><ol class="gd-side-subs"><li><a href="#the-mixer">THE MIXER</a></li><li><a href="#fx-machines">FX MACHINES</a></li><li><a href="#audio-inputs">AUDIO INPUTS</a></li><li><a href="#neibor-routing">NEIBOR ROUTING</a></li><li><a href="#mix-bus-routing">MIX BUS ROUTING</a></li><li><a href="#routing-modes">ROUTING MODES</a></li></ol></li>
+<li class="gd-side-cur"><a href="/guide/mm/18-routing/" aria-current="page">18. Routing</a><ol class="gd-side-subs"><li><a href="#the-mixer">THE MIXER</a></li><li><a href="#fx-machines">FX MACHINES</a></li><li><a href="#audio-inputs">AUDIO INPUTS</a></li><li><a href="#neibor-routing">NEIBOR ROUTING</a></li><li><a href="#mix-bus-routing">MIX BUS ROUTING</a></li><li><a href="#output-meters">OUTPUT METERS</a></li><li><a href="#routing-modes">ROUTING MODES</a></li></ol></li>
 <li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
 <li><a href="/guide/mm/20-early-startup-menu-technical-information/">20. Early startup menu, technical information</a></li>
 <li><a href="/guide/mm/21-appendix-a-machine-reference/">21. Appendix A: machine reference</a></li>
@@ -95,6 +95,12 @@
 <div class="gd-body gd-prose"><h2 id="mix-bus-routing-h">MIX BUS ROUTING <a class="gd-anchor" href="#mix-bus-routing" aria-label="Link to MIX BUS ROUTING">#</a></h2>
 <p class="gd-ref">MM manual p.1-84</p>
 <p><b class="gd-ui">BUS AB</b>, <b class="gd-ui">BUS CD</b> and <b class="gd-ui">BUS EF</b> are inputs that take what a bus carries. If the effect track also sends to the same bus, it replaces what was there: the line below the drawing reads &quot;INSERT&quot;. If it sends elsewhere, it takes a copy of the bus: a send. The line names the track that &quot;takes a copy&quot;.</p>
+</div></section>
+<section class="gd-sec" id="output-meters" aria-labelledby="output-meters-h">
+<div class="gd-body gd-prose"><h2 id="output-meters-h">OUTPUT METERS <a class="gd-anchor" href="#output-meters" aria-label="Link to OUTPUT METERS">#</a></h2>
+<p>Under each bus line of the drawing, next to its output jack, is a meter with two thin bars, left over right. It measures the output pair after the volume: A/B, C/D and E/F. The solid bar is the level, the pale bar behind it is the peak, and the thin mark is the highest peak, held for a moment before it falls. The scale runs from -60 dB at the left to 0 dB at the right. The small square at the left end fills for a few seconds after a sample went over 0 dB.</p>
+<p>The meters work only while the <b class="gd-ui">Mix</b> workspace is open. A pair the host has not switched on is dimmed.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The machine gives the editor its three stereo outputs, not each track. A track has a meter of its own only if you send it to a bus alone. Send one track to CD, for example, and the CD meter shows that track.</p></aside>
 </div></section>
 <section class="gd-sec" id="routing-modes" aria-labelledby="routing-modes-h">
 <div class="gd-body gd-prose"><h2 id="routing-modes-h">ROUTING MODES <a class="gd-anchor" href="#routing-modes" aria-label="Link to ROUTING MODES">#</a></h2>

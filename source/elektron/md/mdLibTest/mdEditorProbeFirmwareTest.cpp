@@ -1162,7 +1162,7 @@ namespace
 
 int main(const int _argc, char** _argv)
 {
-	std::setvbuf(stdout, nullptr, _IOLBF, 0);
+	std::setvbuf(stdout, nullptr, _IONBF, 0);
 	if(_argc < 2)
 	{
 		std::puts("usage: mdEditorProbeFirmwareTest <ROM> [workkit|liverec|samples|sds|samplemap <dir>|rammap <dir> <LEN> <frames>]");

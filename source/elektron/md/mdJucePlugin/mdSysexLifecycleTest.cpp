@@ -258,7 +258,7 @@ namespace
 
 int main(int argc, char** argv)
 {
-	std::setvbuf(stdout, nullptr, _IOLBF, 0);
+	std::setvbuf(stdout, nullptr, _IONBF, 0);
 	if(argc != 5)
 	{
 		std::cout << "usage: mdSysexLifecycleTest <MD-ROM> <MD-factory.cache> <MM-ROM> <MM-patch.bin>\n";
