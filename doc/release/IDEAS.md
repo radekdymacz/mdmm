@@ -3,6 +3,27 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-032 · Mix: a level meter per track, and one per output (the mix buses)
+
+- **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("meters for each track on the Mix tab, and the same for the MIX buses or the summed levels").
+- **Today:** the only meter is the LCD's (I-021): the main output's left and right after the volume, and a clip mark for every output (`mdJucePlugin/mdOutputLevel.h`). The plug-in has three stereo outputs, Main A/B, Out C/D and Out E/F (`mdPluginProcessor.cpp:541`), which carry the machine's own outputs; the emulation gives no audio per track (the DSP mixes the voices inside the firmware), so a true per-track meter is not a cheap tap (the same finding as I-028).
+- **The idea, what is honest:** (1) a meter per output pair on Mix (A/B, C/D, E/F): cheap, the plug-in already takes the peaks of every output once a block for the clip mark; on the Monomachine a track routed alone to C/D or E/F would then have its own meter. (2) Per track, the rail lamps of I-028 (trig activity from the pattern, no audio) beside each fader, not a level. A real per-track level needs a tap in the DSP emulation: research, not planned.
+- **Status:** later (Radek decides).
+
+## I-031 · A lamp in another colour on a track that plays because another track triggered it
+
+- **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("a blue LED lit up on a track if it was triggered from another track").
+- **Today:** the rail lamps (I-028) light a track only for its own trigs (Monomachine `mmStudio/mmMockup.js` ~6239, Machinedrum `mdStudio/mdDeskTop.js:325`). A track that plays because of the Monomachine's kit Trig position (`trigpos`, Sequence > Trig setup: "Also play T2") or the Machinedrum's trig group (`trigGroup`, `mdDeskSound.js:82`) stays dark.
+- **The idea:** light that track's lamp too, in a second colour (blue, or the LCD ink), from the same data the lamps use: the step telemetry, the pattern and the kit's trig relations, no audio. One trig relation each, they do not chain (as the page says), so it stays one look-up a step.
+- **Status:** idea.
+
+## I-030 · Name the trig mark of the lock lane (red and green)
+
+- **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("in the locked parameters view some trigs were green and some were red at the top, what is that?").
+- **Today:** on the Monomachine's lock lane each step with a trig has a small mark at its top: red when the trig fires all three envelopes (AMP, FILTER, LFO), green when it fires only some of them or none (a trigless trig) (`mmStudio/mmStudio.css:1617-1619`, `src/50-state.js:55` stepKind). The step's tip says only "Locked …" or "Kit value …", and the guide's PARAMETER LOCKS section (`doc/guide/mm/13-parameter-locks.md`) does not mention the mark; the roll's step legend (?) names trigless trigs but not this mark.
+- **The idea:** say it where it shows: the lane step's tip adds "all envelopes" / "some envelopes" / "trigless", and one sentence in chapter 13 ("A red mark at the top of a bar: the trig fires every envelope; green: only some, or none"). No new control.
+- **Status:** idea.
+
 ## I-029 · A quick way back to the original sound while you play with the Sound page
 
 - **From:** Radek, 2026-10-13 ("when you play with the Sound page, a way to quickly restore the original settings").
