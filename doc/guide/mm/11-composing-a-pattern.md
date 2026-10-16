@@ -30,7 +30,7 @@ On the machine you step through the grid with the trig keys. In the editor you d
 
 A drag or a paint is one undo step. {key:undo} takes it back whole.
 
-NOTE: With **Draw** dark, a drag in an empty place draws a box round notes and selects them, and a double-click adds a note.
+NOTE: With **Draw** dark, a drag in an empty place draws a box round notes and selects them.
 
 ![The piano roll](shot:mm-roll-draw)
 
@@ -42,7 +42,11 @@ Drag the end of a note to set its length. New notes take the length too. On a sy
 
 To set a NOTE OFF by hand, hold [⌥] and click an empty step. A NOTE OFF is a yellow mark.
 
-To delete a note, hold [⌥] and click it. The note before it keeps its length. Drag on with [⌥] held to delete every step the pointer crosses. One {key:undo} brings all of them back.
+To delete a note, double-click it, or hold [⌥] and click it. The earlier note runs on to the next trig or NOTE OFF, as on the machine. The editor writes no NOTE OFF and takes none away: a NOTE OFF goes only when you clear its own step. Drag on with [⌥] held to delete every step the pointer crosses. One {key:undo} brings all of them back.
+
+### Selecting a note
+
+Click a note to select it. It stays selected, with no [⌘] needed. {key:delete} removes it. With one note selected, [↑] and [↓] change its pitch by a semitone, and [⇧][↑] and [⇧][↓] by an octave. Hold a key and the note keeps moving; the whole hold is one undo step. With no note selected, [↑] and [↓] still move to the previous or next track. A double-click on an empty place draws one note: the second click does nothing.
 
 ### Chords
 

@@ -53,7 +53,7 @@ const wheelHeld=()=>!!wheelLock&&performance.now()-wheelLock.at<WHEEL_RUN_MS;
 $("#main").addEventListener("wheel",e=>{const el=e.target.closest("#lane .lb");if(!el||S.ws!=="seq")return;const t=S.sel,s=+el.dataset.s,st=trk(t).steps[s],d=e.deltaY||(e.shiftKey?e.deltaX:0);
  if(!d||!st||st.off)return;e.preventDefault();const[pg,i]=S.lane.split("."),m=meta(t,pg,+i),mx=maxOf(m),now=performance.now(),key=t+"|"+S.lane+"|"+s;
  if(!wheelLock||wheelLock.key!==key||now-wheelLock.at>WHEEL_RUN_MS){commit();wheelLock={key}}wheelLock.at=now;clearTimeout(wheelEndT);wheelEndT=setTimeout(showHeld,WHEEL_RUN_MS+10);
- const had=S.locks.get(lkKey(t,S.lane))?.get(s),cur=had??getP(t,S.lane)??0,v=clamp(cur+(d<0?1:-1)*(e.shiftKey||mx<16?1:4),0,mx);if(had!=null&&v===had)return;
+ const had=S.locks.get(lkKey(t,S.lane))?.get(s),cur=had??getP(t,S.lane)??0,v=m.tab?tabStep(m.tab,cur,d<0?1:-1):clamp(cur+(d<0?1:-1)*(e.shiftKey||mx<16?1:4),0,mx);if(had!=null&&v===had)return;
  if(!setLock(t,S.lane,s,v))return;edit("lock",{t,...pidArgs(S.lane),s,v});renderTop();renderLane();toast(`${pidLabel(t,S.lane)} ${fmt(m,v)} · ${tLabel(t)}, step ${s+1}`)},{passive:false});
 
 /* ---- a ramp in the lock lane: ⇧-drag draws a straight line from the press to the pointer, shown as it moves; at
@@ -142,6 +142,17 @@ Keys.bind({id:"velocity",scope:"any",keys:["C","V"],group:"Playing",does:()=>`Ve
 /* ---- the selected track's keys, the all keys, the step gestures ---- */
 Keys.bind({id:"mute-track",scope:"any",keys:["M"],code:"KeyM",group:"Selected track",does:"Mute or unmute the selected track",when:kbOn,run:()=>muteSel()});
 Keys.bind({id:"mute-all",scope:"any",keys:["M"],code:"KeyM",mod:"alt",group:"All",does:"Mute every track; when none is audible, unmute every track",when:kbOn,run:()=>muteAllToggle()});
+/* I-036: with exactly one note selected (a click on it selects it), ↑ / ↓ change its pitch a semitone, ⇧ an octave: the
+   note's chord notes together, one undo step a press (the key's release commits). Without a note selected they stay the track move below. */
+function pitchSel(){const x=S.stepSel;if(!x||x.n!==1||S.ws!=="seq")return null;const tr=trk(x.t);let hit=-1,cnt=0;
+ for(let s=x.from;s<Math.min(x.to,S.len);s++){const st=tr.steps[s];if(st&&!st.off&&st.n?.length){cnt++;hit=s}}return cnt===1?{t:x.t,s:hit}:null}
+function pitchSelMove(d){const h=pitchSel();if(!h)return;const st=trk(h.t).steps[h.s],ns=st.n.map(n=>n+d);
+ if(ns.some(n=>n<0||n>127)){toast(`${tLabel(h.t)} step ${h.s+1}: ${noteName(d>0?127:0)} is as far as it goes.`);return}
+ st.n=ns;editStep(h.t,h.s);autoRange(h.t);rerenderSeq();toast(`${tLabel(h.t)} step ${h.s+1}: ${ns.map(noteName).join(" ")}`)}
+Keys.bind({id:"note-pitch",short:"Note ↑ / ↓",scope:"seq",keys:["ArrowUp","ArrowDown"],group:"Sequence",does:"One note selected (click it): its pitch a semitone up / down, one undo step a press. Anything else selected: the track move below",
+ when:()=>selKeys()&&!!pitchSel(),run:e=>pitchSelMove(e.key==="ArrowUp"?1:-1)});
+Keys.bind({id:"note-octave",short:"Note ⇧↑ / ⇧↓",scope:"seq",keys:["ArrowUp","ArrowDown"],mod:"shift",group:"Sequence",does:"One note selected: its pitch an octave up / down",
+ when:()=>selKeys()&&!!pitchSel(),run:e=>pitchSelMove(e.key==="ArrowUp"?12:-12)});
 Keys.bind({id:"track-prev-next",scope:"any",keys:["ArrowUp","ArrowDown"],group:"Selected track",does:"Select the previous / next track of the side shown (a focused value keeps ↑ / ↓ for itself). Sequence with selected steps: move the selection a track",
  when:()=>kbOn()&&$("#kpop").hidden&&S.ws!=="song",run:e=>{if(selKeys()){selMove(e.key==="ArrowDown"?1:-1,0);return}const sd=side(),i=sd.indexOf(S.sel);select(sd[((i<0?0:i)+(e.key==="ArrowDown"?1:5))%6])}});
 Keys.bind({id:"tap-tempo",scope:"any",keys:["B"],group:"Transport",does:"Tap tempo (the average of the last taps; T plays F♯ here).",when:kbOn,run:()=>tapTempo()});

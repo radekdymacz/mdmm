@@ -41,6 +41,8 @@ const run = list.filter(b => b.run), name = b => `${Keys.label(b)} (${b.group})`
 /* ---- rule: no ⇧ chords, ⌘ only for the standard edit keys ---- */
 /* the standard edit keys, and the selection's (K7, as the Machinedrum Editor: ⌘X ⌘D ⌘A, ⇧← ⇧→ extend) */
 const STD_CMD = new Set(["cmd KeyZ", "cmd+shift KeyZ", "cmd KeyY", "cmd KeyC", "cmd KeyV", "cmd KeyX", "cmd KeyD", "cmd KeyA", "shift ArrowLeft", "shift ArrowRight", "shift KeyB",
+	/* I-036 (0.8): one note selected, ⇧↑ ⇧↓ an octave */
+	"shift ArrowUp", "shift ArrowDown",
 	/* wave 2 (DESIGN-machine-menus.md §3, approved 2026-10-11): ⇧Space pauses, ⌘. is panic */
 	"shift Space", "cmd .",
 	/* wave 4: the copy / paste / clear what windows (DESIGN-machine-menus.md §3) */
@@ -53,7 +55,8 @@ check(!badMod.length, "no ⇧ or ⌘ commands but ⇧B (tap tempo), ⌘Z ⌘⇧Z
    ← →: the Song's rows or the selected steps (by workspace); B: tap tempo */
 /* Delete, ⌫: erase while live recording, clear a step while step recording (MM), the selection on Sequence or the row on
    Song otherwise (wave 7; each when() names its state) */
-const EXCLUSIVE = new Set([" Escape", " ArrowLeft", " ArrowRight", " Enter", " KeyB", " Delete", " Backspace"]);
+/* ↑ ↓: one note selected (its pitch, ⇧ an octave) or the track move, by when() (I-036) */
+const EXCLUSIVE = new Set([" Escape", " ArrowUp", " ArrowDown", " ArrowLeft", " ArrowRight", " Enter", " KeyB", " Delete", " Backspace"]);
 const by = new Map();
 for (const b of run) for (const id of ids(b)) for (const m of mods(b)) { const k = m + " " + id; by.set(k, [...(by.get(k) || []), b]); }
 const clash = [...by].filter(([k, bs]) => bs.length > 1 && (bs.some(b => !b.when) || !EXCLUSIVE.has(k)));

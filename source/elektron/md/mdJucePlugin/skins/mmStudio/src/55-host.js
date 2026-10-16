@@ -44,7 +44,7 @@
                                       shows their moving values with MMView.setModulation
      notes                            the host's words for the Control sources ({ccSource, appSource})
      engine(kind), firstRun(), bootScreen(on), renderPst(), engineLabels, menu(x, y) (the editor's menu at that point: the host draws it with DeskMenu, I-008)
-     syxChoose(), syxExport(request), syxStart(kinds, skip, {placeAt, checkOnly}), syxStop(), syxPlace(placeAt), syxExportInfo(),
+     syxChoose(), syxExport(request), syxStart(kinds, skip, {placeAt, checkOnly, readBack}), syxStop(), syxPlace(placeAt), syxExportInfo(),
      machineReset(how)   SysEx import and export (P7, B-019; 0.6: SPECIFIC place, VERIFY ONLY, kinds and ranges, Reset machine…): the host's file
                                       dialogs; the preview and progress come back through MMView
      removeRom(info)   REMOVE in the LOAD ROM card

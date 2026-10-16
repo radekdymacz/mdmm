@@ -155,11 +155,11 @@ const ValueBox={range:el=>[0,maxOf(ref(el)[2])],
  find:el=>$("#main")?.querySelector(Object.entries(el.dataset).filter(([k])=>["g","n","t","i","src","li"].includes(k)).map(([k,v])=>`[data-${k}="${CSS.escape(v)}"]`).join(""))||null,
  say:t=>toast(t)};
 main.addEventListener("wheel",e=>{
- const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el){e.preventDefault();const d=(e.deltaY||e.deltaX)<0?1:-1;setV(el,getV(el)+d*(e.shiftKey?10:1));return}
+ const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el){e.preventDefault();const d=(e.deltaY||e.deltaX)<0?1:-1;stepV(el,d*(e.shiftKey?10:1));return}
  const st=e.target.closest(".mst");if(st){const t=+st.dataset.t,s=+st.dataset.s,x=trk(t).steps[s];if(!x?.n)return;e.preventDefault();const d=((e.deltaY||e.deltaX)<0?1:-1)*(e.shiftKey?12:1);x.n=x.n.map(n=>clamp(n+d));editStep(t,s);refreshRow(t);return}
  const roll=e.target.closest("canvas.roll[data-big]");if(roll){e.preventDefault();const t=+roll.dataset.t;S.rollLoT[t]=clamp((S.rollLoT[t]??S.rollLo)+((e.deltaY)<0?1:-1)*(e.shiftKey?12:2),0,127-ROWS);redraw()}},{passive:false});
 main.addEventListener("dblclick",e=>{const el=e.target.closest(".pc[data-g]");if(el&&!ValueEdit.isOpenClick(e)){const m=ref(el)[2];setV(el,m.def??(m.en?0:64))}});
-main.addEventListener("keydown",e=>{const el=e.target.closest("[data-g]");if(!el)return;if(e.key==="Enter"&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&el.matches(".pc,.fader")){e.preventDefault();ValueEdit.open(el,ValueBox);return}const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1,PageUp:10,PageDown:-10}[e.key];if(d==null)return;e.preventDefault();setV(el,getV(el)+d*(e.shiftKey?10:1))});
+main.addEventListener("keydown",e=>{const el=e.target.closest("[data-g]");if(!el)return;if(e.key==="Enter"&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&el.matches(".pc,.fader")){e.preventDefault();ValueEdit.open(el,ValueBox);return}const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1,PageUp:10,PageDown:-10}[e.key];if(d==null)return;e.preventDefault();stepV(el,d*(e.shiftKey?10:1))});
 
 /* ===== Clicks ===== */
 function autoRange(t){const ns=trk(t).steps.flatMap(x=>x?.n||[]);if(!ns.length)return;const lo=Math.min(...ns),hi=Math.max(...ns),cur=S.rollLoT[t];if(cur==null||lo<cur||hi>cur+ROWS-1)S.rollLoT[t]=clamp(Math.round((lo+hi)/2)-Math.floor(ROWS/2),0,127-ROWS)}
@@ -292,7 +292,8 @@ Keys.bind({id:"mkey-prepare",scope:"any",area:"Tracks",keys:["M key"],mod:"shift
 Keys.bind({id:"ms-paint",scope:"any",area:"Tracks",keys:["drag M / S keys"],group:"Anywhere",does:"Mute (solo) or unmute every track the drag crosses, as the first key became"});
 Keys.bind({id:"roll-chord",scope:"seq",area:"Roll",keys:["roll"],mod:"shift",group:"Sequence",does:"Click: a chord note on the step"});
 Keys.bind({id:"roll-paint",scope:"seq",area:"Roll",keys:["roll"],group:"Sequence",does:"Click an empty step: a note there, as long as the Len key says; drag it up or down for its pitch, sideways to paint that note on every empty step crossed (the last one as long as the Len key says; one undo step)."});
-Keys.bind({id:"roll-erase",scope:"seq",area:"Roll",keys:["roll"],mod:"alt",group:"Sequence",does:"Click: delete a note, the note before it keeps its length (drag on: every step crossed loses its notes, one undo step), or a NOTE OFF on an empty step"});
+Keys.bind({id:"roll-erase",scope:"seq",area:"Roll",keys:["roll"],mod:"alt",group:"Sequence",does:"Click: delete a note, the earlier note runs on to the next trig or NOTE OFF, as on the machine; no NOTE OFF is written or taken away (drag on: every step crossed loses its notes, one undo step), or a NOTE OFF on an empty step"});
+Keys.bind({id:"roll-select-note",scope:"seq",area:"Roll",keys:["note"],group:"Sequence",does:"Click a note: select it (it stays selected: ↑ / ↓ its pitch, ⇧ an octave, Delete removes it). Double-click: delete it (one undo step)"});
 Keys.bind({id:"lane-draw",scope:"seq",area:"Lock lane",keys:["lock lane"],group:"Sequence",does:"Drag over the bars: lock the lane's parameter on each step with a trig"});
 Keys.bind({id:"lane-erase",scope:"seq",area:"Lock lane",keys:["lock lane"],mod:"alt",group:"Sequence",does:"Drag: erase locks"});
 Keys.bind({id:"lane-clear-all",scope:"seq",area:"Lock lane",keys:["lock lane clear"],mod:"alt",group:"Sequence",does:"Click: clear every lock of the track (all its parameters)"});

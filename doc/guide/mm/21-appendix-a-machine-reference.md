@@ -18,7 +18,7 @@ Pulse oscillators with unison and sub oscillators. <PW> sets the pulse width, <P
 ## SWAVE-ENS
 <!-- rows: MM-326 @6b1aa5 -->
 
-An ensemble of oscillators. <PCH2> to <PCH4> pitch the extra voices, <WAVE> picks the wave and <CHRL> and <CHRW> set the chorus.
+An ensemble of oscillators. <PCH2> to <PCH4> pitch the extra voices: OFF, -12 to +12 semitones, or an interval (2/3, 3/4, 4/5, 5/6 below, 6/5, 5/4, 4/3, 3/2 above), <WAVE> picks the wave and <CHRL> and <CHRW> set the chorus.
 
 ## SID 6581
 <!-- rows: MM-327 @965dcd -->
@@ -28,7 +28,7 @@ A model of the SID chip. <WAVE> picks the wave, <MOD> the modulation, <MSRC> and
 ## DPRO-WAVE
 <!-- rows: MM-328 @2e998d -->
 
-A wave player on the DigiPRO. <WAVE> picks the wave, <WP> shapes it, <SYNC> and <SFRQ> set oscillator sync.
+A wave player on the DigiPRO. <WAVE> picks one of the 32 waves, S01 to S32, <WP> shapes it, <SYNC> and <SFRQ> set oscillator sync.
 
 ## DPRO-BBOX
 <!-- rows: MM-329 @b47c7d -->
@@ -38,27 +38,27 @@ The beat box, a set of 24 drum sounds played by key. <PTCH> sets the pitch, <STR
 ## DPRO-DDRW
 <!-- rows: MM-330 @36350f -->
 
-A machine built on two waves. <WAV1> and <WAV2> pick them, <MIX> blends them and <TIME>, <BR1>, <WID> and <BR2> shape the draw between them.
+A machine built on two waves. <WAV1> and <WAV2> pick them from the 64 waves, D01 to D64, <MIX> blends them and <TIME>, <BR1>, <WID> and <BR2> shape the draw between them.
 
 ## DPRO-DENS
 <!-- rows: MM-331 @c2c1e2 -->
 
-A stack of voices from one wave. <PCH2> to <PCH4> pitch the extra voices and <CHRL> and <CHRW> set the chorus.
+A stack of voices from one wave. <WAVE> picks it, D01 to D64. <PCH2> to <PCH4> pitch the extra voices as on SWAVE-ENS and <CHRL> and <CHRW> set the chorus.
 
 ## FM+STAT
 <!-- rows: MM-332 @6d4a3b -->
 
-A static FM machine. <1FRQ>, <1FIN>, <1ENV> and <1FB> set the first operator, <2FRQ> and <2VOL> the second, <TONE> the tone.
+A static FM machine. <1FRQ>, <1FIN>, <1ENV> and <1FB> set the first operator, <2FRQ> and <2VOL> the second, <TONE> the tone. <1FRQ> and <2FRQ> step through 24 frequencies, from 1/64 to 4 times the note.
 
 ## FM+PAR
 <!-- rows: MM-333 @e2c56b -->
 
-A parallel FM machine. Three operators have a frequency and an envelope each, <TONE> sets the tone.
+A parallel FM machine. Three operators have a frequency and an envelope each, <TONE> sets the tone. <1FRQ>, <2FRQ> and <3FRQ> step through the same 24 frequencies as FM+STAT, 1/64 to 4.
 
 ## FM+DYN
 <!-- rows: MM-334 @f9b47d -->
 
-A dynamic FM machine. The first operator has frequency, frequency envelope, volume and volume envelope, the second frequency, envelope and feedback.
+A dynamic FM machine. The first operator has frequency, frequency envelope, volume and volume envelope, the second frequency, envelope and feedback. <1FRQ> and <2FRQ> change in fine steps and show the frequency as the machine writes it, a fraction or a number.
 
 ## VO-6
 <!-- rows: MM-335 @9cac6c -->

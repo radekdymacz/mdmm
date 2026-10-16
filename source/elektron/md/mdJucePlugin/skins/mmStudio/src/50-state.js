@@ -4,7 +4,7 @@ const $=q=>document.querySelector(q),$$=q=>[...document.querySelectorAll(q)];
 function clamp(v,a=0,b=127){return Math.max(a,Math.min(b,v))}
 const newArp=()=>({MODE:0,PLAY:1,SPD:6,RNGE:1,OJMP:0,amp:1,flt:1,lfo:1,len:8,rhy:Array(16).fill(true),ofs:Array(16).fill(0)});
 const newAssign=()=>({mirr:true,hpf:true,lpf:true,tabs:{"JOY RL":[{pg:3,d:1,add:88},{pg:2,d:5,add:64}],"JOY U":[{pg:5,d:7,add:94},{pg:3,d:3,add:64}],"JOY D":[{pg:3,d:0,add:40},{pg:2,d:5,add:64}],VEL:[{pg:2,d:5,add:84},{pg:3,d:7,add:64}],KEY:[{pg:3,d:0,add:64},{pg:3,d:1,add:64}]}});
-function synDefaults(m){const p=MACH[m].p;return Array.from({length:8},(_,i)=>{const n=p[i];if(!n)return 0;if(n==="TUNE")return 64;if(n==="INP")return 100;if(n==="MIX")return 64;return({UNIL:40,UNIW:20,UNIX:0,SUB1:30,PW:64,VOC1:64,VOC2:64,"V-SW":1,CVOL:100,LP:127,GATE:127,DEC:64,"1ENV":80,TONE:64})[n]??0})}
+function synDefaults(m){const p=MACH[m].p;return Array.from({length:8},(_,i)=>{const n=p[i];if(!n)return 0;if(n==="TUNE")return 64;if(n==="INP")return 100;if(n==="MIX")return 64;return({UNIL:40,UNIW:20,UNIX:0,SUB1:30,PW:64,VOC1:64,VOC2:64,"V-SW":1,CVOL:100,LP:127,GATE:127,DEC:64,"1ENV":80,TONE:64,PCH2:63,PCH3:63,PCH4:63})[n]??0})}
 function newTrack(m,name){return{m,name,v:{SYN:synDefaults(m),AMP:[...DEFV.AMP],FLT:[...DEFV.FLT],EFX:[...DEFV.EFX],LF1:[...DEFV.LFO],LF2:[...DEFV.LFO],LF3:[...DEFV.LFO]},
  lev:100,out:{AB:true,CD:false,EF:false},inp:"NEIBOR",mute:false,solo:false,steps:Array(64).fill(null),slide:new Set(),swing:new Set([1,3,5,7,9,11,13,15].flatMap(x=>[x,x+16,x+32,x+48])),
  arp:newArp(),tr:{TRACK:64,SCALE:0,KEY:0},trigpos:null,port:0,leg:{amp:1,flt:1,lfo:1},assign:newAssign()}}
@@ -38,13 +38,13 @@ function pidLabel(t,pid){const[pg]=pid.split(".");return pg+" "+pname(t,pid)}
 function destNames(t,pidx){const pg=LPAGES[pidx];if(pg==="PTCH")return PTCHD;if(pg==="MID")return FIXED.MID;const a=[...pnames(t,pg)].map(n=>n||"—");while(a.length<8)a.push("—");return a}
 function meta(t,pg,i){const tr=trk(t),name=pnames(t,pg)[i];
  if(pg.startsWith("LF")){if(i===0)return{name,en:LPAGES};if(i===1)return{name,en:destNames(t,tr.v[pg][0])};if(i===2)return{name,en:LTRIG};if(i===3)return{name,en:LWAVE};if(i===4)return{name,en:LMULT};return{name,max:127}}
- if(pg==="SYN"){const en=EN[tr.m+"."+name]||EN[name];if(en)return{name,en};if(tr.m==="DPRO-WAVE"&&name==="WAVE")return{name,max:31}}
- return{name,max:127,signed:SIGNED.has(name)||(pg==="SYN"&&/^PCH/.test(name))}}
+ if(pg==="SYN"){const tab=TAB[tr.m+"."+name];if(tab)return{name,max:127,tab};const en=EN[tr.m+"."+name]||EN[name];if(en)return{name,en}}
+ return{name,max:127,signed:SIGNED.has(name)}}
 /* LEN (P7): a click steps a page and goes round (16 32 48 64 16 ...), shift-click back; a scroll one step, 2-64.
    It used to stop at 64: a click on the factory patterns' LEN 64 did nothing. */
 function lenStep(len,d,fine){if(fine)return clamp(len+d,2,64);const p=Math.ceil(len/16)+d;return(((p-1)%4+4)%4+1)*16}
 const maxOf=m=>m.en?m.en.length-1:m.max;
-function fmt(m,v){if(v==null)return"—";if(m.en)return m.en[clamp(v,0,m.en.length-1)];if(m.signed){const d=v-64;return(d>0?"+":"")+d}return String(v)}
+function fmt(m,v){if(v==null)return"—";if(m.tab)return tabAt(m.tab,v).t;if(m.en)return m.en[clamp(v,0,m.en.length-1)];if(m.signed){const d=v-64;return(d>0?"+":"")+d}return String(v)}
 function getP(t,pid){const[pg,i]=pid.split(".");return trk(t).v[pg]?.[+i]}
 function lkKey(t,pid){return t+"|"+pid}
 function setLock(t,pid,s,v,quiet){const k=lkKey(t,pid);if(!S.locks.has(k)){if(S.locks.size>=62){if(!quiet)toast("All 62 locked parameters are in use. Clear one before you lock a new parameter.");return false}S.locks.set(k,new Map())}S.locks.get(k).set(s,v);return true}

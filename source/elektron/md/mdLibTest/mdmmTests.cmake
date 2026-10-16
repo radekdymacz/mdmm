@@ -59,6 +59,18 @@ function(mdmm_add_lib_tests _dir)
 	target_link_libraries(mdEditorProbeFirmwareTest PRIVATE mdLib elektronData)
 	set_property(TARGET mdEditorProbeFirmwareTest PROPERTY FOLDER "Elektron/test")
 
+	# Beta report 2026-10-16: stacked LFOs on a kick's PTCH, every hit measured (peak, zero crossings, difference
+	# from the median hit) with the speed-ups on and off, L3 on and off, at several host block sizes; the test registered
+	# here plays the case that missed (scenario stack3, about 4 min); --matrix alone plays every scenario. Needs the MD ROM.
+	add_executable(stackedLfoFirmwareTest ${_dir}/stackedLfoFirmwareTest.cpp ${_dir}/mdFirmwareSession.h)
+	target_link_libraries(stackedLfoFirmwareTest PRIVATE mdLib elektronData)
+	set_property(TARGET stackedLfoFirmwareTest PROPERTY FOLDER "Elektron/test")
+	add_test(NAME stackedLfoFirmwareTest COMMAND stackedLfoFirmwareTest --scenario stack3 --matrix)
+	set_tests_properties(stackedLfoFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
+	# the same on the Monomachine: LFO1-3 of one track on PTCH, note trigs (about 3 min)
+	add_test(NAME stackedLfoMmFirmwareTest COMMAND stackedLfoFirmwareTest --mm --scenario mm-stack3 --matrix)
+	set_tests_properties(stackedLfoMmFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
+
 	# DESIGN-edit-flow.md: the firmware and the desk under a stream of page edits (manual: needs a ROM).
 	add_executable(editFlowBenchTest ${_dir}/editFlowBenchTest.cpp ${_dir}/mdFirmwareSession.h)
 	target_link_libraries(editFlowBenchTest PRIVATE mdLib mdDesk mmDesk deskWire)
@@ -100,6 +112,22 @@ function(mdmm_add_lib_tests _dir)
 	add_executable(mdP4ProbeFirmwareTest ${_dir}/mdP4ProbeFirmwareTest.cpp ${_dir}/mdFirmwareSession.h)
 	target_link_libraries(mdP4ProbeFirmwareTest PRIVATE mdLib elektronData)
 	set_property(TARGET mdP4ProbeFirmwareTest PROPERTY FOLDER "Elektron/test")
+
+	# WP1 of PLAN-0.8 (D2, B-011): host notes through the firmware MIDI input at sample offsets: MD key map, channels and
+	# GRID RECORD safety, MM six-note chord. The ROM from GEARMULATOR_MD_FIRMWARE_BIN / GEARMULATOR_MM_FIRMWARE_BIN;
+	# skips (77) without it.
+	add_executable(mdHostNotesFirmwareTest ${_dir}/mdHostNotesFirmwareTest.cpp ${_dir}/mdFirmwareSession.h)
+	target_link_libraries(mdHostNotesFirmwareTest PRIVATE mdLib elektronData)
+	if(MSVC)
+		target_compile_options(mdHostNotesFirmwareTest PRIVATE /fp:precise)
+	else()
+		target_compile_options(mdHostNotesFirmwareTest PRIVATE -fno-fast-math)
+	endif()
+	set_property(TARGET mdHostNotesFirmwareTest PROPERTY FOLDER "Elektron/test")
+	add_test(NAME mdHostNotesFirmwareTest_md COMMAND mdHostNotesFirmwareTest md)
+	add_test(NAME mdHostNotesFirmwareTest_mm COMMAND mdHostNotesFirmwareTest mm)
+	set_tests_properties(mdHostNotesFirmwareTest_md mdHostNotesFirmwareTest_mm PROPERTIES
+		LABELS "Integration;FirmwareTest;Midi" SKIP_RETURN_CODE 77 TIMEOUT 600)
 
 	add_executable(mdSequencerStateTest ${_dir}/mdSequencerStateTest.cpp)
 	target_link_libraries(mdSequencerStateTest PRIVATE mdLib)
