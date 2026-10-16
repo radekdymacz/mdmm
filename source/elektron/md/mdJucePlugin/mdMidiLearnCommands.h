@@ -68,6 +68,9 @@ namespace mdJucePlugin
 			// a target whose parameter is null or not realtime-capable.
 			std::function<pluginLib::Parameter*(const Ref&)> parameter;
 			std::function<int()> baseChannel;				// the machine's global base channel
+			// Why Learn is off now ("" when it is on): with the HW MIDI engine the host's MIDI in carries the real machine's own
+			// MIDI out, so nothing is translated or captured; the document says why (paused)
+			std::function<std::string()> pausedReason;
 			deskCore::FirmwareCcMap firmwareCcMap;			// what the firmware's own CC map drives (pure)
 			std::function<double()> nowMs;
 		};
@@ -99,6 +102,9 @@ namespace mdJucePlugin
 		// What the last project load left out (setup mappings and the alpha MDLN import), for the document; republishes.
 		void setLeft(std::vector<std::string> _left);
 
+		// Learning ends (the page went away); the mappings stay
+		void cancelLearning();
+
 		bool enabled() const { return m_model.enabled; }
 		bool learning() const { return m_capture.target.t >= 0; }
 		const Model& model() const { return m_model; }
@@ -120,6 +126,7 @@ namespace mdJucePlugin
 		Ref targetOf(const Value& _message) const;
 		void edit(std::vector<deskCore::LearnMapping> _list);
 		void stopLearning();
+		std::string pausedNow() const;
 		void takeCaptured();
 		void notifyHost();
 		void closeGestures();
@@ -132,6 +139,8 @@ namespace mdJucePlugin
 		deskCore::LearnCapture m_capture;			// target.t < 0: not learning
 		std::vector<deskCore::LearnMapping> m_built;	// the list the router's table was built from
 		bool m_builtValid = false;
+		int m_publishedBase = -1;			// what the published document was made with: it is made again when these change
+		std::string m_publishedPaused;
 		uint32_t m_generation = 0;
 		std::vector<pluginLib::Parameter*> m_params;	// by mapping index, for the host's notification
 		std::vector<std::string> m_left;

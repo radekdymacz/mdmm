@@ -38,6 +38,8 @@ namespace mdJucePlugin
 	// parameter by name when it takes the realtime host-automation path (null: none, or not realtime)
 	MidiLearnCommands::Model learnModelOf(AudioPluginAudioProcessor& _processor, MidiLearnCommands::Model _model);
 	pluginLib::Parameter* learnParameterOf(AudioPluginAudioProcessor& _processor, const std::string& _name, int _track);
+	// Learn is off while the HW MIDI engine runs (the host's MIDI in is the machine's own MIDI out): why, "" when it is on
+	std::string learnPausedReason(AudioPluginAudioProcessor& _processor);
 	double sessionNowMs();
 
 	// The session's pace. One step every 8 ms while a page is up (or a .syx import runs): the playhead (the app
@@ -573,6 +575,7 @@ namespace mdJucePlugin
 		void onDetach() override
 		{
 			stopMixMeters();
+			m_learn.cancelLearning();	// the page that waited for a controller is gone
 			m_desk->detachPage();
 		}
 
@@ -585,6 +588,7 @@ namespace mdJucePlugin
 			h.setMappings = [this](std::vector<deskCore::LearnMapping> _list) { m_desk->setMappings(std::move(_list)); };
 			h.parameter = [this](const MidiLearnCommands::Ref& _at) { return learnParameter(_at); };
 			h.baseChannel = [this] { return m_engine ? m_engine->baseChannel() : 0; };
+			h.pausedReason = [this] { return learnPausedReason(processor()); };
 			h.firmwareCcMap = [this](const int _offset, const int _cc) { return firmwareCc(_offset, _cc); };
 			h.nowMs = [] { return sessionNowMs(); };
 			return h;

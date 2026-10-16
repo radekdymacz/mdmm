@@ -104,6 +104,7 @@ namespace mmDesk
 		bool m_follow = false;	// I-003: the selected track follows the last played
 		deskCore::SoloMemo m_solo;	// the page's solo and the mutes the person had before it
 		std::vector<deskCore::LearnMapping> m_mappings;	// MIDI Learn
+		bool m_mappingsKept = false;	// the member is written even when empty (deskSetup.h, mappingsKept)
 	};
 
 	// The Monomachine's links address its six synth tracks' DATA pages (page * 8 + index) and levels.

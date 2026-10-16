@@ -36,12 +36,15 @@ namespace deskCore
 		void readMappings(const json::Value& _doc, const SetupSpec& _spec, DeskSetup& _s, std::vector<std::string>& _errors)
 		{
 			if(const auto* m = _doc.find("mappings"))
+			{
 				_s.mappings = mappingsFromJson(*m, _spec.learn, _errors);
+				_s.mappingsKept = _s.mappings.empty();	// only an empty list needs the flag
+			}
 		}
 
 		void writeMappings(const DeskSetup& _setup, const SetupSpec& _spec, json::Value& _d)
 		{
-			if(!_setup.mappings.empty())
+			if(!_setup.mappings.empty() || _setup.mappingsKept)
 				_d.set("mappings", mappingsToJson(_setup.mappings, _spec.learn.pages > 0));
 		}
 	}

@@ -1071,8 +1071,9 @@ namespace mdJucePlugin
 		{
 			// the host's MIDI only (the audio thread); the page's own (Editor), the device's and a port's (Physical) never go
 			// through the router: they pass on to the machine raw. A CC from a port is counted.
+			// (HW MIDI engine: the host's MIDI in is the real machine's own MIDI out; nothing is translated or captured)
 			if(_ev.source == synthLib::MidiEventSource::Host)
-				return m_learnRouter.translate(_ev);
+				return !getExternalMidi().isOn() && m_learnRouter.translate(_ev);
 			if(_ev.source == synthLib::MidiEventSource::Physical && _ev.sysex.empty() && (_ev.a & 0xf0) == 0xb0)
 				m_learnRouter.countPhysicalPassed();
 			return false;

@@ -107,7 +107,12 @@ namespace mdJucePlugin
 	{
 		LearnTable empty;
 		empty.generation = m_emptyGeneration.fetch_add(1, std::memory_order_relaxed) + 1;
-		publish(empty);
+		return publishAndSettle(empty, _timeoutMs);
+	}
+
+	bool LearnRouter::publishAndSettle(const LearnTable& _table, const unsigned _timeoutMs) noexcept
+	{
+		publish(_table);
 		// Any block that begins from here on takes the empty table. A block running now ends or is followed by the next.
 		const auto seen = m_blocks.load(std::memory_order_seq_cst);
 		const auto start = std::chrono::steady_clock::now();

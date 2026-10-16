@@ -380,6 +380,13 @@ namespace mdJucePlugin
 		m_processor.getDeskHost()->clearLegacyMapping();
 	}
 
+	std::string learnPausedReason(AudioPluginAudioProcessor& _processor)
+	{
+		return _processor.getExternalMidi().isOn()
+			? "MIDI Learn is off with the HW MIDI engine: the host's MIDI in is the machine's own MIDI out. Choose the emulator to learn."
+			: std::string();
+	}
+
 	LearnRouter& learnRouterOf(AudioPluginAudioProcessor& _processor)
 	{
 		return _processor.learnRouter();
