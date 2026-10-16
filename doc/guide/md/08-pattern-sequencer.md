@@ -413,7 +413,7 @@ A parameter lock gives one parameter its own value on one step. The step has to 
 
 ![The lock lane](shot:md-lock-lane)
 
-The lane shows the value locked on each step, and a dashed line shows the value of the kit. A bipolar parameter draws from the centre: up for right or boost, down for left or cut.
+The lane shows the value locked on each step, and a solid line shows the value of the kit, with its number at the right end of the lane. Rest the pointer on a step, or select it, to read its lock as a number at the top of its bar. Drag the line itself to change the kit value of the parameter on that track, the value the **Sound** page changes. The whole drag is one undo step and draws no lock. A bipolar parameter draws from the centre: up for right or boost, down for left or cut.
 
 ### The lock count
 
