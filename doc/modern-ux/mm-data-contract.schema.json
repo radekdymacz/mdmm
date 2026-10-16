@@ -2583,6 +2583,19 @@
         },
         {
           "type": "object",
+          "description": "I-003: whether the selected track follows the last track played from a MIDI controller, as the plug-in keeps it with the project (followSet): said with the solo; never as an echo of followSet.",
+          "required": ["type", "on"],
+          "properties": {
+            "type": {
+              "const": "follow"
+            },
+            "on": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
           "description": "The page's solo and the mutes the person had before it, as the plug-in keeps them with the project (soloSet): said when a project is opened, after a reset and when the page is made; never as an echo of soloSet.",
           "required": ["type", "tracks", "mutes"],
           "properties": {
@@ -5543,6 +5556,30 @@
             },
             "mutes": {
               "type": "array"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "setup: I-003: the selected track follows the last track played from a MIDI controller, kept with the project; the plug-in says it again as {\"type\":\"follow\"}",
+          "required": ["op", "on"],
+          "properties": {
+            "op": {
+              "const": "followSet"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "on": {
+              "type": ["boolean", "integer"]
             }
           },
           "additionalProperties": false

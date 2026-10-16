@@ -49,7 +49,7 @@ page.move = ds => ran.push("move" + ds); page.grow = ds => ran.push("grow" + ds)
 StepSel.bind(Keys, page);
 const ids = bound.map(b => b.id);
 check(J(ids) === J(["cut", "duplicate", "select-all", "sel-move", "sel-extend", "sel-trigs", "deselect", "step-select", "step-extend", "ruler-select", "step-menu"]), "bind: the selection's entries: " + ids.join(" "));
-check(bound.every(b => b.scope === "seq" && b.group === "Sequence") && bound.filter(b => b.area).every(b => b.area === "Roll" && !b.run), "bind: on Sequence; the pointer gestures described in the page's area, never dispatched");
+check(bound.every(b => b.scope === "seq" && b.group === "Pattern") && bound.filter(b => b.area).every(b => b.area === "Roll" && !b.run), "bind: on Pattern; the pointer gestures described in the page's area, never dispatched");
 check(Keys.byId("select-all").does === "the side shown" && /Cut the selected/.test(Keys.byId("cut").does), "bind: a page says an entry its own way");
 for (const b of bound.filter(b => b.run)) b.run({ key: "ArrowRight" });
 check(J(ran) === J(["cut", "duplicate", "selectAll", "move1", "grow1", "trigs", "deselect"]), "bind: each key runs the page's operation: " + ran.join(" "));

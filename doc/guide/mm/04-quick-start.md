@@ -34,13 +34,13 @@ In multi trig mode one source plays all six tracks. To use it:
 Multi trig takes its notes on MIDI channel 7. Chapter 5 describes the other keyboard modes.
 
 ## EXPLORING A PATTERN
-<!-- rows: MM-074 @466fde -->
+<!-- rows: MM-074 @1b8566 -->
 
 Play the pattern and listen to each track.
 
 1. Click a track in the rail to select it.
 2. Press {key:mute-track} to mute it, or **S** in its rail row to solo it.
-3. Go to the **Sound** workspace ({key:workspace-2}) and drag the values of the track. The sound changes as you drag.
+3. Go to the **Kit** workspace ({key:workspace-2}) and drag the values of the track. The sound changes as you drag.
 4. Play the track from your keyboard with {key:piano-white}.
 
 The piano roll plays the pitch of a note when you click it.
@@ -48,9 +48,9 @@ The piano roll plays the pitch of a note when you click it.
 ## GRID RECORDING
 <!-- rows: MM-075 MM-076 MM-077 MM-078 @825ab0 -->
 
-In grid recording you place notes on the steps of a pattern one by one. The machine does this with the TRIG keys. In the editor you draw in the piano roll of the **Sequence** workspace.
+In grid recording you place notes on the steps of a pattern one by one. The machine does this with the TRIG keys. In the editor you draw in the piano roll of the **Pattern** workspace.
 
-1. Go to the **Sequence** workspace ({key:workspace-1}) and select a track.
+1. Go to the **Pattern** workspace ({key:workspace-1}) and select a track.
 2. If you want the pattern's own kit, open the kit library and load it: click <KIT>, choose a kit, click **Load**. Chapter 6 describes the library.
 3. Click an empty step in the roll. A note goes on it, as long as the **Len** key says.
 4. Drag the end of the note to make it longer or shorter, drag it up or down to change its pitch, or sideways to move it.
@@ -90,7 +90,7 @@ A parameter lock gives one parameter a value of its own for one step.
 
 ### Lock a value
 
-1. In the **Sequence** workspace, click the **Locks** tab under the roll, then a page tab in the rail, for example FLT.
+1. In the **Pattern** workspace, click the **Locks** tab under the roll, then a page tab in the rail, for example FLT.
 2. Click the parameter, for example BASE. The lock lane under the roll now edits it.
 3. Drag over the bars of the lane. Each step with a trig gets a lock with the value where you dragged.
 4. To draw a straight line of values, hold [⇧] and drag. The locks make a ramp over the notes.
@@ -102,7 +102,7 @@ The <LOCKS> field of the LCD counts the locks of the pattern, out of 62.
 
 ### Lock live
 
-While live recording plays, turn a value on the **Sound** workspace. The machine records the value as a lock on the step that plays when the value arrives. The editor marks that step in the trig row and in the lock lane, for about three seconds, and a note says which value it locked.
+While live recording plays, turn a value on the **Kit** workspace. The machine records the value as a lock on the step that plays when the value arrives. The editor marks that step in the trig row and in the lock lane, for about three seconds, and a note says which value it locked.
 
 ### Remove locks
 

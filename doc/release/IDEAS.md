@@ -3,6 +3,13 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-044 · Name the workspaces as the manuals do: SEQUENCE becomes PATTERN, SOUND becomes KIT
+
+- **From:** a beta tester on Discord (suggestion to match the machines' manuals); decided by Radek, 2026-10-16.
+- **The idea:** the first two workspace tabs are called PATTERN and KIT in both editors. Labels only: the internal ids (`data-ws` seq / sound, the CSS classes, journey names, key ids, saved setup values) are unchanged, so saved projects and tests keep working. Keys 1-5 and the layout stay.
+- **Status:** built on branch `feat/0.8-tab-names`, not merged. Changed: the tab markup of both editors, the key view (group "Pattern", the workspace names), toasts, tooltips, journey narration, the guide (both editors), the feature rows' "where" fields, the site's front page captions. Left as they were: chapter titles of the manuals ("Sound synthesis: kits", the Sequencer chapters), the words "sound" and "sequencer" where they mean the machine's own, code comments, past release notes, and the site's screenshots (they show the old tab names until the next shoot).
+- **Release-note line:** The first two tabs are now called Pattern and Kit, as in the machines' manuals (they were Sequence and Sound). Nothing else changes.
+
 ## I-043 · Filter envelope: a larger display with the full BOFS/WOFS range, the second window smaller (square) with attack and decay only
 
 - **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). The filter envelope display should be larger, and left/right on it show the full BOFS/WOFS range (-64 to +63, B-148); the second window smaller and square, with just attack and decay.
@@ -85,15 +92,15 @@
 
 - **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("a blue LED lit up on a track if it was triggered from another track").
 - **Today:** the rail lamps (I-028) light a track only for its own trigs (Monomachine `mmStudio/mmMockup.js` ~6239, Machinedrum `mdStudio/mdDeskTop.js:325`). A track that plays because of the Monomachine's kit Trig position (`trigpos`, Sequence > Trig setup: "Also play T2") or the Machinedrum's trig group (`trigGroup`, `mdDeskSound.js:82`) stays dark.
-- **The idea:** light that track's lamp too, in a second colour (blue, or the LCD ink), from the same data the lamps use: the step telemetry, the pattern and the kit's trig relations, no audio. One trig relation each, they do not chain (as the page says), so it stays one look-up a step.
-- **Status:** planned for 0.8 (WP9, doc/release/PLAN-0.8.md).
+- **The idea:** light that track's lamp too, in a second colour (blue, or the LCD ink), from the same data the lamps use: the step telemetry, the pattern and the kit's trig relations, no audio. Each track has one trig relation, and the forwarding follows on from track to track (T1 to T2 to T3, at most six hops), so it stays a short look-up a step.
+- **Status:** built on feat/0.8-mm-tester-items (WP9), Monomachine only. The data exists on the page: a track's `trigpos` (Sequence > Trig setup > Trig position) names the track its notes are forwarded to, and the forwarding follows on (T1 to T2 to T3, as the journey mm-seq-trig-setup shows). On Sequence and Sound, when a track's own trig lights its rail number, the tracks it forwards to light in blue (`trig2`, `--fwd`) unless they trig themselves on that step; a muted track or one a solo leaves out stays dark. Page only (`130-main.js` railLamps, fwdTargets; `20-mm.css`), journey `mm-seq-rail-lamps-forwarded`. The Machinedrum is not done: its trig group (`trigGroup`) is a different relation (one track's trig plays another's machine), to be decided; the Mix strip squares do not show it either.
 
 ## I-030 · Name the trig mark of the lock lane (red and green)
 
 - **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("in the locked parameters view some trigs were green and some were red at the top, what is that?").
 - **Today:** on the Monomachine's lock lane each step with a trig has a small mark at its top: red when the trig fires all three envelopes (AMP, FILTER, LFO), green when it fires only some of them or none (a trigless trig) (`mmStudio/mmStudio.css:1617-1619`, `src/50-state.js:55` stepKind). The step's tip says only "Locked …" or "Kit value …", and the guide's PARAMETER LOCKS section (`doc/guide/mm/13-parameter-locks.md`) does not mention the mark; the roll's step legend (?) names trigless trigs but not this mark.
 - **The idea:** say it where it shows: the lane step's tip adds "all envelopes" / "some envelopes" / "trigless", and one sentence in chapter 13 ("A red mark at the top of a bar: the trig fires every envelope; green: only some, or none"). No new control.
-- **Status:** planned for 0.8 (WP9, doc/release/PLAN-0.8.md).
+- **Status:** done on feat/0.8-mm-tester-items (WP9): the lane bar's tip ends with "all envelopes", "some envelopes" or "trigless" (`70-seq.js`), and doc/guide/mm/13-parameter-locks.md says what the red and green mark mean.
 
 ## I-029 · A quick way back to the original sound while you play with the Sound page
 
@@ -283,7 +290,7 @@
 
 - **From:** Discord tester B, 2026-10-07.
 - **Idea:** an option to switch the selected track (instrument focus) to the one last played from an external MIDI controller.
-- **Status:** new.
+- **Status:** done on `feat/0.8-follow-track` (WP7 of PLAN-0.8), not yet merged. Both editors: engine menu entry FOLLOW PLAYED TRACK: OFF / ON (off at first, no new control). On, a note from a MIDI controller (the plug-in's `midiIn`, host or port, never the editor's own keyboard or audition) selects the track it plays: Machinedrum, the track the Global key map gives the note on the four base channels; Monomachine, the synth track whose channel (base + t inside CHANNEL SPAN) it arrives on. Another channel or an unmapped note changes nothing. Kept with the project in the editor's setup (`followPlayed`, written only when on; no new chunk). Journeys md-follow-played-track, mm-follow-played-track; tests in mdDeskTest and mmDeskTest.
 
 ## I-002 · Show incoming notes on the Sound page
 

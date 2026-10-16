@@ -1,7 +1,7 @@
 "use strict";
 /* The Sampler (the UW's ROM and RAM machines): the slots in the rail, a RAM slot's set-up, take, steps and
    chops, a ROM slot's waveform and every ROM slot as a tile; the samples' waveforms (overview and detail),
-   the audition, a sample file on its way to a ROM slot, and the sample screens of the Sound page. The chop
+   the audition, a sample file on its way to a ROM slot, and the sample screens of the Kit page. The chop
    drag is mdDeskGestures.js's. */
 
 /* ===== Sampler (UW): real kit machines, pattern locks, recorder mutes, sample names (0x73) and P9:
@@ -328,7 +328,7 @@ function renderSampler() {
    <section class="card ramsteps"><header><h3>Steps</h3><span class="chophead">${ps.length > 1 ? ps.map(i => `<button class="${i === p ? "cream" : ""}" data-choptrk="${i}">Track ${i + 1}</button>`).join("") : ""}</span></header>
     <div class="seq smpseq"><div class="r" style="grid-template-columns:${smpCols()}"><span></span>${steps().map(s => `<div class="rul ${s % 16 === 0 && s !== vis()[0] ? "gap" : ""}">${s % 4 === 0 ? s + 1 : ""}</div>`).join("")}</div>
      <div class="r" id="recon" data-r="${r}" style="grid-template-columns:${smpCols()}">${smpLab(r, "Record on", "rec")}${steps().map(s => `<button class="${stepCls(r, s)}" data-rc="${s}" aria-pressed="${V.tracks[r].trigs[s]}" aria-label="Record on step ${s + 1}"></button>`).join("")}</div>
-     ${p != null ? `<div class="r" id="chop" data-p="${p}" style="grid-template-columns:${smpCols()}">${smpLab(p, "Chop")}${steps().map(s => `<button class="${stepCls(p, s)}" data-cp="${s}" aria-pressed="${V.tracks[p].trigs[s]}" aria-label="Chop step ${s + 1}">${chopInner(p, s)}</button>`).join("")}</div>` : `<div class="r" style="grid-template-columns:var(--srlab) minmax(0,1fr)"><span class="srlab"><b>Chop</b></span><div class="edblank">No track plays RAM-P${n}. Put RAM-P${n} on a track in Sound.</div></div>`}</div>
+     ${p != null ? `<div class="r" id="chop" data-p="${p}" style="grid-template-columns:${smpCols()}">${smpLab(p, "Chop")}${steps().map(s => `<button class="${stepCls(p, s)}" data-cp="${s}" aria-pressed="${V.tracks[p].trigs[s]}" aria-label="Chop step ${s + 1}">${chopInner(p, s)}</button>`).join("")}</div>` : `<div class="r" style="grid-template-columns:var(--srlab) minmax(0,1fr)"><span class="srlab"><b>Chop</b></span><div class="edblank">No track plays RAM-P${n}. Put RAM-P${n} on a track in Kit.</div></div>`}</div>
     <div class="seqfoot"><span></span><div class="legend"><span><i class="lg on"></i>Trig: click</span>${p != null ? `<span>Chop slice: drag up / down</span><span>Reverse: alt-click</span><span>Retrig: shift-click</span>` : ""}<span><i class="lg on lk"></i>Has locks</span></div>${pageCtl()}</div></section>
    <div class="smp2"><section class="card"><header class="smph"><h3>Source</h3>${sourceSeg(r)}<span>recorder · track ${r + 1}</span></header><div class="ctl four">${RAMR.map(k => pc("syn", k, { t: r, unit: k === "LEN" ? "len" : k === "RATE" ? "rate" : "" })).join("")}</div></section>
     ${p != null ? `<section class="card"><header class="smph"><h3>Playback</h3><span class="pbtake" title="${tk}"><span class="ilab">Take</span> ${tk}</span><span>player · track ${p + 1}</span></header><div class="ctl four">${SMPL.map(k => pc("syn", k, { t: p })).join("")}</div></section>` : ""}</div>`;

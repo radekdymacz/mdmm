@@ -104,6 +104,6 @@ DeskGlobal.host = {
 	copy: G => cmd("globalCopy", { slot: G.slot }),
 	paste: G => cmd("globalPaste", { slot: G.slot }),
 	canPaste: () => V.clipboard?.global != null,
-	back: () => ({ seq: "Sequence", sound: "Sound", mix: "Mix", sampler: "Sampler", song: "Song", control: "Control" })[S.ws] || "",
+	back: () => ({ seq: "Pattern", sound: "Kit", mix: "Mix", sampler: "Sampler", song: "Song", control: "Control" })[S.ws] || "",
 	ask: (html, label, yes) => ask(html, [[label, "danger", yes], ["Cancel", "", () => { }]])
 };

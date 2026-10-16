@@ -21,6 +21,17 @@ namespace deskCore
 				if(const auto solo = solo::fromJson(*sl, _spec.tracks, _errors))
 					_s.solo = *solo;
 		}
+
+		void readFollow(const json::Value& _doc, DeskSetup& _s, std::vector<std::string>& _errors)
+		{
+			const auto* f = _doc.find("followPlayed");
+			if(!f)
+				return;
+			if(f->isBool())
+				_s.followPlayed = f->asBool();
+			else
+				_errors.emplace_back("$.followPlayed: expected true or false; off is used");
+		}
 	}
 
 	std::vector<std::string> validateKnobCcs(const std::vector<int>& _ccs)
@@ -49,6 +60,7 @@ namespace deskCore
 			// the bare modulators with the solo beside them (the MM's setup)
 			s.modulators = modSetupRead(_doc, _errors, _spec.modulators);
 			readSolo(_doc, _spec, s, _errors);
+			readFollow(_doc, s, _errors);
 			return s;
 		}
 		if(name != _spec.schema)
@@ -85,6 +97,7 @@ namespace deskCore
 					s.knobCcs[i] = static_cast<uint8_t>(ccs[i]);
 		}
 		readSolo(_doc, _spec, s, _errors);
+		readFollow(_doc, s, _errors);
 		return s;
 	}
 
@@ -95,6 +108,8 @@ namespace deskCore
 			auto d = modSetupToJson(_setup.modulators, _spec.modulators);
 			if(!_setup.solo.empty())
 				d.set("solo", solo::toJson(_setup.solo));
+			if(_setup.followPlayed)
+				d.set("followPlayed", true);
 			return d;
 		}
 		json::Value d = json::Value::object();
@@ -110,6 +125,8 @@ namespace deskCore
 		}
 		if(!_setup.solo.empty())
 			d.set("solo", solo::toJson(_setup.solo));
+		if(_setup.followPlayed)
+			d.set("followPlayed", true);
 		return d;
 	}
 }

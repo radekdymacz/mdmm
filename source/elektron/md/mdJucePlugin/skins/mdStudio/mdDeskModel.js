@@ -52,7 +52,7 @@ function slots(m, cat) {
 /* a lane's (or a knob's) label on machine m: n, or FX·n / RTG·n where its synthesis page has an n too */
 function laneLabel(m, n, cat) { const a = slots(m, cat); if (!a.includes("SYN·" + n)) return n; return (a.indexOf(n) >= 16 ? "RTG·" : "FX·") + n; }
 /* MD-033: the clips the machine's LCD draws between two value boxes whose parameters depend on each other (the
-   catalogue's clips: i joins slot i and i + 1), as the Sound page names its boxes: [[g, a], [g, b]] with g "syn",
+   catalogue's clips: i joins slot i and i + 1), as the Kit page names its boxes: [[g, a], [g, b]] with g "syn",
    "fx" or "rt", and LFOS LFOD LFOM as the LFO card's SPD DEPTH SHMIX (E.lfoParams). Pairs with an unnamed slot go. */
 function clipPairs(m, cat, E) {
 	const c = cat.byName[m]; if (!c || !c.clips) return [];
