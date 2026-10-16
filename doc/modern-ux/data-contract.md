@@ -498,6 +498,14 @@ What was left out is logged and shown on the page as an `error` message. It is n
 is restored, after a `reset` and when a page is made (`ready`), and the page takes it as
 its solo and mutes, then makes the machine's mutes match.
 
+FOLLOW PLAYED TRACK (I-003) is the setup's `followPlayed` boolean, both editors: the page says
+`{"op":"followSet","on":true|false}` (the engine menu's entry), the desk keeps it beside `solo` (written only when on,
+so a setup without it is off; anything but a boolean is off, said as an error) and does not echo it. The Machinedrum's
+`setup` message carries it in `doc`; the Monomachine says `{"type":"follow","on"}` with its solo (restore, `reset`,
+`ready`). The page does the following: a `midiIn` (a note from a MIDI controller, never the editor's own
+keyboard) on the Machinedrum's four base channels that the Global key map gives a track, or on a Monomachine
+synth track's channel (base + t inside CHANNEL SPAN), selects that track while the option is on.
+
 `revertTrack {k, t}` (a working-kit edit, both editors) puts track `t` of the kit that
 plays back as the kit's stored slot has it, in one undo step (the Sound page's Revert
 track; the kit library's Reload is the whole kit).

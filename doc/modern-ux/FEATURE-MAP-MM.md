@@ -120,7 +120,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Grid recording 1-13 | NOTE OFF (FUNCTION + TRIG) | Note off trig | ✅ | Alt-click an empty step; drag a bar's end |  | 2 | pass (e2e-mm-roll-draw-length) |
 | Live recording 1-13 | Record notes in real time, quantised | Live record | ✅ | Alt + Space, record key | Quantising done by firmware | 1 | pass (e2e-mm-seq-live-record) |
 | Live recording 1-13 | Erase with EXIT while notes sound | Live erase | ✅ | Hold Delete while live recording: the selected track's notes go as they play |  | 1 | pass (e2e-mm-seq-live-erase) |
-| Parameter locks 1-13 | Lock a value on a step | P-lock | ✅ | Lock lane (draw bars), wheel on a step |  | 2 | pass (e2e-mm-seq-lock-lane) |
+| Parameter locks 1-13 | Lock a value on a step | P-lock | ✅ | Lock lane (draw bars), wheel on a step |  | 3 | pass (e2e-mm-seq-lock-lane) |
 | Parameter locks 1-14 | Record locks live by turning a knob | Live lock | ✅ | Value boxes while live recording | The machine records; the page marks the step's cell and lock lane for about 3 s and says which value it locked (`70-seq.js` setRecLock) | 1 | pass (e2e-mm-seq-record-locks) |
 | Parameter locks 1-14 | Remove one lock; remove all locks of a trig | Clear locks | ✅ | Lane: Alt-drag erases one parameter's locks; a step's menu (right-click, or the Menu key on a focused step): Clear locks takes all its locks (or the selection's) and keeps the note | No key that drops a step's locks and keeps its note | 2 | pass (e2e-mm-seq-lock-ramp-erase-wheel) |
 
@@ -422,7 +422,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Mechanical settings 1-94 | Velocity curve, fixed velocity (SFX-6) | Keyboard response | ➖ | – | Hardware keys. The editor's own velocity is keys C / V | – | n/a |
 | Mechanical settings 1-94 | Joystick mapping TIGHT / FULL | Joystick | ➖ | – | Hardware joystick | – | n/a |
 | File 1-95 | Sysex send: ALL, KIT, PAT+KIT, SONG+PAT+KIT with ranges | Send dumps | ✅ | Engine menu: EXPORT SYSEX…: All (every kit, pattern, song and global), or untick All and tick Kits, Patterns, Songs, Globals, Waveforms, each with its range | The kinds are chosen one by one: a song range does not add its patterns by itself. | 1 | stub-only |
-| File 1-97 | Sysex receive: ORIG, SPEC, VERF | Receive dumps | ✅ | Import SysEx: PLACE row (Original place, Specific place from a first slot per kind, the grid shows where each item lands); Verify only beside Import | Verify only writes nothing: the slots are read and compared. | 4 | pass (e2e-mm-lib-syx-import) |
+| File 1-97 | Sysex receive: ORIG, SPEC, VERF | Receive dumps | ✅ | Import SysEx: PLACE row (Original place, Specific place from a first slot per kind, the grid shows where each item lands); Verify only beside Import | Verify only writes nothing: the slots are read and compared. The tick Read back and compare beside Verify only (on by default, kept): off, the import ends after Send and the report says not read back. | 5 | pass (e2e-mm-lib-syx-import) |
 | File 1-95, 1-97 | Needs the machine on SYSEX RECV | Receive session | ✅ | Editor drives it itself; pattern field shows RECV / SEND n | HW MIDI: user opens the screen | 2 | pass (e2e-mm-lib-syx-import) |
 | DigiPRO manager 1-99 | Send, receive, erase, rename user waveforms; copy between Digibanks | Waveform manager | 🟡 | Export SysEx…: Waveforms (the manager's SEND) |  | – | n/a |
 | +Drive settings 1-105 | Quick mode, format | +Drive | ➖ | – | Not emulated | – | n/a |
@@ -537,7 +537,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | SELECT, COPY AND PASTE STEPS | Select, copy and paste steps | Select steps with the mouse, copy, paste and clear them, to one track or several. | ✅ | Cmd-click, Cmd-drag, the top bar's Copy, Paste, Clr; Cmd+C, Cmd+V |  | 5 | pass (e2e-mm-seq-paste-steps-keeps-page) |
 | COPY, PASTE AND CLEAR WHAT | Copy, Paste and Clear what | Choose what a copy, paste or clear takes: trigs, locks, the sound, the whole track. | ✅ | The what menu on Copy, Paste and Clear |  | 2 | pass (mm-copy-what) |
 | DROP A FILE ON THE WINDOW | Drop a file on the window | Drop a SysEx file (or, on the Machinedrum, a sample) on the editor. | ✅ | The window itself | macOS | 1 | pass (e2e-mm-drop-syx) |
-| SYSEX IMPORT WITH A PREVIEW | SysEx import with a preview | Look inside a SysEx file before you send it: tick the kinds, choose where each goes, read the report. | ✅ | Engine menu: IMPORT SYSEX… |  | 4 | pass (e2e-mm-lib-syx-import) |
+| SYSEX IMPORT WITH A PREVIEW | SysEx import with a preview | Look inside a SysEx file before you send it: tick the kinds, choose where each goes, read the report. | ✅ | Engine menu: IMPORT SYSEX… |  | 5 | pass (e2e-mm-lib-syx-import) |
 | NOTES FROM A MIDI KEYBOARD LIGHT THE TRACK | Notes from a MIDI keyboard light the track | The track you play lights on the rail and in the mixer. | ✅ | Rail numbers, Mix LEDs |  | 1 | pass (e2e-mm-perform-keys-lit) |
 | THE CPU METER AND THE SPEED-UPS | The CPU meter and the speed-ups | No such function. A meter shows how much of the audio time the emulation takes, with the speed-ups to switch. | ✅ | The CPU meter beside the version; Developer › Speed-ups |  | 2 | pass (e2e-mm-top-cpu-meter) |
 | THE OUTPUT METER AND VOLUME | The output meter and volume | Two bars and a volume line at the end of the LCD. | ✅ | The LCD's right end |  | 1 | pass (e2e-mm-lcd-volume) |
@@ -550,6 +550,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | PIANO ROLL | Piano roll | Draw notes on a roll with a note length, move or box-select them and play chords; the roll writes the same step data as the machine's own entry. | ✅ | Sequence: the piano roll, Draw (B), Len | MM only | 5 | pass (e2e-mm-seq-transpose-keyboard) |
 | WHAT YOU DRAW IS WHAT PLAYS | What you draw is what plays | What you enter in the sequencer is what the machine plays. | ✅ | Sequence: the grid or the roll; Alt+Delete clears the pattern; Cmd+Z takes it back | e2e: drawn, played, cleared, undone, each checked on the machine's output | 1 | pass (mm-real-sequence-drawn) |
 | CLEAR | Clear (was Revert track) | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Sound: Clear key at the right end of the MUTATE bar, next to R |  | 1 | pass (e2e-mm-sound-revert-track) |
+|  | The selected track follows the last track played | No such function. With it on, the track you select changes to the last one you played from a MIDI keyboard. | ✅ | Engine menu: FOLLOW PLAYED TRACK (off at first) | I-003 | 1 | – |
 
 ## 24. Editor features with no manual counterpart (for orientation)
 
@@ -561,11 +562,11 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 361 |
+| ✅ | 362 |
 | 🟡 | 14 |
 | ❌ | 1 |
 | ➖ | 34 |
-| Total | 410 |
+| Total | 411 |
 
 ### Top gaps, ranked (our UI)
 

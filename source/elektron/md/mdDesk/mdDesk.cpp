@@ -53,7 +53,7 @@ namespace mdDesk
 	const std::map<std::string, void (Desk::*)(const Value&)>& Desk::setups()
 	{
 		static const std::map<std::string, void (Desk::*)(const Value&)> map{
-			{"modSet", &Desk::setModulators}, {"knobs", &Desk::setKnobs}, {"soloSet", &Desk::setSolo},
+			{"modSet", &Desk::setModulators}, {"knobs", &Desk::setKnobs}, {"soloSet", &Desk::setSolo}, {"followSet", &Desk::setFollow},
 			{"sampleName", &Desk::renameSample}, {"sampleWave", &Desk::sampleWave}, {"audition", &Desk::audition}, {"auditionStop", &Desk::auditionStop}};
 		return map;
 	}
@@ -122,6 +122,19 @@ namespace mdDesk
 		result(_message, errors, {});
 	}
 
+	// I-003: follow the last played track. Not echoed (the page knows what it sent); the setup message says it again.
+	void Desk::setFollow(const Value& _message)
+	{
+		const auto* on = _message.find("on");
+		const bool follow = on && on->isBool() && on->asBool();
+		if(m_setup.followPlayed != follow)
+		{
+			m_setup.followPlayed = follow;
+			saveSetup();
+		}
+		result(_message, {}, {});
+	}
+
 	void Desk::publishSolo()
 	{
 		publish(deskCore::solo::message(m_setup.solo));
@@ -162,6 +175,7 @@ namespace mdDesk
 	void Desk::onStartOver()
 	{
 		m_samples.reset();
+		publishSetup();	// I-003: the follow option is in it
 		publishSolo();	// the page dropped its solo with the rest: the project's is said again
 	}
 
