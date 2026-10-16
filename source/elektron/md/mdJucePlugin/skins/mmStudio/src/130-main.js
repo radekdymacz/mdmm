@@ -207,7 +207,7 @@ document.addEventListener("click",e=>{
  const pmk=e.target.closest("[data-pmode]");if(pmk){S.mode=pmk.dataset.pmode;S.polyT=S.mode==="poly"?asgT():null;if(HOST.keyMode)HOST.keyMode(S.mode,asgT());if(S.mode==="poly")toast("POLY: T"+(asgT()+1)+" now plays six voices. The other five tracks are silent until you leave POLY.");render();return}
  const so2=e.target.closest("[data-strk]");if(so2){S.multi.splitTrack=clamp(S.multi.splitTrack+ +so2.dataset.strk,2,6);edit("multiTrig",{splitTrack:S.multi.splitTrack-1});render();return}
  const tm=e.target.closest("[data-tim]");if(tm){S.multi.timing=clamp(S.multi.timing+ +tm.dataset.tim,0,6);edit("multiTrig",{timing:S.multi.timing});render();return}
- const ko=e.target.closest("[data-kboct]");if(ko){S.kbOct=clamp(S.kbOct+ +ko.dataset.kboct,0,6);render();return}
+ const ko=e.target.closest("[data-kboct]");if(ko){S.kbOct=clamp(S.kbOct+ +ko.dataset.kboct,KBOCT[0],KBOCT[1]);render();return}
  const bd=e.target.closest("[data-band]");if(bd){S.mmapSel=+bd.dataset.band;render();return}
  const mr=e.target.closest("tr[data-mrow]");if(mr&&!e.target.closest("button,.pc,.kselbtn")){S.mmapSel=+mr.dataset.mrow;render();return}
  const mh=e.target.closest("[data-mhi]");if(mh){const i=+mh.dataset.i,r=S.mmap[i],lo=i?S.mmap[i-1].hi+1:0,nx=S.mmap[i+1];r.hi=clamp(r.hi+ +mh.dataset.mhi,lo,nx?nx.hi-1:127);edit("multiMap",{i,hi:r.hi});render();return}
@@ -241,6 +241,7 @@ document.addEventListener("click",e=>{
  if(e.target.closest("#undo")){undo();return}if(e.target.closest("#redo")){redo();return}
  const sc=e.target.closest("[data-sec]");if(sc){if(e.altKey&&sc.dataset.sec==="clear")clearPattern();else secAction(sc.dataset.sec);return}
  if(e.target.closest("#syncf.warn")){sendDialog();return}
+ if(e.target.closest("#kitPrev,#kitNext")){kitStep(e.target.closest("#kitNext")?1:-1);return}
  if(e.target.closest("#kitf")){toggleLib("kit");return}
  if(e.target.closest("#pat")){toggleLib("pat");return}
  if(e.target.closest("#learnkey")){S.learn=!S.learn;S.learnT=null;document.body.classList.toggle("learn",S.learn);renderTop();if(S.learn)toast("LEARN: click a value, then press 1-8 for a controller knob.");if(HOST.learning)HOST.learning(S.learn);return}

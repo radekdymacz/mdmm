@@ -142,7 +142,7 @@ The GLOBAL page opens over the workspace. It holds the eight global slots and th
 The sixteen TRIG keys play notes and set trigs. In the editor:
 
 - The keys {key:piano-white} play the selected synth track, from any workspace. They are the white keys C to D. {key:piano-black} are the black keys above them.
-- Press {key:octave-down} or {key:octave-up} to move the octave down or up, from −3 to +3. Press {key:velocity-down} or {key:velocity-up} to step the velocity through 20, 40, 60, 80, 100 and 127.
+- Press {key:octave-down} or {key:octave-up} to move the octave down or up, from −4 to +6. The A key then plays any note from MIDI 0 to 120, and the keys above it stop at 127. Press {key:velocity-down} or {key:velocity-up} to step the velocity through 20, 40, 60, 80, 100 and 127.
 - The on-screen keyboard in the **Perform** workspace plays notes by click or drag.
 - Clicking in the piano roll of the **Pattern** workspace plays the pitch.
 
@@ -308,7 +308,7 @@ The SFX-6 has a keyboard and a joystick. The editor has the same functions on th
 - The **Keyboard** card plays notes. It has four modes: **Auto track**, **Multi trig**, **Multi map** and **Poly**.
 - The **Assign** card has a joystick pad. Drag the stick. It springs back when you let go. On the machine's tabletop models the pad sends pitch bend, CC 1 and CC 2.
 - **Multi trig** and **Multi map** are keys of the card.
-- The **Octave** stepper moves the on-screen keyboard.
+- The **Octave** stepper moves the on-screen keyboard over all 128 notes, from MIDI 0 up to 127.
 
 To use the Perform keyboard and joystick:
 

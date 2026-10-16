@@ -3815,14 +3815,14 @@ function liveRecord(){if(HOST.record)return HOST.record(true);S.rec=!S.rec;if(S.
 
 /* ---- the keyboard: two rows play the selected synth track chromatically, from any workspace, as a DAW's typing
    keyboard: A S D F G H J K L are the white keys C D E F G A B C D from C-3, W E · T Y U · O P the black keys above
-   them (C♯ D♯ · F♯ G♯ A♯ · C♯ D♯; R and I sit where a piano has no black key) (Z / X: the octave, −3 to +3; ⇧B taps
+   them (C♯ D♯ · F♯ G♯ A♯ · C♯ D♯; R and I sit where a piano has no black key) (Z / X: the octave, −4 to +6: the A key from MIDI 0 to 120, every note 0-127, I-040; ⇧B taps
    the tempo everywhere, B off Pattern, since T is F♯ here; MM-PORT-PLAN.md 2026-10-05), real MIDI notes on the track's own channel
    (GLOBAL › MIDI › CHANNELS: base + track), at KB.vel (C / V: 20 40 60 80 100 127; the machine hears it through
    ASSIGN › VEL). Each key is its own note on and off, so legato and the machine's note priority work as on a
    keyboard; while LIVE RECORDING the machine records them. MIDI tracks are not played (their notes go to the
    MIDI OUT only). Key repeat is ignored. ---- */
 /* a key (its letter) to semitones above the A key's note */
-const KEYS_PIANO={A:0,W:1,S:2,E:3,D:4,F:5,T:6,G:7,Y:8,H:9,U:10,J:11,K:12,O:13,L:14,P:15},KEYS_WHITE="ASDFGHJKL",KEYS_BLACK="WETYUOP",KEYS_OCT=[-3,3],KEYS_VELS=[20,40,60,80,100,127],KEYS_BASE=48;
+const KEYS_PIANO={A:0,W:1,S:2,E:3,D:4,F:5,T:6,G:7,Y:8,H:9,U:10,J:11,K:12,O:13,L:14,P:15},KEYS_WHITE="ASDFGHJKL",KEYS_BLACK="WETYUOP",KEYS_OCT=[-4,6],KEYS_VELS=[20,40,60,80,100,127],KEYS_BASE=48;
 const KB={oct:0,vel:100,held:new Map(),told:new Set()};
 function keyVel(v,d){const up=KEYS_VELS.find(x=>x>v),down=[...KEYS_VELS].reverse().find(x=>x<v);return d>0?up??KEYS_VELS[KEYS_VELS.length-1]:down??KEYS_VELS[0]}
 /* the keys that play and act on tracks: no dialog or panel open, no text field focused (the one rule of both editors, deskKeys.js) */
@@ -3835,7 +3835,7 @@ function homeUp(code){const h=KB.held.get(code);if(!h)return;KB.held.delete(code
 /* a host plays the machine (the note intent: pitch in semitones from KEYS_BASE, C3); the example only shows the track's lamp */
 function keyNote(t,n,vel){if(vel&&S.ws==="mix"&&!isMidiT(t)&&audible(t))DeskTrig.light([t]);if(HOST.noteOn){const p=n-KEYS_BASE;return vel?HOST.noteOn(t,p,vel):HOST.noteOff(t,p)}if(vel){flashTracks([t]);kbTell("eg","Example: in the plug-in the keys play the machine.")}}
 function kbVel(d){KB.vel=keyVel(KB.vel,d);toast(`Keyboard velocity ${KB.vel}`)}
-function kbOct(d){KB.oct=clamp(KB.oct+d,KEYS_OCT[0],KEYS_OCT[1]);toast(`Keyboard octave ${KB.oct>0?"+":""}${KB.oct}: A plays ${noteName(KEYS_BASE+12*KB.oct)}`)}
+function kbOct(d){KB.oct=clamp(KB.oct+d,KEYS_OCT[0],KEYS_OCT[1]);toast(`Keyboard octave ${KB.oct>0?"+":""}${KB.oct}: A plays ${noteName(KEYS_BASE+12*KB.oct)} (MIDI ${KEYS_BASE+12*KB.oct})`)}
 document.addEventListener("keyup",e=>homeUp(e.code));addEventListener("blur",()=>[...KB.held.keys()].forEach(homeUp));
 Keys.bind({id:"piano-run",scope:"any",keys:[...KEYS_WHITE,...KEYS_BLACK],group:"Playing",hidden:true,field:true,when:kbOn,run:homeDown,does:""});
 Keys.bind({id:"octave-down",scope:"any",keys:["Z"],group:"Playing",hidden:true,field:true,when:kbOn,run:()=>kbOct(-1),does:""});
@@ -3844,7 +3844,7 @@ Keys.bind({id:"velocity-down",scope:"any",keys:["C"],group:"Playing",hidden:true
 Keys.bind({id:"velocity-up",scope:"any",keys:["V"],group:"Playing",hidden:true,field:true,when:kbOn,run:()=>kbVel(1),does:""});
 Keys.bind({id:"piano-white",scope:"any",notes:"C D E F G A B C D",keys:["A S D F G H J K L"],group:"Playing",does:"Play the selected synth track: white keys C D E F G A B C D, real notes on its MIDI channel, from any workspace. While live recording the machine records them"});
 Keys.bind({id:"piano-black",scope:"any",notes:"C♯ D♯ F♯ G♯ A♯ C♯ D♯",keys:["W E T Y U O P"],group:"Playing",does:"The black keys above them: C♯ D♯ F♯ G♯ A♯ C♯ D♯, so the two rows play every semitone"});
-Keys.bind({id:"octave",scope:"any",keys:["Z","X"],group:"Playing",does:()=>`Octave down / up, −3 to +3 (now ${KB.oct>0?"+":""}${KB.oct}: A is ${noteName(KEYS_BASE+12*KB.oct)})`});
+Keys.bind({id:"octave",scope:"any",keys:["Z","X"],group:"Playing",does:()=>`Octave down / up, −4 to +6: every note 0-127 (now ${KB.oct>0?"+":""}${KB.oct}: A is ${noteName(KEYS_BASE+12*KB.oct)}, MIDI ${KEYS_BASE+12*KB.oct}). Perform: the Octave stepper moves the on-screen keyboard over the same notes`});
 Keys.bind({id:"velocity",scope:"any",keys:["C","V"],group:"Playing",does:()=>`Velocity down / up: 20 40 60 80 100 127 (now ${KB.vel})`});
 
 /* ---- the selected track's keys, the all keys, the step gestures ---- */
@@ -5070,7 +5070,9 @@ function menvHint(){const m=S.multi.mode,play=S.mode!=="multi"&&m!==1;
  return`<b>${MTM[m]}:</b> ${MENV_SAY[m]}${play?` <span class="menvto">The keys play ${{normal:"AUTO TRACK",map:"MULTI MAP",poly:"POLY"}[S.mode]} now: choose <b>Multi trig</b> under Keyboard to hear it.</span>`:""}`}
 const MTM=["ALL TRK","SPLIT KEY","SEQ START","SEQ TRNSP"],TIMS=["DIRECT","1/16","2/16","4/16","8/16","16/16","32/16"];
 const isBlack=n=>[1,3,6,8,10].includes(n%12);
-function kbRange(){const lo=12*(S.kbOct+1);return[lo,lo+47]}
+/* the on-screen keyboard: four octaves from C (MIDI 0 at the lowest stop), the last stop cut at note 127 (I-040) */
+const KBOCT=[-1,6];
+function kbRange(){const lo=12*(S.kbOct+1);return[lo,Math.min(lo+47,127)]}
 function zoneOf(n){if(S.mode!=="multi"||S.multi.mode!==1)return null;return n>=S.multi.splitKey?"up":"lo"}
 function mapRow(n){let lo=0;for(let i=0;i<S.mmap.length;i++){const r=S.mmap[i];if(n>=lo&&n<=r.hi)return i;lo=r.hi+1}return -1}
 function renderKb(){const[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const ww=100/whites.length;let h="",wi=0;
@@ -5126,7 +5128,7 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
  const upper=`<div class="perf3">${menvH}
    <section class="card trkcard"><header><h3>Track</h3>${scope(shortM(tr.m),"These settings belong to the selected track")}</header>${selTrack}${tabsH}${padH}${rowsH}${extrasH}${hintH}</section>
    <div class="perfside">${mutesH}<section class="card kbcard"><header><h3>Keyboard</h3><span title="What the keys below play">plays · all keys</span></header>  <div class="perfbar kbtitle"><span class="keyrow">${PMODES.map(([k,n])=>`<button class="lkey" data-pmode="${k}" aria-pressed="${S.mode===k}"><i class="led"></i>${n}</button>`).join("")}</span>${mtCtl}
-   <span class="stepper" style="margin-left:auto"><span class="ilab">Octave</span><button data-kboct="-1" aria-label="Octave down">−</button><b class="mono">${noteName(kbRange()[0])}</b><button data-kboct="1" aria-label="Octave up">+</button></span></div>
+   <span class="stepper" style="margin-left:auto"><span class="ilab">Octave</span><button data-kboct="-1" aria-label="Octave down"${S.kbOct<=KBOCT[0]?" disabled":""}>−</button><b class="mono">${noteName(kbRange()[0])}</b><button data-kboct="1" aria-label="Octave up"${S.kbOct>=KBOCT[1]?" disabled":""}>+</button></span></div>
   <div class="hint kbhint">${S.mode==="poly"?polyHint(t):pm[2]} ${S.mode==="multi"?{0:"Notes go to all six tracks; each keeps its own arpeggiator.",1:`Keys from ${noteName(S.multi.splitKey)} play T${S.multi.splitTrack}-T6, keys below play T1-T${S.multi.splitTrack-1}. The multi envelope is not used here.`,2:"Each note restarts the pattern, transposed from C-4.",3:"The first note starts the pattern; later notes only transpose it, so the loop never breaks."}[S.multi.mode]:""}</div></section></div></div>`;
  $("#main").innerHTML=`<div class="perf ${S.mode==="map"?"map":""}">
   ${upper}
@@ -5679,6 +5681,8 @@ function relinkCur(k){S.patKit[S.pat]=k}
 function kitLoad(k){if(HOST.kit)return HOST.kit("load",k);if(k===S.kit){if(S.kitState==="edited")kitReload();else toast(kitName(k)+" is already the current kit.");return}
  const go=()=>{S.kit=k;applyKit(kitData(k));S.workName=S.kits[k].name;relinkCur(k);setKitState("clean");demoRebase(true);tx();render();drawLib(true);toast("Loaded "+kitName(k)+". "+patName(S.pat)+" now uses it.")};
  if(S.kitState==="edited"){ask(`Load <b>${kitName(k)}</b>? Your edits to <b>${kitName(S.kit)}</b> are not saved on the machine. Without saving, they go to its UNDO KIT.`,[["Save and load","cream",()=>{saveKit();go()}],["Load without saving","danger",go],["Cancel","",()=>drawLib(true)]]);return}go()}
+/* ‹ › on the KIT field (I-041): the previous / next of the 128 kits, loaded as a click in the kit chooser loads it (over unsaved edits the machine asks first) */
+function kitStep(d){if(!engReady())return;kitLoad((S.kit+d+128)%128)}
 function kitSave(){saveKit();drawLib(true)}
 function kitSaveAs(k){if(HOST.kit)return HOST.kit("saveAs",k);if(k===S.kit){kitSave();return}
  const go=()=>{const from=S.kit;S.kits[k]={name:S.workName,empty:false,data:captureKit()};S.kit=k;relinkCur(k);setKitState("clean");demoRebase(true);tx();render();drawLib(true);toast("Saved as "+kitName(k)+". It is now the current kit; K"+nn(from)+" keeps its saved version.")};
@@ -6213,7 +6217,7 @@ document.addEventListener("click",e=>{
  const pmk=e.target.closest("[data-pmode]");if(pmk){S.mode=pmk.dataset.pmode;S.polyT=S.mode==="poly"?asgT():null;if(HOST.keyMode)HOST.keyMode(S.mode,asgT());if(S.mode==="poly")toast("POLY: T"+(asgT()+1)+" now plays six voices. The other five tracks are silent until you leave POLY.");render();return}
  const so2=e.target.closest("[data-strk]");if(so2){S.multi.splitTrack=clamp(S.multi.splitTrack+ +so2.dataset.strk,2,6);edit("multiTrig",{splitTrack:S.multi.splitTrack-1});render();return}
  const tm=e.target.closest("[data-tim]");if(tm){S.multi.timing=clamp(S.multi.timing+ +tm.dataset.tim,0,6);edit("multiTrig",{timing:S.multi.timing});render();return}
- const ko=e.target.closest("[data-kboct]");if(ko){S.kbOct=clamp(S.kbOct+ +ko.dataset.kboct,0,6);render();return}
+ const ko=e.target.closest("[data-kboct]");if(ko){S.kbOct=clamp(S.kbOct+ +ko.dataset.kboct,KBOCT[0],KBOCT[1]);render();return}
  const bd=e.target.closest("[data-band]");if(bd){S.mmapSel=+bd.dataset.band;render();return}
  const mr=e.target.closest("tr[data-mrow]");if(mr&&!e.target.closest("button,.pc,.kselbtn")){S.mmapSel=+mr.dataset.mrow;render();return}
  const mh=e.target.closest("[data-mhi]");if(mh){const i=+mh.dataset.i,r=S.mmap[i],lo=i?S.mmap[i-1].hi+1:0,nx=S.mmap[i+1];r.hi=clamp(r.hi+ +mh.dataset.mhi,lo,nx?nx.hi-1:127);edit("multiMap",{i,hi:r.hi});render();return}
@@ -6247,6 +6251,7 @@ document.addEventListener("click",e=>{
  if(e.target.closest("#undo")){undo();return}if(e.target.closest("#redo")){redo();return}
  const sc=e.target.closest("[data-sec]");if(sc){if(e.altKey&&sc.dataset.sec==="clear")clearPattern();else secAction(sc.dataset.sec);return}
  if(e.target.closest("#syncf.warn")){sendDialog();return}
+ if(e.target.closest("#kitPrev,#kitNext")){kitStep(e.target.closest("#kitNext")?1:-1);return}
  if(e.target.closest("#kitf")){toggleLib("kit");return}
  if(e.target.closest("#pat")){toggleLib("pat");return}
  if(e.target.closest("#learnkey")){S.learn=!S.learn;S.learnT=null;document.body.classList.toggle("learn",S.learn);renderTop();if(S.learn)toast("LEARN: click a value, then press 1-8 for a controller knob.");if(HOST.learning)HOST.learning(S.learn);return}
