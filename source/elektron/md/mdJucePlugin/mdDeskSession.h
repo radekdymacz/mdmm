@@ -9,6 +9,7 @@
 #include "deskCore/deskCommands.h"
 #include "deskCore/deskLcd.h"
 #include "deskCore/deskLifecycle.h"
+#include "deskCore/deskSetup.h"
 
 #include "deskHost/deskHost.h"
 
@@ -32,6 +33,11 @@ namespace mdJucePlugin
 {
 	class AudioPluginAudioProcessor;
 	pluginLib::Processor& pluginProcessorOf(AudioPluginAudioProcessor& _processor);
+	LearnRouter& learnRouterOf(AudioPluginAudioProcessor& _processor);
+	// MIDI Learn: the model without the parameters the audio thread cannot move (the controller's), and a track's plug-in
+	// parameter by name when it takes the realtime host-automation path (null: none, or not realtime)
+	MidiLearnCommands::Model learnModelOf(AudioPluginAudioProcessor& _processor, MidiLearnCommands::Model _model);
+	pluginLib::Parameter* learnParameterOf(AudioPluginAudioProcessor& _processor, const std::string& _name, int _track);
 	double sessionNowMs();
 
 	// The session's pace. One step every 8 ms while a page is up (or a .syx import runs): the playhead (the app
@@ -241,6 +247,9 @@ namespace mdJucePlugin
 		// The project's setup text when it changed outside the session since the last call (the first
 		// call: the project's); "" when the project keeps none.
 		std::optional<std::string> restored();
+		// An alpha project's "MDLN" text (read only; DeskHost::legacyMapping), "" when it has none or it was imported
+		std::string legacyMapping() const;
+		void clearLegacyMapping();
 
 	private:
 		AudioPluginAudioProcessor& m_processor;
@@ -302,6 +311,9 @@ namespace mdJucePlugin
 		// Messages still wait for a real machine's wire (DinPacer: one leaves a step once the wire is free, so the
 		// session keeps its 8 ms pace without a page until they are out). The emulator: never.
 		virtual bool wireBusy() { return false; }
+		// The machine's global base channel as the adapter last told the port (0 until it has): the channels from it carry
+		// the machine's CC map, which a learned mapping can hide (MIDI Learn's overrides).
+		virtual int baseChannel() const { return 0; }
 	};
 
 	// One engine of the engine map: its profile (id, label, what it offers), how to make it and
@@ -339,7 +351,9 @@ namespace mdJucePlugin
 			, m_engines(std::move(_engines))
 			, m_setup(_processor)
 			, m_defaultSetup(std::move(_defaultSetup))
-			, m_learn(pluginProcessorOf(_processor), std::move(_learn), [this](const Value& _m) { toPage(_m); })
+			// only the parameters the audio thread can move through the realtime host-automation path are learnable
+			, m_learn(learnRouterOf(_processor), learnModelOf(_processor, std::move(_learn)),
+				learnHost(), [this](const Value& _m) { toPage(_m); })
 			, m_page(std::move(_page))
 			, m_followHost(followsHost(_processor))
 		{
@@ -406,7 +420,6 @@ namespace mdJucePlugin
 			}
 			case Action::LearnStart:
 			case Action::LearnAdd:
-			case Action::LearnSetCc:
 			case Action::LearnCancel:
 			case Action::LearnRemove:
 			case Action::LearnInvert: m_learn.handle(row->handler.action, _message); break;
@@ -420,7 +433,7 @@ namespace mdJucePlugin
 			const auto span = stepSpan();
 			const auto t = m_tick += span;
 			const auto due = [t, span](const double _periodMs) { return mdJucePlugin::due(t, _periodMs, span); };
-			m_learn.enforce();	// MIDI mapping off: none applied, whatever the disk or the project brought
+			m_learn.step();	// MIDI Learn: the captured CCs, the table, the host's notification (nothing when the switch is off)
 			m_engine->step(*m_desk, t, span);
 			if(const auto text = m_setup.restored())
 				loadSetup(*text);
@@ -526,6 +539,8 @@ namespace mdJucePlugin
 
 	protected:
 		virtual void onMidi(const Value& _message) { reply(_message, false, "midi: this editor's page has no keyboard"); }
+		// MIDI Learn: what the firmware's own CC map drives at this offset from the base channel (pure; the model's)
+		virtual std::optional<deskCore::LearnRef> firmwareCc(int /*_offset*/, int /*_cc*/) const { return std::nullopt; }
 		// machineReset {how} that SyxWork does not run (the Machinedrum's factory reset): the model's
 		virtual void machineReset(const Value& _message) { reply(_message, false, "This machine has no such reset in the editor."); }
 		// The model's own step work (the factory data being prepared).
@@ -536,6 +551,34 @@ namespace mdJucePlugin
 		void onDetach() override { m_desk->detachPage(); }
 
 	private:
+		// MIDI Learn's edges: the desk's mappings, the controller's parameters, the engine's base channel
+		MidiLearnCommands::Host learnHost()
+		{
+			MidiLearnCommands::Host h;
+			h.mappings = [this]() -> const std::vector<deskCore::LearnMapping>& { return m_desk->mappings(); };
+			h.setMappings = [this](std::vector<deskCore::LearnMapping> _list) { m_desk->setMappings(std::move(_list)); };
+			h.parameter = [this](const MidiLearnCommands::Ref& _at) { return learnParameter(_at); };
+			h.baseChannel = [this] { return m_engine ? m_engine->baseChannel() : 0; };
+			h.firmwareCcMap = [this](const int _offset, const int _cc) { return firmwareCc(_offset, _cc); };
+			h.nowMs = [] { return sessionNowMs(); };
+			return h;
+		}
+
+		// A learn target's plug-in parameter: the model's name for (page, index) on the track, when it takes the
+		// realtime host-automation path
+		pluginLib::Parameter* learnParameter(const MidiLearnCommands::Ref& _at)
+		{
+			if(_at.t < 0 || _at.t >= m_learn.model().tracks)
+				return nullptr;
+			for(const auto& p : m_learn.model().params)
+			{
+				if(p.at.pg != _at.pg || p.at.i != _at.i)
+					continue;
+				return learnParameterOf(processor(), p.name, _at.t);
+			}
+			return nullptr;
+		}
+
 		// The desk's edges that are the session's: the page and the project's setup (the device
 		// edge is the engine's adapter).
 		typename DeskT::Port port()
@@ -578,7 +621,13 @@ namespace mdJucePlugin
 				doc = m_defaultSetup ? *m_defaultSetup : Value::object();
 			}
 			const auto more = m_desk->loadSetup(*doc);
-			errors.insert(errors.end(), more.begin(), more.end());
+			// MIDI Learn: what the mappings member left out is said by the learn document (left), not by the generic notice
+			std::vector<std::string> left;
+			for(const auto& e : more)
+				(e.rfind("$.mappings", 0) == 0 ? left : errors).push_back(e);
+			importAlphaMapping(*doc, left);
+			m_learn.setLeft(std::move(left));
+			m_learn.rebuild();
 			m_setupNotice.reset();
 			if(errors.empty())
 				return;
@@ -594,6 +643,37 @@ namespace mdJucePlugin
 				toPage(m);
 			else
 				m_setupNotice = std::move(m);
+		}
+
+		// An alpha project's "MDLN" mapping (the pluginLib translator's preset): taken over once, only when the project's
+		// setup has no "mappings" member; what cannot be taken over is left out and goes to the log and the learn document.
+		void importAlphaMapping(const Value& _setupDoc, std::vector<std::string>& _left)
+		{
+			const auto text = m_setup.legacyMapping();
+			if(text.empty() || deskCore::setupHasMappings(_setupDoc))
+				return;
+			m_setup.clearLegacyMapping();
+			const auto preset = elektronData::json::parse(text);
+			if(!preset)
+			{
+				_left.emplace_back("$.MDLN: not JSON; the alpha mapping is left out");
+				return;
+			}
+			const auto& model = m_learn.model();
+			const auto imported = deskCore::importMdln(*preset, [&model](const std::string& _name) -> std::optional<deskCore::LearnRef>
+			{
+				for(const auto& p : model.params)
+					if(p.name == _name)
+						return p.at;
+				return std::nullopt;
+			}, model.limits);
+			for(const auto& l : imported.left)
+			{
+				_left.push_back("MDLN " + l);
+				log("setup: MDLN " + l);
+			}
+			if(!imported.mappings.empty())
+				m_desk->setMappings(imported.mappings);
 		}
 
 		std::vector<deskCore::EngineChoice> choices() const

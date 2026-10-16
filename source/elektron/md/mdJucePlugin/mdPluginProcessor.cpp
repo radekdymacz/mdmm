@@ -584,6 +584,9 @@ namespace mdJucePlugin
 	AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
 	{
 		stopTimer();
+		// MIDI Learn: the audio thread reads no table (and so no parameter) from here on; the controller goes with the base
+		// class, after this body and the members
+		m_learnRouter.publishEmptyAndSettle();
 		m_memory.stop();	// and writes a save it has not written yet
 		m_performanceReport.reset();
 		// The editor is a view over the session and keeps a pointer to it (PageEditor detaches on
@@ -1015,6 +1018,7 @@ namespace mdJucePlugin
 			m_midiHeld.clear();	// I-002: a bypassed plug-in hears no note off
 			m_boot.counters.onBypassed(_frames);
 			m_cpuMeter.onBypassed();
+			m_learnRouter.endBlock();	// no end hook on this path
 			return;
 		}
 		m_boot.counters.onBlock(_frames, isNonRealtime());
@@ -1027,6 +1031,7 @@ namespace mdJucePlugin
 		// the host's rate (a host that called prepareToPlay alone sets only the plug-in's: a plain member read)
 		const double rate = getSampleRate() > 0 ? getSampleRate() : static_cast<double>(getPlugin().getHostSamplerate());
 		m_cpuMeter.onBlock(cpuClockNs() - m_blockStartNs, _frames, rate, isNonRealtime());
+		m_learnRouter.endBlock();
 	}
 
 	// I-021: the output meter: one pass over the enabled outputs a block, three compare-exchanges (mdOutputLevel.h)
@@ -1062,9 +1067,13 @@ namespace mdJucePlugin
 	{
 		if constexpr (deskHost::midiMappingEnabled)
 		{
-			// the host's MIDI only (the audio thread); the page's own and a port's never go through the router
+			// the host's MIDI only (the audio thread); the page's own (Editor), the device's and a port's (Physical) never go
+			// through the router: they pass on to the machine raw. A CC from a port is counted.
 			if(_ev.source == synthLib::MidiEventSource::Host)
 				return m_learnRouter.translate(_ev);
+			if(_ev.source == synthLib::MidiEventSource::Physical && _ev.sysex.empty() && (_ev.a & 0xf0) == 0xb0)
+				m_learnRouter.countPhysicalPassed();
+			return false;
 		}
 		return jucePluginEditorLib::Processor::consumeMidiIn(_ev);
 	}
@@ -1327,9 +1336,11 @@ namespace mdJucePlugin
 
 	bool AudioPluginAudioProcessor::usesMidiLearn() const
 	{
-		// The translator reads and swaps its mappings on the audio, MIDI-input and message threads without
-		// synchronisation (doc/midilearn/THREADING.md); it is made only once that is redesigned and mapping is on.
-		return deskHost::midiMappingEnabled;
+		// Never: the pluginLib translator reads and swaps its mappings on the audio, MIDI-input and message threads without
+		// synchronisation (doc/midilearn/THREADING.md). MIDI Learn is the session's (DESIGN-learn-0.8.md decision C): the
+		// mappings are the setup's, the audio thread reads the LearnRouter's table. With the translator never made, nothing
+		// of the old path runs for Editor, Physical or Device events, and there is no default preset file.
+		return false;
 	}
 
 	bool AudioPluginAudioProcessor::sendDeskCommands(const std::vector<synthLib::DeviceCommand>& _commands, const size_t _panelPackets)

@@ -8,13 +8,11 @@
 
 namespace deskHost
 {
-	// THE switch for MIDI mapping (MIDI learn and the pages' CONTROL workspace). Off while the
-	// controller feature is being reworked: the learn commands are refused, the plug-in applies no
-	// learned mappings (MIDI reaches the machine raw), and the learn document tells the pages
-	// ("enabled") to hide the CONTROL workspace and the LEARN key. All of the code stays. Turn it on
-	// with -DMDMM_MIDI_MAPPING=1 (or change the default here); nothing else is needed.
+	// THE switch for MIDI mapping (MIDI learn and the pages' CONTROL workspace). On since 0.8 (doc/midilearn/DESIGN-learn-0.8.md).
+	// Off (-DMDMM_MIDI_MAPPING=0): the learn commands are refused, the plug-in applies no learned mappings (MIDI reaches the
+	// machine raw), and the learn document tells the pages ("enabled") to hide the CONTROL workspace and the LEARN key.
 #ifndef MDMM_MIDI_MAPPING
-#define MDMM_MIDI_MAPPING 0
+#define MDMM_MIDI_MAPPING 1
 #endif
 	inline constexpr bool midiMappingEnabled = MDMM_MIDI_MAPPING != 0;
 
@@ -28,7 +26,6 @@ namespace deskHost
 		Menu,				// the editor's menu
 		LearnStart,			// MIDI learn (mdMidiLearnCommands)
 		LearnAdd,
-		LearnSetCc,
 		LearnCancel,
 		LearnRemove,
 		LearnInvert,

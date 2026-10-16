@@ -8,6 +8,7 @@
 #include "deskCore/deskLearn.h"
 
 #include <atomic>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <new>
@@ -280,6 +281,62 @@ namespace
 		allocationProbe::enabled = false;
 		check(allocationProbe::allocations == 0, "beginBlock and translate allocate nothing (mapped, unmapped, learning, a full ring)");
 	}
+
+	// L2: the table from the setup's mappings; the empty table and the block boundary before parameters are freed; the
+	// port CCs counted
+	void sessionSide()
+	{
+		std::printf("session side\n");
+		pluginLib::Parameter a, b;
+		auto mapping = [](const uint8_t _ch, const uint8_t _cc, const int _t, const int _i)
+		{
+			deskCore::LearnMapping m;
+			m.ch = _ch;
+			m.cc = _cc;
+			m.at = {_t, -1, _i};
+			return m;
+		};
+		const std::vector<deskCore::LearnMapping> list{mapping(0, 21, 0, 0), mapping(255, 21, 1, 0), mapping(0, 22, 9, 0), mapping(3, 21, 0, 1)};
+		std::vector<pluginLib::Parameter*> by;
+		const auto table = buildLearnTable(list, [&](const deskCore::LearnRef& _r) -> pluginLib::Parameter*
+		{
+			return _r.t == 9 ? nullptr : _r.i == 0 ? &a : &b;
+		}, 7, &by);
+		check(table.generation == 7 && table.count == 3, "the table has the mappings whose parameter exists, in order");
+		check(by.size() == 4 && by[0] == &a && by[1] == &a && by[2] == nullptr && by[3] == &b, "and each mapping's parameter by its index");
+		check(table.head[0][21] != LearnTable::None && table.targets[table.head[0][21]].mapping == 0
+			&& table.head[LearnTable::AnyChannel][21] != LearnTable::None && table.targets[table.head[LearnTable::AnyChannel][21]].mapping == 1
+			&& table.head[3][21] != LearnTable::None && table.head[0][22] == LearnTable::None, "the heads: channel, any channel, and the one left out has none");
+		std::vector<deskCore::LearnMapping> many;
+		for(int i = 0; i < 200; ++i)
+			many.push_back(mapping(static_cast<uint8_t>(i % 16), static_cast<uint8_t>(i % 128), i % 16, i % 8));
+		check(buildLearnTable(many, [&](const deskCore::LearnRef&) { return &a; }, 1).count == LearnTable::MaxTargets, "past 128 mappings the rest is left out");
+
+		// the empty table and the block boundary
+		LearnRouter router(&apply);
+		router.publish(table);
+		router.beginBlock();
+		check(router.table().count == 3, "the block took the table");
+		std::atomic<bool> published{false};
+		std::thread publisher([&]
+		{
+			published.store(router.publishEmptyAndSettle(2000));
+		});
+		std::this_thread::sleep_for(std::chrono::milliseconds(60));
+		check(!published.load(), "the empty table is not settled while a block that read the old one runs");
+		router.endBlock();
+		publisher.join();
+		check(published.load(), "it settles when the block ends");
+		router.beginBlock();
+		check(router.table().count == 0 && !router.translate(0xb0, 21, 5), "the next block reads the empty table: nothing is mapped");
+		check(!router.publishEmptyAndSettle(20), "a block that never ends: the wait is bounded, and says so");
+		router.endBlock();
+		check(router.publishEmptyAndSettle(20), "no block running: settled at once");
+
+		router.countPhysicalPassed();
+		router.countPhysicalPassed();
+		check(router.counts().physicalPassed == 2, "CCs from a port are counted");
+	}
 }
 
 int main()
@@ -291,6 +348,7 @@ int main()
 	learning();
 	threads();
 	noAllocation();
+	sessionSide();
 	if(g_failures)
 	{
 		std::printf("mdLearnRouterTest: %d FAILED\n", g_failures);

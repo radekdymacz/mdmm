@@ -98,6 +98,7 @@ namespace mmDesk
 		s.modulators = m_mods.setup();
 		s.solo = m_solo;
 		s.followPlayed = m_follow;
+		s.mappings = m_mappings;
 		return deskCore::setupToJson(s, g_mmSetupSpec);
 	}
 
@@ -127,6 +128,15 @@ namespace mmDesk
 		publish(f);
 	}
 
+	void Desk::setMappings(std::vector<deskCore::LearnMapping> _mappings)
+	{
+		if(_mappings == m_mappings)
+			return;
+		m_mappings = std::move(_mappings);
+		if(m_saveSetup)
+			m_saveSetup(setupDoc());
+	}
+
 	std::vector<std::string> Desk::loadSetup(const Value& _setup)
 	{
 		// never the previous project's setup: what this one holds that can be used, else the default (errors say what not)
@@ -135,6 +145,7 @@ namespace mmDesk
 		m_mods.setSetup(s.modulators);
 		m_solo = s.solo;
 		m_follow = s.followPlayed;
+		m_mappings = s.mappings;
 		publishModulators();
 		publishSolo();
 		flush();

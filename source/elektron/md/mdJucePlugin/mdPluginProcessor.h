@@ -184,7 +184,7 @@ namespace mdJucePlugin
 	    synthLib::Device* createDevice() override;
 
 	    pluginLib::Controller* createController() override;
-		// MIDI mapping switched off (deskHost::midiMappingEnabled): no translator, so no learn code on the MIDI threads
+		// Always false: the pluginLib translator is never made (MIDI Learn is the session's and the LearnRouter's)
 		bool usesMidiLearn() const override;
 		void saveChunkData(baseLib::BinaryStream& _stream) override;
 		void loadChunkData(baseLib::ChunkReader& _reader) override;

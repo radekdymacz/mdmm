@@ -2650,11 +2650,86 @@
                   "type": "boolean",
                   "description": "MIDI mapping (MIDI learn and the Control workspace) is on; the pages hide both unless true (mdmm::midiMappingEnabled, deskHost.h)."
                 },
+                "mappings": {
+                  "type": "array",
+                  "description": "The setup's mappings in order. overrides: the machine's own targets of that (channel, CC) the mapping hides (the firmware's CC map, the Global's base channel); empty when the CC is not on the map.",
+                  "items": {
+                    "type": "object",
+                    "required": ["index", "t", "pg", "i", "name", "cc", "ch", "mode", "invert"],
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "overrides": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": ["ch", "t", "pg", "i"],
+                          "properties": {
+                            "ch": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 15
+                            },
+                            "t": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "pg": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 7
+                            },
+                            "i": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "learning": {
+                  "description": "The target that waits for a controller, with the progress (got of need values seen); null when not learning.",
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "required": ["t", "pg", "i", "got", "need"],
+                      "properties": {
+                        "got": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "need": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      }
+                    }
+                  ]
+                },
+                "left": {
+                  "type": "array",
+                  "description": "What the last project load left out (the setup's mappings), one reason each; absent: nothing.",
+                  "items": {
+                    "type": "string"
+                  }
+                },
                 "limits": {
                   "type": "object",
                   "description": "P6: exactly the learnable targets.",
                   "required": ["tracks", "params"],
                   "properties": {
+                    "max": {
+                      "type": "integer",
+                      "description": "The most mappings (128).",
+                      "minimum": 1
+                    },
                     "tracks": {
                       "type": "integer",
                       "minimum": 1
@@ -6969,37 +7044,6 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 15
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "description": "host: a controller row's CC changed: its mappings follow",
-          "required": ["op", "from", "to"],
-          "properties": {
-            "op": {
-              "const": "learnSetCc"
-            },
-            "id": {
-              "type": "integer"
-            },
-            "g": {
-              "type": "integer",
-              "minimum": 0
-            },
-            "force": {
-              "type": ["boolean", "integer"]
-            },
-            "from": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 127
-            },
-            "to": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 127
             }
           },
           "additionalProperties": false

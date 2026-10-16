@@ -245,6 +245,107 @@ namespace
 		check(setupFromJson(d, md, errors).mappings.empty(), "a newer major version is the default setup");
 	}
 
+	// What the Machinedrum Editor 0.7.0 reads of a project's setup (mdmm-v0.7.0, mdDesk/mdDeskSetup.cpp deskSetupFromJson): the
+	// schema and version 1, then the members it knows (modulators, knobCcs, solo); anything else is not looked at. Any error
+	// it finds is the default setup in 0.7.0, so a document is readable when it has none.
+	struct Read070
+	{
+		bool ok = false;
+		std::vector<int> knobs;
+		size_t sources = 0;
+		std::vector<int> soloTracks;
+	};
+
+	Read070 read070Md(const json::Value& _doc)
+	{
+		Read070 r;
+		std::vector<std::string> errors;
+		const auto* schema = _doc.find("schema");
+		if(!schema || !schema->isString() || schema->asString() != "md-desk/setup")
+			errors.emplace_back("$.schema: expected md-desk/setup");
+		const auto* version = _doc.find("version");
+		if(!version || !version->isNumber() || version->asNumber() != 1)
+			errors.emplace_back("$.version: expected 1");
+		if(const auto* m = _doc.find("modulators"))
+		{
+			const auto mods = modSetupFromJson(*m, errors, ModLimits{"md-desk/modulators", 15, 23});
+			if(mods)
+				r.sources = mods->sources.size();
+		}
+		if(const auto* k = _doc.find("knobCcs"))
+		{
+			std::vector<int> ccs;
+			for(const auto& v : k->asArray())
+				ccs.push_back(v.isNumber() ? static_cast<int>(v.asNumber()) : -1);
+			const auto bad = validateKnobCcs(ccs);
+			errors.insert(errors.end(), bad.begin(), bad.end());
+			r.knobs = ccs;
+		}
+		if(const auto* sl = _doc.find("solo"))
+			if(const auto solo = solo::fromJson(*sl, 16, errors))
+				r.soloTracks = solo->tracks;
+		r.ok = errors.empty();
+		return r;
+	}
+
+	// The Monomachine Editor 0.7.0 reads the bare modulators document and the solo beside it (mmDesk::Desk::loadSetup)
+	Read070 read070Mm(const json::Value& _doc)
+	{
+		Read070 r;
+		std::vector<std::string> errors;
+		if(const auto mods = modSetupFromJson(_doc, errors, ModLimits{"mm-desk/modulators", 5, 63}))
+			r.sources = mods->sources.size();
+		if(const auto* sl = _doc.find("solo"))
+			if(const auto solo = solo::fromJson(*sl, 12, errors))
+				r.soloTracks = solo->tracks;
+		r.ok = errors.empty();
+		return r;
+	}
+
+	// 0.8 compatibility (the 1.0 read promise: additions are new members, never a version bump): a setup written with
+	// mappings is read by the 0.7.0 reader without a complaint, and gives it exactly what it gave without them. The
+	// fixtures are the documents the new codec writes now.
+	void older()
+	{
+		SetupSpec md;
+		md.learn = {16, 0, 25};
+		SetupSpec mm;
+		mm.schema = "mm-desk/setup";
+		mm.tracks = 12;
+		mm.knobCcs = false;
+		mm.writesBare = true;
+		mm.learn = {6, 8, 8};
+		mm.modulators = ModLimits{"mm-desk/modulators", 5, 63};
+
+		DeskSetup s;
+		s.knobCcs = {30, 31, 32, 33, 34, 35, 36, 37};
+		s.solo.tracks = {2, 5};
+		s.mappings = {map(0, 21, 2, 5), map(g_learnAnyChannel, 22, 0, 24, LearnMode::RelativeSigned, true)};
+		auto doc = setupToJson(s, md);
+		const std::string fixtureMd = elektronData::json::write(doc);
+		check(fixtureMd.find("\"mappings\":[{\"ch\":0,\"cc\":21,\"t\":2,\"i\":5,\"mode\":\"absolute\",\"invert\":false},{\"ch\":255,\"cc\":22,\"t\":0,\"i\":24,\"mode\":\"relative-signed\",\"invert\":true}]") != std::string::npos,
+			"fixture: the Machinedrum's setup with mappings, as the codec writes it");
+		auto read = read070Md(parse(fixtureMd.c_str()));
+		DeskSetup plain = s;
+		plain.mappings.clear();
+		const auto without = read070Md(setupToJson(plain, md));
+		check(read.ok && without.ok && read.knobs == without.knobs && read.soloTracks == without.soloTracks && read.sources == without.sources
+			&& read.knobs == std::vector<int>{30, 31, 32, 33, 34, 35, 36, 37} && read.soloTracks == std::vector<int>{2, 5},
+			"0.7.0's reader takes a setup with mappings without error and reads what it read before (the unknown member is ignored)");
+
+		DeskSetup m;
+		m.solo.tracks = {1, 4};
+		m.mappings = {map(3, 60, 1, 4, LearnMode::Absolute, false, 1)};
+		const std::string fixtureMm = elektronData::json::write(setupToJson(m, mm));
+		check(fixtureMm.find("\"schema\":\"mm-desk/modulators\"") != std::string::npos && fixtureMm.find("\"mappings\":[{\"ch\":3,\"cc\":60,\"t\":1,\"pg\":1,\"i\":4,") != std::string::npos,
+			"fixture: the Monomachine's setup with mappings, in the 0.x shape");
+		const auto mmRead = read070Mm(parse(fixtureMm.c_str()));
+		check(mmRead.ok && mmRead.soloTracks == std::vector<int>{1, 4}, "0.7.0's Monomachine reader takes it too, solo intact");
+		// and this version reads the 0.7.0 documents (no mappings member): none
+		std::vector<std::string> errors;
+		check(setupFromJson(setupToJson(plain, md), md, errors).mappings.empty() && errors.empty(), "a setup without mappings (0.7.0 wrote these) reads as none");
+	}
+
 	void mdln()
 	{
 		const LearnModelLookup model = [](const std::string& _n) -> std::optional<LearnRef>
@@ -292,6 +393,7 @@ int main()
 	overrides();
 	codec();
 	mdln();
+	older();
 	std::printf("deskLearnTest: %s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
 	return g_failures ? 1 : 0;
 }

@@ -10,6 +10,8 @@
 
 #include "deskWire/mmWire.h"
 
+#include "mdLib/mdautomation.h"
+
 #include "elektronData/mmJson.h"
 #include "elektronData/mmKit.h"
 #include "elektronData/mmValidate.h"
@@ -62,11 +64,13 @@ namespace mdJucePlugin
 				m_link.sendMidi(static_cast<uint8_t>((_v ? 0x90 : 0x80) | (_ch & 0x0f)), _n & 0x7f, _v & 0x7f);
 			};
 			p.sendMidi = [this](const std::vector<uint8_t>& _m) { m_link.sendShort(_m); };
+			p.baseChannel = [this](const uint8_t _ch) { m_channel = _ch; };
 			p.nowMs = [] { return nowMs(); };
 			return p;
 		}
 
 		deskCore::LifeFacts::Probe probe() override { return m_link.probe(); }
+		int baseChannel() const override { return m_channel; }
 		bool sendMidi(const uint8_t _s, const uint8_t _d1, const uint8_t _d2) override { return m_link.sendMidi(_s, _d1, _d2); }
 
 		void step(mmDesk::Desk& _desk, const uint64_t _tick, const uint64_t _span) override
@@ -92,6 +96,7 @@ namespace mdJucePlugin
 		MmStudioLink m_link;
 		std::deque<std::vector<uint8_t>> m_in;
 		LcdFeed m_lcd;
+		uint8_t m_channel = 0;	// the machine's base channel (the adapter's fact, baseChannel)
 	};
 
 	// A real Monomachine on the plug-in's MIDI in and out at DIN speed (deskWire): SysEx, CCs and NRPN
@@ -110,6 +115,7 @@ namespace mdJucePlugin
 
 		deskCore::LifeFacts::Probe probe() override { return deskCore::LifeFacts::Probe::Running; }
 		bool wireBusy() override { return !m_wire.wire().idle(nowMs()); }
+		int baseChannel() const override { return m_channel; }
 		bool sendMidi(const uint8_t _s, const uint8_t _d1, const uint8_t _d2) override
 		{
 			m_wire.wire().send(deskWire::channelMessage(_s, _d1, _d2));
@@ -155,6 +161,8 @@ namespace mdJucePlugin
 			MidiLearnCommands::Model m;
 			m.pages = true;
 			m.tracks = 6;
+			m.limits = mmDesk::g_mmSetupSpec.learn;
+			m.span = 6;		// the Monomachine's CCs: six channels from the base channel, one a track
 			m.refusal = "learn: a synth track's DATA page value or level (MIDI page values are NRPN, not learnable)";
 			constexpr uint8_t dataPages = 7, levelPage = 7;
 			for(uint8_t pg = 0; pg < dataPages; ++pg)
@@ -176,6 +184,24 @@ namespace mdJucePlugin
 				&& engine.sendMidi(static_cast<uint8_t>(v(0)), static_cast<uint8_t>(v(1)), static_cast<uint8_t>(v(2)));
 			if(!ok)
 				reply(_message, false, "midi: a channel message, [status 0x80-0xef, data, data]");
+		}
+
+		// What the Monomachine's firmware drives with CC _cc on the channel _offset from its base channel (mdLib's pure map):
+		// a DATA page value or the level of the track the channel belongs to
+		std::optional<deskCore::LearnRef> firmwareCc(const int _offset, const int _cc) const override
+		{
+			namespace a = ::md::automation;
+			if(_offset < 0 || _offset > 15 || _cc < 0 || _cc > 127)
+				return std::nullopt;
+			const auto c = a::decodeParameterChange(::md::MachineModel::Monomachine,
+				{static_cast<uint8_t>(0xb0 | _offset), static_cast<uint8_t>(_cc), 0}, 0);
+			if(!c)
+				return std::nullopt;
+			if(c->page == a::monomachine::Level)
+				return deskCore::LearnRef{c->track, 7, 0};
+			if(c->page < a::monomachine::Level)
+				return deskCore::LearnRef{c->track, c->page, c->index};
+			return std::nullopt;
 		}
 
 		const char* missingText() const override { return "No MM OS 1.32B ROM is running yet. After adding it, reopen the plug-in."; }

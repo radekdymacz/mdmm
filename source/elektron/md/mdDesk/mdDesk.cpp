@@ -98,8 +98,15 @@ namespace mdDesk
 		auto errors = validateKnobCcs(ccs);
 		if(errors.empty())
 		{
+			// one intent, one command: the knob row's any-channel mappings follow its CC (the learned ones stay learned)
+			auto mappings = m_setup.mappings;
 			for(size_t i = 0; i < m_setup.knobCcs.size() && i < ccs.size(); ++i)
+			{
+				if(m_setup.knobCcs[i] != ccs[i])
+					mappings = deskCore::moveKnobCc(mappings, m_setup.knobCcs[i], static_cast<uint8_t>(ccs[i]));
 				m_setup.knobCcs[i] = static_cast<uint8_t>(ccs[i]);
+			}
+			m_setup.mappings = std::move(mappings);
 			saveSetup();
 		}
 		result(_message, errors, {});
@@ -442,6 +449,15 @@ namespace mdDesk
 		publishSolo();
 		publishModulators();
 		return errors;
+	}
+
+	void Desk::setMappings(std::vector<deskCore::LearnMapping> _mappings)
+	{
+		if(_mappings == m_setup.mappings)
+			return;
+		m_setup.mappings = std::move(_mappings);
+		saveSetup();
+		publishSetup();
 	}
 
 	void Desk::publishSetup()

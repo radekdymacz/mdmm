@@ -5,6 +5,7 @@
 #include "synthLib/midiTypes.h"
 
 #include <algorithm>
+#include <chrono>
 #include <functional>
 #include <thread>
 
@@ -44,6 +45,32 @@ namespace mdJucePlugin
 		return std::clamp(_current + step, lo, hi);
 	}
 
+	LearnTable buildLearnTable(const std::vector<deskCore::LearnMapping>& _mappings,
+		const std::function<pluginLib::Parameter*(const deskCore::LearnRef&)>& _parameter, const uint32_t _generation,
+		std::vector<pluginLib::Parameter*>* _byMapping)
+	{
+		LearnTable table;
+		table.generation = _generation;
+		if(_byMapping)
+			_byMapping->assign(_mappings.size(), nullptr);
+		for(size_t n = 0; n < _mappings.size() && n < LearnTable::MaxTargets; ++n)
+		{
+			const auto& m = _mappings[n];
+			auto* param = _parameter ? _parameter(m.at) : nullptr;
+			if(!param)
+				continue;
+			LearnTarget target;
+			target.param = param;
+			target.mode = static_cast<uint8_t>(m.mode);
+			target.invert = m.invert ? 1 : 0;
+			target.mapping = static_cast<uint8_t>(n);
+			const size_t channel = m.ch == deskCore::g_learnAnyChannel ? LearnTable::AnyChannel : m.ch;
+			if(table.add(channel, m.cc, target) && _byMapping)
+				(*_byMapping)[n] = param;
+		}
+		return table;
+	}
+
 	LearnRouter::LearnRouter(const Apply _apply) : m_apply(_apply)
 	{
 	}
@@ -72,11 +99,36 @@ namespace mdJucePlugin
 		c.captured = m_captured.load(std::memory_order_relaxed);
 		c.capturedDropped = m_capturedDropped.load(std::memory_order_relaxed);
 		c.notOnAudioThread = m_notOnAudioThread.load(std::memory_order_relaxed);
+		c.physicalPassed = m_physicalPassed.load(std::memory_order_relaxed);
 		return c;
+	}
+
+	bool LearnRouter::publishEmptyAndSettle(const unsigned _timeoutMs) noexcept
+	{
+		LearnTable empty;
+		empty.generation = m_emptyGeneration.fetch_add(1, std::memory_order_relaxed) + 1;
+		publish(empty);
+		// Any block that begins from here on takes the empty table. A block running now ends or is followed by the next.
+		const auto seen = m_blocks.load(std::memory_order_seq_cst);
+		const auto start = std::chrono::steady_clock::now();
+		while(m_inBlock.load(std::memory_order_seq_cst) && m_blocks.load(std::memory_order_seq_cst) == seen)
+		{
+			if(std::chrono::steady_clock::now() - start > std::chrono::milliseconds(_timeoutMs))
+				return false;
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+		return true;
+	}
+
+	void LearnRouter::endBlock() noexcept
+	{
+		m_inBlock.store(false, std::memory_order_seq_cst);
 	}
 
 	void LearnRouter::beginBlock() noexcept
 	{
+		m_inBlock.store(true, std::memory_order_seq_cst);
+		m_blocks.fetch_add(1, std::memory_order_seq_cst);
 		m_audioThread.store(threadKey(), std::memory_order_relaxed);
 		m_haveAudioThread.store(true, std::memory_order_release);
 
