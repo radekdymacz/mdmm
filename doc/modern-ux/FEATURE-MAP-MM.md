@@ -63,7 +63,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-5 | 11 PATTERN / SONG key | Sequencer mode | ✅ | LCD line 2 PLAY PAT / SONG, Song > What plays | `seqMode` op | 1 | pass (e2e-mm-song-mode) |
 | Front panel 1-5 | 11 POLY (FUNCTION + PATTERN / SONG) | Poly mode | ✅ | Perform > Keyboard > Poly, on the track selected (the editor presses its TRACK key) | `poly` op | 2 | pass (mm-perform-poly) |
 | Front panel 1-5 | 12 ENTER / YES, EXIT / NO | Confirm, cancel | ➖ | – | Page dialogs | – | n/a |
-| Front panel 1-5 | 13 ARROW keys; octave for TRIG keys | Navigate; octave | ✅ | Keys Z / X octave; arrows step values |  | 1 | pass (e2e-mm-seq-pitch-keys) |
+| Front panel 1-5 | 13 ARROW keys; octave for TRIG keys | Navigate; octave | ✅ | Keys Z / X octave; arrows step values |  | 2 | pass (e2e-mm-seq-pitch-keys) |
 | Front panel 1-5 | 14 BANK GROUP A-D / E-H | Bank group | ✅ | Pattern chooser shows all 8 banks |  | 1 | pass (mm-pattern-chooser) |
 | Front panel 1-5 | 14 MUTE MODE (FUNCTION + BANK GROUP) | Mute window | ✅ | Perform > Mutes |  | 1 | pass (e2e-mm-perform-mutes) |
 | Front panel 1-5 | 15 BANK keys A-H | Pattern bank | ✅ | Pattern chooser |  | 1 | pass (mm-pattern-chooser) |
@@ -82,7 +82,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Keyboard SFX-6 1-6 | Keyboard | Real-time play and record | ✅ | Perform on-screen keyboard (keys lit while held, also from a MIDI keyboard); home row |  | 3 | pass (e2e-mm-perform-keyboard) |
 | Keyboard SFX-6 1-6 | MULTI TRIG key | Toggle multi trig | ✅ | Perform > Multi trig |  | 1 | pass (e2e-mm-perform-multi-trig) |
 | Keyboard SFX-6 1-6 | MULTI MAP (FUNCTION + MULTI TRIG) | Toggle multi map | ✅ | Perform > Multi map |  | 1 | pass (e2e-mm-perform-multi-map) |
-| Keyboard SFX-6 1-6 | OCTAVE keys | Keyboard octave | ✅ | Perform Octave stepper |  | 1 | pass (e2e-mm-perform-joystick-midi) |
+| Keyboard SFX-6 1-6 | OCTAVE keys | Keyboard octave | ✅ | Perform Octave stepper |  | 2 | pass (e2e-mm-perform-joystick-midi) |
 | Keyboard SFX-6 1-6 | KEYBOARD LEDs | Notes shown | ➖ | – | The roll shows pitches | – | n/a |
 | Rear 1-7 | Power switch, power in, voltage selector, fuse | Power | ➖ | – |  | – | n/a |
 | Rear 1-7 | MIDI Thru / Out / In | MIDI ports | 🟡 | AUDIO / MIDI panel (standalone): inputs, output, Bluetooth | In a DAW the host routes MIDI. Machine MIDI out reaches the host since 0.4.0. No MIDI THRU | – | n/a |
@@ -142,7 +142,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 |---|---|---|---|---|---|---|---|
 | Arrangement 1-17 | Machines grouped in Mono-synths | Families | ✅ | Machine picker families |  | 1 | pass (mm-machine-picker) |
 | Arrangement 1-17 | Track effects per track (filter, EQ, SRR, distortion, delay) | Effects | ✅ | Kit AMP, FLT, EFX |  | 1 | pass (mm-sound-workspace) |
-| Kits 1-18 | Kit holds machines, pages, LFOs, MIDI pages, routing, trig, multi env, name | Kit content | ✅ | Whole kit editable in the working kit | `WorkingKit` document | 1 | pass (e2e-mm-kit-parts) |
+| Kits 1-18 | Kit holds machines, pages, LFOs, MIDI pages, routing, trig, multi env, name | Kit content | ✅ | Whole kit editable in the working kit | `WorkingKit` document | 2 | pass (e2e-mm-kit-parts) |
 | Link kits and patterns 1-18 | Pattern recalls its kit; same kit not reloaded | Link | ✅ | Pattern chooser shows kit per pattern | Dialog "Save kit, then switch" | 1 | pass (e2e-mm-lib-pattern-same-kit) |
 | Link kits and patterns 1-18 | Change which kit a pattern uses | Relink | ✅ | Pattern chooser: Alt-click a pattern, then its Kit list (patternKit); over the pattern that plays the kit loads at once, asked over unsaved edits | Measured: the dump carries the link; over the pattern that plays the machine loads the kit (gapProbesFirmwareTest w12patkit) | 1 | pass (e2e-mm-lib-pattern-kit) |
 | Loading a kit 1-19 | Kit list of 128, load | LOAD KIT | ✅ | Kit library |  | 1 | pass (e2e-mm-lib-kit-load) |
@@ -234,7 +234,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Pattern selection 1-45 | 8 banks x 16, A01-H16 | Pattern select | ✅ | Pattern chooser |  | 1 | pass (e2e-mm-lib-pattern-go) |
 | Pattern selection 1-45 | Red LEDs show patterns with data | Used mark | ✅ | Chooser slot shows length or empty |  | 1 | pass (mm-pattern-chooser) |
 | Pattern selection 1-45 | Switch waits for pattern end | Cued switch | ✅ | Queue; Shift-click or "Now" switches at once | "Now" = STOP, LOAD, PLAY | 1 | pass (e2e-mm-seq-queue-while-playing) |
-| Pattern chaining 1-46 | Chain patterns of one bank, each once | Chain | ✅ | Song > Patterns > Chain | `chain` op; STOP resets, pick ends the chain | 1 | pass (e2e-mm-song-chain) |
+| Pattern chaining 1-46 | Chain patterns of one bank, each once | Chain | ✅ | Song > Patterns > Chain | `chain` op; STOP resets, pick ends the chain | 2 | pass (e2e-mm-song-chain) |
 | Scale setup 1-46 | Total steps up to 64 | Length | ✅ | LCD LEN (2-64), x2 key |  | 1 | pass (e2e-mm-seq-len) |
 | Scale setup 1-46 | Scale length in pages | Pages | ✅ | PAGE key, LEDs |  | 1 | pass (e2e-mm-seq-pages) |
 | Scale setup 1-47 | Tempo multiplier 1X, 2X, 3/4X, 3/2X | Speed | ✅ | LCD SPD |  | 1 | pass (e2e-mm-seq-scale-setup) |
@@ -278,7 +278,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Tempo screen 1-56 | Temporary +/-10 % shift | Nudge | ✅ | TEMPO window: −10 % / +10 % held, or the keys - and = held; back at the release |  | 1 | pass (e2e-mm-top-tempo-window) |
 | Tap tempo 1-56 | Average of taps | Tap | ✅ | Shift + B everywhere; B off Pattern | The last five taps are averaged; a pause of 2 s starts over | 2 | pass (e2e-mm-keys-tap-tempo) |
 | External synchronisation 1-56 | Internal or external MIDI clock; EXT shown | Sync | ✅ | GLOBAL > Sync > Tempo in (INT / EXT); in a DAW EXT follows the host (a new plug-in starts so), INT runs the machine on its own clock (`followHost`, review 1, I-026) | See Control In. INT is kept with the project; the host's clock and transport stop going to the machine (mmDeskFirmwareTest hostclock) | 1 | pass (e2e-mm-top-tempo-window) |
-| Tempo 1-57 | Songs store tempo changes | Song tempo | ✅ | Song row Tempo |  | 1 | pass (mm-song-workspace) |
+| Tempo 1-57 | Songs store tempo changes | Song tempo | ✅ | Song row Tempo |  | 2 | pass (mm-song-workspace) |
 
 ## 13. Parameter locks (1-57, 1-58)
 
@@ -367,11 +367,11 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Song editing 1-76 | ROW count | Rows | ✅ | Arrangement grid |  | 1 | pass (mm-song-workspace) |
 | Song editing 1-76 | PAT column, END mark | Pattern | ✅ | Pattern palette, drag, ‹ › |  | 3 | pass (e2e-mm-song-playhead) |
 | Song editing 1-76 | REP | Repeats | ✅ | Repeat stepper |  | 1 | pass (e2e-mm-song-row-inspector) |
-| Song editing 1-77 | TRN pattern transpose | Row transpose | ✅ | Transpose stepper |  | 1 | pass (mm-song-workspace) |
-| Song editing 1-77 | Song track transpose (TR1-6, six MIDI) | Per-track transpose | ✅ | Row > More > Per track |  | 1 | pass (mm-song-workspace) |
+| Song editing 1-77 | TRN pattern transpose | Row transpose | ✅ | Transpose stepper |  | 2 | pass (mm-song-workspace) |
+| Song editing 1-77 | Song track transpose (TR1-6, six MIDI) | Per-track transpose | ✅ | Row > More > Per track |  | 2 | pass (mm-song-workspace) |
 | Song editing 1-77 | OF LN offset and length | Part | ✅ | Row > More > Part |  | 1 | pass (mm-song-workspace) |
-| Song editing 1-77 | XTRA: row mutes (6 + 6) | Row mutes | ✅ | Row > More > Mutes |  | 1 | pass (e2e-mm-song-row-inspector) |
-| Song editing 1-77 | XTRA: row BPM | Row tempo | ✅ | Row Tempo |  | 1 | pass (mm-song-workspace) |
+| Song editing 1-77 | XTRA: row mutes (6 + 6) | Row mutes | ✅ | Row > More > Mutes |  | 2 | pass (e2e-mm-song-row-inspector) |
+| Song editing 1-77 | XTRA: row BPM | Row tempo | ✅ | Row Tempo |  | 2 | pass (mm-song-workspace) |
 | Song editing 1-77 | Insert / remove rows (FUNCTION + arrows) | Row edit | ✅ | Row Duplicate, Delete, Add loop, drag |  | 1 | pass (e2e-mm-song-rows) |
 | Song editing 1-77 | Copy, paste, clear, undo rows | Row clipboard | ✅ | LCD COPY / PASTE / CLR; page undo |  | 1 | pass (e2e-mm-song-rows-copy) |
 | Song edit transport 1-77 | Start from any row (ENTER) | Play from row | ✅ | Song: Enter on the selected row (▶ From here) |  | 1 | stub-only (e2e-mm-song-play-from-fail) |

@@ -32,7 +32,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.5 | PLAY (second press pauses) | Start / pause | ✅ | Play key: ⇧-click or ⇧Space pauses (▶ blinks, the position holds), ▶ goes on; the ▶ menu (right-click or its ▾) | Pause and Continue are MIDI Stop and Continue on both engines (P1, P1b): with CTRL IN off the machine takes neither, and the editor says so. | 3 | pass (md-step-grid) |
 | p.5 | STOP; double STOP silences all voices | Stop, panic | ✅ | Panic: ⌘. or the ▶ menu's Panic (the machine's STOP pressed twice) | Over HW MIDI there is no panic: no MIDI message silences the Machinedrum (P5); the menu entry is off and says why. | 1 | pass (e2e-md-top-panic) |
 | p.5 | STOP + PLAY restarts from the top | Restart | 🟡 | Stop then Play | Same result in two clicks. | – | n/a |
-| p.5 | PATTERN/SONG key | Switch sequencer mode | ✅ | Song page: PATTERN · CHAIN · SONG keys; LCD PLAY value | seqMode command. | 4 | pass (e2e-md-song-mode) |
+| p.5 | PATTERN/SONG key | Switch sequencer mode | ✅ | Song page: PATTERN · CHAIN · SONG keys; LCD PLAY value | seqMode command. | 5 | pass (e2e-md-song-mode) |
 | p.5 | KIT key (kit menu) / FUNCTION + KIT (song menu) | Open kit / song menus | ✅ | Kit: library popover. Song: the Songs column on the Song page (Load, Save, Save to…, Copy, Paste, Clear, Rename) | The song menu is the Songs column (0.6). | 1 | pass (md-kit-library) |
 | p.5 | TRIG keys 1-16 | Play tracks, place notes, pick patterns | ✅ | Step grid; piano keys A-L play the selected track | Right-click a step for its menu. | 2 | pass (md-step-grid) |
 | p.5 | SCALE SETUP key (page switch) | Pick pattern page | ✅ | Page key and page LEDs above the grid, [ and ] | ALL view shows every step. | 1 | pass (e2e-md-seq-pages) |
@@ -144,7 +144,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.36 | Temporary +/-10 % tempo shift (LEFT/RIGHT) | Turntable sync | ✅ | TEMPO window: −10 % / +10 % held, or the keys - and = held; back at the release, nothing stored |  | 1 | pass (e2e-md-top-tempo-window) |
 | p.36 | Tap tempo | FUNCTION + TEMPO | ✅ | T or B key; Shift+B on every workspace | keymap.json tap-tempo, tap-tempo-shift. On the Monomachine B is Draw on Sequence, so Shift+B is the one key both editors share. | 3 | pass (e2e-md-keys-tap-tempo) |
 | p.36 | External sync, EXT shown | MIDI clock follow | ✅ | Global > Sync > Tempo in; host tempo marked on LCD | In a DAW Tempo in is the switch (review 1, I-026): EXT follows the DAW's tempo and transport (a new plug-in starts so), INT runs the machine on its own clock and TEMPO is editable; kept with the project (`followHost`, `deskHostClock.h`; mdDeskFirmwareTest hostclock). | 1 | pass (md-global-panel) |
-| p.37 | Pattern selection (8 banks x 16) | A01-H16 | ✅ | Pattern chooser; prev/next arrows |  | 4 | pass (e2e-md-top-pattern-next) |
+| p.37 | Pattern selection (8 banks x 16) | A01-H16 | ✅ | Pattern chooser; prev/next arrows |  | 5 | pass (e2e-md-top-pattern-next) |
 | p.37 | Uninitialised patterns shown by LEDs | Which are empty | ✅ | Pattern chooser: EMPTY slots |  | 1 | pass (md-pattern-chooser) |
 | p.37 | Pending pattern at the pattern end | Queue | ✅ | Pattern chooser Queue / Now; LCD blinks |  | 1 | pass (e2e-md-seq-queue-while-playing) |
 | p.37 | Sticky bank keys (two seconds) | One-hand operation | ➖ |  | Not needed with the mouse. | – | n/a |
@@ -204,7 +204,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.52 | Move song pointer to a row; start from a row | Navigate, transport | ✅ | Song: ▶ From here on the selected row, or Enter (SONG mode, the song position, Continue) | A LOOP or JUMP before the row cannot be counted through: the editor says so (start the song and let it play there). | 1 | pass (md-song-what-plays) |
 | p.52 | Playing row shown, repeats left | Playhead | ✅ | Song: the playing row marked +2, +1, last; the What plays line ends 2 more / last | The machine's own counter (RAM 0x2b1901, gapProbesFirmwareTest w12repeats), telemetry songRepeats | 2 | pass (e2e-md-song-playhead) |
 | p.52 | STOP holds, second STOP to start | Stop behaviour | ✅ | Play key: ⇧-click pauses and holds the position; ▶ goes on, Stop in the ▶ menu ends it |  | 1 | pass (e2e-md-top-pause) |
-| p.53 | Song editor: pattern, REP, BPM, offset, length, mute | EDIT SONG | ✅ | Song > Selected row; arrangement grid |  | 1 | pass (md-song-loop) |
+| p.53 | Song editor: pattern, REP, BPM, offset, length, mute | EDIT SONG | ✅ | Song > Selected row; arrangement grid |  | 2 | pass (md-song-loop) |
 | p.53 | Insert / remove step | FUNCTION + arrows | ✅ | Add by palette, Duplicate, Delete |  | 2 | pass (e2e-md-song-arrange-rows) |
 | p.53 | Copy / paste / clear / undo rows | Row clipboard | ✅ | Cmd+C/V; Delete; Cmd+Z |  | 1 | pass (e2e-md-song-arrange-rows) |
 | p.53 | END mark | Song end | ✅ | END cell |  | 1 | pass (md-song-workspace) |
@@ -212,7 +212,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.54 | Song loop (count, infinite, nested) | LOOP | ✅ | Add loop; Times; Forever |  | 1 | pass (md-song-loop) |
 | p.55 | Song jump | JUMP | ✅ | Command: Jump |  | 1 | pass (md-song-workspace) |
 | p.55 | Song halt | HALT | ✅ | Command: Halt |  | 1 | pass (md-song-workspace) |
-| p.55 | Song mute per row | MUT | ✅ | Song > More > Mutes |  | 1 | pass (md-song-loop) |
+| p.55 | Song mute per row | MUT | ✅ | Song > More > Mutes |  | 2 | pass (md-song-loop) |
 | p.56 | Save song, choose slot, name it | SAVE SONG | ✅ | Songs column: Save (SAVE SONG 0x6D), Save to… with a name, Rename (F2) | Edits are still written into the slot at once; Save is the machine's SAVE SONG. A name has 16 characters. | 1 | pass (e2e-md-song-slots) |
 | p.56 | Copy, paste, clear, undo of song slots | Song library | ✅ | Songs column: Copy, Paste, Clear, drag a slot onto another; Cmd+Z | Library slot ops songCopy, songPaste, songCopyTo, songClear, songRename; asks before writing over a song. | 1 | pass (e2e-md-song-slots) |
 | p.52 | Song position pointer from MIDI | SPP | ➖ |  | Firmware follows host. | – | n/a |
