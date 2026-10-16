@@ -45,6 +45,7 @@ namespace mdJucePlugin
 		f.midiRxConsumed = hw.midiRxConsumedCount();
 		const auto panel = hw.getPanelInputStatus();
 		f.panelDropped = panel.overflowCount + panel.droppedPulsePackets + panel.rejectedPackets;
+		f.scheduledMidiOverflow = hw.scheduledMidiOverflowCount();
 		if(f.valid)
 			f.dspBooted = static_cast<uint8_t>((hw.getDspMixer().booted() ? 1 : 0) + (hw.getDspProducer().booted() ? 1 : 0));
 		if(desk)

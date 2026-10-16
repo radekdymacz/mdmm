@@ -3143,7 +3143,7 @@ namespace
 		check(false, gap.c_str());
 		// The plug-in's host sends these; this test has no host.
 		const auto r = contract::checkMessages(*root, g_published, {"learn", "audio", "audioLevel", "openAudio",
-			"romInstall", "romInfo", "notice", "syxPreview", "syxProgress", "syxExport", "syxExportInfo", "syxReset", "host", "audioRun", "cpuLoad", "outputLevel", "machineMemory", "midiIn", "midiHeld",
+			"romInstall", "romInfo", "notice", "syxPreview", "syxProgress", "syxExport", "syxExportInfo", "syxReset", "host", "audioRun", "cpuLoad", "outputLevel", "machineMemory", "midiIn", "midiHeld", "midiStats",
 			"editorMenu", "zoom", "drop", "dragFiles"});
 		for(const auto& p : r.off)
 			std::printf("    %s\n", p.c_str());

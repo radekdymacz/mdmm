@@ -506,6 +506,13 @@ function(mdmm_plugin_targets)
 	set_tests_properties(mdMidiInTest PROPERTIES LABELS "UnitTest")
 	set_property(TARGET mdMidiInTest PROPERTY FOLDER "Elektron/test")
 
+	# 0.8 (WP3): the MIDI monitor's counts (mdMidiMonitor.h, pure: by direction, type, channel; no allocation; no ROM)
+	add_executable(mdMidiMonitorTest mdMidiMonitorTest.cpp mdMidiMonitor.h)
+	target_link_libraries(mdMidiMonitorTest PRIVATE Threads::Threads)
+	add_test(NAME mdMidiMonitorTest COMMAND mdMidiMonitorTest)
+	set_tests_properties(mdMidiMonitorTest PROPERTIES LABELS "UnitTest")
+	set_property(TARGET mdMidiMonitorTest PROPERTY FOLDER "Elektron/test")
+
 	add_executable(mdProcessArchTest mdProcessArchTest.cpp mdProcessArch.cpp)
 	# the diagnostics builds' GEARMULATOR_MDMM_FAKE_ROSETTA
 	target_compile_definitions(mdProcessArchTest PRIVATE MDMM_DIAGNOSTICS=1)

@@ -196,6 +196,16 @@ namespace pluginLib
 		// input will get no note off (0.6, the editors' held notes).
 		virtual void midiInputsChanged() {}
 
+		// 0.8 (WP3, the MIDI monitor): where a message went through the processor. A hook, audio thread;
+		// it must not allocate or wait. What comes in from outside is midiInReceived's.
+		enum class MidiTraffic : uint8_t
+		{
+			ToFirmware,		// into the device's MIDI input (the routing allowed it)
+			FromMachine,	// out of the device, before the routing
+			ToHost			// into the host's MIDI out (the routing allowed it)
+		};
+		virtual void midiTraffic(MidiTraffic /*_where*/, const synthLib::SMidiEvent& /*_ev*/) {}
+
 		bool rebootDevice();
 
 		auto& getMidiPorts() { return m_midiPorts; }
@@ -233,6 +243,8 @@ namespace pluginLib
 		void handleAsyncUpdate() override;
 
 	private:
+		// into the device if the routing lets the message through (and the MIDI monitor's hook, midiTraffic)
+		void midiToFirmware(const synthLib::SMidiEvent& _ev, bool _realtimeInsert);
 		void prepareToPlay(double sampleRate, int maximumExpectedSamplesPerBlock) override;
 		void releaseResources() override;
 

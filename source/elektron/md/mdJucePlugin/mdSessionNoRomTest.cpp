@@ -287,6 +287,24 @@ int main(const int _argc, char** const _argv)
 		check(heldNow() == "[]", "HW MIDI: the machine's own notes (host or port) are not held (" + heldNow() + ")");
 		processor->getExternalMidi().set(false);
 	}
+	// 0.8 (WP3): the MIDI monitor counts what the notes above did, logs its line (at most every 10 s, here asked for
+	// with a late clock), and the page gets the counts as midiStats
+	{
+		using namespace mdJucePlugin::midiMonitor;
+		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, 0xb3, 7, 100));
+		const auto c = processor->midiMonitorCounts();
+		check(c.count(Direction::InHost, Type::Note) >= 5000 && c.count(Direction::InHost, Type::Cc) >= 2 && c.channel[0][3] >= 1,
+			"the monitor counted the host's notes and CCs (" + std::to_string(c.count(Direction::InHost, Type::Note)) + " notes in)");
+		check(c.total(Direction::InFirmware) > 0, "and what went on to the firmware (" + std::to_string(c.total(Direction::InFirmware)) + ")");
+		processor->logMidiMonitor(1e12);
+		const auto& line = processor->lastMidiLogLine();
+		std::printf("  %s\n", line.c_str());
+		check(line.rfind("midi: in host=", 0) == 0 && line.find(" out machine=") != std::string::npos && line.find(" dropped sched=") != std::string::npos,
+			"the log line says in, out and dropped");
+		for(int i = 0; i < 30 && count(published, "midiStats") == 0; ++i)
+			pump(100);
+		check(count(published, "midiStats") > 0, "the page is sent the counts (midiStats)");
+	}
 	// B-030: the host's tempo reaches the page while the host is stopped (the LCD's TEMPO shows it)
 	{
 		double bpm = -1;
