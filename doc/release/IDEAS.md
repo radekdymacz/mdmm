@@ -3,6 +3,27 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-043 · Filter envelope: a larger display with the full BOFS/WOFS range, the second window smaller (square) with attack and decay only
+
+- **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). The filter envelope display should be larger, and left/right on it show the full BOFS/WOFS range (-64 to +63, B-148); the second window smaller and square, with just attack and decay.
+- **Status:** idea; needs Radek's call on the look (Sound > Filter env).
+
+## I-042 · LFO preview: show the p-locked LFO values, not only the trig markers
+
+- **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). The LFO preview marks the trigs; it should draw the LFO as the locks change it.
+- **Status:** idea; read the preview's code before sizing (locks on LF1-LF3 are in `S.locks` as `LF1.i`).
+
+## I-041 · Kit: left/right navigation like the pattern selector
+
+- **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). The pattern selector has previous/next arrows; the kit selector should too.
+- **Status:** idea; check what the kit field does today in both editors (the Machinedrum has the same field).
+
+## I-040 · Computer keyboard: the octave range does not reach -2 to +8
+
+- **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). Z / X stop at -3 to +3 (`KEYS_OCT=[-3,3]`, `mmStudio/src/75-comforts.js:117`), seven octaves; the tester expects -2 to +8. The Perform page's own keyboard is clamped 0-6 (`130-main.js:207`).
+- **Open:** is -3..+3 a choice or the machine's limit? The note range is 0-127 (clamped in `keyNote`); -2..+8 is wider than the 128 notes from a C3 base, so the base or the range label may differ from what the tester sees. Check the Monomachine manual before calling it a bug.
+- **Status:** idea (bug if the manual says the machine's range is wider).
+
 ## I-039 · Song rows: show and edit mutes, transpose and tempo in the arrangement itself
 
 - **From:** a beta tester on Discord, 2026-10-16: loves Song mode and wants more song options: per-track mutes, per-track transpose and BPM per row.
