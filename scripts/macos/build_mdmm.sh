@@ -217,6 +217,10 @@ cmake --build "${build_dir}" --parallel 4 --target \
   pluginTester \
   latency_host
 
+# B-155: the standalone apps just built carry the Bluetooth and microphone usage keys (plutil; skipped, 77, only when
+# an app is missing, which --no-tests=error and the exit code below do not hide: a missing app fails the package anyway)
+ctest --test-dir "${build_dir}" -C Release --output-on-failure --no-tests=error --tests-regex '^mdmmStandalonePlistTest$'
+
 # The unit and plug-in tests (scripts/macos/mdmm_unit_tests.sh, the list CI's test job runs too). CI's package job
 # leaves them out (GEARMULATOR_MDMM_PACKAGE_TESTS=0): its test job builds them on arm64 without ThinLTO, in parallel,
 # so the package's ThinLTO links are the plug-ins' only (doc/release/DEV-CYCLE.md).

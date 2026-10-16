@@ -5,6 +5,8 @@
 #include "synthLib/midiTypes.h"
 #include "baseLib/binarystream.h"
 
+#include <algorithm>
+
 #include <juce_data_structures/juce_data_structures.h>
 
 namespace pluginLib
@@ -243,9 +245,9 @@ namespace pluginLib
 			m_learningType = statusByte;
 			m_learningValues.push_back(value);
 
-			// Notify progress
-			if (onLearningProgress)
-				onLearningProgress(1, kRequiredUniqueValues);
+			// Notify progress (a copy, as onMappingLearned below)
+			if (const auto progress = onLearningProgress)
+				progress(1, kRequiredUniqueValues);
 			return;
 		}
 
@@ -268,8 +270,8 @@ namespace pluginLib
 		const size_t uniqueCount = m_learningValues.size();
 
 		// Notify progress
-		if (onLearningProgress)
-			onLearningProgress(uniqueCount, kRequiredUniqueValues);
+		if (const auto progress = onLearningProgress)
+			progress(uniqueCount, kRequiredUniqueValues);
 
 		// Wait for enough unique values (forces user to rotate in both directions)
 		if (uniqueCount < kRequiredUniqueValues)
@@ -291,13 +293,19 @@ namespace pluginLib
 		// No conflict or reassigning controller from another parameter - notify success and exit learning mode
 		cancelLearning();
 
-		if (onMappingLearned)
-			onMappingLearned(newMapping);
+		// Run a copy: the callback may clear or replace onMappingLearned from inside itself (destroying the closure that is
+		// running), and a closure that uses its captures afterwards would read freed memory.
+		if (const auto learned = onMappingLearned)
+			learned(newMapping);
 	}
 
-	MidiLearnMapping::Mode MidiLearnTranslator::detectMode(const std::vector<uint8_t>& _values) const
+	MidiLearnMapping::Mode MidiLearnTranslator::detectMode(const std::vector<uint8_t>& _values)
 	{
 		if (_values.empty())
+			return MidiLearnMapping::Mode::Absolute;
+
+		// A button sends 127 when pressed and 0 when released: an absolute minimum and maximum, not an encoder.
+		if (std::all_of(_values.begin(), _values.end(), [](const uint8_t _v) { return _v == 0 || _v == 127; }))
 			return MidiLearnMapping::Mode::Absolute;
 
 		// Check for relative encoder patterns:

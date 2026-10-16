@@ -20,6 +20,7 @@ target_sources(deskCore PRIVATE
 	deskCore.h
 	deskDesk.h
 	deskLcd.h
+	deskLearn.cpp deskLearn.h
 	deskHistory.h
 	deskLifecycle.cpp deskLifecycle.h
 	deskLoadQueue.h
@@ -46,4 +47,10 @@ if(BUILD_TESTING)
 	add_test(NAME deskCoreTest COMMAND deskCoreTest)
 	set_tests_properties(deskCoreTest PROPERTIES LABELS "UnitTest")
 	set_property(TARGET deskCoreTest PROPERTY FOLDER "Elektron/test")
+
+	add_executable(deskLearnTest deskLearnTest.cpp)
+	target_link_libraries(deskLearnTest PRIVATE deskCore)
+	add_test(NAME deskLearnTest COMMAND deskLearnTest)
+	set_tests_properties(deskLearnTest PROPERTIES LABELS "UnitTest")
+	set_property(TARGET deskLearnTest PROPERTY FOLDER "Elektron/test")
 endif()

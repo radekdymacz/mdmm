@@ -154,6 +154,7 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 | Strip mute | md-mix-mute-solo PASS | mm-mix-level-mute PASS |
 | PAN / trim boxes | md-mix-pan-undo PASS | mm-mix-pan-undo PASS |
 | Outputs: OUT key / routing mode | md-mix-out-route PASS | mm-mix-routing PASS |
+| Output pair meters (I-032, 0.8) | none (no bus section on the MD Mix page) | mm-mix-meters PASS |
 | Master effects | md-mix-master-fx PASS | — |
 | MIDI track mutes (MUTE window) | — | mm-perform-midi-mutes PASS |
 
@@ -162,6 +163,7 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 | Feature | Machinedrum | Monomachine |
 |---|---|---|
 | Arrange: add a pattern row, delete, undo | md-song-arrange-rows PASS | mm-song-rows PASS |
+| Row marks on the cell (tempo, mutes, transpose); a click opens Row > More | md-song-row-marks PASS | mm-song-row-marks PASS |
 | Chain: pads chain at once, Clear ends it | md-song-chain PASS | mm-song-chain PASS |
 | Song picker (any of 24), Load on the machine | — | mm-song-picker-load PASS |
 | Row inspector (repeat, mutes), loops | md-song-row-inspector PASS | mm-song-row-inspector PASS |

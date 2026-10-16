@@ -53,6 +53,8 @@ The base channel is the first of four MIDI channels the machine listens and send
 
 In the **Control** card, click **−** or **+** beside **Base channel**. The value reads the four channels, for example 1 to 4. It steps one channel at a time, up to 13 to 16.
 
+The machine takes notes, program changes and controllers on these four channels only. A DAW drum track on another channel, for example channel 10, plays nothing until the base channel puts that channel among the four or the notes are sent on channels 1 to 4.
+
 NOTE: When the global holds a base channel of OFF, the card reads OFF. The machine then takes no notes, mutes or sound values over MIDI, and the editor cannot play it.
 
 ## MAP EDITOR
@@ -67,6 +69,10 @@ Each of the sixteen keys is named TRACK 1 to TRACK 16. It shows the note that pl
 ![The Map editor card](shot:md-map-editor)
 
 When a MIDI keyboard plays a track's note on the base channel, the track's number in the track rail glows for a moment, and so does its light on the Mix workspace. A note on another channel lights nothing.
+
+### Notes from a DAW or a port
+
+A note from the host, a MIDI port or a keyboard goes to the firmware's MIDI input through this map, as it does on the real machine. It plays the track the map gives it, on any of the four channels from the base channel. After you change a track's note, the new note plays it and the old one plays nothing. With GRID RECORD on, notes from the host do not write steps into the pattern.
 
 ### Notes for patterns and the transport
 
@@ -119,6 +125,8 @@ In the **Control** card:
 - **Prg change in**: ON makes a MIDI program change choose a pattern.
 - **Prg change out**: ON makes the machine send a program change when a pattern is chosen.
 - **Prg channel**: click **−** or **+** to choose the channel, 1 to 16. BASE means the four base channels for the messages in, and the first of them for the messages out.
+
+In a DAW a clip's program change, or one sent by a MIDI track, reaches the machine on the channel the host chose and picks the pattern when **Prg change in** is ON. With **Prg change out** ON the pattern you choose in the editor sends one to the DAW or the standalone's output.
 
 ## MECHANICAL SETTINGS (MKII UNITS ONLY)
 <!-- rows: MD-173 @64cf06 -->
@@ -281,7 +289,7 @@ Beside **Tempo in**, click:
 - **INT**: the machine runs at its own tempo.
 - **EXT**: the machine follows the MIDI clock it receives. MIDI Start waits for the clock.
 
-In a DAW, EXT follows the tempo and transport of the host, and a new plug-in starts so. INT runs the machine on its own clock there, and the project keeps it. See "EXTERNAL SYNCHRONIZATION" in chapter 8.
+In a DAW, EXT follows the tempo and transport of the host, and a new plug-in starts so. INT runs the machine on its own clock there: no clock from the host reaches it and the host's Play does not start it. The project keeps the choice. In the standalone, EXT follows the clock that arrives at a MIDI input. See "EXTERNAL SYNCHRONIZATION" in chapter 8.
 
 ### Ctrl in
 
@@ -289,7 +297,9 @@ Beside **Ctrl in**, click **ON** to make the machine react to MIDI Start, Stop a
 
 ### Tempo out
 
-Beside **Tempo out**, click **ON** to make the machine send the MIDI clock. Click it again to put it back.
+Beside **Tempo out**, click **ON** to make the machine send the MIDI clock. Click it again to put it back. The clock goes to the standalone's MIDI output, or to the plug-in's MIDI output in a DAW.
+
+NOTE: Do not feed the output back into an input of the same standalone, for example one IAC bus as both. The clock then circles and the sound can turn to noise. The AUDIO / MIDI panel warns about it.
 
 ### Ctrl out
 

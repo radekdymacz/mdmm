@@ -148,7 +148,7 @@
 <p>To play a first beat:</p>
 <ol class="gd-steps"><li>Open the Pattern workspace and select a track in the rail.</li><li>Click four empty steps of that track. Each lights as a trig.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The pattern plays with your trigs.</li><li>Press the same key to stop.</li></ol>
 <figure class="gd-shot"><img src="/guide/shots/md-step-grid.webp" width="1440" height="924" alt="The step grid with trigs"><figcaption>The step grid with trigs</figcaption></figure>
-<p>The piano keys play the selected track from any workspace: <kbd class="gd-key">[A S D F G H J K L]</kbd> play the white keys C to D. <kbd class="gd-key">[Z]</kbd> or <kbd class="gd-key">[X]</kbd> moves the octave and <kbd class="gd-key">[C]</kbd> or <kbd class="gd-key">[V]</kbd> sets the velocity.</p>
+<p>The piano keys play the selected track from any workspace: <kbd class="gd-key">[A S D F G H J K L]</kbd> play the white keys C to D. <kbd class="gd-key">[Z]</kbd> or <kbd class="gd-key">[X]</kbd> moves the octave, two up or down (the PTCH range of the machines) and <kbd class="gd-key">[C]</kbd> or <kbd class="gd-key">[V]</kbd> sets the velocity.</p>
 <h4 class="gd-h3">Pattern pages</h4>
 <p>A pattern of 64 steps has four pages of 16.</p>
 <ul class="gd-list"><li>Click <b class="gd-ui">Page</b> to show the next page. Hold <kbd class="gd-key">[⇧]</kbd> and click to show the previous one. The left and right square bracket keys do the same.</li><li>Four LEDs beside the key show the pages the pattern has. The page that plays is lit. Click an LED to show that page.</li><li>If the pattern has one page, click <b class="gd-ui">×2</b> on the LCD to double its length. The LEDs then show the pages of the new length.</li><li><b class="gd-ui">All</b> shows every step at once. It is on when the editor starts.</li><li><b class="gd-ui">Fol</b> makes the page follow the play position. With <b class="gd-ui">Fol</b> on and the machine playing, the lit LED moves to the second page when the position passes step 16.</li></ul>
@@ -159,7 +159,7 @@
 <div class="gd-body gd-prose"><h2>REAR CONNECTORS</h2>
 <p>The editor has no power switch or power input. It runs as a plug-in in your DAW, or as a standalone program. It has no rack mount, no battery and nothing to care for.</p>
 <h4 class="gd-h3">MIDI</h4>
-<p>In a DAW the plug-in takes MIDI from the host. In the standalone, open the <b class="gd-ui">AUDIO / MIDI</b> settings with <kbd class="gd-key">[,]</kbd>. The <b class="gd-ui">MIDI</b> card lists the MIDI inputs, the output and Bluetooth devices. No MIDI input is on until you switch it on.</p>
+<p>In a DAW the plug-in takes MIDI from the host. In the standalone, open the <b class="gd-ui">AUDIO / MIDI</b> settings with <kbd class="gd-key">[,]</kbd>. The <b class="gd-ui">MIDI</b> card lists the MIDI inputs, the output and Bluetooth devices. No MIDI input is on until you switch it on. The <b class="gd-ui">Monitor</b> row counts what came in and went out. A red line under the output warns when a virtual bus, such as an IAC bus, is both an input and the output: switch the input off or send to another bus. See &quot;MIDI and sync&quot; in the installation guide.</p>
 <p>The machine's own MIDI out reaches your DAW through the plug-in's MIDI output, and the standalone's MIDI output. It carries notes, controllers, program changes, pitch bend, pressure, clock, start, stop and continue. It never carries SysEx.</p>
 <p>The machine's MIDI channels, sync and the rest of its global settings are on the GLOBAL panel. Click <b class="gd-ui">GLOBAL</b> in the top bar, or choose <b class="gd-ui">GLOBAL…</b> in the engine menu of the LCD.</p>
 <p>MIDI Thru has no meaning in the editor.</p>
@@ -646,6 +646,7 @@
 <div class="gd-body gd-prose"><h2>PARAMETER TWEAKING</h2>
 <p>On the machine you hold <kbd class="gd-key">[FUNCTION]</kbd> and turn a knob to move that parameter on all 16 tracks. In the editor you hold <kbd class="gd-key">[⌥]</kbd> and drag a value on <b class="gd-ui">Kit</b> or <b class="gd-ui">Mix</b>. The same knob moves on every track by the same amount.</p>
 <p>To sweep the filters of all tracks, hold <kbd class="gd-key">[⌥]</kbd> and drag the FLTF or FLTW value.</p>
+<p>The ‹ and › keys beside the kit name in the <b class="gd-light">&lt;KIT&gt;</b> field of the LCD load the kit before or after, as a click in the kit library does. When the kit has unsaved edits the machine asks first.</p>
 <p>To drop the tweaks of a kit and load its stored sound again:</p>
 <ol class="gd-steps"><li>Click the kit name in the <b class="gd-light">&lt;KIT&gt;</b> field of the LCD. The kit library opens.</li><li>Click <b class="gd-ui">Reload</b> under <b class="gd-ui">Current</b>. The button is available only when the kit has unsaved edits. The edits are lost and the kit is as stored.</li></ol>
 <figure class="gd-shot"><img src="/guide/shots/md-kit-reload.webp" width="1440" height="924" alt="The kit library with Reload"><figcaption>The kit library with Reload</figcaption></figure>
@@ -903,6 +904,7 @@
 <h4 class="gd-h3">Read the cells</h4>
 <p>The marks under a pattern name say what else the row does.</p>
 <table class="gd-table"><thead><tr><th>Mark</th><th>Meaning</th></tr></thead><tbody><tr><td>×4</td><td>the row plays four times</td></tr><tr><td>~</td><td>the row plays part of its pattern</td></tr><tr><td>↺ and a row number</td><td>a loop back to that row</td></tr><tr><td>×3 or ∞</td><td>the loop plays three times, or for ever</td></tr><tr><td>→ and a row number</td><td>a jump to that row</td></tr><tr><td>HALT</td><td>the song halts</td></tr><tr><td>END</td><td>the song ends</td></tr></tbody></table>
+<p>A row that has a tempo of its own or muted tracks shows it in its cell as well. A tempo shows as a number, muted tracks as M and how many, for example 120 M3. When the cells are too narrow for words, letters stand for them: B for the tempo and M for the mutes. Hold the pointer over the cell to read them in full. Click the marks to open <b class="gd-ui">More</b> for that row. A row with neither looks as before.</p>
 <h4 class="gd-h3">When the machine hears an edit</h4>
 <p>The editor writes each edit into the song on the machine. An edit is heard from the next start of the song. The editor loads the song into the machine again when the machine is stopped.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>With a real Machinedrum over MIDI the editor cannot see the transport. The <b class="gd-ui">Songs</b> column then reads &quot;Edits heard after STOP + reload&quot; and offers <b class="gd-ui">Reload song</b>. Click it: the machine stops, loads the song and plays again.</p></aside>
@@ -1003,6 +1005,7 @@
 <div class="gd-body gd-prose"><h2>BASE CHANNEL</h2>
 <p>The base channel is the first of four MIDI channels the machine listens and sends on: channel n to channel n+3.</p>
 <p>In the <b class="gd-ui">Control</b> card, click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Base channel</b>. The value reads the four channels, for example 1 to 4. It steps one channel at a time, up to 13 to 16.</p>
+<p>The machine takes notes, program changes and controllers on these four channels only. A DAW drum track on another channel, for example channel 10, plays nothing until the base channel puts that channel among the four or the notes are sent on channels 1 to 4.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>When the global holds a base channel of OFF, the card reads OFF. The machine then takes no notes, mutes or sound values over MIDI, and the editor cannot play it.</p></aside>
 </div></section>
 <section class="gd-sec" id="map-editor">
@@ -1013,6 +1016,8 @@
 <p>Each of the sixteen keys is named TRACK 1 to TRACK 16. It shows the note that plays the track, or -- when the track has none. Click <b class="gd-ui">‹</b> or <b class="gd-ui">›</b> on a key to move the note down or up. Notes are named as C4, C#4 and so on, from 0 to 127.</p>
 <figure class="gd-shot"><img src="/guide/shots/md-map-editor.webp" width="1440" height="924" alt="The Map editor card"><figcaption>The Map editor card</figcaption></figure>
 <p>When a MIDI keyboard plays a track's note on the base channel, the track's number in the track rail glows for a moment, and so does its light on the Mix workspace. A note on another channel lights nothing.</p>
+<h4 class="gd-h3">Notes from a DAW or a port</h4>
+<p>A note from the host, a MIDI port or a keyboard goes to the firmware's MIDI input through this map, as it does on the real machine. It plays the track the map gives it, on any of the four channels from the base channel. After you change a track's note, the new note plays it and the old one plays nothing. With GRID RECORD on, notes from the host do not write steps into the pattern.</p>
 <h4 class="gd-h3">Notes for patterns and the transport</h4>
 <ol class="gd-steps"><li>Beside <b class="gd-ui">Map a note</b>, click <b class="gd-ui">‹</b> or <b class="gd-ui">›</b> to choose the note.</li><li>Choose from the menu what the note plays: nothing, a track, a pattern A01 to H16, START or STOP.</li></ol>
 <p>A note plays one thing. If you give it a new job, it leaves the old one. The line beside <b class="gd-ui">Pattern trig</b> lists the notes that play patterns or the transport.</p>
@@ -1040,6 +1045,7 @@
 <div class="gd-body gd-prose"><h2>PROGRAM CHANGE</h2>
 <p>In the <b class="gd-ui">Control</b> card:</p>
 <ul class="gd-list"><li><b class="gd-ui">Prg change in</b>: ON makes a MIDI program change choose a pattern.</li><li><b class="gd-ui">Prg change out</b>: ON makes the machine send a program change when a pattern is chosen.</li><li><b class="gd-ui">Prg channel</b>: click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> to choose the channel, 1 to 16. BASE means the four base channels for the messages in, and the first of them for the messages out.</li></ul>
+<p>In a DAW a clip's program change, or one sent by a MIDI track, reaches the machine on the channel the host chose and picks the pattern when <b class="gd-ui">Prg change in</b> is ON. With <b class="gd-ui">Prg change out</b> ON the pattern you choose in the editor sends one to the DAW or the standalone's output.</p>
 </div></section>
 <section class="gd-sec" id="mechanical-settings-mkii-units-only">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.61</span></span></aside>
@@ -1134,11 +1140,12 @@
 <h4 class="gd-h3">Tempo in</h4>
 <p>Beside <b class="gd-ui">Tempo in</b>, click:</p>
 <ul class="gd-list"><li><b class="gd-ui">INT</b>: the machine runs at its own tempo.</li><li><b class="gd-ui">EXT</b>: the machine follows the MIDI clock it receives. MIDI Start waits for the clock.</li></ul>
-<p>In a DAW, EXT follows the tempo and transport of the host, and a new plug-in starts so. INT runs the machine on its own clock there, and the project keeps it. See &quot;EXTERNAL SYNCHRONIZATION&quot; in chapter 8.</p>
+<p>In a DAW, EXT follows the tempo and transport of the host, and a new plug-in starts so. INT runs the machine on its own clock there: no clock from the host reaches it and the host's Play does not start it. The project keeps the choice. In the standalone, EXT follows the clock that arrives at a MIDI input. See &quot;EXTERNAL SYNCHRONIZATION&quot; in chapter 8.</p>
 <h4 class="gd-h3">Ctrl in</h4>
 <p>Beside <b class="gd-ui">Ctrl in</b>, click <b class="gd-ui">ON</b> to make the machine react to MIDI Start, Stop and Continue. Click <b class="gd-ui">OFF</b> to make it ignore them.</p>
 <h4 class="gd-h3">Tempo out</h4>
-<p>Beside <b class="gd-ui">Tempo out</b>, click <b class="gd-ui">ON</b> to make the machine send the MIDI clock. Click it again to put it back.</p>
+<p>Beside <b class="gd-ui">Tempo out</b>, click <b class="gd-ui">ON</b> to make the machine send the MIDI clock. Click it again to put it back. The clock goes to the standalone's MIDI output, or to the plug-in's MIDI output in a DAW.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Do not feed the output back into an input of the same standalone, for example one IAC bus as both. The clock then circles and the sound can turn to noise. The AUDIO / MIDI panel warns about it.</p></aside>
 <h4 class="gd-h3">Ctrl out</h4>
 <p>Beside <b class="gd-ui">Ctrl out</b>, click <b class="gd-ui">ON</b> to make the machine send MIDI Start, Stop and Continue.</p>
 </div></section>
@@ -1376,7 +1383,7 @@
 <section class="gd-sec" id="note-map">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.B-1</span></span></aside>
 <div class="gd-body gd-prose"><h2>NOTE MAP</h2>
-<p>By default the 16 tracks answer to notes from C2 upwards, one note a track. The 128 patterns answer to notes from E4 upwards, one note a pattern.</p>
+<p>By default the 16 tracks answer to the white keys from C2 to D4, one note a track, on the four channels from the base channel. The 128 patterns answer to notes from E4 upwards, one note a pattern.</p>
 <p>To see or change the map:</p>
 <ol class="gd-steps"><li>Choose <b class="gd-ui">GLOBAL…</b> in the engine menu.</li><li>Find the map editor in the panel. Each track has a note.</li><li>Click the note of a track up or down. The track plays from the next note.</li><li>Click a track's <b class="gd-ui">LEARN</b> dot to set the note by playing it. The head of the panel asks you to play a note. Play it on a MIDI keyboard. The track takes that note and the dot goes out.</li><li>Click <b class="gd-ui">Reset map</b>. The editor asks first. Answer, and the tracks play from C2 and the patterns from E4 again.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to close the panel.</li></ol>
 <aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes back a change to the map.</p></aside>
@@ -1386,7 +1393,7 @@
 <div class="gd-body gd-prose"><h2>CONTROL CHANGES</h2>
 <p>The sound parameters of the 16 tracks are reached by control change messages. The machine uses four MIDI channels, starting from its base channel, and each channel serves a group of four tracks. Every parameter of a track has its own control change number.</p>
 <p>In the editor you do not type these numbers. When you move a value on the <b class="gd-ui">Kit</b> workspace, the editor sends the control change for it. A move on a track of each group of four, tracks 1, 5, 9 and 13, reaches the machine through its own channel.</p>
-<p>The editor also learns a controller of your own from the one you move, through its Control page.</p>
+<p>A DAW reaches the same parameters by host automation. Each track has host parameters for synthesis, effects, routing, level and mute, and a lane of automation sends the control change the knob would send.</p>
 </div></section>
 <section class="gd-sec" id="level-and-mute">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.B-1</span></span></aside>
@@ -1394,6 +1401,16 @@
 <p>Each track has its own control change for its level. The mute of a track is a control change of its own too.</p>
 <ol class="gd-steps"><li>Click the <b class="gd-ui">Mix</b> tab.</li><li>Drag the <b class="gd-light">&lt;LEV&gt;</b> box of a track. The level control change goes out with each move.</li><li>Double-click the box. It reads 100.</li><li>Click <b class="gd-ui">Undo</b> until the level is back.</li></ol>
 <p>The mute keys of the editor act on the machine's own memory of the mutes.</p>
+</div></section>
+<section class="gd-sec" id="program-change">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>PROGRAM CHANGE</h2>
+<p>A program change on one of the four channels selects a pattern when <b class="gd-ui">Prg change in</b> is ON (chapter 10). With <b class="gd-ui">Prg change out</b> ON the machine sends one when you choose a pattern.</p>
+</div></section>
+<section class="gd-sec" id="midi-out">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>MIDI OUT</h2>
+<p>The machine's MIDI out carries notes, controllers, program changes, pitch bend, pressure, clock, start, stop and continue. It never carries SysEx.</p>
 </div></section>
 </article>
 <article class="gd-chapter" id="c16" style="page: c16">

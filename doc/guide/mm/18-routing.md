@@ -40,6 +40,14 @@ NOTE: A synth track has no input. Its strip reads "synth · none".
 
 **BUS AB**, **BUS CD** and **BUS EF** are inputs that take what a bus carries. If the effect track also sends to the same bus, it replaces what was there: the line below the drawing reads "INSERT". If it sends elsewhere, it takes a copy of the bus: a send. The line names the track that "takes a copy".
 
+## OUTPUT METERS
+
+Under each bus line of the drawing, next to its output jack, is a meter with two thin bars, left over right. It measures the output pair after the volume: A/B, C/D and E/F. The solid bar is the level, the pale bar behind it is the peak, and the thin mark is the highest peak, held for a moment before it falls. The scale runs from -60 dB at the left to 0 dB at the right. The small square at the left end fills for a few seconds after a sample went over 0 dB.
+
+The meters work only while the **Mix** workspace is open. A pair the host has not switched on is dimmed.
+
+NOTE: The machine gives the editor its three stereo outputs, not each track. A track has a meter of its own only if you send it to a bus alone. Send one track to CD, for example, and the CD meter shows that track.
+
 ## ROUTING MODES
 <!-- rows: MM-282 MM-283 MM-284 MM-288 @716ba9 -->
 

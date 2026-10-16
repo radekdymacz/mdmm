@@ -309,7 +309,7 @@ namespace
 
 int main(const int _argc, char** _argv)
 {
-	std::setvbuf(stdout, nullptr, _IOLBF, 0);
+	std::setvbuf(stdout, nullptr, _IONBF, 0);
 	if(_argc < 4)
 	{
 		std::puts("usage: mdDataCaptureFirmwareTest dump|script <MD-1.63-ROM> <out-dir> [script] [state.mdst]");

@@ -226,6 +226,7 @@ document.addEventListener("click",e=>{
   const cp=e.target.closest("[data-chainpad]");if(cp){chainPad(+cp.dataset.chainpad);return}
   const ca=e.target.closest("[data-chain]");if(ca){if(!ca.disabled)chainAct(ca.dataset.chain);return}
   const ap=e.target.closest("[data-addpat]");if(ap){if(S.song.length>=200){toast("A song holds 200 rows.");return}let at2=S.songSel+1;if(S.song[S.songSel]?.type==="end")at2=S.songSel;S.song.splice(at2,0,{pat:+ap.dataset.addpat,rep:1});S.songSel=at2;edit("rowInsert",{i:at2,row:S.song[at2]});render();return}
+  const rmk=e.target.closest("[data-rowmarks]");if(rmk){S.songSel=+rmk.closest(".scell").dataset.row;S.songMore=true;render();return}
   const rw=e.target.closest(".scell:not(.empty),.db[data-row]");if(rw){S.songSel=+rw.dataset.row;render();return}
   const ra=e.target.closest("[data-rowact]");if(ra){songAction(ra.dataset.rowact);return}
   const stp=e.target.closest("[data-step]");if(stp){songStep(stp.dataset.step,+stp.dataset.d*(e.shiftKey?10:1));return}
@@ -422,7 +423,7 @@ function render(){const f=focusedValue();renderPage();if(f){const el=document.qu
 function renderPage(){closePicker();closeK();const sl=$("#seqscroll")?.scrollLeft||0;renderTop();{const m=(S.ws==="seq"||S.ws==="sound")&&S.side==="midi";if(!m&&S.sel>5)S.sel-=6;if(m&&S.sel<6)S.sel+=6}const full=["mix","perform","song","control"].includes(S.ws);
  $("#body").className="body "+(full?"full ":"")+"ws-"+S.ws;$("#rail").hidden=full;if(!full)renderRail();renderSub();
  ({control:renderControl,seq:renderSeq,sound:renderSound,mix:renderMix,perform:renderPerform,song:renderSong})[S.ws]();
- const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));if(S.learn)document.body.classList.add("learn");movePH(false);polyFollows()}
+ const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));if(S.learn)document.body.classList.add("learn");movePH(false);polyFollows();mixMetersSync()}
 /* 0.6 wave 9 (B-064): POLY plays the machine's track in focus; the synth track the person selects here (rail, Assign's
    1-6) is the one that plays it: a new selection while in POLY moves it (the host presses that TRACK key) */
 /* the Multi envelope's "choose Multi trig" rings that key while pointed at (no :has(): macOS 12's WebKit) */
@@ -621,7 +622,7 @@ window.MMView={
  setFollow,selectTrack:followSelect,setLcd,setKeyDown,setMidiHeld,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
  /* calls */
  render,renderTop,drawLib,toast,ask,redraw,movePH,setPos,flashTracks,goWs,clickStep,autoRange,kitSave,
- redrawAudio:()=>{if(AP.open)drawAudio()},audioLevel,openAudio};
+ redrawAudio:()=>{if(AP.open)drawAudio()},audioLevel,audioStats,openAudio,mixLevels,mixMeterState};
 /* the view gives exactly the seam's members (53-seam.js) */
 {const have=Object.keys(window.MMView),odd=[...MM_SEAM.view.filter(k=>!have.includes(k)),...have.filter(k=>!MM_SEAM.view.includes(k))];if(odd.length)console.warn("MMView and 53-seam.js differ: "+odd.join(", "))}
 /* The self-tests (a diagnostics build's bundle sets window.MMDiagnostics before this script) play the

@@ -20,5 +20,9 @@ async function audioSelfTest(T){const sleep=ms=>new Promise(r=>setTimeout(r,ms))
  await check("output "+out0+" -> "+(out1??"-"),async()=>{if(!out1)return "one output device only, skipped";audioSend({set:"output",device:out1});await until(D=>D.output.id===out1&&D.running);if(!(await moving()))throw new Error("audio stopped");return "still playing"});
  await check("output back to "+out0,async()=>{if(!out1)return "skipped";audioSend({set:"output",device:out0});await until(D=>D.output.id===out0&&D.running);if(!(await moving()))throw new Error("audio stopped");return "still playing"});
  await check("input mute toggles and is kept",async()=>{audioSend({set:"mute",on:!muted0});await until(D=>!!D.input.muted===!muted0);audioSend({set:"mute",on:muted0});await until(D=>!!D.input.muted===muted0);return muted0?"muted again":"live again"});
+ await check("loop warning, input note and monitor row show",async()=>{const real=window.audioDoc;window.audioDoc=()=>Object.assign({},real(),{midiLoop:"MIDI loop: test",inputNote:"Input note: test"});
+  try{drawAudio();const loop=document.getElementById("amloop"),note=document.getElementById("aminputnote");if(!loop||!/MIDI loop/.test(loop.textContent))throw new Error("no loop warning");if(!note||!/Input note/.test(note.textContent))throw new Error("no input note");
+   const z=()=>({total:0,types:{},channels:[]});audioStats({directions:{inHost:Object.assign(z(),{total:5}),outHost:Object.assign(z(),{total:7})},dropped:{}});const m=document.getElementById("ammon");if(!m||!/IN\s*5/.test(m.textContent)||!/OUT\s*7/.test(m.textContent))throw new Error("monitor row: "+(m&&m.textContent))}
+  finally{window.audioDoc=real;AP.stats=null;AP.prev=null;drawAudio()}return "warning, note and counts drawn"});
  T.play(false);closeAudio();await sleep(300);
  T.log((res.every(Boolean)?"PASS ":"FAIL ")+res.filter(Boolean).length+"/"+res.length)}
