@@ -58,23 +58,23 @@ const StepSel = (() => {
 	}
 
 	/* ---- the selection's keys (the same ids, keys and modifiers on both editors: deskKeymapTest.js). p: the page's
-	   {seqKeys(): its Sequence keys are on, has(): a selection, selKeys(): its keys may take the arrows and Enter (a
+	   {seqKeys(): its Pattern keys are on, has(): a selection, selKeys(): its keys may take the arrows and Enter (a
 	   selection, no other control focused), cut, duplicate, selectAll, move(ds), grow(ds), trigs, deselect,
 	   deselectWhen(), does: {id: words} for what the page says its own way, area: the pointer's area name} ---- */
 	function bind(Keys, p) {
 		const does = (id, words) => (p.does && p.does[id]) || words;
 		const area = p.area || "Steps";
-		Keys.bind({ id: "cut", short: "Cut", scope: "seq", keys: ["X"], mod: "cmd", group: "Sequence", does: does("cut", "Cut the selected steps (copy, then clear; one undo step)"), when: () => p.seqKeys() && p.has(), run: () => p.cut() });
-		Keys.bind({ id: "duplicate", short: "Duplicate", scope: "seq", keys: ["D"], mod: "cmd", group: "Sequence", does: does("duplicate", "Duplicate the selected steps right after themselves (the clipboard stays); again: once more"), when: () => p.seqKeys() && p.has(), run: () => p.duplicate() });
-		Keys.bind({ id: "select-all", short: "Select all", scope: "seq", keys: ["A"], mod: "cmd", group: "Sequence", does: does("select-all", "Select every step of every track up to the length (then ⌘C copies the pattern as a block)"), when: () => p.seqKeys(), run: () => p.selectAll() });
-		Keys.bind({ id: "sel-move", short: "Sel ← / Sel →", scope: "seq", keys: ["ArrowLeft", "ArrowRight"], group: "Sequence", does: does("sel-move", "Move the selection a step earlier / later (one step selected: a cursor)"), when: () => p.selKeys(), run: e => p.move(e.key === "ArrowRight" ? 1 : -1) });
-		Keys.bind({ id: "sel-extend", short: "Grow ← / Grow →", scope: "seq", keys: ["ArrowLeft", "ArrowRight"], mod: "shift", group: "Sequence", does: does("sel-extend", "Extend the selection a step earlier / later"), when: () => p.selKeys(), run: e => p.grow(e.key === "ArrowRight" ? 1 : -1) });
-		Keys.bind({ id: "sel-trigs", short: "Trigs", scope: "seq", keys: ["Enter"], group: "Sequence", does: does("sel-trigs", "The selected steps' trigs on, or off when each has one (one undo step)"), when: () => p.selKeys(), run: () => p.trigs() });
-		Keys.bind({ id: "deselect", short: "Deselect", scope: "seq", keys: ["Escape"], group: "Sequence", does: does("deselect", "Clear the step selection"), when: () => p.seqKeys() && p.has() && p.deselectWhen(), run: () => p.deselect() });
-		Keys.bind({ id: "step-select", scope: "seq", area, keys: ["step"], mod: "cmd", group: "Sequence", does: does("step-select", "Click: select the step (⌘V pastes there). Drag: select steps × tracks. Drag the selection: a copy where you let go") });
-		Keys.bind({ id: "step-extend", scope: "seq", area, keys: ["step"], mod: "cmd+shift", group: "Sequence", does: does("step-extend", "Click: extend the selection to the step") });
-		Keys.bind({ id: "ruler-select", scope: "seq", area, keys: ["step ruler"], group: "Sequence", does: does("ruler-select", "Click or drag: select steps of the selected track (down over the grid: more tracks); ⇧-click extends") });
-		Keys.bind({ id: "step-menu", scope: "seq", area, keys: ["right-click a step"], group: "Sequence", does: does("step-menu", "The step menu: trig, accent, slide, copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (the ⋯ on the selection; Ctrl-click on a Mac; the Menu key on a focused step)") });
+		Keys.bind({ id: "cut", short: "Cut", scope: "seq", keys: ["X"], mod: "cmd", group: "Pattern", does: does("cut", "Cut the selected steps (copy, then clear; one undo step)"), when: () => p.seqKeys() && p.has(), run: () => p.cut() });
+		Keys.bind({ id: "duplicate", short: "Duplicate", scope: "seq", keys: ["D"], mod: "cmd", group: "Pattern", does: does("duplicate", "Duplicate the selected steps right after themselves (the clipboard stays); again: once more"), when: () => p.seqKeys() && p.has(), run: () => p.duplicate() });
+		Keys.bind({ id: "select-all", short: "Select all", scope: "seq", keys: ["A"], mod: "cmd", group: "Pattern", does: does("select-all", "Select every step of every track up to the length (then ⌘C copies the pattern as a block)"), when: () => p.seqKeys(), run: () => p.selectAll() });
+		Keys.bind({ id: "sel-move", short: "Sel ← / Sel →", scope: "seq", keys: ["ArrowLeft", "ArrowRight"], group: "Pattern", does: does("sel-move", "Move the selection a step earlier / later (one step selected: a cursor)"), when: () => p.selKeys(), run: e => p.move(e.key === "ArrowRight" ? 1 : -1) });
+		Keys.bind({ id: "sel-extend", short: "Grow ← / Grow →", scope: "seq", keys: ["ArrowLeft", "ArrowRight"], mod: "shift", group: "Pattern", does: does("sel-extend", "Extend the selection a step earlier / later"), when: () => p.selKeys(), run: e => p.grow(e.key === "ArrowRight" ? 1 : -1) });
+		Keys.bind({ id: "sel-trigs", short: "Trigs", scope: "seq", keys: ["Enter"], group: "Pattern", does: does("sel-trigs", "The selected steps' trigs on, or off when each has one (one undo step)"), when: () => p.selKeys(), run: () => p.trigs() });
+		Keys.bind({ id: "deselect", short: "Deselect", scope: "seq", keys: ["Escape"], group: "Pattern", does: does("deselect", "Clear the step selection"), when: () => p.seqKeys() && p.has() && p.deselectWhen(), run: () => p.deselect() });
+		Keys.bind({ id: "step-select", scope: "seq", area, keys: ["step"], mod: "cmd", group: "Pattern", does: does("step-select", "Click: select the step (⌘V pastes there). Drag: select steps × tracks. Drag the selection: a copy where you let go") });
+		Keys.bind({ id: "step-extend", scope: "seq", area, keys: ["step"], mod: "cmd+shift", group: "Pattern", does: does("step-extend", "Click: extend the selection to the step") });
+		Keys.bind({ id: "ruler-select", scope: "seq", area, keys: ["step ruler"], group: "Pattern", does: does("ruler-select", "Click or drag: select steps of the selected track (down over the grid: more tracks); ⇧-click extends") });
+		Keys.bind({ id: "step-menu", scope: "seq", area, keys: ["right-click a step"], group: "Pattern", does: does("step-menu", "The step menu: trig, accent, slide, copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (the ⋯ on the selection; Ctrl-click on a Mac; the Menu key on a focused step)") });
 	}
 
 	/* the words of an entry's key (a pointer gesture's: "⌘⇧-click") */
@@ -103,7 +103,7 @@ const StepSel = (() => {
 	   top-right corner of the selection's last step that is on screen; a click opens the same step menu, right-click
 	   stays a shortcut. It floats (no row of its own, the layout stays), under the popovers and hidden while a dialog
 	   or a menu is open. It is placed frame by frame only while there is a selection (moreWake starts that, from the
-	   editors' syncSel, a scroll or a resize). o: {active(): a selection on the Sequence page; cells(): the selected
+	   editors' syncSel, a scroll or a resize). o: {active(): a selection on the Pattern page; cells(): the selected
 	   steps in order; clip(): the scrolling grid, the part of it on screen; open(x, y): the step menu there} ---- */
 	/* held: a press on the page (a click, a drag or a ⌘-drag over the steps) hides the key until the release, so it
 	   never sits under the pointer's path (it moves to the selection's last step as a drag grows the selection) */

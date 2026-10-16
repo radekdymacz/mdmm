@@ -3,7 +3,7 @@
    skins/shared/deskWhat.js): the selected track's parts as the machine keeps them, PATTERN (trigs, accent, swing,
    slide, locks: every step of the pattern) and KIT (machine + sound, LFO: the kit that plays). One command each,
    trackCopy / trackPaste / trackClear (mdDesk::trackParts), one undo step; the clipboard is the core's
-   (machine.clipboard.track says what it holds). The Sound page's LFO card has a ⋯ with Copy LFO, Paste LFO,
+   (machine.clipboard.track says what it holds). The Kit page's LFO card has a ⋯ with Copy LFO, Paste LFO,
    Clear LFO: the same commands with the LFO alone. */
 const MD_WHAT = [["trigs", "Trigs", "pat"], ["accent", "Accent", "pat"], ["swing", "Swing", "pat"], ["slide", "Slide", "pat"], ["locks", "Locks", "pat"],
 	["sound", "Machine + sound", "kit"], ["lfo", "LFO", "kit"]];

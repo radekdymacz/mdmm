@@ -1,7 +1,7 @@
 # 9. Additional kit settings
 <!-- summary: Assign performance controls to parameters, set how a track's notes and glides behave, and play all six tracks from one keyboard. -->
 
-Besides the sound of each track, a kit holds settings for how the tracks are played: what the joystick, the velocity and the key position control, which track a trig also plays, how the portamento and legato behave, and how a single keyboard drives several tracks. The assign settings and the multi trig, multi map and multi envelope settings are on the **Perform** workspace. Press {key:workspace-4}, or click the **Perform** tab. The trig track settings are on **Sequence**.
+Besides the sound of each track, a kit holds settings for how the tracks are played: what the joystick, the velocity and the key position control, which track a trig also plays, how the portamento and legato behave, and how a single keyboard drives several tracks. The assign settings and the multi trig, multi map and multi envelope settings are on the **Perform** workspace. Press {key:workspace-4}, or click the **Perform** tab. The trig track settings are on **Pattern**.
 
 ## ASSIGN
 <!-- rows: MM-145 MM-150 @30842b -->
@@ -42,16 +42,16 @@ The tabs JOY RL, JOY U and JOY D hold the joystick's three directions: right and
 The VEL tab assigns the velocity of the notes you play to a parameter. The sequencer always plays its notes at velocity 100, so a velocity assign only responds to the keys.
 
 ### KEY TRACKING
-<!-- rows: MM-149 @4bc813 -->
+<!-- rows: MM-149 @6f8f99 -->
 
 The KEY tab assigns the key you played last to a parameter. The value is low for the lowest key and near its maximum for the highest.
 
-Two keys on this tab, **HPF tracks keys** and **LPF tracks keys**, switch the key tracking of the high-pass and low-pass filters. **KEY** in the title of the **Filter** group on **Sound** shows the two switches and opens this tab. Chapter 7 describes filter tracking.
+Two keys on this tab, **HPF tracks keys** and **LPF tracks keys**, switch the key tracking of the high-pass and low-pass filters. **KEY** in the title of the **Filter** group on **Kit** shows the two switches and opens this tab. Chapter 7 describes filter tracking.
 
 ## TRIG TRACK SETTINGS
-<!-- rows: MM-151 MM-152 MM-153 @b013d7 -->
+<!-- rows: MM-151 MM-152 MM-153 @dec448 -->
 
-These settings belong to one track. They sit in the **Trig setup** tab, in the header of the lock lane on **Sequence**. A MIDI track has the **MIDI page** tab in its place (see chapter 16).
+These settings belong to one track. They sit in the **Trig setup** tab, in the header of the lock lane on **Pattern**. A MIDI track has the **MIDI page** tab in its place (see chapter 16).
 
 1. Press {key:workspace-1}.
 2. Select a synth track in the rail.
@@ -59,7 +59,7 @@ These settings belong to one track. They sit in the **Trig setup** tab, in the h
 
 ![The Trig setup tab](shot:mm-trig-setup)
 
-**Trig position** chooses a second track that also plays this track's notes. The keys are T1 to T6, without the track itself, and a dash for none. The **Mix** workspace draws the link as a dotted cord labelled TRIG and the target track.
+**Trig position** chooses a second track that also plays this track's notes. The keys are T1 to T6, without the track itself, and a dash for none. The **Mix** workspace draws the link as a dotted cord labelled TRIG and the target track. On Pattern and Kit, the number of a track that plays only because another track forwards its trig lights in blue; a track with its own trig lights in the usual colour.
 
 **Port** sets how the portamento works.
 

@@ -188,7 +188,7 @@ const NoteLights = { due: new Set(), timer: 0 };
 function noteLight(m) {
 	const g = Docs.global; if (!g || !(g.baseChannel >= 0 && g.baseChannel <= 12) || m.ch !== g.baseChannel) return;
 	if (V.caps.engine === "hw") return;	/* HW MIDI: what comes in is the real machine's own MIDI OUT, not a player */
-	const t = g.keymap?.[m.note]; if (!(t >= 0 && t < 16)) return;
+	const t = g.keymap?.[m.note]; if (!Number.isInteger(t) || t < 0 || t > 15) return;	/* an unmapped note is null: null >= 0 is true */
 	if (S.ws === "mix" && audible(t)) DeskTrig.light([t]);
 	NoteLights.due.add(t); if (NoteLights.timer) return;
 	NoteLights.timer = setTimeout(() => {

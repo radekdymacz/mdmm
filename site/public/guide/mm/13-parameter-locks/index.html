@@ -69,10 +69,11 @@
 <section class="gd-sec" id="parameter-locks" aria-labelledby="parameter-locks-h">
 <div class="gd-body gd-prose"><h2 id="parameter-locks-h">PARAMETER LOCKS <a class="gd-anchor" href="#parameter-locks" aria-label="Link to PARAMETER LOCKS">#</a></h2>
 <p class="gd-ref">MM manual p.1-58</p>
-<p>The lock lane is under the piano roll on <b class="gd-ui">Sequence</b>. Press <kbd class="gd-key">[1]</kbd> and select a track.</p>
+<p>The lock lane is under the piano roll on <b class="gd-ui">Pattern</b>. Press <kbd class="gd-key">[1]</kbd> and select a track.</p>
 <figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-lock-lane.webp" aria-label="Open the picture full size: The lock lane"><img src="/guide/shots/mm-lock-lane.webp" width="1440" height="924" alt="The lock lane" loading="lazy"></a><figcaption>The lock lane</figcaption></figure>
 <p>The rail on the left of the lane lists what you can lock. For a synth track the page keys are SYN, AMP, FLT, EFX, LF1, LF2 and LF3. For a MIDI track there is one key, MIDI PAGE. A green light on a page key means the page holds locks. Under the page keys are the parameters of the page. A number on a parameter key counts its locked steps.</p>
 <p>The lane shows one parameter at a time, the one lit in the rail. Each step with a trig has a bar. A solid line across the lane marks the value of the kit, and its number sits on the line at the right end of the lane. Rest the pointer on a step, or select it, to read its lock as a number at the top of its bar. Drag the line itself to change the kit value of the parameter on that track, the value the knob changes. The whole drag is one undo step and draws no lock. A click on or near the line, without moving up or down, still sets a lock on that step. Hatched steps have no trig.</p>
+<p>A small mark at the top of a bar tells what the trig fires. Red: the trig fires all three envelopes (AMP, FILTER and LFO). Green: it fires only some of them, or none (a trigless trig). The tip of the bar says the same.</p>
 </div></section>
 <section class="gd-sec" id="parameter-locks-in-grid-recording-mode" aria-labelledby="parameter-locks-in-grid-recording-mode-h">
 <div class="gd-body gd-prose"><h2 id="parameter-locks-in-grid-recording-mode-h">PARAMETER LOCKS IN GRID RECORDING MODE <a class="gd-anchor" href="#parameter-locks-in-grid-recording-mode" aria-label="Link to PARAMETER LOCKS IN GRID RECORDING MODE">#</a></h2>
@@ -97,7 +98,7 @@
 <div class="gd-body gd-prose"><h2 id="parameter-locks-in-live-recording-mode-h">PARAMETER LOCKS IN LIVE RECORDING MODE <a class="gd-anchor" href="#parameter-locks-in-live-recording-mode" aria-label="Link to PARAMETER LOCKS IN LIVE RECORDING MODE">#</a></h2>
 <p class="gd-ref">MM manual p.1-58</p>
 <p>While LIVE RECORDING plays (see chapter 11), turn a value on any page. The machine locks it on the step that plays when the value arrives. A step without a trig gets a trigless lock.</p>
-<ol class="gd-steps"><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd> to record live.</li><li>Turn a value, for example the filter <b class="gd-ui">BASE</b> on <b class="gd-ui">Sound</b>.</li><li>The editor marks the step in the trig row and the bar in the lock lane, and says which value it locked and on which step, for example Locks T1 FLT BASE on step 5.</li></ol>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd> to record live.</li><li>Turn a value, for example the filter <b class="gd-ui">BASE</b> on <b class="gd-ui">Kit</b>.</li><li>The editor marks the step in the trig row and the bar in the lock lane, and says which value it locked and on which step, for example Locks T1 FLT BASE on step 5.</li></ol>
 <p>To tidy up, stop recording and draw the values again in the lock lane.</p>
 </div></section>
 <nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/12-tempo/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">12. Tempo</span></a><a href="/guide/mm/14-advanced-sequencer-control/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">14. Advanced sequencer control</span></a></nav>

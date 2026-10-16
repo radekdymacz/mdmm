@@ -7,7 +7,7 @@ function ask(html,btns,cls="",item={}){Dlg.show(Object.assign(item,{draw:()=>dra
 function drawAsk(html,btns,cls){const d=$("#dlg");d.innerHTML=`<div class="dlgbox ${cls}" role="alertdialog" aria-modal="true">${/^<(p|div|ol|ul|h[1-6]|section|form)[\s>]/i.test(html)?html:`<p>${html}</p>`}<div class="btnrow">${btns.map(([t,c],i)=>`<button class="${c}" data-dlg="${i}">${t}</button>`).join("")}</div></div>`;d.hidden=false;d._btns=btns;d.querySelector(".btnrow button:last-child")?.focus()}
 
 /* ===== Honest machine state =====
-   Sound edits go out as CCs at once (Appendix B) but stay unsaved in the kit.
+   Kit edits go out as CCs at once (Appendix B) but stay unsaved in the kit.
    Pattern, kit and song DUMPS are different on the Monomachine: it only takes them on
    GLOBAL > FILE > SYSEX RECV while the screen says WAITING (P1-RESULT, GAP-REVIEW 3.1).
    EMU: the app drives that screen itself (the emulator can press the panel).
@@ -118,7 +118,7 @@ function ref(el){const d=el.dataset,t=d.t!=null?+d.t:S.sel,tr=trk(t),g=d.g;
   case"mmap":{const r=S.mmap[+d.i];return[r,d.n,{name:d.n,...{trn:{max:127,signed:1},ofs:{en:["---",...Array.from({length:64},(_,i)=>String(i).padStart(2,"0"))]},len:{max:64},tim:{en:["DIR","1","2","4","8","16","32"]}}[d.n]},t,g]}}}
 const getV=el=>{const[o,n]=ref(el);return o[n]};
 /* Control All (the Machinedrum's FUNCTION + a DATA ENTRY knob, manual p.37; an editor feature here, the
-   Monomachine has none): Alt held while dragging a Sound value, or a curve editor's handle, moves the same
+   Monomachine has none): Alt held while dragging a Kit value, or a curve editor's handle, moves the same
    value of every synth track by the same amount. A machine without that SYN parameter is left out, the
    MIDI tracks are never touched, a value that hits its end does not come back symmetrically. The host
    gets it as one kit edit per frame (edited "sound"): one undo step per gesture. */
@@ -150,7 +150,7 @@ function syncControls(){
   if(m.signed&&el.classList.contains("pc")){const q=v/mx*100;el.classList.add("bip");el.style.setProperty("--pl",Math.min(q,50.4)+"%");el.style.setProperty("--pw",Math.max(1.5,Math.abs(q-50.4))+"%")}
   /* a PAN bar reads as a mixer does: L / C / R */
   const txt=el.classList.contains("pan")&&m.signed?(v===64?"C":(v<64?"L":"R")+Math.abs(v-64)):fmt(m,v);
-  const b=el.querySelector("b");if(b)b.textContent=txt;el.setAttribute("aria-valuetext",txt);
+  const b=el.querySelector("b");const dw=!el.classList.contains("pan")&&m.tab&&v!=null?tabAt(m.tab,v):null,wn=dw&&dw.n;/* B-150: a D wave box shows the wave's name (the number is in the tip and the screen) */if(b){b.textContent=wn||txt;b.classList.toggle("long",!!wn)}if(wn)el.title=txt;el.setAttribute("aria-valuetext",txt);
   if(PAGES.includes(g)||g==="MID"){const pid=g+"."+n;el.classList.toggle("lk",S.locks.has(lkKey(t,pid)));const mb=modBy(t,g,+n);let md=el.querySelector(".mod");
    if(mb.length){if(!md){md=document.createElement("i");md.className="mod";el.appendChild(md)}md.textContent="~"+mb.join("");el.title=`Modulated by LFO ${mb.join(" + ")}`}else if(md)md.remove();
    const mp=S.ctl.links.filter(l=>l.t===t&&l.pid===pid);el.classList.toggle("mapped",mp.length>0)}});

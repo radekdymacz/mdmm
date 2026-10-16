@@ -438,7 +438,7 @@
 		   yet (mmConvert.js loads after the mockup: it reads the mockup's tables). init() says ready,
 		   and the plug-in answers with the catalogue at once: a catalogue that came before MmConvert
 		   was lost (useCatalogue threw), so every document showed the enumerations as raw firmware
-		   values (LFO PAGE 15 for SYN) and Sound threw on such a track. The page speaks only once
+		   values (LFO PAGE 15 for SYN) and Kit threw on such a track. The page speaks only once
 		   MmConvert is there. */
 		start() { const go = () => typeof MmConvert === "undefined" || typeof MmView === "undefined" ? setTimeout(go, 0) : init(); go(); },
 		/* the gesture ended: the next edit is a new undo step; the drawing it held comes now, and an edit that

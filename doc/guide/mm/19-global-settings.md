@@ -181,4 +181,4 @@ The +Drive, its snapshots and its Digibanks are hardware. The editor does not em
 ## MIDI SEQ
 <!-- rows: MM-314 MM-315 @a7b5ee -->
 
-The channel of each MIDI track, and the controller numbers CL1 to CL4, are on the **MIDI page** of **Sequence**. See chapter 16.
+The channel of each MIDI track, and the controller numbers CL1 to CL4, are on the **MIDI page** of **Pattern**. See chapter 16.

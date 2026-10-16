@@ -67,7 +67,7 @@ function mmNotesTag(sp,name=n=>String(n)){const n=sp&&sp.notes;if(!n||n.motion==
    trial's base, keyed by (seed, track, page × 8 + knob) so a scope change never reshuffles the others.
      spec: { tracks: [t...] (synth tracks 0..5), pages: ["SYN" | "AMP" | "FLT" | "EFX" | "LFO"...], amount 0..100, seed,
              protect: names never moved (default VOL and TUNE: the level and the tuning the notes rely on),
-             extra: { t: [[pg, i]...] } knobs of the groups in scope (a group's title on the Sound page), optional }
+             extra: { t: [[pg, i]...] } knobs of the groups in scope (a group's title on the Kit page), optional }
      base: the synth tracks before the trial: [{ m, v: { SYN: [8], AMP: [8], FLT, EFX, LF1, LF2, LF3 } }...]
      info(t, pg, i): { name, max } of that knob, or null where the machine has none
    -> [[t, pg, i, v]...] for every knob in scope (an unmoved one too, so a new seed from the base resets it).
