@@ -184,7 +184,7 @@ The machine's song menu is the **Songs** column of the Song workspace: load, sav
 
 ### TRIG keys
 
-The steps of the grid are the TRIG keys. Click a step to turn its trig on or off. Select a step (⌘-click) and click the small ⋯ on it for its menu, or right-click the step.
+The steps of the grid are the TRIG keys. Click an empty step to draw a trig. Click a trig to select it, and it stays selected: {key:delete} removes it and the arrows move the selection. Double-click a trig to remove it. Select more steps with ⌘-click, then click the small ⋯ on a selected step for its menu, or right-click the step.
 
 To play a first beat:
 

@@ -142,6 +142,17 @@ Keys.bind({id:"velocity",scope:"any",keys:["C","V"],group:"Playing",does:()=>`Ve
 /* ---- the selected track's keys, the all keys, the step gestures ---- */
 Keys.bind({id:"mute-track",scope:"any",keys:["M"],code:"KeyM",group:"Selected track",does:"Mute or unmute the selected track",when:kbOn,run:()=>muteSel()});
 Keys.bind({id:"mute-all",scope:"any",keys:["M"],code:"KeyM",mod:"alt",group:"All",does:"Mute every track; when none is audible, unmute every track",when:kbOn,run:()=>muteAllToggle()});
+/* I-036: with exactly one note selected (a click on it selects it), ↑ / ↓ change its pitch a semitone, ⇧ an octave: the
+   note's chord notes together, one undo step a press (the key's release commits). Without a note selected they stay the track move below. */
+function pitchSel(){const x=S.stepSel;if(!x||x.n!==1||S.ws!=="seq")return null;const tr=trk(x.t);let hit=-1,cnt=0;
+ for(let s=x.from;s<Math.min(x.to,S.len);s++){const st=tr.steps[s];if(st&&!st.off&&st.n?.length){cnt++;hit=s}}return cnt===1?{t:x.t,s:hit}:null}
+function pitchSelMove(d){const h=pitchSel();if(!h)return;const st=trk(h.t).steps[h.s],ns=st.n.map(n=>n+d);
+ if(ns.some(n=>n<0||n>127)){toast(`${tLabel(h.t)} step ${h.s+1}: ${noteName(d>0?127:0)} is as far as it goes.`);return}
+ st.n=ns;editStep(h.t,h.s);autoRange(h.t);rerenderSeq();toast(`${tLabel(h.t)} step ${h.s+1}: ${ns.map(noteName).join(" ")}`)}
+Keys.bind({id:"note-pitch",short:"Note ↑ / ↓",scope:"seq",keys:["ArrowUp","ArrowDown"],group:"Sequence",does:"One note selected (click it): its pitch a semitone up / down, one undo step a press. Anything else selected: the track move below",
+ when:()=>selKeys()&&!!pitchSel(),run:e=>pitchSelMove(e.key==="ArrowUp"?1:-1)});
+Keys.bind({id:"note-octave",short:"Note ⇧↑ / ⇧↓",scope:"seq",keys:["ArrowUp","ArrowDown"],mod:"shift",group:"Sequence",does:"One note selected: its pitch an octave up / down",
+ when:()=>selKeys()&&!!pitchSel(),run:e=>pitchSelMove(e.key==="ArrowUp"?12:-12)});
 Keys.bind({id:"track-prev-next",scope:"any",keys:["ArrowUp","ArrowDown"],group:"Selected track",does:"Select the previous / next track of the side shown (a focused value keeps ↑ / ↓ for itself). Sequence with selected steps: move the selection a track",
  when:()=>kbOn()&&$("#kpop").hidden&&S.ws!=="song",run:e=>{if(selKeys()){selMove(e.key==="ArrowDown"?1:-1,0);return}const sd=side(),i=sd.indexOf(S.sel);select(sd[((i<0?0:i)+(e.key==="ArrowDown"?1:5))%6])}});
 Keys.bind({id:"tap-tempo",scope:"any",keys:["B"],group:"Transport",does:"Tap tempo (the average of the last taps; T plays F♯ here).",when:kbOn,run:()=>tapTempo()});
