@@ -57,6 +57,11 @@ namespace synthLib
 			// Runs without Plugin's process/device lock, like StateTransaction::prepare: it must own (or share
 			// immutably) every input and must not access the live Device. Appends what getState would append.
 			virtual bool encode(std::vector<uint8_t>& _state) = 0;
+
+			// More of the capture, under the same lock as beginStateCapture (Plugin takes it again for each call and
+			// releases it between, so the audio thread never waits for a whole large copy), while the device that
+			// began it is still the plug-in's. True: call again. The default: the capture is complete at once.
+			virtual bool captureMore() { return false; }
 		};
 
 		Device(const DeviceCreateParams& _params);

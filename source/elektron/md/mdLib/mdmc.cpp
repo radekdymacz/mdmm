@@ -200,6 +200,12 @@ namespace md
 			m_patchRam[_offset] = _value;
 	}
 
+	bool Microcontroller::patchRamEquals(const std::vector<uint8_t>& _data) const
+	{
+		std::shared_lock lock(m_patchRamMutex);
+		return _data == m_patchRam;
+	}
+
 	bool Microcontroller::replacePatchRam(const std::vector<uint8_t>& _data)
 	{
 		if(_data.size() != m_patchRam.size())
@@ -254,6 +260,7 @@ namespace md
 		m_immPageData = nullptr;
 		m_flashDirty = _dirty;
 		m_lastFlashWriteCycle = getCycles();
+		++m_flashWrites;
 		return true;
 	}
 
@@ -276,7 +283,9 @@ namespace md
 		// A write-cycle count belongs to its emulator timeline, not to the moved
 		// backing store. Conservatively restart each dirty-idle interval.
 		m_lastFlashWriteCycle = getCycles();
+		++m_flashWrites;
 		_other.m_lastFlashWriteCycle = _other.getCycles();
+		++_other.m_flashWrites;
 		return true;
 	}
 
@@ -304,6 +313,7 @@ namespace md
 		m_immPageData = nullptr;
 		m_flashDirty = _dirty;
 		m_lastFlashWriteCycle = getCycles();
+		++m_flashWrites;
 		return StateImagePublishResult::Published;
 	}
 	void Microcontroller::readMidiOut(std::vector<synthLib::SMidiEvent>& _midiOut, const uint64_t _nativeOrigin)
@@ -807,6 +817,7 @@ namespace md
 					{
 						m_flashDirty = true;
 						m_lastFlashWriteCycle = getCycles();
+						++m_flashWrites;
 						m_immPageAddress = 0xffffffffu;
 						m_immPageData = nullptr;
 						if(m_flashOperationObserver) m_flashOperationObserver(*operation, getCycles());
@@ -828,6 +839,7 @@ namespace md
 			m_monomachineFlash->write(offset, _val);
 			m_flashDirty = true;
 			m_lastFlashWriteCycle = getCycles();
+			++m_flashWrites;
 			m_immPageAddress = 0xffffffffu;
 			m_immPageData = nullptr;
 			return;

@@ -27,6 +27,7 @@
 #include "jucePluginLib/tools.h"
 
 #include "mdLib/mddevice.h"
+#include "mdLib/mdstatecapture.h"
 #include "mdLib/mdromloader.h"
 #include "mdLib/mdstate.h"
 #include "mdLib/mdpanel.h"
@@ -150,6 +151,35 @@ namespace
 		return getOptions(_model, _ephemeral);
 	}
 
+}
+
+namespace
+{
+	// The live machine's state captured a part per device-lock hold (md::DeviceStateCapture::captureMore), every part
+	// of _live at _epoch; _mark: the machine's state mark when the capture completed. False: the machine changed.
+	bool captureLiveState(synthLib::Plugin& _plugin, md::Device* const _live, const uint64_t _epoch,
+		std::unique_ptr<md::DeviceStateCapture>& _capture, md::Device::StateMark& _mark)
+	{
+		bool more = true;
+		while(more)
+		{
+			const bool same = _plugin.withDeviceLocked([&](synthLib::Device* const _device)
+			{
+				auto* const device = dynamic_cast<md::Device*>(_device);
+				if(!device || device != _live || device->hardwareEpoch() != _epoch)
+					return false;
+				if(!_capture)
+					_capture = device->beginDeviceStateCapture(synthLib::StateTypeGlobal);
+				more = _capture->captureMore();
+				if(!more)
+					_mark = device->stateMark();
+				return true;
+			});
+			if(!same)
+				return false;
+		}
+		return true;
+	}
 }
 
 namespace mdJucePlugin
@@ -399,7 +429,7 @@ namespace mdJucePlugin
 						// exchange if firmware or panel input changed battery-backed
 						// storage in that interval; otherwise those newer bytes would
 						// exist in neither the replacement nor its recovery image.
-						if(device->getHardware().copyPatchRam() != previousBytes)
+						if(!device->getHardware().patchRamEquals(previousBytes))
 						{
 							commitError = "Live storage was edited while the replacement was preparing; try again.";
 							return false;
@@ -685,9 +715,15 @@ namespace mdJucePlugin
 			if(hardware.isFactoryFlashCacheReady())
 				(void)device->captureFactoryFlashCachePersistence(cacheFilename,
 					factoryFlash, cacheError);
-			if(!device->getState(originalState, synthLib::StateTypeGlobal))
-				state = State::Waiting;
 		});
+		// The machine's state taken a part per hold (DESIGN-audio-lock.md step 1), encoded after the lock, with the
+		// mark and the patch RAM of the moment it was complete: the commit checks against those
+		std::unique_ptr<md::DeviceStateCapture> capture;
+		md::Device::StateMark mark;
+		if(state == State::Ready && !captureLiveState(getPlugin(), liveDevice, liveEpoch, capture, mark))
+			state = State::Waiting;
+		if(capture && state == State::Ready && !capture->encode(originalState))
+			state = State::Waiting;
 
 		if(state == State::NotNeeded)
 		{
@@ -725,9 +761,8 @@ namespace mdJucePlugin
 				if(device != liveDevice || !device
 					|| device->hardwareEpoch() != liveEpoch)
 					return false;
-				std::vector<uint8_t> currentState;
-				if(!device->getState(currentState, synthLib::StateTypeGlobal)
-					|| currentState != originalState)
+				// unchanged since the capture: the same marks and patch RAM give the same state (no getState here)
+				if(device->stateMark() != mark || !device->getHardware().patchRamEquals(capture->patchRam))
 					return false;
 				return device->commitPreparedState(*prepared);
 			});

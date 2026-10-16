@@ -69,6 +69,8 @@ namespace synthLib
 
 		bool isValid() const;
 
+		// Replaces the device: the old one's state is captured (getState), the new one is configured and given that
+		// state before it is installed, so the lock is held only for the swap; the old device is deleted after it.
 		void setDevice(Device* _device);
 		Device* getDevice() const { return m_device; }
 
@@ -105,6 +107,10 @@ namespace synthLib
 		void updateDeviceLatency();
 		void processMidiInEvents();
 		void processMidiInEvent(const SMidiEvent& _ev, bool _realtime);
+#if !SYNTHLIB_DEMO_MODE
+		// setState's header and dispatch for a device nobody else can reach yet (setDevice's new one): no lock
+		static bool setStateUnshared(Device& _device, const std::vector<uint8_t>& _state);
+#endif
 
 		dsp56k::RingBuffer<SMidiEvent, RealtimeMidiEventCapacity, false> m_midiInRingBuffer;
 		std::vector<SMidiEvent> m_midiIn;
@@ -117,6 +123,7 @@ namespace synthLib
 		mutable std::mutex m_lockAddMidiEvent;
 
 		Device* m_device;
+		uint64_t m_deviceGeneration = 0;	// counts setDevice: a capture in parts knows its device was replaced
 
 		std::vector<float> m_silentInputBuffer;
 		std::array<std::vector<float>, std::tuple_size_v<TAudioOutputs>>

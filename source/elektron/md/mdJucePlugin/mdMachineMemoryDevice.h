@@ -6,6 +6,7 @@
 #include "mdMachineMemoryService.h"
 
 #include <string>
+#include <vector>
 
 namespace mdJucePlugin
 {
@@ -28,6 +29,11 @@ namespace mdJucePlugin
 		void notice(const std::string& _text) override;
 
 	private:
+		static constexpr size_t g_flashCopyPart = 256 * 1024;
+		static constexpr uint32_t g_flashCopyAttempts = 4;
+		bool copyFlashInParts(uint8_t* _to, size_t _at, size_t _size, std::optional<uint64_t>& _machine, double& _copyMs,
+			std::vector<uint8_t>* _patch);
+
 		AudioPluginAudioProcessor& m_processor;
 		const machineMemory::Shape m_shape;
 		const std::string m_noticeTitle;

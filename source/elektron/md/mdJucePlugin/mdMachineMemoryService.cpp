@@ -599,8 +599,9 @@ namespace mdJucePlugin
 		}
 		auto& patch = memory.patch;
 		auto& sectors = memory.sectors;
-		const auto& factory = memory.factory;
-		const auto& rom = memory.rom;
+		static const std::vector<uint8_t> none;
+		const auto& factory = memory.factory ? *memory.factory : none;
+		const auto& rom = memory.rom ? *memory.rom : none;
 		uint64_t romFingerprint = 0;
 		if(m_shape.sampleFlash)
 		{
