@@ -24,6 +24,16 @@
 
 namespace mdJucePlugin
 {
+	// The machine a look belongs to: the device and its hardware epoch (a rebooted machine is another one), compared
+	// exactly as a pair
+	struct MachineId
+	{
+		uint64_t device = 0;
+		uint64_t epoch = 0;
+		friend bool operator==(const MachineId& _a, const MachineId& _b) { return _a.device == _b.device && _a.epoch == _b.epoch; }
+		friend bool operator!=(const MachineId& _a, const MachineId& _b) { return !(_a == _b); }
+	};
+
 	// What the machine memory needs from the machine. Any thread but the audio thread, unless said otherwise.
 	class MachineMemoryPort
 	{
@@ -49,12 +59,12 @@ namespace mdJucePlugin
 		};
 		// A piece as of one moment, a part per hold of the plug-in's lock (md::OneMomentCopy). _heldMs: the longest hold,
 		// from taking the lock to releasing it
-		virtual bool look(const Piece& _piece, std::optional<uint64_t>& _machine, double& _heldMs) = 0;
+		virtual bool look(const Piece& _piece, std::optional<MachineId>& _machine, double& _heldMs) = 0;
 
 		// Sample flash: the flash's [_at, _at + _size), of a valid machine that is the one _machine names, as it was at
 		// one moment: a part of up to 64 KiB per hold, the pieces written meanwhile copied again (md::OneMomentCopy,
 		// DESIGN-audio-lock.md). _copyMs: the longest hold's copy.
-		virtual bool copyFlash(uint8_t* _to, size_t _at, size_t _size, std::optional<uint64_t>& _machine, double& _copyMs) = 0;
+		virtual bool copyFlash(uint8_t* _to, size_t _at, size_t _size, std::optional<MachineId>& _machine, double& _copyMs) = 0;
 
 		// The memory a session starts with: the patch RAM, the sectors (the user flash, or the whole flash), and (sample
 		// flash) what the flash is made of: the factory flash and the ROM's flash, shared and immutable (the machine's own;
@@ -198,8 +208,8 @@ namespace mdJucePlugin
 		bool write(const std::vector<machineMemory::Key>& _keys, const std::vector<uint8_t>& _base, const std::vector<uint8_t>& _patch,
 			const std::vector<uint8_t>& _sectors);
 		WriteResult writeChanges(bool _withForced, bool _consistent);
-		bool look(uint64_t& _signature, uint64_t& _epoch, bool _atomic);
-		bool rebase(uint64_t _signature, uint64_t _epoch);
+		bool look(uint64_t& _signature, MachineId& _epoch, bool _atomic);
+		bool rebase(uint64_t _signature, const MachineId& _epoch);
 		void clearFile();
 		void serviceSampleStore();
 		void takeSampleSectors(bool _atomic);

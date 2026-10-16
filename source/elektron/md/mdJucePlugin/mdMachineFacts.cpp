@@ -50,7 +50,8 @@ namespace mdJucePlugin
 		if(desk)
 		{
 			f.audition = desk->auditionStatus();
-			f.panelPending = static_cast<uint32_t>(std::max(0, desk->getSequencerTelemetry()->panelPending.load(std::memory_order_relaxed)));
+			if(const auto* const telemetry = desk->sequencerTelemetryPtr())
+				f.panelPending = static_cast<uint32_t>(std::max(0, telemetry->panelPending.load(std::memory_order_relaxed)));
 		}
 		return f;
 	}

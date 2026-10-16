@@ -24,7 +24,7 @@ namespace mdJucePlugin
 	struct MachineMemoryService::WatchState
 	{
 		machineMemory::Watch watch;
-		std::optional<uint64_t> epoch;		// the machine the base is of
+		std::optional<MachineId> epoch;		// the machine the base is of
 		std::optional<uint64_t> settling;	// a new machine's first signature: the base once a look sees it again
 		uint32_t settleLooks = 0;
 		Cost cost;
@@ -779,7 +779,7 @@ namespace mdJucePlugin
 			MachineMemoryService& s; double& max;
 			~Measure() { if(s.m_watch) { s.m_watch->cost.flashHoldLastMs = max; s.m_watch->cost.flashHoldMaxMs = std::max(s.m_watch->cost.flashHoldMaxMs, max); } }
 		} measure{*this, holdMax};
-		std::optional<uint64_t> machine;
+		std::optional<MachineId> machine;
 		const size_t step = _atomic ? _flash.size() - md::g_mdFirmwareFlashEnd : machineMemory::g_sectorSize;
 		for(size_t at = md::g_mdFirmwareFlashEnd; at < _flash.size(); at += step)
 		{
@@ -798,7 +798,7 @@ namespace mdJucePlugin
 	// so the audio thread never waits for more than one chunk; every chunk checks it is still the same machine. A save
 	// that lands while the chunks are taken changes the next look too, and a write waits for two looks that agree.
 	// False: no machine to look at (none, starting, restoring, changed while it was looked at).
-	bool MachineMemoryService::look(uint64_t& _signature, uint64_t& _epoch, const bool _atomic)
+	bool MachineMemoryService::look(uint64_t& _signature, MachineId& _epoch, const bool _atomic)
 	{
 		const size_t chunk = _atomic ? md::g_mmUserFlashStateSize : 0x10000;
 		uint64_t flashMark = 0;
@@ -810,7 +810,7 @@ namespace mdJucePlugin
 			userFlash.resize(md::g_mmUserFlashStateSize);
 		const auto begin = std::chrono::steady_clock::now();
 		double lockMax = 0;
-		std::optional<uint64_t> machine;
+		std::optional<MachineId> machine;
 		// one piece under the lock
 		const auto piece = [&](const MachineMemoryPort::Piece& _piece)
 		{
@@ -898,7 +898,7 @@ namespace mdJucePlugin
 	// a ROM reinstalled, the MD's factory flash prepared) or a storage image keeps the base: what differs from it is a
 	// save, written as one. A memory replaced on purpose (willBeReplaced: a project, the file's slots, factory memory)
 	// is the new base once it holds still for a look. False: not yet (still settling).
-	bool MachineMemoryService::rebase(const uint64_t _signature, const uint64_t _epoch)
+	bool MachineMemoryService::rebase(const uint64_t _signature, const MachineId& _epoch)
 	{
 		auto& w = *m_watch;
 		if(w.watch.based() && !w.rebaseNext)
@@ -916,7 +916,8 @@ namespace mdJucePlugin
 			return false;
 		}
 		// the base is read whole (one hold of the plug-in's lock), so no half-done save is taken into it
-		uint64_t signature = 0, epoch = 0;
+		uint64_t signature = 0;
+		MachineId epoch;
 		if(!look(signature, epoch, true) || epoch != _epoch)
 			return false;
 		w.rebaseNext = false;
@@ -987,7 +988,8 @@ namespace mdJucePlugin
 	{
 		const std::lock_guard lock(m_memoryMutex);
 		auto& w = *m_watch;
-		uint64_t signature = 0, epoch = 0;
+		uint64_t signature = 0;
+		MachineId epoch;
 		if(!look(signature, epoch, false))
 			return;	// starting or restoring: the base and the last look of the old machine stay for its rebase
 		if(w.epoch != epoch)
@@ -1092,7 +1094,8 @@ namespace mdJucePlugin
 				(void)writeChanges(true, false);
 			return;
 		}
-		uint64_t signature = 0, epoch = 0;
+		uint64_t signature = 0;
+		MachineId epoch;
 		if(!look(signature, epoch, true))
 			return;
 		if(w.epoch != epoch)

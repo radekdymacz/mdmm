@@ -26,6 +26,8 @@ namespace hwLib
 
 	void Am29f::write(const uint32_t _addr, const uint16_t _data)
 	{
+		m_changedAt = 0;
+		m_changedSize = 0;
 		const auto reset = [this]()
 		{
 			m_currentBusCycle = 0;
@@ -98,6 +100,9 @@ namespace hwLib
 
 		for(size_t i = _addr; i< _addr + _sizeInKb * 1024; ++i)
 			m_buffer[i] = 0xff;
+
+		m_changedAt = _addr;
+		m_changedSize = _sizeInKb * 1024;
 
 		return true;
 	}
@@ -179,6 +184,8 @@ namespace hwLib
 				// "A bit cannot be programmed from a 0 back to a 1"
 				const auto v = _data & old;
 				mc68k::memoryOps::writeU16(m_buffer, _addr, v);
+				m_changedAt = _addr;
+				m_changedSize = 2;
 	//			assert(v == _data);
 				break;
 			}

@@ -38,6 +38,11 @@ namespace hwLib
 
 		void write(uint32_t _addr, uint16_t _data);
 
+		// The bytes the last write() changed (a programmed word, an erased sector): [changedAt, changedAt + changedSize),
+		// size 0 when it changed none. For a caller that marks what it has changed
+		size_t changedAt() const { return m_changedAt; }
+		size_t changedSize() const { return m_changedSize; }
+
 		bool eraseSector(uint32_t _addr, size_t _sizeInKb) const;
 
 		virtual bool eraseSector(const uint32_t _addr) const
@@ -67,6 +72,8 @@ namespace hwLib
 		void execCommand(CommandType _command, uint32_t _addr, uint16_t _data) const;
 
 		uint8_t* m_buffer;
+		mutable size_t m_changedAt = 0;
+		mutable size_t m_changedSize = 0;
 		const size_t m_size;
 		const bool m_useWriteEnable;
 		const bool m_bitreverseCmdAddr;

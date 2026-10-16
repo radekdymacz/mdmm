@@ -28,9 +28,9 @@ namespace mdJucePlugin
 		}
 
 		// The machine a piece of a look belongs to: a rebooted machine is another one
-		uint64_t machineOf(const md::Device& _device)
+		MachineId machineOf(const md::Device& _device)
 		{
-			return _device.deviceId() << 40 ^ _device.hardwareEpoch();
+			return {_device.deviceId(), _device.hardwareEpoch()};
 		}
 	}
 
@@ -56,7 +56,7 @@ namespace mdJucePlugin
 		return true;
 	}
 
-	bool MachineMemoryDevice::copyAtOneMoment(std::vector<md::OneMomentCopy::Area> _areas, std::optional<uint64_t>& _machine,
+	bool MachineMemoryDevice::copyAtOneMoment(std::vector<md::OneMomentCopy::Area> _areas, std::optional<MachineId>& _machine,
 		double& _heldMs, double& _copyMs, const std::function<bool(md::Device&)>& _check,
 		const std::function<void(md::Device&)>& _last)
 	{
@@ -99,7 +99,7 @@ namespace mdJucePlugin
 		}
 	}
 
-	bool MachineMemoryDevice::look(const Piece& _piece, std::optional<uint64_t>& _machine, double& _heldMs)
+	bool MachineMemoryDevice::look(const Piece& _piece, std::optional<MachineId>& _machine, double& _heldMs)
 	{
 		// the piece's buffers are the caller's: copied into vectors of ours, then out (the copy grows its buffers)
 		std::vector<uint8_t> patch, userFlash;
@@ -148,7 +148,7 @@ namespace mdJucePlugin
 
 	// DESIGN-audio-lock.md: the flash (and with it the patch RAM: startMemory) as of one moment, a part per hold
 	bool MachineMemoryDevice::copyFlashInParts(uint8_t* const _to, const size_t _at, const size_t _size,
-		std::optional<uint64_t>& _machine, double& _copyMs, std::vector<uint8_t>* const _patch)
+		std::optional<MachineId>& _machine, double& _copyMs, std::vector<uint8_t>* const _patch)
 	{
 		std::vector<uint8_t> flash;
 		std::vector<md::OneMomentCopy::Area> areas;
@@ -163,7 +163,7 @@ namespace mdJucePlugin
 		return true;
 	}
 
-	bool MachineMemoryDevice::copyFlash(uint8_t* _to, const size_t _at, const size_t _size, std::optional<uint64_t>& _machine, double& _copyMs)
+	bool MachineMemoryDevice::copyFlash(uint8_t* _to, const size_t _at, const size_t _size, std::optional<MachineId>& _machine, double& _copyMs)
 	{
 		return copyFlashInParts(_to, _at, _size, _machine, _copyMs, nullptr);
 	}
@@ -174,7 +174,7 @@ namespace mdJucePlugin
 		// the lock), then the flash a part per hold and the patch RAM with the last part (copyFlashInParts)
 		std::shared_ptr<const md::Rom> rom;
 		std::shared_ptr<md::FactoryFlashBaseline> factory;
-		std::optional<uint64_t> machine;
+		std::optional<MachineId> machine;
 		size_t flashAt = 0, flashSize = 0;
 		const bool ready = m_processor.getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
 		{
