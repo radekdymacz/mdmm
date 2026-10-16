@@ -58,8 +58,8 @@ source/elektron/md/mdJucePlugin/skins/mmStudio/mmOverrides.css	deskCompatPageTes
 source/elektron/md/mdJucePlugin/skins/mmStudio/*	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-*	-	no	2 2c 7d
 source/elektron/md/mdJucePlugin/skins/*	-	-	-	-	no	2 2c 7d
 # --- the core and the machines' models (no emulator)
-source/elektron/md/deskCore/*	deskCoreTest|mdDeskTest|mmDeskTest|deskWire	mdIntentCasesFirmwareTest|mmIntentCasesFirmwareTest|mdTransportFirmwareTest|mmTransportFirmwareTest	*	-	no	2 2b 2c 4 7d
-source/elektron/md/deskHost/*	deskCoreTest|mdDeskTest|mmDeskTest	-	*	-	no	2 2b 2c 7d
+source/elektron/md/deskCore/*	deskCoreTest|deskLearnTest|mdDeskTest|mmDeskTest|deskWire	mdIntentCasesFirmwareTest|mmIntentCasesFirmwareTest|mdTransportFirmwareTest|mmTransportFirmwareTest	*	-	no	2 2b 2c 4 7d
+source/elektron/md/deskHost/*	deskCoreTest|deskLearnTest|mdDeskTest|mmDeskTest	-	*	-	no	2 2b 2c 7d
 source/elektron/md/deskStubHost/*	-	-	*	-	no	2c
 source/elektron/md/mdDesk/*	mdDeskTest|mdDataLinkTest	mdIntentCasesFirmwareTest|mdTransportFirmwareTest|mdLiveEraseFirmwareTest	md-*	-	no	2 2b 2c 4 7d
 source/elektron/md/mmDesk/*	mmDeskTest	mmIntentCasesFirmwareTest|mmDeskFirmwareTest|mmTransportFirmwareTest|mmStepRecordFirmwareTest|mmPerformSoundFirmwareTest|mmChordEraseFirmwareTest	mm-*	-	no	2 2b 2c 4 7d
