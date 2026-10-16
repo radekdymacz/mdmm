@@ -251,6 +251,8 @@ namespace mdJucePlugin
 			if(m_bytes.empty())
 				return "Open a .syx file first.";
 			m_check = _checkOnly;
+			m_stopped = false;
+			m_stopAtMs = -1;
 			m_readBack = _checkOnly || _readBack;
 			std::set<size_t> chosen;
 			m_placedBytes.clear();
@@ -322,8 +324,17 @@ namespace mdJucePlugin
 			else if(m_phase == Phase::Sending)
 			{
 				m_queue.clear();
-				m_phase = m_readBack ? Phase::Reading : Phase::Done;
-				m_text = m_readBack ? "Stopped: reading back what was sent." : "Stopped: what was sent is not read back.";
+				if(m_readBack)
+				{
+					m_phase = Phase::Reading;
+					m_text = "Stopped: reading back what was sent.";
+				}
+				else
+				{
+					// not read back: what the adapter holds still goes (or the wait for the person's SEND ends, bounded); step() ends it
+					m_stopped = true;
+					m_stopAtMs = -1;
+				}
 			}
 			else if(m_phase == Phase::Reading)
 			{
@@ -345,6 +356,8 @@ namespace mdJucePlugin
 			namespace ed = elektronData;
 			if(m_phase == Phase::Sending)
 			{
+				if(m_stopped && m_stopAtMs < 0)
+					m_stopAtMs = _nowMs + 10000.0;
 				const auto a = _machine.asIs();
 				// over HW MIDI with the person's SEND to come, everything waits for it together
 				size_t room = !a.waitsFor.empty() ? m_queue.size() : a.queued < 2 ? 2 - a.queued : 0;
@@ -377,7 +390,7 @@ namespace mdJucePlugin
 					m_text = after.waitsFor;
 					now = true;
 				}
-				if(m_queue.empty() && !after.busy && after.queued == 0)
+				if(m_queue.empty() && ((!after.busy && after.queued == 0) || (m_stopped && _nowMs > m_stopAtMs)))
 				{
 					m_phase = m_readBack ? Phase::Reading : Phase::Done;
 					m_text = "";
@@ -517,31 +530,51 @@ namespace mdJucePlugin
 			}
 			else if(m_phase == Phase::Done && !m_readBack)
 			{
-				// I-038: nothing was read back, so nothing is said to be taken: the count sent, never "imported"
+				// I-038: nothing was read back, so nothing is said to be taken: per item what really went (an item is sent only
+				// when every one of its messages went)
 				Value report = Value::object();
-				int sentItems = 0, sentOther = 0;
+				int sentItems = 0, partly = 0, notSent = 0, sentOther = 0;
+				Value items = Value::array();
 				for(const auto& i : m_items)
 				{
-					if(!i.chosen || !i.sent)
+					if(!i.chosen)
 						continue;
 					if(i.kind == ed::SyxKind::Other)
-						++sentOther;
-					else
-						++sentItems;
+					{
+						sentOther += i.sent > 0;
+						continue;
+					}
+					const auto state = sentState(i);
+					const char* name = state == 2 ? "sent" : state == 1 ? "partly sent" : "not sent";
+					sentItems += state == 2;
+					partly += state == 1;
+					notSent += state == 0;
+					Value v = Value::object();
+					v.set("kind", kindKey(i.kind));
+					v.set("slot", i.target);
+					v.set("name", i.name);
+					v.set("outcome", name);
+					v.set("text", label(i) + (state == 2 ? ": sent, not read back" : state == 1 ? ": only part of it was sent (stopped)" : ": not sent (stopped)"));
+					items.push(v);
 				}
 				report.set("readBack", false);
 				report.set("sent", sentItems);
+				report.set("partly", partly);
+				report.set("notSent", notSent);
 				report.set("commands", sentOther);
 				report.set("unsent", static_cast<int>(unsent()));
-				report.set("items", Value::array());
+				report.set("items", items);
 				m.set("report", report);
 				if(text.empty())
 				{
-					text = std::to_string(sentItems) + " sent, not read back";
+					text = std::to_string(sentItems) + " sent";
+					if(partly)
+						text += ", " + std::to_string(partly) + " partly sent";
+					if(notSent)
+						text += ", " + std::to_string(notSent) + " not sent" + (m_stopped ? " (stopped)" : "");
+					text += ", not read back";
 					if(sentOther)
 						text += ", " + std::to_string(sentOther) + " other message" + (sentOther > 1 ? "s" : "") + " sent";
-					if(const auto u = unsent())
-						text += "; " + std::to_string(u) + " not sent (stopped)";
 					text += ". The machine's slots were not compared with the file.";
 				}
 			}
@@ -803,6 +836,12 @@ namespace mdJucePlugin
 			return n;
 		}
 
+		// 0 none of the item's messages went, 1 some, 2 all
+		static int sentState(const Item& _i)
+		{
+			return _i.sent == 0 ? 0 : _i.sent >= _i.messages.size() ? 2 : 1;
+		}
+
 		size_t unsent() const
 		{
 			size_t n = 0;
@@ -935,6 +974,8 @@ namespace mdJucePlugin
 		bool m_fullBackup = false;
 		std::map<elektronData::SyxKind, int> m_place;	// SPECIFIC: each kind's first slot
 		std::map<size_t, Bytes> m_placedBytes;			// the messages that go placed, by index
+		bool m_stopped = false;						// I-038: Stop while sending with no read-back: the adapter's rest goes, then done
+		double m_stopAtMs = -1;
 		bool m_readBack = true;						// I-038: false = Send, then done (not read back)
 		bool m_check = false;							// VERIFY ONLY: nothing sent, read and compared
 		std::string m_word = "imported";

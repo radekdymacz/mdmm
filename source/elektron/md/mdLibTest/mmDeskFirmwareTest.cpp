@@ -1525,8 +1525,11 @@ namespace
 				readAt = r.ms();
 			r.run(10);
 		}
-		std::printf("  import: read before %.1f s, sent in %.1f s, read back in %.1f s (emulated time)\n", (sendAt - t0) / 1000,
-			(readAt - sendAt) / 1000, (r.ms() - readAt) / 1000);
+		if(readAt < 0)	// I-038: no read-back phase
+			std::printf("  import: read before %.1f s, sent in %.1f s, not read back (emulated time)\n", (sendAt - t0) / 1000, (r.ms() - sendAt) / 1000);
+		else
+			std::printf("  import: read before %.1f s, sent in %.1f s, read back in %.1f s (emulated time)\n", (sendAt - t0) / 1000,
+				(readAt - sendAt) / 1000, (r.ms() - readAt) / 1000);
 		check(last && last->find("phase")->asString() == "done", "the import ends with a report");
 		if(!last)
 			return;

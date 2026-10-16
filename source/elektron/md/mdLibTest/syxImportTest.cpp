@@ -587,7 +587,7 @@ namespace
 		const auto& l4 = p4.back();
 		const auto& r4 = *l4.find("report");
 		check(l4.find("phase")->asString() == "done" && !l4.find("readBack")->asBool() && !r4.find("readBack")->asBool()
-			&& r4.find("sent")->asNumber() == 4 && r4.find("commands")->asNumber() == 1 && r4.find("items")->asArray().empty(), "the report: 4 sent, 1 command, readBack false");
+			&& r4.find("sent")->asNumber() == 4 && r4.find("commands")->asNumber() == 1 && r4.find("items")->asArray().size() == 4 && r4.find("partly")->asNumber() == 0 && r4.find("notSent")->asNumber() == 0, "the report: 4 sent, 1 command, readBack false, an entry per item");
 		check(l4.find("text")->asString().find("not read back") != std::string::npos && l4.find("text")->asString().find("imported") == std::string::npos
 			&& l4.find("text")->asString().find("taken") == std::string::npos, "the summary says not read back, never imported: " + l4.find("text")->asString());
 		check(last.find("readBack")->asBool(), "the default run reported readBack true");
@@ -601,8 +601,47 @@ namespace
 		double t5 = 0;
 		j5.step(m5, t5 += 10, false);
 		j5.cancel();
-		check(j5.phase() == Job::Phase::Done && j5.progress().find("text")->asString().find("not read back") != std::string::npos,
-			"Stop while sending, read-back off: done, not read back");
+		// manual machine: the dumps are held for SEND; Stop clears the queue, the job waits for the adapter (bounded), then ends
+		check(j5.phase() == Job::Phase::Sending, "Stop while sending, read-back off: the job waits for what the adapter holds");
+		double t6 = t5;
+		for(int i = 0; i < 2000 && j5.running(); ++i)
+			j5.step(m5, t6 += 10, false);
+		check(j5.phase() == Job::Phase::Done, "...and ends once the wait is over (bounded)");
+		const auto pj5 = j5.progress();
+		const auto& rj5 = *pj5.find("report");
+		const auto tx5 = pj5.find("text")->asString();
+		check(!rj5.find("readBack")->asBool() && tx5.find("not read back") != std::string::npos && tx5.find("(stopped)") != std::string::npos
+			&& tx5.find("imported") == std::string::npos, "the Stopped report counts what went: " + tx5);
+
+		// per item: an item whose messages did not all go is never "sent": kit 2 is in the file three times (one item, three
+		// messages), two went; kit 4 never started
+		{
+			Bytes two;
+			append(two, ed::encodeMdKit(k1));
+			append(two, ed::encodeMdKit(k1));
+			append(two, ed::encodeMdKit(k1));
+			append(two, ed::encodeMdKit(k3));
+			FakeMachine m7;
+			Job j7;
+			j7.open(two, "two.syx", known, {});
+			j7.start({"kit"}, {}, known, false, false);
+			double t7 = 0;
+			j7.step(m7, t7 += 10, false);	// the first two messages (room 2) go to the adapter
+			j7.cancel();
+			for(int i = 0; i < 100 && j7.running(); ++i)
+				j7.step(m7, t7 += 10, false);
+			const auto pj7 = j7.progress();
+			const auto& r7 = *pj7.find("report");
+			int sentItems = 0;
+			for(const auto& it : r7.find("items")->asArray())
+				sentItems += it.find("outcome")->asString() == "sent";
+			check(r7.find("sent")->asNumber() + r7.find("partly")->asNumber() + r7.find("notSent")->asNumber() == r7.find("items")->asArray().size()
+				&& sentItems == static_cast<int>(r7.find("sent")->asNumber()), "per-item entries agree with the counts");
+			check(r7.find("sent")->asNumber() == 0 && r7.find("partly")->asNumber() == 1 && r7.find("notSent")->asNumber() == 1 && sentItems == 0,
+				"two of three messages went: the item is partly sent, not sent; the other is not sent");
+			check(pj7.find("text")->asString().find("1 partly sent") != std::string::npos && pj7.find("text")->asString().find("1 not sent (stopped)") != std::string::npos,
+				"the text: " + pj7.find("text")->asString());
+		}
 	}
 
 	// 0.6 (wave 6): SPECIFIC place, VERIFY ONLY, a part for an export, the DigiPRO messages.
