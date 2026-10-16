@@ -61,12 +61,12 @@ namespace pluginLib
 			midiInReceived(_ev);
 		if(m_externalMidi.takeIn(_ev))	// an editor's HW MIDI (externalMidi.h)
 			return;
-		// Process through MIDI Learn translator first
+		// MIDI Learn first (consumeMidiIn: the translator, or what a plug-in puts in its place)
 		if (_ev.source != synthLib::MidiEventSource::Device)
 		{
-			if (m_midiLearnTranslator && m_midiLearnTranslator->processMidiInput(_ev))
+			if (consumeMidiIn(_ev))
 			{
-				// MIDI event was consumed by MIDI Learn (learned mapping or learning mode)
+				// consumed by MIDI Learn (a learned mapping or learning): it never reaches the firmware
 				return;
 			}
 
@@ -82,10 +82,25 @@ namespace pluginLib
 
 		if (m_controller)
 			m_controller->tryEnqueueRealtimeMidiMessage(_ev);
-		if (m_midiRoutingMatrix.enabled(_ev, synthLib::MidiEventSource::Device))
-			getPlugin().addMidiEvent(_ev);
+		midiToFirmware(_ev, false);
 		if (m_midiRoutingMatrix.enabled(_ev, synthLib::MidiEventSource::Physical))
 			m_midiPorts.send(_ev);
+	}
+
+	bool Processor::consumeMidiIn(const synthLib::SMidiEvent& _ev)
+	{
+		return m_midiLearnTranslator && m_midiLearnTranslator->processMidiInput(_ev);
+	}
+
+	void Processor::midiToFirmware(const synthLib::SMidiEvent& _ev, const bool _realtimeInsert)
+	{
+		if(!m_midiRoutingMatrix.enabled(_ev, synthLib::MidiEventSource::Device))
+			return;
+		midiTraffic(MidiTraffic::ToFirmware, _ev);
+		if(_realtimeInsert)
+			getPlugin().insertMidiEvent(_ev);
+		else
+			getPlugin().addMidiEvent(_ev);
 	}
 
 	bool Processor::tryAddRealtimeMidiEvent(const synthLib::SMidiEvent& _ev)
@@ -101,8 +116,7 @@ namespace pluginLib
 		if(m_midiRoutingMatrix.enabled(_ev, synthLib::MidiEventSource::Physical)
 			&& !m_midiPorts.trySend(_ev))
 			return false;
-		if(m_midiRoutingMatrix.enabled(_ev, synthLib::MidiEventSource::Device))
-			getPlugin().insertMidiEvent(_ev);
+		midiToFirmware(_ev, true);
 		return true;
 	}
 
@@ -856,10 +870,12 @@ namespace pluginLib
 
 	    for (auto& e : m_midiOut)
 	    {
+			midiTraffic(MidiTraffic::FromMachine, e);
 		    addMidiEvent(e);
 
 			if (!getMidiRoutingMatrix().enabled(e, synthLib::MidiEventSource::Host))
 			    continue;
+			midiTraffic(MidiTraffic::ToHost, e);
 
 	    	const auto mm = MidiPorts::toJuceMidiMessage(e);
 		    midiMessages.addEvent(mm, static_cast<int>(e.offset));

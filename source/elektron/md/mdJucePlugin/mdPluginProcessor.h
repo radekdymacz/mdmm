@@ -3,7 +3,10 @@
 #include "jucePluginEditorLib/pluginProcessor.h"
 #include "mdBootDiagnostics.h"
 #include "mdCpuLoad.h"
+#include "mdLearnRouter.h"
 #include "mdMidiIn.h"
+#include "mdMidiMonitor.h"
+#include "mdMixMeters.h"
 #include "mdOutputLevel.h"
 #include "mdMachineMemory.h"
 #include "mdMachineMemoryService.h"
@@ -98,9 +101,29 @@ namespace mdJucePlugin
 		// session's outputLevel message)
 		void processBlockOutput(const synthLib::TAudioOutputs& _outputs, size_t _frames) override;
 		outputLevel::Peaks takeOutputPeaks() { return m_outputMeter.take(); }
+		// I-032 (0.8, WP9): the Mix page's meters, one per output pair (mdMixMeters.h): peak and RMS of each channel
+		// since the last call (the page's mixLevels message, only while its Mix page is shown)
+		mixMeters::Levels takeMixLevels() { return m_mixMeter.take(); }
+		// the pass runs only while a page shows the Mix page (the page's mixMeters command): off, the audio thread skips it
+		void setMixMeterWanted(const bool _on) { m_mixMeterWanted.store(_on, std::memory_order_relaxed); }
+		bool mixMeterWanted() const { return m_mixMeterWanted.load(std::memory_order_relaxed); }
 		// 0.6 (LEARN, I-002): each note on from the host's MIDI in or a port, kept for the session's midiIn message
 		// (mdMidiIn.h); taken on the message thread
 		void midiInReceived(const synthLib::SMidiEvent& _ev) override;
+		// 0.8 (WP3): the MIDI monitor (mdMidiMonitor.h). The hooks count on the audio thread; the rest is the message
+		// thread's, and takes no lock.
+		void midiTraffic(MidiTraffic _where, const synthLib::SMidiEvent& _ev) override;
+		// 0.8 (MIDI Learn L1, doc/midilearn/DESIGN-learn-0.8.md): the realtime router (mdLearnRouter.h). With MIDI
+		// mapping on (deskHost::midiMappingEnabled) the host's MIDI goes through it: a mapped CC moves its parameter
+		// and never reaches the firmware; while learning, CCs are captured for the session. Other sources are the base's.
+		bool consumeMidiIn(const synthLib::SMidiEvent& _ev) override;
+		LearnRouter& learnRouter() { return m_learnRouter; }
+		// The router's applier: a learned CC value onto its parameter through Parameter::setValue (the realtime
+		// host-automation entry). Audio thread; no lock, no allocation.
+		static bool applyLearnedCc(pluginLib::Parameter& _param, const LearnTarget& _target, uint8_t _value);
+		midiMonitor::Counts midiMonitorCounts();			// the counts and the drops
+		void logMidiMonitor(double _nowMs);						// the 10 s log line, when due (timerCallback)
+		const std::string& lastMidiLogLine() const { return m_midiLogLine; }
 		std::optional<midiIn::Note> takeMidiIn() { midiIn::Note n; if(m_midiIn.tryPop(n)) return n; return {}; }
 		// I-002, B-062: the notes held from outside (any channel), for the session's midiHeld message (mdMidiIn.h)
 		midiIn::Notes heldMidiNotes() const { return m_midiHeld.notes(); }
@@ -213,8 +236,14 @@ namespace mdJucePlugin
 		cpuLoad::Meter m_cpuMeter;
 		cpuLoad::Smoother m_cpuSmoother;	// message thread
 		outputLevel::Meter m_outputMeter;
+		std::atomic<bool> m_mixMeterWanted{false};
+		mixMeters::Meter m_mixMeter;		// I-032: written on the audio thread once a block, read by the session
 		midiIn::Queue m_midiIn;
+		midiMonitor::Monitor m_midiMonitor;
+		midiMonitor::LogPacer m_midiLogPacer;	// message thread
+		std::string m_midiLogLine;				// the last line logged, message thread
 		midiIn::Held m_midiHeld;
+		LearnRouter m_learnRouter{&applyLearnedCc};
 		uint64_t m_blockStartNs = 0;		// audio thread
 		static uint64_t cpuClockNs();
 		void recordBoot();

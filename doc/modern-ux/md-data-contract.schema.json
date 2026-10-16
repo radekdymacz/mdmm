@@ -1561,6 +1561,22 @@
         },
         "bluetooth": {
           "type": "boolean"
+        },
+        "setupError": {
+          "type": "string",
+          "description": "0.8 (WP4, B-155): what JUCE's last audio device setup returned (\"\" = it applied). Shown beside the Input row through inputNote."
+        },
+        "inputPermission": {
+          "enum": ["granted", "denied", "notAsked", "unknown"],
+          "description": "0.8 (WP4, B-155): the microphone permission the system holds for the app (macOS; unknown elsewhere). Without it macOS gives an input device and no input."
+        },
+        "inputNote": {
+          "type": "string",
+          "description": "0.8 (WP4, B-155): why the External Input is on NONE after a device was chosen (microphone permission, the setup error, no input channels), \"\" when there is nothing to say. The page shows it under the Input row."
+        },
+        "midiLoop": {
+          "type": "string",
+          "description": "0.8 (WP4, B-154): the warning when a MIDI port is on as an input and is also the chosen output (the editor's MIDI out comes straight back in), \"\" when there is no loop. mdMidiLoop.h."
         }
       }
     },
@@ -2111,6 +2127,297 @@
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 127
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "description": "0.8 (WP3): the MIDI monitor, once a second while the page is up: what this plug-in instance did with MIDI since it started, counted on the audio thread. directions: inHost (from the host's MIDI in or a MIDI port), inFirmware (into the firmware's MIDI input, after the routing), outMachine (out of the machine, before the routing), outHost (into the host's MIDI out, after the routing); each with total, the counts by type (note, cc, pc, clock, transport, sysex, other) and the counts of the channel messages by channel (16 numbers, channel 1 first; the system messages and SysEx have no channel). dropped: scheduled (events the machine's scheduled-MIDI ring could not take), external (HW MIDI events the editor's queue dropped), allocation (host messages that took the allocating path: SysEx and messages longer than 3 bytes).",
+          "required": ["type", "directions", "dropped"],
+          "properties": {
+            "type": {
+              "const": "midiStats"
+            },
+            "directions": {
+              "type": "object",
+              "required": ["inHost", "inFirmware", "outMachine", "outHost"],
+              "properties": {
+                "inHost": {
+                  "type": "object",
+                  "required": ["total", "types", "channels"],
+                  "properties": {
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "types": {
+                      "type": "object",
+                      "required": ["note", "cc", "pc", "clock", "transport", "sysex", "other"],
+                      "properties": {
+                        "note": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "cc": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "pc": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "clock": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "transport": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "sysex": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "other": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    },
+                    "channels": {
+                      "type": "array",
+                      "minItems": 16,
+                      "maxItems": 16,
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                },
+                "inFirmware": {
+                  "type": "object",
+                  "required": ["total", "types", "channels"],
+                  "properties": {
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "types": {
+                      "type": "object",
+                      "required": ["note", "cc", "pc", "clock", "transport", "sysex", "other"],
+                      "properties": {
+                        "note": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "cc": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "pc": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "clock": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "transport": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "sysex": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "other": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    },
+                    "channels": {
+                      "type": "array",
+                      "minItems": 16,
+                      "maxItems": 16,
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                },
+                "outMachine": {
+                  "type": "object",
+                  "required": ["total", "types", "channels"],
+                  "properties": {
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "types": {
+                      "type": "object",
+                      "required": ["note", "cc", "pc", "clock", "transport", "sysex", "other"],
+                      "properties": {
+                        "note": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "cc": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "pc": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "clock": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "transport": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "sysex": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "other": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    },
+                    "channels": {
+                      "type": "array",
+                      "minItems": 16,
+                      "maxItems": 16,
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                },
+                "outHost": {
+                  "type": "object",
+                  "required": ["total", "types", "channels"],
+                  "properties": {
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "types": {
+                      "type": "object",
+                      "required": ["note", "cc", "pc", "clock", "transport", "sysex", "other"],
+                      "properties": {
+                        "note": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "cc": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "pc": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "clock": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "transport": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "sysex": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "other": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    },
+                    "channels": {
+                      "type": "array",
+                      "minItems": 16,
+                      "maxItems": 16,
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "dropped": {
+              "type": "object",
+              "required": ["scheduled", "external", "allocation"],
+              "properties": {
+                "scheduled": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "external": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "allocation": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "description": "I-032 (0.8, WP9): the Mix page's output meters, about 25 times a second, only between the page's mixMeters on and off. pairs: the plug-in's three stereo outputs in order, A/B, C/D, E/F (the emulation gives no audio per track; a track routed alone to C/D or E/F has its own pair). Each pair: on (the host enabled that output), clip (a sample above 0 dBFS in the window), peak (the largest |sample| of its left and right since the previous message) and rms (the RMS of its left and right over the same time), in dBFS to 0.1 dB after the volume, -96 for silence. The page does its own decay and peak hold.",
+          "required": ["type", "pairs"],
+          "properties": {
+            "type": {
+              "const": "mixLevels"
+            },
+            "pairs": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "object",
+                "required": ["on", "clip", "peak", "rms"],
+                "properties": {
+                  "on": {
+                    "type": "boolean"
+                  },
+                  "clip": {
+                    "type": "boolean"
+                  },
+                  "peak": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                      "type": "number",
+                      "minimum": -96
+                    }
+                  },
+                  "rms": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                      "type": "number",
+                      "minimum": -96
+                    }
                   }
                 }
               }
@@ -7033,6 +7340,30 @@
               "type": "number",
               "minimum": -60,
               "maximum": 6
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: I-032: the Mix page's output meters: on while the page shows Mix, off when it leaves; the plug-in then sends mixLevels messages (about 25 a second) and the audio thread measures the outputs, or neither",
+          "required": ["op", "on"],
+          "properties": {
+            "op": {
+              "const": "mixMeters"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "on": {
+              "type": ["boolean", "integer"]
             }
           },
           "additionalProperties": false

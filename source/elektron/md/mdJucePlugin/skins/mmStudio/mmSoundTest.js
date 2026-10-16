@@ -81,7 +81,7 @@ const screen = (name, mid) => {
 	vm.runInContext(`var ED=ED||{},drawn=[],labelled="";var grid=()=>{},railDraw=()=>{},cssv=()=>"#000",inkA=()=>"#000",label=(g,t)=>{labelled=t},
 		line=(g,W,f)=>{let far=f(0);for(let x=0;x<W;x++){const y=f(x);if(Math.abs(y-mid)>Math.abs(far-mid))far=y}drawn.push(far)};`
 		+ (stateCtx.V ? "" : sound.slice(sound.indexOf("const V=(pg)"), sound.indexOf("function railDraw")).replace(/^const /gm, "var ")
-			+ "\n" + sound.split("\n").filter(l => /^(const dpWave=|function wfDP\(|function hashN\()/.test(l)).join("\n").replace(/^const /gm, "var ") + "\n") + sound.slice(a, b) + `;this.E={ED,get drawn(){return drawn},get labelled(){return labelled},reset(){drawn=[];labelled=""}};`, stateCtx);
+			+ "\n" + sound.split("\n").filter(l => /^(const dpWave=|const SFONT=|function wfDP\(|function hashN\()/.test(l)).join("\n").replace(/^const /gm, "var ") + "\n") + sound.slice(a, b) + `;this.E={ED,get drawn(){return drawn},get labelled(){return labelled},reset(){drawn=[];labelled=""}};`, stateCtx);
 	return stateCtx.E;
 };
 /* a canvas context that draws nothing */
@@ -92,19 +92,28 @@ const box = (m, pg, name, v) => { P.S.sel = 0; P.S.tracks[0].m = m; const i = pg
 	/* B-148: BOFS and WOFS are -64 to +63 (64 no sweep), the envelope drawn up for +, down for - */
 	const ends = ["BOFS", "WOFS"].map(n => [0, 64, 127].map(v => box("SWAVE-SAW", "FLT", n, v).text).join(" "));
 	check(ends.every(e => e === "-64 0 +63"), "BOFS and WOFS show -64 0 +63 at 0 64 127: " + ends.join(" | "));
-	const H = 100, mid = (22 + H - 10) / 2, E = screen("fenv", mid), f = P.S.tracks[0].v.FLT;
-	const peak = (bofs, wofs) => { f[4] = 20; f[5] = 60; f[6] = bofs; f[7] = wofs; E.reset(); E.ED.fenv.draw(G2D, 200, H); return E.drawn; };
-	const up = peak(127, 64), down = peak(0, 64), flat = peak(64, 64), wd = peak(64, 0);
-	check(up.length === 1 && up[0] < mid - 20 && down[0] > mid + 20 && Math.abs(flat[0] - mid) < 1e-9,
-		`BOFS +63 sweeps up, -64 down, 0 is flat (peaks ${up[0]?.toFixed(1)} ${down[0]?.toFixed(1)} ${flat[0]?.toFixed(1)}, the middle ${mid})`);
-	check(wd.length === 2 && wd[1] > mid + 20 && /dashed = width/.test(E.labelled), "WOFS -64: a dashed width line, downwards");
-	peak(64, 64); check(/does nothing/.test(E.labelled), "both at 0 (64): the envelope does nothing");
+	const H = 100, W = 200, mid = (22 + H - 10) / 2, E = screen("fenv", mid), f = P.S.tracks[0].v.FLT;
+	const draw = (bofs, wofs) => { f[4] = 20; f[5] = 60; f[6] = bofs; f[7] = wofs; E.reset(); E.ED.fenv.draw(G2D, W, H); return E.drawn; };
+	draw(64, 64); check(/does nothing/.test(E.labelled), "both at 0 (64): the envelope does nothing");
+	draw(127, 0); check(/moves/.test(E.labelled) && E.drawn.length === 1, "an offset: the reach pane is labelled and the small pane draws the one envelope curve");
+	/* I-043: the big pane is the reach: a drag left or right covers the full BOFS / WOFS range, -64 to +63; the square pane has ATK and DEC only */
+	const G = E.ED.fenv.geo(W, H), hs = () => E.ED.fenv.handles(W, H), at = k => hs().find(h => h.k === k);
+	check(G.side < G.bw && G.side <= W * 0.4 && G.side <= H, `the reach pane (${G.bw} px) is larger than the square envelope pane (${G.side} px)`);
+	check(hs().map(h => h.k).join(" ") === "BOFS WOFS ATK DEC", "the handles: BOFS WOFS in the reach pane, ATK DEC in the square: " + hs().map(h => h.k).join(" "));
+	f[6] = 64; f[7] = 64; at("BOFS").drag(-50, 0); at("WOFS").drag(5000, 90);
+	check(f[6] === 0 && f[7] === 127 && box("SWAVE-SAW", "FLT", "BOFS", f[6]).text === "-64" && box("SWAVE-SAW", "FLT", "WOFS", f[7]).text === "+63", `dragging BOFS to the left edge gives -64 and WOFS to the right edge +63 (${f[6]}, ${f[7]})`);
+	at("BOFS").drag(E.ED.fenv.X(G, 64), 0); check(f[6] === 64 && box("SWAVE-SAW", "FLT", "BOFS", f[6]).text === "0", "BOFS dragged onto the zero line is 0 (64)");
+	const xs = [0, 32, 64, 96, 127].map(v => E.ED.fenv.X(G, v)); at("WOFS").drag(xs[1], 0);
+	check(xs.every((x, k) => !k || x > xs[k - 1]) && f[7] === 32 && at("WOFS").x === xs[1], "the reach pane is linear: a value's dot sits where it was dragged");
+	f[6] = 90; f[7] = 40; f[4] = 40; const a0 = at("ATK").x, d0 = at("DEC").x; f[4] = 80; f[5] = 30;
+	check(at("ATK").x > a0 && at("DEC").x > G.sx && hs().filter(h => h.x < G.sx - 1).map(h => h.k).join() === "BOFS,WOFS" && at("ATK").x > G.sx && d0 > G.sx, "ATK and DEC sit inside the square pane, BOFS and WOFS in the big one");
+	f[4] = 0; f[5] = 60; at("ATK").drag(5000, 0); check(f[4] === 127 && f[6] === 90 && f[7] === 40, "ATK to the right edge of the square is 127 and leaves BOFS and WOFS alone");
+	at("DEC").drag(0, 0); check(f[5] === 0, "DEC dragged left is 0");
 	const F = screen("flt", 0), fl = n => { E.reset(); F.ED.flt.draw(G2D, 200, H); return F.drawn.length; };
 	f[6] = 64; f[7] = 64; const none = fl(); f[6] = 30; const some = fl();
 	check(none === 1 && some === 2, `the filter curve's dashed envelope peak only with an offset (BOFS 0: ${none} line, BOFS -34: ${some})`);
 	const neutral = vm.runInContext("DEFV.FLT", stateCtx);
 	check(neutral[6] === 64 && neutral[7] === 64, "a cleared track's FILTER page holds BOFS and WOFS 64, no sweep (the firmware's machine change writes 64): " + neutral.join(" "));
-	const h = E.ED.fenv.handles(200, H)[0]; h.drag(h.x, mid - 20); check(f[6] > 64, "dragging the base handle up gives a positive BOFS (" + f[6] + ")");
 }
 {
 	/* B-149: the FM+ frequencies as the machine's LCD writes them (mmEditorProbeFirmwareTest enums, OS 1.32B) */
@@ -164,6 +173,34 @@ const box = (m, pg, name, v) => { P.S.sel = 0; P.S.tracks[0].m = m; const i = pg
 	E.reset(); E.ED.chord.draw(G2D, 200, 100); const n = E.ED.chord.notes();
 	check(E.labelled === "C + +07 5/4" && JSON.stringify(n.map(o => [o.k, o.ratio])) === "[[19,false],[16,true]]", "the chord screen: OFF no note, +07 a fifth up, 5/4 on its nearest key (E) marked: " + E.labelled + " " + JSON.stringify(n));
 	Object.assign(P.S.tracks[0].v.SYN, { 0: 0, 1: 63, 2: 63 }); check(JSON.stringify(E.ED.chord.notes().map(o => o.k)) === "[0]", "-12 is the octave below, the first key");
+}
+
+{
+	/* I-042: the LFO preview as the track's locks change it: lfoTrace (90-sound.js) on its own */
+	const lctx = vm.createContext({ console }), fn = n => sound.slice(sound.indexOf("function " + n), sound.indexOf("\n", sound.indexOf("function " + n)));
+	const trace = sound.slice(sound.indexOf("function lfoTrace"), sound.indexOf("/* the locks of this track on LFO l"));
+	vm.runInContext("const RND=[.35,-.7,.9,-.25,.55,-.9,.1,.7];" + part("60-ui.js").split("\n").filter(l => /^function lshape/.test(l)).join("\n") + "\n" + trace + "\nthis.lfoTrace = lfoTrace;", lctx);
+	const N = 32, M = 320, len = 16, play = new Set([0, 4, 8, 12]), step = s => play.has(s), none = () => undefined;
+	const v = (o = {}) => Object.assign([0, 0, 0, 8, 0, 16, 0, 127], o);	/* a rising ramp (WAVE 8), cycle 128 steps, full depth */
+	const ramp = (ph, d = 1) => (2 * ph - 1) * d;
+	const free = lctx.lfoTrace(v(), N, M, len, step, () => false, none);
+	check(free.every((o, k) => Math.abs(o - ramp(k / M * N / 128)) < 1e-9), "no locks, FREE: the ramp across the pattern as the closed form says");
+	const spd = lctx.lfoTrace(v(), N, M, len, step, () => false, (i, s) => i === 5 && s === 4 ? 127 : undefined);
+	check(Math.abs(spd[80] - ramp(239 / 2048)) < 1e-9 && Math.abs(spd[40] - free[40]) < 1e-12, "an SPD lock on step 4 runs the phase faster through that step only: the ramp at step 8 is 239/2048, before it unchanged");
+	const stop = lctx.lfoTrace(v(), N, M, len, step, () => false, (i, s) => i === 5 && s === 4 ? 0 : undefined);
+	check(stop[41] === stop[49] && stop[80] < free[80], "SPD 0 locked: the LFO stands still during that step (the same value across it)");
+	const dep = lctx.lfoTrace(v({ 7: 127 }), N, M, len, step, () => false, (i, s) => i === 7 && s === 8 ? 0 : undefined);
+	check(Math.abs(dep[85] - ramp(85 / M * N / 128, .15)) < 1e-9 && Math.abs(dep[70] - free[70]) < 1e-12 && Math.abs(dep[170] - free[170]) < 1e-12, "a DPTH lock changes the amplitude on its step only");
+	const ghost = lctx.lfoTrace(v(), N, M, len, step, () => false, (i, s) => i === 5 && s === 5 ? 127 : undefined);
+	check(ghost.every((o, k) => o === free[k]), "a lock on a step that does not play changes nothing (it has no trig)");
+	const wave = lctx.lfoTrace(v(), N, M, len, step, () => false, (i, s) => i === 3 && s === 4 ? 0 : undefined);
+	check(wave[45] !== free[45] && wave[10] === free[10] && wave[85] === free[85], "a WAVE lock changes the shape on its step only");
+	const tr = lctx.lfoTrace(v({ 2: 1, 5: 64 }), N, M, len, step, s => s === 0 || s === 8, none);
+	check(Math.abs(tr[0] - ramp(0)) < 1e-9 && Math.abs(tr[80] - ramp(0)) < 1e-9 && tr[79] > tr[0], "TRIG mode: the trig on step 8 restarts the ramp");
+	const mult = lctx.lfoTrace(v({ 2: 1, 5: 64 }), N, M, len, step, s => s === 0 || s === 8, (i, s) => i === 4 && s === 8 ? 1 : undefined);
+	check(Math.abs(mult[90] - ramp(10 / M * N * 2 / 32)) < 1e-9 && tr[90] !== mult[90], "a MULT lock doubles the speed from the trig on (MULT 1 on step 8)");
+	check(JSON.stringify(lctx.lfoTrace(v({ 2: 1, 5: 0 }), N, M, len, step, s => s === 0, none).slice(0, 3)) === JSON.stringify([ramp(0), ramp(0), ramp(0)]), "SPD 0 stands still");
+	check(/lfoLocks/.test(sound) && /locks "\+LK\.idx/.test(sound), "the screen's label names the locked parameters");
 }
 
 console.log(failures ? `FAIL (${failures})` : "PASS");

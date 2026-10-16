@@ -1696,6 +1696,15 @@ svg.route{width:100%;height:auto;aspect-ratio:1200/146;min-height:0}
 .strip6 .busk button,.strip6 .busrow .kselbtn{height:22px}
 .strip6 .mrow{display:grid;grid-template-columns:1fr 1fr;gap:3px}
 .strip6 .mrow .ms{width:auto;height:22px}
+/* I-032: the output meters on the routing graph (100-mix.js): the LCD's ink only */
+svg.route .mgnd{fill:var(--lcd)}
+svg.route .mbg{fill:none;stroke:var(--ink);stroke-width:.6;opacity:.45}
+svg.route .mpk{fill:var(--ink);opacity:.3}
+svg.route .mrm{fill:var(--ink)}
+svg.route .mhd{fill:var(--ink)}
+svg.route .mclip{fill:transparent;stroke:var(--ink);stroke-width:.8}
+svg.route .mclip.on{fill:var(--ink)}
+svg.route .mtr.off{opacity:.3}
 /* The header's LCD as one real display (P7), one stylesheet for both editors (skins/shared/). One dot grid: labels are 8 px Silkscreen (one dot = 1 px) and values 16 px (two
    dots), line 2's values 12 px (on the same device-pixel grid at 2x: 2, 3 and 4 pixels a dot), every
    text line box is its font size; one rule weight (1 px) between all fields; no rule
@@ -1981,6 +1990,11 @@ body.deskmidi #main,body.deskmidi #rail{opacity:.3;pointer-events:none;transitio
 .ammeter i{display:block;height:100%;width:0;background:var(--led);transition:width .08s linear}
 .amnote{font:500 11px var(--sans);color:var(--print2);padding-left:100px}
 .amerr{color:var(--led);font-weight:600}
+/* 0.8 (WP4): the loop warning and the input note, the MIDI monitor row */
+.amwarn{color:var(--led);font-weight:600}
+.ammons{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;min-width:0;font:500 11px var(--sans);color:var(--print2)}
+.ammon b{font-weight:600;letter-spacing:.1em;color:var(--print)}
+.ammon i{font-style:normal;opacity:.7}
 @media (max-width:900px){.amgrid{grid-template-columns:1fr}.amnote{padding-left:0}}
 /* 0.3.5: the line to the machine's own MIDI settings (GLOBAL, the Machinedrum Editor) */
 .amlink{background:none;border:0;padding:0;font:inherit;color:var(--print);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
@@ -2800,6 +2814,15 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
 .ws-seq .lbscale b{position:absolute;right:6px;line-height:1}
 .ws-seq .lbscale b:first-child{top:8px;transform:translateY(-50%)}
 .ws-seq .lbscale b:last-child{bottom:6px;transform:translateY(50%)}
+
+/* I-039: the marks on an arrangement cell (tempo, mutes, transpose): the words in the small line when every cell has room for them
+   (SongMarks.fit puts .rmkwide on the grid), else short letter codes (B M ± T) in the same line; the cell keeps its height either way */
+.scell .rmk{font-style:normal;cursor:pointer}
+.scell .rmk .rt{display:none}
+.scell .rmk .rg{letter-spacing:-.6px}
+.slotgrid.rmkwide .rmk .rt{display:inline}
+.slotgrid.rmkwide .rmk .rg{display:none}
+.scell small{white-space:nowrap}
 
 /* ===== The real machine's states (not in the mockup) ===== */
 .statusline,.errline{margin:6px 0 0;padding:6px 10px;border-radius:3px;font:12px var(--pix);text-transform:uppercase}

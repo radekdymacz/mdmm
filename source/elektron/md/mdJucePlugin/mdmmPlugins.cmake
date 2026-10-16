@@ -36,12 +36,13 @@ list(APPEND SOURCES
 	mdEditorPages.cpp mdEditorPages.h
 	mdDeskHost.cpp mdDeskHost.h
 	mdStandaloneApp.cpp
-	mdBootDiagnostics.cpp mdBootDiagnostics.h mdCpuLoad.h mdOutputLevel.h mdMidiIn.h mdMachineMemory.h
+	mdBootDiagnostics.cpp mdBootDiagnostics.h mdCpuLoad.h mdOutputLevel.h mdMixMeters.h mdMidiIn.h mdMachineMemory.h
 	mdMachineMemoryService.cpp mdMachineMemoryService.h mdMachineMemoryDevice.cpp mdMachineMemoryDevice.h
 	mdMachineFacts.cpp mdMachineFacts.h
 	mdProcessArch.cpp mdProcessArch.h mdRosettaNotice.h
 	mdDeskSession.cpp mdDeskSession.h
 	mdMidiLearnCommands.cpp mdMidiLearnCommands.h
+	mdLearnRouter.cpp mdLearnRouter.h mdLearnTable.h
 	mdPageEditor.cpp mdPageEditor.h mdPageZoom.h mdEditorMenu.h mdNoticeBook.h mdDroppedFiles.h
 	mdRomInstall.cpp mdRomInstall.h
 	mdSettingsMigration.cpp mdSettingsMigration.h
@@ -55,7 +56,8 @@ list(APPEND SOURCES
 	$<$<PLATFORM_ID:Darwin>:mdWebFileDrop.mm> mdWebFileDrop.h
 	$<$<PLATFORM_ID:Windows>:mdWebView2Page.cpp>
 	mdWebView2Page.h mdWebView2Window.h
-	mdAudioMidiLink.cpp mdAudioMidiLink.h mdMidiPortRefusal.h mdMachineMidiOut.h
+	mdAudioMidiLink.cpp mdAudioMidiLink.h mdMidiPortRefusal.h mdMachineMidiOut.h mdMidiLoop.h
+	mdMicPermission.h $<IF:$<PLATFORM_ID:Darwin>,mdMicPermission.mm,mdMicPermissionOther.cpp>
 	mdUpdater.cpp mdUpdater.h
 
 	skins/mdStudio/mdStudio.rml
@@ -112,7 +114,7 @@ list(APPEND SOURCES
 	skins/shared/deskDocs.js
 	skins/shared/deskOverlay.js skins/shared/deskOverlayTest.js
 	skins/shared/deskGen.js skins/shared/deskGenTest.js skins/shared/deskGenBar.js skins/shared/deskGenBar.css skins/shared/deskGenDialog.css skins/shared/deskLaneShapes.js skins/shared/deskLaneShapesTest.js skins/shared/deskSoundLayout.js skins/shared/deskSoundLayoutTest.js skins/shared/deskSound.css
-	skins/shared/deskKeys.js skins/shared/deskKeysTest.js skins/shared/deskKeymapTest.js skins/shared/deskKeyView.js skins/shared/deskKeyView.css skins/shared/deskKeyViewTest.js skins/shared/deskSongSlots.js skins/shared/deskSongSlots.css skins/shared/deskWhat.js skins/shared/deskWhat.css skins/shared/deskWhatTest.js
+	skins/shared/deskKeys.js skins/shared/deskKeysTest.js skins/shared/deskKeymapTest.js skins/shared/deskKeyView.js skins/shared/deskKeyView.css skins/shared/deskKeyViewTest.js skins/shared/deskSongSlots.js skins/shared/deskSongMarksTest.js skins/shared/deskSongSlots.css skins/shared/deskWhat.js skins/shared/deskWhat.css skins/shared/deskWhatTest.js
 	skins/shared/deskTogglePaint.js skins/shared/deskTogglePaintTest.js
 	skins/shared/deskSelect.js skins/shared/deskSelectTest.js
 	skins/shared/deskValueEdit.js skins/shared/deskValueEdit.css skins/shared/deskValueEditTest.js
@@ -184,7 +186,7 @@ set(MM_NODE_TESTS "skins/mmStudio/mmConvertTest.js" "skins/mmStudio/mmKeysTest.j
 	"skins/mmStudio/mmViewTest.js" "skins/mmStudio/mmViewFixture.json")
 # the shared page files' node tests (never in a glob, so never shipped); checked to be there
 set(SHARED_NODE_TESTS "skins/shared/deskGenTest.js" "skins/shared/deskOverlayTest.js" "skins/shared/deskBridgeTest.js"
-	"skins/shared/deskTogglePaintTest.js" "skins/shared/deskSelectTest.js" "skins/shared/deskKeysTest.js" "skins/shared/deskModalTest.js" "skins/shared/deskMenuTest.js" "skins/shared/deskTransportTest.js" "skins/shared/deskCompatTest.js"
+	"skins/shared/deskTogglePaintTest.js" "skins/shared/deskSongMarksTest.js" "skins/shared/deskSelectTest.js" "skins/shared/deskKeysTest.js" "skins/shared/deskModalTest.js" "skins/shared/deskMenuTest.js" "skins/shared/deskTransportTest.js" "skins/shared/deskCompatTest.js"
 	"skins/shared/deskKeymapTest.js" "skins/shared/deskKeyViewTest.js" "skins/shared/deskAboutTest.js" "skins/shared/deskCpuTest.js" "skins/shared/deskVolumeTest.js"
 	"skins/shared/deskSyxTest.js" "skins/shared/deskDropTest.js" "skins/shared/deskSoundLayoutTest.js" "skins/shared/deskWhatTest.js"
 	"skins/shared/deskJourneyTiersTest.js" "skins/shared/deskValueEditTest.js")
@@ -246,7 +248,8 @@ unset(_mdmmKey)
 # - the maker a DAW shows (AU "Future Native Audio: Machinedrum Editor", the VST3 vendor, the Windows file details)
 #   instead of upstream's "Gearmulator Preview". The data folder keeps that name (mdPluginProcessor.cpp,
 #   g_dataFolderVendor), and the VST3 class IDs and AU codes come from the codes below, not from names;
-# - the microphone prompt's text;
+# - the microphone prompt's text and the Bluetooth one (B-155: CoreMIDI's Bluetooth pairing window takes the app down on
+#   macOS without NSBluetoothAlwaysUsageDescription in the Info.plist);
 # - the LV2 URI as it was with the old product name (it would otherwise follow the name).
 foreach(_mdmmTarget md mm)
 	string(TOUPPER "${_mdmmTarget}" _mdmmUpper)
@@ -257,6 +260,8 @@ foreach(_mdmmTarget md mm)
 		COMPANY_WEBSITE "${MDMM_WEBSITE}"
 		COMPANY_COPYRIGHT "Copyright (C) The Usual Suspects (Gearmulator), joelanders and NativeKloud Consulting Radoslaw Dymacz. GNU GPL v3."
 		MICROPHONE_PERMISSION_TEXT "${MDMM_PRODUCT_NAME_${_mdmmUpper}} uses audio input to process external instruments."
+		BLUETOOTH_PERMISSION_ENABLED TRUE
+		BLUETOOTH_PERMISSION_TEXT "${MDMM_PRODUCT_NAME_${_mdmmUpper}} connects to Bluetooth MIDI devices (keyboards, controllers)."
 		LV2URI "http://theusualsuspects.lv2/Gearmulator${_mdmmUpper}")
 endforeach()
 unset(_mdmmTarget)
@@ -280,6 +285,9 @@ set(GEARMULATOR_PLUGIN_MANUFACTURER_CODE_mmJucePlugin "${MDMM_AU_MANUFACTURER}")
 function(mdmm_plugin_targets)
 	foreach(plugin_target mdJucePlugin mmJucePlugin)
 		target_link_libraries(${plugin_target} PRIVATE elektronData mdDataLink mdDesk mmDesk deskHost deskWire)
+		if(APPLE)
+			target_link_libraries(${plugin_target} PRIVATE "-framework AVFoundation")	# mdMicPermission.mm
+		endif()
 		# public: mdPageEditor.h includes mdUpdater.h, and the tests that build on the plug-in include both
 		target_link_libraries(${plugin_target} PUBLIC mdmmUpdate)
 		# the version (mdmmVersion.h): the update check, the page's ?version=, the About box
@@ -506,6 +514,66 @@ function(mdmm_plugin_targets)
 	set_tests_properties(mdMidiInTest PROPERTIES LABELS "UnitTest")
 	set_property(TARGET mdMidiInTest PROPERTY FOLDER "Elektron/test")
 
+	# I-032 (0.8, WP9): the Mix page's output meters (mdMixMeters.h, pure: peak and RMS per channel of the three pairs; no allocation; no ROM)
+	add_executable(mdMixMetersTest mdMixMetersTest.cpp mdMixMeters.h)
+	target_link_libraries(mdMixMetersTest PRIVATE Threads::Threads)
+	add_test(NAME mdMixMetersTest COMMAND mdMixMetersTest)
+	set_tests_properties(mdMixMetersTest PROPERTIES LABELS "UnitTest")
+	set_property(TARGET mdMixMetersTest PROPERTY FOLDER "Elektron/test")
+
+	# 0.8 (WP3): the MIDI monitor's counts (mdMidiMonitor.h, pure: by direction, type, channel; no allocation; no ROM)
+	add_executable(mdMidiMonitorTest mdMidiMonitorTest.cpp mdMidiMonitor.h)
+	target_link_libraries(mdMidiMonitorTest PRIVATE Threads::Threads)
+	add_test(NAME mdMidiMonitorTest COMMAND mdMidiMonitorTest)
+	set_tests_properties(mdMidiMonitorTest PROPERTIES LABELS "UnitTest")
+	set_property(TARGET mdMidiMonitorTest PROPERTY FOLDER "Elektron/test")
+
+	# 0.8 (MIDI Learn L1, doc/midilearn/DESIGN-learn-0.8.md "Tests" 1-3): the realtime router (mdLearnRouter.h, pure:
+	# a stand-in parameter, no JUCE, no ROM). The values, override, any channel, learning pulled by the message thread,
+	# no allocation on the audio path; then two threads under stress, and the same under ThreadSanitizer (macOS, that
+	# target only).
+	add_executable(mdLearnRouterTest mdLearnRouterTest.cpp mdLearnRouter.cpp mdLearnRouter.h mdLearnTable.h)
+	target_include_directories(mdLearnRouterTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
+	target_link_libraries(mdLearnRouterTest PRIVATE deskCore Threads::Threads)
+	add_test(NAME mdLearnRouterTest COMMAND mdLearnRouterTest)
+	set_tests_properties(mdLearnRouterTest PROPERTIES LABELS "UnitTest")
+	set_property(TARGET mdLearnRouterTest PROPERTY FOLDER "Elektron/test")
+
+	add_executable(mdLearnRouterStressTest mdLearnRouterStressTest.cpp mdLearnRouter.cpp mdLearnRouter.h mdLearnTable.h)
+	target_include_directories(mdLearnRouterStressTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
+	target_link_libraries(mdLearnRouterStressTest PRIVATE deskCore Threads::Threads)
+	add_test(NAME mdLearnRouterStressTest COMMAND mdLearnRouterStressTest 2)
+	set_tests_properties(mdLearnRouterStressTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+	set_property(TARGET mdLearnRouterStressTest PROPERTY FOLDER "Elektron/test")
+
+	# ThreadSanitizer: the stress test's sources instrumented, nothing else (deskCore is linked for a header's enum
+	# only). macOS with Clang, where TSan works out of the box; halt_on_error makes a report fail the test.
+	if(APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		add_executable(mdLearnRouterStressTestTsan mdLearnRouterStressTest.cpp mdLearnRouter.cpp mdLearnRouter.h mdLearnTable.h)
+		target_include_directories(mdLearnRouterStressTestTsan PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
+		target_link_libraries(mdLearnRouterStressTestTsan PRIVATE deskCore Threads::Threads)
+		target_compile_options(mdLearnRouterStressTestTsan PRIVATE -fsanitize=thread -O1 -g -fno-omit-frame-pointer)
+		target_link_options(mdLearnRouterStressTestTsan PRIVATE -fsanitize=thread)
+		add_test(NAME mdLearnRouterStressTestTsan COMMAND mdLearnRouterStressTestTsan 2)
+		set_tests_properties(mdLearnRouterStressTestTsan PROPERTIES LABELS "UnitTest" TIMEOUT 120
+			ENVIRONMENT "TSAN_OPTIONS=halt_on_error=1:abort_on_error=1")
+		set_property(TARGET mdLearnRouterStressTestTsan PROPERTY FOLDER "Elektron/test")
+	endif()
+
+	# 0.8 (WP4): the AUDIO / MIDI panel's MIDI loop warning (B-154) and input note (B-155) (mdMidiLoop.h, pure; no ROM)
+	add_executable(mdMidiLoopTest mdMidiLoopTest.cpp mdMidiLoop.h)
+	add_test(NAME mdMidiLoopTest COMMAND mdMidiLoopTest)
+	set_tests_properties(mdMidiLoopTest PROPERTIES LABELS "UnitTest")
+	set_property(TARGET mdMidiLoopTest PROPERTY FOLDER "Elektron/test")
+
+	# 0.8 (WP4, B-155): the built standalone apps' Info.plist carries the Bluetooth and the microphone usage keys
+	# (read with plutil; macOS only; skipped, 77, when the apps are not built)
+	if(APPLE AND TARGET mdJucePlugin_Standalone AND TARGET mmJucePlugin_Standalone)
+		add_test(NAME mdmmStandalonePlistTest COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../../../../scripts/check_mdmm_standalone_plist.sh
+			"$<TARGET_BUNDLE_DIR:mdJucePlugin_Standalone>" "$<TARGET_BUNDLE_DIR:mmJucePlugin_Standalone>")
+		set_tests_properties(mdmmStandalonePlistTest PROPERTIES LABELS "UnitTest" SKIP_RETURN_CODE 77 TIMEOUT 60)
+	endif()
+
 	add_executable(mdProcessArchTest mdProcessArchTest.cpp mdProcessArch.cpp)
 	# the diagnostics builds' GEARMULATOR_MDMM_FAKE_ROSETTA
 	target_compile_definitions(mdProcessArchTest PRIVATE MDMM_DIAGNOSTICS=1)
@@ -608,6 +676,9 @@ function(mdmm_plugin_targets)
 		# the drag across the M and S keys (both editors): which keys a drag changes
 		add_test(NAME deskTogglePaintPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskTogglePaintTest.js)
 		set_tests_properties(deskTogglePaintPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
+		# I-039: the marks on a song row's cell (both editors): tempo, mutes, transpose
+		add_test(NAME deskSongMarksPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskSongMarksTest.js)
+		set_tests_properties(deskSongMarksPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# I-022: a typed value (both editors): what a text becomes, what is refused, the field, the gesture and its wiring
 		add_test(NAME deskValueEditPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskValueEditTest.js)
 		set_tests_properties(deskValueEditPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
@@ -791,6 +862,11 @@ function(mdmm_plugin_targets)
 		add_test(NAME mdMachineMidiOutFirmwareTest_${m} COMMAND mdMachineMidiOutTest ${m})
 		set_tests_properties(mdMachineMidiOutFirmwareTest_${m} PROPERTIES
 			LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 400)
+		# WP2 (PLAN-0.8, B-121, B-154): the host's transport and clock through the processor with a scripted play
+		# head, the host's Program Change, the machine's MIDI out fed back into its in
+		add_test(NAME mdTransportFirmwareTest_${m} COMMAND mdMachineMidiOutTest ${m} transport)
+		set_tests_properties(mdTransportFirmwareTest_${m} PROPERTIES
+			LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1500)
 	endforeach()
 
 	# The built bundles carry the identity in scripts/mdmm-product.env (the AU codes, the VST3 class IDs that follow

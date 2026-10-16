@@ -49,6 +49,8 @@ namespace mdJucePlugin
 		uint64_t midiRxConsumed = 0;
 		// panel events the machine's panel queue dropped (overflow, dropped pulses, rejected), this Hardware's count
 		uint64_t panelDropped = 0;
+		// MIDI events the scheduled-MIDI ring could not take (md::Hardware::scheduledMidiOverflowCount; the MIDI monitor)
+		uint64_t scheduledMidiOverflow = 0;
 		// the tester switches
 		bool speedUps = true;
 		bool exactEssi = false;

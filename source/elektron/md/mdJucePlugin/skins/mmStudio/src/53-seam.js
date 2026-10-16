@@ -10,7 +10,7 @@ const MM_SEAM={
   "selectPattern","kit","tempo","mutes","keyMode","record","chain","chainClear","seqMode","loadSong","saveSong","waiting",
   "sendNow","playKey","keyUp","transport","noteOn","noteOff","joy","learning","learnTarget","learnBind","modulators",
   "engine","chooseRom","removeRom","romManage","syxChoose","syxExport","syxStart","syxStop","syxPlace","syxExportInfo","machineReset","revealRom",
-  "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","globalSlot","memory","follow"],
+  "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","mixMeters","globalSlot","memory","follow"],
  "view":[
   "audible","soloed","engReady","asgT","noteName","pname","machName","kitName","gated","busy","sel","mode",
   "playing","step","tempo","engineState","kitState","learnTarget","learning","ctlSetup","show","startEmpty",
@@ -18,4 +18,4 @@ const MM_SEAM={
   "setEngineLabel","setEngineTip","setEngines","setAudioEntry","setMemory","setFollow","selectTrack","clearLearnTarget","setMapping","setModulation",
   "setCtlSetup","disable","setRecord","setRecLock","setLcd","setKeyDown","setMidiHeld","setPst","closeFirmwareDialog","bootRom",
   "bootInstalled","syxPreview","syxProgress","syxExported","syxExportInfo","render","renderTop","drawLib","toast","ask","redraw","movePH",
-  "setPos","flashTracks","goWs","clickStep","autoRange","kitSave","redrawAudio","audioLevel","openAudio"]};
+  "setPos","flashTracks","goWs","clickStep","autoRange","kitSave","redrawAudio","audioLevel","audioStats","openAudio","mixLevels","mixMeterState"]};

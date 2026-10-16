@@ -1470,6 +1470,26 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { if (S.songMore && $1("[data-rowmore]")) u.click("[data-rowmore]"); if (c.r0) await undoUntil(u, () => JSON.stringify(songRows()) === c.r0, 8); await back(u, c); }
 	};
+	/* 0.8 I-039: a row that holds a tempo, mutes or a transpose says so in its cell (the small line: the tempo as a number, M and the count);
+	   a plain row looks as ever, the cell keeps its height and the marks are not cut; clicking them opens Row > More. */
+	const songRowMarks = {
+		name: "md-song-row-marks", proves: ["MD-149", "MD-157"],
+		steps: [
+			go("song"),
+			{ say: "add a row (Arrange, pad A01): its cell has no marks; remember its height", act: async (u, c) => { u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(200); c.r0 = JSON.stringify(songRows()); c.n0 = songRows().length; u.click('[data-addpat="0"]'); await until(() => songRows().length === c.n0 + 1, 4000); c.i = S.songSel; if (S.songMore && $1("[data-rowmore]")) { u.click("[data-rowmore]"); await sleep(250); } c.cell = () => $1(`#tl .scell[data-i="${c.i}"]`); c.h0 = c.cell().getBoundingClientRect().height; },
+				screen: c => ok(!c.cell().querySelector(".rmk") && !/\n/.test(c.cell().title), "marks " + c.cell().querySelector(".rmk .rt")?.textContent) },
+			{ say: "Tempo: Keep off gives the row a tempo: its cell shows the number", act: async (u, c) => { u.click("[data-bpmkeep]"); await until(() => songRows()[c.i]?.tempo != null, 4000); await sleep(200); c.t = songRows()[c.i].tempo; },
+				screen: c => ok(c.cell().querySelector(".rmk .rt")?.textContent === String(c.t), "marks " + c.cell().querySelector(".rmk .rt")?.textContent + " for tempo " + c.t) },
+			{ say: "click the marks: Row > More opens (the mutes show); mute track 1 and 3", act: async (u, c) => { if (S.songMore) { u.click("[data-rowmore]"); await sleep(250); } c.closed = !$1("[data-rowmute]"); u.click(c.cell().querySelector($1("#tl").classList.contains("rmkwide") ? ".rmk .rt" : ".rmk .rg")); await sleep(300); c.open = !!$1("[data-rowmute]"); u.click('[data-rowmute="0"]'); await sleep(250); u.click('[data-rowmute="2"]'); await sleep(250); },
+				screen: c => ok(c.closed && c.open && c.cell().querySelector(".rmk .rt")?.textContent === c.t + " M2", `closed ${c.closed}, opened ${c.open}, marks ${c.cell().querySelector(".rmk .rt")?.textContent}`) },
+			{ say: "the marks are whole (not cut), the cell is as tall as before, the tooltip tells the detail", act: () => {},
+				screen: c => { const wide = $1("#tl").classList.contains("rmkwide"), v = c.cell().querySelector(wide ? ".rmk .rt" : ".rmk .rg"), r = v.getBoundingClientRect(), cr = c.cell().getBoundingClientRect(), codes = c.cell().querySelector(".rmk .rg")?.textContent; Journey.snapshot("md-song-row-marks");
+					return ok(r.width > 0 && r.left >= cr.left - 1 && r.right <= cr.right + 1 && r.top >= cr.top - 1 && r.bottom <= cr.bottom + 1 && codes === "BM" && Math.abs(cr.height - c.h0) < 1 && /Tempo \d+ BPM/.test(c.cell().title) && /Muted: Track 1, Track 3/.test(c.cell().title), `${wide ? "words" : "codes"} ${Math.round(r.left - cr.left)}..${Math.round(r.right - cr.left)} of ${Math.round(cr.width)} wide, codes ${codes}, height ${cr.height} (was ${c.h0}), title ${c.cell().title.replace(/\n/g, " | ")}`); } },
+			{ say: "unmute both, Keep on: the marks are gone", act: async (u, c) => { u.click('[data-rowmute="0"]'); await sleep(250); u.click('[data-rowmute="2"]'); await sleep(250); u.click("[data-bpmkeep]"); await sleep(400); },
+				screen: c => ok(!c.cell().querySelector(".rmk"), "marks " + c.cell().querySelector(".rmk .rt")?.textContent) }
+		],
+		async tidy(u, c) { if (S.songMore && $1("[data-rowmore]")) u.click("[data-rowmore]"); if (c.r0) await undoUntil(u, () => JSON.stringify(songRows()) === c.r0, 12); await back(u, c); }
+	};
 	const songDrag = {
 		name: "md-song-drag-drop", proves: ["MD-150"],
 		steps: [
@@ -3300,7 +3320,7 @@ const MdJourneys = (() => {
 		songArrange, songChain, modeCycle, songPlayhead, songSlots, songKeys, shotsSongSlots, samplerSlots, samplerSetup, audition,
 		libDialog, kitCopy, kitRename, kitClear, patGo, patClear, dialogEsc,
 		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, noteLights, followPlayed, audioPanel, romCard, notePlay,
-		lockRamp, pasteMany, mutScope, songInspector, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
+		lockRamp, pasteMany, mutScope, songInspector, songRowMarks, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
 		syxImportMute, globalReset, shotsGlobal, shotsSound, shotsReview, shots, shotsSong, shotsImport, editorMenuJ, memoryJ, shotsMenu, ...cpuJs, ...volJs,
 		dropSyxJ, dropSampleJ, ...viewJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, modalLock, songFactoryPlay, lockKeysFit, resetFactory, resetEmpty, syxRunningReach];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;

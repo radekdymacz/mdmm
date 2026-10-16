@@ -2008,7 +2008,7 @@
 			],
 			"mod": "",
 			"group": "Playing",
-			"does": "Octave down / up, −3 to +3"
+			"does": "Octave down / up, −4 to +6: every note 0-127 (now 0: A is C-3, MIDI 48). Perform: the Octave stepper moves the on-screen keyboard over the same notes"
 		},
 		{
 			"id": "velocity",
