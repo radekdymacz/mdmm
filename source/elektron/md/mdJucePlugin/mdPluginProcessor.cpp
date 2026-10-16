@@ -13,6 +13,7 @@
 #include "mdRomInstall.h"
 
 #include "mdController.h"
+#include "jucePluginLib/parameter.h"
 #include "mdMachineMidiOut.h"
 #include "mdPluginEditorState.h"
 #include "mdProcessArch.h"
@@ -1008,6 +1009,7 @@ namespace mdJucePlugin
 
 	void AudioPluginAudioProcessor::processBlockStarted(const int _frames, const bool _bypassed)
 	{
+		m_learnRouter.beginBlock();	// MIDI Learn: the table the session published last, before this block's MIDI
 		if(_bypassed)
 		{
 			m_midiHeld.clear();	// I-002: a bypassed plug-in hears no note off
@@ -1054,6 +1056,29 @@ namespace mdJucePlugin
 		const auto d = _where == MidiTraffic::ToFirmware ? Direction::InFirmware
 			: _where == MidiTraffic::FromMachine ? Direction::OutMachine : Direction::OutHost;
 		m_midiMonitor.onEvent(d, _ev.a, !_ev.sysex.empty());
+	}
+
+	bool AudioPluginAudioProcessor::consumeMidiIn(const synthLib::SMidiEvent& _ev)
+	{
+		if constexpr (deskHost::midiMappingEnabled)
+		{
+			// the host's MIDI only (the audio thread); the page's own and a port's never go through the router
+			if(_ev.source == synthLib::MidiEventSource::Host)
+				return m_learnRouter.translate(_ev);
+		}
+		return jucePluginEditorLib::Processor::consumeMidiIn(_ev);
+	}
+
+	bool AudioPluginAudioProcessor::applyLearnedCc(pluginLib::Parameter& _param, const LearnTarget& _target, const uint8_t _value)
+	{
+		const auto& range = _param.getNormalisableRange();
+		const auto current = _param.getUnnormalizedValue();
+		const auto next = learnedValue(_target.mode, _target.invert != 0, _value, current,
+			juce::roundToInt(range.start), juce::roundToInt(range.end));
+		if(next == current)
+			return false;
+		_param.setValue(_param.convertTo0to1(static_cast<float>(next)));
+		return true;
 	}
 
 	midiMonitor::Counts AudioPluginAudioProcessor::midiMonitorCounts()
