@@ -2534,7 +2534,7 @@ const MmJourneys = (() => {
 	/* ---- Sound: the track effects, every value of AMP, FLT and EFX in the manual's order (Track effects chapter) ---- */
 	const EFFECT_PAGES = [["AMP", "ATK HOLD DEC REL DIST VOL PAN PORT"], ["FLT", "BASE WDTH HPQ LPQ ATK DEC BOFS WOFS"], ["EFX", "EQF EQG SRR DTIM DSND DFB DBAS DWID"]];
 	/* the values the manual gives a sign (below 0: headroom for DIST, a cut for EQG, left for PAN, stereo kept for DSND) */
-	const SIGNED_NAMES = new Set(["DIST", "PAN", "EQG", "DSND"]);
+	const SIGNED_NAMES = new Set(["DIST", "PAN", "EQG", "DSND", "BOFS", "WOFS"]);	/* B-148: BOFS, WOFS -64 to +63 */
 	const signedText = v => (v - 64 > 0 ? "+" : "") + (v - 64);
 	const trackEffects = {
 		name: "mm-sound-track-effects", proves: ["MM-114", "MM-115", "MM-116", "MM-117", "MM-118", "MM-119", "MM-121", "MM-122", "MM-123", "MM-124", "MM-125", "MM-126", "MM-127", "MM-129", "MM-130", "MM-131", "MM-132", "MM-133", "MM-134", "MM-092", "MM-084"],
@@ -2781,13 +2781,21 @@ const MmJourneys = (() => {
 					await stepPick(u, 0, c.e, "step-trigless"); c.on = await until(() => bitsOf(0, "trig").includes(c.e) && !["amp", "filter", "lfo"].some(k => bitsOf(0, k).includes(c.e)), 6000); c.kind = noteSpans(0).find(sp => sp.s === c.e)?.kind;
 					if (S().stepSel) clearSel(); await stepPick(u, 0, c.e, "step-trigless"); },
 				machine: c => ok(c.on && !bitsOf(0, "trig").includes(c.e), `added ${c.on}, then trig ${bitsOf(0, "trig").includes(c.e)}`), screen: c => ok(c.kind === "trigless" && !S().tracks[0].steps[c.e], "kind " + c.kind), within: 8000 },
+			/* B-152: the page makes a pitchless trig (the machine's EXIT held on a trig): step menu > Pitchless trig */
+			{ say: "right-click an empty step and choose Pitchless trig: a trig with its three envelope trigs and no note of its own (a dashed bar at the pitch before); the menu ticks it", act: async (u, c) => {
+					c.p = freeSteps(0, 1, (c.s ?? 0) + 1).find(x => x !== c.e && x > (c.s ?? 0)); if (c.p == null) throw new Error("no free step for a pitchless trig"); if (S().stepSel) clearSel();
+					await stepPick(u, 0, c.p, "step-pitchless"); await until(() => bitsOf(0, "trig").includes(c.p) && !noteAt(0, c.p).length, 6000); await sleep(200);
+					if (S().stepSel) clearSel(); await stepPick(u, 0, c.p); c.tk = ticked("step-pitchless"); closeDeskMenu(); },
+				machine: c => ok(bitsOf(0, "trig").includes(c.p) && ["amp", "filter", "lfo"].every(k => bitsOf(0, k).includes(c.p)) && !noteAt(0, c.p).length, `trig ${bitsOf(0, "trig").includes(c.p)}, envelopes ${["amp", "filter", "lfo"].map(k => bitsOf(0, k).includes(c.p))}, notes ${noteAt(0, c.p)}`),
+				screen: c => ok(noteSpans(0).find(sp => sp.s === c.p)?.pitchless === true && c.tk, "pitchless " + noteSpans(0).find(sp => sp.s === c.p)?.pitchless + ", ticked " + c.tk), within: 8000 },
+			{ say: "choose Pitchless trig again: the step has a note of its own again (the track's pitch before it), the trig and envelopes stay", act: async (u, c) => { if (S().stepSel) clearSel(); await stepPick(u, 0, c.p, "step-pitchless"); await until(() => noteAt(0, c.p).length === 1, 6000); },
+				machine: c => ok(noteAt(0, c.p).length === 1 && bitsOf(0, "trig").includes(c.p) && bitsOf(0, "amp").includes(c.p), `notes ${noteAt(0, c.p)}`), screen: c => ok(noteSpans(0).find(sp => sp.s === c.p)?.pitchless === false, "still pitchless"), within: 8000 },
 			{ say: "a trig with no pitch of its own (envelope trigs only: its note is the one before): step menu > Envelopes > Amp: the amp trig flips, the step stays without a pitch", act: async (u, c) => {
-					/* B-107 (the 0.6 e2e run): the page makes no pitchless trig (the machine's own patterns and backups hold them; the
-					   page tier's fixture does, factory memory not): without one the journey writes its own with the step intent
-					   (a trig with its envelopes and no note), on a free step after a note */
+					/* a pitchless trig of the pattern (the machine's own patterns and backups hold them), or one made with the step
+					   menu's Pitchless trig (B-152) on a free step after a note */
 					let found = [0, 1, 2, 3, 4, 5].map(t => [t, noteSpans(t).find(sp => sp.pitchless && sp.st.a)]).find(([, sp]) => sp);
-					if (!found) { const s0 = freeSteps(0, 3, (c.s ?? 0) + 1).find(x => x !== c.e && x > (c.s ?? 0)); if (s0 == null) throw new Error("no free step for a pitchless trig");
-						HOST.intent("step", { t: 0, s: s0, v: { a: 1, f: 1, l: 1 } }); await until(() => noteSpans(0).some(sp => sp.s === s0 && sp.pitchless), 6000);
+					if (!found) { const s0 = freeSteps(0, 3, (c.s ?? 0) + 1).find(x => x !== c.e && x !== c.p && x > (c.s ?? 0)); if (s0 == null) throw new Error("no free step for a pitchless trig");
+						if (S().stepSel) clearSel(); await stepPick(u, 0, s0, "step-pitchless"); await until(() => noteSpans(0).some(sp => sp.s === s0 && sp.pitchless), 6000);
 						found = [0, noteSpans(0).find(sp => sp.s === s0 && sp.pitchless && sp.st.a)]; if (!found[1]) throw new Error("the pitchless trig did not come"); } c.pt = found[0]; c.ps = found[1].s; u.click(rail(c.pt)); await sleep(300);
 					c.a0 = bitsOf(c.pt, "amp").includes(c.ps); await envPick(u, c.pt, c.ps, "a"); await until(() => bitsOf(c.pt, "amp").includes(c.ps) !== c.a0, 4000); },
 				machine: c => ok(bitsOf(c.pt, "amp").includes(c.ps) !== c.a0 && bitsOf(c.pt, "trig").includes(c.ps) && !noteAt(c.pt, c.ps).length, `amp ${bitsOf(c.pt, "amp").includes(c.ps)}, notes ${noteAt(c.pt, c.ps)}`), screen: c => ok(noteSpans(c.pt).find(sp => sp.s === c.ps)?.pitchless === true, "span"), within: 6000 }
