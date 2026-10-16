@@ -17,6 +17,7 @@ function selShown(x = S.stepSel) { return StepSel.shown(x, V.len); }
 function syncSel(ghost) {
 	$$("#seq .st").forEach(b => { const t = +b.dataset.t, s = +b.dataset.s; b.classList.toggle("selx", inSel(t, s)); b.classList.toggle("selghost", inSel(t, s, ghost)); });
 	$$("#seq .rul[data-s]").forEach(r => r.classList.toggle("selx", !!S.stepSel && +r.dataset.s >= S.stepSel.from && +r.dataset.s < S.stepSel.to));
+	$$("#lane .lb[data-s]").forEach(b => b.classList.toggle("vsel", inSel(S.sel, +b.dataset.s)));
 	secLabels();
 	StepSel.moreWake();
 }
