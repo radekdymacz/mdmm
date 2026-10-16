@@ -2,6 +2,24 @@
 
 *Drafted 2026-10-16 by Claude Code (Opus) for Radek. Nothing here is built yet. Inputs: the MIDI audit of origin/main `28b6bcb6c`, the Discord roundup of 2026-10-16, BUGS.md, IDEAS.md, ROADMAP.md, DEV-CYCLE.md, THREADING.md. Assumes `fix/mm-tester-bugs-1016` (B-148 to B-152), `ci/linux-steamos` (B-153) and `fix/1.0-lock-free-audio` are merged.*
 
+## Status (2026-10-17)
+
+| Package | State | Notes |
+|---|---|---|
+| WP0 log the roundup | done | B-154 to B-160, I-033, I-034 in the logs |
+| WP1 notes in (D2, B-011) | done, merged | D2 branch A; B-163; B-011 chord at one offset ruled out, still open |
+| WP2 transport and clock | done, merged | B-121 confirmed; B-154 loop reproduced |
+| WP3 MIDI monitor | done, merged | log line and `midiStats` |
+| WP4 AUDIO / MIDI panel | done, merged | B-154 warning, B-155 Bluetooth key, monitor row |
+| WP5 CI parity | done, merged | B-044, B-047 closed |
+| WP6 B-133 | done, merged | cause found (OS 1.63 screen list); no repair (Radek); stays in Known |
+| WP7 follow played track | done, merged | I-003 |
+| WP8 docs, test sheet, notes | in progress | guide MIDI and sync sections, log upkeep, TEST-0.8.md and v0.8.0.md drafted; Learn docs (`doc/midilearn`, ROADMAP F13, FOUNDATION) wait for WP-L |
+| WP9 Monomachine tester items | done, merged | B-148 to B-152, I-030 to I-032 |
+| WP10 feedback 2026-10-16b | done, merged | B-161 to B-164, I-035 to I-044; B-165 logged, open |
+| WP-L MIDI Learn | in progress | design, pure core, codec and realtime router merged (L0, L1, L3); switch off; CONTROL page not built |
+| Lock-free audio | done, merged | rt gate 0 ms under load |
+
 ## Problem
 
 MIDI in, MIDI out, clock and transport run through the stock plug-in plumbing. Little of it is proven end to end.
