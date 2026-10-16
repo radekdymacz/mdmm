@@ -1938,7 +1938,7 @@ const MdJourneys = (() => {
 		],
 		async tidy(u) { if (!$1("#syxpop").hidden) u.key("Escape"); }
 	};
-	/* alone: B-133 (a sample in by SDS leaves the machine's live recording deaf until it starts again), as md-sampler-rename */
+	/* alone: B-133 (OS 1.63 leaves its screen list with one node after the RECEIVING SAMPLE screen, so live recording is deaf until the machine starts again; the emulator keeps the hardware's behaviour), as md-sampler-rename */
 	const dropSampleJ = {
 		name: "md-drop-sample", alone: true, proves: ["MD-191", "MD-X12"],
 		needs: () => new URLSearchParams(location.search).get("wavfile") ? null
