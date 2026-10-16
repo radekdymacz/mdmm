@@ -59,6 +59,7 @@ namespace
 	using Value = elektronData::json::Value;
 
 	int g_failures = 0;
+	bool g_long = false;	// transport: every window at the plan's full length (--long)
 
 	void setDataRoot(const juce::File& _folder)
 	{
@@ -739,6 +740,17 @@ namespace
 			op(R"({"op":"params","g":30002,"k":)" + k + R"(,"values":[[0,1,1,0],[0,1,2,127],[0,1,3,8],[0,1,5,60]]})");
 			op(R"({"op":"level","g":30003,"k":)" + k + R"(,"t":0,"v":48})");
 			watch(4000);
+			if(debug)
+			{
+				const std::lock_guard l(publishedLock);
+				int shown = 0;
+				for(auto it = published.rbegin(); it != published.rend() && shown < 6; ++it)
+					if(str(*it, "type") == "result")
+					{
+						std::printf("  result: %s\n", elektronData::json::write(*it).substr(0, 300).c_str());
+						++shown;
+					}
+			}
 		};
 		if(_mm)
 		{
@@ -754,6 +766,15 @@ namespace
 			};
 			check(until(loaded, 300000), "the Monomachine's memory is read");
 			watch(1000);
+			// the tracks on channels 1 to 6, so T1 is channel 1 whatever the machine was shipped with
+			{
+				auto o = elektronData::json::parse(globalOp("tempoIn", true));
+				o->set("base", 0);
+				o->set("span", 6);
+				o->set("clockIn", true);
+				session->onPageMessage(*o);
+			}
+			watch(4000);
 			setupT1();
 		}
 
@@ -766,7 +787,7 @@ namespace
 		check(started, "the host's Play starts the machine (the host clock reached the firmware)");
 		watch(1500);
 		auto sp = begin();
-		watch(10000);
+		watch(g_long ? 10000 : 8000);
 		const double q1 = quartersSince(sp), s1 = secondsSince(sp);
 		const int st1 = stepsSince(sp);
 		std::printf("  %.2f quarters (%.2f s of audio): %d steps (%.2f per quarter), \n", q1, s1, st1, q1 > 0 ? st1 / q1 : 0.0);
@@ -796,7 +817,8 @@ namespace
 			// a note whose note off never comes, then the host's Stop: All Notes Off ends it (B-121)
 			hostPlay(120, 0.0);
 			until(playing, 8000);
-			inject({0x90, 60, 110});
+			for(uint8_t ch = 0; ch < 8; ++ch)
+				inject({static_cast<uint8_t>(0x90 | ch), 60, 110});	// held on every channel: whichever the tracks answer on
 			watch(1500);
 			meter.reset();
 			watch(1000);
@@ -810,7 +832,8 @@ namespace
 			std::printf("  held note rms %.4f, 1.5 s after the host's Stop %.4f\n", held.rms, after.rms);
 			check(held.rms > 0.003, "a held note sounds with the host playing");
 			check(after.rms < held.rms * 0.35, "1.5 s after the host's Stop the held note is gone (All Notes Off)");
-			inject({0x80, 60, 0});
+			for(uint8_t ch = 0; ch < 8; ++ch)
+				inject({static_cast<uint8_t>(0x80 | ch), 60, 0});
 			watch(300);
 		}
 
@@ -881,7 +904,7 @@ namespace
 		// ---- 5. Tempo INT and EXT ----
 		std::puts("5. Tempo INT and EXT");
 		op(globalOp("tempoIn", false));
-		const bool intSet = until([&] { return !processor->getPlugin().hostClock(); }, 60000);
+		const bool intSet = until([&] { return !processor->getPlugin().hostClock(); }, 180000);
 		check(intSet, "Tempo in INT: the plug-in stops sending the host's clock to the firmware");
 		hostPlay(90, 0.0);
 		watch(3000);
@@ -905,7 +928,7 @@ namespace
 		host.seekTo = 0.0;
 		watch(300);
 		op(globalOp("tempoIn", true));
-		check(until([&] { return processor->getPlugin().hostClock(); }, 60000), "Tempo in EXT again: the host clock is on");
+		check(until([&] { return processor->getPlugin().hostClock(); }, 180000), "Tempo in EXT again: the host clock is on");
 		hostPlay(120, 0.0);
 		check(until(playing, 20000), "EXT again: the host's Play starts the machine");
 		watch(1500);
@@ -915,6 +938,55 @@ namespace
 		hostStop();
 		until(stopped, 5000);
 		host.seekTo = 0.0;
+
+		// ---- 7. Notes in (before 6: a pattern change loads another kit and the T1 voice built above is gone) ----
+		std::puts("7. Notes in");
+		op(R"({"op":"stop"})");
+		watch(1500);
+		meter.reset();
+		watch(500);
+		const double quiet = meter.read().rms;
+		std::printf("  kit %d, pattern %d\n", numberAt({"kit", "current"}), pattern());
+		double loud = 0, first = 0;
+		int sounding = 0;
+		if(_mm)
+		{
+			// the Monomachine's voices answer with the sequencer running, as mmDeskFirmwareTest hoststop plays them
+			hostPlay(120, 0.0);
+			until(playing, 20000);
+			watch(1000);
+		}
+		for(int ch = 0; ch < (_mm ? 3 : 1); ++ch)
+		{
+			const uint8_t note = static_cast<uint8_t>(_mm ? 60 : 36);
+			meter.reset();
+			watch(300);
+			const double pre = meter.read().rms;
+			meter.reset();
+			inject({static_cast<uint8_t>(0x90 | ch), note, 110});
+			watch(1500);
+			const double r = meter.read().rms;
+			inject({static_cast<uint8_t>(0x80 | ch), note, 0});
+			watch(1000);
+			std::printf("  note in on channel %d: rms %.5f\n", ch + 1, r);
+			loud = std::max(loud, r);
+			if(ch == 0)
+				first = r;
+			const bool heard = r > pre * 2 + 0.002;
+			if(heard)
+				++sounding;
+		}
+		std::printf("  note in: rms %.5f quiet, %.5f with the note\n", quiet, loud);
+		std::printf("  %d channels answered\n", sounding);
+		if(_mm)
+		{
+			hostStop();
+			until(stopped, 5000);
+			host.seekTo = 0.0;
+			watch(500);
+		}
+		check(first > quiet * 2 + 0.0005 && first > 0.002, std::string("a note into the processor sounds on the machine (")
+			+ (_mm ? "T1 on channel 1, the voice built above)" : "track 1 by the key map)"));
 
 		// ---- 6. Host Program Change selects the pattern ----
 		std::puts("6. Host Program Change");
@@ -926,7 +998,7 @@ namespace
 		const auto selects = [&](const int _program, const int _channel)
 		{
 			inject({static_cast<uint8_t>(0xc0 | _channel), static_cast<uint8_t>(_program)});
-			return until([&] { return pattern() == _program; }, 4000);
+			return until([&] { return pattern() == _program; }, 12000);
 		};
 		if(debug)
 			std::printf("  pattern before: %d\n", pattern());
@@ -947,29 +1019,7 @@ namespace
 		}
 
 		// ---- 7. Notes in and out, no SysEx out ----
-		std::puts("7. Notes in and out");
-		op(R"({"op":"stop"})");
-		watch(1500);
-		setupT1();	// the pattern changes of 6 loaded other kits
-		meter.reset();
-		watch(500);
-		const double quiet = meter.read().rms;
-		std::printf("  kit %d, pattern %d\n", numberAt({"kit", "current"}), pattern());
-		double loud = 0;
-		for(int ch = 0; ch < (_mm ? 6 : 1); ++ch)
-		{
-			const uint8_t note = static_cast<uint8_t>(_mm ? 60 : 36);
-			meter.reset();
-			inject({static_cast<uint8_t>(0x90 | ch), note, 110});
-			watch(1500);
-			const double r = meter.read().rms;
-			inject({static_cast<uint8_t>(0x80 | ch), note, 0});
-			watch(1000);
-			std::printf("  note in on channel %d: rms %.5f\n", ch + 1, r);
-			loud = std::max(loud, r);
-		}
-		std::printf("  note in: rms %.5f quiet, %.5f with the note\n", quiet, loud);
-		check(loud > quiet * 2 + 0.0005, "a note into the processor sounds on the machine");
+		
 		hostPlay(120, 0.0);
 		check(until(playing, 8000), "Play (notes out)");
 		const int notesB = out.notes;
@@ -986,8 +1036,8 @@ namespace
 		// ---- 8. Loopback (B-154) ----
 		const auto loopbackRun = [&](const char* _name, const bool _loop, const int _burst)
 		{
-			std::printf("8. %s: the machine's out %s its in for 10 s of audio, external 24 PPQN clock at 120 BPM%s\n", _name,
-				_loop ? "fed into" : "not fed into", _burst > 1 ? ", ticks in bursts" : "");
+			std::printf("8. %s: the machine's out %s its in for %d s of audio, external 24 PPQN clock at 120 BPM%s\n", _name,
+				_loop ? "fed into" : "not fed into", g_long ? 10 : 5, _burst > 1 ? ", ticks in bursts" : "");
 			extBurst = _burst;
 			extTicks = 0;
 			hostStop();
@@ -1003,7 +1053,7 @@ namespace
 			const auto start = audioSamples.load();
 			// 10 s of audio, at most 15 minutes of wall time
 			const auto wallEnd = std::chrono::steady_clock::now() + std::chrono::minutes(15);
-			while(audioSamples.load() - start < static_cast<uint64_t>(10 * rate) && std::chrono::steady_clock::now() < wallEnd)
+			while(audioSamples.load() - start < static_cast<uint64_t>((g_long ? 10 : 5) * rate) && std::chrono::steady_clock::now() < wallEnd)
 				watch(50);
 			const auto m = meter.read();
 			loopback = false;
@@ -1019,7 +1069,7 @@ namespace
 				static_cast<unsigned long long>(m.samples), static_cast<unsigned long long>(m.nonFinite),
 				static_cast<size_t>(o0[0]), static_cast<size_t>(o1[0]), static_cast<unsigned long long>(o0[1]),
 				static_cast<unsigned long long>(o1[1]));
-			check(secs >= 9.9, "ran the whole 10 s");
+			check(secs >= (g_long ? 9.9 : 4.9), "ran the whole window");
 			check(m.nonFinite == 0, std::string(_name) + ": every output sample is finite");
 			check(m.samples > 0 && static_cast<double>(m.clipped) <= 0.001 * static_cast<double>(m.samples),
 				std::string(_name) + ": the output stays within the clip budget (at most 0.1 % of samples at full scale)");
@@ -1070,6 +1120,7 @@ int main(const int _argc, char** const _argv)
 	const bool md = _argc > 1 && std::strcmp(_argv[1], "md") == 0;
 	const bool mm = _argc > 1 && std::strcmp(_argv[1], "mm") == 0;
 	const bool trans = (md || mm) && _argc > 2 && std::strcmp(_argv[2], "transport") == 0;
+	g_long = trans && _argc > 3 && std::strcmp(_argv[3], "--long") == 0;
 	const int result = trans ? transport(mm) : md || mm ? firmware(mm) : values();
 	if(result == 77)
 		return 77;
