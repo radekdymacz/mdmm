@@ -374,3 +374,6 @@ html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[dat
 .lb .vl{display:none;right:auto;left:50%;transform:translateX(-50%);background:var(--lcd);color:var(--ink)}
 .lb:hover .vl,.lb.vsel .vl{display:block}
 .lb .kvl{background:var(--key);color:var(--keytext);box-shadow:inset 0 0 0 1px var(--keytext)}
+.lb .kvl.fl{right:calc(100% + 2px)}
+/* the lock's number and the kit's never cover each other: the kit's goes while the lock's shows */
+.lb:hover .vl~.kvl,.lb.vsel .vl~.kvl{visibility:hidden}

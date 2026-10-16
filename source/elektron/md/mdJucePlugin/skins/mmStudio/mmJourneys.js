@@ -426,9 +426,13 @@ const MmJourneys = (() => {
 				screen: c => ok(S().sel === c.t && !!$1(`#lane .lb[data-s="${c.s}"] .base`), "no kit line on step " + c.s), machine: c => ok(c.s != null && c.pg >= 0, "no note or no page") },
 			{ say: "the kit line is 2 px and its number is on the lane", screen: c => { const { m } = laneMeta(), b = $1(`#lane .lb[data-s="${c.s}"] .base`), k = $1("#lane .kvl");
 					return ok(b.getBoundingClientRect().height >= 2 && !!k && k.textContent === fmt(m, getP(c.t, c.lane)), `line ${b.getBoundingClientRect().height} px, number ${k?.textContent}`); } },
+			{ say: "click exactly on the line: it is a click on the lane, the step is locked at the kit value", act: async (u, c) => { c.l0 = laneLocks(c.t, c.lane).length; c.k0 = getP(c.t, c.lane);
+					const { mx } = laneMeta(), key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), y = r.bottom - 6 - (r.height - 14) * c.k0 / mx; u.click(key, {}, 0.5, (y - r.top) / r.height); },
+				machine: c => ok(laneLocks(c.t, c.lane).some(([x, v]) => x === c.s && v === c.k0) && getP(c.t, c.lane) === c.k0, `locks ${JSON.stringify(laneLocks(c.t, c.lane))}, kit value ${c.k0}`), within: 20000 },
+			{ ...undoKey, say: "press Cmd+Z: the lock is gone", act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(laneLocks(c.t, c.lane).length === c.l0, "locks " + JSON.stringify(laneLocks(c.t, c.lane))), within: 20000 },
 			{ say: "drag the line itself: the kit value follows the pointer, no lock is drawn", act: async (u, c) => { c.l0 = laneLocks(c.t, c.lane).length; c.u0 = machine().history?.undoCount || 0; c.k0 = getP(c.t, c.lane);
 					const key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), b = $1(key + " .base").getBoundingClientRect(), y = b.top + b.height / 2, dy = y - r.top < r.height / 2 ? 30 : -30;
-					await u.drag(key, [[0, dy / 2], [0, dy]], {}, { fy: (y - r.top) / r.height, click: false, onLine: true }); },
+					await u.drag(key, [[0, dy / 2], [0, dy]], {}, { fy: (y - r.top) / r.height, click: false }); },
 				screen: c => { const { m } = laneMeta(), v = getP(c.t, c.lane), k = $1("#lane .kvl"); return ok(v !== c.k0 && !!k && k.textContent === fmt(m, v), `kit ${c.k0} -> ${v}, number ${k?.textContent}`); },
 				machine: c => { const v = wk().tracks[c.t].pages[c.pg][c.pi]; return ok(v === getP(c.t, c.lane) && v !== c.k0 && laneLocks(c.t, c.lane).length === c.l0, `machine ${v}, page ${getP(c.t, c.lane)}, was ${c.k0}; locks ${laneLocks(c.t, c.lane).length} (was ${c.l0})`); }, within: 20000 },
 			{ say: "the whole drag was one undo step", machine: c => ok((machine().history?.undoCount || 0) === c.u0 + 1, `undo steps ${c.u0} -> ${machine().history?.undoCount}`), within: 8000 },
@@ -2925,7 +2929,7 @@ const MmJourneys = (() => {
 	const lockList = () => (patDoc()?.locks || []);
 	const lockVals = (t, pg, pi) => { const l = lockList().find(x => x.track === t && x.page === pg && x.param === pi); return l ? l.steps.slice().sort((a, b) => a[0] - b[0]) : []; };
 	/* pick lane (page, index) of the selected track and draw one lock on step s at height fy */
-	const drawLock = async (u, g, i, s, fy) => { u.click(`[data-lpage="${g}"]`); await sleep(30); u.click(`.pk[data-lane="${g}.${i}"]`); await sleep(30); await u.drag(`#lane .lb[data-s="${s}"]`, [[0, -1]], {}, { fy, settle: 40, stepMs: 10 }); };
+	const drawLock = async (u, g, i, s, fy) => { u.click(`[data-lpage="${g}"]`); await sleep(30); u.click(`.pk[data-lane="${g}.${i}"]`); await sleep(30); const key = `#lane .lb[data-s="${s}"]`; await u.drag(key, [[0, -1]], {}, { fy: Journey.awayFromLine($1(key), fy), settle: 40, stepMs: 10 }); };
 	const locksJ = {
 		name: "mm-seq-locks", proves: ["MM-017", "MM-113", "MM-205", "MM-206", "MM-208"],
 		steps: [

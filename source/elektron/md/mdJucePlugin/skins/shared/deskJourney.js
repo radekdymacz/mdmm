@@ -102,13 +102,19 @@ const Journey = (() => {
 		if (!e) throw new Error("not on the page: " + q);
 		return e;
 	}
-	function pointIn(e, fx = 0.5, fy = 0.5, onLine = false) {
+	/* a lock lane key's kit-value line is grabbed by a press within 4 px of it (I-035): a press whose height the journey left
+	   to the hands (no fy) keeps 9 px away from it; a journey that passes an fy chose it, and a journey that presses
+	   where the line is does it on purpose (and for its own fy, awayFromLine) */
+	function awayFromLine(e, fy) {
+		const base = e.classList?.contains("lb") ? e.querySelector(".base") : null; if (!base) return fy;
+		const r = e.getBoundingClientRect(), b = base.getBoundingClientRect(), mid = b.top + b.height / 2;
+		return Math.abs(r.top + r.height * fy - mid) < 9 ? ((mid - r.top) / r.height > 0.5 ? 0.2 : 0.8) : fy;
+	}
+	function pointIn(e, fx = 0.5, fy) {
 		e.scrollIntoView?.({ block: "nearest", inline: "nearest" });
 		const r = e.getBoundingClientRect();
 		if (r.width < 1 || r.height < 1) throw new Error("not shown: " + describe(e));
-		/* a lock lane key's kit-value line is grabbed by a press within 4 px of it (I-035): a press meant for the lane keeps 9 px away */
-		const base = !onLine && e.classList?.contains("lb") ? e.querySelector(".base") : null;
-		if (base) { const b = base.getBoundingClientRect(), mid = b.top + b.height / 2; if (Math.abs(r.top + r.height * fy - mid) < 9) fy = (mid - r.top) / r.height > 0.5 ? 0.2 : 0.8; }
+		fy = fy === undefined ? awayFromLine(e, 0.5) : fy;
 		const x = r.left + r.width * fx, y = r.top + r.height * fy, top = document.elementFromPoint(x, y);
 		if (!top || (top !== e && !e.contains(top))) throw new Error(`${describe(e)} is covered by ${describe(top)}`);
 		return { x, y };
@@ -159,7 +165,7 @@ const Journey = (() => {
 		dblclick(q, m = {}) { u.click(q, m); const e = el(q), { x, y } = pointIn(e); me("dblclick", document.elementFromPoint(x, y), x, y, m, 0, 2); },
 		/* a press and drag: from the element's point through each [dx, dy] offset (or element), released at the last */
 		async drag(q, path, m = {}, o = {}) {
-			const e = el(q), a = pointIn(e, o.fx, o.fy, o.onLine), down = document.elementFromPoint(a.x, a.y);
+			const e = el(q), a = pointIn(e, o.fx, o.fy), down = document.elementFromPoint(a.x, a.y);
 			/* pointer capture as the browser keeps it: the element the page captured gets the moves and the release,
 			   even when a redraw replaced the element pressed (a synthetic pointer has no real capture) */
 			let captured = null; const cap0 = Element.prototype.setPointerCapture;
@@ -1068,5 +1074,5 @@ const Journey = (() => {
 				c.n = document.querySelectorAll(".pk[data-lane]").length; },
 				screen: c => ok(c.n > 0 && Object.values(c.cut).every(x => !x), `${c.n} keys; ` + Object.entries(c.cut).map(([w, x]) => `${w}: ${x || "all fit"}`).join("; ")) }]
 	});
-	return { stateDiff, pageTier, noWire, cutText, spills, overlaps, canvasProblems, lockKeysCut, lockKeysJourney, pressOutside, modalLockJourney, boxOf, keysInside, run, demo, ok, sleep, until, recent, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
+	return { stateDiff, pageTier, noWire, cutText, spills, overlaps, canvasProblems, lockKeysCut, lockKeysJourney, pressOutside, modalLockJourney, boxOf, keysInside, run, demo, ok, sleep, until, recent, u, TIERS, tierOf, awayFromLine, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
 })();

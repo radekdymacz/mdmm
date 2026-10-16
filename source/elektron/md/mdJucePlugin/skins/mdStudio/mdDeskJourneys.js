@@ -301,9 +301,13 @@ const MdJourneys = (() => {
 				screen: c => ok(S.sel === c.t && S.lane === c.p && !!$1(`#lane .lb[data-s="${c.s}"] .base`), "no kit line on step " + c.s), machine: c => ok(c.s != null && c.i >= 0, "no trig or no parameter") },
 			{ say: "the kit line is 2 px and its number is on the lane", screen: c => { const b = $1(`#lane .lb[data-s="${c.s}"] .base`), v = grp(c.t, c.p)[c.p] ?? 0, k = $1("#lane .kvl");
 					return ok(b.getBoundingClientRect().height >= 2 && !!k && k.textContent === laneFmt(v), `line ${b.getBoundingClientRect().height} px, number ${k?.textContent} for ${v}`); } },
+			{ say: "click exactly on the line: it is a click on the lane, the step is locked at the kit value", act: async (u, c) => { c.l0 = locksOf(c.t, c.i).length; c.k0 = grp(c.t, c.p)[c.p] ?? 0; c.ul = V.undoCount;
+					const key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), y = r.bottom - 3 - (r.height - 6) * c.k0 / 127; u.click(key, {}, 0.5, (y - r.top) / r.height); },
+				machine: c => ok(locksOf(c.t, c.i).some(([x, v]) => x === c.s && v === c.k0) && (grp(c.t, c.p)[c.p] ?? 0) === c.k0, `locks ${JSON.stringify(locksOf(c.t, c.i))}, kit value ${c.k0}`), within: 8000 },
+			{ ...undoKey, say: "press Cmd+Z: the lock is gone", machine: c => ok(locksOf(c.t, c.i).length === c.l0, "locks " + JSON.stringify(locksOf(c.t, c.i))), within: 8000 },
 			{ say: "drag the line itself: the kit value follows the pointer, no lock is drawn", act: async (u, c) => { c.l0 = locksOf(c.t, c.i).length; c.u0 = V.undoCount; c.k0 = grp(c.t, c.p)[c.p] ?? 0;
 					const key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), b = $1(key + " .base").getBoundingClientRect(), y = b.top + b.height / 2, dy = y - r.top < r.height / 2 ? 30 : -30;
-					await u.drag(key, [[0, dy / 2], [0, dy]], {}, { fy: (y - r.top) / r.height, click: false, onLine: true }); },
+					await u.drag(key, [[0, dy / 2], [0, dy]], {}, { fy: (y - r.top) / r.height, click: false }); },
 				screen: c => { const v = grp(c.t, c.p)[c.p], k = $1("#lane .kvl"); return ok(v !== c.k0 && !!k && k.textContent === laneFmt(v), `kit ${c.k0} -> ${v}, number ${k?.textContent}`); },
 				machine: c => { const i = c.i, d = kit()?.tracks[c.t], v = d && d[["synth", "effects", "routing"][i >> 3]][i & 7]; return ok(v === grp(c.t, c.p)[c.p] && v !== c.k0 && locksOf(c.t, c.i).length === c.l0, `machine ${v}, page ${grp(c.t, c.p)[c.p]}, was ${c.k0}; locks ${locksOf(c.t, c.i).length} (was ${c.l0})`); }, within: 8000 },
 			{ say: "the whole drag was one undo step", machine: c => ok(V.undoCount === c.u0 + 1, `undo steps ${c.u0} -> ${V.undoCount}`), within: 4000 },

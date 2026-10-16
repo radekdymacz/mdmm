@@ -8,6 +8,9 @@
 /* ===== The lock lane: draw (Alt erases), Shift: a ramp ===== */
 function laneAt(e) {
 	const d = Held.as("lane"); if (!d) return;
+	/* a press near the kit line is "maybe": moved more than KIT_MOVE px up or down it is the kit drag, released without
+	   that move it was a click on the lane (endLaneDraw) */
+	if (d.kit === "maybe") { if (Math.abs(e.clientY - d.y0) <= KIT_MOVE) return; Held.with("lane", { kit: true }); $("#lane").classList.add("kitdrag"); kitAt(e); return; }
 	if (d.kit) { kitAt(e); return; }
 	if (d.ramp) { rampAt(e); return; }
 	const lane = $("#lane"); if (!lane) return; const el = document.elementFromPoint(e.clientX, e.clientY)?.closest(".lb"); if (!el || !lane.contains(el)) return;
@@ -17,12 +20,14 @@ function laneAt(e) {
 	el.querySelector("i")?.remove(); if (!d.erase) el.insertAdjacentHTML("beforeend", barHTML(v));
 	Held.with("lane", { touched: new Set(d.touched).add(s) }); renderTop();
 }
-function endLaneDraw() { const d = Held.as("lane"); if (!d) return; if (d.ramp) rampSend(); Held.end("lane"); Gesture.end(); $("#lane")?.classList.remove("kitdrag"); refreshRow(S.sel); renderLane(); }
+function endLaneDraw() { let d = Held.as("lane"); if (!d) return;
+	if (d.kit === "maybe") { d = Held.with("lane", { kit: false, erase: false, ramp: false, touched: new Set() }); laneAt(d.down); }
+	if (d.ramp) rampSend(); Held.end("lane"); Gesture.end(); $("#lane")?.classList.remove("kitdrag"); refreshRow(S.sel); renderLane(); }
 
 /* ===== The lock lane's kit-value line (I-035): grab the line itself (a hit zone of KIT_HIT px each side of it) and
    drag: the kit value of the lane's parameter on the selected track changes, the edit the Sound page's knob makes
    (sendParam), one undo step for the drag. Nothing is locked while it is held. ===== */
-const KIT_HIT = 4;
+const KIT_HIT = 4, KIT_MOVE = 3;
 /* the line's y in a step's key (the .base: bottom 3px + (height - 6px) * kit / 127, 2 px thick) */
 function kitLineY(r) { const g = grp(S.sel, S.lane); return r.bottom - 3 - (r.height - 6) * ((g[S.lane] ?? 0) / 127) - 1; }
 /* the key under the pointer when the pointer is on its kit line, else null */
@@ -31,10 +36,10 @@ function kitHit(e) {
 	const el = e.target.closest(".lb"); if (!el || !el.querySelector(".base")) return null;
 	return Math.abs(e.clientY - kitLineY(el.getBoundingClientRect())) <= KIT_HIT ? el : null;
 }
-/* a plain press on the line begins the drag (Alt erases and Shift ramps: those stay the lane's own) */
+/* a plain press on the line may begin the drag (Alt erases and Shift ramps: those stay the lane's own) */
 function kitGrab(e) {
 	if (e.button !== 0 || e.altKey || e.shiftKey || !kitHit(e)) return false;
-	Held.begin("lane", { kit: true }); Gesture.begin(); $("#lane").classList.add("kitdrag"); grabPointer($("#lane"), e); e.preventDefault(); return true;
+	Held.begin("lane", { kit: "maybe", y0: e.clientY, down: { clientX: e.clientX, clientY: e.clientY } }); Gesture.begin(); grabPointer($("#lane"), e); e.preventDefault(); return true;
 }
 function kitAt(e) {
 	const el = $("#lane .lb"); if (!el) return; const r = el.getBoundingClientRect(), t = S.sel, g = grp(t, S.lane);
@@ -43,7 +48,7 @@ function kitAt(e) {
 	sendParam(t, g === V.tracks[t].syn ? "syn" : g === V.tracks[t].fx ? "fx" : "rt", S.lane, v);
 	/* in place: the page's renders wait for the drag (Held) */
 	$$("#lane .base").forEach(b => b.style.setProperty("--bf", (v / 127).toFixed(4)));
-	const k = $("#lane .kvl"); if (k) { k.textContent = laneFmt(v); k.style.bottom = kitLabelAt(v); }
+	const k = $("#lane .kvl"); if (k) { k.textContent = laneFmt(v); k.style.bottom = kitLabelAt(v); k.className = kitLabelCls(v); }
 	syncControls(); redraw();
 }
 
