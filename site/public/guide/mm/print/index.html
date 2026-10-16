@@ -283,7 +283,7 @@
 <div class="gd-body gd-prose"><h2>REAR PANEL</h2>
 <p>Power, the voltage selector and the fuse belong to the hardware. The editor has no counterpart.</p>
 <h4 class="gd-h3">MIDI sockets</h4>
-<p>The standalone editor has the <b class="gd-ui">AUDIO / MIDI</b> panel for its MIDI. Press <kbd class="gd-key">[,]</kbd> or choose <b class="gd-ui">AUDIO/MIDI…</b> in the engine menu. The <b class="gd-ui">MIDI</b> card lists the inputs, with a light for each that is on, and an output. A button pairs a Bluetooth MIDI device. No MIDI input is on until you switch it on there.</p>
+<p>The standalone editor has the <b class="gd-ui">AUDIO / MIDI</b> panel for its MIDI. Press <kbd class="gd-key">[,]</kbd> or choose <b class="gd-ui">AUDIO/MIDI…</b> in the engine menu. The <b class="gd-ui">MIDI</b> card lists the inputs, with a light for each that is on, and an output. A button pairs a Bluetooth MIDI device. No MIDI input is on until you switch it on there. The <b class="gd-ui">Monitor</b> row counts what came in and went out. A red line under the output warns when a virtual bus, such as an IAC bus, is both an input and the output: switch the input off or send to another bus. See &quot;MIDI and sync&quot; in the installation guide.</p>
 <p>In a plug-in the host routes MIDI. The machine's own MIDI out, which carries notes, controllers, program changes, pitch bend, pressure and clock, reaches the plug-in's MIDI output. Its SysEx never does.</p>
 <p>The editor has no MIDI THRU.</p>
 <h4 class="gd-h3">Audio inputs and outputs</h4>
@@ -1415,6 +1415,13 @@
 <div class="gd-body gd-prose"><h2>MIX BUS ROUTING</h2>
 <p><b class="gd-ui">BUS AB</b>, <b class="gd-ui">BUS CD</b> and <b class="gd-ui">BUS EF</b> are inputs that take what a bus carries. If the effect track also sends to the same bus, it replaces what was there: the line below the drawing reads &quot;INSERT&quot;. If it sends elsewhere, it takes a copy of the bus: a send. The line names the track that &quot;takes a copy&quot;.</p>
 </div></section>
+<section class="gd-sec" id="output-meters">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>OUTPUT METERS</h2>
+<p>Under each bus line of the drawing, next to its output jack, is a meter with two thin bars, left over right. It measures the output pair after the volume: A/B, C/D and E/F. The solid bar is the level, the pale bar behind it is the peak, and the thin mark is the highest peak, held for a moment before it falls. The scale runs from -60 dB at the left to 0 dB at the right. The small square at the left end fills for a few seconds after a sample went over 0 dB.</p>
+<p>The meters work only while the <b class="gd-ui">Mix</b> workspace is open. A pair the host has not switched on is dimmed.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The machine gives the editor its three stereo outputs, not each track. A track has a meter of its own only if you send it to a bus alone. Send one track to CD, for example, and the CD meter shows that track.</p></aside>
+</div></section>
 <section class="gd-sec" id="routing-modes">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-85,</span> <span>1-89</span></span></aside>
 <div class="gd-body gd-prose"><h2>ROUTING MODES</h2>
@@ -1469,16 +1476,17 @@
 <p>A track has a channel only if its channel is 15 or lower. A base channel of 16 reaches no track. When a track has no channel of its own, the card says which tracks, and that mutes and notes cannot reach them. The editor then sends their sound values as kit dumps.</p>
 <h4 class="gd-h3">MORE ON THE MONOMACHINE MIDI FUNCTIONALITY</h4>
 <p>The machine takes NRPN control and uses program change to select patterns. Automation and MIDI from a DAW reach it as they reach the machine.</p>
+<p>A note on a track's channel plays that track. Six notes sent at one moment, one on each of the six channels, play six voices. In a DAW each track also has host parameters for synthesis, amplification, filter, effects, the three LFOs, level and mute, so a lane of automation moves the knob. A program change on the base channel selects a pattern. When the host stops, the editor sends All Notes Off on every channel, so a held note ends.</p>
 <h4 class="gd-h3">CONTROL OUT1</h4>
 <p>Control out 1 sets where the notes of the sequencer, the arpeggiator and the keyboard go. The <b class="gd-ui">Control out 1</b> card has a row for each: <b class="gd-ui">Sequencer</b>, <b class="gd-ui">Arp</b> and <b class="gd-ui">Keyboard</b>. Click one of:</p>
 <ul class="gd-list"><li><b class="gd-ui">INT</b>: the internal tracks play the notes. Nothing goes to MIDI out.</li><li><b class="gd-ui">OUT</b>: the notes go to MIDI out only. The tracks make no sound.</li><li><b class="gd-ui">INT+OUT</b>: both.</li></ul>
 <p>The machine ships with INT for the sequencer and the arpeggiator, and INT+OUT for the keyboard. The sequencer sends its trigs as NRPN on the base channel. The arpeggiator and the keyboard send notes. The keyboard is the TRIG keys of the machine.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>With OUT the machine makes no sound of its own for that source. The card says so in a line under the rows. Choose INT or INT+OUT to hear it again.</p></aside>
 <h4 class="gd-h3">CONTROL OUT2</h4>
-<p>The <b class="gd-ui">Sync</b> card holds two switches for what the machine sends. <b class="gd-ui">Tempo out</b> sends the MIDI clock. <b class="gd-ui">Ctrl out</b> sends MIDI start and stop. The <b class="gd-ui">Control</b> card has <b class="gd-ui">Prg change out</b>: choosing a pattern then sends a program change on the base channel.</p>
+<p>The <b class="gd-ui">Sync</b> card holds two switches for what the machine sends. <b class="gd-ui">Tempo out</b> sends the MIDI clock. <b class="gd-ui">Ctrl out</b> sends MIDI start and stop. They go to the standalone's MIDI output, or to the plug-in's MIDI output in a DAW. Do not feed that output back into an input of the same standalone, for example one IAC bus as both: the clock then circles. The AUDIO / MIDI panel warns about it. The <b class="gd-ui">Control</b> card has <b class="gd-ui">Prg change out</b>: choosing a pattern then sends a program change on the base channel.</p>
 <h4 class="gd-h3">CONTROL IN</h4>
 <ul class="gd-list"><li><b class="gd-ui">Tempo in</b>: INT uses the machine's own tempo. EXT follows the MIDI clock.</li><li><b class="gd-ui">Ctrl in</b>: ON makes the machine react to MIDI start, stop and continue.</li><li><b class="gd-ui">Prg change in</b>: reads BASE. The machine always takes a program change on its base channel, so you cannot change it.</li></ul>
-<p>In a DAW a new plug-in sets <b class="gd-ui">Tempo in</b> to EXT and <b class="gd-ui">Ctrl in</b> to ON itself. Set <b class="gd-ui">Tempo in</b> to INT and the machine runs on its own clock there; the project keeps it.</p>
+<p>In a DAW a new plug-in sets <b class="gd-ui">Tempo in</b> to EXT and <b class="gd-ui">Ctrl in</b> to ON itself. With EXT the machine follows the host's tempo, loops and position. Set <b class="gd-ui">Tempo in</b> to INT and the machine runs on its own clock there: no clock from the host reaches it and the host's Play does not start it. The project keeps the choice. In the standalone, EXT follows the clock that arrives at a MIDI input.</p>
 <h4 class="gd-h3">MULTI MAP EDIT</h4>
 <p>The multi map starts patterns from key ranges. It is on the <b class="gd-ui">Perform</b> workspace, in multi map mode. It is stored in the global slot.</p>
 <ol class="gd-steps"><li>Press <kbd class="gd-key">[4]</kbd>.</li><li>In the <b class="gd-ui">Keyboard</b> bar, click <b class="gd-ui">Multi map</b>.</li><li>The table lists the ranges from the lowest key. Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside a range's upper key to move the limit. The last range always ends at G-9.</li><li>Choose the pattern in the <b class="gd-ui">Pattern</b> list. <b class="gd-ui">CUR</b> plays the current pattern.</li><li>Set <b class="gd-ui">OFS</b>, the first step. <b class="gd-ui">LEN</b> is the number of steps and needs an offset first. <b class="gd-ui">TRN</b> is the transpose and <b class="gd-ui">TIM</b> the timing.</li><li>Click <b class="gd-ui">Split selected range</b> to cut a range in two. Click × to delete a range.</li></ol>
@@ -1717,7 +1725,7 @@
 <section class="gd-sec" id="channels">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.B-1</span></span></aside>
 <div class="gd-body gd-prose"><h2>CHANNELS</h2>
-<p>Each track listens on its own channel: the base channel plus 0 to 5. You set the base channel and the span in GLOBAL, in the Control section (chapter 19). The on-screen keyboard, the home row keys and the roll keys use these channels.</p>
+<p>Each track listens on its own channel: the base channel plus 0 to 5. You set the base channel and the span in GLOBAL, in the Control section (chapter 19). The on-screen keyboard, the home row keys and the roll keys use these channels. Notes from a MIDI keyboard or a DAW use them too, and a note on a channel that no track listens on plays nothing.</p>
 <ol class="gd-steps"><li>Click <b class="gd-ui">GLOBAL</b> in the top bar. The panel opens with the MIDI channels.</li><li>Click the minus beside Channel span until it reads 0. No track has a channel, and the panel says so.</li><li>Close the panel and click the <b class="gd-ui">M</b> of a track on the rail. The editor refuses and offers the fix in a notice.</li><li>Open GLOBAL again and click <b class="gd-ui">Give each track its own channel</b>. The span reads 6 and <b class="gd-ui">M</b> mutes the track.</li></ol>
 <figure class="gd-shot"><img src="/guide/shots/mm-global-panel.webp" width="1440" height="924" alt="The MIDI channels in GLOBAL"><figcaption>The MIDI channels in GLOBAL</figcaption></figure>
 </div></section>
@@ -1820,12 +1828,13 @@
 <section class="gd-sec" id="program-change">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.B-6</span></span></aside>
 <div class="gd-body gd-prose"><h2>PROGRAM CHANGE</h2>
-<p>A program change selects a pattern. The firmware reacts to it when your host sends one; the editor has no control of its own for it.</p>
+<p>A program change on the base channel selects a pattern. The firmware reacts to it when your host sends one, for example from a clip. With <b class="gd-ui">Prg change out</b> on, choosing a pattern in the editor sends one out.</p>
 </div></section>
 <section class="gd-sec" id="song-pointer-clock-start-continue-stop">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.B-6</span></span></aside>
 <div class="gd-body gd-prose"><h2>SONG POINTER, CLOCK, START, CONTINUE, STOP</h2>
-<p>These system messages sync the machine to a host. The firmware handles them, and the editor uses them when it follows the host's clock.</p>
+<p>These system messages sync the machine to a host. The firmware handles them, and the editor uses them when it follows the host's clock (<b class="gd-ui">Tempo in</b> EXT). A loop in the DAW arrives as a song position and a continue. When the host stops, the editor sends All Notes Off on every channel as well. With <b class="gd-ui">Tempo in</b> on INT none of these reach the machine.</p>
+<p>The machine's own MIDI out carries notes, controllers, program changes, pitch bend, pressure, clock, start, stop and continue. It never carries SysEx.</p>
 </div></section>
 </article>
 <article class="gd-chapter" id="c23" style="page: c23">

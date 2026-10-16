@@ -523,7 +523,7 @@ namespace
 
 int main(const int _argc, char** _argv)
 {
-	std::setvbuf(stdout, nullptr, _IOLBF, 0);
+	std::setvbuf(stdout, nullptr, _IONBF, 0);
 	if(_argc < 3)
 	{
 		std::puts("usage: mdEditFlowPluginTest md|mm <ROM> [rate] [block]");

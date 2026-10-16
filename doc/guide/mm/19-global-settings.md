@@ -79,6 +79,8 @@ A track has a channel only if its channel is 15 or lower. A base channel of 16 r
 
 The machine takes NRPN control and uses program change to select patterns. Automation and MIDI from a DAW reach it as they reach the machine.
 
+A note on a track's channel plays that track. Six notes sent at one moment, one on each of the six channels, play six voices. In a DAW each track also has host parameters for synthesis, amplification, filter, effects, the three LFOs, level and mute, so a lane of automation moves the knob. A program change on the base channel selects a pattern. When the host stops, the editor sends All Notes Off on every channel, so a held note ends.
+
 ### CONTROL OUT1
 <!-- rows: MM-295 @d33887 -->
 
@@ -95,7 +97,7 @@ NOTE: With OUT the machine makes no sound of its own for that source. The card s
 ### CONTROL OUT2
 <!-- rows: MM-296 @0e638d -->
 
-The **Sync** card holds two switches for what the machine sends. **Tempo out** sends the MIDI clock. **Ctrl out** sends MIDI start and stop. The **Control** card has **Prg change out**: choosing a pattern then sends a program change on the base channel.
+The **Sync** card holds two switches for what the machine sends. **Tempo out** sends the MIDI clock. **Ctrl out** sends MIDI start and stop. They go to the standalone's MIDI output, or to the plug-in's MIDI output in a DAW. Do not feed that output back into an input of the same standalone, for example one IAC bus as both: the clock then circles. The AUDIO / MIDI panel warns about it. The **Control** card has **Prg change out**: choosing a pattern then sends a program change on the base channel.
 
 ### CONTROL IN
 <!-- rows: MM-297 MM-298 MM-299 @d414dc -->
@@ -104,7 +106,7 @@ The **Sync** card holds two switches for what the machine sends. **Tempo out** s
 - **Ctrl in**: ON makes the machine react to MIDI start, stop and continue.
 - **Prg change in**: reads BASE. The machine always takes a program change on its base channel, so you cannot change it.
 
-In a DAW a new plug-in sets **Tempo in** to EXT and **Ctrl in** to ON itself. Set **Tempo in** to INT and the machine runs on its own clock there; the project keeps it.
+In a DAW a new plug-in sets **Tempo in** to EXT and **Ctrl in** to ON itself. With EXT the machine follows the host's tempo, loops and position. Set **Tempo in** to INT and the machine runs on its own clock there: no clock from the host reaches it and the host's Play does not start it. The project keeps the choice. In the standalone, EXT follows the clock that arrives at a MIDI input.
 
 ### MULTI MAP EDIT
 <!-- rows: MM-300 MM-301 MM-302 MM-303 @a98cee -->
