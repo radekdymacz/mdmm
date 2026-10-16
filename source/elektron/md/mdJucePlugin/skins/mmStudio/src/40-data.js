@@ -60,7 +60,7 @@ const EN={"SID-6581.WAVE":["TRI","SAW","PULS","MIX","NOIS"],"SID-6581.MOD":["OFF
 const tabRuns=rows=>rows.map(([lo,t,r])=>({lo,t,r}));
 const tabAt=(tab,v)=>{let e=tab[0];for(const x of tab){if(x.lo>v)break;e=x}return e};
 /* d entries on from v's (a step past either end stays there): the entry's first value */
-const tabStep=(tab,v,d)=>{const i=tab.indexOf(tabAt(tab,v));return tab[Math.max(0,Math.min(tab.length-1,i+d))].lo};
+const tabStep=(tab,v,d)=>{const i=tab.indexOf(tabAt(tab,v)),j=i+d;return j<0||j>=tab.length?v:tab[j].lo};
 const num=t=>t.includes("/")?t.split("/").reduce((a,b)=>a/b):+t;
 /* FM+STAT and FM+PAR 1FRQ 2FRQ 3FRQ: the modulator's frequency, 24 entries. The machine writes 5/32 for 48-53, between
    3/8 and 7/16 (13/32 in four characters): the drawing takes 13/32 there. */

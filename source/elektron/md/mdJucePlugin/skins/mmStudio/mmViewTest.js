@@ -508,6 +508,11 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 		S.tracks[0].steps[1] = { n: [50], a: 0, f: 0, l: 0 }; pick(0, 1).run(); q = take();
 		check(JSON.stringify(q[0].rows[0].steps) === '[[1,{"a":1,"f":1,"l":1}]]', "a trigless trig made pitchless gets its envelopes (a trig with neither is no step): " + q.map(args).join("; "));
 		M.setSel({ t: 6, n: 1, from: 0, to: 1 }); check(!M.stepMenuItems(6, 0).some(i => i.id === "step-pitchless"), "a MIDI track has no Pitchless trig");
+		/* a range whose trigs are all pitchless switches off in one choice, empty steps in it or not */
+		S.tracks[0].steps[0] = { a: 1, f: 1, l: 1 }; S.tracks[0].steps[1] = null; M.setSel({ t: 0, n: 1, from: 0, to: 2 });
+		check(pick(0, 0).checked, "a range of pitchless trigs and an empty step is ticked");
+		pick(0, 0).run(); q = take();
+		check(q.length === 1 && q[0].rows[0].steps.length === 1 && q[0].rows[0].steps[0][0] === 0 && q[0].rows[0].steps[0][1].n?.length === 1, "...and one choice switches it off, the empty step stays empty: " + q.map(args).join("; "));
 		S.tracks[0].steps[1] = null; M.setSel({ t: 0, n: 1, from: 0, to: 1 }); S.tracks[0].steps[0] = { n: [48], a: 1, f: 1, l: 1 };
 	}
 	check(ids(M.stepMenuItems(6, 0)) === "sel-trigs step-note-off step-slide step-swing copy cut paste duplicate delete clear-step-locks step-fill-2 step-fill-4", "on a MIDI track: no trigless, no pitchless, no envelopes, no chord without a pitch");
