@@ -804,6 +804,45 @@ const MmJourneys = (() => {
 	const pdown = (q, type) => { const k = $1(q), r = k.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height * 0.8;
 		document.elementFromPoint(x, y).dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, composed: true, pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0, buttons: type === "pointerdown" ? 1 : 0, clientX: x, clientY: y })); };
 	const kbKey = (type, key) => document.body.dispatchEvent(new KeyboardEvent(type, { key, code: "Key" + key.toUpperCase(), bubbles: true, cancelable: true }));
+	/* I-003: FOLLOW PLAYED TRACK in the engine menu (off by default, kept in the editor's setup): a note from a MIDI controller
+	   (midiIn) on a synth track's channel (base + t inside CHANNEL SPAN) selects that track; another channel, and the
+	   editor's own computer keyboard, do not */
+	const followKeyLabel = () => $1('#engsel option[value="followPlayed"]')?.textContent;
+	const followPlayed = {
+		name: "mm-follow-played-track", proves: ["MM-X26"],
+		steps: [
+			go("seq"), sel(0),
+			{ say: "track 1 is selected; the engine menu says FOLLOW PLAYED TRACK: OFF", act: (u, c) => { const g = globalNow()?.channels; c.base = g?.base; c.span = g?.span; if (!(c.base <= 8 && c.span >= 5)) throw new Error("the global's channels: " + JSON.stringify(g)); },
+				screen: () => ok(S().sel === 0 && followKeyLabel() === "FOLLOW PLAYED TRACK: OFF", "track " + S().sel + ", " + followKeyLabel()), within: 6000 },
+			{ say: "off: a MIDI keyboard plays track 4's channel: the selection stays", act: async (u, c) => { window.gm.recv([{ type: "midiIn", ch: c.base + 3, note: 60, vel: 100 }]); await sleep(300); },
+				screen: () => ok(S().sel === 0, "track " + S().sel) },
+			{ say: "choose FOLLOW PLAYED TRACK in the engine menu: it reads ON", act: u => u.pick("engsel", "followPlayed"),
+				screen: () => ok(followKeyLabel() === "FOLLOW PLAYED TRACK: ON", followKeyLabel()), within: 4000 },
+			{ say: "on: a note on track 4's channel selects track 4", act: (u, c) => window.gm.recv([{ type: "midiIn", ch: c.base + 3, note: 60, vel: 100 }]),
+				screen: () => ok(S().sel === 3, "track " + S().sel), within: 2000 },
+			{ say: "a note on a channel no synth track plays (past the span): the selection stays", act: async (u, c) => { c.far = [...Array(16).keys()].find(x => x < c.base || x >= c.base + c.span); window.gm.recv([{ type: "midiIn", ch: c.far, note: 60, vel: 100 }]); await sleep(300); },
+				screen: c => ok(c.far != null && S().sel === 3, "channel " + c.far + ", track " + S().sel) },
+			{ say: "press A on the computer keyboard (the editor's own audition): the selection stays", act: async u => { blur(); u.key("a"); await sleep(300); },
+				screen: () => ok(S().sel === 3, "track " + S().sel) },
+			{ say: "a burst of 40 notes alternating track 5 and track 6, ending on 6: one selection, track 6", act: async (u, c) => { c.n = 0; const sl = window.select; window.select = t => { c.n++; sl(t); };
+					try { window.gm.recv(Array.from({ length: 40 }, (_, i) => ({ type: "midiIn", ch: c.base + 4 + (i % 2 ? 1 : 0), note: 60, vel: 100 }))); await sleep(300); } finally { window.select = sl; } },
+				screen: c => ok(S().sel === 5 && c.n === 1, "track " + S().sel + ", " + c.n + " selections") },
+			{ say: "a question open: a note for track 1 leaves the selection", act: async (u, c) => { u.pick("engsel", "reset"); await until(() => !$1("#dlg").hidden, 3000); window.gm.recv([{ type: "midiIn", ch: c.base, note: 60, vel: 100 }]); await sleep(300); },
+				screen: () => ok(S().sel === 5 && !$1("#dlg").hidden, "track " + S().sel) },
+			{ say: "close the question: a note for track 1 selects it again", act: async (u, c) => { u.key("Escape"); await until(() => $1("#dlg").hidden, 3000); window.gm.recv([{ type: "midiIn", ch: c.base, note: 60, vel: 100 }]); },
+				screen: () => ok(S().sel === 0, "track " + S().sel), within: 2000 },
+			{ say: "LEARN waiting for a note: a note for track 3 leaves the selection", act: async (u, c) => { window.GP.learn = 2; window.gm.recv([{ type: "midiIn", ch: c.base + 2, note: 60, vel: 100 }]); await sleep(300); window.GP.learn = null; },
+				screen: () => ok(S().sel === 0, "track " + S().sel) },
+			{ say: "the HW MIDI engine (the port carries the machine's own MIDI out): a note for track 3 leaves the selection", act: async (u, c) => { const m0 = machine(), hw = { ...m0, capabilities: { ...m0.capabilities, engine: "hw" } };
+					window.gm.recv([{ type: "machine", doc: hw }]); await sleep(100); window.gm.recv([{ type: "midiIn", ch: c.base + 2, note: 60, vel: 100 }]); await sleep(300); window.gm.recv([{ type: "machine", doc: m0 }]); },
+				screen: () => ok(S().sel === 0, "track " + S().sel) },
+			{ say: "a note on track 2's channel selects track 2", act: (u, c) => window.gm.recv([{ type: "midiIn", ch: c.base + 1, note: 60, vel: 100 }]),
+				screen: () => ok(S().sel === 1, "track " + S().sel), within: 2000 },
+			{ say: "choose it again: OFF; a note on track 5's channel leaves track 2 selected", act: async (u, c) => { await u.pick("engsel", "followPlayed"); await sleep(300); window.gm.recv([{ type: "midiIn", ch: c.base + 4, note: 60, vel: 100 }]); await sleep(300); },
+				screen: () => ok(followKeyLabel() === "FOLLOW PLAYED TRACK: OFF" && S().sel === 1, followKeyLabel() + ", track " + S().sel), within: 4000 }
+		],
+		async tidy(u) { if (followKeyLabel() === "FOLLOW PLAYED TRACK: ON") await u.pick("engsel", "followPlayed"); }
+	};
 	const kbLit = {
 		name: "mm-perform-keys-lit", proves: ["MM-050", "MM-X14"],
 		steps: [
@@ -3888,7 +3927,7 @@ const MmJourneys = (() => {
 	};
 	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixHeads, mixSolo, soloSaved, shiftMutes, routing, panTrim, msOff, msViews, railLamps, railLampsFwd,
-		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
+		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, followPlayed, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
 		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,

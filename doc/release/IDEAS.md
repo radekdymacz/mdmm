@@ -290,7 +290,7 @@
 
 - **From:** Discord tester B, 2026-10-07.
 - **Idea:** an option to switch the selected track (instrument focus) to the one last played from an external MIDI controller.
-- **Status:** new.
+- **Status:** done on `feat/0.8-follow-track` (WP7 of PLAN-0.8), not yet merged. Both editors: engine menu entry FOLLOW PLAYED TRACK: OFF / ON (off at first, no new control). On, a note from a MIDI controller (the plug-in's `midiIn`, host or port, never the editor's own keyboard or audition) selects the track it plays: Machinedrum, the track the Global key map gives the note on the four base channels; Monomachine, the synth track whose channel (base + t inside CHANNEL SPAN) it arrives on. Another channel or an unmapped note changes nothing. Kept with the project in the editor's setup (`followPlayed`, written only when on; no new chunk). Journeys md-follow-played-track, mm-follow-played-track; tests in mdDeskTest and mmDeskTest.
 
 ## I-002 · Show incoming notes on the Sound page
 

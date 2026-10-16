@@ -96,6 +96,7 @@ namespace mmDesk
 
 		std::function<void(const Value&)> m_saveSetup;
 		deskCore::ModEngine m_mods;
+		bool m_follow = false;	// I-003: the selected track follows the last played
 		deskCore::SoloMemo m_solo;	// the page's solo and the mutes the person had before it
 	};
 

@@ -219,6 +219,18 @@ The track you play lights up. The number of the track on the rail and its light 
 3. Hold [A] on the computer keyboard. Its key is lit while you hold it.
 4. Play a MIDI keyboard on a channel the machine plays. The keys of the notes you hold are lit, and each goes dark when you let go of it. On a channel the machine does not play, none is lit.
 
+## THE SELECTED TRACK FOLLOWS THE LAST TRACK PLAYED
+<!-- rows: MM-X26 @dde272 -->
+
+The machine has no such function. With it on, the track you select changes to the last synth track you played from a MIDI keyboard. It is off until you turn it on, and the project keeps the choice.
+
+1. Open the engine menu and choose **FOLLOW PLAYED TRACK: OFF**. It reads **FOLLOW PLAYED TRACK: ON**.
+2. Play a MIDI keyboard on the channel of track 4. Track 4 is selected.
+3. Play it on a channel no synth track plays. The selection stays where it was.
+4. Choose the entry again to turn it off.
+
+A track's channel is the base channel plus the track's number, inside the CHANNEL SPAN of the global. The keys of the computer keyboard never move the selection. With the HW MIDI engine it does nothing, since the port then carries the machine's own MIDI. While a question is open, or LEARN waits for its note, the selection stays where it is.
+
 ## THE CPU METER AND THE SPEED-UPS
 <!-- rows: MM-X15 @9cd295 -->
 
