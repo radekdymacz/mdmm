@@ -19,6 +19,7 @@
 #include "mdscheduledmidi.h"
 #include "mdstate.h"
 #include "mdSpeedUpLevers.h"
+#include "mdscreenlist.h"
 #include "mdsysextransfer.h"
 #include "mdturbomidi.h"
 #include "mdtransportdiagnostics.h"
@@ -456,6 +457,7 @@ namespace md
 		// Microcontroller, the Sim and the DSPs, which applySpeedUps drives.
 		void     applySpeedUps();
 		bool     m_speedUps = true;
+		ScreenListFix m_screenListFix;		// B-133
 		uint32_t m_speedUpLeversOff = 0;
 		bool     m_leverL1 = true;
 		bool     m_leverL2b = true;
