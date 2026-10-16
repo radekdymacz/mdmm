@@ -337,3 +337,7 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
 .perf .trksel button::before{display:none!important}
 .perf .trksel button[aria-pressed=true]{background:var(--key);color:var(--keytext);box-shadow:inset 0 -3px 0 var(--led)}
 .perf .trksel button[aria-pressed=true] small{color:var(--keytext)}
+
+/* B-164: a lock on a step without a trig is kept and drawn hollow: the machine ignores it, the page shows it */
+.ws-seq .lb.ghost{background:repeating-linear-gradient(135deg,transparent 0 4px,color-mix(in srgb,var(--ink) 14%,transparent) 4px 6px)!important;opacity:.85!important;cursor:crosshair}
+.ws-seq .lb.ghost i{background:transparent!important;outline:1.5px dashed var(--ink);outline-offset:-1px;filter:none!important}

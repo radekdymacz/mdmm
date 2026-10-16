@@ -72,21 +72,25 @@ S.tracks[TRK].steps = Array(64).fill(null);
 for (const s of TRIGS) S.tracks[TRK].steps[s] = { n: [60], a: 1, f: 1, l: 1 };
 S.locks = new Map();
 const lane = (pid, byStep) => S.locks.set(TRK + "|" + pid, new Map(Object.entries(byStep).map(([s, v]) => [+s, v])));
-const bars = pid => { S.lane = pid; S.lanePage = pid.split(".")[0]; p.renderLane(); return (laneEl.innerHTML.match(/<i style="bottom:6px;height:calc\(\(100% - 14px\)\*([0-9.]+)\)"/g) || []).map(m => +m.match(/\*([0-9.]+)\)/)[1]); };
+const draw = pid => { S.lane = pid; S.lanePage = pid.split(".")[0]; p.renderLane(); return laneEl.innerHTML; };
+/* bars: [{ s, ghost, h }] with h the bar's fraction (the CSS height is max(2px, calc(... * h))) */
+const bars = pid => [...draw(pid).matchAll(/<div class="lb ([^"]*)" data-s="(\d+)" title="([^"]*)">(.*?)<\/div>(?=<div class="lb|$)/g)]
+	.map(m => { const h = m[4].match(/<i style="[^"]*height:max\(2px,calc\(\(100% - 14px\)\*([0-9.]+)\)\)"/); return h && { s: +m[2], ghost: /\bghost\b/.test(m[1]), h: +h[1], title: m[3] }; }).filter(Boolean);
 
-/* 1. a lock on a step with no trig (a machine's backup holds such locks): counted by the panel, drawn nowhere */
+/* 1. a lock on a step with no trig (a machine's backup holds such locks): kept, and drawn as a ghost bar */
 lane("AMP.0", { 2: 90, 10: 90, 18: 90, 26: 90 });
 lane("AMP.2", { 3: 90, 11: 90, 19: 90, 27: 90 });
 const counted = pid => S.locks.get(TRK + "|" + pid)?.size || 0;	// the panel's number (70-seq.js, the rail)
-check(bars("AMP.0").length === counted("AMP.0"), "ATK: the 4 counted locks are 4 bars");
-const decBars = bars("AMP.2").length, decCount = counted("AMP.2");
-check(decBars === decCount,
-	"DEC: the panel counts " + decCount + " locks, the lane draws " + decBars + " bars (locks on steps without a trig are neither shown nor flagged)");
+check(bars("AMP.0").length === counted("AMP.0") && bars("AMP.0").every(b => !b.ghost), "ATK: the 4 counted locks are 4 solid bars");
+const dec = bars("AMP.2");
+check(dec.length === counted("AMP.2") && dec.every(b => b.ghost), "DEC: the 4 locks on steps without a trig are 4 ghost bars (" + dec.length + " drawn, " + dec.filter(b => b.ghost).length + " ghost)");
+check(dec.every(b => /without a trig: the machine ignores it/.test(b.title)), "a ghost bar's tooltip says the machine ignores it");
+check(counted("AMP.2") === 4 && S.locks.has(TRK + "|AMP.2"), "the locks stay in the data (nothing is dropped)");
 
-/* 2. a lock of 0 is a bar of no height: it must still be seen */
+/* 2. a lock of 0 is a bar of no height by value: it keeps a minimum mark (CSS max(2px, ...)) */
 lane("AMP.5", { 2: 0, 10: 0, 18: 0, 26: 0 });
 const vol = bars("AMP.5");
-check(vol.length === 4 && vol.every(h => h > 0), "VOL locked to 0: a bar the eye can see (heights " + vol.join(" ") + ")");
+check(vol.length === 4 && vol.every(b => !b.ghost) && /max\(2px,/.test(draw("AMP.5")), "VOL locked to 0: four bars with a 2 px minimum");
 
 console.log(failures ? `mmLockLaneTest: ${failures} failure(s)` : "mmLockLaneTest: PASS");
 process.exit(failures ? 1 : 0);
