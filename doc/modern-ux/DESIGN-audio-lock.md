@@ -95,6 +95,28 @@ alone: 159 passed, 0 failed. mdSysexLifecycleTest needs the Monomachine factory 
 gate says the same). Not done: the ticket echo of the design's command (callers read the device's own pending facts,
 `panelPending`), `missedBlocks` (step 5).
 
+### The seqlock test failures of 2026-10-16
+
+synthLibSeqlockTest failed on the Windows CI (72 and then 3017 "torn" reads), on the Linux CI (310) and once on macOS
+under load. `synthLib::Seqlock` (source/synthLib/seqlock.h) was not at fault: the writer stores the odd sequence, a
+release fence, the words as relaxed atomics, the even sequence with release; the reader loads the sequence with
+acquire, the words relaxed, an acquire fence, the sequence again. That is Boehm's seqlock: a reader that saw a word of
+a newer write sees, through the fence pair, that write's odd sequence, so it retries; no plain memory is shared. The
+two hand-made seqlocks of the working kit (mddeskdevice.cpp `publishWorkingKit`, mmtelemetry.h) follow the same order.
+
+The test was wrong. Every "torn" value printed whole was all zeros: the constructor's `T{}`, which the readers read
+when they ran before the writer thread's first write. The test called a value whole only when it equalled `make(n)`,
+and `make(0)` is not `T{}`, so how many it counted depended on how late the writer thread started (more on a busy
+runner). Now `T{}` counts as whole and the test also checks that a read is never older than the last write that had
+completed when it began, runs a second case of two writers serialised by a mutex (as Plugin's lock holders are) with
+more readers than cores, a 13-byte value, and a ThreadSanitizer build of the same file (synthLibSeqlockTsanTest, where
+the compiler has it). A mutant that skips the reader's re-check fails it at once (604 torn in 200 ms). Locally: 500
+runs under load 185 to 255 and 50 TSan runs, none failed.
+
+Writers: the only writer of the machine facts is the FactsCallback (mdPluginProcessor.cpp), called from
+`Plugin::publishFacts` by a `PublishOnExit` that every site declares after its `LockScope` (or, in `process`, after
+the lock is taken), so it runs while `m_lock` is held: one writer at a time, as the seqlock asks.
+
 ## Problem
 
 `synthLib::Plugin::process` (plugin.cpp, the audio thread) takes `m_lock`, a blocking `std::recursive_mutex`. The
