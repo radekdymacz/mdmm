@@ -200,32 +200,32 @@ const SongSlots = (() => {
    short as it can be: the tempo as a number, mutes as "M" and their count, the row's transpose as +2 / -3, per-track
    transpose (MM) as "T±". A row with none gets nothing, so a plain song looks as it did. The full detail is for the
    cell's tooltip. A cell can be as narrow as 22 px (it is not wider than its pattern name), so the words cannot
-   always fit: the same marks are also four tiny pips along the cell's foot (tempo ●, mutes ■, transpose ▲, a track
-   of its own ○), and fit() shows the words when every cell has room for them and the pips when one has not: nothing
-   is ever cut and no cell changes its height. Pure apart from fit(): a row in (MD: bpm, mutes; MM: also trn, ttr,
+   always fit: the same marks are also short letter codes in the same small line (B tempo, M mutes, ± the row's
+   transpose, T single tracks, in that order, e.g. "BM±"), and fit() shows the words when every cell has room for them
+   and the codes when one has not: nothing is ever cut and no cell changes its height. Pure apart from fit(): a row in (MD: bpm, mutes; MM: also trn, ttr,
    64 = no transpose), text out. Tested in node by deskSongMarksTest.js. */
 const SongMarks = (() => {
 	const sgn = n => (n > 0 ? "+" : "") + n;
 	/* kind "md": mute k is "Track k+1"; "mm": 0-5 are T1-T6, 6-11 are M1-M6 (the machine's MIDI tracks) */
 	const muteName = (kind, k) => kind === "mm" ? (k < 6 ? "T" + (k + 1) : "M" + (k - 5)) : "Track " + (k + 1);
 	function marks(r, kind) {
-		if (!r || r.type) return { text: "", title: "", any: false, pips: "" };
-		const text = [], tip = []; let pips = "";
-		if (r.bpm) { text.push(String(r.bpm)); tip.push("Tempo " + r.bpm + " BPM"); pips += "b"; }
+		if (!r || r.type) return { text: "", title: "", any: false, codes: "" };
+		const text = [], tip = []; let codes = "";
+		if (r.bpm) { text.push(String(r.bpm)); tip.push("Tempo " + r.bpm + " BPM"); codes += "B"; }
 		const mutes = (r.mutes || []).slice().sort((a, b) => a - b);
-		if (mutes.length) { text.push("M" + mutes.length); tip.push("Muted: " + mutes.map(k => muteName(kind, k)).join(", ")); pips += "m"; }
+		if (mutes.length) { text.push("M" + mutes.length); tip.push("Muted: " + mutes.map(k => muteName(kind, k)).join(", ")); codes += "M"; }
 		const trn = (r.trn ?? 64) - 64;
-		if (trn) { text.push(sgn(trn)); tip.push("Transpose " + sgn(trn)); pips += "t"; }
+		if (trn) { text.push(sgn(trn)); tip.push("Transpose " + sgn(trn)); codes += "±"; }
 		const ttr = (r.ttr || []).map((v, k) => [k, v - 64]).filter(([, d]) => d);
-		if (ttr.length) { text.push("T±"); tip.push("Per track: " + ttr.map(([k, d]) => muteName(kind, k) + " " + sgn(d)).join(", ")); pips += "k"; }
-		return { text: text.join(" "), title: tip.join(" · "), any: text.length > 0, pips };
+		if (ttr.length) { text.push("T±"); tip.push("Per track: " + ttr.map(([k, d]) => muteName(kind, k) + " " + sgn(d)).join(", ")); codes += "T"; }
+		return { text: text.join(" "), title: tip.join(" · "), any: text.length > 0, codes };
 	}
-	/* the cell's markup: the words and the pips in one element (a click on it opens Row > More); "" for a plain row */
+	/* the cell's markup: the words and the codes in one element (a click on it opens Row > More); "" for a plain row */
 	function html(r, kind) {
 		const m = marks(r, kind);
-		return m.any ? `<i class="rmk" data-rowmarks="1"><span class="rt">${m.text}</span><span class="rg">${[...m.pips].map(c => `<u class="p${c}"></u>`).join("")}</span></i>` : "";
+		return m.any ? `<i class="rmk" data-rowmarks="1"><span class="rt">${m.text}</span><span class="rg">${m.codes}</span></i>` : "";
 	}
-	/* the words when each cell's small line holds them, else the pips (re-run after a render and when the page resizes) */
+	/* the words when each cell's small line holds them, else the codes (re-run after a render and when the page resizes) */
 	function fit(grid) {
 		if (!grid) return;
 		grid.classList.add("rmkwide");
