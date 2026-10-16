@@ -136,6 +136,13 @@ namespace md
 		// The ROM image, shared: a state capture keeps it alive while it encodes outside the device lock
 		std::shared_ptr<const Rom> sharedRom() const { return m_rom; }
 		bool flashDirty() const { return m_uc.flashDirty(); }
+		// Microcontroller::flashWrites: copies of the flash taken in parts check it did not move meanwhile
+		uint64_t flashWrites() const { return m_uc.flashWrites(); }
+		// The patch RAM copyPatchRam would give is _data (compared in place: no 1 MiB copy under the device lock)
+		bool patchRamEquals(const std::vector<uint8_t>& _data) const;
+		// factoryFlashBaseline() would give one (the factory flash is ready and its cache or capture is there),
+		// without making it: for the facts the audio thread publishes
+		bool hasFactoryFlashBaseline() const;
 		bool factoryFlashCacheReady();
 		bool isFactoryFlashCacheReady() const
 		{

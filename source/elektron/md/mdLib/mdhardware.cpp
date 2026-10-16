@@ -659,6 +659,20 @@ namespace md
 		return m_pendingFlashOverlay.valid ? m_pendingPatchRam : m_uc.copyPatchRam();
 	}
 
+	bool Hardware::patchRamEquals(const std::vector<uint8_t>& _data) const
+	{
+		std::lock_guard lock(m_factoryFlashMutex);
+		return m_pendingFlashOverlay.valid ? m_pendingPatchRam == _data : m_uc.patchRamEquals(_data);
+	}
+
+	bool Hardware::hasFactoryFlashBaseline() const
+	{
+		if(!m_factoryFlashReady.load(std::memory_order_acquire))
+			return false;
+		std::lock_guard lock(m_factoryFlashMutex);
+		return m_factoryBaseline || !m_factoryFlashCache.empty() || !m_factoryFlashBaseline->empty();
+	}
+
 	void Hardware::copyPatchRamTo(std::vector<uint8_t>& _out) const
 	{
 		std::lock_guard lock(m_factoryFlashMutex);

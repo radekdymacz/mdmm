@@ -195,6 +195,13 @@ namespace md
 			size_t _size) const;
 		bool flashDirty() const { return m_flashDirty; }
 		uint64_t flashIdleCycles() const;
+		// Every change of the flash's bytes counted (a programmed word, an erased sector, a replaced or exchanged
+		// image): a copy taken in parts is the flash of one moment when this did not move while it was taken.
+		// Under the owning Plugin device lock, like the writes.
+		uint64_t flashWrites() const { return m_flashWrites; }
+		size_t flashSize() const { return m_flashData.size(); }
+		// The patch RAM is _data, compared in place (no copy)
+		bool patchRamEquals(const std::vector<uint8_t>& _data) const;
 		// Optional diagnostic observation of decoded NOR operations. The observer
 		// runs synchronously under the flash lock and must not reenter this device.
 		using FlashOperationObserver = std::function<void(const FlashCommandDecoder::Operation&, uint64_t)>;
@@ -259,6 +266,7 @@ namespace md
 		mutable std::shared_mutex m_flashMutex;
 		bool m_flashDirty = false;
 		uint64_t m_lastFlashWriteCycle = 0;
+		uint64_t m_flashWrites = 0;		// flashWrites()
 
 		Sim m_sim;	// on-chip SIM peripheral window (MBAR base 0x300000)
 		struct MidiTxBuffer

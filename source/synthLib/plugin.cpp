@@ -190,42 +190,76 @@ namespace synthLib
 		if(!_device)
 			return;
 
-		std::lock_guard lock(m_lock);
-
+		// DESIGN-audio-lock.md step 1: the long parts (the old device's state, the new device's Hardware built from
+		// it) run without the lock; the audio thread waits only for the swap. In the same order as before: the new
+		// device's sample rate and latency, then the state, then the plug-in's audio set up for it.
 		std::vector<uint8_t> deviceState;
 		getState(deviceState, StateTypeGlobal);
 
-		delete m_device;
-
-		m_device = _device;
-
-		configureDeviceAudio();
+		float deviceSamplerate = 0.0f;
+		uint32_t extraLatency = 0;
+		bool latencyKnown = false;
+		{
+			std::lock_guard lock(m_lock);
+			deviceSamplerate = m_deviceSamplerate;
+			latencyKnown = m_blockSize > 0 && m_hostSamplerate > 0;
+			if(latencyKnown)
+				extraLatency = static_cast<uint32_t>(std::min<uint64_t>(rescaleSamplesCeil(uint64_t(m_blockSize) * m_extraLatencyBlocks,
+					m_hostSamplerate, _device->getSamplerate()), std::numeric_limits<uint32_t>::max()));
+		}
+		_device->setSamplerate(deviceSamplerate);
+		if(latencyKnown)
+			_device->setExtraLatencySamples(extraLatency);
+#if !SYNTHLIB_DEMO_MODE
 		if(!deviceState.empty())
-			setState(deviceState);
+			setStateUnshared(*_device, deviceState);
+#endif
 
-		// MIDI clock has to send the start event again, some device find it confusing and do strange things if there isn't any
-		m_midiClock.restart();
+		Device* retired = nullptr;
+		{
+			std::lock_guard lock(m_lock);
+			retired = m_device;
+			m_device = _device;
+			++m_deviceGeneration;
 
+			configureDeviceAudio();
+
+			// MIDI clock has to send the start event again, some device find it confusing and do strange things if there isn't any
+			m_midiClock.restart();
+		}
+		delete retired;
 	}
 
 #if !SYNTHLIB_DEMO_MODE
 	bool Plugin::getState(std::vector<uint8_t>& _state, StateType _type) const
 	{
+		// The capture begins under the lock and takes the rest a part per hold (StateCapture::captureMore), the lock
+		// released between; a device replaced meanwhile begins it again on the new one.
 		std::unique_ptr<Device::StateCapture> capture;
+		uint64_t capturing = 0;
+		for(;;)
 		{
+			std::unique_ptr<Device::StateCapture> retired;	// dropped after the lock is released
 			std::lock_guard lock(m_lock);
 
 			if(!m_device)
 				return false;
 
-			capture = m_device->beginStateCapture(_type);
-			if(!capture)
+			if(!capture || capturing != m_deviceGeneration)
 			{
-				_state.push_back(g_stateVersion);
-				_state.push_back(_type);
+				retired = std::move(capture);
+				capturing = m_deviceGeneration;
+				capture = m_device->beginStateCapture(_type);
+				if(!capture)
+				{
+					_state.push_back(g_stateVersion);
+					_state.push_back(_type);
 
-				return m_device->getState(_state, _type);
+					return m_device->getState(_state, _type);
+				}
 			}
+			if(!capture->captureMore())
+				break;
 		}
 		// The device encodes from what it captured, without the process/device lock the audio thread needs. The
 		// capture may own copies of whole memories: it is destroyed here too, after the lock is released.
@@ -233,6 +267,23 @@ namespace synthLib
 		_state.push_back(_type);
 
 		return capture->encode(_state);
+	}
+
+	bool Plugin::setStateUnshared(Device& _device, const std::vector<uint8_t>& _state)
+	{
+		if(_state.empty())
+			return false;
+		if(_state.size() < 2 || _state[0] != g_stateVersion)
+			return _device.setStateFromUnknownCustomData(_state);
+		const auto stateType = static_cast<StateType>(_state[1]);
+		const std::vector<uint8_t> state(_state.begin() + 2, _state.end());
+		if(!_device.supportsStateTransactions())
+			return _device.setState(state, stateType);
+		auto transaction = _device.beginStateTransaction(std::make_shared<const std::vector<uint8_t>>(state), stateType);
+		if(!transaction)
+			return false;
+		const auto preparationSucceeded = transaction->prepare();
+		return _device.finishStateTransaction(*transaction) && preparationSucceeded;
 	}
 
 	bool Plugin::setState(const std::vector<uint8_t>& _state) const
