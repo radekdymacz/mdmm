@@ -7,17 +7,25 @@
 #include "mdOutputLevel.h"
 #include "mdMachineMemory.h"
 #include "mdMachineMemoryService.h"
+#include "mdMachineFacts.h"
 
 #include <functional>
 #include "mdLib/mdtypes.h"
 #include "synthLib/performanceReport.h"
+#include "synthLib/seqlock.h"
 
 #include <atomic>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <mutex>
 #include <vector>
+
+namespace md
+{
+	class FrontPanelPublisher;
+}
 
 namespace mdJucePlugin
 {
@@ -45,6 +53,9 @@ namespace mdJucePlugin
 	    ~AudioPluginAudioProcessor() override;
 
 		md::MachineModel getModel() const { return m_model; }
+		// The machine's facts as the audio thread (or the last locked call) published them, without the device lock
+		// (mdMachineFacts.h, DESIGN-audio-lock.md step 2). Any thread.
+		MachineFacts machineFacts() const { return m_facts->read(); }
 		static md::MachineModel getCompiledProductModel();
 		static bool hasEmbeddedProductResource(std::string_view _filename);
 		juce::File getStorageRecoveryImage() const;
@@ -173,6 +184,9 @@ namespace mdJucePlugin
 		void reportProjectStateRestoreFailure(const std::string& _error);
 		void timerCallback() override;
 
+		const std::shared_ptr<synthLib::Seqlock<MachineFacts>> m_facts = std::make_shared<synthLib::Seqlock<MachineFacts>>();
+		uint64_t m_startupPanelDevice = 0;	// the device m_startupPanel belongs to (recordStandaloneStartupDiagnostics)
+		std::shared_ptr<md::FrontPanelPublisher> m_startupPanel;
 		std::unique_ptr<synthLib::PerformanceReport> m_performanceReport;
 		juce::File m_performanceReportFile;
 		bool m_performanceFolderError = false;
