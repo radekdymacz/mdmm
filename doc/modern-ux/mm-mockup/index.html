@@ -2886,6 +2886,33 @@ const LMULT=["1X","2X","4X","8X","16X","32X","64X"];
 const CONS=["-","B","D","F","G","H","J","K","L","M","N","P","R","RR","S","SJ","T","TH","TJ","V","Z"];
 const EN={"SID-6581.WAVE":["TRI","SAW","PULS","MIX","NOIS"],"SID-6581.MOD":["OFF","RING","SYNC","R+S"],"SID-6581.MSRC":["MFRQ","PRCH"],
  PWRS:["OFF","ON"],WPRS:["OFF","ON"],STON:["OFF","ON"],"V-SW":["OFF","ON"],CONS};
+/* Value lists the machine shows (B-149): a value is 0-127 and goes to the machine as it is; the page shows
+   the entry it falls in, as the LCD writes it, and a step (wheel, arrows) moves one entry. An entry is {lo, t, r}: from
+   value lo up to the next entry's lo, the text t, and r what a drawing needs (a ratio, semitones, a wave's index). Read
+   on OS 1.32B from the LCD, every value 0-127 sent as its CC and the screen read back (mmEditorProbeFirmwareTest enums,
+   2026-10-16; a CC writes the kit's byte as it is). */
+const tabRuns=rows=>rows.map(([lo,t,r])=>({lo,t,r}));
+const tabAt=(tab,v)=>{let e=tab[0];for(const x of tab){if(x.lo>v)break;e=x}return e};
+/* d entries on from v's (a step past either end stays there): the entry's first value */
+const tabStep=(tab,v,d)=>{const i=tab.indexOf(tabAt(tab,v));return tab[Math.max(0,Math.min(tab.length-1,i+d))].lo};
+const num=t=>t.includes("/")?t.split("/").reduce((a,b)=>a/b):+t;
+/* FM+STAT and FM+PAR 1FRQ 2FRQ 3FRQ: the modulator's frequency, 24 entries. The machine writes 5/32 for 48-53, between
+   3/8 and 7/16 (13/32 in four characters): the drawing takes 13/32 there. */
+const FMFRQ=tabRuns([[0,"1/64"],[6,"1/32"],[11,"1/16"],[16,"3/32"],[22,"1/8"],[27,"3/16"],[32,"1/4"],[38,"5/16"],[43,"3/8"],[48,"5/32",13/32],[54,"7/16"],[59,"1/2"],
+ [64,"5/8"],[70,"3/4"],[75,"7/8"],[80,"1"],[86,"1.25"],[91,"1.5"],[96,"1.75"],[102,"2"],[107,"2.5"],[112,"3"],[118,"3.5"],[123,"4"]].map(([lo,t,r])=>[lo,t,r??num(t)]));
+/* FM+DYN 1FRQ and 2FRQ: a text per value. 1FRQ is value / 64 (0.0 to 1.54, 2.0 at 40); 2FRQ a curve (0.0 to 2.39, 4.0 at
+   40). On 11-40 (but 21 and 32) the machine writes the decimal point one place (1FRQ) or two places (2FRQ) to the right:
+   1.56 there is 0.156 (between 5/32 at 10 and .171 at 21). The drawing takes the number in line. */
+const dynTab=(texts,div)=>texts.split(" ").map((t,lo)=>{let r=num(t);if(lo>=11&&lo<=40&&r>=1)r/=div;return{lo,t,r}});
+const FMDYN1=dynTab("0.0 1/64 1/32 .046 1/16 .078 3/32 .109 1/8 .140 5/32 1.56 1.57 1.59 1.60 1.62 1.64 1.65 1.67 1.68 1.70 .171 1.71 1.73 1.75 1.76 1.78 1.79 1.81 1.82 1.84 1.85 "+
+ "3/16 1.87 1.89 1.90 1.92 1.93 1.95 1.96 2.0 .203 .218 .234 1/4 .265 .281 .296 5/16 .328 .343 .359 3/8 .390 .406 .421 7/16 .453 .468 .484 1/2 .515 .531 .546 "+
+ "9/16 .578 .593 .609 5/8 .640 .656 .671 .687 .703 .718 .734 3/4 .765 .781 .796 .812 .828 .843 .859 7/8 .890 .906 .921 .937 .953 .968 .984 1.0 1.01 1.03 1.04 "+
+ "1.06 1.07 1.09 1.10 1.12 1.14 1.15 1.17 1.18 1.20 1.21 1.23 1.25 1.26 1.28 1.29 1.31 1.32 1.34 1.35 1.37 1.39 1.40 1.42 1.43 1.45 1.46 1.48 1.5 1.51 1.53 1.54",10);
+const FMDYN2=dynTab("0.0 .000 .001 .002 .003 .006 .008 .011 1/64 .019 .024 2.44 2.49 2.54 2.59 2.64 2.69 2.74 2.79 2.84 2.90 .029 2.95 3.0 3.06 3.11 3.17 3.22 3.28 3.34 3.39 3.45 "+
+ ".035 3.51 3.57 3.63 3.69 3.75 3.81 3.87 4.0 .041 .047 .054 1/16 .070 .079 .088 .097 .107 .118 .129 9/64 .152 .165 .177 .191 .205 .219 .234 1/4 .265 .282 .299 "+
+ ".316 .334 .352 .371 .390 .410 .430 .451 .472 .494 .516 .539 9/16 .586 .610 .635 .660 .685 .711 .738 .765 .793 .821 .849 .878 .908 .938 .968 1.0 1.03 1.06 1.09 "+
+ "1.12 1.16 1.19 1.23 1.26 1.30 1.33 1.37 1.41 1.44 1.48 1.52 1.56 1.60 1.64 1.68 1.72 1.76 1.80 1.84 1.89 1.93 1.97 2.02 2.06 2.11 2.15 2.20 2.25 2.29 2.34 2.39",100);
+const TAB={"FM+STAT.1FRQ":FMFRQ,"FM+STAT.2FRQ":FMFRQ,"FM+PAR.1FRQ":FMFRQ,"FM+PAR.2FRQ":FMFRQ,"FM+PAR.3FRQ":FMFRQ,"FM+DYN.1FRQ":FMDYN1,"FM+DYN.2FRQ":FMDYN2};
 /* B-148: the filter envelope's BOFS and WOFS are -64 to +63 on the machine (OS 1.32B LCD at both ends; 64 = no sweep) */
 const SIGNED=new Set(["PAN","EQG","DIST","DSND","TUNE","PB","BOFS","WOFS"]);
 const DEFV={SYN:[0,0,0,0,0,0,0,64],AMP:[0,40,64,20,64,100,64,0],FLT:[0,127,0,0,0,40,0,0],EFX:[64,64,0,32,64,0,0,127],LFO:[2,1,1,0,1,32,0,0],MID:[64,100,64,0,0,0,0,0]};
@@ -2936,13 +2963,13 @@ function pidLabel(t,pid){const[pg]=pid.split(".");return pg+" "+pname(t,pid)}
 function destNames(t,pidx){const pg=LPAGES[pidx];if(pg==="PTCH")return PTCHD;if(pg==="MID")return FIXED.MID;const a=[...pnames(t,pg)].map(n=>n||"—");while(a.length<8)a.push("—");return a}
 function meta(t,pg,i){const tr=trk(t),name=pnames(t,pg)[i];
  if(pg.startsWith("LF")){if(i===0)return{name,en:LPAGES};if(i===1)return{name,en:destNames(t,tr.v[pg][0])};if(i===2)return{name,en:LTRIG};if(i===3)return{name,en:LWAVE};if(i===4)return{name,en:LMULT};return{name,max:127}}
- if(pg==="SYN"){const en=EN[tr.m+"."+name]||EN[name];if(en)return{name,en};if(tr.m==="DPRO-WAVE"&&name==="WAVE")return{name,max:31}}
+ if(pg==="SYN"){const tab=TAB[tr.m+"."+name];if(tab)return{name,max:127,tab};const en=EN[tr.m+"."+name]||EN[name];if(en)return{name,en};if(tr.m==="DPRO-WAVE"&&name==="WAVE")return{name,max:31}}
  return{name,max:127,signed:SIGNED.has(name)||(pg==="SYN"&&/^PCH/.test(name))}}
 /* LEN (P7): a click steps a page and goes round (16 32 48 64 16 ...), shift-click back; a scroll one step, 2-64.
    It used to stop at 64: a click on the factory patterns' LEN 64 did nothing. */
 function lenStep(len,d,fine){if(fine)return clamp(len+d,2,64);const p=Math.ceil(len/16)+d;return(((p-1)%4+4)%4+1)*16}
 const maxOf=m=>m.en?m.en.length-1:m.max;
-function fmt(m,v){if(v==null)return"—";if(m.en)return m.en[clamp(v,0,m.en.length-1)];if(m.signed){const d=v-64;return(d>0?"+":"")+d}return String(v)}
+function fmt(m,v){if(v==null)return"—";if(m.tab)return tabAt(m.tab,v).t;if(m.en)return m.en[clamp(v,0,m.en.length-1)];if(m.signed){const d=v-64;return(d>0?"+":"")+d}return String(v)}
 function getP(t,pid){const[pg,i]=pid.split(".");return trk(t).v[pg]?.[+i]}
 function lkKey(t,pid){return t+"|"+pid}
 function setLock(t,pid,s,v,quiet){const k=lkKey(t,pid);if(!S.locks.has(k)){if(S.locks.size>=62){if(!quiet)toast("All 62 locked parameters are in use. Clear one before you lock a new parameter.");return false}S.locks.set(k,new Map())}S.locks.get(k).set(s,v);return true}
@@ -6051,6 +6078,8 @@ function setV(el,v){const[o,n,m,t,g]=ref(el);v=clamp(Math.round(v),g==="arp"&&n=
  if(g.startsWith("LF")&&(+el.dataset.n<2)){if(+el.dataset.n===0)o[1]=0;render();return}
  if(g==="arp"&&n==="len")renderArp();
  syncControls();redraw()}
+/* a step of a value box (wheel, arrows): d values, or on a list the machine shows (B-149) d entries */
+function stepV(el,d){const m=ref(el)[2],v=getV(el);setV(el,m.tab?tabStep(m.tab,v,d):v+d)}
 function pc(g,n,{t,label,cls="",extra=""}={}){if(n==null)return`<div class="pc empty" aria-hidden="true"></div>`;
  return`<div class="pc ${cls}" role="slider" tabindex="0" data-g="${g}" data-n="${n}"${t!=null?` data-t="${t}"`:""} ${extra} aria-label="${label||n}"><span>${label||n}</span><b></b></div>`}
 function page8(t,pg){const names=pnames(t,pg);return Array.from({length:8},(_,i)=>names[i]?pc(pg,i,{t,label:names[i]}):pc(0,null)).join("")}
@@ -6207,7 +6236,7 @@ function barHTML(v){const{mx,bip}=laneMeta(),f=v/mx;if(bip)return f>=.5?`<i clas
  return`<i style="bottom:6px;height:calc(${IN}*${f.toFixed(4)})"></i>`}
 function baseHTML(v,mx){return`<div class="base" style="bottom:calc(6px + ${IN}*${(v/mx).toFixed(4)})"></div>`}
 function renderLane(){const lane=$("#lane");if(!lane)return;const t=S.sel,tr=trk(t),pid=S.lane,[pg,i]=pid.split("."),m=meta(t,pg,+i),mx=maxOf(m),lm=S.locks.get(lkKey(t,pid)),base=getP(t,pid);
- const sc=$("#lanescale");if(sc)sc.textContent=m.en?`${m.en[0]}…${m.en[mx]}`:m.signed?"−64…+63":"0–127";
+ const sc=$("#lanescale");if(sc)sc.textContent=m.tab?`${m.tab[0].t}…${m.tab[m.tab.length-1].t}`:m.en?`${m.en[0]}…${m.en[mx]}`:m.signed?"−64…+63":"0–127";
  lane.innerHTML=`<div class="lbscale"><b>${fmt(m,mx)}</b><span>${fmt(m,base)}<small>kit</small></span><b>${fmt(m,0)}</b></div>`+steps().map(s=>{const st=tr.steps[s],on=st&&!st.off,v=lm?.get(s);
   return`<div class="lb ${on?"":"none"} ${on?"k-"+(isMidiT(t)?"full":stepKind(st)):""} ${gapC(s)} " data-s="${s}" title="${on?(v!=null?"Locked "+fmt(m,v):"Kit value "+fmt(m,base)):"No trig here: add one (a trigless trig with alt-click keeps the envelopes quiet)"}">${on?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${v!=null?barHTML(v):""}`:""}</div>`}).join("");
  requestAnimationFrame(drawSlides)}
@@ -6482,7 +6511,7 @@ const wheelHeld=()=>!!wheelLock&&performance.now()-wheelLock.at<WHEEL_RUN_MS;
 $("#main").addEventListener("wheel",e=>{const el=e.target.closest("#lane .lb");if(!el||S.ws!=="seq")return;const t=S.sel,s=+el.dataset.s,st=trk(t).steps[s],d=e.deltaY||(e.shiftKey?e.deltaX:0);
  if(!d||!st||st.off)return;e.preventDefault();const[pg,i]=S.lane.split("."),m=meta(t,pg,+i),mx=maxOf(m),now=performance.now(),key=t+"|"+S.lane+"|"+s;
  if(!wheelLock||wheelLock.key!==key||now-wheelLock.at>WHEEL_RUN_MS){commit();wheelLock={key}}wheelLock.at=now;clearTimeout(wheelEndT);wheelEndT=setTimeout(showHeld,WHEEL_RUN_MS+10);
- const had=S.locks.get(lkKey(t,S.lane))?.get(s),cur=had??getP(t,S.lane)??0,v=clamp(cur+(d<0?1:-1)*(e.shiftKey||mx<16?1:4),0,mx);if(had!=null&&v===had)return;
+ const had=S.locks.get(lkKey(t,S.lane))?.get(s),cur=had??getP(t,S.lane)??0,v=m.tab?tabStep(m.tab,cur,d<0?1:-1):clamp(cur+(d<0?1:-1)*(e.shiftKey||mx<16?1:4),0,mx);if(had!=null&&v===had)return;
  if(!setLock(t,S.lane,s,v))return;edit("lock",{t,...pidArgs(S.lane),s,v});renderTop();renderLane();toast(`${pidLabel(t,S.lane)} ${fmt(m,v)} · ${tLabel(t)}, step ${s+1}`)},{passive:false});
 
 /* ---- a ramp in the lock lane: ⇧-drag draws a straight line from the press to the pointer, shown as it moves; at
@@ -7438,11 +7467,14 @@ ED.rtrg={geo(W){const n=sv("RTRG"),dt=(6+u7(sv("RTIM"))*(W*.3));return{n:n>=127?
  draw(g,W,H){const G=this.geo(W),ink=cssv("--ink");grid(g,W,H);railDraw(g,W,H);for(let k=0;k<=G.n;k++){const x=10+k*G.dt;if(x>W-4)break;const h=(H-38)*Math.pow(.86,k);g.fillStyle=ink;g.fillRect(x,H-14-h,3,h)}
   label(g,G.n?(sv("RTRG")>=127?"retrigs on and on":G.n+" retrig"+(G.n>1?"s":"")):"one hit")},
  handles(W,H){const G=this.geo(W);return[{x:10+G.dt,y:H-14-(H-38)*.86,k:"RTIM",drag:x=>sset("RTIM",(x-16)/(W*.3)*127)},railH(W,H,"SYN","RTRG")]}};
-/* FM+: one block: the carrier moved by its modulator; dot = the modulator's frequency (sideways) and level (up) */
+/* FM+: one block: the carrier moved by its modulator; dot = the modulator's frequency (sideways) and level (up). The
+   frequency is the machine's (B-149: 40-data.js FMFRQ, FMDYN1, FMDYN2): the label writes it as the LCD does, the
+   modulator turns at that ratio to the carrier */
 ED.fm={ks(c){const k=ck(c);return{f:k.find(n=>/FRQ$/.test(n)),a:k.find(n=>/(ENV|VOL)$/.test(n)&&!/VEN$/.test(n)),fb:k.find(n=>/FB$/.test(n))}},
- draw(g,W,H,c){const K=this.ks(c),ink=cssv("--ink"),r=.5+u7(sv(K.f))*6,I=(K.a?u7(sv(K.a)):.5)*4,fb=K.fb?u7(sv(K.fb)):0;grid(g,W,H);
+ frq(n){const tab=TAB[trk(S.sel).m+"."+n],e=tab?tabAt(tab,sv(n)):null;return e?{r:e.r,t:e.t}:{r:1,t:"1"}},
+ draw(g,W,H,c){const K=this.ks(c),ink=cssv("--ink"),F=this.frq(K.f),r=F.r,I=(K.a?u7(sv(K.a)):.5)*4,fb=K.fb?u7(sv(K.fb)):0;grid(g,W,H);
   line(g,W,x=>{const p=x/W*2;return H/2+4-Math.sin(p*6.283*r)*(K.a?u7(sv(K.a)):.5)*(H/2-26)*.5},inkA(.4),1.2,[2,3]);
-  line(g,W,x=>{const p=x/W*2,mod=Math.sin(p*6.283*r+fb*Math.sin(p*6.283*r));return H/2+4-Math.sin(p*6.283+I*mod)*(H/2-24)},ink,2);label(g,`ratio ${r.toFixed(1)}${fb?" · feedback":""}`)},
+  line(g,W,x=>{const p=x/W*2,mod=Math.sin(p*6.283*r+fb*Math.sin(p*6.283*r));return H/2+4-Math.sin(p*6.283+I*mod)*(H/2-24)},ink,2);label(g,`${K.f} ${F.t}${fb?" · feedback":""}`)},
  handles(W,H,c){const K=this.ks(c);return K.f?[{x:u7(sv(K.f))*W,y:K.a?H-8-u7(sv(K.a))*(H-28):H/2,k:K.a?K.f+" · "+K.a:K.f,drag:(x,y)=>{sset(K.f,x/W*127);if(K.a)sset(K.a,(H-8-y)/(H-28)*127)}}]:[]}};
 /* VO-6: the vowel map (VOC1 across, VOC2 up) with the tutorial's points */
 ED.vowel={draw(g,W,H){const P=[["O",35,5],["A",127,60],["I",40,110],["E",80,100],["U",10,30]];grid(g,W,H);g.font="10px Silkscreen, monospace";
@@ -8884,11 +8916,11 @@ const ValueBox={range:el=>[0,maxOf(ref(el)[2])],
  find:el=>$("#main")?.querySelector(Object.entries(el.dataset).filter(([k])=>["g","n","t","i","src","li"].includes(k)).map(([k,v])=>`[data-${k}="${CSS.escape(v)}"]`).join(""))||null,
  say:t=>toast(t)};
 main.addEventListener("wheel",e=>{
- const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el){e.preventDefault();const d=(e.deltaY||e.deltaX)<0?1:-1;setV(el,getV(el)+d*(e.shiftKey?10:1));return}
+ const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el){e.preventDefault();const d=(e.deltaY||e.deltaX)<0?1:-1;stepV(el,d*(e.shiftKey?10:1));return}
  const st=e.target.closest(".mst");if(st){const t=+st.dataset.t,s=+st.dataset.s,x=trk(t).steps[s];if(!x?.n)return;e.preventDefault();const d=((e.deltaY||e.deltaX)<0?1:-1)*(e.shiftKey?12:1);x.n=x.n.map(n=>clamp(n+d));editStep(t,s);refreshRow(t);return}
  const roll=e.target.closest("canvas.roll[data-big]");if(roll){e.preventDefault();const t=+roll.dataset.t;S.rollLoT[t]=clamp((S.rollLoT[t]??S.rollLo)+((e.deltaY)<0?1:-1)*(e.shiftKey?12:2),0,127-ROWS);redraw()}},{passive:false});
 main.addEventListener("dblclick",e=>{const el=e.target.closest(".pc[data-g]");if(el&&!ValueEdit.isOpenClick(e)){const m=ref(el)[2];setV(el,m.def??(m.en?0:64))}});
-main.addEventListener("keydown",e=>{const el=e.target.closest("[data-g]");if(!el)return;if(e.key==="Enter"&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&el.matches(".pc,.fader")){e.preventDefault();ValueEdit.open(el,ValueBox);return}const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1,PageUp:10,PageDown:-10}[e.key];if(d==null)return;e.preventDefault();setV(el,getV(el)+d*(e.shiftKey?10:1))});
+main.addEventListener("keydown",e=>{const el=e.target.closest("[data-g]");if(!el)return;if(e.key==="Enter"&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&el.matches(".pc,.fader")){e.preventDefault();ValueEdit.open(el,ValueBox);return}const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1,PageUp:10,PageDown:-10}[e.key];if(d==null)return;e.preventDefault();stepV(el,d*(e.shiftKey?10:1))});
 
 /* ===== Clicks ===== */
 function autoRange(t){const ns=trk(t).steps.flatMap(x=>x?.n||[]);if(!ns.length)return;const lo=Math.min(...ns),hi=Math.max(...ns),cur=S.rollLoT[t];if(cur==null||lo<cur||hi>cur+ROWS-1)S.rollLoT[t]=clamp(Math.round((lo+hi)/2)-Math.floor(ROWS/2),0,127-ROWS)}

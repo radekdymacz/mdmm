@@ -72,14 +72,15 @@ check(plotted.length >= machines.length - 2, `the synthesis page draws a picture
    90-sound.js on its own, with a drawing that only records its lines ---- */
 const stateCtx = vm.createContext({ console });
 vm.runInContext([data, genBlock, mmGen, part("50-state.js")].join("\n").replace(/^"use strict";/m, "")
-	+ "\nthis.P = { S, meta, fmt, maxOf };", stateCtx);
-const P = stateCtx.P;
+	+ "\nthis.P = { S, meta, fmt, maxOf, tabStep };", stateCtx);
+const P = stateCtx.P, stepTab = P.tabStep;
 /* one screen editor (ED.<name>=... up to the next comment line) with the canvas helpers stubbed: line() records the y furthest from the middle line (mid) of its x */
 const screen = (name, mid) => {
 	const a = sound.indexOf(`ED.${name}=`), b = sound.indexOf("\n/*", a);
 	stateCtx.mid = mid;
 	vm.runInContext(`var ED=ED||{},drawn=[],labelled="";var grid=()=>{},railDraw=()=>{},cssv=()=>"#000",inkA=()=>"#000",label=(g,t)=>{labelled=t},
-		line=(g,W,f)=>{let far=f(0);for(let x=0;x<W;x++){const y=f(x);if(Math.abs(y-mid)>Math.abs(far-mid))far=y}drawn.push(far)};var V=pg=>trk(S.sel).v[pg];` + sound.slice(a, b) + `;this.E={ED,get drawn(){return drawn},get labelled(){return labelled},reset(){drawn=[];labelled=""}};`, stateCtx);
+		line=(g,W,f)=>{let far=f(0);for(let x=0;x<W;x++){const y=f(x);if(Math.abs(y-mid)>Math.abs(far-mid))far=y}drawn.push(far)};`
+		+ (stateCtx.V ? "" : sound.slice(sound.indexOf("const V=(pg)"), sound.indexOf("function railDraw")).replace(/^const /gm, "var ")) + sound.slice(a, b) + `;this.E={ED,get drawn(){return drawn},get labelled(){return labelled},reset(){drawn=[];labelled=""}};`, stateCtx);
 	return stateCtx.E;
 };
 /* a canvas context that draws nothing */
@@ -100,6 +101,26 @@ const box = (m, pg, name, v) => { P.S.sel = 0; P.S.tracks[0].m = m; const i = pg
 	f[6] = 64; f[7] = 64; const none = fl(); f[6] = 30; const some = fl();
 	check(none === 1 && some === 2, `the filter curve's dashed envelope peak only with an offset (BOFS 0: ${none} line, BOFS -34: ${some})`);
 	const h = E.ED.fenv.handles(200, H)[0]; h.drag(h.x, mid - 20); check(f[6] > 64, "dragging the base handle up gives a positive BOFS (" + f[6] + ")");
+}
+{
+	/* B-149: the FM+ frequencies as the machine's LCD writes them (mmEditorProbeFirmwareTest enums, OS 1.32B) */
+	const at = (m, n, vs) => vs.map(v => box(m, "SYN", n, v).text).join(" ");
+	const stat = at("FM+STAT", "1FRQ", [0, 5, 6, 43, 48, 59, 80, 86, 102, 127]);
+	check(stat === "1/64 1/64 1/32 3/8 5/32 1/2 1 1.25 2 4", "FM+STAT 1FRQ: " + stat);
+	check(["FM+STAT.2FRQ", "FM+PAR.1FRQ", "FM+PAR.2FRQ", "FM+PAR.3FRQ"].every(k => at(...k.split("."), [0, 5, 6, 48, 127]) === "1/64 1/64 1/32 5/32 4"), "FM+STAT 2FRQ and FM+PAR 1FRQ 2FRQ 3FRQ: the same 24 entries");
+	const d1 = at("FM+DYN", "1FRQ", [0, 1, 10, 11, 21, 40, 41, 92, 127]), d2 = at("FM+DYN", "2FRQ", [0, 8, 11, 40, 44, 102, 127]);
+	check(d1 === "0.0 1/64 5/32 1.56 .171 2.0 .203 1.0 1.54", "FM+DYN 1FRQ: " + d1);
+	check(d2 === "0.0 1/64 2.44 4.0 1/16 1.33 2.39", "FM+DYN 2FRQ: " + d2);
+	const { mt } = box("FM+STAT", "SYN", "1FRQ", 0), tab = mt.tab;
+	check(mt.max === 127 && tab.length === 24 && tab[0].lo === 0 && tab.every((e, k) => !k || e.lo > tab[k - 1].lo), "FM+STAT 1FRQ: 24 entries over 0-127, the full value to the machine");
+	const steps = []; for (let v = 0, k = 0; k < 30; k++) { steps.push(v); v = stepTab(tab, v, 1); }
+	check(new Set(steps).size === 24 && steps[1] === 6 && steps.at(-1) === 123 && stepTab(tab, 6, -1) === 0 && stepTab(tab, 0, -1) === 0, "a step moves one entry (0 6 11 ... 123, and stays at the ends)");
+	const r1 = box("FM+DYN", "SYN", "1FRQ", 0).mt.tab.map(e => e.r), r2 = box("FM+DYN", "SYN", "2FRQ", 0).mt.tab.map(e => e.r);
+	check(r1.length === 128 && r2.length === 128 && [r1, r2].every(r => r.every((x, k) => !k || x >= r[k - 1] - .0021)), "FM+DYN 1FRQ and 2FRQ: 128 texts, the ratios the drawing takes in line (the decimal point the LCD moves on 11-40 put back)");
+	check(Math.abs(r1[11] - .156) < 1e-9 && Math.abs(r2[11] - .0244) < 1e-9 && r1[40] === .2 && r2[40] === .04, "the LCD's 1.56 (1FRQ 11) is 0.156, its 4.0 (2FRQ 40) is 0.04");
+	const E = screen("fm", 0), c = { dataset: { k: "1FRQ 1FIN 1ENV 1FB" } };
+	box("FM+STAT", "SYN", "1FRQ", 0); P.S.tracks[0].v.SYN[0] = 64; E.reset(); E.ED.fm.draw(G2D, 200, 100, c);
+	check(E.labelled === "1FRQ 5/8" && E.ED.fm.frq("1FRQ").r === 5 / 8, "the FM screen's label and ratio are the machine's: " + E.labelled);
 }
 
 console.log(failures ? `FAIL (${failures})` : "PASS");

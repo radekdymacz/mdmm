@@ -72,11 +72,14 @@ ED.rtrg={geo(W){const n=sv("RTRG"),dt=(6+u7(sv("RTIM"))*(W*.3));return{n:n>=127?
  draw(g,W,H){const G=this.geo(W),ink=cssv("--ink");grid(g,W,H);railDraw(g,W,H);for(let k=0;k<=G.n;k++){const x=10+k*G.dt;if(x>W-4)break;const h=(H-38)*Math.pow(.86,k);g.fillStyle=ink;g.fillRect(x,H-14-h,3,h)}
   label(g,G.n?(sv("RTRG")>=127?"retrigs on and on":G.n+" retrig"+(G.n>1?"s":"")):"one hit")},
  handles(W,H){const G=this.geo(W);return[{x:10+G.dt,y:H-14-(H-38)*.86,k:"RTIM",drag:x=>sset("RTIM",(x-16)/(W*.3)*127)},railH(W,H,"SYN","RTRG")]}};
-/* FM+: one block: the carrier moved by its modulator; dot = the modulator's frequency (sideways) and level (up) */
+/* FM+: one block: the carrier moved by its modulator; dot = the modulator's frequency (sideways) and level (up). The
+   frequency is the machine's (B-149: 40-data.js FMFRQ, FMDYN1, FMDYN2): the label writes it as the LCD does, the
+   modulator turns at that ratio to the carrier */
 ED.fm={ks(c){const k=ck(c);return{f:k.find(n=>/FRQ$/.test(n)),a:k.find(n=>/(ENV|VOL)$/.test(n)&&!/VEN$/.test(n)),fb:k.find(n=>/FB$/.test(n))}},
- draw(g,W,H,c){const K=this.ks(c),ink=cssv("--ink"),r=.5+u7(sv(K.f))*6,I=(K.a?u7(sv(K.a)):.5)*4,fb=K.fb?u7(sv(K.fb)):0;grid(g,W,H);
+ frq(n){const tab=TAB[trk(S.sel).m+"."+n],e=tab?tabAt(tab,sv(n)):null;return e?{r:e.r,t:e.t}:{r:1,t:"1"}},
+ draw(g,W,H,c){const K=this.ks(c),ink=cssv("--ink"),F=this.frq(K.f),r=F.r,I=(K.a?u7(sv(K.a)):.5)*4,fb=K.fb?u7(sv(K.fb)):0;grid(g,W,H);
   line(g,W,x=>{const p=x/W*2;return H/2+4-Math.sin(p*6.283*r)*(K.a?u7(sv(K.a)):.5)*(H/2-26)*.5},inkA(.4),1.2,[2,3]);
-  line(g,W,x=>{const p=x/W*2,mod=Math.sin(p*6.283*r+fb*Math.sin(p*6.283*r));return H/2+4-Math.sin(p*6.283+I*mod)*(H/2-24)},ink,2);label(g,`ratio ${r.toFixed(1)}${fb?" · feedback":""}`)},
+  line(g,W,x=>{const p=x/W*2,mod=Math.sin(p*6.283*r+fb*Math.sin(p*6.283*r));return H/2+4-Math.sin(p*6.283+I*mod)*(H/2-24)},ink,2);label(g,`${K.f} ${F.t}${fb?" · feedback":""}`)},
  handles(W,H,c){const K=this.ks(c);return K.f?[{x:u7(sv(K.f))*W,y:K.a?H-8-u7(sv(K.a))*(H-28):H/2,k:K.a?K.f+" · "+K.a:K.f,drag:(x,y)=>{sset(K.f,x/W*127);if(K.a)sset(K.a,(H-8-y)/(H-28)*127)}}]:[]}};
 /* VO-6: the vowel map (VOC1 across, VOC2 up) with the tutorial's points */
 ED.vowel={draw(g,W,H){const P=[["O",35,5],["A",127,60],["I",40,110],["E",80,100],["U",10,30]];grid(g,W,H);g.font="10px Silkscreen, monospace";
