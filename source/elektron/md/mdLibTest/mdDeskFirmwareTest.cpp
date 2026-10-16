@@ -3692,12 +3692,11 @@ namespace
 	}
 
 	// B-133 (the 0.6 e2e run, 2026-10-13): after any sample went into the machine by SDS (Rename, Load sample, a dropped
-	// file; any ROM slot), live recording looks as it should (RECORD blinks, the pattern plays, the TRIG key reaches the
-	// panel) but the firmware records no TRIG key and no knob lock until the machine starts again. Not fixed: this mode
-	// shows it (FAIL with the sample, PASS without: mdDeskFirmwareTest <rom> recaftersample [nosample]). Measured: no
-	// key (EXIT, PLAY, STOP, RECORD twice, KIT/GLOBAL and out), no pattern or kit load, no longer hold, no wait (30 s) and
-	// no speed-up lever (all off) brings it back; the sample's name alone (0x73) does not cause it. The machine's RAM
-	// (0x250000-0x2b8000) put back as a run without the sample has it does bring it back: the state is in that RAM.
+	// file; any ROM slot), live recording looked as it should (RECORD blinks, the pattern plays, the TRIG key reaches
+	// the panel) but the firmware recorded no TRIG key and no knob lock until the machine started again. The cause is
+	// the OS's screen list left with one node by the RECEIVING SAMPLE screen (md::ScreenListFix, mdLib/mdscreenlist.h,
+	// which puts the list's head back); this mode keeps the proof: PASS with the sample and without
+	// (mdDeskFirmwareTest <rom> recaftersample [nosample]).
 	void recordAfterSample(Rig& _rig, const bool _sample)
 	{
 		auto& m = _rig.machine();
