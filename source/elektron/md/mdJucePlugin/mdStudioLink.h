@@ -103,7 +103,13 @@ namespace mdJucePlugin
 		std::array<std::atomic<uint32_t>, 16> m_dirtyParams{};		// bit n = index n (0-25)
 		std::shared_ptr<const md::DeskDevice::SequencerTelemetry> m_telemetry;
 		std::shared_ptr<md::FrontPanelPublisher> m_panel;
-		double m_telemetryCheckedMs = -1e9;
+		// the device the handles above and the sample exchange belong to (MachineFacts::deviceId): looked up again,
+		// under the device lock, only when the facts name another device (DESIGN-audio-lock.md step 2)
+		uint64_t m_handlesDevice = 0;
+		bool m_handlesKnown = false;
+		std::shared_ptr<md::SampleExchange> m_sampleExchange;
+		uint64_t m_sampleDevice = 0;
+		bool m_sampleKnown = false;
 		uint32_t m_workingKitSequence = 0;
 		uint32_t m_sampleSequence = 0;
 		const void* m_sampleSource = nullptr;

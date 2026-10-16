@@ -42,20 +42,17 @@ namespace mdJucePlugin
 	// so its flash is the user's samples over the factory's
 	bool MachineMemoryDevice::ready()
 	{
-		return m_processor.getPlugin().withDeviceLocked([this](synthLib::Device* const _device)
-		{
-			auto* const device = dynamic_cast<md::Device*>(_device);
-			if(!device || !device->isValid() || device->isProjectStateRestorePending())
-				return false;
-			auto& hw = device->getHardware();
-			// the firmware has booted: a first start's memory is formatted by then (before, the patch RAM is not yet the
-			// factory memory the slots are laid over, and the firmware would format it again)
-			if(!hw.isFirmwareMidiReady())
-				return false;
-			if(m_shape.sampleFlash)
-				return hw.factoryFlashBaseline() != nullptr && !hw.isFactoryFlashInitializationExpected();
-			return true;
-		});
+		// the facts the audio thread published (DESIGN-audio-lock.md step 2)
+		const auto f = m_processor.machineFacts();
+		if(f.kind != MachineFacts::Kind::Machine || !f.valid || f.restorePending)
+			return false;
+		// the firmware has booted: a first start's memory is formatted by then (before, the patch RAM is not yet the
+		// factory memory the slots are laid over, and the firmware would format it again)
+		if(!f.firmwareMidiReady)
+			return false;
+		if(m_shape.sampleFlash)
+			return f.factoryFlashBaseline && !f.factoryFlashInitializationExpected;
+		return true;
 	}
 
 	bool MachineMemoryDevice::look(const Piece& _piece, std::optional<uint64_t>& _machine, double& _heldMs)
@@ -200,11 +197,8 @@ namespace mdJucePlugin
 
 	uint64_t MachineMemoryDevice::restoreGeneration()
 	{
-		return m_processor.getPlugin().withDeviceLocked([](synthLib::Device* const _device)
-		{
-			const auto* const device = dynamic_cast<const md::Device*>(_device);
-			return device ? device->deferredStateGeneration() : uint64_t{0};
-		});
+		const auto f = m_processor.machineFacts();
+		return f.kind == MachineFacts::Kind::Machine ? f.restoreGeneration : uint64_t{0};
 	}
 
 	bool MachineMemoryDevice::restore(const std::vector<uint8_t>& _state)

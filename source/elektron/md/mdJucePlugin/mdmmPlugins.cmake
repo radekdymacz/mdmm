@@ -38,6 +38,7 @@ list(APPEND SOURCES
 	mdStandaloneApp.cpp
 	mdBootDiagnostics.cpp mdBootDiagnostics.h mdCpuLoad.h mdOutputLevel.h mdMidiIn.h mdMachineMemory.h
 	mdMachineMemoryService.cpp mdMachineMemoryService.h mdMachineMemoryDevice.cpp mdMachineMemoryDevice.h
+	mdMachineFacts.cpp mdMachineFacts.h
 	mdProcessArch.cpp mdProcessArch.h mdRosettaNotice.h
 	mdDeskSession.cpp mdDeskSession.h
 	mdMidiLearnCommands.cpp mdMidiLearnCommands.h

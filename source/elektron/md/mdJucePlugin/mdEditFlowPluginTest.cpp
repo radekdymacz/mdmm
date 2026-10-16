@@ -297,11 +297,9 @@ namespace
 		void pageText(const std::string& _json) { processor->getDeskHost()->session()->onPageMessage(parseJson(_json)); }
 		void page(const Value& _v) { processor->getDeskHost()->session()->onPageMessage(_v); }
 
-		template<typename T> T device(const std::function<T(md::DeskDevice&)>& _f, T _def)
-		{
-			return processor->getPlugin().withDeviceLocked([&](synthLib::Device* _d) { auto* d = dynamic_cast<md::DeskDevice*>(_d); return d ? _f(*d) : _def; });
-		}
-		uint64_t rxBytes() { return device<uint64_t>([](md::DeskDevice& _d) { return _d.getHardware().midiRxConsumedCount(); }, 0); }
+		// the facts, without the device lock: the test's own reads must not be what the audio thread waits for
+		uint64_t rxBytes() { return processor->machineFacts().midiRxConsumed; }
+		uint64_t panelDropped() { return processor->machineFacts().panelDropped; }
 		mdJucePlugin::Controller& controller() { return dynamic_cast<mdJucePlugin::Controller&>(processor->getController()); }
 
 		std::string lifecycle() const
@@ -559,6 +557,7 @@ int main(const int _argc, char** _argv)
 		auto& realtime = r.processor->getPlugin().getRealtimeInstrumentation();
 		realtime.setEnabled(true);
 		realtime.reset();
+		const auto panelDroppedStart = r.panelDropped();
 		if(const auto* rec = std::getenv("EDITFLOW_RECORD"))
 		{
 			// A fresh ready: everything a page gets, for replaying into the real page in a browser.
@@ -615,7 +614,11 @@ int main(const int _argc, char** _argv)
 			std::printf("synth lock wait while editing: max %.3f ms, %.1f ms in all over %llu blocks (limit %.1f ms): %s\n",
 				maxMs, static_cast<double>(snap.synthProcessLockWaitNanoseconds) / 1e6,
 				static_cast<unsigned long long>(snap.synthProcessCount), limitMs, pass ? "PASS" : "FAIL");
-			if(!pass)
+			// the edits must all reach the machine: none of the panel events the desk sent was dropped
+			const auto panelDroppedEnd = r.panelDropped();
+			const auto dropped = panelDroppedEnd >= panelDroppedStart ? panelDroppedEnd - panelDroppedStart : panelDroppedEnd;
+			std::printf("dropped panel events while editing: %llu: %s\n", static_cast<unsigned long long>(dropped), dropped ? "FAIL" : "PASS");
+			if(!pass || dropped)
 				return 1;
 		}
 		if(!r.lastDocJson.empty())

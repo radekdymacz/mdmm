@@ -16,3 +16,10 @@ add_test(NAME synthLibMidiQueueTest COMMAND synthLibMidiQueueTest)
 set_tests_properties(synthLibMidiQueueTest PROPERTIES LABELS "UnitTest;Midi" TIMEOUT 60)
 set_property(TARGET synthLibMidiQueueTest PROPERTY FOLDER "Tests")
 
+
+# synthLib::Seqlock: the facts the audio thread publishes, read without the device lock (DESIGN-audio-lock.md)
+add_executable(synthLibSeqlockTest synthLibSeqlockTest.cpp)
+target_link_libraries(synthLibSeqlockTest PRIVATE synthLib)
+add_test(NAME synthLibSeqlockTest COMMAND synthLibSeqlockTest)
+set_tests_properties(synthLibSeqlockTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+set_property(TARGET synthLibSeqlockTest PROPERTY FOLDER "Tests")

@@ -323,6 +323,42 @@ namespace
 	}
 }
 
+namespace
+{
+	// DESIGN-audio-lock.md step 2: the facts callback runs once when installed and at the end of every locked call, on
+	// the calling thread before the call returns, with the current device (a replaced one included)
+	int testFactsPublishedUnderTheLock()
+	{
+		auto* first = new PartsTestDevice({1}, 0);
+		synthLib::Plugin plugin(first, [](synthLib::Device*) {});
+		int published = 0;
+		bool sameThread = true;
+		const auto caller = std::this_thread::get_id();
+		synthLib::Device* last = nullptr;
+		plugin.setFactsCallback([&](synthLib::Device* const _device)
+		{
+			++published;
+			last = _device;
+			sameThread = sameThread && std::this_thread::get_id() == caller;
+		});
+		const int installed = published;
+		plugin.withDeviceLocked([](synthLib::Device*) {});
+		const int afterCall = published;
+		auto* second = new PartsTestDevice({2}, 0);
+		plugin.setDevice(second);
+		const bool sawSecond = last == second;
+		plugin.setFactsCallback({});
+		plugin.setDevice(new PartsTestDevice({}, 0));
+		if(installed != 1 || afterCall != 2)
+			return fail("the facts were not published on install and after a locked call");
+		if(!sawSecond)
+			return fail("the facts after setDevice were not the new device's");
+		if(!sameThread)
+			return fail("the facts callback ran on another thread");
+		return 0;
+	}
+}
+
 int main()
 {
 	if(const auto result = testStateCaptureEncodesUnlocked())
@@ -332,6 +368,8 @@ int main()
 	if(const auto result = testStateCaptureRestartsOnNewDevice())
 		return result;
 	if(const auto result = testSetDevicePreparesUnlocked())
+		return result;
+	if(const auto result = testFactsPublishedUnderTheLock())
 		return result;
 
 	std::cout << "synthLib state capture tests passed\n";

@@ -30,6 +30,10 @@ namespace synthLib
 		static constexpr size_t RealtimeMidiEventCapacity = 1024;
 
 		using CallbackDeviceInvalid = std::function<void(Device*)>;
+		// DESIGN-audio-lock.md step 2: called with the device whenever the lock is about to be released by the audio
+		// thread at a block's end, and by every locked call (withDeviceLocked, setDevice, setState, ...): it publishes
+		// what readers need (a Seqlock), so they read without the lock. Runs under the lock; must not block or allocate.
+		using FactsCallback = std::function<void(Device*)>;
 
 		Plugin(Device* _device, CallbackDeviceInvalid _callbackDeviceInvalid);
 
@@ -45,8 +49,9 @@ namespace synthLib
 		void setBlockSize(uint32_t _blockSize);
 		void reserveMidiEventCapacity(size_t _capacity = RealtimeMidiEventCapacity);
 
-		uint32_t getLatencyMidiToOutput() const;
-		uint32_t getLatencyInputToOutput() const;
+		// As published with the facts (no lock): the plug-in's latencies after the last change or block
+		uint32_t getLatencyMidiToOutput() const { return m_latencyMidiToOutput.load(std::memory_order_acquire); }
+		uint32_t getLatencyInputToOutput() const { return m_latencyInputToOutput.load(std::memory_order_acquire); }
 		// Counts visits to explicitly unsupported RT allocation paths: a host block
 		// larger than setBlockSize, or dynamically sized SysEx processed/emitted by
 		// the device. Prepared audio and channel-message MIDI must leave this stable.
@@ -77,12 +82,17 @@ namespace synthLib
 		// Keep a short control-plane operation pinned to the current Device. Callers
 		// must not perform file I/O, allocation-heavy preparation, or other long work
 		// inside this callback; capture immutable context here and prepare outside.
+		// The facts are published after the callback, before the lock is released (FactsCallback).
 		template<typename Callback>
 		decltype(auto) withDeviceLocked(Callback&& _callback) const
 		{
 			std::lock_guard lock(m_lock);
+			const PublishOnExit publish(*this);
 			return std::forward<Callback>(_callback)(m_device);
 		}
+
+		// Installs the facts callback (under the lock) and publishes once
+		void setFactsCallback(FactsCallback _callback);
 
 #if !SYNTHLIB_DEMO_MODE
 		bool getState(std::vector<uint8_t>& _state, StateType _type) const;
@@ -100,6 +110,14 @@ namespace synthLib
 		uint32_t getLatencyBlocks() const { return m_extraLatencyBlocks; }
 
 	private:
+		struct PublishOnExit
+		{
+			const Plugin& plugin;
+			explicit PublishOnExit(const Plugin& _plugin) : plugin(_plugin) {}
+			~PublishOnExit() { plugin.publishFacts(); }
+		};
+		// Under m_lock: the latencies and the FactsCallback's facts
+		void publishFacts() const;
 		void processMidiClock(double _bpm, double _ppqPos, bool _isPlaying, size_t _sampleCount, bool _ppqKnown);
 		float* getSilentInputBuffer(size_t _minimumSize);
 		float* getDiscardOutputBuffer(size_t _channel, size_t _minimumSize);
@@ -147,6 +165,9 @@ namespace synthLib
 
 		float m_deviceSamplerate = 0.0f;
 		CallbackDeviceInvalid m_callbackDeviceInvalid;
+		FactsCallback m_factsCallback;
+		mutable std::atomic<uint32_t> m_latencyMidiToOutput{0};
+		mutable std::atomic<uint32_t> m_latencyInputToOutput{0};
 		std::atomic<uint64_t> m_realtimeAllocationFallbackCount{0};
 		RealtimeInstrumentation m_realtimeInstrumentation;
 	};

@@ -29,8 +29,6 @@ namespace mdJucePlugin
 			{"Lfo2Page", "Lfo2Destination", "Lfo2Trigger", "Lfo2Waveform", "Lfo2Multiplier", "Lfo2Speed", "Lfo2Interlace", "Lfo2Depth"},
 			{"Lfo3Page", "Lfo3Destination", "Lfo3Trigger", "Lfo3Waveform", "Lfo3Multiplier", "Lfo3Speed", "Lfo3Interlace", "Lfo3Depth"}};
 
-		double nowMs() { return juce::Time::getMillisecondCounterHiRes(); }
-
 		std::optional<md::PanelControl> control(const mmDesk::Key _k)
 		{
 			using K = mmDesk::Key;
@@ -219,10 +217,12 @@ namespace mdJucePlugin
 
 	mmDesk::Telemetry MmStudioLink::readTelemetry()
 	{
-		const auto now = nowMs();
-		if(!m_telemetry || now - m_telemetryCheckedMs > 1000)
+		// the handles again only when the facts name another device (DESIGN-audio-lock.md step 2)
+		const auto device = m_processor.machineFacts().deviceId;
+		if(!m_handlesKnown || device != m_handlesDevice)
 		{
-			m_telemetryCheckedMs = now;
+			m_handlesKnown = true;
+			m_handlesDevice = device;
 			m_telemetry = m_processor.getPlugin().withDeviceLocked(
 				[](synthLib::Device* _base) -> std::shared_ptr<const md::MmTelemetry>
 			{
@@ -275,21 +275,18 @@ namespace mdJucePlugin
 	deskCore::LifeFacts::Probe MmStudioLink::probe() const
 	{
 		using P = deskCore::LifeFacts::Probe;
-		return m_processor.getPlugin().withDeviceLocked([](synthLib::Device* _base)
-		{
-			auto* device = dynamic_cast<md::DeskDevice*>(_base);
-			// No device yet: not a missing ROM (P5). Only an invalid device is a definite NO ROM.
-			if(!device)
-				return isNoRomDevice(_base) ? P::Missing : P::Loading;
-			if(!device->isValid())
-				return P::Missing;
-			const auto& hw = device->getHardware();
-			if(hw.getModel() != md::MachineModel::Monomachine || hw.firmwareFingerprint() != md::g_mmOs132bFingerprint)
-				return P::Unsupported;
-			if(device->isProjectStateRestorePending())
-				return P::Loading;
-			return hw.isFirmwareMidiReady() ? P::Running : P::Booting;
-		});
+		// from the facts the audio thread published (DESIGN-audio-lock.md step 2): no device lock every desk step
+		const auto f = m_processor.machineFacts();
+		// No device yet: not a missing ROM (P5). Only an invalid device is a definite NO ROM.
+		if(!f.desk)
+			return f.kind == MachineFacts::Kind::NoRom ? P::Missing : P::Loading;
+		if(!f.valid)
+			return P::Missing;
+		if(f.model != static_cast<uint8_t>(md::MachineModel::Monomachine) || f.firmwareFingerprint != md::g_mmOs132bFingerprint)
+			return P::Unsupported;
+		if(f.restorePending)
+			return P::Loading;
+		return f.firmwareMidiReady ? P::Running : P::Booting;
 	}
 
 	bool MmStudioLink::readLcd(std::vector<uint8_t>& _bits) const
@@ -305,6 +302,9 @@ namespace mdJucePlugin
 						_bits[y * 16 + x / 8] |= static_cast<uint8_t>(0x80 >> (x & 7));
 			return true;
 		}
+		// no machine (the facts say so): nothing to lock for
+		if(const auto f = m_processor.machineFacts(); !f.desk || !f.valid)
+			return false;
 		return m_processor.getPlugin().withDeviceLocked([&](synthLib::Device* _base)
 		{
 			auto* device = dynamic_cast<md::DeskDevice*>(_base);
