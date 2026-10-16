@@ -290,6 +290,31 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.l0?.length) u.key("z", { cmd: true }); }
 	};
+	/* I-035: the lock lane's kit-value line (2 px, grabbed within 4 px of it): dragged, it changes the kit value of the lane's parameter on
+	   the track as the Sound page's knob does, one undo step, and paints no lock; its number on the line says the value */
+	const laneKitDrag = {
+		name: "md-lane-kit-drag", proves: ["MD-134"],
+		steps: [
+			go("seq"),
+			{ say: "pick a track that has a trig and click the FLTF lock key", act: async (u, c) => { c.t = soundTracks().find(t => trigsOf(t).some(s => s < Math.min(16, V.len))) ?? soundTrack(); u.click(rail(c.t)); await sleep(250);
+					const k = $1('#chips .pk[data-lane="FLTF"]') || $1("#chips .pk[data-lane]"); c.p = k.dataset.lane; c.i = pidx(c.t, c.p); u.click(k); await sleep(250); c.s = trigsOf(c.t).find(s => s < Math.min(16, V.len)); },
+				screen: c => ok(S.sel === c.t && S.lane === c.p && !!$1(`#lane .lb[data-s="${c.s}"] .base`), "no kit line on step " + c.s), machine: c => ok(c.s != null && c.i >= 0, "no trig or no parameter") },
+			{ say: "the kit line is 2 px and its number is on the lane", screen: c => { const b = $1(`#lane .lb[data-s="${c.s}"] .base`), v = grp(c.t, c.p)[c.p] ?? 0, k = $1("#lane .kvl");
+					return ok(b.getBoundingClientRect().height >= 2 && !!k && k.textContent === laneFmt(v), `line ${b.getBoundingClientRect().height} px, number ${k?.textContent} for ${v}`); } },
+			{ say: "click exactly on the line: it is a click on the lane, the step is locked at the kit value", act: async (u, c) => { c.l0 = locksOf(c.t, c.i).length; c.k0 = grp(c.t, c.p)[c.p] ?? 0; c.ul = V.undoCount;
+					const key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), y = r.bottom - 3 - (r.height - 6) * c.k0 / 127; u.click(key, {}, 0.5, (y - r.top) / r.height); },
+				machine: c => ok(locksOf(c.t, c.i).some(([x, v]) => x === c.s && v === c.k0) && (grp(c.t, c.p)[c.p] ?? 0) === c.k0, `locks ${JSON.stringify(locksOf(c.t, c.i))}, kit value ${c.k0}`), within: 8000 },
+			{ ...undoKey, say: "press Cmd+Z: the lock is gone", machine: c => ok(locksOf(c.t, c.i).length === c.l0, "locks " + JSON.stringify(locksOf(c.t, c.i))), within: 8000 },
+			{ say: "drag the line itself: the kit value follows the pointer, no lock is drawn", act: async (u, c) => { c.l0 = locksOf(c.t, c.i).length; c.u0 = V.undoCount; c.k0 = grp(c.t, c.p)[c.p] ?? 0;
+					const key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), b = $1(key + " .base").getBoundingClientRect(), y = b.top + b.height / 2, dy = y - r.top < r.height / 2 ? 30 : -30;
+					await u.drag(key, [[0, dy / 2], [0, dy]], {}, { fy: (y - r.top) / r.height, click: false }); },
+				screen: c => { const v = grp(c.t, c.p)[c.p], k = $1("#lane .kvl"); return ok(v !== c.k0 && !!k && k.textContent === laneFmt(v), `kit ${c.k0} -> ${v}, number ${k?.textContent}`); },
+				machine: c => { const i = c.i, d = kit()?.tracks[c.t], v = d && d[["synth", "effects", "routing"][i >> 3]][i & 7]; return ok(v === grp(c.t, c.p)[c.p] && v !== c.k0 && locksOf(c.t, c.i).length === c.l0, `machine ${v}, page ${grp(c.t, c.p)[c.p]}, was ${c.k0}; locks ${locksOf(c.t, c.i).length} (was ${c.l0})`); }, within: 8000 },
+			{ say: "the whole drag was one undo step", machine: c => ok(V.undoCount === c.u0 + 1, `undo steps ${c.u0} -> ${V.undoCount}`), within: 4000 },
+			{ ...undoKey, say: "press Cmd+Z: the kit value is back", machine: c => ok((grp(c.t, c.p)[c.p] ?? 0) === c.k0 && V.undoCount === c.u0, `kit ${grp(c.t, c.p)[c.p]} (was ${c.k0}), undo steps ${V.undoCount}`), within: 8000 }
+		],
+		async tidy(u, c) { if (c.u0 != null && V.undoCount > c.u0) await undoUntil(u, () => V.undoCount <= c.u0); }
+	};
 	const pagesJ = {
 		name: "md-seq-pages", proves: ["MD-020", "MD-108"],
 		steps: [
@@ -3163,7 +3188,7 @@ const MdJourneys = (() => {
 		async tidy(u) { await closePops(u); u.click(tab("seq")); }
 	};
 	const all = [screensFit, ...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
-		paintUndo, stepClickSelect, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
+		paintUndo, stepClickSelect, accentSlide, trigTypesJ, lockLane, laneKitDrag, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
 		genJourney("md-gen-mutate-undo", false, { proves: ["MD-X04", "MD-X05"] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: ["MD-X04"] }), genKeys, genModal, laneTools, gridFits,
 		shapeSound, typeValue, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
 		mixSolo, soloSaved, shiftMutes, allOff, fader, lev, outKey, masterFx,
