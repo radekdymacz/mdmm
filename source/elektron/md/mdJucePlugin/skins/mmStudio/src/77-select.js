@@ -126,7 +126,7 @@ function selMark(kind){const x=selShown();if(!x)return false;const cells=[];
   commit();rerenderSeq();return true}
  return false}
 /* what the step menu ticks: true when every selected step (of those it applies to) has the mark */
-const isPitchless=st=>!!st&&!st.off&&!st.n;
+const isPitchless=st=>!!st&&!st.off&&!st.notrig&&!st.n;
 function selHas(kind){const x=selShown();if(!x)return false;const c=[];for(let t=x.t;t<x.t+x.n;t++)for(let s=x.from;s<x.to;s++)c.push([t,s,trk(t).steps[s]]);
  if(kind==="noteoff")return c.every(([,,st])=>st?.off);
  if(kind==="trigless"){const y=c.filter(([t])=>!isMidiT(t));return y.length>0&&y.every(([,,st])=>stepKind(st)==="trigless")}
