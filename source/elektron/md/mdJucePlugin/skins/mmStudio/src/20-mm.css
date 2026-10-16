@@ -65,6 +65,8 @@ canvas.ed,.edblank,#lanescroll,.lcdroll,.slotgrid,.lcdbox{box-shadow:0 0 0 2px v
 .sidesw button[aria-pressed=true] .led{background:var(--led);box-shadow:0 0 5px var(--led)}
 /* I-028: a track's trig lamp on the rail (its number lights while its trig plays) */
 .th.trig .n{box-shadow:0 0 0 1px var(--led),0 0 6px 1px var(--led)}
+/* I-031: a track that plays because another track's trig forwards to it (Trig position) */
+.th.trig2 .n{box-shadow:0 0 0 1px var(--fwd,#4aa3ff),0 0 6px 1px var(--fwd,#4aa3ff)}
 .sidesw .sosign{font:700 9px/12px var(--mono);letter-spacing:0;padding:0 3px;border-radius:1px;background:var(--cream);color:var(--creamtext)}
 .sidesw button[aria-pressed=true] .sosign{background:var(--creamtext);color:var(--cream)}
 .th .nm small{font:500 10px var(--mono);color:var(--print3);margin-left:auto}
@@ -685,3 +687,6 @@ svg.route{width:100%;height:auto;aspect-ratio:1200/146;min-height:0}
 .strip6 .busk button,.strip6 .busrow .kselbtn{height:22px}
 .strip6 .mrow{display:grid;grid-template-columns:1fr 1fr;gap:3px}
 .strip6 .mrow .ms{width:auto;height:22px}
+
+/* B-150: a DigiPRO wave box (D36 STR4) is longer than a number: two small lines, the number over the wave's name */
+.pc b.long{font-size:11px;line-height:12px;text-align:right;max-width:46px;white-space:normal}

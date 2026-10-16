@@ -131,8 +131,9 @@ const box = (m, pg, name, v) => { P.S.sel = 0; P.S.tracks[0].m = m; const i = pg
 	/* B-150: the DigiPRO waves as the machine names them (OS 1.32B: 71 = D36, 127 = D64; 10 = S03, 34 = S09, 102 = S26, 126 = S32) */
 	const at = (m, n, vs) => vs.map(v => box(m, "SYN", n, v).text).join(" ");
 	const dd = ["DPRO-DDRW.WAV1", "DPRO-DDRW.WAV2", "DPRO-DENS.WAVE"].map(k => at(...k.split("."), [0, 1, 2, 71, 111, 127]));
-	check(dd.every(x => x === "D01 D01 D02 D36 D56 D64"), "DPRO-DDRW WAV1 WAV2 and DPRO-DENS WAVE: D01-D64, two values a wave: " + dd[0]);
-	const { mt } = box("DPRO-DDRW", "SYN", "WAV1", 0);
+	check(dd.every(x => x === "D01 SINE D01 SINE D02 HSIN D36 STR4 D56 MALÖ D64 FEMÖ"), "DPRO-DDRW WAV1 WAV2 and DPRO-DENS WAVE: D01-D64 with the LCD's names, two values a wave: " + dd[0]);
+		const { mt } = box("DPRO-DDRW", "SYN", "WAV1", 0), names = mt.tab.map(e => e.n);
+	check(names.length === 64 && new Set(names).size === 64 && names[0] === "SINE" && names[8] === "SYN1" && names[16] === "ORG1" && names[29] === "ELP1" && names[32] === "STR1" && names[40] === "WND1" && names[48] === "MALA" && names[56] === "FEMA", "the 64 D waves carry the LCD's names, none twice");
 	check(mt.max === 127 && mt.tab.length === 64 && stepTab(mt.tab, 70, 1) === 72 && stepTab(mt.tab, 71, -1) === 68, "a step is one wave (two values), the full value to the machine");
 	/* DPRO-WAVE WAVE: an enumeration of the catalogue (32 waves); the host turns the machine's value into its index */
 	const cat = JSON.parse(fs.readFileSync(path.join(__dirname, "../../../../../../doc/modern-ux/mm-catalogue.json"), "utf8"));
@@ -142,10 +143,10 @@ const box = (m, pg, name, v) => { P.S.sel = 0; P.S.tracks[0].m = m; const i = pg
 	const idx = v => Math.min(31, Math.floor(v * 32 / 128)); /* mmConvert.js valueToPage */
 	check([10, 34, 102, 126].map(v => P.fmt(wv, idx(v))).join(" ") === "S03 S09 S26 S32", "the machine's 10 34 102 126 are S03 S09 S26 S32 on the page");
 	const E = screen("morph", 0), lab = (m, vals) => { box(m, "SYN", MACH_P(m)[0], 0); Object.entries(vals).forEach(([n, v]) => P.S.tracks[0].v.SYN[MACH_P(m).indexOf(n)] = v); E.reset(); E.ED.morph.draw(G2D, 200, 100); return E.labelled; };
-	check(lab("DPRO-DDRW", { WAV1: 71, WAV2: 127, MIX: 30 }) === "D36 ↔ D64 · mix 30", "the DDRW screen names its waves as the machine: " + E.labelled);
+	check(lab("DPRO-DDRW", { WAV1: 71, WAV2: 127, MIX: 30 }) === "D36 STR4 ↔ D64 FEMÖ · mix 30", "the DDRW screen names its waves as the machine: " + E.labelled);
 	check(lab("DPRO-WAVE", { WAVE: 31, WPM: 0 }) === "S32 → S01", "the DPRO-WAVE screen morphs S32 into S01: " + E.labelled);
 	const W = screen("enswave", 0); box("DPRO-DENS", "SYN", "WAVE", 0); P.S.tracks[0].v.SYN[3] = 71; W.reset(); W.ED.enswave.draw(G2D, 200, 100);
-	check(W.labelled === "wave D36", "the DENS wave screen: " + W.labelled);
+	check(W.labelled === "wave D36 STR4", "the DENS wave screen: " + W.labelled);
 }
 {
 	/* B-151: PCH2-4 of SWAVE-ENS and DPRO-DENS as the machine lists them (OS 1.32B, 33 entries, OFF at 63-65) */
