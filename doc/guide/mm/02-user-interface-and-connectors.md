@@ -327,7 +327,7 @@ Power, the voltage selector and the fuse belong to the hardware. The editor has 
 
 ### MIDI sockets
 
-The standalone editor has the **AUDIO / MIDI** panel for its MIDI. Press {key:audio-settings} or choose **AUDIO/MIDI…** in the engine menu. The **MIDI** card lists the inputs, with a light for each that is on, and an output. A button pairs a Bluetooth MIDI device. No MIDI input is on until you switch it on there.
+The standalone editor has the **AUDIO / MIDI** panel for its MIDI. Press {key:audio-settings} or choose **AUDIO/MIDI…** in the engine menu. The **MIDI** card lists the inputs, with a light for each that is on, and an output. A button pairs a Bluetooth MIDI device. No MIDI input is on until you switch it on there. The **Monitor** row counts what came in and went out. A red line under the output warns when a virtual bus, such as an IAC bus, is both an input and the output: switch the input off or send to another bus. See "MIDI and sync" in the installation guide.
 
 In a plug-in the host routes MIDI. The machine's own MIDI out, which carries notes, controllers, program changes, pitch bend, pressure and clock, reaches the plug-in's MIDI output. Its SysEx never does.
 
