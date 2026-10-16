@@ -5,7 +5,8 @@
    an editor the page has (90-sound.js, ED.<name>) with its help; a group's knobs follow the manual's slots; and
    MUTATE's group scope (a group's title) moves those knobs and only those, by the page's rules (VOL TUNE INP stay).
    The layout (titles, screens and boxes level in a row, equal screens, no scroll at 1440 × 900 and 1280 × 760)
-   needs a browser: the page measures it (MM-PORT-PLAN.md, phase 3).
+   needs a browser: the page measures it (MM-PORT-PLAN.md, phase 3). Then the values as the machine shows them (B-148 to
+   B-151): signed BOFS and WOFS, the lists of FM frequencies, chord notes and DigiPRO waves, and the screens that draw them.
      node mmSoundTest.js */
 const fs = require("fs"), path = require("path"), vm = require("vm");
 let failures = 0;
@@ -65,6 +66,40 @@ check(plotted.length >= machines.length - 2, `the synthesis page draws a picture
 	const both = T.mmMutate({ ...spec, pages: ["SYN"] }, base, info);
 	check(both.length === new Set(both.map(([, pg, i]) => pg + i)).size, "a page and one of its groups in scope: each knob once");
 	check(JSON.stringify(T.mmMutate(spec, base, info)) === JSON.stringify(out), "the same seed, the same values");
+}
+
+/* ---- the values as the machine shows them (B-148 to B-151): the page's state (50-state.js: meta, fmt) and a screen of
+   90-sound.js on its own, with a drawing that only records its lines ---- */
+const stateCtx = vm.createContext({ console });
+vm.runInContext([data, genBlock, mmGen, part("50-state.js")].join("\n").replace(/^"use strict";/m, "")
+	+ "\nthis.P = { S, meta, fmt, maxOf };", stateCtx);
+const P = stateCtx.P;
+/* one screen editor (ED.<name>=... up to the next comment line) with the canvas helpers stubbed: line() records the y furthest from the middle line (mid) of its x */
+const screen = (name, mid) => {
+	const a = sound.indexOf(`ED.${name}=`), b = sound.indexOf("\n/*", a);
+	stateCtx.mid = mid;
+	vm.runInContext(`var ED=ED||{},drawn=[],labelled="";var grid=()=>{},railDraw=()=>{},cssv=()=>"#000",inkA=()=>"#000",label=(g,t)=>{labelled=t},
+		line=(g,W,f)=>{let far=f(0);for(let x=0;x<W;x++){const y=f(x);if(Math.abs(y-mid)>Math.abs(far-mid))far=y}drawn.push(far)};var V=pg=>trk(S.sel).v[pg];` + sound.slice(a, b) + `;this.E={ED,get drawn(){return drawn},get labelled(){return labelled},reset(){drawn=[];labelled=""}};`, stateCtx);
+	return stateCtx.E;
+};
+/* a canvas context that draws nothing */
+const G2D = new Proxy({}, { get: () => () => {}, set: () => true });
+const box = (m, pg, name, v) => { P.S.sel = 0; P.S.tracks[0].m = m; const i = pg === "SYN" ? T.MACH[m].p.indexOf(name) : T.FIXED[pg].indexOf(name); const mt = P.meta(0, pg, i); return { mt, text: P.fmt(mt, v) }; };
+{
+	/* B-148: BOFS and WOFS are -64 to +63 (64 no sweep), the envelope drawn up for +, down for - */
+	const ends = ["BOFS", "WOFS"].map(n => [0, 64, 127].map(v => box("SWAVE-SAW", "FLT", n, v).text).join(" "));
+	check(ends.every(e => e === "-64 0 +63"), "BOFS and WOFS show -64 0 +63 at 0 64 127: " + ends.join(" | "));
+	const H = 100, mid = (22 + H - 10) / 2, E = screen("fenv", mid), f = P.S.tracks[0].v.FLT;
+	const peak = (bofs, wofs) => { f[4] = 20; f[5] = 60; f[6] = bofs; f[7] = wofs; E.reset(); E.ED.fenv.draw(G2D, 200, H); return E.drawn; };
+	const up = peak(127, 64), down = peak(0, 64), flat = peak(64, 64), wd = peak(64, 0);
+	check(up.length === 1 && up[0] < mid - 20 && down[0] > mid + 20 && Math.abs(flat[0] - mid) < 1e-9,
+		`BOFS +63 sweeps up, -64 down, 0 is flat (peaks ${up[0]?.toFixed(1)} ${down[0]?.toFixed(1)} ${flat[0]?.toFixed(1)}, the middle ${mid})`);
+	check(wd.length === 2 && wd[1] > mid + 20 && /dashed = width/.test(E.labelled), "WOFS -64: a dashed width line, downwards");
+	peak(64, 64); check(/does nothing/.test(E.labelled), "both at 0 (64): the envelope does nothing");
+	const F = screen("flt", 0), fl = n => { E.reset(); F.ED.flt.draw(G2D, 200, H); return F.drawn.length; };
+	f[6] = 64; f[7] = 64; const none = fl(); f[6] = 30; const some = fl();
+	check(none === 1 && some === 2, `the filter curve's dashed envelope peak only with an offset (BOFS 0: ${none} line, BOFS -34: ${some})`);
+	const h = E.ED.fenv.handles(200, H)[0]; h.drag(h.x, mid - 20); check(f[6] > 64, "dragging the base handle up gives a positive BOFS (" + f[6] + ")");
 }
 
 console.log(failures ? `FAIL (${failures})` : "PASS");
