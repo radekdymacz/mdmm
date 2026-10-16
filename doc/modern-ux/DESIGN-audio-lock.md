@@ -49,21 +49,44 @@ records its site (`withDeviceLocked` and plugin.cpp take `__builtin_FILE`/`__bui
 thread is blamed on the holder's site, and every hold off the audio thread is recorded with its wall time and the
 holder's own CPU time. rt-check --lock prints them.
 
-**One firmware test at the boundary**, mdMachineMemoryFirmwareTest md (save, restore, factory start, damaged file, two
-instances, ...) with every product hold reported: PASS, load 12 to 2 (no build): the worst hold of a session 0.42 ms
-(`mdMachineMemoryDevice.cpp:62`, `look`), wall time equal to the work. An earlier run while other builds loaded the
-Mac had walls of 3.4 and 6.3 ms at the same site with means of 3 to 8 us: the low-priority memory thread preempted
-while holding (the second way a short hold becomes a long wait, below). So the test fails on the work done under the
-lock (holder CPU time over 1 ms) and reports the wall time beside it. On macOS a real-time audio thread that waits
-lends its priority to that holder (measured 14 us at load 90, below); on Linux and Windows it does not. Only steps 4
-and 5 (copy jobs, the try-lock owner token) remove that case; they wait for evidence from a host on those systems.
+**Bulk copies in parts, of one moment (md::OneMomentCopy).** The review's boundary run (mdMachineMemoryFirmwareTest md at
+load 8 to 13) found one hold of real work over 1 ms: the "atomic" look copied the whole 1 MiB patch RAM (and on the
+Monomachine the 2 MiB user flash) in one hold, and the Monomachine's state save copied both in one hold too (1.6 ms of
+work under load). Now every copy of machine memory off the audio thread (the look, the sample flash copy, the start's
+memory, the state save of both machines) goes through `md::OneMomentCopy`: parts of 64 KiB a hold, and write marks per
+piece in `md::Microcontroller` (16 KiB of patch RAM, 64 KiB of flash; counted in the slow write path only, the fast
+lane never maps patch RAM, so the emulation is unchanged). Each hold first marks stale every piece written since it was
+copied; when what is stale is no more than one part it is copied in that hold, and the copy is of that moment. After
+four full passes' worth of holds the rest is copied in one hold (not reached in the runs). The look's check no longer
+makes the factory baseline in its hold (`hasFactoryFlashBaseline`, the making copied the factory cache: a 3.2 ms hold).
+mdStateCaptureTest: patch RAM written between the parts of a save is saved as it is after the writes.
+
+**One firmware test at the boundary**, mdMachineMemoryFirmwareTest md and mm (save, restore, factory start, damaged
+file, two instances, a save landing between the pieces of a look, ...), every product hold reported, the test failing
+on more than 1 ms of work under the lock in any hold:
+
+| Run | Load (start to end, other builds) | Worst work in a hold | Worst wall time |
+|---|---|---|---|
+| before (one-hold atomic look), md | 8 to 13 | **1.9 ms FAIL** (look) | 11.4 ms |
+| after, md | 138 to 7.5 (another agent's builds, then quiet) | 0.65 ms PASS | 2.2 ms |
+| after, mm | 7.5 to 6.3 | 0.09 ms PASS | 11.7 ms |
+
+The wall times above the work are the low-priority memory thread preempted while holding (the second way a short hold
+becomes a long wait, below). On macOS a real-time audio thread that waits lends its priority to that holder (measured
+14 us at load 90, below); on Linux and Windows it does not. Only steps 4 and 5 (copy jobs run by the audio thread, the
+try-lock owner token) remove that case; they wait for evidence from a host on those systems.
+
+**rt-check after the copies in parts** (`--lock --load 24`, no build at the start; other agents' builds started during
+it, load 153 to 184): MD 0 ms (12169 blocks), MM 0 ms (9292 blocks), PASS, nothing dropped.
 
 **Goldens:** local gate stage 5 (`MDMM_GATE_ONLY=5 MDMM_GATE_SKIP_BUILD=1 --build temp/dev`): 30 of 30 runs equal their
-golden. **Tests:** synthLibDeviceCommandTest (new: order, one block per call, a full queue applied by the sender, a
+golden, before and after the write marks. **Tests:** synthLibDeviceCommandTest (new: order, one block per call, a full queue applied by the sender, a
 stale or refused command dropped and counted, the blame names the holder), synthLibStateTransactionTest,
 synthLibMidiQueueTest, synthLibSeqlockTest, synthLibStateCaptureTest, mdStateCaptureTest, mdSessionNoRomTest md/mm,
 mdProjectStateRestoreTest: pass; `scripts/mdmm-check.sh` (quick tier against main: 126 unit tests, page contracts,
-page journeys, one golden a machine) green. mdSysexLifecycleTest needs the Monomachine factory patch RAM, absent on this Mac (the
+page journeys, one golden a machine) green; after the write marks the same, but for two Monomachine page-journey
+shards whose stub host ended at the shard's end under load (every journey passed); the Monomachine page journeys again
+alone: 159 passed, 0 failed. mdSysexLifecycleTest needs the Monomachine factory patch RAM, absent on this Mac (the
 gate says the same). Not done: the ticket echo of the design's command (callers read the device's own pending facts,
 `panelPending`), `missedBlocks` (step 5).
 

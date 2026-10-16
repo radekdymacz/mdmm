@@ -204,6 +204,29 @@ namespace
 			hardware.replaceFlashData(flash, true);
 		}
 
+		// The patch RAM written while the capture is taken in parts (md::OneMomentCopy): the piece written after it was
+		// copied is copied again, and the save is the patch RAM after the write
+		{
+			auto capture = cached->beginStateCapture(synthLib::StateTypeGlobal);
+			bool parts = capture != nullptr;
+			for(int i = 0; parts && i < 130; ++i)	// the flash's 128 parts and two of the patch RAM's
+				parts = capture->captureMore();
+			auto& uc = hardware.getUC();
+			const auto before = hardware.copyPatchRam();
+			uc.pokePatchRamForTest(0x123, static_cast<uint8_t>(before[0x123] ^ 0xa5));		// a piece copied already
+			uc.pokePatchRamForTest(0xf0000, static_cast<uint8_t>(before[0xf0000] ^ 0x3c));	// one not yet
+			while(capture && capture->captureMore())
+			{
+			}
+			std::vector<uint8_t> bytes, expected;
+			check(parts && capture && capture->encode(bytes)
+				&& md::encodeStateWithFactoryBaseline(expected, hardware.copyPatchRam(), flash, factory, _rom,
+					md::MachineModel::Machinedrum, synthLib::StateTypeGlobal)
+				&& bytes == expected, "capture: patch RAM written during the parts is saved as it is after the writes");
+			uc.pokePatchRamForTest(0x123, before[0x123]);
+			uc.pokePatchRamForTest(0xf0000, before[0xf0000]);
+		}
+
 		// No factory cache yet: a complete flash image
 		auto firstRun = makeDevice(_rom, md::MachineModel::Machinedrum, {});
 		std::vector<uint8_t> completeExpected;

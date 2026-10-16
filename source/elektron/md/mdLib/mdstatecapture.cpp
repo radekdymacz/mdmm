@@ -2,6 +2,7 @@
 
 #include "mddevice.h"
 #include "mdfactorybaseline.h"
+#include "mdmemorymap.h"
 
 namespace md
 {
@@ -53,7 +54,6 @@ namespace md
 		_capture.rom.reset();
 		_capture.romFingerprint = 0;
 		_capture.copying = false;
-		_capture.flashAt = 0;
 		if(isProjectStateRestorePending() && _capture.type == m_requestedStateType && m_requestedState)
 		{
 			_capture.requestedState = m_requestedState;
@@ -61,28 +61,31 @@ namespace md
 		}
 
 		auto& stateHardware = stateCaptureHardware();
+		std::vector<OneMomentCopy::Area> areas;
+		const auto patchSize = g_patchRamStateSize;
 		if(m_model == MachineModel::Monomachine)
 		{
-			// 1 MiB and 2 MiB: one hold (0.2 ms measured)
-			_capture.patchRam = stateHardware.copyPatchRam();
-			_capture.userFlash = stateHardware.copyUserFlash();
-			return;
+			// the patch RAM and the user flash (when the flash has one), a part per hold
+			areas.push_back({false, &_capture.patchRam, 0, patchSize});
+			const auto userAt = memorymap::g_flashFull.offset(memorymap::g_mmUserFlash.begin);
+			if(stateHardware.getUC().flashSize() >= memorymap::g_flashFull.offset(memorymap::g_mmUserFlash.end))
+				areas.push_back({true, &_capture.userFlash, userAt, memorymap::g_mmUserFlash.size()});
 		}
-		_capture.rom = stateHardware.sharedRom();
-		_capture.romFingerprint = stateHardware.firmwareFingerprint();
-		_capture.factoryBaseline = stateHardware.factoryFlashBaseline();
-		const bool pending = stateHardware.copyPendingFlashOverlay(_capture.pendingOverlay);
-		// A pending restore without a factory baseline saves its overlay alone; every other case saves the flash
-		if(!_capture.factoryBaseline && pending)
+		else
 		{
-			_capture.patchRam = stateHardware.copyPatchRam();
-			return;
+			_capture.rom = stateHardware.sharedRom();
+			_capture.romFingerprint = stateHardware.firmwareFingerprint();
+			_capture.factoryBaseline = stateHardware.factoryFlashBaseline();
+			const bool pending = stateHardware.copyPendingFlashOverlay(_capture.pendingOverlay);
+			// A pending restore without a factory baseline saves its overlay alone; every other case saves the flash
+			if(_capture.factoryBaseline || !pending)
+				areas.push_back({true, &_capture.flash, 0, stateHardware.getUC().flashSize()});
+			areas.push_back({false, &_capture.patchRam, 0, patchSize});
 		}
-		_capture.flash.reserve(stateHardware.getUC().flashSize());
 		_capture.hardware = &stateHardware;
 		_capture.epoch = m_hardwareEpoch;
 		_capture.generation = m_deferredStateGeneration;
-		_capture.flashWritesAtStart = stateHardware.flashWrites();
+		_capture.copy.begin(std::move(areas));
 		_capture.copying = true;
 	}
 
@@ -99,25 +102,21 @@ namespace md
 			startStateCapture(_capture);
 			return _capture.copying;
 		}
-		auto& uc = stateHardware.getUC();
-		const auto size = uc.flashSize();
-		const bool whole = _capture.flashAt == 0 && _capture.restarts >= DeviceStateCapture::g_restarts;
-		const auto part = whole ? size : std::min(DeviceStateCapture::g_partSize, size - _capture.flashAt);
-		_capture.flash.resize(_capture.flashAt + part);
-		if(!uc.copyFlashDataRangeRealtime(_capture.flash.data() + _capture.flashAt, _capture.flashAt, part))
-			_capture.flash = stateHardware.copyFlashData();
-		_capture.flashAt = _capture.flash.size();
-		if(_capture.flashAt < size)
-			return true;
-		if(!whole && stateHardware.flashWrites() != _capture.flashWritesAtStart)
+		switch(_capture.copy.step(stateHardware))
 		{
-			// the firmware wrote the flash while it was copied: the parts may not be of one moment
-			++_capture.restarts;
-			startStateCapture(_capture);
-			return _capture.copying;
+		case OneMomentCopy::Step::More:
+			return true;
+		case OneMomentCopy::Step::Done:
+			break;
+		case OneMomentCopy::Step::Failed:
+			// a range the memory does not have: the whole memories, in this hold, as before the copy in parts
+			_capture.patchRam = stateHardware.copyPatchRam();
+			if(m_model == MachineModel::Monomachine)
+				_capture.userFlash = stateHardware.copyUserFlash();
+			else if(_capture.factoryBaseline || !_capture.pendingOverlay.valid)
+				_capture.flash = stateHardware.copyFlashData();
+			break;
 		}
-		// the flash is now what was copied: the patch RAM of this moment completes the save of one moment
-		_capture.patchRam = stateHardware.copyPatchRam();
 		_capture.copying = false;
 		return false;
 	}

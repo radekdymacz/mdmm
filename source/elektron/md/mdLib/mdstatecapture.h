@@ -6,6 +6,7 @@
 // beginStateCapture override.
 
 #include "mdhardware.h"
+#include "mdonemomentcopy.h"
 #include "mdstate.h"
 #include "mdtypes.h"
 
@@ -31,13 +32,12 @@ namespace md
 		DeviceStateCapture(MachineModel _model, synthLib::StateType _type) : model(_model), type(_type) {}
 
 		bool encode(std::vector<uint8_t>& _state) override;
-		// DESIGN-audio-lock.md step 1: the Machinedrum's 8 MiB flash is copied g_partSize a hold, the patch RAM with
-		// the last part. When the flash was written meanwhile (Microcontroller::flashWrites) or the device's Hardware
-		// changed, the capture begins again; after g_restarts the rest is copied in one hold. Same lock as
-		// beginStateCapture; the device must still be the plug-in's (synthLib::Plugin::getState checks).
+		// DESIGN-audio-lock.md: the memory the running machine can still change (the patch RAM and the MD flash or the
+		// MM user flash) is copied a part per hold, as of one moment (md::OneMomentCopy). When the device's Hardware
+		// changes meanwhile the capture begins again on the new one. Same lock as beginStateCapture; the device must
+		// still be the plug-in's (synthLib::Plugin::getState checks).
 		bool captureMore() override;
 
-		static constexpr size_t g_partSize = 256 * 1024;
 		static constexpr uint32_t g_restarts = 4;
 
 		const MachineModel model;
@@ -52,13 +52,12 @@ namespace md
 		std::shared_ptr<const Rom> rom;
 		uint64_t romFingerprint = 0;
 
-		// The copy in parts (Device::continueStateCapture): which Hardware, how far, and the flash's writes at its start
+		// The copy in parts (Device::continueStateCapture): which Hardware, and the copy
 		Device* device = nullptr;
 		const Hardware* hardware = nullptr;
 		uint64_t epoch = 0;
 		uint64_t generation = 0;
-		uint64_t flashWritesAtStart = 0;
-		size_t flashAt = 0;
+		OneMomentCopy copy;
 		bool copying = false;
 		uint32_t restarts = 0;
 	};
