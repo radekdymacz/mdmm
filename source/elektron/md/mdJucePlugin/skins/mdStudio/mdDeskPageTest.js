@@ -38,7 +38,9 @@ function run() { for (let n = 0; n < 20 && timers.length; n++) { const t = timer
 const on = { window: {}, document: {} };
 const listen = where => (type, f) => { (on[where][type] = on[where][type] || []).push(f); };
 const fire = (where, type, e = {}) => (on[where][type] || []).forEach(f => f(e));
-const document = orAny({ addEventListener: listen("document"), activeElement: null, readyState: "complete" });
+/* the elements a test puts behind a selector (the lane, a key); every other selector answers "any" */
+const hooks = {};
+const document = orAny({ addEventListener: listen("document"), activeElement: null, readyState: "complete", querySelector: q => hooks[q] || any, elementFromPoint: () => hooks.under || any });
 /* the Bridge: records every command; answers none (so the optimistic writes stay, as while they are on their way) */
 const sent = [], bridgeListeners = [];
 let id = 0;
@@ -53,7 +55,7 @@ const src = FILES.map(f => fs.readFileSync(path.join(__dirname, f), "utf8").repl
 const P = new Function("scope", "with (scope) {\n" + src + `
 ;let renders = 0;
 render = () => { renders++; }; syncControls = () => { }; renderTop = () => { }; renderSub = () => { }; redraw = () => { }; refreshAudible = () => { };
-return { Boot, hostTempoRefused, l2step, onTelemetry, pauseNow, playsText, songLcd, S, Docs, Overlay, Held, PREP, scheduleRender, clickSteps, secAction, selStart, stepMenu, stepMenuItems, Modifiers, selCut, selDuplicate, clearSel, setSel, endSelect, interacting, genEnsure, genSpec, setGenSpec, clickTrackKeys, userMute, soloWrites, muteSel, msSet, prepToggle, unmuteAll, Keys,
+return { kitHit, kitGrab, kitAt, laneAt, valueHTML, kitLabelHTML, laneFmt, grp, Gesture, Boot, hostTempoRefused, l2step, onTelemetry, pauseNow, playsText, songLcd, S, Docs, Overlay, Held, PREP, scheduleRender, clickSteps, secAction, selStart, stepMenu, stepMenuItems, Modifiers, selCut, selDuplicate, clearSel, setSel, endSelect, interacting, genEnsure, genSpec, setGenSpec, clickTrackKeys, userMute, soloWrites, muteSel, msSet, prepToggle, unmuteAll, Keys,
 	get V() { return V; }, setV(v) { V = v; }, view, get renders() { return renders; }, get pending() { return pendingRender; } }; }`)(scope);
 
 /* the machine document: its mutes (machine.desk.mutes) as the machine has them */
@@ -665,6 +667,64 @@ return { Bridge, cmd, asked, errors, banners, S, Drop, get V() { return V; }, se
 			"dropSample's slot is a ROM slot (0-47)");
 		native.onDrop = null;
 	}
+}
+
+/* ---- I-035: the lock lane's kit-value line: grabbed within 4 px of it, dragged to change the kit value (one undo step,
+   no lock painted), its number and the locks' numbers on the lane ---- */
+{
+	const HEX62 = "0".repeat(62);
+	const tr = (i) => ({ machine: "GND-EMPTY", model: 0, level: 100, synth: Array(8).fill(0), effects: Array(8).fill(0).map((x, k) => k === 4 && i === 0 ? 64 : 0), routing: Array(8).fill(0),
+		lfo: { track: 0, param: 0, shape1: 0, shape2: 0, update: 0 }, muteGroup: null, trigGroup: null });
+	P.Docs.kits[3] = { schema: "md-desk/kit", version: 2, slot: 3, name: "K", tracks: Array.from({ length: 16 }, (_, i) => tr(i)),
+		masterFx: { rhythmEcho: Array(8).fill(0), gateBox: Array(8).fill(0), eq: Array(8).fill(0), dynamix: Array(8).fill(0) },
+		firmware: { format: { version: 2, revision: 0 }, lfoState: Array(16).fill(HEX62) } };
+	P.Docs.patterns[5] = { schema: "md-desk/pattern", version: 2, slot: 5, kit: 3, length: 16, totalLength: 16, tempoMultiplier: "1X", swingAmount: 0, accentAmount: 0,
+		accent: { editAll: 0, steps: [] }, slide: { editAll: 0, steps: [] }, swing: { editAll: 0, steps: [] },
+		tracks: Array.from({ length: 16 }, (_, i) => ({ trigs: i === 0 ? [0, 1, 4] : [], accent: [], slide: [], swing: [] })), locks: [], firmware: { format: { version: 2, revision: 0 }, lockedRowsField: 0 } };
+	P.Docs.machine = Object.assign({}, P.Docs.machine || {}, { pattern: { current: 5 }, kit: { current: 3 }, desk: {} });
+	P.Overlay.clear(); P.S.multi = new Set(); P.S.sel = 0; P.S.ws = "seq"; P.S.lane = "FLTF"; P.setV(P.view());
+	/* a key 106 px tall at the bottom 200: the bars' scale is 3 px in, 100 px high, the kit line (64 of 127) at y 145.6 */
+	const classes = new Set();
+	const lane = { contains: () => true, classList: { add: c => classes.add(c), remove: c => classes.delete(c), toggle: (c, on) => on ? classes.add(c) : classes.delete(c) }, innerHTML: "" };
+	const key = { dataset: { s: "1" }, insertAdjacentHTML() { }, getBoundingClientRect: () => ({ bottom: 200, height: 106, top: 94, left: 0, right: 20, width: 20 }), querySelector: q => q === ".base" ? {} : null, closest: () => key };
+	hooks["#lane"] = lane; hooks["#lane .lb"] = key; hooks.under = key;
+	const at = (y, m = {}) => Object.assign({ button: 0, clientX: 5, clientY: y, target: key, preventDefault() { } }, m);
+	check(P.grp(0, "FLTF").FLTF === 64, "the kit value the lane's line shows: FLTF 64");
+	check(!!P.kitHit(at(146)) && !!P.kitHit(at(142)) && !!P.kitHit(at(149)), "the line's hit zone: 146, 142 and 149 are on it (4 px each side of its middle, 145.6)");
+	check(!P.kitHit(at(141)) && !P.kitHit(at(151)) && !P.kitHit(at(60)), "141, 151 and 60 are off it");
+	check(!P.kitHit(Object.assign(at(146), { target: { closest: () => ({ querySelector: () => null }) } })), "a key without a line (no trig) has no zone");
+	check(!P.kitGrab(at(146, { altKey: true })) && !P.kitGrab(at(146, { shiftKey: true })) && !P.kitGrab(at(146, { button: 2 })) && !P.Held.now, "Alt (erase), Shift (ramp) and a right button never grab it");
+	/* a click on the line (released without moving more than 3 px) is the lane's: it locks the step at the value under the pointer, the kit value */
+	sent.length = 0;
+	check(P.kitGrab(at(146.6)) && P.Held.as("lane")?.kit === "maybe" && !classes.has("kitdrag"), "a press on the line is a maybe-drag: nothing is written yet");
+	P.laneAt(at(148)); fire("document", "pointerup"); run();
+	check(sent.filter(m => m.op === "lock").length === 1 && sent.find(m => m.op === "lock").v === 64 && sent.find(m => m.op === "lock").s === 1 && !sent.some(m => m.op === "param") && !P.Held.now,
+		"released after a 2 px move it is a click: the step is locked at the kit value 64, no kit edit: " + sent.map(m => m.op + ":" + (m.v ?? "")).join(" "));
+	sent.length = 0;
+	check(P.kitGrab(at(146)) && P.Held.as("lane")?.kit === "maybe", "a press on the line begins as a maybe-drag");
+	P.laneAt(at(144)); check(P.Held.as("lane")?.kit === "maybe" && !classes.has("kitdrag"), "3 px of movement is still a click");
+	P.laneAt(at(100)); check(P.Held.as("lane")?.kit === true && classes.has("kitdrag"), "more than 3 px up or down is the kit drag (the lane's cursor follows)");
+	P.laneAt(at(60)); P.laneAt(at(60));
+	const params = sent.filter(m => m.op === "param");
+	check(sent.filter(m => m.op === "lock").length === 0, "dragging the line paints no lock: " + sent.map(m => m.op).join(" "));
+	check(params.length === 2 && params[0].t === 0 && params[0].i === 12 && params[0].v === 123 && params[1].v === 127, "the drag sets the track's FLTF kit value as the Sound page's knob does (param, index 12): " + JSON.stringify(params.map(m => m.v)));
+	check(new Set(params.map(m => m.g)).size === 1 && params[0].g, "all the drag's edits are one undo step (one gesture id): " + params.map(m => m.g));
+	check(P.grp(0, "FLTF").FLTF === 127, "the view shows the new kit value at once");
+	fire("document", "pointerup"); run();
+	check(!P.Held.now && !classes.has("kitdrag") && P.Gesture.id === 0, "letting go ends the drag");
+	/* the lane elsewhere: a press off the line draws a lock as before */
+	sent.length = 0;
+	check(!P.kitGrab(at(60)), "a press off the line is the lane's: no grab");
+	P.Held.begin("lane", { erase: false, ramp: false, touched: new Set() }); P.laneAt(at(60)); P.Held.end("lane");
+	check(sent.filter(m => m.op === "lock").length === 1 && !sent.some(m => m.op === "param"), "and it locks the step, changing no kit value: " + sent.map(m => m.op).join(" "));
+	/* the numbers: a lock's at its bar's end, the kit's on the line, a signed parameter as -64..+63 */
+	check(/>99</.test(P.valueHTML(99)) && /vl/.test(P.valueHTML(99)), "a lock's value is written as a number: " + P.valueHTML(99));
+	check(/0\.7795\) \+ 1px/.test(P.valueHTML(99)) && /0\.9449\) - 13px/.test(P.valueHTML(120)), "the number sits above a bar's end, below it near the top");
+	check(/>127</.test(P.kitLabelHTML(127)) && /- 15px/.test(P.kitLabelHTML(127)) && /\+ 3px/.test(P.kitLabelHTML(40)), "the kit line's number sits above the line, below it near the top");
+	check(/class="kvl fl"/.test(P.kitLabelHTML(127)) && /class="kvl"/.test(P.kitLabelHTML(40)), "near the top the kit's number moves left of its key (it never covers a bar's top)");
+	P.S.lane = "PAN";
+	check(P.laneFmt(64) === "0" && P.laneFmt(74) === "+10" && P.laneFmt(0) === "-64" && />\+10</.test(P.valueHTML(74)), "a signed parameter's numbers are -64 to +63 as the knob shows it");
+	P.S.lane = "FLTF"; delete P.Docs.kits[3]; delete P.Docs.patterns[5]; P.Overlay.clear(); P.setV(P.view()); for (const k of Object.keys(hooks)) delete hooks[k];
 }
 
 console.log(failures ? `${failures} failure(s)` : "mdDeskPageTest: all passed");
