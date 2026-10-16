@@ -19,7 +19,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current state
 
-0.6.0 was released on 2026-10-14. 0.7.0 is being cut on release/0.7.0 (2026-10-15); B-133 still open. State and decisions: doc/release/PLAN-0.6.md (top: Radek's rule after 0.6; "Handover" is history). The feature data is doc/features/*.json (doc/features/README.md), the user guide doc/guide/ (README.md, STYLE.md), the gap design doc/modern-ux/DESIGN-machine-menus.md with its wave plan doc/modern-ux/PLAN-manual-gaps.md.
+0.7.0 was released on 2026-10-15; B-133 still open. Toward 1.0: the review of 2026-10-15 and what was fixed is doc/modern-ux/DESIGN-REVIEW-2026-10-15-1.0.md (status table at the top). No auto-update (Radek, 2026-10-15): the update check stays, install stays off.
+
+### Handover (2026-10-16): three pushed branches, none merged
+
+The usage limit stopped the work mid-way. Each branch is pushed to origin and has its own worktree in `audio/gearmulator-md-mm-wt/`. Rule: merge to main only after the branch's own tests pass and an independent reviewer passes it.
+
+1. **`fix/mm-tester-bugs-1016`** (worktree `mm-bugs-1016`): Monomachine B-148..B-152 from a tester (BOFS/WOFS signed and a cleared track's FILTER page 64/64; FM+ frequencies, DigiPRO D01-D64/S01-S32 and PCH2-4 as the firmware's own lists, read from the ROM, tables in BUGS.md; a "Pitchless trig" step-menu item). Done and tested by its author (mmDeskTest, mmViewTest, mmSoundTest, MM page journeys, firmware intentcases + trigkinds). **Left:** the independent review (stopped half-way: check saved-data compatibility of the S01-S32 enum rename and the PCH default 63, table-box stepping/GEN/MUTATE, generated files in step, both plug-ins build), then merge. Open small item: D-wave names (SINE, HSIN ...) not shown.
+2. **`fix/1.0-lock-free-audio`** (worktree `1.0-lockwait`): the last 1.0 real-time item, the audio thread waiting for the device lock. Design and measurements: doc/modern-ux/DESIGN-audio-lock.md (chosen: steps 1, 2 and 6 now; steps 3-5, the command ring, only if the gate still fails). Step 1 committed (long holds out of the lock: setDevice, startMemory, ...). Step 2 (facts snapshot, `mdMachineFacts`) and `mdmm-rt-check.sh --load` are a WIP commit: it builds, the gate still FAILS under load (MD worst 19.6 ms, total 24 ms, was 27/384; MM 1.8 ms, was 21). **Left:** find the remaining blamed sites (`scripts/mdmm-rt-check.sh --lock --load 24`), finish step 2, then decide on steps 3-5; tests per the design's "done when"; review; merge.
+3. **`ci/linux-steamos`** (worktree `ci-steamos`): a SteamOS-like start test for the Linux tarball (B-153, "does not work on SteamOS Holo"), a WIP commit: a job in mdmm-editors-linux.yml plus scripts/linux/steamos_start_test.sh, never run. **Left:** check the image (Steam Deck Homebrew holo image pinned by digest, else archlinux), run it with `gh workflow run mdmm-editors-linux.yml --ref ci/linux-steamos`, make the "with packages" case green and print the "bare" case, add the Arch/SteamOS pacman line to scripts/linux/README-Linux.txt, update B-153, review, merge. B-153 waits for the tester's facts (a reply asking for them was drafted 2026-10-16).
+
+State and decisions before 1.0: doc/release/PLAN-0.6.md (top: Radek's rule after 0.6; "Handover" there is history). The feature data is doc/features/*.json (doc/features/README.md), the user guide doc/guide/ (README.md, STYLE.md), the gap design doc/modern-ux/DESIGN-machine-menus.md with its wave plan doc/modern-ux/PLAN-manual-gaps.md.
 
 ## Sister product: xox-plocks
 
