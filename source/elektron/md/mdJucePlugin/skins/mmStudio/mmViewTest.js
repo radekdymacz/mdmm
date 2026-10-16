@@ -61,7 +61,7 @@ function page() {
 	const src = FILES.map(f => fs.readFileSync(f, "utf8").replace(/^"use strict";/, "") + (/mmAdapter/.test(f) ? hold : "")).join("\n;\n")
 		+ "\n;__start();\nreturn { S: () => S, Overlay, MmView, docStore, storeDoc, MM_SEAM, Dlg, Banner, mockup: { " +
 			"mutApply, genLive, genEnd, setMachine, songAction, secAction, setSel, clearSel, selCut, selDuplicate, selTrigs, selMark, selMove, selGrow, stepMenuItems, Keys, HOST, " +
-			"rollAdd, rollLen, rollRemove, editSpan, setRollLen, selMoveTo, selClear, noteSpans, vis } };";
+			"rollAdd, rollLen, rollRemove, editSpan, setRollLen, selMoveTo, selClear, pitchSel, noteSpans, vis } };";
 	const out = new Function("scope", "with (scope) {\n" + src + "\n}")(scope);
 	const run = () => { for (let n = 0; timers.length && n < 10000; n++) timers.shift()(); };
 	run();
@@ -391,10 +391,51 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 		"dragged longer than the room: up to the next trig on 9, the NOTE OFF on 7 gone: " + o.map(args).join("; "));
 	const ch = M.rollRemove(0, 8); M.editSpan(0, new Set(ch), true);
 	o = take();
-	check(!!T().steps[8]?.off && o.length === 1 && JSON.stringify(o[0].rows[0].steps) === '[[8,{"off":true}]]',
-		"a removed note the note on 5 ran into: a NOTE OFF in its place, so that one keeps its four steps: " + o.map(args).join("; "));
+	check(!T().steps[8] && o.length === 1 && JSON.stringify(o[0].rows[0].steps) === '[]',
+		"a removed note the note on 5 ran into (I-037): gone, and no NOTE OFF in its place: " + o.map(args).join("; "));
 	const sp = M.noteSpans(0).find(x => x.s === 4);
-	check(sp && sp.e === 8 && sp.wrap === 0, "the roll draws it four steps long: " + JSON.stringify(sp && { s: sp.s, e: sp.e }));
+	check(sp && (sp.e > 8 || sp.wrap > 0), "the note before runs on through the gap, as the machine plays it: " + JSON.stringify(sp && { s: sp.s, e: sp.e, wrap: sp.wrap }));
+	/* a NOTE OFF that only closed the removed note goes with it */
+	put(0, { 4: N(50), 8: N(52), 10: { off: 1 } });
+	const ch2 = M.rollRemove(0, 8); M.editSpan(0, new Set(ch2), true);
+	o = take();
+	check(!T().steps[8] && !T().steps[10] && JSON.stringify(o[0].rows[0].steps) === '[]', "the removed note's own NOTE OFF goes with it: " + o.map(args).join("; "));
+	/* I-036: Delete on a selected note (selClear) writes nothing but the clear, no NOTE OFF before it */
+	put(0, { 4: N(50), 8: N(52) });
+	M.setSel({ t: 0, n: 1, from: 8, to: 9 }); take();
+	M.selClear();
+	o = take();
+	check(o.length === 1 && args(o[0]) === 'clearSteps {"t":0,"n":1,"from":8,"to":9}', "Delete on a selected note: clearSteps only, the note before keeps sounding (I-037): " + o.map(args).join("; "));
+	M.clearSel();
+	put(0, { 4: null, 8: null });
+	/* I-036: ↑ / ↓ with exactly one note selected change its pitch, ⇧ an octave; each press its own undo step (the key's release commits) */
+	put(0, { 4: N(50), 8: N(52) });
+	M.setSel({ t: 0, n: 1, from: 4, to: 5 }); take();
+	const up = M.Keys.byId("note-pitch"), oct = M.Keys.byId("note-octave"), mv = M.Keys.byId("track-prev-next");
+	check(!!up && !!oct && !!M.pitchSel() && M.pitchSel().s === 4 && up.keys.includes("ArrowUp") && oct.mod === "shift", "one note selected: the pitch keys have it (the keys' when() is pitchSel and selKeys)");
+	up.run({ key: "ArrowUp" });
+	o = take();
+	check(T().steps[4].n[0] === 51 && o.length === 1 && args(o[0]) === 'step {"t":0,"s":4,"v":{"a":1,"f":1,"l":1,"n":[51]}}' && JSON.stringify(S.stepSel) === '{"t":0,"n":1,"from":4,"to":5}',
+		"ArrowUp: a semitone up, one step intent, the note stays selected: " + o.map(args).join("; "));
+	p.host.commit(); take();
+	up.run({ key: "ArrowDown" }); const d1 = take(); p.host.commit(); up.run({ key: "ArrowDown" }); const d2 = take();
+	check(T().steps[4].n[0] === 49 && d1.length === 1 && d2.length === 1 && d1[0].g !== d2[0].g, "ArrowDown twice (the key released between): two semitones down, one intent each, each its own undo step (gesture): " + [...d1, ...d2].map(m => args(m) + " g" + m.g).join("; "));
+	oct.run({ key: "ArrowUp" });
+	check(T().steps[4].n[0] === 61, "Shift+ArrowUp: an octave up");
+	take();
+	S.tracks[0].steps[4].n = [127]; oct.run({ key: "ArrowUp" });
+	check(T().steps[4].n[0] === 127 && !take().length, "at the top of the range it stays (nothing sent)");
+	T().steps[4].n = [50];
+	/* a selection with no note, or two notes: the keys stay the track move */
+	M.setSel({ t: 0, n: 1, from: 5, to: 8 });
+	check(!M.pitchSel(), "no note in the selection: the pitch keys are off (↑ / ↓ move the track)");
+	M.setSel({ t: 0, n: 1, from: 4, to: 9 });
+	check(!M.pitchSel(), "two notes selected: off, too");
+	M.setSel({ t: 0, n: 2, from: 4, to: 5 });
+	check(!M.pitchSel(), "a note on two tracks selected: off");
+	M.clearSel();
+	check(!M.pitchSel(), "no selection: off");
+	put(0, { 4: null, 8: null });
 	put(0, { 14: N(48), 2: { off: 1 } });
 	const w = M.noteSpans(0).find(x => x.s === 14);
 	check(w && w.e === 16 && w.wrap === 2, "a note on step 15 of 16 with a NOTE OFF on step 3: drawn to the end and on at the start (two steps), as the machine plays it");
