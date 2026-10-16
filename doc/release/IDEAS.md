@@ -3,6 +3,41 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-039 · Song rows: show and edit mutes, transpose and tempo in the arrangement itself
+
+- **From:** a beta tester on Discord, 2026-10-16: loves Song mode and wants more song options: per-track mutes, per-track transpose and BPM per row.
+- **Today:** the editors have all three (feature rows MD-149/MD-157, MM-199/MM-263/MM-264/MM-266/MM-267, as on the machines: MD rows hold pattern, REP, BPM, offset, length, mutes; MM rows hold pattern, repeats, transpose, per-track transpose TR1-6 + six MIDI, offset/length, mutes 6 + 6, BPM). But the arrangement cell shows only the pattern name, `x` repeats and a `~` for offset/length (`mdDeskSong.js:116-120`, `120-song.js:125-128`); mutes and per-track transpose are behind the selected row's inspector > More (`data-rowmute`, `data-rowmore`), and the tempo behind a Keep toggle. The tester probably does not know they are there, or wants them at a glance.
+- **The idea:** small marks on the arrangement cells (a tempo number when the row sets one, a mute dot, a transpose number), without a new row above the grid; the inspector stays the place to edit. Needs Radek's call on the look.
+- **Status:** idea; first answer the tester that the options exist (Row > More), then decide on the marks.
+
+## I-038 · SysEx import: make the read-back (the second scan) optional
+
+- **From:** a beta tester on Discord, 2026-10-16: the second scan that verifies a SysEx transfer should be optional.
+- **Today:** an import is Read the slots (only when the editor does not know them yet), Send, Read back (`SyxJob`, `mdJucePlugin/mdSyxSession.h:49` phases Before / Sending / Reading; the page `skins/shared/deskSyx.js:308`). The read-back compares each slot with the file and fills the report; Verify only is a separate button. Both editors, one code path.
+- **The idea:** a tick "Read back and compare" on the import panel (on by default), off = Send then done, report says "not checked". Saves the read time (a pattern per 1.7 s at cable speed). Needs Radek's call where the tick sits.
+- **Status:** idea.
+
+## I-037 · Piano roll: deleting a note should let the note before it fill the gap, not write a note off
+
+- **From:** a beta tester on Discord, 2026-10-16: deleting a note produces a note off, which is usually not wanted; the previous note filling the gap would fit better.
+- **Today (Monomachine only; the Machinedrum has no note off):** `MmRoll.remove` (`mmStudio/src/58-roll.js:41-43`, used by `rollRemove`, `70-seq.js:206`) puts a NOTE OFF where the removed note began when the note before it ran into it, so the earlier note keeps its length. The machine itself does not: a synth note sounds from its trig to the next NOTE OFF or trig (header of `58-roll.js`), so clearing a trig on the machine lets the earlier note run on.
+- **The idea:** the removal writes nothing but the removed trig (and, as now, its own closing NOTE OFF), as the machine does. Alt-click and the erase drag use the same function.
+- **Status:** idea; reverses a deliberate rule (0.5 note lengths), so Radek decides.
+
+## I-036 · Notes: a click keeps the note selected, arrows move it, Delete removes it, double-click removes a note
+
+- **From:** a beta tester on Discord, 2026-10-16: clicking a note should keep focus (now it needs a ⌘-click) so the up/down arrow keys move it; Delete while the note is held is awkward; maybe a double-click removes a note.
+- **Today:** a plain press on a step paints (toggles the trig) and ends the selection (Machinedrum `mdDeskGestures.js:218-221`; Monomachine step grid `clickStep`, `70-seq.js:101-106`); only ⌘-click selects. In the Monomachine piano roll a plain click already selects the note (`rollSelectDown`, `70-seq.js:225`). Up/Down with a selection moves the selection to the next track (`track-prev-next`, `75-comforts.js:145`), never the pitch; Delete clears the selection (`77-select.js:49`). There is no double-click on steps.
+- **The idea:** (1) a click on an existing trig selects it instead of removing it (the toggle moves to the empty step or the double-click); (2) Up/Down on one selected note changes its pitch (Monomachine; on the Machinedrum a trig has no pitch, so only left/right); (3) double-click removes.
+- **Status:** idea; changes what a click does on both grids, Radek decides.
+
+## I-035 · Lock lane: a thicker kit-value line, ⌘-drag to change it, the value as a number under the line
+
+- **From:** a beta tester on Discord, 2026-10-16: the dashed line that shows the current parameter value should be thicker; it should be changeable by ⌘-drag (or similar) so all the editing happens in the lock window; the value should be a number below it instead of only on hover.
+- **Today:** the dashed line is `.lb .base` (a 1 px dashed border at 55 % opacity: `mdStudio/mdDesk.css:139,1152`, `mmStudio/src/*.css`), drawn per trig by `baseHTML` (`70-seq.js:83`) and `mdDeskSeq.js:87`. A lock's value is only in the tooltip (`title` "Locked 64" / "Kit value 64"); the kit value is in the lane's left scale (`.lbscale`, MM only) as a number. A plain drag draws locks (`laneAt`, `mdDeskGestures.js:11-18`); changing the kit value itself is done on the Sound page.
+- **The idea:** (1) 2 px line, full opacity; (2) ⌘-drag on the lane moves the kit value (the same value the Sound page edits), shown live; (3) the lane shows the number of the value under the pointer or of the selected step in a small readout under the lane, always visible.
+- **Status:** idea; (2) and (3) add to the lane, Radek decides. Both editors.
+
 ## I-034 · GEN settings: Keep on for every track by default, placed between the patterns and the mutes/solos
 
 - **From:** a beta tester on Discord, 2026-10-12 (0.5.1 / 0.6 line).

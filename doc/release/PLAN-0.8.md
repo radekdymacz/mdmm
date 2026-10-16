@@ -230,3 +230,59 @@ Install both .pkg files. Gear: USB MIDI keyboard, IAC driver with two buses, Abl
 11. Ask Radek to deploy the site at once; check `/get/` has no price step; close B-159.
 12. Discord: webhook posts #announcements; every other post shown to Radek first (B-154, B-155, B-157, B-119 replies, B-156 retest).
 13. After: CLAUDE.md "Current state", BUGS.md "fixed in 0.8.0", start PLAN-0.9.md with the waits.
+
+### WP10 · Beta-tester feedback 2026-10-16b
+
+Shared rules as in PLAN-0.8 (own worktree from origin/main, own test via scripts/mdmm-check.sh, Sonnet, review, push). MM page files: edit `mmStudio/src/*`, regenerate `mmMockup.js` (build step in FOUNDATION).
+
+#### A. B-161 stacked LFOs (branch fix/0.8-stacked-lfo, other agent) - no work here.
+
+#### B. B-162 mode switching (Chain/Pattern/Song)  - Size M, both editors
+- Goal: no mode key sequence leaves the page and the machine apart or changes a parameter.
+- Files: `mdStudio/mdDeskSong.js` (songPickSet l.34, chainSoon l.43, songModeSync l.23), `mmStudio/src/120-song.js` (l.22-27, 45, 84-86); possibly the chain command in mdLib/desk (MdMachine::cmdChain).
+- Step 1 (repro first): firmware journeys `md-song-mode-cycle`, `mm-song-mode-cycle` in the machine tier: snapshot of all kit values + songMode + chain doc; then (a) SONG, PATTERN, SONG, PATTERN, 100 ms apart; (b) PATTERN, CHAIN, click two pads, SONG within 100 ms (inside the 150 ms chain timer), PATTERN; (c) chain two pads, wait, PATTERN pad pick (chain ends), screen must not say CHAIN; (d) CHAIN then LCD PLAY key. After each: page switch == machine mode, chain doc == pads shown, kit values and pattern unchanged.
+- Step 2 (fix, per what step 1 shows): cancel `S.chainTimer` and the draft in `songPickSet`; send no chain while the machine is not in pattern mode; fall back `S.songPick` from "chain" to "pattern" when `chainDoc().active` is false and the draft is empty; serialise `seqMode` (latest wins).
+- Done when: both journeys pass 5 of 5 on the ROMs; `md-song-mode`, `md-song-chain`, `mm-song-mode`, `mm-song-chain` still pass. Needs the tester's steps if (a)-(d) all pass.
+- Independent of the rest. No UI change (Radek not needed).
+
+#### C. I-037 delete a note: previous note fills the gap  - Size S, Monomachine only
+- Goal: rollRemove writes no NOTE OFF (the machine's behaviour: a note runs to the next trig or NOTE OFF).
+- Files: `mmStudio/src/58-roll.js` (`remove`), `70-seq.js` (rollRemove, l.206, erase drag l.256), `mmRollTest.js`.
+- Done when: `mmRollTest` cases: removing a note after a long note leaves no new `{off:1}`; removing the note that has a closing NOTE OFF removes that too (or keeps it, see Radek); page journey `mm-roll-delete-gap`. Firmware check optional: `mmDeskFirmwareTest notelength` shows the earlier note sounding through.
+- Radek's call (behaviour): A) machine-like, no note off (proposed, simplest); B) keep today's rule and add a modifier/setting "keep length" off by default. Parallel with D, E.
+
+#### D. I-036 click keeps the note selected / arrows / double-click  - Size M, both editors
+- Goal: a click on an existing trig selects it (focus kept), Up/Down change pitch of one selected note (MM; MD has no pitch, Left/Right only), double-click removes.
+- Files: `mdStudio/mdDeskGestures.js` (pointerdown l.218), `mmStudio/src/70-seq.js` (clickStep l.101), `77-select.js`, `75-comforts.js` (track-prev-next l.145: Up/Down are track moves today, so a selection of one note taking pitch means the track move moves to another key), `shared/deskSelect.js`.
+- Done when: page journeys `md-note-click-select`, `mm-note-click-select` (click, ArrowUp changes pitch / ArrowRight moves, Delete removes, double-click removes); existing select/paint journeys updated.
+- Radek's call: the plain click is toggle-paint today (drag to paint rows of trigs). A) click selects an existing trig, empty step still draws, drag-paint kept from an empty step, double-click removes; B) leave clicks, add only a setting "click selects"; plus the Up/Down conflict: Up/Down with one selected note = pitch (A) or stay track-move and use Alt+Up/Down for pitch (B). Not parallel with C inside 70-seq.js (merge conflicts): C first.
+
+#### E. I-035 lock lane readout and kit-value drag  - Size M, both editors
+- Goal: thicker line (2 px, full ink), a visible number readout, ⌘-drag on the lane edits the kit value.
+- Files: `mdStudio/mdDesk.css` l.139+1152, `mmStudio/src/*.css`, `mdDeskSeq.js` l.87, `70-seq.js` l.83-95 (baseHTML/renderLane), `mdDeskGestures.js` l.11-18 (laneAt), `mmStudio/src/70-seq.js` laneAt l.108; the kit value setter the Sound page uses.
+- Done when: page journeys `md-lane-kitvalue`, `mm-lane-kitvalue` (⌘-drag changes the kit value and the Sound page shows it; readout text equals the value); Haiku screenshot review.
+- Radek's call (UI): readout A) a fixed strip under the lane ("T3 CUTOFF step 5: lock 64, kit 40"), B) number on the line at the pointer/selected step. Line thickness: do as asked (no call). Keep the layout; no new rows above the grid; no right-click.
+- Split E1 (line + readout, S, no gesture) can go now; E2 (⌘-drag, M) after the call.
+
+#### F. I-038 optional read-back for SysEx import  - Size S-M, both editors (one code path)
+- Goal: a tick "Read back and compare" (default on); off = Send, then done, report says "not checked".
+- Files: `mdJucePlugin/mdSyxSession.h` (phases, l.294-330; a `m_readBack` flag next to `m_check`), `mdSyxWork.h` l.314-330 (message arg), `deskHost/deskHost.cpp` l.84, `skins/shared/deskSyx.js` (panel foot l.243, PH steps l.308, start l.389), md.json MD-184.
+- Done when: unit test on `SyxJob` (no ROM): without read-back the job ends after Sending, report outcome "sent"; `deskSyxTest.js` for the tick; firmware `syx` test still passes with the tick on.
+- Radek's call (UI): where the tick sits. A) beside Verify only in the footer, B) in the PLACE row. Parallel with everything.
+
+#### G. I-039 song row marks  - Size M (page only), both editors
+- Goal: arrangement cells show a tempo number, a mute dot, a transpose value when set.
+- Files: `mdDeskSong.js` l.116-120 (`sub`), `120-song.js` l.125-128, css for `.scell small`; the data is in the rows already (`r.bpm`, `r.mutes`, `r.trn`, per-track trn).
+- Done when: page journeys `md-song-row-marks`, `mm-song-row-marks` (set BPM / mute / transpose in the inspector, the cell shows it); Haiku screenshot.
+- Radek's call (UI): A) a second line in the cell ("120 M3 +2"), B) small corner glyphs; also answer the tester first that Row > More has them. Parallel with B (different functions, same files: B first or rebase).
+
+#### Order
+Wave 1 parallel: B (repro first), C, F, E1. Wave 2: D (after C), E2, G. Items needing Radek's call before they start: C, D, E (readout/drag), F (tick place), G (look). B and E1 need none.
+
+#### Decisions (Radek left them to Claude, 2026-10-16)
+- I-037 note delete: A, machine-like. Delete writes no NOTE OFF; the earlier note runs on.
+- I-036 click: A. A click on an existing trig selects it and keeps focus; an empty step still draws; double-click removes; Delete/Backspace remove the selection; Up/Down on one selected note changes its pitch.
+- I-035 lock lane: a thicker value line; the value as a number on the line at the selected step (no new strip, the layout stays); the kit value is changed by dragging the line itself, no modifier.
+- I-038 SysEx read-back: a "Read back and compare" tick beside Verify in the footer, on by default.
+- I-039 song rows: a second line in the arrangement cell only when the row has a BPM, mutes or transpose (e.g. "120 M3 +2"); rows without them look as today. Tell the tester Row > More already edits them.
+- Order: B (mode switching) and C first.
