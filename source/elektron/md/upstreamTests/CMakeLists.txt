@@ -23,3 +23,11 @@ target_link_libraries(synthLibSeqlockTest PRIVATE synthLib)
 add_test(NAME synthLibSeqlockTest COMMAND synthLibSeqlockTest)
 set_tests_properties(synthLibSeqlockTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
 set_property(TARGET synthLibSeqlockTest PROPERTY FOLDER "Tests")
+
+# synthLib::Plugin::sendCommands: the device's commands, queued for the audio thread without the device lock, and the
+# lock blame (DESIGN-audio-lock.md step 3)
+add_executable(synthLibDeviceCommandTest synthLibDeviceCommandTest.cpp)
+target_link_libraries(synthLibDeviceCommandTest PRIVATE synthLib)
+add_test(NAME synthLibDeviceCommandTest COMMAND synthLibDeviceCommandTest)
+set_tests_properties(synthLibDeviceCommandTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+set_property(TARGET synthLibDeviceCommandTest PROPERTY FOLDER "Tests")

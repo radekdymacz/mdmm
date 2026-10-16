@@ -3,6 +3,7 @@
 #include <array>
 #include <mutex>
 #include <atomic>
+#include <chrono>
 #include <functional>
 #include <tuple>
 #include <utility>
@@ -14,6 +15,7 @@
 
 #include "dsp56kBase/ringbuffer.h"
 
+#include "deviceCommand.h"
 #include "deviceTypes.h"
 #include "midiClock.h"
 
@@ -83,13 +85,24 @@ namespace synthLib
 		// must not perform file I/O, allocation-heavy preparation, or other long work
 		// inside this callback; capture immutable context here and prepare outside.
 		// The facts are published after the callback, before the lock is released (FactsCallback).
+		// _file / _line: the caller's site, named when the audio thread has to wait for this hold (lock blame)
 		template<typename Callback>
-		decltype(auto) withDeviceLocked(Callback&& _callback) const
+		decltype(auto) withDeviceLocked(Callback&& _callback, const char* _file = __builtin_FILE(),
+			const uint32_t _line = __builtin_LINE()) const
 		{
-			std::lock_guard lock(m_lock);
+			const LockScope lock(*this, _file, _line);
 			const PublishOnExit publish(*this);
 			return std::forward<Callback>(_callback)(m_device);
 		}
+
+		// DESIGN-audio-lock.md step 3: queues _count commands for the device (Device::applyCommand), applied in this
+		// order at the start of the next audio block, all in the same block. Any thread but the audio thread; never
+		// takes the device lock while blocks run. When the queue is full (no blocks ran for a while: host stopped,
+		// offline tests) the queue is applied under the lock first. False: more than CommandCapacity commands.
+		static constexpr size_t CommandCapacity = 256;
+		bool sendCommands(const DeviceCommand* _commands, size_t _count);
+		// Commands not applied: the device refused them, or it was replaced or invalid when they came
+		uint64_t getDroppedCommandCount() const { return m_droppedCommands.load(std::memory_order_relaxed); }
 
 		// Installs the facts callback (under the lock) and publishes once
 		void setFactsCallback(FactsCallback _callback);
@@ -110,6 +123,50 @@ namespace synthLib
 		uint32_t getLatencyBlocks() const { return m_extraLatencyBlocks; }
 
 	private:
+		// m_lock held with the holder's site recorded: when the audio thread has to wait, it names the site
+		// (RealtimeInstrumentation lock blame). Nested holds restore the outer site when they end
+		class LockScope
+		{
+		public:
+			explicit LockScope(const Plugin& _plugin, const char* _file = __builtin_FILE(),
+				const uint32_t _line = __builtin_LINE())
+			: m_plugin(_plugin)
+			, m_lock(_plugin.m_lock)
+			, m_outerFile(_plugin.m_holderFile.load(std::memory_order_relaxed))
+			, m_outerLine(_plugin.m_holderLine.load(std::memory_order_relaxed))
+			, m_file(_file)
+			, m_line(_line)
+			, m_start(_plugin.m_realtimeInstrumentation.isEnabled() ? std::chrono::steady_clock::now()
+				: std::chrono::steady_clock::time_point{})
+			, m_startCpu(m_start != std::chrono::steady_clock::time_point{} ? RealtimeInstrumentation::threadCpuNanoseconds() : 0)
+			{
+				m_plugin.m_holderFile.store(_file, std::memory_order_relaxed);
+				m_plugin.m_holderLine.store(_line, std::memory_order_relaxed);
+			}
+			~LockScope()
+			{
+				// the hold, while still holding the lock (it serialises the instrumentation's writers)
+				if(m_start != std::chrono::steady_clock::time_point{})
+				{
+					const auto cpu = RealtimeInstrumentation::threadCpuNanoseconds();
+					m_plugin.m_realtimeInstrumentation.recordLockHold(static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+						std::chrono::steady_clock::now() - m_start).count()), cpu >= m_startCpu ? cpu - m_startCpu : 0, m_file, m_line);
+				}
+				m_plugin.m_holderFile.store(m_outerFile, std::memory_order_relaxed);
+				m_plugin.m_holderLine.store(m_outerLine, std::memory_order_relaxed);
+			}
+			LockScope(const LockScope&) = delete;
+			LockScope& operator=(const LockScope&) = delete;
+		private:
+			const Plugin& m_plugin;
+			std::lock_guard<std::recursive_mutex> m_lock;
+			const char* const m_outerFile;
+			const uint32_t m_outerLine;
+			const char* const m_file;
+			const uint32_t m_line;
+			const std::chrono::steady_clock::time_point m_start;
+			const uint64_t m_startCpu;
+		};
 		struct PublishOnExit
 		{
 			const Plugin& plugin;
@@ -124,6 +181,8 @@ namespace synthLib
 		void configureDeviceAudio();
 		void updateDeviceLatency();
 		void processMidiInEvents();
+		// Under m_lock: applies the queued commands (sendCommands)
+		void applyCommands();
 		void processMidiInEvent(const SMidiEvent& _ev, bool _realtime);
 #if !SYNTHLIB_DEMO_MODE
 		// setState's header and dispatch for a device nobody else can reach yet (setDevice's new one): no lock
@@ -138,10 +197,19 @@ namespace synthLib
 
 		ResamplerInOut m_resampler;
 		mutable std::recursive_mutex m_lock;
+		mutable std::atomic<const char*> m_holderFile{nullptr};	// the site of m_lock's off-audio-thread holder (LockScope)
+		mutable std::atomic<uint32_t> m_holderLine{0};
 		mutable std::mutex m_lockAddMidiEvent;
 
 		Device* m_device;
-		uint64_t m_deviceGeneration = 0;	// counts setDevice: a capture in parts knows its device was replaced
+		std::atomic<uint64_t> m_deviceGeneration{0};	// counts setDevice: a capture in parts knows its device was replaced
+
+		// sendCommands' queue: producers serialise on m_lockCommands, the holder of m_lock consumes
+		std::array<DeviceCommand, CommandCapacity> m_commands{};
+		std::atomic<uint64_t> m_commandWrite{0};
+		std::atomic<uint64_t> m_commandRead{0};
+		std::mutex m_lockCommands;
+		std::atomic<uint64_t> m_droppedCommands{0};
 
 		std::vector<float> m_silentInputBuffer;
 		std::array<std::vector<float>, std::tuple_size_v<TAudioOutputs>>
@@ -169,6 +237,6 @@ namespace synthLib
 		mutable std::atomic<uint32_t> m_latencyMidiToOutput{0};
 		mutable std::atomic<uint32_t> m_latencyInputToOutput{0};
 		std::atomic<uint64_t> m_realtimeAllocationFallbackCount{0};
-		RealtimeInstrumentation m_realtimeInstrumentation;
+		mutable RealtimeInstrumentation m_realtimeInstrumentation;	// mutable: a locked call records its hold
 	};
 }

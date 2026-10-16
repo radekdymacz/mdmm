@@ -12,7 +12,9 @@
 #                   with its audio thread at real time and the page's edits on the message thread, per machine; fails
 #                   when processBlock waited longer than EDITFLOW_LOCK_WAIT_MS (default 1 ms) for the device lock.
 #                   Wall time, so run it on a quiet Mac; a few minutes a machine. It also fails when the
-#                   processor counted a dropped panel event (the desk's sends) while editing
+#                   processor counted a dropped panel event (the desk's sends) or a dropped device command (the queue
+#                   the desk's sends go through, DESIGN-audio-lock.md step 3) while editing. Each wait is blamed
+#                   on the holder's site (file:line of the withDeviceLocked or plugin.cpp hold)
 #     --load N      N busy loops run beside the checks (a busy Mac on purpose, so the --lock result does not depend
 #                   on what else the Mac runs); the load average is printed before and after each result
 #     VAR=value     passed on: GEARMULATOR_MDMM_EDIT_RATE=0 measures without the stream (0.3.3), ACTIONS=a,b
@@ -91,7 +93,7 @@ if [ "$LOCK" = 1 ]; then
 		line=$(grep "^synth lock wait" "$OUT/$m-lock.txt")
 		[ -n "$line" ] || { line="synth lock wait: no result (see $OUT/$m-lock.txt): FAIL"; STATUS=1; }
 		echo "lock $m: $line (load average $before to $(loadavg), $LOAD busy loops)"
-		grep "^dropped panel events" "$OUT/$m-lock.txt" | sed "s/^/lock $m: /"
+		grep -E "^dropped panel events|^dropped device commands|^  lock (wait blamed|held at)" "$OUT/$m-lock.txt" | sed "s/^ */lock $m: /"
 	done
 fi
 stop_load

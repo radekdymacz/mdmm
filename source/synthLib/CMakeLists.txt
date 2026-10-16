@@ -14,6 +14,7 @@ set(SOURCES
 	dac.cpp dac.h
 	device.cpp device.h
 	deviceException.cpp deviceException.h
+	deviceCommand.h
 	deviceTypes.h
 	functionRef.h
 	lv2PresetExport.cpp lv2PresetExport.h
