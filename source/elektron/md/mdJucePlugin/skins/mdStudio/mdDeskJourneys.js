@@ -133,6 +133,15 @@ const MdJourneys = (() => {
 			{ say: "click ‹: back", act: async u => { u.click("#patPrev"); await confirmIfAsked(u); }, screen: c => ok($1("#pat").textContent.includes(patName(c.p0)), "LCD " + $1("#pat").textContent), machine: c => ok(currentPatternSlot() === c.p0, "machine pattern " + currentPatternSlot()), within: 5000 }
 		]
 	};
+	/* I-041: ‹ › on the KIT field load the previous / next kit as a click in the kit chooser does (the plug-in asks first over unsaved edits) */
+	const kitStep = {
+		name: "md-kit-step", proves: ["MD-094"],
+		steps: [
+			{ say: "click › next to the kit on the LCD", act: async (u, c) => { c.k0 = currentKitSlot(); u.click("#kitNext"); await confirmIfAsked(u); }, screen: c => ok($1("#kitname").textContent.startsWith("K" + String((c.k0 + 1) % 64 + 1).padStart(2, "0")), "LCD " + $1("#kitname").textContent), machine: c => ok(currentKitSlot() === (c.k0 + 1) % 64, "machine kit " + currentKitSlot()), within: 8000 },
+			{ say: "click ‹: back", act: async u => { u.click("#kitPrev"); await confirmIfAsked(u); }, screen: c => ok($1("#kitname").textContent.startsWith("K" + String(c.k0 + 1).padStart(2, "0")), "LCD " + $1("#kitname").textContent), machine: c => ok(currentKitSlot() === c.k0, "machine kit " + currentKitSlot()), within: 8000 },
+			{ say: "the arrows did not open the kit chooser", screen: () => ok($1("#libpop").hidden, "chooser open") }
+		]
+	};
 	const queuePattern = {
 		name: "md-seq-queue-while-playing", proves: ["MD-094", "MD-096", "MD-X21"],
 		steps: [
@@ -3283,7 +3292,7 @@ const MdJourneys = (() => {
 		],
 		async tidy(u) { await closePops(u); u.click(tab("seq")); }
 	};
-	const all = [screensFit, ...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
+	const all = [screensFit, ...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, kitStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, stepClickSelect, accentSlide, trigTypesJ, lockLane, laneKitDrag, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
 		genJourney("md-gen-mutate-undo", false, { proves: ["MD-X04", "MD-X05"] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: ["MD-X04"] }), genKeys, genModal, laneTools, gridFits,
 		shapeSound, typeValue, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
