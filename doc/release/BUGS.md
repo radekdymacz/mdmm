@@ -42,7 +42,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Setup:** Monomachine Editor, Sound, the Filter env group (ATK DEC BOFS WOFS), any machine.
 - **What happens:** BOFS and WOFS are not in the page's signed list (`mmStudio/src/40-data.js:55`), so their boxes and the lock lane show 0-127, and the envelope drawing moves BASE and WIDTH only up, by value/127 (`src/90-sound.js:124`); at 0 it says "no offset: the envelope does nothing". The machine shows both as -64 to +63 (measured on OS 1.32B, the LCD at both ends of the knob, 2026-10-16): 0 is the largest downward sweep, 64 is no sweep.
 - **What should happen:** BOFS and WOFS shown signed (-64 to +63) wherever they appear (boxes, lock lane, typed values), and the drawing sweeps up for positive and down for negative, flat at 0.
-- **Status:** open.
+- **Status:** fixed on fix/mm-tester-bugs-1016: BOFS and WOFS are in the page's signed list (boxes, lock lane, typed values -64 to +63); the Filter env screen draws from a middle line, up for +, down for -, flat at 0, its handle sets the signed value; the filter curve's dashed peak moves BASE and WDTH by the signed offsets. Test: `mmSoundTest` (the values at 0 64 127, the sweep both ways, the handle). Not changed: a cleared track's neutral FLT page (the desk's and the page's) still holds BOFS and WOFS 0, which the machine shows as -64.
 
 ## B-147 · Test harness: `mdSyxPickFirmwareTest` crashed (SIGSEGV, exit 139) after its import checks
 
