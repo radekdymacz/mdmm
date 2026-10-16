@@ -2829,6 +2829,9 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
 .slotgrid.rmkwide .rmk .rt{display:inline}
 .slotgrid.rmkwide .rmk .rg{display:none}
 .scell small{white-space:nowrap}
+
+/* the scale takes the lane's stretched height (the keys stretch), so 127 and 0 land on the key ends */
+.ws-seq #lane>.lbscale{height:auto!important;align-self:stretch}
 </style>
 <div class="app">
   <header class="top">
