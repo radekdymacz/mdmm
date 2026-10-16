@@ -18,9 +18,26 @@ function rowSet(i, r) { songCmd("rowSet", { i, row: rowToContract(r, patLen) }, 
    into the machine's own chain (live, one bank, loops; chainFooter). SONG: the pad is added after the selected row of
    the song (stored, any bank, loops and jumps; heard after STOP + reload; the machine is in SONG mode). A key sets the
    machine's mode too (seqMode); a mode the machine reports (the LCD's PLAY key) moves the switch (songModeSync). */
-S.songPick = null; S.songModeSeen = undefined; S.songMore = false; S.chainDraft = []; S.chainTimer = 0; S.chainSent = false;
+S.songPick = null; S.songModeSeen = undefined; S.songMore = false; S.chainDraft = []; S.chainTimer = 0; S.chainSent = false; S.chainWas = false; S.chainOwnEnd = false; S.chainPending = null;
 const SONG_PICKS = [["pattern", "Pattern"], ["chain", "Chain"], ["song", "Song"]];
+/* B-162: the machine's chain ended without the page (a pattern pick, the LCD): the pads start over and the CHAIN key goes back to
+   PATTERN, as the screen would otherwise say CHAIN over a machine that plays one pattern. Not while the page's own chain or Clear
+   is on its way (chainPending: until the machine shows it, 4 s at most), and not for the page's own Clear (chainOwnEnd: CHAIN stays, the pads are empty). */
+function chainSync() {
+	const c = chainDoc(), act = !!(c && c.active), p = S.chainPending;
+	if (p && (performance.now() > p.until || (p.patterns ? act && JSON.stringify(c.patterns) === JSON.stringify(p.patterns) : !act))) S.chainPending = null;
+	if (S.chainWas && !act && !S.chainTimer && !S.chainPending) {
+		S.chainDraft = []; S.chainSent = false;
+		if (!S.chainOwnEnd && S.songPick === "chain") S.songPick = "pattern";
+		S.chainOwnEnd = false;
+	}
+	if (act) S.chainOwnEnd = false;
+	S.chainWas = act || (S.chainWas && !c);
+}
+/* the machine's chain changes between renders (the LCD, a pick): watched on its own clock, a render only when the page has to change */
+setInterval(() => { const k = S.songPick + S.chainDraft.join(); chainSync(); if (S.ws === "song" && k !== S.songPick + S.chainDraft.join()) render(); }, 300);
 function songModeSync() {
+	chainSync();
 	const sm = V.songMode;
 	if (!SONG_PICKS.some(([k]) => k === S.songPick)) S.songPick = sm === true ? "song" : chainDoc()?.active && sm === false ? "chain" : "pattern";
 	if (S.songModeSeen !== sm) {
@@ -32,6 +49,8 @@ function songModeSync() {
    render and the machine's answer to a key just pressed may not be in it yet (SONG, then PATTERN at once: PATTERN
    sent nothing, the machine stayed in SONG mode and the switch went back to SONG) */
 function songPickSet(v) {
+	/* B-162: a chain still waiting for its 150 ms (chainSoon) is not sent into the other mode: its keys are PATTERN mode's gesture */
+	if (v !== "chain") { clearTimeout(S.chainTimer); if (S.chainTimer) S.chainDraft = []; S.chainTimer = 0; }
 	S.songPick = v;
 	cmd("seqMode", { song: v === "song" });
 	render();
@@ -43,10 +62,11 @@ function chainDoc() { const d = machineState().desk || {}; return d.chain || nul
 function chainSoon() {
 	clearTimeout(S.chainTimer);
 	S.chainTimer = setTimeout(() => {
+		S.chainTimer = 0;
 		const d = S.chainDraft.slice(), c = chainDoc();
-		if (!canDo(V, "chains")) return;
-		if (d.length >= 2) { if (!(c && c.active && c.patterns.length === d.length && c.patterns.every((p, i) => p === d[i]))) { cmd("chain", { patterns: d }); S.chainSent = true; } }
-		else if ((c && c.active) || S.chainSent) { cmd("chainClear"); S.chainSent = false; }
+		if (!canDo(V, "chains") || S.songPick !== "chain" || V.songMode === true) return;
+		if (d.length >= 2) { if (!(c && c.active && c.patterns.length === d.length && c.patterns.every((p, i) => p === d[i]))) { S.chainPending = { patterns: d, until: performance.now() + 4000 }; cmd("chain", { patterns: d }); S.chainSent = true; } }
+		else if ((c && c.active) || S.chainSent) { S.chainOwnEnd = !!(c && c.active); S.chainPending = { until: performance.now() + 4000 }; cmd("chainClear"); S.chainSent = false; }
 	}, 150);
 }
 function chainFooter() {
@@ -189,7 +209,7 @@ function clickSong(e) {
 	const ca = e.target.closest("[data-chain]"); if (ca) {
 		if (ca.disabled) return true;
 		if (ca.dataset.chain === "undo") { S.chainDraft.pop(); render(); chainSoon(); }
-		else if (ca.dataset.chain === "clear") { clearTimeout(S.chainTimer); S.chainDraft = []; render(); if (chainDoc()?.active || S.chainSent) { cmd("chainClear"); S.chainSent = false; } }
+		else if (ca.dataset.chain === "clear") { clearTimeout(S.chainTimer); S.chainDraft = []; render(); if (chainDoc()?.active || S.chainSent) { S.chainOwnEnd = !!chainDoc()?.active; S.chainPending = { until: performance.now() + 4000 }; cmd("chainClear"); S.chainSent = false; } S.chainTimer = 0; }
 		return true;
 	}
 	if (e.target.closest("[data-rowmore]")) { S.songMore = !S.songMore; render(); return true; }
