@@ -1237,6 +1237,34 @@ void modulators()
 	msg(R"({"op":"soloSet","id":5,"tracks":[],"mutes":[3]})");
 	check(saved.find("solo") == nullptr, "no solo: the setup says none");
 
+	// 0.8, MIDI Learn: the learned CCs are kept beside the modulators and the solo (the 0.x shape stays, so 0.7 reads it)
+	{
+		deskCore::LearnMapping m;
+		m.ch = deskCore::g_learnAnyChannel; m.cc = 21; m.at = {2, 1, 3};
+		deskCore::LearnMapping lvl;
+		lvl.ch = 4; lvl.cc = 7; lvl.at = {5, 7, 0}; lvl.mode = deskCore::LearnMode::RelativeOffset;
+		check(d.loadSetup(project).empty() && d.mappings().empty(), "a project without mappings: none");
+		d.setMappings({m, lvl});
+		check(d.mappings().size() == 2 && saved.find("mappings") && saved.find("mappings")->asArray().size() == 2
+			&& saved.find("schema")->asString() == "mm-desk/modulators" && saved.find("solo"), "setMappings: kept beside the modulators and the solo, in the 0.x shape");
+		check(saved.find("mappings")->asArray()[0].find("pg")->asNumber() == 1, "a mapping carries its DATA page");
+		const auto withMappings = saved;
+		const auto n = saved.find("mappings")->asArray().size();
+		d.setMappings({m, lvl});
+		check(saved.find("mappings")->asArray().size() == n, "the same list again changes nothing");
+		d.loadSetup(project);
+		check(d.mappings().empty(), "another project's setup replaces them");
+		check(d.loadSetup(withMappings).empty() && d.mappings() == std::vector<deskCore::LearnMapping>{m, lvl}, "a project's mappings load");
+		std::vector<std::string> bad;
+		const auto parsed = deskCore::setupFromJson(*ed::json::parse(R"({"schema":"mm-desk/modulators","version":1,"sources":[],"mappings":[
+			{"ch":0,"cc":5,"t":2,"pg":1,"i":7},{"ch":0,"cc":6,"t":6,"pg":1,"i":0},{"ch":0,"cc":7,"t":0,"pg":8,"i":0},{"ch":0,"cc":8,"t":0,"i":0}]})"),
+			mmDesk::g_mmSetupSpec, bad);
+		check(parsed.mappings.size() == 1 && bad.size() == 3, "a mapping outside the limits (track 6, page 8) or without its page is left out alone");
+		check(mmDesk::g_mmSetupSpec.learn.tracks == 6 && mmDesk::g_mmSetupSpec.learn.pages == 8 && mmDesk::g_mmSetupSpec.learn.params == 8,
+			"the Monomachine's learn limits: 6 tracks, 8 pages (7 DATA pages and the level), 8 values a page");
+		d.loadSetup(project);
+	}
+
 	// I-003: FOLLOW PLAYED TRACK is kept beside the modulators (the 0.x shape: a bare member 0.7 ignores), off by default
 	const auto follow = [&]() { const auto* m = last("follow"); return m && m->find("on")->asBool(); };
 	check(saved.find("followPlayed") == nullptr, "follow: not written while off");

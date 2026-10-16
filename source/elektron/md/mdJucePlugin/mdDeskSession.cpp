@@ -370,6 +370,39 @@ namespace mdJucePlugin
 		reply(_message, true, {});
 	}
 
+	std::string SetupStore::legacyMapping() const
+	{
+		return m_processor.getDeskHost()->legacyMapping();
+	}
+
+	void SetupStore::clearLegacyMapping()
+	{
+		m_processor.getDeskHost()->clearLegacyMapping();
+	}
+
+	std::string learnPausedReason(AudioPluginAudioProcessor& _processor)
+	{
+		return _processor.getExternalMidi().isOn()
+			? "MIDI Learn is off with the HW MIDI engine: the host's MIDI in is the machine's own MIDI out. Choose the emulator to learn."
+			: std::string();
+	}
+
+	LearnRouter& learnRouterOf(AudioPluginAudioProcessor& _processor)
+	{
+		return _processor.learnRouter();
+	}
+
+	MidiLearnCommands::Model learnModelOf(AudioPluginAudioProcessor& _processor, MidiLearnCommands::Model _model)
+	{
+		return MidiLearnCommands::onlyRealtime(std::move(_model), _processor.getController());
+	}
+
+	pluginLib::Parameter* learnParameterOf(AudioPluginAudioProcessor& _processor, const std::string& _name, const int _track)
+	{
+		auto* param = _processor.getController().getParameter(_name, static_cast<uint8_t>(_track));
+		return param && param->takesRealtimeHostValues() ? param : nullptr;
+	}
+
 	void SetupStore::save(const Value& _setup)
 	{
 		m_processor.getDeskHost()->setSetup(elektronData::json::write(_setup));
