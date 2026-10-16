@@ -5,6 +5,8 @@
 // atomic words between two sequence numbers (Boehm, "Can seqlocks get along with programming language memory
 // models?", 2012), so there is no data race even when a read and a write overlap.
 // Writers must be serialised by the caller (synthLib::Plugin: only the holder of its device lock writes).
+// Until the first write() a reader gets T{} (the constructor's write), a whole value like any other: the test once
+// counted it as torn (DESIGN-audio-lock.md, "The seqlock test failures of 2026-10-16").
 
 #include <array>
 #include <atomic>
