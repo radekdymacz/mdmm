@@ -4,6 +4,23 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-162 · Switching between Chain, Pattern and Song makes things go weird (mode out of step, parameters change)
+
+- **From:** a beta tester on Discord, 2026-10-16 (0.7.0). Not specific: "things go weird" when switching between Chain, Pattern and Song; for example the editor still believes it is in chain mode while the machine is in pattern mode, and parameters change at random.
+- **Both editors.** The three keys are the Song page's `songpick` switch (`mdStudio/mdDeskSong.js:22-37`, `mmStudio/src/120-song.js:22-27`). Only PATTERN and SONG are machine modes (`seqMode`); CHAIN is a page state (`S.songPick`) over pattern mode, and the chain is the BANK + TRIG key gesture sent as hardware keys.
+- **Suspects (read, not yet reproduced):** (1) `songPickSet` does not cancel `S.chainTimer`: pads clicked in CHAIN send the chain 150 ms after the last click (`chainSoon`), so SONG or PATTERN pressed inside that window sends `seqMode` and then the chain's BANK/TRIG keys into the other mode; TRIG keys in SONG mode are not the chain gesture and can hit the panel (B-127 shows the firmware takes no BANK + TRIG gesture in some states). (2) `S.songPick === "chain"` stays after the machine's chain ended (the LCD or a pattern pick), so the page says CHAIN while `chainDoc().active` is false; `songModeSync` only corrects the Song to Pattern direction. (3) The B-072 fix sends the mode on every key, so a fast PATTERN, CHAIN, SONG run queues several `seqMode` before the machine answers.
+- **Related:** B-072 (fixed, mode keys), B-127 (Chain does nothing after a live recording).
+- **Reproduction plan:** a firmware journey `md-song-mode-cycle` / `mm-song-mode-cycle`: SONG, PATTERN, CHAIN with two pads, SONG, PATTERN in quick sequence and with 50 ms gaps; after each step the machine's `songMode`, the page's switch, the chain document and the kit values of all tracks are compared with what they were; nothing may change).
+- **Status:** open; needs the tester's exact steps (which keys, how fast, which parameters).
+
+## B-161 · Stacked LFOs are unstable: three LFOs on a kick's pitch, the sweep sometimes does not trigger
+
+- **From:** a beta tester on Discord, 2026-10-16: three LFOs stacked on one kick's pitch, the sweep randomly does not trigger, "on most emulators".
+- **Setup:** one track, its pitch (or a pitch parameter) modulated by three LFOs at once.
+- **What happens:** the pitch sweep does not fire on some hits, at random.
+- **What should happen:** every trig restarts the sweep, as on the machine.
+- **Status:** investigating, branch `fix/0.8-stacked-lfo`. Which editor is not stated yet (a kick suggests the Machinedrum).
+
 ## B-160 · Monomachine machine-tier journeys depend on run order
 
 - **From:** found by Claude Code while checking a branch, 2026-10-16.
@@ -217,6 +234,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Cause (measured, `mdDeskFirmwareTest liveerase`, the chain after it):** after a live recording in which EXIT/NO and a TRIG key were held (Delete held: erase), or one stopped with STOP while recording, the firmware takes no BANK + TRIG gesture: no chain, not even the pattern change, until REC is pressed. Recording left with REC (PLAY) and no erase is not affected. Pressing REC on and off once (grid recording for a moment, nothing pressed in it) brings the gesture back; EXIT or STOP do not.
 - **Fix (`fix/0.6-e2e-2`):** the desk remembers that live recording ran; the first chain after it presses REC twice before the chain's keys. Test: `mdDeskFirmwareTest liveerase` chains A02 A03 after the erase and checks the firmware holds it; `md-seq-live-erase` then `md-song-chain` pass on the firmware.
 - **Status:** fixed on `fix/0.6-e2e-2`. Other panel-key gestures after such a recording were not checked.
+- **More (2026-10-16):** a possible link to B-162 (switching modes after a chain); not checked.
 
 ## B-126 · Monomachine: a sub at 0 puts its handle on its caption; on a zoomed-out page the track list's tag hangs under its row
 
@@ -543,6 +561,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Cause:** since 0.6 wave 1 (the PATTERN · CHAIN · SONG keys, 97f1ccfe8) a key sent the mode only when it differed from `V.songMode`, the view of the last render; the machine's answer to SONG was in the machine state but not yet in that view, so PATTERN looked like no change. The MM page had the same check on its own copy of the mode. Before wave 1 every click sent the mode.
 - **Fix (`fix/0.6-span-song`):** every key sends the mode (SET STATUS 0x10 and the status request; the same mode again changes nothing), on both editors. Tests: md-seq-live-record then md-song-mode, 5 of 5 runs pass; `mdDeskFirmwareTest <MD ROM> songrow`: SONG sent again while the song plays is no restart.
 - **Status:** fixed on `fix/0.6-span-song`. Not in a release (wave 1 is on the 0.6 branch only).
+- **More (2026-10-16):** a beta tester on Discord reports the three-way switch (Chain, Pattern, Song) still going wrong on 0.7.0, see B-162.
 
 ## B-071 · Monomachine: an imported global's MIDI channels do not reach the machine
 
