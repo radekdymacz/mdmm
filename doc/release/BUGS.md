@@ -4,6 +4,15 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-161 · Machinedrum: host notes 36 to 51 pressed TRIG keys instead of playing the key map
+
+- **From:** found by Claude Code while writing the host-notes test (WP1 of PLAN-0.8, D2), 2026-10-16.
+- **What happened:** `Hardware::pumpScheduledMidi` turned every host note 36 to 51, on any channel, into a press of the panel TRIG key (note - 36), and ignored the firmware's key map and base channels. With the factory key map (36 38 40 41 43 45 47 48 50 52 53 55 57 59 60 62 play tracks 1 to 16) a DAW's note 38 played track 3, not track 2; 11 of 16 tracks, a note on a channel outside the base channels, a note after a MAP EDITOR change (the old note kept sounding) and, with GRID RECORD on, any of those notes toggled a trig in the pattern.
+- **Measured (`mdHostNotesFirmwareTest md`, before the change, 12 checks failed):** tracks 2 to 9 played another track or the wrong level; tracks 10 to 16 (notes outside 36-51) already went through the firmware and matched their TRIG key exactly (signature cosine 1.000). Channel 9 sounded track 1 and 6. The unmapped old note 40 still played. Two host notes in GRID RECORD changed the pattern dump (the control with the panel key did too).
+- **D2, branch A (Radek, 2026-10-16: A if the native path plays all 16 tracks):** the rewrite is removed. After the change all 16 factory notes on the base channel match their TRIG key (level 0.93-1.04 of it, cosine 1.000), a note on channel 9 is silent, an edited map moves the note, and host notes leave a GRID RECORD pattern as it was. Channels 1 to 4 (the four base channels) all play the key map, as on the machine. Branch B (keep it, limit it to the base channel and the map) was not needed.
+- **Also:** `mdMidiTimingFirmwareTest` expected the pad bytes on the panel UART for note 36; it now expects the note on the MIDI wire.
+- **Status:** fixed on branch `fix/0.8-notes-in`, not yet merged.
+
 ## B-160 · Monomachine machine-tier journeys depend on run order
 
 - **From:** found by Claude Code while checking a branch, 2026-10-16.
@@ -1089,7 +1098,8 @@ where it came from, the setup, what happens, what should happen, status.*
 - **What happens:** with the emulated MIDI input paced at 3.1 or 62.5 KB/s, the sixth DigiPRO voice stays silent; at 31, 125 and 250 KB/s it plays. Timing-dependent, cause unknown.
 - **Now:** B-010's pacing uses 125 KB/s, which passes. Not seen by users.
 - **Should:** every pacing rate plays all voices; understand the cause (possibly the same DSP1→DSP2 timing as joelanders' PR #98, "dropped Monomachine notes on tracks 4-6").
-- **Status:** open.
+- **Retest 2026-10-16 (WP1, `mdHostNotesFirmwareTest mm`):** six notes on six channels at one sample offset (0, 1, 33 and 63) through `Hardware::scheduleMidi`, GND-SIN on every track (a sine each, found by pitch): all six voices sound at the level they have alone. The same with DPRO-DDRW assigned to every track (offsets 0 and 33): all six sound. So the sixth-voice loss is not reproduced by a chord at one offset; it was seen with the emulated input paced at 3.1 and 62.5 KB/s (`mmDigiproFirmwareTest`), which this test does not pace. Not fixed, not seen again.
+- **Status:** open (cause unknown, chord at one offset ruled out).
 
 ## B-010 · Timing lags ("swing") while editing parameter locks
 

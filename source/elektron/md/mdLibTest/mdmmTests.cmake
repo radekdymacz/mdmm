@@ -101,6 +101,22 @@ function(mdmm_add_lib_tests _dir)
 	target_link_libraries(mdP4ProbeFirmwareTest PRIVATE mdLib elektronData)
 	set_property(TARGET mdP4ProbeFirmwareTest PROPERTY FOLDER "Elektron/test")
 
+	# WP1 of PLAN-0.8 (D2, B-011): host notes through the firmware MIDI input at sample offsets: MD key map, channels and
+	# GRID RECORD safety, MM six-note chord. The ROM from GEARMULATOR_MD_FIRMWARE_BIN / GEARMULATOR_MM_FIRMWARE_BIN;
+	# skips (77) without it.
+	add_executable(mdHostNotesFirmwareTest ${_dir}/mdHostNotesFirmwareTest.cpp ${_dir}/mdFirmwareSession.h)
+	target_link_libraries(mdHostNotesFirmwareTest PRIVATE mdLib elektronData)
+	if(MSVC)
+		target_compile_options(mdHostNotesFirmwareTest PRIVATE /fp:precise)
+	else()
+		target_compile_options(mdHostNotesFirmwareTest PRIVATE -fno-fast-math)
+	endif()
+	set_property(TARGET mdHostNotesFirmwareTest PROPERTY FOLDER "Elektron/test")
+	add_test(NAME mdHostNotesFirmwareTest_md COMMAND mdHostNotesFirmwareTest md)
+	add_test(NAME mdHostNotesFirmwareTest_mm COMMAND mdHostNotesFirmwareTest mm)
+	set_tests_properties(mdHostNotesFirmwareTest_md mdHostNotesFirmwareTest_mm PROPERTIES
+		LABELS "Integration;FirmwareTest;Midi" SKIP_RETURN_CODE 77 TIMEOUT 600)
+
 	add_executable(mdSequencerStateTest ${_dir}/mdSequencerStateTest.cpp)
 	target_link_libraries(mdSequencerStateTest PRIVATE mdLib)
 	add_test(NAME mdSequencerStateTest COMMAND mdSequencerStateTest)
