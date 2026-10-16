@@ -298,7 +298,7 @@ Refuted:
 - **JIT optimiser on:** 0 % steady state, bit-exact; already off on Apple arm64 (`mddsp.cpp:118-122`).
 - **Plain maxDoIterations 16 or 64:** changes MD hashes; MM fails `mmSineFirmwareTest` and `mmSineMidiFirmwareTest` at 64.
 - **Batched or delayed DSP-to-DSP link:** at most one 96-cycle slot of lookahead; the MM strobe rejects any delay; ≤ 3-4 % left after L2.
-- **Scheduler quantum tuning:** < 1 %; MD runs only 0.42 slices per frame.
+- **Scheduler quantum tuning:** < 1 %; MD ran only 0.42 slices per frame at 125 µs. Since 0.8 the MD runs at 30 µs like the MM (B-161, stacked LFOs): about 1.6 slices per frame, and with speed-ups on its playing instructions per frame fell about 15 % (md-busy 188619 to 159326; speed-ups off +2.3 %).
 - **DSP speed percent (under-clock):** the frame is fixed at 2304 cycles; speed only scales the mixer's codec clock (`mddevice.cpp:649-652`). Gain 0 %.
 - **ColdFire JIT, Unicorn or QEMU:** ≤ 1-3 %; the cost is the wrapper, not Musashi (3-4 ns per instruction). No cycle model.
 - **Replace Musashi with upstream's new ColdFire core (3c0de7e6):** no benchmark exists.
