@@ -23,6 +23,11 @@
 .ammeter i{display:block;height:100%;width:0;background:var(--led);transition:width .08s linear}
 .amnote{font:500 11px var(--sans);color:var(--print2);padding-left:100px}
 .amerr{color:var(--led);font-weight:600}
+/* 0.8 (WP4): the loop warning and the input note, the MIDI monitor row */
+.amwarn{color:var(--led);font-weight:600}
+.ammons{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;min-width:0;font:500 11px var(--sans);color:var(--print2)}
+.ammon b{font-weight:600;letter-spacing:.1em;color:var(--print)}
+.ammon i{font-style:normal;opacity:.7}
 @media (max-width:900px){.amgrid{grid-template-columns:1fr}.amnote{padding-left:0}}
 /* 0.3.5: the line to the machine's own MIDI settings (GLOBAL, the Machinedrum Editor) */
 .amlink{background:none;border:0;padding:0;font:inherit;color:var(--print);text-decoration:underline;text-underline-offset:2px;cursor:pointer}

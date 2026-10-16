@@ -403,7 +403,12 @@ namespace mdJucePlugin
 				reply(_message, true, "");
 				break;
 			case Action::MixMeters:
-				m_mixMeters = _message.find("on")->asBool();
+				{
+					const bool on = _message.find("on")->asBool();
+					if(on && !m_mixMeters)
+						processor().takeMixLevels();	// what an earlier window left is stale: the first message is of now
+					m_mixMeters = on;
+				}
 				processor().setMixMeterWanted(m_mixMeters);
 				reply(_message, true, "");
 				break;

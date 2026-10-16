@@ -61,12 +61,12 @@ namespace pluginLib
 			midiInReceived(_ev);
 		if(m_externalMidi.takeIn(_ev))	// an editor's HW MIDI (externalMidi.h)
 			return;
-		// Process through MIDI Learn translator first
+		// MIDI Learn first (consumeMidiIn: the translator, or what a plug-in puts in its place)
 		if (_ev.source != synthLib::MidiEventSource::Device)
 		{
-			if (m_midiLearnTranslator && m_midiLearnTranslator->processMidiInput(_ev))
+			if (consumeMidiIn(_ev))
 			{
-				// MIDI event was consumed by MIDI Learn (learned mapping or learning mode)
+				// consumed by MIDI Learn (a learned mapping or learning): it never reaches the firmware
 				return;
 			}
 
@@ -85,6 +85,11 @@ namespace pluginLib
 		midiToFirmware(_ev, false);
 		if (m_midiRoutingMatrix.enabled(_ev, synthLib::MidiEventSource::Physical))
 			m_midiPorts.send(_ev);
+	}
+
+	bool Processor::consumeMidiIn(const synthLib::SMidiEvent& _ev)
+	{
+		return m_midiLearnTranslator && m_midiLearnTranslator->processMidiInput(_ev);
 	}
 
 	void Processor::midiToFirmware(const synthLib::SMidiEvent& _ev, const bool _realtimeInsert)

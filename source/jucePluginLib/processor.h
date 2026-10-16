@@ -206,6 +206,12 @@ namespace pluginLib
 		};
 		virtual void midiTraffic(MidiTraffic /*_where*/, const synthLib::SMidiEvent& /*_ev*/) {}
 
+		// A hook: MIDI from outside (any source but the device) before it is routed, from addMidiEvent on whichever
+		// thread called it. True: consumed (MIDI Learn took it); it does not reach the firmware, the program change
+		// router or the ports. Default: the pluginLib MIDI learn translator (none: nothing is consumed). 0.8 (MIDI Learn
+		// L1, doc/midilearn/DESIGN-learn-0.8.md): the editors put their realtime router here for the host's MIDI.
+		virtual bool consumeMidiIn(const synthLib::SMidiEvent& _ev);
+
 		bool rebootDevice();
 
 		auto& getMidiPorts() { return m_midiPorts; }

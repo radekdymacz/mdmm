@@ -356,8 +356,8 @@ Machinedrum page does not send `mixMeters`, so its plug-in never measures.
 
 **The MIDI monitor (0.8, WP3).** `{"type":"midiStats","directions":{inHost, inFirmware, outMachine, outHost: {total, types:
 {note, cc, pc, clock, transport, sysex, other}, channels:[16]}},"dropped":{scheduled, external, allocation}}` once a second
-while the page is up: what this plug-in instance did with MIDI since it started (`mdMidiMonitor.h`; the pages do not read
-it yet). `inHost` is what the host's MIDI in or a MIDI port gave the processor, `inFirmware` what the routing let into the
+while the page is up: what this plug-in instance did with MIDI since it started (`mdMidiMonitor.h`; the AUDIO / MIDI panel's
+Monitor row shows the `inHost` and `outHost` totals and their rate, 0.8 WP4). `inHost` is what the host's MIDI in or a MIDI port gave the processor, `inFirmware` what the routing let into the
 firmware's MIDI input, `outMachine` what the machine sent (before the routing), `outHost` what the routing let into the
 host's MIDI out. The counts are relaxed atomics written on the audio thread (no allocation, no lock); `channels` counts
 channel messages only (channel 1 first). `dropped` are the counters the instance already had: the scheduled-MIDI ring
@@ -564,6 +564,8 @@ command and whenever the device manager changes.
 | `midiInputs` `[{id, name, on}]` | every MIDI input and whether it is enabled |
 | `midiOutput` `{id, list:[{id, name}]}` | the MIDI output (`""` = none) |
 | `bluetooth` | Bluetooth MIDI pairing is available |
+| `setupError`, `inputPermission`, `inputNote` (0.8, B-155) | the last audio device setup's error (`""` = applied); the microphone permission the system holds (`granted`, `denied`, `notAsked`, `unknown`; macOS reads it, elsewhere `unknown`); why the External Input is on NONE after a device was chosen (`""` = nothing to say). The Info.plist carries `NSMicrophoneUsageDescription` and `NSBluetoothAlwaysUsageDescription` (Bluetooth MIDI's pairing window takes an app without the second key down) |
+| `midiLoop` (0.8, B-154) | the warning line when a MIDI port is on as an input and is also the output (IAC bus, loopMIDI port): what the editor sends comes straight back in and the sound turns to noise. `""` = no loop (`mdMidiLoop.h`) |
 
 Commands, `{"op":"audioSet", ...}` (the message's own `id` is the request number, so
 devices go in `device`): `set` = `driver`/`output`/`input`/`midiOutput` with `device`,

@@ -1561,6 +1561,22 @@
         },
         "bluetooth": {
           "type": "boolean"
+        },
+        "setupError": {
+          "type": "string",
+          "description": "0.8 (WP4, B-155): what JUCE's last audio device setup returned (\"\" = it applied). Shown beside the Input row through inputNote."
+        },
+        "inputPermission": {
+          "enum": ["granted", "denied", "notAsked", "unknown"],
+          "description": "0.8 (WP4, B-155): the microphone permission the system holds for the app (macOS; unknown elsewhere). Without it macOS gives an input device and no input."
+        },
+        "inputNote": {
+          "type": "string",
+          "description": "0.8 (WP4, B-155): why the External Input is on NONE after a device was chosen (microphone permission, the setup error, no input channels), \"\" when there is nothing to say. The page shows it under the Input row."
+        },
+        "midiLoop": {
+          "type": "string",
+          "description": "0.8 (WP4, B-154): the warning when a MIDI port is on as an input and is also the chosen output (the editor's MIDI out comes straight back in), \"\" when there is no loop. mdMidiLoop.h."
         }
       }
     },
