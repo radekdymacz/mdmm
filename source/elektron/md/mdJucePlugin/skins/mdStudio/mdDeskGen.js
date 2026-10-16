@@ -38,7 +38,7 @@ function genDefault(m, len = 64) { return genFit(GEN_DEFAULTS[genRole(m)](Math.m
      spec: { tracks: [t...], groups: ["syn" | "fx" | "rt" | "<g>:<key>" ...], amount 0..100, seed, protect: ["VOL"] }
      base: 16 tracks of { m: machine name, v: [24 values] } (the kit before the trial)
      names(m): the machine's 24 parameter names (null where it has none; "SYN·DIST" for a synthesis DIST)
-     groupKnobs(t, id): the names of a Sound-page group ("syn:pitch", "fx:flt"...) on that track, or []
+     groupKnobs(t, id): the names of a Kit-page group ("syn:pitch", "fx:flt"...) on that track, or []
    -> [[t, i, v]...] for every knob in scope (an unmoved one too, so an Again from the base resets it). */
 const MUT_SKIP = /^(MID-|CTR-|GND-EMPTY$)/;
 const MUT_PAGE = { syn: 0, fx: 8, rt: 16 };

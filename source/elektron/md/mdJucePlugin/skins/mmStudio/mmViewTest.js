@@ -238,7 +238,7 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 }
 
 /* ---- the page's own gestures are intents (DESIGN-UNIFY.md phases 4 and 5): MUTATE, GEN, the machine picker, a song
-   row and the Sound page's CLEAR, through the mockup's functions; one gesture each ---- */
+   row and the Kit page's CLEAR, through the mockup's functions; one gesture each ---- */
 {
 	const p = loaded(), S = p.S(), M = p.mockup;
 	const sentOps = from => p.sent.slice(from).filter(m => m.op && !["ready", "audio"].includes(m.op));
@@ -256,7 +256,7 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 	p.host.commit();
 	at = p.sent.length;
 	M.secAction("clear"); p.run();
-	check(sentOps(at).map(m => m.op).join() === "clearSound", "Sound's CLEAR: clearSound");
+	check(sentOps(at).map(m => m.op).join() === "clearSound", "Kit's CLEAR: clearSound");
 	p.host.commit();
 	S.ws = "seq"; S.sel = 0;
 	at = p.sent.length;

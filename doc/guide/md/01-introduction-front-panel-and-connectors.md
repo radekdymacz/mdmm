@@ -6,7 +6,7 @@ The Machinedrum Editor runs the Elektron Machinedrum firmware (OS 1.63) behind o
 This chapter maps the machine's front panel and rear connectors to the page. Later chapters follow the manual's order and say how to do each job.
 
 ## FRONT PANEL
-<!-- rows: MD-001 MD-002 MD-003 MD-004 MD-005 MD-006 MD-007 MD-008 MD-009 MD-010 MD-011 MD-012 MD-013 MD-014 MD-015 MD-016 MD-017 MD-018 MD-019 MD-020 MD-021 @4089aa -->
+<!-- rows: MD-001 MD-002 MD-003 MD-004 MD-005 MD-006 MD-007 MD-008 MD-009 MD-010 MD-011 MD-012 MD-013 MD-014 MD-015 MD-016 MD-017 MD-018 MD-019 MD-020 MD-021 @b23237 -->
 
 The page has three parts. The top bar holds the workspace tabs, the LCD and the Undo, Redo, GLOBAL and panel colour keys. The track rail runs down the left side. The workspace fills the rest.
 
@@ -18,8 +18,8 @@ The machine has pages that you reach with keys. The editor has workspaces that y
 
 | Workspace | Key | What it holds |
 |---|---|---|
-| Sequence | {key:workspace-1} | the step grid, the lock lane and the generators |
-| Sound | {key:workspace-2} | the selected track's machine, effects, routing and LFO |
+| Pattern | {key:workspace-1} | the step grid, the lock lane and the generators |
+| Kit | {key:workspace-2} | the selected track's machine, effects, routing and LFO |
 | Mix | {key:workspace-3} | one strip a track, and the four master effects |
 | Sampler | {key:workspace-4} | the sample slots and the RAM machines |
 | Song | {key:workspace-5} | the song arrangement |
@@ -33,15 +33,15 @@ The panel colour key at the right of the top bar switches the page between the s
 | Master volume knob | the volume of your DAW or system |
 | SOUND SELECTION wheel and LEDs | the track rail |
 | TRIG keys 1 to 16 | the steps of the grid, and the piano keys |
-| SYNTHESIS, EFFECTS and ROUTING key | groups on the Sound workspace, all in one view |
+| SYNTHESIS, EFFECTS and ROUTING key | groups on the Kit workspace, all in one view |
 | DATA ENTRY knobs A to H | the value boxes |
-| SCALE SETUP key and page LEDs | the **Page** key and four LEDs on the Sequence workspace |
+| SCALE SETUP key and page LEDs | the **Page** key and four LEDs on the Pattern workspace |
 | RECORD, PLAY, STOP | **REC** and the Play and Stop key in the LCD |
 | TEMPO key | the **Tempo** field of the LCD |
 | KIT key | the **Kit** field of the LCD |
 | BANK key and the A to H keys | the pattern chooser |
 | FUNCTION key | the [⌥] key |
-| CLASSIC/EXTENDED key | **MODE** on the Sequence workspace's second LCD line |
+| CLASSIC/EXTENDED key | **MODE** on the Pattern workspace's second LCD line |
 | PATTERN/SONG key | **PLAY** on the LCD's second line |
 | ENTER/YES, EXIT/NO and the arrow keys | not needed: every menu is a control, and [ESC] closes a window |
 
@@ -60,7 +60,7 @@ On the Mix workspace a light on each strip flashes when its track plays a trig. 
 
 ### Classic and extended mode
 
-1. Open the Sequence workspace.
+1. Open the Pattern workspace.
 2. Click **MODE** on the LCD's second line.
 3. The field reads CLASSIC or EXT. Each click switches.
 
@@ -148,7 +148,7 @@ On the machine you press a DATA ENTRY knob in to turn it in coarse steps. In the
 
 ### The three parameter pages
 
-The machine shows the synthesis, effects and routing parameters one page at a time. The Sound workspace shows all three at once, in groups. A small word at the right of a group's title names the machine's page that holds its knobs.
+The machine shows the synthesis, effects and routing parameters one page at a time. The Kit workspace shows all three at once, in groups. A small word at the right of a group's title names the machine's page that holds its knobs.
 
 ### Recording and the transport
 
@@ -188,7 +188,7 @@ The steps of the grid are the TRIG keys. Click an empty step to draw a trig. Cli
 
 To play a first beat:
 
-1. Open the Sequence workspace and select a track in the rail.
+1. Open the Pattern workspace and select a track in the rail.
 2. Click four empty steps of that track. Each lights as a trig.
 3. Press {key:play-stop}. The pattern plays with your trigs.
 4. Press the same key to stop.
@@ -207,10 +207,10 @@ A pattern of 64 steps has four pages of 16.
 - **All** shows every step at once. It is on when the editor starts.
 - **Fol** makes the page follow the play position. With **Fol** on and the machine playing, the lit LED moves to the second page when the position passes step 16.
 
-![The Sequence workspace with its page LEDs](shot:md-sequence-workspace)
+![The Pattern workspace with its page LEDs](shot:md-sequence-workspace)
 
 ## REAR CONNECTORS
-<!-- rows: MD-022 MD-023 MD-024 MD-025 MD-026 @0d4dc7 -->
+<!-- rows: MD-022 MD-023 MD-024 MD-025 MD-026 @a52684 -->
 
 The editor has no power switch or power input. It runs as a plug-in in your DAW, or as a standalone program. It has no rack mount, no battery and nothing to care for.
 
@@ -234,7 +234,7 @@ The **Input** card of the **AUDIO / MIDI** settings sets where the external audi
 
 The input starts **MUTED**, so that a microphone and speakers cannot feed back. Keep speakers away from a microphone when it is live.
 
-A track plays the input when its machine is one of the External input machines (INP). Choose one with the machine key on the Sound workspace.
+A track plays the input when its machine is one of the External input machines (INP). Choose one with the machine key on the Kit workspace.
 
 ![The AUDIO / MIDI settings](shot:md-audio-midi)
 
