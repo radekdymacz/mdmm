@@ -324,3 +324,7 @@ Order: L0, L1, L3 together; then L2; then L4 and L5 together; then L6; L7 last. 
 - **B. In the project, and the last learned set also as a default for new instances** (a file in the editor's config folder, written by the session step, never on the audio thread). Like most plug-ins (Serum, Vital, Arturia). A project's own mappings always win over the default.
 
 Claude's pick: **A**. It is the smaller, testable design (no file, no "which one won" question on load), and a controller set is one LEARN round per project. B can be added later without changing the setup format.
+
+## Decision on the open question
+
+Radek, 2026-10-16: **A**. Mappings live only in the project (the standalone in its own saved state); no config file. B (a default for new instances) can come later without a setup format change.
