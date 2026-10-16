@@ -824,6 +824,18 @@ const MmJourneys = (() => {
 				screen: c => ok(c.far != null && S().sel === 3, "channel " + c.far + ", track " + S().sel) },
 			{ say: "press A on the computer keyboard (the editor's own audition): the selection stays", act: async u => { blur(); u.key("a"); await sleep(300); },
 				screen: () => ok(S().sel === 3, "track " + S().sel) },
+			{ say: "a burst of 40 notes alternating track 5 and track 6, ending on 6: one selection, track 6", act: async (u, c) => { c.n = 0; const sl = window.select; window.select = t => { c.n++; sl(t); };
+					try { window.gm.recv(Array.from({ length: 40 }, (_, i) => ({ type: "midiIn", ch: c.base + 4 + (i % 2 ? 1 : 0), note: 60, vel: 100 }))); await sleep(300); } finally { window.select = sl; } },
+				screen: c => ok(S().sel === 5 && c.n === 1, "track " + S().sel + ", " + c.n + " selections") },
+			{ say: "a question open: a note for track 1 leaves the selection", act: async (u, c) => { u.pick("engsel", "reset"); await until(() => !$1("#dlg").hidden, 3000); window.gm.recv([{ type: "midiIn", ch: c.base, note: 60, vel: 100 }]); await sleep(300); },
+				screen: () => ok(S().sel === 5 && !$1("#dlg").hidden, "track " + S().sel) },
+			{ say: "close the question: a note for track 1 selects it again", act: async (u, c) => { u.key("Escape"); await until(() => $1("#dlg").hidden, 3000); window.gm.recv([{ type: "midiIn", ch: c.base, note: 60, vel: 100 }]); },
+				screen: () => ok(S().sel === 0, "track " + S().sel), within: 2000 },
+			{ say: "LEARN waiting for a note: a note for track 3 leaves the selection", act: async (u, c) => { window.GP.learn = 2; window.gm.recv([{ type: "midiIn", ch: c.base + 2, note: 60, vel: 100 }]); await sleep(300); window.GP.learn = null; },
+				screen: () => ok(S().sel === 0, "track " + S().sel) },
+			{ say: "the HW MIDI engine (the port carries the machine's own MIDI out): a note for track 3 leaves the selection", act: async (u, c) => { const m0 = machine(), hw = { ...m0, capabilities: { ...m0.capabilities, engine: "hw" } };
+					window.gm.recv([{ type: "machine", doc: hw }]); await sleep(100); window.gm.recv([{ type: "midiIn", ch: c.base + 2, note: 60, vel: 100 }]); await sleep(300); window.gm.recv([{ type: "machine", doc: m0 }]); },
+				screen: () => ok(S().sel === 0, "track " + S().sel) },
 			{ say: "a note on track 2's channel selects track 2", act: (u, c) => window.gm.recv([{ type: "midiIn", ch: c.base + 1, note: 60, vel: 100 }]),
 				screen: () => ok(S().sel === 1, "track " + S().sel), within: 2000 },
 			{ say: "choose it again: OFF; a note on track 5's channel leaves track 2 selected", act: async (u, c) => { await u.pick("engsel", "followPlayed"); await sleep(300); window.gm.recv([{ type: "midiIn", ch: c.base + 4, note: 60, vel: 100 }]); await sleep(300); },

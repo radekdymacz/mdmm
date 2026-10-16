@@ -164,7 +164,7 @@ Bridge.onMessage(m => { if (m.type === "machineMemory") { Object.assign(Memory, 
 /* I-003: the engine menu's FOLLOW PLAYED TRACK (off by default, kept with the project in the editor's setup: followPlayed). On:
    a note from a MIDI controller (the plug-in's midiIn; never the editor's own audition or keyboard) that the map gives a
    track selects that track, as a click on it does. Shown once the plug-in has said the setup. */
-const Follow = { on: false };
+const Follow = { on: false, t: 0, raf: 0 };
 function renderFollowMenu() {
 	const o = document.querySelector('#engsel option[value="followPlayed"]'); if (!o) return;
 	o.hidden = false; o.textContent = "FOLLOW PLAYED TRACK: " + (Follow.on ? "ON" : "OFF");
@@ -176,9 +176,16 @@ function takeFollowSetup(doc) { Follow.on = doc?.followPlayed === true; renderFo
 function followNote(m) {
 	if (!Follow.on || V.caps.engine === "hw") return;
 	const g = Docs.global; if (!g || !(g.baseChannel >= 0 && g.baseChannel <= 12) || !(m.ch >= g.baseChannel && m.ch < g.baseChannel + 4)) return;
-	const t = g.keymap?.[m.note]; if (!Number.isInteger(t) || t < 0 || t > 15 || S.sel === t) return;	/* an unmapped note is null */
-	if (S.multi.size) S.multi = new Set();
-	select(t);
+	const t = g.keymap?.[m.note]; if (!Number.isInteger(t) || t < 0 || t > 15) return;	/* an unmapped note is null */
+	/* one selection per frame, whatever the burst: the last note's track */
+	Follow.t = t; if (Follow.raf) return;
+	Follow.raf = requestAnimationFrame(() => {
+		Follow.raf = 0;
+		/* a question open, or LEARN waiting for its note: the selection stays */
+		if (Follow.t === S.sel || !Follow.on || document.getElementById("dlg")?.hidden === false || GP.learn != null) return;
+		if (S.multi.size) S.multi = new Set();
+		select(Follow.t);
+	});
 }
 
 /* I-002: a note from a MIDI keyboard (the plug-in's midiIn) on the global's base channel plays the track its map gives
