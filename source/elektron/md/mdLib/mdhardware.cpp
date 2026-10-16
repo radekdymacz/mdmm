@@ -158,6 +158,11 @@ namespace md
 		const auto* const speedUps = std::getenv("GEARMULATOR_MDMM_SPEEDUPS");
 		setSpeedUps(speedUps == nullptr || std::strcmp(speedUps, "0") != 0);
 
+		// The factory baseline of a given cache, made here (off the plug-in's device lock, the Hardware is not shared
+		// yet): made on first use it copied the cache under that lock, 1 ms and more (DESIGN-audio-lock.md)
+		if(!m_factoryFlashCache.empty())
+			m_factoryBaseline = std::make_shared<FactoryFlashBaseline>(m_factoryFlashCache, m_rom);
+
 		if(!m_rom->isValid())
 			return;
 		// B-010: the MIDI UART at a pace the firmware keeps time at. GEARMULATOR_MDMM_MIDI_PACING=0 turns
