@@ -86,14 +86,14 @@
 - **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("a blue LED lit up on a track if it was triggered from another track").
 - **Today:** the rail lamps (I-028) light a track only for its own trigs (Monomachine `mmStudio/mmMockup.js` ~6239, Machinedrum `mdStudio/mdDeskTop.js:325`). A track that plays because of the Monomachine's kit Trig position (`trigpos`, Sequence > Trig setup: "Also play T2") or the Machinedrum's trig group (`trigGroup`, `mdDeskSound.js:82`) stays dark.
 - **The idea:** light that track's lamp too, in a second colour (blue, or the LCD ink), from the same data the lamps use: the step telemetry, the pattern and the kit's trig relations, no audio. One trig relation each, they do not chain (as the page says), so it stays one look-up a step.
-- **Status:** planned for 0.8 (WP9, doc/release/PLAN-0.8.md).
+- **Status:** built on feat/0.8-mm-tester-items (WP9), Monomachine only. The data exists on the page: a track's `trigpos` (Sequence > Trig setup > Trig position) names the track its notes are forwarded to, and the forwarding follows on (T1 to T2 to T3, as the journey mm-seq-trig-setup shows). On Sequence and Sound, when a track's own trig lights its rail number, the tracks it forwards to light in blue (`trig2`, `--fwd`) unless they trig themselves on that step; a muted track or one a solo leaves out stays dark. Page only (`130-main.js` railLamps, fwdTargets; `20-mm.css`), journey `mm-seq-rail-lamps-forwarded`. The Machinedrum is not done: its trig group (`trigGroup`) is a different relation (one track's trig plays another's machine), to be decided; the Mix strip squares do not show it either.
 
 ## I-030 · Name the trig mark of the lock lane (red and green)
 
 - **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("in the locked parameters view some trigs were green and some were red at the top, what is that?").
 - **Today:** on the Monomachine's lock lane each step with a trig has a small mark at its top: red when the trig fires all three envelopes (AMP, FILTER, LFO), green when it fires only some of them or none (a trigless trig) (`mmStudio/mmStudio.css:1617-1619`, `src/50-state.js:55` stepKind). The step's tip says only "Locked …" or "Kit value …", and the guide's PARAMETER LOCKS section (`doc/guide/mm/13-parameter-locks.md`) does not mention the mark; the roll's step legend (?) names trigless trigs but not this mark.
 - **The idea:** say it where it shows: the lane step's tip adds "all envelopes" / "some envelopes" / "trigless", and one sentence in chapter 13 ("A red mark at the top of a bar: the trig fires every envelope; green: only some, or none"). No new control.
-- **Status:** planned for 0.8 (WP9, doc/release/PLAN-0.8.md).
+- **Status:** done on feat/0.8-mm-tester-items (WP9): the lane bar's tip ends with "all envelopes", "some envelopes" or "trigless" (`70-seq.js`), and doc/guide/mm/13-parameter-locks.md says what the red and green mark mean.
 
 ## I-029 · A quick way back to the original sound while you play with the Sound page
 

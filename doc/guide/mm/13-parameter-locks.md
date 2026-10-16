@@ -16,6 +16,8 @@ The rail on the left of the lane lists what you can lock. For a synth track the 
 
 The lane shows one parameter at a time, the one lit in the rail. Each step with a trig has a bar. A dashed line across the lane marks the value of the kit. Hatched steps have no trig.
 
+A small mark at the top of a bar tells what the trig fires. Red: the trig fires all three envelopes (AMP, FILTER and LFO). Green: it fires only some of them, or none (a trigless trig). The tip of the bar says the same.
+
 ## PARAMETER LOCKS IN GRID RECORDING MODE
 <!-- rows: MM-200 MM-201 MM-202 MM-203 MM-204 @ae7b8d -->
 
