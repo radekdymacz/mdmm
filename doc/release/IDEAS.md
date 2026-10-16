@@ -3,26 +3,40 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-034 · GEN settings: Keep on for every track by default, placed between the patterns and the mutes/solos
+
+- **From:** a beta tester on Discord, 2026-10-12 (0.5.1 / 0.6 line).
+- **The idea:** (1) make the GEN setting "keep" the default for all tracks; (2) put the GEN settings column to the right of the patterns column and before the mutes/solos column, because they act on the patterns, and so the mutes/solos column sits right beside the track names (easy to see what is muted or soloed); (3) a panel/frame round the GEN column so it reads as separate from mutes/solos.
+- **Today:** 0.7.0 has a GEN dialog on every track's dice key (release note 2026-10-15); the placement and the Keep default are not discussed in the log.
+- **Status:** idea; ask the tester whether 0.7.0's GEN dialog answers it.
+
+## I-033 · Ableton Link for the standalone apps, and the Machinedrum and Monomachine apps that find each other
+
+- **From:** Radek and a beta tester on Discord, 2026-10-10 and 2026-10-14. Radek (10-10): wants the MD and MM standalone apps to detect each other and sync "like in the real world, no need for a DAW" (even two laptops over Wi-Fi), then record jams. Radek (10-14): "thinking about adding Ableton Link for standalone apps". The tester (10-14): "Ableton Link would probably be more accurate than MIDI sync" (after trying Ableton -> the standalone over the IAC driver: notes, sync and remote start worked, B-154).
+- **The idea:** Link (tempo and beat phase) in the standalone apps, a switch next to GLOBAL Tempo in (INT / EXT / LINK); optionally songs and patterns that follow each other between the two apps, as two linked machines do.
+- **Notes:** Link's SDK is GPL-3 or commercial; the editors are GPL, so it fits, but the licence has to be checked. In a DAW the host's clock stays the source. The standalone's MIDI clock in (IAC) already works (B-154 is about the sound that follows it).
+- **Status:** idea; Radek decides.
+
 ## I-032 · Mix: a level meter per track, and one per output (the mix buses)
 
 - **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("meters for each track on the Mix tab, and the same for the MIX buses or the summed levels").
 - **Today:** the only meter is the LCD's (I-021): the main output's left and right after the volume, and a clip mark for every output (`mdJucePlugin/mdOutputLevel.h`). The plug-in has three stereo outputs, Main A/B, Out C/D and Out E/F (`mdPluginProcessor.cpp:541`), which carry the machine's own outputs; the emulation gives no audio per track (the DSP mixes the voices inside the firmware), so a true per-track meter is not a cheap tap (the same finding as I-028).
 - **The idea, what is honest:** (1) a meter per output pair on Mix (A/B, C/D, E/F): cheap, the plug-in already takes the peaks of every output once a block for the clip mark; on the Monomachine a track routed alone to C/D or E/F would then have its own meter. (2) Per track, the rail lamps of I-028 (trig activity from the pattern, no audio) beside each fader, not a level. A real per-track level needs a tap in the DSP emulation: research, not planned.
-- **Status:** later (Radek decides).
+- **Status:** planned for 0.8 (WP9, doc/release/PLAN-0.8.md).
 
 ## I-031 · A lamp in another colour on a track that plays because another track triggered it
 
 - **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("a blue LED lit up on a track if it was triggered from another track").
 - **Today:** the rail lamps (I-028) light a track only for its own trigs (Monomachine `mmStudio/mmMockup.js` ~6239, Machinedrum `mdStudio/mdDeskTop.js:325`). A track that plays because of the Monomachine's kit Trig position (`trigpos`, Sequence > Trig setup: "Also play T2") or the Machinedrum's trig group (`trigGroup`, `mdDeskSound.js:82`) stays dark.
 - **The idea:** light that track's lamp too, in a second colour (blue, or the LCD ink), from the same data the lamps use: the step telemetry, the pattern and the kit's trig relations, no audio. One trig relation each, they do not chain (as the page says), so it stays one look-up a step.
-- **Status:** idea.
+- **Status:** planned for 0.8 (WP9, doc/release/PLAN-0.8.md).
 
 ## I-030 · Name the trig mark of the lock lane (red and green)
 
 - **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("in the locked parameters view some trigs were green and some were red at the top, what is that?").
 - **Today:** on the Monomachine's lock lane each step with a trig has a small mark at its top: red when the trig fires all three envelopes (AMP, FILTER, LFO), green when it fires only some of them or none (a trigless trig) (`mmStudio/mmStudio.css:1617-1619`, `src/50-state.js:55` stepKind). The step's tip says only "Locked …" or "Kit value …", and the guide's PARAMETER LOCKS section (`doc/guide/mm/13-parameter-locks.md`) does not mention the mark; the roll's step legend (?) names trigless trigs but not this mark.
 - **The idea:** say it where it shows: the lane step's tip adds "all envelopes" / "some envelopes" / "trigless", and one sentence in chapter 13 ("A red mark at the top of a bar: the trig fires every envelope; green: only some, or none"). No new control.
-- **Status:** idea.
+- **Status:** planned for 0.8 (WP9, doc/release/PLAN-0.8.md).
 
 ## I-029 · A quick way back to the original sound while you play with the Sound page
 
@@ -42,6 +56,7 @@
 - **From:** Discord, 2026-10-10 and 2026-10-11 (a virtual port and a Max patch beside the DAW). The tester was told it is on the list.
 - **The idea:** the plug-in can open MIDI input and output ports of its own (as the standalone does), in addition to the MIDI the host routes to it, so a patch or a controller can talk to the editor directly.
 - **Status:** later (not 0.6): needs port handling in the plug-in layer; the standalone already has it.
+- **More (Discord roundup, 2026-10-16):** [MIDI] a Max-patch user wants outboard MIDI channels or a virtual port next to the host MIDI (2026-10-10, 10-11). Radek's first answer (10-10: MIDI out "should be fixed in new release, settings in GLOBAL top right") was wrong and was corrected on 10-11: the port choice is not in yet; the workaround is DAW routing (a MIDI track from the interface input to the plug-in; the plug-in's MIDI out to a track with the interface output).
 
 ## I-026 · In a DAW: the machine's own clock (GLOBAL Tempo in INT)
 
@@ -56,6 +71,7 @@
 - **Way A (machine memory file, as a real machine):** one memory file per machine in the editor's user folder. A new session with no project state starts from it. Each SAVE KIT, SAVE PATTERN, song or global save also writes it. An existing DAW project still opens with its own memory. A menu item starts from factory memory again. Risk: two instances of the same machine both write the file; the last save wins.
 - **Way B (start-up memory, by hand):** a menu item "Use this memory for new sessions" copies the current memory into the file; new sessions start from it. Nothing is written by itself. Simpler and safe with many instances, but the user must remember to do it.
 - **Status:** Radek, 2026-10-12: way A, with a setting to turn it off. Planned for 0.6 (wave 11, PLAN-0.6.md). Built on `feat/0.6-memory` (doc/modern-ux/DESIGN-machine-memory.md): one file per machine in `<data folder>/memory/`, a session with no project state starts from it, a watch thread writes each save, the engine menu's KEEP MEMORY, RESET MACHINE…'s Start from factory memory…; the standalone starts from the file too.
+- **More (Discord roundup, 2026-10-16):** a tester (2026-10-14): in the standalone, saved kits and patterns persist across restarts; he asks for the same in the plug-in. No new request.
 
 ## I-023 · Monomachine: a real MKII look (silver panel, bluish-white LCD with black text)
 
@@ -136,6 +152,7 @@
 - **Spike (two days):** try way A headless with mdFirmwareSession; relax the loader behind the switch; boot the
   custom OS; list what works and what breaks on the page. Decide the product shape after that.
 - **Status:** queued after 0.4.
+- **More (Discord roundup, 2026-10-16):** 2026-10-14: loading the X.14 custom firmware as a sysex in the LCD's boot menu does nothing (on the hardware it is sent as a sysex file at boot); Radek: the UI is coded against stock firmware, custom firmware is on the list. So the boot-menu route does nothing today. 2026-10-10: a community user pointed to a script in a gearmulator fork (branch md-mm-remote-panel) that converts an OS .syx to a flash image with your own stock .bin; a tester tried it: X.13 and X.14 worked, X.20 did not. Another user named github.com/jmamma/MDX as the newest X.20 and suggested asking Elektron about redistribution (Radek: the original ROM is the issue).
 
 ## I-015 · Pattern length per track, and microtiming
 
