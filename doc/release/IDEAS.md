@@ -36,7 +36,8 @@
 - **From:** a beta tester on Discord, 2026-10-16: the second scan that verifies a SysEx transfer should be optional.
 - **Today:** an import is Read the slots (only when the editor does not know them yet), Send, Read back (`SyxJob`, `mdJucePlugin/mdSyxSession.h:49` phases Before / Sending / Reading; the page `skins/shared/deskSyx.js:308`). The read-back compares each slot with the file and fills the report; Verify only is a separate button. Both editors, one code path.
 - **The idea:** a tick "Read back and compare" on the import panel (on by default), off = Send then done, report says "not checked". Saves the read time (a pattern per 1.7 s at cable speed). Needs Radek's call where the tick sits.
-- **Status:** idea.
+- **Decision (2026-10-16):** the tick sits beside Verify only in the import footer, on by default (PLAN-0.8 WP10 F).
+- **Status:** built on branch `feat/0.8-syx-readback-option`, not merged. The page sends `readBack: false` with `syxImport` when the tick is off (absent means on). Off: the Read the slots phase before still runs where the editor does not know a slot, Send, then done; the report is `{readBack: false, sent, commands, unsent}` and says "n sent, not read back", never "imported". The choice is kept in the page's storage (`deskSyx.readBack`), not in the editor setup: the setup (`MDSK`) is what a DAW project restores (modulators, knob CCs, solo), this is the person's habit, and the page already keeps such conveniences in storage (the transport's delayed start). Reset machine… and Verify only always read back. Tests: `syxImportTest` (job, both paths), `deskSyxTest.js` (tick, saved state, report), journeys `md-lib-syx-noreadback`, `mm-lib-syx-noreadback`.
 
 ## I-037 · Piano roll: deleting a note should let the note before it fill the gap, not write a note off
 

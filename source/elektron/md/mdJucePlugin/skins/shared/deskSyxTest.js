@@ -90,6 +90,30 @@ check(M.slotLabel("song", 4) === "S05" && M.slotLabel("global", 7) === "G8", "so
 	check(M.OUTCOME.same[1] === "=", "the same as the file: =");
 }
 
+/* I-038: Read back and compare: a report of an import that was not read back says "sent", never "taken" */
+{
+	const picked = [{ kind: "kit", slot: 0 }, { kind: "kit", slot: 1 }, { kind: "other", slot: 0 }];
+	const r = M.outcomes(picked, { readBack: false, sent: 2, commands: 1, unsent: 0, items: [] });
+	check([...r.values()].every(x => x.outcome === "sent"), "not read back: every item is sent (never taken, never unclear)");
+	check(M.OUTCOME.sent[0] === "sent" && ![...r.values()].some(x => x.outcome === "taken"), "not read back: nothing is called taken");
+	check(M.outcomes([{ kind: "kit", slot: 0 }], { taken: 1, items: [] }).get("kit:0").outcome === "taken", "read back (the default): unchanged");
+}
+/* the tick: on unless the person turned it off; remembered in the page's storage; a blocked storage means on */
+{
+	const mem = () => { const m = {}; return { getItem: k => (k in m ? m[k] : null), setItem: (k, v) => { m[k] = String(v); } }; };
+	const blocked = { getItem() { throw new Error("blocked"); }, setItem() { throw new Error("blocked"); } };
+	const st = mem();
+	check(M.readBackLoad(st) === true, "the tick is on by default");
+	M.readBackSave(false, st);
+	check(M.readBackLoad(st) === false, "turned off: remembered");
+	M.readBackSave(true, st);
+	check(M.readBackLoad(st) === true, "turned on again: remembered");
+	check(M.readBackLoad(blocked) === true && (M.readBackSave(false, blocked), true), "a blocked storage: on, and saving does not throw");
+	const on = M.readBackTick(true), off = M.readBackTick(false);
+	check(/data-syxrb checked>/.test(on) && !/checked/.test(off), "the tick's markup: checked when on, not when off");
+	check(/Read back and compare/.test(on) && (on.match(/<input/g) || []).length === 1, "one tick, labelled Read back and compare");
+}
+
 /* SPECIFIC place (0.6): a kind's first slot is the file's first, from where an item came */
 check(M.placeFirst([{ slot: 9, from: 3 }, { slot: 10, from: 4 }]) === 3 && M.placeFirst([{ slot: 7 }, { slot: 2 }]) === 2, "place: the first slot is the file's first");
 

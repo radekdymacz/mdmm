@@ -2110,7 +2110,9 @@ namespace
 			}
 		}
 		const ImportTap tap(desk, job);
-		const auto why = job.start(kinds, {}, machineDocs(desk));
+		// SYX_READBACK=0 (I-038): the tick "Read back and compare" off
+		const bool readBack = !(std::getenv("SYX_READBACK") && std::string(std::getenv("SYX_READBACK")) == "0");
+		const auto why = job.start(kinds, {}, machineDocs(desk), false, readBack);
 		check(why.empty(), "the import starts" + (why.empty() ? std::string() : ": " + why));
 		const auto secs = [&] { return double(rig.machine().now()) / g_rate; };
 		using Phase = mdJucePlugin::SyxJob<MdSyxTraits>::Phase;
@@ -2147,6 +2149,32 @@ namespace
 			return;
 		std::printf("  report: %s\n", last->find("text")->asString().c_str());
 		const auto& report = *last->find("report");
+		if(!readBack)
+		{
+			// I-038: Send, then done: nothing read back, nothing called imported; Verify only then finds the file on the machine
+			const auto text = last->find("text")->asString();
+			check(!last->find("readBack")->asBool() && !report.find("readBack")->asBool() && report.find("sent")->asNumber() > 0
+				&& text.find("not read back") != std::string::npos && text.find("imported") == std::string::npos, "read-back off: the report says sent, not read back");
+			check(job.outcomes().empty() && readAt < 0, "read-back off: no Reading phase, no outcome");
+			rig.runUntil([&] { return !desk.isBusy(); }, 10000);
+			mdJucePlugin::SyxJob<MdSyxTraits> verify;
+			verify.open(bytes, _file, machineDocs(desk), {st.pattern ? *st.pattern : -1, st.kit ? *st.kit : -1, st.song ? *st.song : -1, st.globalSlot ? *st.globalSlot : -1});
+			const ImportTap vtap(desk, verify);
+			check(verify.start(kinds, {}, machineDocs(desk), true).empty(), "Verify only starts");
+			rig.runUntil([&]
+			{
+				if(desk.lifecycle() == deskCore::Lifecycle::Ready)
+					verify.step(desk.machine(), ms(rig.machine().now()), _hw);
+				rig.run(4);
+				return !verify.running();
+			}, 3600000);
+			std::map<std::string, int> held;
+			for(const auto& [item, o] : verify.outcomes())
+				++held[ed::syxOutcomeName(o)];
+			check(held["taken"] > 0 && held["no reply"] == 0, "the machine holds the file after an import that was not read back (" + std::to_string(held["taken"]) + " of "
+				+ std::to_string(verify.outcomes().size()) + " the same)");
+			return;
+		}
 		int n = 0;
 		for(const auto& i : report.find("items")->asArray())
 			if(n++ < 24)
