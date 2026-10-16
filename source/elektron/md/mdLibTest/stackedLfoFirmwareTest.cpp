@@ -5,8 +5,13 @@
 // 30 ms is measured (peak, zero crossings, difference from the median hit) and a hit that differs is counted as a miss.
 // Run with the speed-ups on and off, with the exact ESSI timing (L3) on and off, and at several host block sizes.
 //
-// Manual: needs a user-supplied ROM (GEARMULATOR_MD_FIRMWARE_BIN). Usage:
-//   stackedLfoFirmwareTest [md] [--bars N] [--scenario NAME] [--block N] [--wav DIR] [--matrix]
+// The Monomachine (--mm): a GND-SIN on track 1 with a short amp envelope, its LFO1-3 (or LFO1 alone) on the PTCH page in
+// TRIG mode (DEST 1OCT, SAW), played by a host note on its channel every beat (a note trigs amp, filter and LFO), each
+// note at the same machine frame whatever the block size. The oscillator runs free, so the MM is judged by each hit's
+// pitch (0-15 ms and 15-30 ms), not by its waveform: a hit more than 2 % off the median pitch is a miss.
+//
+// Manual: needs a user-supplied ROM (GEARMULATOR_MD_FIRMWARE_BIN, --mm: GEARMULATOR_MM_FIRMWARE_BIN). Usage:
+//   stackedLfoFirmwareTest [--mm] [--bars N] [--scenario NAME] [--block N] [--wav DIR] [--matrix] [-v]
 // Exit 0 when no hit is missed in every run, 1 otherwise, 77 without a ROM.
 
 #include "mdFirmwareSession.h"
@@ -15,6 +20,8 @@
 #include "elektronData/mdKit.h"
 #include "elektronData/mdMachines.h"
 #include "elektronData/mdPattern.h"
+#include "elektronData/mmCommands.h"
+#include "elektronData/mmKit.h"
 
 #include <cmath>
 #include <cstdlib>
@@ -70,7 +77,26 @@ namespace
 		float peak = 0;
 		int zc = 0;			// zero crossings in the first 30 ms
 		double dev = 0;		// RMS difference from the median hit, relative to its RMS
+		double hz[2]{};		// pitch over 0-15 ms and 15-30 ms, from interpolated rising zero crossings (any phase)
 	};
+
+	// The pitch of _x[_from, _to) from its rising zero crossings, interpolated: independent of the oscillator's phase.
+	double pitchHz(const std::vector<float>& _x, const size_t _from, const size_t _to)
+	{
+		double first = -1, last = -1;
+		int n = 0;
+		for(size_t i = _from + 1; i < _to; ++i)
+		{
+			if(!(_x[i - 1] < 0 && _x[i] >= 0))
+				continue;
+			const double t = double(i - 1) + double(-_x[i - 1]) / double(_x[i] - _x[i - 1]);
+			if(first < 0)
+				first = t;
+			last = t;
+			++n;
+		}
+		return n > 1 ? (n - 1) * double(g_rate) / (last - first) : 0;
+	}
 
 	struct Result
 	{
@@ -111,6 +137,8 @@ namespace
 				if(i > o && (_x[i - 1] < 0) != (_x[i] < 0))
 					++h.zc;
 			}
+			h.hz[0] = pitchHz(_x, o, o + win / 2);
+			h.hz[1] = pitchHz(_x, o + win / 2, o + win);
 			r.hits.push_back(h);
 		}
 		if(r.hits.empty())
@@ -297,7 +325,137 @@ namespace
 		return r;
 	}
 
-	void print(const Scenario& _s, const Options& _o, const Result& _r)
+
+	struct MmScenario
+	{
+		const char* name;
+		const char* about;
+		int lfos;		// LFO1..LFOn on the PTCH page
+	};
+
+	const std::vector<MmScenario>& mmScenarios()
+	{
+		static const std::vector<MmScenario> s{
+			{"mm-none", "no LFO (the reference note)", 0},
+			{"mm-one", "LFO1 on PTCH, TRIG", 1},
+			{"mm-stack3", "LFO1-3 on PTCH, TRIG", 3},
+		};
+		return s;
+	}
+
+	ed::MmKit mmWorkingKit(Machine& _m)
+	{
+		const auto patch = _m.hardware().copyPatchRam();
+		const auto off = ed::g_mmWorkingKitAddress - 0x700000;
+		const Bytes raw(patch.begin() + off, patch.begin() + off + ed::MmKit::g_rawSize);
+		const auto k = ed::mmKitFromRaw(raw, 0);
+		require(k.has_value(), "the MM working kit did not decode");
+		return *k;
+	}
+
+	Result runMm(const Bytes& _rom, const MmScenario& _s, const Options& _o)
+	{
+		Machine m(_rom, g_romName, {}, true, md::MachineModel::Monomachine);
+		m.hardware().setSpeedUps(_o.speedUps);
+		m.hardware().setExactEssiTiming(_o.exactEssi);
+		const auto cc = [&](const uint8_t _ch, const uint8_t _cc, const uint8_t _v) { m.send({static_cast<uint8_t>(0xb0 | _ch), _cc, _v}); };
+		// track 1 a GND-SIN with its pages initialised, the other tracks silent
+		m.send(ed::mmAssignMachine(0, 1, 1));
+		m.run(200);
+		for(uint8_t ch = 1; ch < 6; ++ch)
+			cc(ch, 7, 0);
+		// AMP: ATK 0, HOLD 0, DEC 30, REL 0, VOL 100
+		cc(0, 56, 0); cc(0, 57, 0); cc(0, 58, 30); cc(0, 59, 0); cc(0, 61, 100);
+		// LFO pages (PAGE DEST TRIG WAVE MULT SPD INTL DPTH): PTCH, TRIG, SAW, SPD 80, depth 96
+		static constexpr uint8_t lfoBase[3]{88, 104, 112};
+		for(int l = 0; l < 3; ++l)
+		{
+			const uint8_t b = lfoBase[l];
+			const bool on = l < _s.lfos;
+			// enumerated LFO settings take a CC value scaled over their range (index x 128 / count): PAGE PTCH (0 of 9),
+			// DEST 1OCT (3 of 8), TRIG (1 of 5), WAVE SAW (2 of 11), MULT 1X; then SPD 80, INTL 0
+			const auto pick = [](const int _index, const int _count) { return static_cast<uint8_t>((2 * _index + 1) * 64 / _count); };
+			cc(0, b + 0, pick(0, 9)); cc(0, b + 1, pick(3, 8)); cc(0, b + 2, pick(1, 5)); cc(0, b + 3, pick(2, 11));
+			cc(0, b + 4, 0); cc(0, b + 5, 80); cc(0, b + 6, 0); cc(0, b + 7, on ? 96 : 0);
+		}
+		m.run(300);
+		// one note before the measured ones: the first trig after the LFO settings arrive starts from another phase
+		m.send({0x90, 60, 100});
+		m.run(60);
+		m.send({0x80, 60, 0});
+		m.run(500);
+		const auto k = mmWorkingKit(m);
+		require(k.machines[0] == 1, "track 1 is not a GND-SIN");
+		if(_o.verbose)
+			for(int l = 0; l < 3; ++l)
+			{
+				std::printf("    LFO%d:", l + 1);
+				for(const auto v : k.tracks[0].pages[static_cast<size_t>(4 + l)])
+					std::printf(" %u", v);
+				std::printf("\n");
+			}
+
+		std::array<std::vector<float>, 6> out;
+		for(auto& o : out)
+			o.assign(std::max<uint32_t>(_o.block, 1), 0.0f);
+		synthLib::TAudioOutputs outputs{};
+		for(size_t c = 0; c < out.size(); ++c)
+			outputs[c] = out[c].data();
+		std::vector<float> left;
+		std::vector<synthLib::SMidiEvent> midi;
+		const double framesPerBeat = g_rate * 60.0 / 120.0;
+		const int beats = _o.bars * 4;
+		const size_t total = static_cast<size_t>(framesPerBeat * beats) + g_rate;
+		// note on at each beat, off 60 ms later, each at its own machine frame
+		std::vector<std::pair<size_t, Bytes>> events;
+		for(int b = 0; b < beats; ++b)
+		{
+			const auto at = static_cast<size_t>(g_rate / 10 + b * framesPerBeat);
+			events.push_back({at, {0x90, 60, 100}});
+			events.push_back({at + g_rate * 60 / 1000, {0x80, 60, 0}});
+		}
+		size_t next = 0;
+		while(left.size() < total)
+		{
+			while(next < events.size() && events[next].first <= left.size())
+				m.post(events[next++].second);
+			auto n = static_cast<uint32_t>(_o.block);
+			if(next < events.size() && left.size() + n > events[next].first)
+				n = static_cast<uint32_t>(events[next].first - left.size());
+			m.hardware().processAudio(outputs, n, 0);
+			left.insert(left.end(), out[0].begin(), out[0].begin() + n);
+			midi.clear();
+			m.hardware().readMidiOut(midi);
+		}
+		auto r = analyse(left, 0, framesPerBeat, beats);
+		// a free-running oscillator starts each note at another phase: judge the MM by pitch, not by waveform
+		r.misses = 0;
+		double median[2]{};
+		for(int w = 0; w < 2; ++w)
+		{
+			std::vector<double> v;
+			for(const auto& h : r.hits)
+				v.push_back(h.hz[w]);
+			std::sort(v.begin(), v.end());
+			median[w] = v.empty() ? 0 : v[v.size() / 2];
+		}
+		for(const auto& h : r.hits)
+		{
+			bool off = false;
+			for(int w = 0; w < 2; ++w)
+				off |= median[w] <= 0 || std::fabs(h.hz[w] - median[w]) > 0.02 * median[w];
+			r.misses += off;
+		}
+		std::printf("    median pitch %.1f Hz (0-15 ms), %.1f Hz (15-30 ms); hits more than 2 %% off: %d\n", median[0], median[1], r.misses);
+		if(!_o.wavDir.empty())
+			writeWav(_o.wavDir + "/" + _s.name + "-b" + std::to_string(_o.block) + (_o.speedUps ? "" : "-nospeed") + ".wav", left);
+		if(_o.verbose)
+			for(size_t i = 0; i < r.hits.size(); ++i)
+				std::printf("    hit %2zu at %8zu peak %.3f %.1f Hz %.1f Hz\n", i, r.hits[i].onset, r.hits[i].peak, r.hits[i].hz[0], r.hits[i].hz[1]);
+		return r;
+	}
+
+	void print(const char* _name, const Options& _o, const Result& _r)
 	{
 		std::map<int, int> zc;
 		double maxDev = 0;
@@ -307,7 +465,7 @@ namespace
 			maxDev = std::max(maxDev, h.dev);
 		}
 		std::printf("  %-16s block %4u speed-ups %-3s L3 %-3s: %3zu hits of %3d, missing %d, differing %d, max dev %.3f, hash %016llx, zc:",
-			_s.name, _o.block, _o.speedUps ? "on" : "off", _o.exactEssi ? "on" : "off", _r.hits.size(), _r.expected, _r.missing,
+			_name, _o.block, _o.speedUps ? "on" : "off", _o.exactEssi ? "on" : "off", _r.hits.size(), _r.expected, _r.missing,
 			_r.misses, maxDev, static_cast<unsigned long long>(_r.hash));
 		for(const auto& [z, n] : zc)
 			std::printf(" %d:%d", z, n);
@@ -317,10 +475,12 @@ namespace
 
 int main(int _argc, char** _argv)
 {
-	const char* rom = std::getenv("GEARMULATOR_MD_FIRMWARE_BIN");
+	const bool mm = std::any_of(_argv + 1, _argv + _argc, [](const char* _a) { return std::strcmp(_a, "--mm") == 0; });
+	const char* const romVar = mm ? "GEARMULATOR_MM_FIRMWARE_BIN" : "GEARMULATOR_MD_FIRMWARE_BIN";
+	const char* rom = std::getenv(romVar);
 	if(!rom || !*rom)
 	{
-		std::puts("stackedLfoFirmwareTest: SKIP (GEARMULATOR_MD_FIRMWARE_BIN not set)");
+		std::printf("stackedLfoFirmwareTest: SKIP (%s not set)\n", romVar);
 		return 77;
 	}
 	g_romName = rom;
@@ -340,36 +500,56 @@ int main(int _argc, char** _argv)
 		else if(a == "--essi") o.exactEssi = true;
 		else if(a == "-v") o.verbose = true;
 	}
+	// --matrix: the speed-ups on and off, L3 on and off (the MD; the MM always runs exact), host blocks 1, 7, 64, 512
+	const auto runsFor = [&]
+	{
+		if(!matrix)
+			return std::vector<Options>{o};
+		std::vector<Options> runs;
+		for(const bool sp : {true, false})
+			for(const bool essi : {false, true})
+				for(const uint32_t b : {64u, 1u, 7u, 512u})
+				{
+					if((!sp || essi) && b != 64)
+						continue;
+					if(mm && essi)
+						continue;
+					auto x = o;
+					x.speedUps = sp;
+					x.exactEssi = essi;
+					x.block = b;
+					runs.push_back(x);
+				}
+		return runs;
+	};
 	try
 	{
 		const auto romBytes = load(rom);
 		int failures = 0;
+		if(mm)
+		{
+			for(const auto& s : mmScenarios())
+			{
+				if(!only.empty() && only != s.name)
+					continue;
+				std::printf("%s: %s\n", s.name, s.about);
+				for(const auto& r : runsFor())
+				{
+					const auto res = runMm(romBytes, s, r);
+					print(s.name, r, res);
+					failures += res.missing + res.misses;
+				}
+			}
+		}
 		for(const auto& s : scenarios())
 		{
-			if(!only.empty() && only != s.name)
+			if(mm || (!only.empty() && only != s.name))
 				continue;
 			std::printf("%s: %s\n", s.name, s.about);
-			std::vector<Options> runs{o};
-			if(matrix)
-			{
-				runs.clear();
-				for(const bool sp : {true, false})
-					for(const bool essi : {false, true})
-						for(const uint32_t b : {64u, 1u, 512u})
-						{
-							if((!sp || essi) && b != 64)
-								continue;
-							auto x = o;
-							x.speedUps = sp;
-							x.exactEssi = essi;
-							x.block = b;
-							runs.push_back(x);
-						}
-			}
-			for(const auto& r : runs)
+			for(const auto& r : runsFor())
 			{
 				const auto res = run(romBytes, s, r);
-				print(s, r, res);
+				print(s.name, r, res);
 				// FREE-running LFOs make every hit different on purpose: only the TRIG scenarios must repeat
 				if(s.update == 1 && (s.trigLfoTracks || s.lfoTracks.size() <= 1))
 					failures += res.missing + res.misses;

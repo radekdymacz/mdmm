@@ -67,6 +67,9 @@ function(mdmm_add_lib_tests _dir)
 	set_property(TARGET stackedLfoFirmwareTest PROPERTY FOLDER "Elektron/test")
 	add_test(NAME stackedLfoFirmwareTest COMMAND stackedLfoFirmwareTest --scenario stack3 --matrix)
 	set_tests_properties(stackedLfoFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
+	# the same on the Monomachine: LFO1-3 of one track on PTCH, note trigs (about 3 min)
+	add_test(NAME stackedLfoMmFirmwareTest COMMAND stackedLfoFirmwareTest --mm --scenario mm-stack3 --matrix)
+	set_tests_properties(stackedLfoMmFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
 
 	# DESIGN-edit-flow.md: the firmware and the desk under a stream of page edits (manual: needs a ROM).
 	add_executable(editFlowBenchTest ${_dir}/editFlowBenchTest.cpp ${_dir}/mdFirmwareSession.h)
