@@ -67,7 +67,8 @@ Files starting with `_` are fixtures, not scenarios.
 | `ask-clear-pattern` | a `clearSlot` question; Confirm resends with `force` | the same |
 | `ask-discard-kit` | a `discardKit` question with an alternative (Save and load) | the same |
 | `error` | an `error` message at 1 s and a longer one at 6 s (the error line) | the same (a toast) |
-| `midi-loop` | the standalone's AUDIO / MIDI panel (comma key) with IAC Bus 1 on as an input and as the output: the loop warning, External Input on NONE with the microphone note, the Monitor row counting | the same |
+| `midi-loop` | the standalone's AUDIO / MIDI panel (comma key) with the IAC Bus 1 virtual bus on as an input and as the output: the loop warning, External Input on NONE with the microphone note, the Monitor row counting | the same |
+| `midi-hardware` | the same panel with a hardware port (Elektron TM-1) as input and output: no loop warning, no input note | the same |
 | `engine-unavailable` | HW MIDI lost: lifecycle hwLost, capabilities with reasons, the engine menu | the same, and the page's own "no answer" dialog |
 
 ## What the contract cannot say (so it is not here)

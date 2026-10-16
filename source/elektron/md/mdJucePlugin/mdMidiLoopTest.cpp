@@ -28,8 +28,11 @@ int main()
 	check(has(iac, "Switch the input off"), "the warning says what to do");
 	const auto loop = midiLoop::warning({"loopMIDI Port"}, "loopMIDI Port");
 	check(has(loop, "loopMIDI port"), "loopMIDI as input and output warns");
-	check(!midiLoop::warning({"Elektron TM-1"}, "Elektron TM-1").empty(), "any port in and out warns");
-	check(has(midiLoop::warning({"Elektron TM-1"}, "Elektron TM-1"), "another port."), "a plain port says port");
+	check(!midiLoop::warning({"Midi Through Port-0"}, "Midi Through Port-0").empty(), "Linux Midi Through in and out warns");
+	// a real port in and out is two cables, not a loop: the main use case never sees the warning
+	check(midiLoop::warning({"Elektron TM-1"}, "Elektron TM-1").empty(), "a hardware port in and out does not warn");
+	check(midiLoop::warning({"USB MIDI Interface"}, "USB MIDI Interface").empty(), "a USB interface in and out does not warn");
+	check(midiLoop::warning({"USB MIDI Interface", "USB MIDI Interface"}, "USB MIDI Interface").empty(), "two identical interfaces do not warn");
 
 	// two buses, or an input that is off, or no output: no loop
 	check(midiLoop::warning({"IAC Driver Bus 1"}, "IAC Driver Bus 2").empty(), "two buses do not warn");
@@ -46,7 +49,8 @@ int main()
 	check(midiLoop::normalised("  A   B ") == "a b", "normalised: trimmed, single spaces, lower case");
 	check(midiLoop::familyOf("IAC Driver Bus 1") == midiLoop::Family::Iac, "family: IAC");
 	check(midiLoop::familyOf("loopMIDI Port 2") == midiLoop::Family::LoopMidi, "family: loopMIDI");
-	check(midiLoop::familyOf("Elektron TM-1") == midiLoop::Family::Other, "family: other");
+	check(midiLoop::familyOf("Elektron TM-1") == midiLoop::Family::Hardware, "family: hardware");
+	check(midiLoop::familyOf("Midi Through Port-0") == midiLoop::Family::Through, "family: Midi Through");
 
 	// the input note (B-155)
 	using audioInput::Permission;
