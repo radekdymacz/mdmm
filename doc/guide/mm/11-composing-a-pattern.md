@@ -42,7 +42,7 @@ Drag the end of a note to set its length. New notes take the length too. On a sy
 
 To set a NOTE OFF by hand, hold [⌥] and click an empty step. A NOTE OFF is a yellow mark.
 
-To delete a note, hold [⌥] and click it. The note before it keeps its length. Drag on with [⌥] held to delete every step the pointer crosses. One {key:undo} brings all of them back.
+To delete a note, hold [⌥] and click it. The note before it runs on through the gap, as on the machine. Drag on with [⌥] held to delete every step the pointer crosses. One {key:undo} brings all of them back.
 
 ### Chords
 

@@ -3373,7 +3373,7 @@ function renderRail(){const r=$("#rail"),withSide=S.ws==="seq"||S.ws==="sound";
  const anyMs=[...S.tracks,...S.midi].some(x=>x.mute||x.solo);
  r.innerHTML=`<div class="railhead">Track<button class="iconkey allon" id="allon" ${anyMs?"":"disabled"} title="Unmute and unsolo every track (0)">M/S off</button></div>`+side().map(th).join("")+(withSide?`<div style="margin-top:4px">${sideSw()}</div>`:"")+(S.ws==="seq"?lockPicker(S.sel):"");altLabels()}
 function rowStatus(t){const tr=trk(t),arp=tr.arp.MODE>0,trn=tr.tr.TRACK-64;return[arp?"ARP":"",t<6&&tr.tr.SCALE?["","FIX","MAJ","MIN"][tr.tr.SCALE]:(trn?(trn>0?"+":"")+trn:"")].filter(Boolean).join(" ")}
-const ROLL_TIP=t=>`${tLabel(t)} notes. Click an empty place: a note of ${MmRoll.say(S.rollLen)} (drag sideways paints) · drag a note's end: its length (new notes get it too; a ${isMidiT(t)?"MIDI note's LEN, 6 a step":"NOTE OFF where it ends"}) · drag a note: up or down its pitch, sideways to move it · shift-click adds a chord note · alt-click deletes a note (the one before keeps its length), or sets a NOTE OFF on an empty step · ⌘-click or ⌘-drag selects steps · right-click: the step menu · scroll = pitch${isMidiT(t)?"":" · the keys on the left play the note"}${(()=>{const a=trk(t).arp;return a.MODE&&a.SPD?` · light notes: what the arpeggiator plays${a.PLAY===4?" (random order: outlined, the pitches vary)":""}`:""})()}`;
+const ROLL_TIP=t=>`${tLabel(t)} notes. Click an empty place: a note of ${MmRoll.say(S.rollLen)} (drag sideways paints) · drag a note's end: its length (new notes get it too; a ${isMidiT(t)?"MIDI note's LEN, 6 a step":"NOTE OFF where it ends"}) · drag a note: up or down its pitch, sideways to move it · shift-click adds a chord note · alt-click deletes a note (the one before runs on through the gap), or sets a NOTE OFF on an empty step · ⌘-click or ⌘-drag selects steps · right-click: the step menu · scroll = pitch${isMidiT(t)?"":" · the keys on the left play the note"}${(()=>{const a=trk(t).arp;return a.MODE&&a.SPD?` · light notes: what the arpeggiator plays${a.PLAY===4?" (random order: outlined, the pitches vary)":""}`:""})()}`;
 /* ===== Values while live recording (as the MD Editor's): the firmware locks the step that plays when a value arrives (CC; a
    step without a trig gets a trigless lock); the plug-in names it (machine.desk.recLock: track, page.value, step) and
    the trig row's cell and the lock lane's bar show it until the read-back brings the real lock. ===== */
@@ -3525,7 +3525,7 @@ document.addEventListener("pointerout",e=>{const c=e.target.closest?.("canvas.ro
    boxes notes (the selection both editors share, StepSel: the steps from the first note's trig to the last one's end,
    its NOTE OFF too), a press on a note selects it, a drag of the selection moves it (⌘-drag: a copy, 77-select.js),
    a double-click adds a note. Both: a note's end drags its length (the draw length follows), up or down its pitch,
-   alt-click deletes it (the note before it keeps its length). Prefs per viewer (localStorage); draw by default. */
+   alt-click deletes it (the note before it runs on through the gap). Prefs per viewer (localStorage); draw by default. */
 S.rollLen=1;
 (()=>{let v=null;try{v=JSON.parse(localStorage.getItem("mmeditor.roll")||"null")}catch(_){}if(v&&typeof v==="object"){if(v.len>=1&&v.len<=64)S.rollLen=Math.round(v.len)}})();
 function rollPrefs(){try{localStorage.setItem("mmeditor.roll",JSON.stringify({len:S.rollLen}))}catch(_){}}
@@ -4189,7 +4189,7 @@ const clipSize=()=>CLIP&&CLIP.rows?{tracks:CLIP.rows.length,length:CLIP.length}:
 /* ---- the operations (⌘C ⌘X ⌘V ⌘D Delete Enter, the drop, the step menu): each one undo step; the result's note says what was done ---- */
 const selArgs=x=>({t:x.t,n:x.n,from:x.from,to:x.to});
 function selCopy(){const x=selShown();if(!x)return false;CLIP=clipOf(x);edit("copySteps",selArgs(x));toast(`Copied ${selSay(x)}.`);return true}
-function selCut(){const x=selShown();if(!x)return false;CLIP=clipOf(x);const keep=selKeeps(x);edit("copySteps",selArgs(x));edit("clearSteps",selArgs(x));selKeep(keep);toast(`Cut ${selSay(x)}.`);return true}
+function selCut(){const x=selShown();if(!x)return false;CLIP=clipOf(x);edit("copySteps",selArgs(x));edit("clearSteps",selArgs(x));toast(`Cut ${selSay(x)}.`);return true}
 /* ⌘V at the selection: the copied block's first step on its first step and track */
 function selPaste(){const x=S.stepSel;if(!x)return false;const size=clipSize();
  if(!size){toast(Modifiers.say("Copy some steps first: ⌘-click or ⌘-drag steps, then ⌘C."));return true}
@@ -4215,20 +4215,13 @@ function lockCurrent(){const t=S.sel,x=S.stepSel,pid=S.lane;
  const[pg,i]=pid.split("."),m=meta(t,pg,+i);renderTop();renderLane();toast(`${pidLabel(t,pid)} locked at ${fmt(m,v)} on ${n} step${n>1?"s":""} · ${tLabel(t)}`)}
 /* MM-083, MM-184, MM-203: the selected steps' locks go, their notes stay (the machine's CLEAR NOTE LOCKS, TRIG + PLAY) */
 function selClearLocks(){const x=selShown();if(!x)return false;edit("clearStepLocks",selArgs(x));return true}
-/* I-010: a note before the selection that ran into it keeps its length when the selection is cleared: a NOTE OFF on
-   the selection's first step with anything on it (where that note ended; on a MIDI track only when its LEN went that
-   far). Read before the clear, put down after it (a step intent of its own, in the same gesture: one undo step). */
-function selKeeps(x){const out=[];for(let t=x.t;t<x.t+x.n;t++){const tr=trk(t);let e=-1;for(let s=x.from;s<x.to;s++)if(tr.steps[s]){e=s;break}if(e<0)continue;
-  const p=MmRoll.before(tr.steps,S.len,x.from);if(p==null||p>=x.from&&p<x.to)continue;
-  if(isMidiT(t)){const v=midiLenOf(t,p);if(v<MmRoll.LEN_HOLD&&v/MmRoll.TICKS<=((e-p)%S.len+S.len)%S.len)continue}out.push([t,e])}return out}
-function selKeep(keep){for(const[t,e] of keep){trk(t).steps[e]={off:1};edit("step",{t,s:e,v:{off:true}})}}
 /* the selection moved (a drag of it): copied to step `at` of its tracks, then the steps it left cleared
-   (the note before it keeps its length, as on a clear); one undo step (the intents of one gesture) */
+   (no NOTE OFF where it was: the note before runs on through the gap, I-037); one undo step (the intents of one gesture) */
 function selMoveTo(at){const x=selShown();if(!x)return false;const n=x.to-x.from;if(at===x.from)return true;
  if(at>=S.len){toast(`No room: the pattern is ${S.len} steps.`);return true}
- const keep=selKeeps(x);edit("copyStepsTo",Object.assign(selArgs(x),{at,dt:x.t}));
+ edit("copyStepsTo",Object.assign(selArgs(x),{at,dt:x.t}));
  const a=at>x.from?x.from:Math.max(x.from,at+n),b=at>x.from?Math.min(x.to,at):x.to;
- if(b>a){edit("clearSteps",{t:x.t,n:x.n,from:a,to:b});selKeep(keep.filter(([,e])=>e>=a&&e<b))}
+ if(b>a){edit("clearSteps",{t:x.t,n:x.n,from:a,to:b})}
  setSel(StepSel.landing({tracks:x.n,length:n},x.t,at,SEL_TRACKS,S.len));toast(`Moved ${selSay(x)} to step ${at+1} (⌘Z undoes it).`);return true}
 /* the selection's steps of each track as one steps intent (rows), after f changed the view's steps */
 function selSteps(x,f){const rows=[];for(let t=x.t;t<x.t+x.n;t++){f(t,trk(t));rows.push(rangeRow(t,x.from,x.to))}edit("steps",{from:x.from,to:x.to,rows});renderTop();rerenderSeq()}
