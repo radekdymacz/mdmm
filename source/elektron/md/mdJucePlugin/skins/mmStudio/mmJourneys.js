@@ -1467,6 +1467,47 @@ const MmJourneys = (() => {
 			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(kitT(0) === c.k0, "kit not back"), within: 15000 }
 		]
 	};
+	/* I-043: the filter envelope's reach pane: a drag left or right on its BOFS and WOFS dots covers -64 to +63 */
+	const filterEnv = {
+		name: "mm-sound-filter-env", proves: [],
+		steps: [
+			go("sound"), sel(0),
+			{ say: "drag the BOFS dot of the filter envelope screen to the left edge", act: async (u, c) => {
+				const cv = $1('#main canvas.ed[data-ed="fenv"]'); if (!cv) throw new Error("no filter envelope screen"); c.cv = cv; c.b0 = wk().tracks[0].pages[2][6]; c.w0 = wk().tracks[0].pages[2][7];
+				const r = cv.getBoundingClientRect(), h = ED.fenv.handles(r.width, r.height, cv).find(x => x.k === "BOFS");
+				await u.drag(cv, [[-20, 0], [-80, 0], [-300, 0]], {}, { fx: h.x / r.width, fy: h.y / r.height }); },
+				screen: () => ok(valueText('#main .pc[data-g="FLT"][data-n="6"]') === "-64", "BOFS shows " + valueText('#main .pc[data-g="FLT"][data-n="6"]')),
+				machine: () => ok(wk().tracks[0].pages[2][6] === 0, "kit BOFS " + wk().tracks[0].pages[2][6]), within: 8000 },
+			{ say: "drag the WOFS dot to the right edge", act: async u => {
+				const cv = $1('#main canvas.ed[data-ed="fenv"]'), r = cv.getBoundingClientRect(), h = ED.fenv.handles(r.width, r.height, cv).find(x => x.k === "WOFS");
+				await u.drag(cv, [[20, 0], [80, 0], [300, 0]], {}, { fx: h.x / r.width, fy: h.y / r.height }); },
+				screen: () => ok(valueText('#main .pc[data-g="FLT"][data-n="7"]') === "+63", "WOFS shows " + valueText('#main .pc[data-g="FLT"][data-n="7"]')),
+				machine: () => ok(wk().tracks[0].pages[2][7] === 127, "kit WOFS " + wk().tracks[0].pages[2][7]), within: 8000 },
+			{ say: "drag the ATK dot of the small square screen: BOFS stays", act: async (u, c) => {
+				const cv = $1('#main canvas.ed[data-ed="fenv"]'), r = cv.getBoundingClientRect(), h = ED.fenv.handles(r.width, r.height, cv).find(x => x.k === "ATK"); c.a0 = wk().tracks[0].pages[2][4];
+				await u.drag(cv, [[10, 0], [20, 0], [30, 0]], {}, { fx: h.x / r.width, fy: h.y / r.height }); },
+				machine: c => ok(wk().tracks[0].pages[2][4] !== c.a0 && wk().tracks[0].pages[2][6] === 0, `ATK ${wk().tracks[0].pages[2][4]} (was ${c.a0}), BOFS ${wk().tracks[0].pages[2][6]}`), within: 8000 }
+		],
+		async tidy(u, c) { blur(); for (let i = 0; i < 3 && c.b0 != null && (wk().tracks[0].pages[2][6] !== c.b0 || wk().tracks[0].pages[2][7] !== c.w0); i++) { u.key("z", { cmd: true }); await sleep(700); } }
+	};
+	/* I-042: the LFO screen shades the steps whose locks change the LFO */
+	const lfoLocksJ = {
+		name: "mm-sound-lfo-locks", proves: [],
+		steps: [
+			go("seq"),
+			{ say: "pick a track with a trig and draw a lock on LFO 1's SPD at that step", act: async (u, c) => {
+				c.t = [0, 1, 2, 3, 4, 5].find(t => trigsOf(t).some(s => s < S().len)); if (c.t == null) throw new Error("no track with a trig"); c.s = trigsOf(c.t).find(s => s < S().len); c.l0 = JSON.stringify(patDoc().locks);
+				u.click(rail(c.t)); await sleep(200); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await sleep(200); await drawLock(u, "LF1", 5, c.s, 0.8); await sleep(400); },
+				machine: c => ok(lockVals(c.t, PAGES.indexOf("LF1"), 5).some(([s]) => s === c.s), "locks " + JSON.stringify(lockVals(c.t, 4, 5))), within: 15000 },
+			go("sound"),
+			{ say: "the LFO 1 screen shades that step", act: async (u, c) => { await sleep(300); },
+				screen: c => { const cv = $1('#main canvas.ed[data-ed="lfo"][data-l="LF1"]'); if (!cv) return ok(false, "no LFO 1 screen");
+					const r = cv.getBoundingClientRect(), N = Math.max(32, Math.min(64, S().len)), k = cv.width / r.width, px = s => cv.getContext("2d").getImageData(Math.round((s + .5) / N * r.width * k), 2, 1, 1).data.join();
+					const other = [...Array(N).keys()].find(s => s % S().len !== c.s && Math.abs(s - c.s) > 3);
+					return ok(px(c.s) !== px(other), `column of step ${c.s}: ${px(c.s)}, of step ${other}: ${px(other)}`); } }
+		],
+		async tidy(u, c) { if (c.l0) await undoUntil(u, () => JSON.stringify(patDoc().locks) === c.l0, 5); }
+	};
 	const dragM = {
 		name: "mm-mix-drag-m-keys", proves: ["MM-020"],
 		steps: [
@@ -4012,7 +4053,7 @@ const MmJourneys = (() => {
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, followPlayed, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, modeCycle, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
-		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
+		valueKeys, soundCopy, screenDrag, filterEnv, lfoLocksJ, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
 		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
 	   its guard, "left:", names what stays). What back cannot put back, the journey keeps first (keep, keepMany) or is alone: true (doc/modern-ux/JOURNEYS.md, "Independent journeys") */
