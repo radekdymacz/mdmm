@@ -6,7 +6,7 @@ The Monomachine takes notes, controllers, NRPN values and a few system messages.
 ## CHANNELS
 <!-- rows: MM-347 @ce2923 -->
 
-Each track listens on its own channel: the base channel plus 0 to 5. You set the base channel and the span in GLOBAL, in the Control section (chapter 19). The on-screen keyboard, the home row keys and the roll keys use these channels.
+Each track listens on its own channel: the base channel plus 0 to 5. You set the base channel and the span in GLOBAL, in the Control section (chapter 19). The on-screen keyboard, the home row keys and the roll keys use these channels. Notes from a MIDI keyboard or a DAW use them too, and a note on a channel that no track listens on plays nothing.
 
 1. Click **GLOBAL** in the top bar. The panel opens with the MIDI channels.
 2. Click the minus beside Channel span until it reads 0. No track has a channel, and the panel says so.
@@ -116,9 +116,11 @@ Pitch bend works per track. The joystick pad sends it.
 ## PROGRAM CHANGE
 <!-- rows: MM-367 @09af8b -->
 
-A program change selects a pattern. The firmware reacts to it when your host sends one; the editor has no control of its own for it.
+A program change on the base channel selects a pattern. The firmware reacts to it when your host sends one, for example from a clip. With **Prg change out** on, choosing a pattern in the editor sends one out.
 
 ## SONG POINTER, CLOCK, START, CONTINUE, STOP
 <!-- rows: MM-368 @048bc1 -->
 
-These system messages sync the machine to a host. The firmware handles them, and the editor uses them when it follows the host's clock.
+These system messages sync the machine to a host. The firmware handles them, and the editor uses them when it follows the host's clock (**Tempo in** EXT). A loop in the DAW arrives as a song position and a continue. When the host stops, the editor sends All Notes Off on every channel as well. With **Tempo in** on INT none of these reach the machine.
+
+The machine's own MIDI out carries notes, controllers, program changes, pitch bend, pressure, clock, start, stop and continue. It never carries SysEx.
