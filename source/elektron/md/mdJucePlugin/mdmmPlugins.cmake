@@ -790,6 +790,11 @@ function(mdmm_plugin_targets)
 		add_test(NAME mdMachineMidiOutFirmwareTest_${m} COMMAND mdMachineMidiOutTest ${m})
 		set_tests_properties(mdMachineMidiOutFirmwareTest_${m} PROPERTIES
 			LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 400)
+		# WP2 (PLAN-0.8, B-121, B-154): the host's transport and clock through the processor with a scripted play
+		# head, the host's Program Change, the machine's MIDI out fed back into its in
+		add_test(NAME mdTransportFirmwareTest_${m} COMMAND mdMachineMidiOutTest ${m} transport)
+		set_tests_properties(mdTransportFirmwareTest_${m} PROPERTIES
+			LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1500)
 	endforeach()
 
 	# The built bundles carry the identity in scripts/mdmm-product.env (the AU codes, the VST3 class IDs that follow
