@@ -892,6 +892,12 @@ const Journey = (() => {
 		if (!main) return ["no #main"];
 		const name = e => (e.id ? "#" + e.id : "") + (typeof e.className === "string" && e.className.trim() ? "." + e.className.trim().split(/\s+/).slice(0, 2).join(".") : e.tagName.toLowerCase());
 		const wall = main.getBoundingClientRect().right;
+		/* the page's own edges: #main and .app end inside the window, and the page does not scroll sideways (up and down is fine) */
+		for (const e of [main, $q(".app")]) if (e && e.getBoundingClientRect().right > innerWidth + 1) out.push(`${name(e)} ends at ${Math.round(e.getBoundingClientRect().right)} in a window ${innerWidth} wide`);
+		/* the top bar is measured by fit-workspaces (it asks 1280 px; below that its Setup keys leave the window, not this page's business), so it is hidden for this one measure */
+		const top = $q("header.top"), shown = top && top.style.display; if (top) top.style.setProperty("display", "none", "important");
+		const sw = document.documentElement.scrollWidth; if (top) { top.style.removeProperty("display"); if (shown) top.style.display = shown; }
+		if (sw > innerWidth + 1) out.push(`the page scrolls sideways (${sw} in ${innerWidth})`);
 		for (const e of [main, ...main.querySelectorAll("*")]) {
 			if (!e.getClientRects().length || e.closest("[hidden]") || e.closest("svg") || ["canvas", "script", "style"].includes(e.localName)) continue;
 			const cs = getComputedStyle(e);
