@@ -13,12 +13,12 @@
 ## I-043 · Filter envelope: a larger display with the full BOFS/WOFS range, the second window smaller (square) with attack and decay only
 
 - **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). The filter envelope display should be larger, and left/right on it show the full BOFS/WOFS range (-64 to +63, B-148); the second window smaller and square, with just attack and decay.
-- **Status:** idea; needs Radek's call on the look (Sound > Filter env).
+- **Status:** done on branch `feat/0.8-mm-lfo-filter-views` (not merged). The filter envelope group keeps its place and size (no new panel; the screens of a row stay level): its one screen is now two panes. The big pane (left, about two thirds) holds BOFS (solid) and WOFS (dashed) as one row each, -64 on the left edge, 0 on the centre line, +63 on the right edge: a drag left or right reaches every value. The small square pane (right, 62 % of the screen's height at most 40 % of its width) draws the envelope's shape with ATK and DEC dots only. Reason for one screen with two panes and not two screens: the group has room for one screen under the page's layout rules, and a second screen would be a new panel. Left over: the big pane no longer draws the envelope curve scaled by BOFS (the Filter group's own screen keeps the dashed envelope-peak curve); say if the tester wants the curve back in the big pane. Page: `ED.fenv` (90-sound.js); `mmSoundTest`, journey `mm-sound-filter-env`; guide: chapter 7, Filter envelope.
 
 ## I-042 · LFO preview: show the p-locked LFO values, not only the trig markers
 
 - **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). The LFO preview marks the trigs; it should draw the LFO as the locks change it.
-- **Status:** idea; read the preview's code before sizing (locks on LF1-LF3 are in `S.locks` as `LF1.i`).
+- **Status:** done on branch `feat/0.8-mm-lfo-filter-views` (not merged). The LFO screen now draws the pattern's whole length (32 steps at least, 64 at most; it was a fixed 32) with the locks of the selected track on the LFO's TRIG, WAVE, MULT, SPD, INTL and DPTH: a lock holds for its own step only (the phase runs on at that step's speed, in its shape and depth, then back), a lock on a step without a trig is ignored as on the machine. Locked steps are shaded, their tick is taller, the label names the locked parameters. It redraws when the page renders (opening KIT, any value change), not per frame. Left over: locks on PAGE and DEST (routing) are not drawn, and the picture shows the LFO's own output, not its effect on the target. Page: `lfoTrace`, `ED.lfo` (90-sound.js); `mmSoundTest`, journey `mm-sound-lfo-locks`; guide: chapter 8, LFO and parameter locks.
 
 ## I-041 · Kit: left/right navigation like the pattern selector
 
