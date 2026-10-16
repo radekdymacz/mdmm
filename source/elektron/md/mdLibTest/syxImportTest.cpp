@@ -559,6 +559,89 @@ namespace
 		j3.step(m3, t3 += 10, false);
 		j3.cancel();
 		check(j3.phase() == Job::Phase::Reading, "Stop while sending: what went is read back");
+
+		// I-038: Read back and compare off: Send, then done; nothing is asked of the machine, nothing is called imported
+		FakeMachine m4;
+		m4.kits = machine.kits;
+		Job j4;
+		j4.open(file, "test.syx", known, {});
+		check(j4.start({"kit", "pattern", "other"}, {"kit:9"}, known, false, false).empty() && !j4.readBack(), "the import starts without the read-back");
+		double t4 = 0;
+		const auto p4 = drive(j4, m4, t4);
+		check(!j4.running() && j4.phase() == Job::Phase::Done, "without the read-back the import ends after Sending");
+		// the Read the slots phase before sending is the same as ever (slots the editor does not know); after the first dump nothing is asked
+		const auto& w4 = m4.wire;
+		const auto first4 = std::find(w4.begin(), w4.end(), ed::encodeMdKit(k1)) - w4.begin();
+		bool askedAfter = false;
+		size_t dumps = 0;
+		for(size_t i = static_cast<size_t>(first4); i < w4.size(); ++i)
+		{
+			if(w4[i] == ed::mdPatternRequest(5) || w4[i] == ed::mdKitRequest(1) || w4[i] == ed::mdKitRequest(2) || w4[i] == ed::mdKitRequest(3))
+				askedAfter = true;	// a kit or pattern request
+			else
+				++dumps;
+		}
+		check(!askedAfter, "no slot is asked for after the import is sent");
+		check(dumps == 5, "the file's five messages went (" + std::to_string(dumps) + ")");
+		check(j4.outcomes().empty(), "no outcome without a read-back");
+		const auto& l4 = p4.back();
+		const auto& r4 = *l4.find("report");
+		check(l4.find("phase")->asString() == "done" && !l4.find("readBack")->asBool() && !r4.find("readBack")->asBool()
+			&& r4.find("sent")->asNumber() == 4 && r4.find("commands")->asNumber() == 1 && r4.find("items")->asArray().size() == 4 && r4.find("partly")->asNumber() == 0 && r4.find("notSent")->asNumber() == 0, "the report: 4 sent, 1 command, readBack false, an entry per item");
+		check(l4.find("text")->asString().find("not read back") != std::string::npos && l4.find("text")->asString().find("imported") == std::string::npos
+			&& l4.find("text")->asString().find("taken") == std::string::npos, "the summary says not read back, never imported: " + l4.find("text")->asString());
+		check(last.find("readBack")->asBool(), "the default run reported readBack true");
+
+		// Stop while sending, read-back off: done, nothing read
+		FakeMachine m5;
+		m5.manual = true;
+		Job j5;
+		j5.open(file, "test.syx", known, {});
+		j5.start({"kit"}, {}, known, false, false);
+		double t5 = 0;
+		j5.step(m5, t5 += 10, false);
+		j5.cancel();
+		// manual machine: the dumps are held for SEND; Stop clears the queue, the job waits for the adapter (bounded), then ends
+		check(j5.phase() == Job::Phase::Sending, "Stop while sending, read-back off: the job waits for what the adapter holds");
+		double t6 = t5;
+		for(int i = 0; i < 2000 && j5.running(); ++i)
+			j5.step(m5, t6 += 10, false);
+		check(j5.phase() == Job::Phase::Done, "...and ends once the wait is over (bounded)");
+		const auto pj5 = j5.progress();
+		const auto& rj5 = *pj5.find("report");
+		const auto tx5 = pj5.find("text")->asString();
+		check(!rj5.find("readBack")->asBool() && tx5.find("not read back") != std::string::npos && tx5.find("(stopped)") != std::string::npos
+			&& tx5.find("imported") == std::string::npos, "the Stopped report counts what went: " + tx5);
+
+		// per item: an item whose messages did not all go is never "sent": kit 2 is in the file three times (one item, three
+		// messages), two went; kit 4 never started
+		{
+			Bytes two;
+			append(two, ed::encodeMdKit(k1));
+			append(two, ed::encodeMdKit(k1));
+			append(two, ed::encodeMdKit(k1));
+			append(two, ed::encodeMdKit(k3));
+			FakeMachine m7;
+			Job j7;
+			j7.open(two, "two.syx", known, {});
+			j7.start({"kit"}, {}, known, false, false);
+			double t7 = 0;
+			j7.step(m7, t7 += 10, false);	// the first two messages (room 2) go to the adapter
+			j7.cancel();
+			for(int i = 0; i < 100 && j7.running(); ++i)
+				j7.step(m7, t7 += 10, false);
+			const auto pj7 = j7.progress();
+			const auto& r7 = *pj7.find("report");
+			int sentItems = 0;
+			for(const auto& it : r7.find("items")->asArray())
+				sentItems += it.find("outcome")->asString() == "sent";
+			check(r7.find("sent")->asNumber() + r7.find("partly")->asNumber() + r7.find("notSent")->asNumber() == r7.find("items")->asArray().size()
+				&& sentItems == static_cast<int>(r7.find("sent")->asNumber()), "per-item entries agree with the counts");
+			check(r7.find("sent")->asNumber() == 0 && r7.find("partly")->asNumber() == 1 && r7.find("notSent")->asNumber() == 1 && sentItems == 0,
+				"two of three messages went: the item is partly sent, not sent; the other is not sent");
+			check(pj7.find("text")->asString().find("1 partly sent") != std::string::npos && pj7.find("text")->asString().find("1 not sent (stopped)") != std::string::npos,
+				"the text: " + pj7.find("text")->asString());
+		}
 	}
 
 	// 0.6 (wave 6): SPECIFIC place, VERIFY ONLY, a part for an export, the DigiPRO messages.

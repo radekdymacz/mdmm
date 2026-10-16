@@ -2557,6 +2557,10 @@
                 }
               }
             },
+            "readBack": {
+              "description": "I-038: false when the import was sent without the read-back (the report then says sent, not read back)",
+              "type": "boolean"
+            },
             "check": {
               "description": "0.6: VERIFY ONLY (nothing sent; the report counts same, differs, unknown, no reply)",
               "type": "boolean"
@@ -6344,7 +6348,7 @@
         },
         {
           "type": "object",
-          "description": "host: import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\", the slot an item lands in), sent to the machine as they are (the firmware decides what it takes), then read back and reported (syxProgress); no undo step. placeAt (SPECIFIC, 0.6): per kind the first slot its items land in, in slot order ({\"kit\": 4}; the dumps go with that position byte and checksum); checkOnly (VERIFY ONLY): nothing is sent, each item's slot is read and compared with the file",
+          "description": "host: import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\", the slot an item lands in), sent to the machine as they are (the firmware decides what it takes), then read back and reported (syxProgress); no undo step. placeAt (SPECIFIC, 0.6): per kind the first slot its items land in, in slot order ({\"kit\": 4}; the dumps go with that position byte and checksum); checkOnly (VERIFY ONLY): nothing is sent, each item's slot is read and compared with the file; readBack (I-038, default true): false ends the import after the messages are sent, without reading the slots back, and the report says the items were sent, not read back",
           "required": ["op", "kinds"],
           "properties": {
             "op": {
@@ -6370,6 +6374,9 @@
               "type": "object"
             },
             "checkOnly": {
+              "type": ["boolean", "integer"]
+            },
+            "readBack": {
               "type": ["boolean", "integer"]
             }
           },

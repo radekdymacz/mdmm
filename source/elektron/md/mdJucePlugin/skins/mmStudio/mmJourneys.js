@@ -1943,6 +1943,37 @@ const MmJourneys = (() => {
 		],
 		async tidy() { $1("#syxpop").hidden = true; }
 	};
+	/* I-038: Read back and compare, off. The tick sits beside Verify only and is kept; an import without it ends after Send and
+	   says "not read back", never "imported". The tick is put back on at the end (it is kept in the page's storage). */
+	const syxNoReadBack = {
+		name: "mm-lib-syx-noreadback", alone: true, proves: ["MM-308", "MM-X13"],
+		needs: syxWanted,
+		steps: [
+			openImport,
+			{ say: "the footer has Read back and compare beside Verify only, ticked by default", act: () => {},
+				screen: () => ok(!!$1('#syxpop .syxfoot [data-syxrb]')?.checked && !!$1('#syxpop .syxfoot [data-syxgo="verify"]') && /Read back and compare/.test($1("#syxpop .syxfoot .syxrb")?.textContent || ""), "tick " + $1('#syxpop [data-syxrb]')?.checked) },
+			{ say: "untick it, click Cancel and open the import again: it stays unticked", act: async u => {
+				u.click('#syxpop [data-syxrb]'); await sleep(100); u.click('#syxpop [data-syxgo="close"]'); await sleep(300); u.pick("engsel", "import"); },
+				screen: () => ok(!$1("#syxpop").hidden && $all('#syxpop button[data-syxitem^="kit:"]').length > 0 && $1('#syxpop [data-syxrb]') && !$1('#syxpop [data-syxrb]').checked, "tick " + $1('#syxpop [data-syxrb]')?.checked), within: 8000 },
+			{ say: "leave Kits ticked only, click Import: sent, and the report says not read back", act: async u => {
+				for (const b of $all("#syxpop [data-syxkind]")) if (b.checked !== (b.dataset.syxkind === "kit")) u.click(b);
+				await sleep(100); u.click('#syxpop [data-syxgo="start"]'); },
+				screen: () => { const s = $1("#syxpop .syxsum")?.textContent || "", steps = $1("#syxpop .syxsteps")?.textContent || "";
+					return ok(/\d+ sent, not read back/.test(s) && !/imported|taken/.test(s) && !/Read back/.test(steps), "summary: " + s + " / steps: " + steps); }, within: 180000 },
+			{ say: "the grid marks the kits as sent, none as taken", act: () => {},
+				screen: () => { const o = $all("#syxpop [data-syxout]").map(d => d.dataset.syxout); return ok(o.every(x => x === "sent"), o.join(" ")); } },
+			{ say: "click Done, open the import again and tick Read back and compare again", act: async u => {
+				u.click('#syxpop [data-syxgo="close"]'); await sleep(300); u.pick("engsel", "import"); await until(() => !!$1('#syxpop [data-syxrb]'), 8000); u.click('#syxpop [data-syxrb]'); },
+				screen: () => ok(!!$1('#syxpop [data-syxrb]')?.checked, "tick " + $1('#syxpop [data-syxrb]')?.checked), within: 10000 },
+			{ say: "click Cancel: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
+		],
+		async tidy(u) {
+			const t = $1('#syxpop [data-syxrb]');
+			if (!$1("#syxpop").hidden && t && !t.checked) t.click();
+			if (!$1("#syxpop").hidden) $1("#syxpop").hidden = true;
+			try { localStorage.removeItem("deskSyx.readBack"); } catch (_) { }
+		}
+	};
 	const syxPlace = {
 		name: "mm-lib-syx-place", proves: ["MM-308", "MM-X13"],
 		needs: syxWanted,
@@ -3811,7 +3842,7 @@ const MmJourneys = (() => {
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
 		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
-		blackKeys, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxPlace, resetEmpty, syxRunningReach];
+		blackKeys, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
 	   its guard, "left:", names what stays). What back cannot put back, the journey keeps first (keep, keepMany) or is alone: true (doc/modern-ux/JOURNEYS.md, "Independent journeys") */
 	for (const j of all) { const own = j.tidy; j.tidy = async (u, c) => { try { if (own) await own(u, c); } finally { if (c.back0?.state && Journey.stateDiff(c.back0.state, state())) await back(u, c); } }; }
