@@ -1680,6 +1680,8 @@ const MmJourneys = (() => {
 	const dblAt = async (u, t, s, n) => { const p = rollAt(t, s, n); u.click(p.c, {}, p.fx, p.fy); await sleep(80); const r = p.c.getBoundingClientRect();
 		p.c.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true, composed: true, view: window, detail: 2, clientX: r.left + p.fx * r.width, clientY: r.top + p.fy * r.height })); };
 	const noteOf = (t, s) => S().tracks[t].steps[s]?.n?.[0];
+	/* the NOTE OFFs after the first note alone (c.o1), the second drawn over its NOTE OFF and then deleted: its own NOTE OFF (run[4]) stays, the first note's (run[2]) was overwritten */
+	const after1 = c => [...c.o1.filter(x => x !== c.run[2]), c.run[4]].sort((a, b) => a - b);
 	const deleteGap = {
 		name: "mm-roll-delete-gap", proves: [],
 		steps: [
@@ -1690,14 +1692,20 @@ const MmJourneys = (() => {
 				machine: c => ok(trigsOf(c.t).includes(c.run[0]) && offsOf(c.t).includes(c.run[2]), `trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 },
 			{ say: "click the step where it ends: a second note of two steps, the first now runs into it", act: (u, c) => { c.o1 = offsOf(c.t); clickAt(u, c.t, c.run[2], c.n); },
 				machine: c => ok(trigsOf(c.t).includes(c.run[2]) && !offsOf(c.t).includes(c.run[2]) && offsOf(c.t).includes(c.run[4]), `trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 },
-			{ say: "double-click the second note: it is deleted, and no NOTE OFF is written where it began (the first note keeps sounding through the gap, as on the machine); the NOTE OFF that only closed it goes too", act: async (u, c) => { if (S().stepSel) clearSel(); await dblAt(u, c.t, c.run[2], c.n); },
-				screen: c => ok(!S().tracks[c.t].steps[c.run[2]] && !S().tracks[c.t].steps[c.run[4]] && !S().stepSel, `steps ${JSON.stringify(S().tracks[c.t].steps.slice(c.run[0], c.run[4] + 1))}, selection ${JSON.stringify(S().stepSel)}`),
-				machine: c => ok(!trigsOf(c.t).includes(c.run[2]) && trigsOf(c.t).includes(c.run[0]) && same(offsOf(c.t), c.o1.filter(x => x !== c.run[2])), `trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")} (with the first note alone: ${c.o1.join(",")}), run ${c.run.join(",")}`), within: 15000 },
+			{ say: "double-click the second note: it is deleted: no NOTE OFF is written where it began and its own NOTE OFF stays (the first note keeps sounding, now to that NOTE OFF, as on the machine)", act: async (u, c) => { if (S().stepSel) clearSel(); await sleep(500); await dblAt(u, c.t, c.run[2], c.n); },
+				screen: c => ok(!S().tracks[c.t].steps[c.run[2]] && !!S().tracks[c.t].steps[c.run[4]]?.off && !S().stepSel, `steps ${JSON.stringify(S().tracks[c.t].steps.slice(c.run[0], c.run[4] + 1))}, selection ${JSON.stringify(S().stepSel)}`),
+				machine: c => ok(!trigsOf(c.t).includes(c.run[2]) && trigsOf(c.t).includes(c.run[0]) && same(offsOf(c.t), after1(c)), `trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")} (with the first note alone: ${c.o1.join(",")}), run ${c.run.join(",")}`), within: 15000 },
 			{ say: "Cmd+Z: the second note and its NOTE OFF are back, one undo step", act: u => { blur(); u.key("z", { cmd: true }); },
 				machine: c => ok(trigsOf(c.t).includes(c.run[2]) && offsOf(c.t).includes(c.run[4]) && !offsOf(c.t).includes(c.run[2]), `trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 },
-			{ say: "Alt-click the second note: the same, no NOTE OFF written", act: (u, c) => { if (S().stepSel) clearSel(); const p = rollAt(c.t, c.run[2], c.n); u.click(p.c, { alt: true }, p.fx, p.fy); },
-				machine: c => ok(!trigsOf(c.t).includes(c.run[2]) && same(offsOf(c.t), c.o1.filter(x => x !== c.run[2])), `trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 },
-			{ say: "Cmd+Z until the track is as before", act: async (u, c) => { await undoUntil(u, () => same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0), 5); },
+			{ say: "Alt-click the second note: the same, no NOTE OFF written or taken away", act: (u, c) => { if (S().stepSel) clearSel(); const p = rollAt(c.t, c.run[2], c.n); u.click(p.c, { alt: true }, p.fx, p.fy); },
+				machine: c => ok(!trigsOf(c.t).includes(c.run[2]) && same(offsOf(c.t), after1(c)), `trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 },
+			{ say: "double-click an empty cell: exactly one note is drawn there (the second click does not delete it), and no message says a note was deleted", act: async (u, c) => { if (S().stepSel) clearSel(); c.s2 = c.run[3]; c.n2 = c.n + 2; await dblAt(u, c.t, c.s2, c.n2); await sleep(400); },
+				screen: c => ok(same(S().tracks[c.t].steps[c.s2]?.n, [c.n2]) && !/Deleted/.test($1("#toast")?.textContent || ""), `step ${JSON.stringify(S().tracks[c.t].steps[c.s2])}, toast "${$1("#toast")?.textContent}"`),
+				machine: c => ok(trigsOf(c.t).includes(c.s2), `trigs ${trigsOf(c.t).join(",")}`), within: 15000 },
+			{ say: "double-click that note once the moment has passed: now it is deleted", act: async (u, c) => { await sleep(500); await dblAt(u, c.t, c.s2, c.n2); },
+				screen: c => ok(!S().tracks[c.t].steps[c.s2]?.n, `step ${JSON.stringify(S().tracks[c.t].steps[c.s2])}`),
+				machine: c => ok(!trigsOf(c.t).includes(c.s2), `trigs ${trigsOf(c.t).join(",")}`), within: 15000 },
+			{ say: "Cmd+Z until the track is as before", act: async (u, c) => { await undoUntil(u, () => same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0), 9); },
 				machine: c => ok(same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0), `trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 }
 		],
 		async tidy(u, c) { if (S().stepSel) clearSel(); if (c.t0 && !(same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0))) await undoUntil(u, () => same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0)); if (c.l0) setRollLen(c.l0); }

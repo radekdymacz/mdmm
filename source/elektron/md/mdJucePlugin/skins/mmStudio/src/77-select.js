@@ -62,7 +62,7 @@ function selCopyTo(dt,at){const x=selShown();if(!x)return false;
  if(at>=S.len){toast(`No room: the pattern is ${S.len} steps.`);return true}
  edit("copyStepsTo",Object.assign(selArgs(x),{at,dt}));setSel(StepSel.landing({tracks:x.n,length:x.to-x.from},dt,at,SEL_TRACKS,S.len));return true}
 function selDuplicate(){const x=selShown();return x?selCopyTo(x.t,x.to):false}
-/* Delete / Clr / the step menu's Clear (I-037): the steps go and nothing is written; the note before runs on through the gap, as on the machine */
+/* Delete / Clr / the step menu's Clear (I-037): the selected steps go (a NOTE OFF only when its own step is selected) and nothing is written; the earlier note runs on to the next trig or NOTE OFF, as on the machine */
 function selClear(){const x=selShown();if(!x)return false;edit("clearSteps",selArgs(x));return true}
 /* MM-201: the lane's parameter locked at its current value (the kit's) on every selected step of the lane's track that has a
    note (the machine: hold the TRIG key, click the knob, manual 1-57); one undo step */
@@ -76,7 +76,7 @@ function lockCurrent(){const t=S.sel,x=S.stepSel,pid=S.lane;
 /* MM-083, MM-184, MM-203: the selected steps' locks go, their notes stay (the machine's CLEAR NOTE LOCKS, TRIG + PLAY) */
 function selClearLocks(){const x=selShown();if(!x)return false;edit("clearStepLocks",selArgs(x));return true}
 /* the selection moved (a drag of it): copied to step `at` of its tracks, then the steps it left cleared
-   (no NOTE OFF where it was: the note before runs on through the gap, I-037); one undo step (the intents of one gesture) */
+   (no NOTE OFF written where it was: the earlier note runs on to the next trig or NOTE OFF, I-037); one undo step (the intents of one gesture) */
 function selMoveTo(at){const x=selShown();if(!x)return false;const n=x.to-x.from;if(at===x.from)return true;
  if(at>=S.len){toast(`No room: the pattern is ${S.len} steps.`);return true}
  edit("copyStepsTo",Object.assign(selArgs(x),{at,dt:x.t}));

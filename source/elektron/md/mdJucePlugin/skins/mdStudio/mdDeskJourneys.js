@@ -228,7 +228,11 @@ const MdJourneys = (() => {
 			{ ...undoKey, say: "press Cmd+Z: the trig is back", act: u => { document.activeElement?.blur?.(); u.key("z", { cmd: true }); }, machine: c => ok(trigsOf(c.t).includes(c.s), "trigs " + trigsOf(c.t).join(",")), within: 8000 },
 			{ say: "click the trig, press Delete: it is cleared (the selection's Delete)", act: async (u, c) => { await until(idle, 3000); u.click(cell(c.t, c.s)); await sleep(150); document.activeElement?.blur?.(); u.key("Delete"); },
 				machine: c => ok(!trigsOf(c.t).includes(c.s), "trigs " + trigsOf(c.t).join(",")), within: 8000 },
-			{ say: "press Cmd+Z, then Cmd+Z again: the track is as it was", act: async (u, c) => { document.activeElement?.blur?.(); await undoUntil(u, () => same(trigsOf(c.t), c.t0), 4); },
+			{ say: "double-click another empty step: one trig is drawn and stays (the second click does not remove it), no message says it was removed", act: async (u, c) => { await until(idle, 3000); c.s2 = [...Array(c.L).keys()].find(s => s !== c.s && !trigsOf(c.t).includes(s)); await sleep(500); u.dblclick(cell(c.t, c.s2)); await sleep(300); },
+				screen: c => ok(pressed(cell(c.t, c.s2)) && !/Removed/.test($1("#toast")?.textContent || ""), "lit " + pressed(cell(c.t, c.s2)) + ", toast \"" + $1("#toast")?.textContent + "\""), machine: c => ok(trigsOf(c.t).includes(c.s2), "trigs " + trigsOf(c.t).join(",")), within: 8000 },
+			{ say: "after a moment double-click that trig: now it is removed", act: async (u, c) => { await sleep(500); u.dblclick(cell(c.t, c.s2)); },
+				screen: c => ok(!pressed(cell(c.t, c.s2)), "still lit"), machine: c => ok(!trigsOf(c.t).includes(c.s2), "trigs " + trigsOf(c.t).join(",")), within: 8000 },
+			{ say: "press Cmd+Z, then Cmd+Z again: the track is as it was", act: async (u, c) => { document.activeElement?.blur?.(); await undoUntil(u, () => same(trigsOf(c.t), c.t0), 8); },
 				machine: c => ok(same(trigsOf(c.t), c.t0), "trigs " + trigsOf(c.t).join(",")), within: 8000 }
 		],
 		async tidy(u, c) { if (S.stepSel) clearSel(); if (c.t0 && !same(trigsOf(c.t), c.t0)) await undoUntil(u, () => same(trigsOf(c.t), c.t0), 4); }
