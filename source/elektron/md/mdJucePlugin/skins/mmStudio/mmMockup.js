@@ -3300,7 +3300,7 @@ function syncControls(){
   if(m.signed&&el.classList.contains("pc")){const q=v/mx*100;el.classList.add("bip");el.style.setProperty("--pl",Math.min(q,50.4)+"%");el.style.setProperty("--pw",Math.max(1.5,Math.abs(q-50.4))+"%")}
   /* a PAN bar reads as a mixer does: L / C / R */
   const txt=el.classList.contains("pan")&&m.signed?(v===64?"C":(v<64?"L":"R")+Math.abs(v-64)):fmt(m,v);
-  const b=el.querySelector("b");if(b){b.textContent=txt;b.classList.toggle("long",txt.length>6)}el.setAttribute("aria-valuetext",txt);
+  const b=el.querySelector("b");const dw=!el.classList.contains("pan")&&m.tab&&v!=null?tabAt(m.tab,v):null,wn=dw&&dw.n;/* B-150: a D wave box shows the wave's name (the number is in the tip and the screen) */if(b){b.textContent=wn||txt;b.classList.toggle("long",!!wn)}if(wn)el.title=txt;el.setAttribute("aria-valuetext",txt);
   if(PAGES.includes(g)||g==="MID"){const pid=g+"."+n;el.classList.toggle("lk",S.locks.has(lkKey(t,pid)));const mb=modBy(t,g,+n);let md=el.querySelector(".mod");
    if(mb.length){if(!md){md=document.createElement("i");md.className="mod";el.appendChild(md)}md.textContent="~"+mb.join("");el.title=`Modulated by LFO ${mb.join(" + ")}`}else if(md)md.remove();
    const mp=S.ctl.links.filter(l=>l.t===t&&l.pid===pid);el.classList.toggle("mapped",mp.length>0)}});
@@ -4717,7 +4717,7 @@ ED.enswave={draw(g,W,H){const ink=cssv("--ink"),m=trk(S.sel).m;grid(g,W,H);
 /* DPRO-WAVE: WAVE (S01-S32) morphing into the next at WP; DPRO-DDRW: two waves (D01-D64) mixed (MIX) */
 ED.morph={draw(g,W,H){const m=trk(S.sel).m,dd=m==="DPRO-DDRW",a=dpWave(dd?"WAV1":"WAVE"),b=dd?dpWave("WAV2"):{i:(a.i+1)%32,t:WAVS[(a.i+1)%32]},bi=b.i,mix=(dd?sv("MIX"):sv("WP"))/127,ink=cssv("--ink");grid(g,W,H);
   line(g,W,x=>{const p=(x/W*2)%1;return H/2+4-((1-mix)*wfDP(a.i,p)+mix*wfDP(bi,p))*(H/2-24)},ink,2);label(g,dd?`${a.t} ↔ ${b.t} · mix ${sv("MIX")}`:`${a.t} → ${b.t}${sv("WPM")?" · sweeps":""}`)},
- handles(W,H){const dd=trk(S.sel).m==="DPRO-DDRW";return[{x:u7(sv(dd?"MIX":"WP"))*W,y:20,k:dd?"MIX":"WP",drag:x=>sset(dd?"MIX":"WP",x/W*127)}]}};
+ handles(W,H){const dd=trk(S.sel).m==="DPRO-DDRW";return[{x:u7(sv(dd?"MIX":"WP"))*W,y:38,k:dd?"MIX":"WP",drag:x=>sset(dd?"MIX":"WP",x/W*127)}]}};
 /* DPRO-BBOX: one hit, from STRT on (the key picks the drum) */
 ED.drum={draw(g,W,H){const ink=cssv("--ink"),s0=u7(sv("STRT"))*.5,f=.6+u7(sv("PTCH"))*1.2;grid(g,W,H);railDraw(g,W,H);
   for(let x=0;x<W;x++){const p=x/W+s0,v=Math.exp(-p*6)*Math.sin(p*90*f+Math.sin(p*400)*2);g.fillStyle=ink;g.fillRect(x,H/2-v*(H/2-24),1,1+Math.abs(v)*2)}label(g,"the key picks the drum")},

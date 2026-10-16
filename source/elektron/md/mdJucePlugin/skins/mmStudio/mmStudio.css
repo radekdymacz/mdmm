@@ -1026,7 +1026,7 @@ html,body{min-width:1280px}
   --key:#232b28;--key2:#323c38;--keytext:#eef0ee;--keydim:#a9b1ae;--cream:#e4e6e6;--creamtext:#232727;
   --led:#f0331f;--ledoff:#7b4035;--ledg:#9fc568;--ledgoff:#56604b;--ledy:#e4c45c;--rec:#e8301e;
   --lcd:#b6d2e8;--scr:#cdcec9;--ink:#0d1626;--bezel:#060707;--labfill:#9a3820;--labtext:#f3eee9;--knob:#323d31;--rust:#9a3820;
-  --trig:var(--led);--oxblood:var(--rust);
+  --trig:var(--led);--oxblood:var(--rust);--fwd:#1f6fe0;
 }
 :root[data-plate="mk2"]{
   color-scheme:light;
@@ -1034,7 +1034,7 @@ html,body{min-width:1280px}
   --key:#1a1c22;--key2:#2a2d35;--keytext:#efeee8;--keydim:#a7a8ad;--cream:#ecebe4;--creamtext:#262527;
   --led:#ff3b2f;--ledoff:#7a6e66;--ledg:#7fd13b;--ledgoff:#5d6656;--ledy:#e4c45c;--rec:#e2452a;
   --lcd:#dfeaf1;--scr:#cdcec9;--ink:#121b28;--bezel:#1c1a1d;--labfill:#84434d;--labtext:#f6eff0;--knob:#141416;--rust:#b8433d;
-  --trig:var(--led);--oxblood:var(--rust);
+  --trig:var(--led);--oxblood:var(--rust);--fwd:#3d8cff;
 }
 html{scrollbar-gutter:stable}
 html,body{min-width:0!important}
@@ -1075,7 +1075,7 @@ canvas.ed,.edblank,#lanescroll,.lcdroll,.slotgrid,.lcdbox{box-shadow:0 0 0 2px v
 /* I-028: a track's trig lamp on the rail (its number lights while its trig plays) */
 .th.trig .n{box-shadow:0 0 0 1px var(--led),0 0 6px 1px var(--led)}
 /* I-031: a track that plays because another track's trig forwards to it (Trig position) */
-.th.trig2 .n{box-shadow:0 0 0 1px var(--fwd,#4aa3ff),0 0 6px 1px var(--fwd,#4aa3ff)}
+.th.trig2 .n{box-shadow:0 0 0 1px var(--fwd),0 0 6px 1px var(--fwd)}
 .sidesw .sosign{font:700 9px/12px var(--mono);letter-spacing:0;padding:0 3px;border-radius:1px;background:var(--cream);color:var(--creamtext)}
 .sidesw button[aria-pressed=true] .sosign{background:var(--creamtext);color:var(--cream)}
 .th .nm small{font:500 10px var(--mono);color:var(--print3);margin-left:auto}
@@ -1696,9 +1696,6 @@ svg.route{width:100%;height:auto;aspect-ratio:1200/146;min-height:0}
 .strip6 .busk button,.strip6 .busrow .kselbtn{height:22px}
 .strip6 .mrow{display:grid;grid-template-columns:1fr 1fr;gap:3px}
 .strip6 .mrow .ms{width:auto;height:22px}
-
-/* B-150: a DigiPRO wave box (D36 STR4) is longer than a number: two small lines, the number over the wave's name */
-.pc b.long{font-size:11px;line-height:12px;text-align:right;max-width:46px;white-space:normal}
 /* The header's LCD as one real display (P7), one stylesheet for both editors (skins/shared/). One dot grid: labels are 8 px Silkscreen (one dot = 1 px) and values 16 px (two
    dots), line 2's values 12 px (on the same device-pixel grid at 2x: 2, 3 and 4 pixels a dot), every
    text line box is its font size; one rule weight (1 px) between all fields; no rule
