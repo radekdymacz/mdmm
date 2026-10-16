@@ -303,7 +303,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Trig tracks 1-59 | AMP only, FILTER only, LFO only | Single trig | ✅ | Step menu > Envelopes: tick one of Amp, Filter, LFO |  | 1 | pass (mm-sequence-workspace) |
 | Trig tracks 1-59 | LED colours green, red, yellow | State | 🟡 | Roll: a NOTE OFF has the yellow lamp of its TRIG LED; a trigless trig a hollow square; a trig that fires only some envelopes their letters |  | 1 | n/a |
 | Trigless trigs 1-59 | Trig with no envelopes, for pitch or locks | Trigless | ✅ | Step menu > Trigless trig (adds one on an empty step, or takes a note's envelopes off; again: removes it); the roll shows a small hollow square |  | 1 | pass (mm-sequence-workspace) |
-| Pitchless trigs 1-59 | Trig without own pitch (EXIT) | Pitchless | ✅ | Dashed bar in the roll; its envelopes in the step menu > Envelopes |  | 1 | pass (mm-sequence-workspace) |
+| Pitchless trigs 1-59 | Trig without own pitch (EXIT) | Pitchless | ✅ | Step menu > Pitchless trig (B-152); a dashed bar in the roll; its envelopes in the step menu > Envelopes |  | 1 | pass (mm-sequence-workspace) |
 
 ## 15. Additional sequencer features (1-61 to 1-69)
 

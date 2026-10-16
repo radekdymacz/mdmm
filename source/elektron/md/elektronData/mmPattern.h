@@ -20,7 +20,11 @@ namespace elektronData
 	//   0x090 noteOff    NOTE OFF (FUNCTION + TRIG)
 	//   0x0c0 midiTrig   MIDI sequencer trig
 	//   0x0f0 midiNoteOff
-	//   0x120 pitch      the step carries a pitch (notes[] below); clear = pitchless
+	//   0x120 pitch      the trig bit: set on a trig of any kind (a trigless trig too: no envelope bits); clear on an
+	//                    envelope-only step (TRIG SELECT: envelope bits alone).
+	//                    A pitchless trig (EXIT held on a trig, manual 1-59): this bit and its envelope bits set,
+	//                    notes[] 0xff (no note: it plays the note before). Read back on OS 1.32B (mmDeskFirmwareTest
+	//                    intentcases, trigkinds; B-152)
 	//   0x150 chord      the step has chord notes in chordNotes[]
 	//   0x180 midiNote   the MIDI step carries notes in midiNotes[]
 	//   0x1b0 slide      slide track
