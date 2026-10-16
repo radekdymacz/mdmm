@@ -220,11 +220,13 @@ The marks under a pattern name say what else the row does.
 | Mark | Meaning |
 |---|---|
 | ×4 | the row plays four times |
+| 120 | the row has a tempo of its own, in beats per minute |
+| M3 | three tracks are muted |
 | +5, −7 | the row's transpose, in semitones |
-| T | single tracks are transposed |
-| M | tracks are muted |
-| B | the row has a tempo of its own |
+| T± | single tracks are transposed |
 | ~ | the row plays part of its pattern |
+
+The marks come in that order, for example 120 M3 +2 T±. A row with none of them shows none. When the cells are too narrow for words, small marks along the foot of the cell stand for them: a filled dot for the tempo, a square for the mutes, a triangle for the transpose and a ring for single tracks. Hold the pointer over the cell to read them in full. Click the marks to open **More** for that row.
 
 On the machine a T replaces the TRN value. The editor shows both.
 
@@ -296,7 +298,7 @@ Besides the transpose of the whole pattern, a row can transpose single tracks: t
 
 1. Select the row and click **More**.
 2. Under **Per track**, the INT line holds the synth tracks T1 to T6, the MIDI line the MIDI tracks M1 to M6.
-3. Click **−** or **+** on a track to transpose it, in semitones. The track shows its value. The cell shows T.
+3. Click **−** or **+** on a track to transpose it, in semitones. The track shows its value. The cell shows T±.
 
 NOTE: A track transpose holds for that row only.
 

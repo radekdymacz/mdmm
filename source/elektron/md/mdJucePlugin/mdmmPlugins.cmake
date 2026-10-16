@@ -111,7 +111,7 @@ list(APPEND SOURCES
 	skins/shared/deskDocs.js
 	skins/shared/deskOverlay.js skins/shared/deskOverlayTest.js
 	skins/shared/deskGen.js skins/shared/deskGenTest.js skins/shared/deskGenBar.js skins/shared/deskGenBar.css skins/shared/deskGenDialog.css skins/shared/deskLaneShapes.js skins/shared/deskLaneShapesTest.js skins/shared/deskSoundLayout.js skins/shared/deskSoundLayoutTest.js skins/shared/deskSound.css
-	skins/shared/deskKeys.js skins/shared/deskKeysTest.js skins/shared/deskKeymapTest.js skins/shared/deskKeyView.js skins/shared/deskKeyView.css skins/shared/deskKeyViewTest.js skins/shared/deskSongSlots.js skins/shared/deskSongSlots.css skins/shared/deskWhat.js skins/shared/deskWhat.css skins/shared/deskWhatTest.js
+	skins/shared/deskKeys.js skins/shared/deskKeysTest.js skins/shared/deskKeymapTest.js skins/shared/deskKeyView.js skins/shared/deskKeyView.css skins/shared/deskKeyViewTest.js skins/shared/deskSongSlots.js skins/shared/deskSongMarksTest.js skins/shared/deskSongSlots.css skins/shared/deskWhat.js skins/shared/deskWhat.css skins/shared/deskWhatTest.js
 	skins/shared/deskTogglePaint.js skins/shared/deskTogglePaintTest.js
 	skins/shared/deskSelect.js skins/shared/deskSelectTest.js
 	skins/shared/deskValueEdit.js skins/shared/deskValueEdit.css skins/shared/deskValueEditTest.js
@@ -183,7 +183,7 @@ set(MM_NODE_TESTS "skins/mmStudio/mmConvertTest.js" "skins/mmStudio/mmKeysTest.j
 	"skins/mmStudio/mmViewTest.js" "skins/mmStudio/mmViewFixture.json")
 # the shared page files' node tests (never in a glob, so never shipped); checked to be there
 set(SHARED_NODE_TESTS "skins/shared/deskGenTest.js" "skins/shared/deskOverlayTest.js" "skins/shared/deskBridgeTest.js"
-	"skins/shared/deskTogglePaintTest.js" "skins/shared/deskSelectTest.js" "skins/shared/deskKeysTest.js" "skins/shared/deskModalTest.js" "skins/shared/deskMenuTest.js" "skins/shared/deskTransportTest.js" "skins/shared/deskCompatTest.js"
+	"skins/shared/deskTogglePaintTest.js" "skins/shared/deskSongMarksTest.js" "skins/shared/deskSelectTest.js" "skins/shared/deskKeysTest.js" "skins/shared/deskModalTest.js" "skins/shared/deskMenuTest.js" "skins/shared/deskTransportTest.js" "skins/shared/deskCompatTest.js"
 	"skins/shared/deskKeymapTest.js" "skins/shared/deskKeyViewTest.js" "skins/shared/deskAboutTest.js" "skins/shared/deskCpuTest.js" "skins/shared/deskVolumeTest.js"
 	"skins/shared/deskSyxTest.js" "skins/shared/deskDropTest.js" "skins/shared/deskSoundLayoutTest.js" "skins/shared/deskWhatTest.js"
 	"skins/shared/deskJourneyTiersTest.js" "skins/shared/deskValueEditTest.js")
@@ -607,6 +607,9 @@ function(mdmm_plugin_targets)
 		# the drag across the M and S keys (both editors): which keys a drag changes
 		add_test(NAME deskTogglePaintPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskTogglePaintTest.js)
 		set_tests_properties(deskTogglePaintPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
+		# I-039: the marks on a song row's cell (both editors): tempo, mutes, transpose
+		add_test(NAME deskSongMarksPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskSongMarksTest.js)
+		set_tests_properties(deskSongMarksPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# I-022: a typed value (both editors): what a text becomes, what is refused, the field, the gesture and its wiring
 		add_test(NAME deskValueEditPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskValueEditTest.js)
 		set_tests_properties(deskValueEditPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
