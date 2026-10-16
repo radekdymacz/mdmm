@@ -2,10 +2,11 @@
    doc/modern-ux/DESIGN-machine-menus.md §2, Song). Both editors: the same classes, the page's own tokens. */
 .songui.withlib{grid-template-columns:366px minmax(340px,400px) minmax(0,1fr)!important}
 @media (max-width:1239px){.songui.withlib{grid-template-columns:minmax(0,1fr)!important}}
-/* B-165: the page asks for 1240 px (.app min-width, the Machinedrum page's body too), the plug-in's zoom gives it 1440 or more, but a user zoom above 100 %
-   leaves less. The Song page then takes the window's width (its columns stack below 1240 px, the song list scrolls in its own
-   area) instead of running past the right edge. Where :has is unknown (WebKit before 15.4) the page keeps its width. */
-@supports selector(:has(a)){html:has(.songui),body:has(.songui),.app:has(.songui){min-width:0!important}}
+/* B-165: the page asks for 1240 px (.app min-width; the Machinedrum page's html and body 1280), the plug-in's zoom gives it 1440
+   or more, but a user zoom above 100 % leaves less. The Song page then takes the window's width (its columns stack below
+   1240 px, the song list shows all its rows) instead of running past the right edge. The class comes from the page's script
+   (renderers set html.songpage on the Song workspace: no :has, WebKit 15 has none, B-054). */
+html.songpage,html.songpage body,html.songpage .app{min-width:0!important}
 /* the three columns at 1240 to 1400 px: the middle one gives room to the arrangement and the slots' labels (A01, END) are one
    size smaller, so a slot shows its whole label (B-165: 22 px cells cut it) */
 @media (min-width:1240px) and (max-width:1400px){.songui.withlib{grid-template-columns:366px minmax(290px,320px) minmax(0,1fr)!important}
