@@ -685,6 +685,50 @@ const MmJourneys = (() => {
 			{ say: "click the first one again", act: (u, c) => u.click(`[data-set="routing"] button[data-v="${c.v0}"]`), machine: c => ok(I().doc("global", c.g)?.routingMode === c.r0, "routing " + I().doc("global", c.g)?.routingMode), within: 15000 }
 		]
 	};
+	/* I-032: the output meters on the Mix page's routing graph: three pairs (A/B, C/D, E/F), two bars each. The page asks the
+	   plug-in for levels only while Mix is on screen (mixMeters on / off); a level the plug-in sends raises the bars at once and
+	   they fall on their own (30 dB a second); the clip mark lights for a sample over 0 dBFS. The levels are injected as the
+	   plug-in's own message (window.gm.recv), so the bars are checked against known values; that the plug-in feeds them is the
+	   host's: mixLevels messages arrive while Mix is shown and stop when it is left. */
+	const mixSeen = { n: 0 };
+	Bridge.onMessage(m => { if (m.type === "mixLevels") mixSeen.n++; });
+	const mixInject = (rms, peak, clip) => window.gm.recv([{ type: "mixLevels", pairs: [0, 1, 2].map(k => ({ on: k < 2, clip: !!clip && k === 0, peak: [peak - 20 * k, peak - 20 * k], rms: [rms - 20 * k, rms - 20 * k] })) }]);
+	/* (pair k is 20 dB quieter than the one before: C/D and E/F show lower bars) */
+	const mixBar = (cls, k = 0, i = 0) => +($1(`[data-${cls}="${k}.${i}"]`)?.getAttribute("width") ?? NaN);
+	const mixMeters = {
+		name: "mm-mix-meters", proves: [],
+		steps: [
+			go("mix"),
+			{ say: "the graph has a meter on each of the three bus lines, two bars (left, right) each, and the page asked the plug-in for levels",
+				screen: () => { const st = window.MMView.mixMeterState(); return ok(st.want && st.running && $all("[data-mt]").length === 3 && $all(".mrm").length === 6 && $all(".mpk").length === 6 && $all(".mhd").length === 6,
+					`want ${st.want}, running ${st.running}, groups ${$all("[data-mt]").length}, rms bars ${$all(".mrm").length}`); } },
+			{ say: "the plug-in sends mixLevels while Mix is shown", act: async () => { await until(() => mixSeen.n >= 2, 3000); },
+				machine: () => ok(mixSeen.n >= 2, mixSeen.n + " mixLevels messages") },
+			{ say: "a loud level (RMS -10, peak -3 dBFS) raises A/B's bars at once: solid to the RMS, paler to the peak, the hold tick at the peak; a quiet one next to it stays low",
+				act: async (u, c) => {
+					await sleep(120);
+					c.lo = mixBar("mr");
+					mixInject(-10, -3, false);
+					c.rm = mixBar("mr"); c.pk = mixBar("mp"); c.hd = +$1('[data-mh="0.0"]').getAttribute("x"); c.mid = mixBar("mr", 1, 0);
+					c.W = 90; Journey.snapshot("mm-mix-meters"); },
+				screen: c => ok(c.rm > c.lo && Math.abs(c.rm - c.W * 50 / 60) < 3 && Math.abs(c.pk - c.W * 57 / 60) < 3 && c.pk > c.rm && c.hd > c.rm && c.hd > 1052 + c.W * 0.9 && c.hd < 1052 + c.W && c.mid < c.rm,
+					`before ${c.lo}, RMS ${c.rm} (want ${(c.W * 50 / 60).toFixed(1)}), peak ${c.pk} (want ${(c.W * 57 / 60).toFixed(1)}), hold x ${c.hd}, C/D ${c.mid}`) },
+			{ say: "a sample over 0 dBFS lights A/B's clip mark; the others stay dark",
+				act: async (u, c) => { mixInject(-6, 2, true); c.clip = $all(".mclip.on").map(e => e.dataset.mc).join(","); },
+				screen: c => ok(c.clip === "0", "lit: " + c.clip) },
+			{ say: "with nothing louder the bars fall by themselves, the hold tick stays",
+				act: async (u, c) => { c.hi = mixBar("mr"); c.hold0 = +$1('[data-mh="0.0"]').getAttribute("x"); await sleep(900); c.lo2 = mixBar("mr"); c.hold1 = +$1('[data-mh="0.0"]').getAttribute("x"); },
+				screen: c => ok(c.lo2 < c.hi - 5 && Math.abs(c.hold1 - c.hold0) < 1, `RMS ${c.hi} then ${c.lo2}, hold x ${c.hold0} then ${c.hold1}`) },
+			{ say: "a pair the host did not enable (E/F) is dimmed", screen: () => ok($1('[data-mt="2"]').classList.contains("off") && !$1('[data-mt="0"]').classList.contains("off"), "E/F off " + $1('[data-mt="2"]').classList.contains("off")) },
+			{ say: "leave Mix for Pattern: the meters stop (no frames, the page tells the plug-in off) and the plug-in stops sending",
+				act: async (u, c) => { u.click(tab("seq")); await sleep(250); c.n0 = mixSeen.n; await sleep(400); c.n1 = mixSeen.n; },
+				screen: () => { const st = window.MMView.mixMeterState(); return ok(!st.want && !st.running && !$1("[data-mt]"), `want ${st.want}, running ${st.running}, groups ${$all("[data-mt]").length}`); },
+				machine: c => ok(c.n1 === c.n0, `mixLevels ${c.n0} then ${c.n1}`) },
+			{ say: "back on Mix they run again and the plug-in sends again", act: async (u, c) => { u.click(tab("mix")); c.n0 = mixSeen.n; await until(() => mixSeen.n >= c.n0 + 2, 3000); },
+				screen: () => { const st = window.MMView.mixMeterState(); return ok(st.want && st.running && $all("[data-mt]").length === 3, `want ${st.want}, running ${st.running}`); },
+				machine: c => ok(mixSeen.n >= c.n0 + 2, `mixLevels ${c.n0} then ${mixSeen.n}`) }
+		]
+	};
 	const panTrim = {
 		name: "mm-mix-pan-undo", proves: ["MM-120"],
 		steps: [
@@ -4069,7 +4113,7 @@ const MmJourneys = (() => {
 		async tidy(u) { await closeLib(u); u.click(tab("seq")); }
 	};
 	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowMarks, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
-		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixHeads, mixSolo, soloSaved, shiftMutes, routing, panTrim, msOff, msViews, railLamps, railLampsFwd,
+		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixHeads, mixSolo, soloSaved, shiftMutes, routing, mixMeters, panTrim, msOff, msViews, railLamps, railLampsFwd,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, followPlayed, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, modeCycle, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,

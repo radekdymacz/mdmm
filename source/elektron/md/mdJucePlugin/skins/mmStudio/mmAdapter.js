@@ -633,7 +633,9 @@
 		   only in its result: the panel shows the last one until the next change. */
 		audioDoc() { return audioDocument && Object.assign({}, audioDocument, { error: audioError }); },
 		audioSend(c) { send(Object.assign({ op: "audioSet" }, c), { onResult: r => { audioError = r.ok ? "" : r.errors[0] || ""; V().redrawAudio(); } }); },
-		audioMeter(on) { send({ op: "audioMeter", on: !!on }); }
+		audioMeter(on) { send({ op: "audioMeter", on: !!on }); },
+		/* I-032: the Mix page's output meters: the page says when it shows Mix; mixLevels messages follow while it does */
+		mixMeters(on) { send({ op: "mixMeters", on: !!on }); }
 	};
 
 	/* files dropped on the window (shared/deskDrop.js): the page's question and toast, the start-up card asking for a
@@ -702,6 +704,7 @@
 		else if (m.type === "audioRun") Boot.audio(m);
 		else if (m.type === "cpuLoad") CpuMeter.update(m);
 		else if (m.type === "outputLevel") DeskVolume.update(m);
+		else if (m.type === "mixLevels") V().mixLevels(m);
 		/* I-024: the machine memory for new sessions (the engine menu's KEEP MEMORY, RESET MACHINE…'s Start from factory memory) */
 		else if (m.type === "machineMemory") { memory = m; V().setMemory(m); }
 		/* 0.6: a note from a MIDI keyboard (the plug-in's midiIn): the Machinedrum's LEARN reads it; the Monomachine's
@@ -711,8 +714,8 @@
 		/* I-002, B-062: the notes a MIDI keyboard holds light the Perform keyboard's keys, those on a channel the machine
 		   plays (playedChannels) */
 		else if (m.type === "midiHeld") { const chs = playedChannels(); V().setMidiHeld((m.notes || []).filter(n => chs.has(n.ch)).map(n => n.note)); }
-		/* 0.8: the MIDI monitor's counts (midiStats); the monitor panel (WP4) reads them, the page does not yet */
-		else if (m.type === "midiStats") { /* not read yet */ }
+		/* 0.8: the MIDI monitor's counts (midiStats): the AUDIO / MIDI panel's Monitor row (WP4) */
+		else if (m.type === "midiStats") V().audioStats(m);
 		else if (m.type === "lcd") { lcdBits = Uint8Array.from(atob(m.bits || ""), c => c.charCodeAt(0)); showLcd(); }
 		else if (m.type === "mod") onMod(m);
 		else if (m.type === "solo") onSolo(m);

@@ -1038,6 +1038,8 @@ namespace mdJucePlugin
 	void AudioPluginAudioProcessor::processBlockOutput(const synthLib::TAudioOutputs& _outputs, const size_t _frames)
 	{
 		m_outputMeter.onBlock(_outputs, _frames);
+		if(m_mixMeterWanted.load(std::memory_order_relaxed))
+			m_mixMeter.onBlock(_outputs, _frames);	// I-032: per output pair, for the Mix page while it is shown
 	}
 
 	// 0.6: a note on from outside, for the page (LEARN, I-002), and the notes held (the lit keys); SysEx and the rest
