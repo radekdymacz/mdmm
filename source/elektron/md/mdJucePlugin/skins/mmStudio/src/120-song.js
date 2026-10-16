@@ -140,15 +140,17 @@ function renderSong(){songModeSync();S.songSel=Math.max(0,Math.min(S.songSel,S.s
  const lines=Math.ceil(200/16);
  $("#main").innerHTML=`<div class="songui lay2 withlib ${S.plays.songMode?"songmode":"patmode"}${S.plays.songMode&&S.playing?" songplaying":""}">${SongSlots.html()}<div class="songleft"><section class="card whatplays ${S.plays.songMode?"song":"pattern"} ${chain?"chainmode":""}">${head}${palette}</section>
    ${pick==="song"?`<section class="card"><header><h3>Selected row</h3><span class="rowacts"><button data-rowact="from" title="Play the song from this row (Enter): SONG mode, the row from its first step">▶ From here</button><button data-rowact="up" title="Move left">←</button><button data-rowact="down" title="Move right">→</button><button data-rowact="dup">Duplicate</button><button data-rowact="loop">Add loop</button><button data-rowact="del" class="danger">Delete</button></span></header><div class="insp">${insp}</div></section>`:""}</div>
-  <section class="card arrcard"><header><h3>Arrangement</h3><span class="arrstate" id="arrstate">${arrState()}</span><span class="note" title="${S.song.length} of 200 rows · T track transpose · M mutes · B tempo · ~ part">${S.song.length} of 200 rows<span class="gopt"> · T track transpose · M mutes · B tempo</span></span></header>
+  <section class="card arrcard"><header><h3>Arrangement</h3><span class="arrstate" id="arrstate">${arrState()}</span><span class="note" title="${S.song.length} of 200 rows · B tempo · M mutes · ± transpose · T per-track transpose · ~ part">${S.song.length} of 200 rows<span class="gopt"> · B tempo · M mutes · ± transpose · T per-track transpose</span></span></header>
    <div class="durbar" title="Song shape by time (length × repeats); in SONG mode it fills up to the row that plays">${S.song.map((r,i)=>r.type?`<i class="db dbm" data-i="${i}"></i>`:`<i class="db ${i===S.songSel?"sel":""}" data-row="${i}" data-i="${i}" style="flex:${rowLen(r)*r.rep} 1 0"></i>`).join("")}</div>
    <div class="slotgrid" id="tl">${Array.from({length:lines},(_,line)=>`<span class="sglab">${String(line*16+1).padStart(3,"0")}</span>${Array.from({length:16},(_,c)=>{const i=line*16+c,r=S.song[i];if(i>=200)return`<span></span>`;
      if(!r)return`<div class="scell empty" data-i="${i}"></div>`;
      const cls=`scell ${i===S.songSel?"sel":""} ${r.type?"cmd "+r.type:""} ${!r.type&&loopOf(i)>=0?"inloop":""}`;
      const txt=r.type==="end"?"END":r.type==="loop"?`↺${String(r.to+1).padStart(3,"0")}`:r.type==="jump"?`→${String(r.to+1).padStart(3,"0")}`:r.type==="halt"?"HALT":patName(r.pat);
-     const sub=r.type==="loop"?(r.count===Infinity?"∞":"×"+r.count):!r.type?`${r.rep>1?"×"+r.rep:""}${(r.trn??64)!==64?" "+((r.trn-64)>0?"+":"")+(r.trn-64):""}${hasTtr(r)?" T":""}${r.mutes?.length?" M":""}${r.bpm?" B":""}${r.ofs||r.len?"~":""}`:"";
-     return`<button class="${cls}" data-row="${i}" data-i="${i}" draggable="${r.type==="end"?"false":"true"}" title="Row ${String(i+1).padStart(3,"0")}${r.type?"":" · "+patName(r.pat)+" ×"+r.rep+" · "+rowLen(r)+" steps"}"><b>${txt}</b><small>${sub}</small></button>`}).join("")}`).join("")}</div></section></div>`;
- markSongRow(true);SongSlots.afterRender()}
+     const mk=SongMarks.marks(r,"mm");
+     const sub=r.type==="loop"?(r.count===Infinity?"∞":"×"+r.count):!r.type?`${r.rep>1?"×"+r.rep:""}${mk.any?(r.rep>1?" ":"")+SongMarks.html(r,"mm"):""}${r.ofs||r.len?"~":""}`:"";
+     return`<button class="${cls}" data-row="${i}" data-i="${i}" draggable="${r.type==="end"?"false":"true"}" title="Row ${String(i+1).padStart(3,"0")}${r.type?"":" · "+patName(r.pat)+" ×"+r.rep+" · "+rowLen(r)+" steps"+(mk.any?"\n"+mk.title+" · click the marks: Row > More":"")}"><b>${txt}</b><small>${sub}</small></button>`}).join("")}`).join("")}</div></section></div>`;
+ markSongRow(true);SongSlots.afterRender();SongMarks.fit(document.getElementById("tl"))}
+SongMarks.watch(()=>document.getElementById("tl"));
 /* The song slots (deskSongSlots.js, shared with the Machinedrum Editor): the host. The 24 songs are the machine's
    documents (S.songs: the host's view, MmView.songsOf; on its own the example's). Load is LOAD SONG, Save SAVE SONG
    (the song the machine holds, into its slot), the rest the library's slot ops (songCopy, songPaste, songCopyTo,

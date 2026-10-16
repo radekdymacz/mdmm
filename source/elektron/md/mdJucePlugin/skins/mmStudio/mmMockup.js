@@ -1234,6 +1234,50 @@ const SongSlots = (() => {
 	return { init(h) { host = h; }, html, afterRender, busy, select, get sel() { return sel; }, get naming() { return naming; } };
 })();
 
+/* I-039: the marks on an arrangement cell. A row that holds a tempo, mutes or a transpose says so in its cell, as
+   short as it can be: the tempo as a number, mutes as "M" and their count, the row's transpose as +2 / -3, per-track
+   transpose (MM) as "T±". A row with none gets nothing, so a plain song looks as it did. The full detail is for the
+   cell's tooltip. A cell can be as narrow as 22 px (it is not wider than its pattern name), so the words cannot
+   always fit: the same marks are also short letter codes in the same small line (B tempo, M mutes, ± the row's
+   transpose, T single tracks, in that order, e.g. "BM±"), and fit() shows the words when every cell has room for them
+   and the codes when one has not: nothing is ever cut and no cell changes its height. Pure apart from fit(): a row in (MD: bpm, mutes; MM: also trn, ttr,
+   64 = no transpose), text out. Tested in node by deskSongMarksTest.js. */
+const SongMarks = (() => {
+	const sgn = n => (n > 0 ? "+" : "") + n;
+	/* kind "md": mute k is "Track k+1"; "mm": 0-5 are T1-T6, 6-11 are M1-M6 (the machine's MIDI tracks) */
+	const muteName = (kind, k) => kind === "mm" ? (k < 6 ? "T" + (k + 1) : "M" + (k - 5)) : "Track " + (k + 1);
+	function marks(r, kind) {
+		if (!r || r.type) return { text: "", title: "", any: false, codes: "" };
+		const text = [], tip = []; let codes = "";
+		if (r.bpm) { text.push(String(r.bpm)); tip.push("Tempo " + r.bpm + " BPM"); codes += "B"; }
+		const mutes = (r.mutes || []).slice().sort((a, b) => a - b);
+		if (mutes.length) { text.push("M" + mutes.length); tip.push("Muted: " + mutes.map(k => muteName(kind, k)).join(", ")); codes += "M"; }
+		const trn = (r.trn ?? 64) - 64;
+		if (trn) { text.push(sgn(trn)); tip.push("Transpose " + sgn(trn)); codes += "±"; }
+		const ttr = (r.ttr || []).map((v, k) => [k, v - 64]).filter(([, d]) => d);
+		if (ttr.length) { text.push("T±"); tip.push("Per track: " + ttr.map(([k, d]) => muteName(kind, k) + " " + sgn(d)).join(", ")); codes += "T"; }
+		return { text: text.join(" "), title: tip.join(" · "), any: text.length > 0, codes };
+	}
+	/* the cell's markup: the words and the codes in one element (a click on it opens Row > More); "" for a plain row */
+	function html(r, kind) {
+		const m = marks(r, kind);
+		return m.any ? `<i class="rmk" data-rowmarks="1"><span class="rt">${m.text}</span><span class="rg">${m.codes}</span></i>` : "";
+	}
+	/* the words when each cell's small line holds them, else the codes (re-run after a render and when the page resizes) */
+	function fit(grid) {
+		if (!grid) return;
+		grid.classList.add("rmkwide");
+		for (const s of grid.querySelectorAll(".scell small")) {
+			const c = s.parentNode, cs = getComputedStyle(c), room = c.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+			if (s.getBoundingClientRect().width > room + 0.5) { grid.classList.remove("rmkwide"); return; }
+		}
+	}
+	function watch(gridOf) {
+		if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("resize", () => fit(gridOf()));
+	}
+	return { marks, html, fit, watch };
+})();
+
 /* ---- shared/deskWhat.js ---- */
 "use strict";
 /* COPY / PASTE / CLEAR what (0.6 wave 4, doc/modern-ux/DESIGN-machine-menus.md 2): the machine's SUPER COPY and SUPER
@@ -5555,15 +5599,17 @@ function renderSong(){songModeSync();S.songSel=Math.max(0,Math.min(S.songSel,S.s
  const lines=Math.ceil(200/16);
  $("#main").innerHTML=`<div class="songui lay2 withlib ${S.plays.songMode?"songmode":"patmode"}${S.plays.songMode&&S.playing?" songplaying":""}">${SongSlots.html()}<div class="songleft"><section class="card whatplays ${S.plays.songMode?"song":"pattern"} ${chain?"chainmode":""}">${head}${palette}</section>
    ${pick==="song"?`<section class="card"><header><h3>Selected row</h3><span class="rowacts"><button data-rowact="from" title="Play the song from this row (Enter): SONG mode, the row from its first step">▶ From here</button><button data-rowact="up" title="Move left">←</button><button data-rowact="down" title="Move right">→</button><button data-rowact="dup">Duplicate</button><button data-rowact="loop">Add loop</button><button data-rowact="del" class="danger">Delete</button></span></header><div class="insp">${insp}</div></section>`:""}</div>
-  <section class="card arrcard"><header><h3>Arrangement</h3><span class="arrstate" id="arrstate">${arrState()}</span><span class="note" title="${S.song.length} of 200 rows · T track transpose · M mutes · B tempo · ~ part">${S.song.length} of 200 rows<span class="gopt"> · T track transpose · M mutes · B tempo</span></span></header>
+  <section class="card arrcard"><header><h3>Arrangement</h3><span class="arrstate" id="arrstate">${arrState()}</span><span class="note" title="${S.song.length} of 200 rows · B tempo · M mutes · ± transpose · T per-track transpose · ~ part">${S.song.length} of 200 rows<span class="gopt"> · B tempo · M mutes · ± transpose · T per-track transpose</span></span></header>
    <div class="durbar" title="Song shape by time (length × repeats); in SONG mode it fills up to the row that plays">${S.song.map((r,i)=>r.type?`<i class="db dbm" data-i="${i}"></i>`:`<i class="db ${i===S.songSel?"sel":""}" data-row="${i}" data-i="${i}" style="flex:${rowLen(r)*r.rep} 1 0"></i>`).join("")}</div>
    <div class="slotgrid" id="tl">${Array.from({length:lines},(_,line)=>`<span class="sglab">${String(line*16+1).padStart(3,"0")}</span>${Array.from({length:16},(_,c)=>{const i=line*16+c,r=S.song[i];if(i>=200)return`<span></span>`;
      if(!r)return`<div class="scell empty" data-i="${i}"></div>`;
      const cls=`scell ${i===S.songSel?"sel":""} ${r.type?"cmd "+r.type:""} ${!r.type&&loopOf(i)>=0?"inloop":""}`;
      const txt=r.type==="end"?"END":r.type==="loop"?`↺${String(r.to+1).padStart(3,"0")}`:r.type==="jump"?`→${String(r.to+1).padStart(3,"0")}`:r.type==="halt"?"HALT":patName(r.pat);
-     const sub=r.type==="loop"?(r.count===Infinity?"∞":"×"+r.count):!r.type?`${r.rep>1?"×"+r.rep:""}${(r.trn??64)!==64?" "+((r.trn-64)>0?"+":"")+(r.trn-64):""}${hasTtr(r)?" T":""}${r.mutes?.length?" M":""}${r.bpm?" B":""}${r.ofs||r.len?"~":""}`:"";
-     return`<button class="${cls}" data-row="${i}" data-i="${i}" draggable="${r.type==="end"?"false":"true"}" title="Row ${String(i+1).padStart(3,"0")}${r.type?"":" · "+patName(r.pat)+" ×"+r.rep+" · "+rowLen(r)+" steps"}"><b>${txt}</b><small>${sub}</small></button>`}).join("")}`).join("")}</div></section></div>`;
- markSongRow(true);SongSlots.afterRender()}
+     const mk=SongMarks.marks(r,"mm");
+     const sub=r.type==="loop"?(r.count===Infinity?"∞":"×"+r.count):!r.type?`${r.rep>1?"×"+r.rep:""}${mk.any?(r.rep>1?" ":"")+SongMarks.html(r,"mm"):""}${r.ofs||r.len?"~":""}`:"";
+     return`<button class="${cls}" data-row="${i}" data-i="${i}" draggable="${r.type==="end"?"false":"true"}" title="Row ${String(i+1).padStart(3,"0")}${r.type?"":" · "+patName(r.pat)+" ×"+r.rep+" · "+rowLen(r)+" steps"+(mk.any?"\n"+mk.title+" · click the marks: Row > More":"")}"><b>${txt}</b><small>${sub}</small></button>`}).join("")}`).join("")}</div></section></div>`;
+ markSongRow(true);SongSlots.afterRender();SongMarks.fit(document.getElementById("tl"))}
+SongMarks.watch(()=>document.getElementById("tl"));
 /* The song slots (deskSongSlots.js, shared with the Machinedrum Editor): the host. The 24 songs are the machine's
    documents (S.songs: the host's view, MmView.songsOf; on its own the example's). Load is LOAD SONG, Save SAVE SONG
    (the song the machine holds, into its slot), the rest the library's slot ops (songCopy, songPaste, songCopyTo,
@@ -6280,6 +6326,7 @@ document.addEventListener("click",e=>{
   const cp=e.target.closest("[data-chainpad]");if(cp){chainPad(+cp.dataset.chainpad);return}
   const ca=e.target.closest("[data-chain]");if(ca){if(!ca.disabled)chainAct(ca.dataset.chain);return}
   const ap=e.target.closest("[data-addpat]");if(ap){if(S.song.length>=200){toast("A song holds 200 rows.");return}let at2=S.songSel+1;if(S.song[S.songSel]?.type==="end")at2=S.songSel;S.song.splice(at2,0,{pat:+ap.dataset.addpat,rep:1});S.songSel=at2;edit("rowInsert",{i:at2,row:S.song[at2]});render();return}
+  const rmk=e.target.closest("[data-rowmarks]");if(rmk){S.songSel=+rmk.closest(".scell").dataset.row;S.songMore=true;render();return}
   const rw=e.target.closest(".scell:not(.empty),.db[data-row]");if(rw){S.songSel=+rw.dataset.row;render();return}
   const ra=e.target.closest("[data-rowact]");if(ra){songAction(ra.dataset.rowact);return}
   const stp=e.target.closest("[data-step]");if(stp){songStep(stp.dataset.step,+stp.dataset.d*(e.shiftKey?10:1));return}
