@@ -56,7 +56,8 @@ list(APPEND SOURCES
 	$<$<PLATFORM_ID:Darwin>:mdWebFileDrop.mm> mdWebFileDrop.h
 	$<$<PLATFORM_ID:Windows>:mdWebView2Page.cpp>
 	mdWebView2Page.h mdWebView2Window.h
-	mdAudioMidiLink.cpp mdAudioMidiLink.h mdMidiPortRefusal.h mdMachineMidiOut.h
+	mdAudioMidiLink.cpp mdAudioMidiLink.h mdMidiPortRefusal.h mdMachineMidiOut.h mdMidiLoop.h
+	mdMicPermission.h $<IF:$<PLATFORM_ID:Darwin>,mdMicPermission.mm,mdMicPermissionOther.cpp>
 	mdUpdater.cpp mdUpdater.h
 
 	skins/mdStudio/mdStudio.rml
@@ -247,7 +248,8 @@ unset(_mdmmKey)
 # - the maker a DAW shows (AU "Future Native Audio: Machinedrum Editor", the VST3 vendor, the Windows file details)
 #   instead of upstream's "Gearmulator Preview". The data folder keeps that name (mdPluginProcessor.cpp,
 #   g_dataFolderVendor), and the VST3 class IDs and AU codes come from the codes below, not from names;
-# - the microphone prompt's text;
+# - the microphone prompt's text and the Bluetooth one (B-155: CoreMIDI's Bluetooth pairing window takes the app down on
+#   macOS without NSBluetoothAlwaysUsageDescription in the Info.plist);
 # - the LV2 URI as it was with the old product name (it would otherwise follow the name).
 foreach(_mdmmTarget md mm)
 	string(TOUPPER "${_mdmmTarget}" _mdmmUpper)
@@ -258,6 +260,8 @@ foreach(_mdmmTarget md mm)
 		COMPANY_WEBSITE "${MDMM_WEBSITE}"
 		COMPANY_COPYRIGHT "Copyright (C) The Usual Suspects (Gearmulator), joelanders and NativeKloud Consulting Radoslaw Dymacz. GNU GPL v3."
 		MICROPHONE_PERMISSION_TEXT "${MDMM_PRODUCT_NAME_${_mdmmUpper}} uses audio input to process external instruments."
+		BLUETOOTH_PERMISSION_ENABLED TRUE
+		BLUETOOTH_PERMISSION_TEXT "${MDMM_PRODUCT_NAME_${_mdmmUpper}} connects to Bluetooth MIDI devices (keyboards, controllers)."
 		LV2URI "http://theusualsuspects.lv2/Gearmulator${_mdmmUpper}")
 endforeach()
 unset(_mdmmTarget)
@@ -281,6 +285,9 @@ set(GEARMULATOR_PLUGIN_MANUFACTURER_CODE_mmJucePlugin "${MDMM_AU_MANUFACTURER}")
 function(mdmm_plugin_targets)
 	foreach(plugin_target mdJucePlugin mmJucePlugin)
 		target_link_libraries(${plugin_target} PRIVATE elektronData mdDataLink mdDesk mmDesk deskHost deskWire)
+		if(APPLE)
+			target_link_libraries(${plugin_target} PRIVATE "-framework AVFoundation")	# mdMicPermission.mm
+		endif()
 		# public: mdPageEditor.h includes mdUpdater.h, and the tests that build on the plug-in include both
 		target_link_libraries(${plugin_target} PUBLIC mdmmUpdate)
 		# the version (mdmmVersion.h): the update check, the page's ?version=, the About box
@@ -544,6 +551,20 @@ function(mdmm_plugin_targets)
 		set_tests_properties(mdLearnRouterStressTestTsan PROPERTIES LABELS "UnitTest" TIMEOUT 120
 			ENVIRONMENT "TSAN_OPTIONS=halt_on_error=1:abort_on_error=1")
 		set_property(TARGET mdLearnRouterStressTestTsan PROPERTY FOLDER "Elektron/test")
+	endif()
+
+	# 0.8 (WP4): the AUDIO / MIDI panel's MIDI loop warning (B-154) and input note (B-155) (mdMidiLoop.h, pure; no ROM)
+	add_executable(mdMidiLoopTest mdMidiLoopTest.cpp mdMidiLoop.h)
+	add_test(NAME mdMidiLoopTest COMMAND mdMidiLoopTest)
+	set_tests_properties(mdMidiLoopTest PROPERTIES LABELS "UnitTest")
+	set_property(TARGET mdMidiLoopTest PROPERTY FOLDER "Elektron/test")
+
+	# 0.8 (WP4, B-155): the built standalone apps' Info.plist carries the Bluetooth and the microphone usage keys
+	# (read with plutil; macOS only; skipped, 77, when the apps are not built)
+	if(APPLE AND TARGET mdJucePlugin_Standalone AND TARGET mmJucePlugin_Standalone)
+		add_test(NAME mdmmStandalonePlistTest COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../../../../scripts/check_mdmm_standalone_plist.sh
+			"$<TARGET_BUNDLE_DIR:mdJucePlugin_Standalone>" "$<TARGET_BUNDLE_DIR:mmJucePlugin_Standalone>")
+		set_tests_properties(mdmmStandalonePlistTest PROPERTIES LABELS "UnitTest" SKIP_RETURN_CODE 77 TIMEOUT 60)
 	endif()
 
 	add_executable(mdProcessArchTest mdProcessArchTest.cpp mdProcessArch.cpp)
