@@ -211,7 +211,8 @@ namespace synthLib
 		auto write = m_commandWrite.load(std::memory_order_relaxed);
 		if(write + _count - m_commandRead.load(std::memory_order_acquire) > m_commands.size())
 		{
-			// Full: no block took them (the host does not run audio). Apply them here, under the lock.
+			// Full: no block took them (the host does not run audio). Apply them here, under the lock. Lock order
+			// m_lockCommands -> m_lock (plugin.h): m_lock is never held when sendCommands is called
 			const LockScope deviceLock(*this);
 			const PublishOnExit publish(*this);
 			applyCommands();

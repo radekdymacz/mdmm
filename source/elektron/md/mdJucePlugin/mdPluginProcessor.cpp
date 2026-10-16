@@ -27,6 +27,7 @@
 #include "jucePluginLib/tools.h"
 
 #include "mdLib/mddevice.h"
+#include "mdLib/mddeskdevice.h"
 #include "mdLib/mdstatecapture.h"
 #include "mdLib/mdromloader.h"
 #include "mdLib/mdstate.h"
@@ -708,33 +709,33 @@ namespace mdJucePlugin
 		}
 		if(state == State::Ready)
 		{
-		state = State::NotNeeded;
-		getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
-		{
-			auto* const device = dynamic_cast<md::Device*>(_device);
-			if(!device || device->getModel() != md::MachineModel::Machinedrum
-				|| !device->isValid())
-				return;
-			if(device->isProjectStateRestorePending())
+			state = State::NotNeeded;
+			getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
 			{
-				state = State::Waiting;
-				return;
-			}
-			auto& hardware = device->getHardware();
-			if(!hardware.isFactoryFlashInitializationExpected())
-				return;
-			state = hardware.isFactoryFlashReadyForReboot()
-				? State::Ready : State::Waiting;
-			if(state != State::Ready)
-				return;
+				auto* const device = dynamic_cast<md::Device*>(_device);
+				if(!device || device->getModel() != md::MachineModel::Machinedrum
+					|| !device->isValid())
+					return;
+				if(device->isProjectStateRestorePending())
+				{
+					state = State::Waiting;
+					return;
+				}
+				auto& hardware = device->getHardware();
+				if(!hardware.isFactoryFlashInitializationExpected())
+					return;
+				state = hardware.isFactoryFlashReadyForReboot()
+					? State::Ready : State::Waiting;
+				if(state != State::Ready)
+					return;
 
-			liveDevice = device;
-			liveEpoch = device->hardwareEpoch();
-			preparationContext = device->getPreparationContext();
-			if(hardware.isFactoryFlashCacheReady())
-				(void)device->captureFactoryFlashCachePersistence(cacheFilename,
-					factoryFlash, cacheError);
-		});
+				liveDevice = device;
+				liveEpoch = device->hardwareEpoch();
+				preparationContext = device->getPreparationContext();
+				if(hardware.isFactoryFlashCacheReady())
+					(void)device->captureFactoryFlashCachePersistence(cacheFilename,
+						factoryFlash, cacheError);
+			});
 		}
 		// The machine's state taken a part per hold (DESIGN-audio-lock.md step 1), encoded after the lock, with the
 		// mark and the patch RAM of the moment it was complete: the commit checks against those
@@ -1274,5 +1275,20 @@ namespace mdJucePlugin
 		// The translator reads and swaps its mappings on the audio, MIDI-input and message threads without
 		// synchronisation (doc/midilearn/THREADING.md); it is made only once that is redesigned and mapping is on.
 		return deskHost::midiMappingEnabled;
+	}
+
+	bool AudioPluginAudioProcessor::sendDeskCommands(const std::vector<synthLib::DeviceCommand>& _commands, const size_t _panelPackets)
+	{
+		const auto f = machineFacts();
+		if(!f.desk || !f.valid || _commands.empty())
+			return false;
+		if(_panelPackets)
+		{
+			// pending counts the held last packet as one more; it is sent already
+			const size_t queued = f.panelPending ? f.panelPending - 1 : 0;
+			if(_panelPackets > md::DeskDevice::PanelSequenceCapacity - std::min(queued, md::DeskDevice::PanelSequenceCapacity))
+				return false;
+		}
+		return getPlugin().sendCommands(_commands.data(), _commands.size());
 	}
 }

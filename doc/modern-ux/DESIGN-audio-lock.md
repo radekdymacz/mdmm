@@ -26,6 +26,24 @@ load a blocking wait of a normal-priority thread is woken late. Step 3 moved tho
 switches, `setLatencyBlocks`, `addMidiEvent` when its ring is full) still takes the lock: user actions, not edits, and
 none ran in the gate.
 
+How the queue behaves, as built (it differs from the data contract below in these points):
+- A command is stamped with the plug-in's device generation (`Plugin::setDevice` counts it), not with the machine's
+  hardware epoch. A command queued for a device that `setDevice` replaced is dropped and counted. A Hardware replaced
+  inside the same device (a state restore, the factory-flash reboot) keeps the generation: its panel commands go to
+  the new Hardware, as they did under the lock.
+- Edits during a device swap are lost: `setDevice` captures the old device's state before the swap, so a panel key
+  applied to the old device after the capture, or queued for it and dropped at the swap, is not in the new one. Each
+  dropped command is counted (`Plugin::getDroppedCommandCount`, the gate fails on any while editing). Under the lock
+  it was the same for the first case; a swap is a ROM change or a reboot, not an edit.
+- A refusal is known at send time only for what the sender can see: no desk device or not a valid one, an empty
+  sequence, or one longer than the free part of the device's 512-packet queue as the facts last said
+  (`AudioPluginAudioProcessor::sendDeskCommands`; the page then says "No panel here" as before). What only the audio
+  thread knows (the queue filled meanwhile, for example by a second key of a chain sent before a block ran) is not a
+  refusal: the sequence is dropped whole and counted.
+- Lock order: `m_lockCommands` before `m_lock` (the full-queue path); nothing that holds `m_lock` may send commands.
+- The work of a hold is the holder's CPU time (`CLOCK_THREAD_CPUTIME_ID`); on Windows, without a fine thread clock,
+  the wall time stands for it.
+
 Lock blame (diagnostics, always compiled, recorded when the realtime instrumentation is on): every hold of the lock
 records its site (`withDeviceLocked` and plugin.cpp take `__builtin_FILE`/`__builtin_LINE`), a wait of the audio
 thread is blamed on the holder's site, and every hold off the audio thread is recorded with its wall time and the
@@ -167,6 +185,7 @@ struct DeviceCommand
 	Kind kind;
 	uint32_t ticket;                 // producer's sequence; the snapshot echoes the last one applied
 	uint64_t epoch;                  // the hardware epoch the producer saw; a stale command is dropped and counted
+	                                 // (as built: synthLib::DeviceCommand::deviceGeneration, see Status)
 	uint32_t a = 0, b = 0;           // small operands (row/mask, option id/value, hold frames, latency blocks)
 	std::array<PanelPacket, 64> panel; uint8_t panelCount = 0;   // longer sequences are split by the producer
 	void* payload = nullptr;         // Audition clip, PreparedState, new Device, CopyJob: owned by the producer

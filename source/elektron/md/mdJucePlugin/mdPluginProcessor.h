@@ -57,11 +57,12 @@ namespace mdJucePlugin
 		// (mdMachineFacts.h, DESIGN-audio-lock.md step 2). Any thread.
 		MachineFacts machineFacts() const { return m_facts->read(); }
 		// Commands for the machine's desk device (md::DeskDevice::panelSequenceCommands, panelEventCommand), queued
-		// for the audio thread without the device lock (DESIGN-audio-lock.md step 3). False without a desk device.
-		bool sendDeskCommands(const std::vector<synthLib::DeviceCommand>& _commands)
-		{
-			return machineFacts().desk && getPlugin().sendCommands(_commands.data(), _commands.size());
-		}
+		// for the audio thread without the device lock (DESIGN-audio-lock.md step 3). _panelPackets: the packets of a
+		// panel sequence among them. Refused (false) when it can be known now: no desk device or not a valid one, an
+		// empty or too long sequence, or one that does not fit beside what the device still has queued (as the facts
+		// last said). What only the audio thread can know (the queue filled meanwhile, the device replaced) is not a
+		// refusal here: the plug-in counts it (synthLib::Plugin::getDroppedCommandCount).
+		bool sendDeskCommands(const std::vector<synthLib::DeviceCommand>& _commands, size_t _panelPackets = 0);
 		static md::MachineModel getCompiledProductModel();
 		static bool hasEmbeddedProductResource(std::string_view _filename);
 		juce::File getStorageRecoveryImage() const;

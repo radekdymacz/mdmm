@@ -55,6 +55,9 @@ namespace mdJucePlugin
 		bool ramRecordingAvailable = false;
 		uint32_t speedUpLeversOff = 0;
 		elektronData::AuditionStatus audition;
+		// panel packets the desk device still has queued (md::DeskDevice::SequencerTelemetry::panelPending: the packets
+		// not sent yet, plus one while the last is held; 0 when none)
+		uint32_t panelPending = 0;
 	};
 
 	// The facts of _device. Under the plug-in's device lock (any thread holding it, the audio thread at block end).
