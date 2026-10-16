@@ -59,6 +59,15 @@ function(mdmm_add_lib_tests _dir)
 	target_link_libraries(mdEditorProbeFirmwareTest PRIVATE mdLib elektronData)
 	set_property(TARGET mdEditorProbeFirmwareTest PROPERTY FOLDER "Elektron/test")
 
+	# Beta report 2026-10-16: stacked LFOs on a kick's PTCH, every hit measured (peak, zero crossings, difference
+	# from the median hit) with the speed-ups on and off, L3 on and off, at several host block sizes; the test registered
+	# here plays the case that missed (scenario stack3, about 4 min); --matrix alone plays every scenario. Needs the MD ROM.
+	add_executable(stackedLfoFirmwareTest ${_dir}/stackedLfoFirmwareTest.cpp ${_dir}/mdFirmwareSession.h)
+	target_link_libraries(stackedLfoFirmwareTest PRIVATE mdLib elektronData)
+	set_property(TARGET stackedLfoFirmwareTest PROPERTY FOLDER "Elektron/test")
+	add_test(NAME stackedLfoFirmwareTest COMMAND stackedLfoFirmwareTest --scenario stack3 --matrix)
+	set_tests_properties(stackedLfoFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
+
 	# DESIGN-edit-flow.md: the firmware and the desk under a stream of page edits (manual: needs a ROM).
 	add_executable(editFlowBenchTest ${_dir}/editFlowBenchTest.cpp ${_dir}/mdFirmwareSession.h)
 	target_link_libraries(editFlowBenchTest PRIVATE mdLib mdDesk mmDesk deskWire)
