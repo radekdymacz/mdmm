@@ -103,6 +103,7 @@ namespace mdDesk
 		void setModulators(const Value& _message);
 		void setKnobs(const Value& _message);
 		void setSolo(const Value& _message);
+		void setFollow(const Value& _message);
 		void publishSolo();
 		void onReadyExtra() override;
 		void onStartOver() override;

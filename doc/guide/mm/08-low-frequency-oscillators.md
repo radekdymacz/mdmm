@@ -3,9 +3,9 @@
 
 Each synth track has three LFOs. An LFO moves one parameter of the track, or of the pitch, in a repeating shape. The three LFOs of a track are independent, and an LFO can move a parameter of another LFO.
 
-The LFOs are the bottom row of the **Sound** workspace. Each has its own group, titled **LFO 1**, **LFO 2** and **LFO 3**. A group holds, from the top:
+The LFOs are the bottom row of the **Kit** workspace. Each has its own group, titled **LFO 1**, **LFO 2** and **LFO 3**. A group holds, from the top:
 
-- a picture of the LFO over two bars, with ticks where the LFO is triggered;
+- a picture of the LFO across the pattern (two bars at least), with ticks where the LFO is triggered and the locks of the track on the LFO's parameters shown, see "LFO and parameter locks" below;
 - the target: **PAGE** and **DEST** selects, with the **TRIG** keys beside them;
 - eleven keys for the shape;
 - four value boxes: MULT, SPD, INTL and DPTH.
@@ -15,13 +15,13 @@ The group is marked off while its depth is 0.
 ![The LFO groups](shot:mm-sound-lfos)
 
 ## LFO
-<!-- rows: MM-135 @079b28 -->
+<!-- rows: MM-135 @1f957e -->
 
 An LFO needs a target. Its target is a page and a destination on that page.
 
 ### Choose a target
 
-1. Select the track and go to the **Sound** workspace ({key:workspace-2}).
+1. Select the track and go to the **Kit** workspace ({key:workspace-2}).
 2. In the LFO's group, open the **PAGE** select. It lists PTCH, SYN, AMP, FLT, EFX, LF1, LF2, LF3 and MIDI.
 3. Open the **DEST** select and choose the parameter. It lists the parameters of the page. For PTCH it lists eight ranges: 1/12, 2/12, 7/12, 1OCT, 2OCT, 4OCT, 8OCT and 16OCT. For LF1 to LF3 the parameters are those of the other LFOs. For MIDI they are the parameters of the MIDI page.
 4. Set DPTH, the depth, above 0.
@@ -77,14 +77,18 @@ DPTH is the depth: how far the LFO moves its target. At 0 the LFO does nothing a
 
 Two LFOs can move the same target, and their movements add. A value box that an LFO moves shows a small badge, ~ and the number of the LFO, for example ~1 or ~12 when two LFOs move it. Hover over the badge to read which LFOs these are.
 
+## LFO AND PARAMETER LOCKS
+
+The picture of an LFO follows the locks of the selected track. A lock on TRIG, WAVE, MULT, SPD, INTL or DPTH of this LFO (set in the lock lane of the **Pattern** workspace, page LF1, LF2 or LF3) changes the LFO for the length of its step only: the LFO runs on at that step's speed, in that step's shape and depth, and goes back to its own values at the next step. The picture draws that. A step with such a lock is shaded, its tick is taller, and the label under the title names the locked parameters. A lock on a step that has no trig does nothing, and the picture ignores it. The picture is drawn again when you open the **Kit** workspace or change a value there.
+
 ## LFO TRIGS
 <!-- rows: MM-143 @ff5866 -->
 
-The sequencer triggers the LFOs on its own. A trig with its LFO trig on triggers the LFOs of the track at that step. It matters for the TRIG, HOLD, ONE and HALF keys. In the **Sequence** workspace right-click the step and choose **Envelopes**, then **LFO**, to switch it. A note without its LFO trig shows the letters of the envelopes it does fire.
+The sequencer triggers the LFOs on its own. A trig with its LFO trig on triggers the LFOs of the track at that step. It matters for the TRIG, HOLD, ONE and HALF keys. In the **Pattern** workspace right-click the step and choose **Envelopes**, then **LFO**, to switch it. A note without its LFO trig shows the letters of the envelopes it does fire.
 
 ## SHARED LFOS
 <!-- rows: MM-144 @3b9e4e -->
 
 A MIDI track shares its three LFOs with the synth track of the same number. M1 shares with T1, and so on. An LFO that has PAGE set to MIDI moves the MIDI page.
 
-On a MIDI track, the **Sound** workspace shows the MIDI page, and in the place of the LFO groups a note says which synth track they belong to. Click **Open T1 LFOs** (with the number of the track) to go to them.
+On a MIDI track, the **Kit** workspace shows the MIDI page, and in the place of the LFO groups a note says which synth track they belong to. Click **Open T1 LFOs** (with the number of the track) to go to them.

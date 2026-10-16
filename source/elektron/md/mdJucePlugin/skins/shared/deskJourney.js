@@ -102,10 +102,19 @@ const Journey = (() => {
 		if (!e) throw new Error("not on the page: " + q);
 		return e;
 	}
-	function pointIn(e, fx = 0.5, fy = 0.5) {
+	/* a lock lane key's kit-value line is grabbed by a press within 4 px of it (I-035): a press whose height the journey left
+	   to the hands (no fy) keeps 9 px away from it; a journey that passes an fy chose it, and a journey that presses
+	   where the line is does it on purpose (and for its own fy, awayFromLine) */
+	function awayFromLine(e, fy) {
+		const base = e.classList?.contains("lb") ? e.querySelector(".base") : null; if (!base) return fy;
+		const r = e.getBoundingClientRect(), b = base.getBoundingClientRect(), mid = b.top + b.height / 2;
+		return Math.abs(r.top + r.height * fy - mid) < 9 ? ((mid - r.top) / r.height > 0.5 ? 0.2 : 0.8) : fy;
+	}
+	function pointIn(e, fx = 0.5, fy) {
 		e.scrollIntoView?.({ block: "nearest", inline: "nearest" });
 		const r = e.getBoundingClientRect();
 		if (r.width < 1 || r.height < 1) throw new Error("not shown: " + describe(e));
+		fy = fy === undefined ? awayFromLine(e, 0.5) : fy;
 		const x = r.left + r.width * fx, y = r.top + r.height * fy, top = document.elementFromPoint(x, y);
 		if (!top || (top !== e && !e.contains(top))) throw new Error(`${describe(e)} is covered by ${describe(top)}`);
 		return { x, y };
@@ -256,7 +265,7 @@ const Journey = (() => {
 		host: ["boot-card", "keys-space-play", "seq-os-copy-paste", "keys-os-help", "dev-speedups", "top-cpu-meter", "lcd-volume",
 			"top-editor-menu", "engine-rom-card", "song-playhead"],
 		machine: ["seq-first-beat", "seq-queue-while-playing", "seq-live-record", "seq-grid-record", "sampler-setup-undo", "sampler-audition", "sampler-rename",
-			"sampler-ram-view", "sampler-setup-chop", "lib-syx-import", "lib-syx-import-mute", "song-mode", "keys-play-notes", "keys-black-keys",
+			"sampler-ram-view", "sampler-setup-chop", "lib-syx-import", "lib-syx-import-mute", "song-mode", "song-mode-cycle", "keys-play-notes", "keys-black-keys",
 			"perform-keyboard", "engine-hw-no-machine", "global-tempo-out", "audio-panel", "drop-syx", "drop-sample", "old-webkit",
 			"sound-machine-stays", "engine-reset-factory", "real-factory-songs", "real-factory-patterns", "real-sequence-plays",
 			/* they time key presses against the journey's clock: in the page tier, beside the gate's busy lane 1, the page
@@ -542,10 +551,10 @@ const Journey = (() => {
 			{ say: "right-click the header's empty part: the editor's menu, its title the editor and version", act: hands => { if (menu.on()) closeDeskMenu(); hands.rightClick(menu.at); },
 				screen: () => menu.titled(product) },
 			/* the rail is on Sequence and Sound, not on Mix, Song or Control (where an earlier journey may have left the page) */
-			{ say: "Esc, then right-click the track rail (outside the header, no menu of its own; on Sequence when the workspace shown has no rail): the editor's menu there too",
+			{ say: "Esc, then right-click the track rail (outside the header, no menu of its own; on Pattern when the workspace shown has no rail): the editor's menu there too",
 				act: async hands => { hands.key("Escape"); await until(() => !menu.on(), 1000);
 					const shown = () => { const r = $q("#rail"); return !!r && !r.hidden && r.getBoundingClientRect().height > 0; };
-					if (!shown()) { hands.click('#tabs [data-ws="seq"]'); if (!await until(shown, 3000)) throw new Error("no track rail on Sequence"); }
+					if (!shown()) { hands.click('#tabs [data-ws="seq"]'); if (!await until(shown, 3000)) throw new Error("no track rail on Pattern"); }
 					hands.rightClick("#rail", {}, 0.5, 0.97); },
 				screen: () => menu.titled(product) },
 			{ say: "focus Zoom, press →: its submenu, its first entry focused", act: (hands, c) => { c.z0 = menu.zoomSays(); $q(menu.id("zoom")).focus(); hands.key("ArrowRight"); },
@@ -1065,5 +1074,5 @@ const Journey = (() => {
 				c.n = document.querySelectorAll(".pk[data-lane]").length; },
 				screen: c => ok(c.n > 0 && Object.values(c.cut).every(x => !x), `${c.n} keys; ` + Object.entries(c.cut).map(([w, x]) => `${w}: ${x || "all fit"}`).join("; ")) }]
 	});
-	return { stateDiff, pageTier, noWire, cutText, spills, overlaps, canvasProblems, lockKeysCut, lockKeysJourney, pressOutside, modalLockJourney, boxOf, keysInside, run, demo, ok, sleep, until, recent, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
+	return { stateDiff, pageTier, noWire, cutText, spills, overlaps, canvasProblems, lockKeysCut, lockKeysJourney, pressOutside, modalLockJourney, boxOf, keysInside, run, demo, ok, sleep, until, recent, u, TIERS, tierOf, awayFromLine, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
 })();

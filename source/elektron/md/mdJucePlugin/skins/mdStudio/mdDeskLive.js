@@ -54,7 +54,7 @@ Keys.bind({ id: "mute-track", short: "Mute", scope: "any", keys: ["M"], code: "K
 Keys.bind({ id: "mute-all", short: "Mute all", scope: "any", keys: ["M"], code: "KeyM", mod: "alt", group: "All", does: "Mute every track; when none is audible, unmute every track", when: () => kbOn(), run: () => muteAllToggle() });
 /* ↑ / ↓: the previous / next track, while no value has the keys (a focused value, tempo or bar keeps them:
    the dispatcher leaves [role=slider] alone, a bar's value stops them itself) */
-Keys.bind({ id: "track-prev-next", short: "Track − / Track +", scope: "any", keys: ["ArrowUp", "ArrowDown"], group: "Selected track", does: "Select the previous / next track (a focused value keeps ↑ / ↓ for itself). Sequence with selected steps: move the selection a track",
+Keys.bind({ id: "track-prev-next", short: "Track − / Track +", scope: "any", keys: ["ArrowUp", "ArrowDown"], group: "Selected track", does: "Select the previous / next track (a focused value keeps ↑ / ↓ for itself). Pattern with selected steps: move the selection a track",
 	when: () => kbOn() && $("#kpop").hidden && $("#keyspop").hidden,
 	run: e => { if (selKeys()) { selMove(e.key === "ArrowDown" ? 1 : -1, 0); return; } select((S.sel + (e.key === "ArrowDown" ? 1 : 15)) % 16); } });
 const refreshAudible0 = refreshAudible; refreshAudible = function () { refreshAudible0(); showPrep(); };
@@ -131,7 +131,7 @@ Bridge.onMessage(m => {
    zooms the whole page out natively (WKWebView pageZoom, mdStudioWebZoom.mm), so nothing is cut. ===== */
 
 /* ===== Tap tempo (manual p.36): T or B taps, and ⇧B, the one tap chord of both editors (the Monomachine Editor's B is the
-   piano roll's Draw on Sequence); the average of the last taps sets the tempo (0x61). ===== */
+   piano roll's Draw on Pattern); the average of the last taps sets the tempo (0x61). ===== */
 const TAP = [];
 function tapTempo() {
 	const now = performance.now(); if (TAP.length && now - TAP[TAP.length - 1] > 2000) TAP.length = 0;

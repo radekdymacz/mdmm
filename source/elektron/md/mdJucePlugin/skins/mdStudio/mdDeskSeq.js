@@ -82,11 +82,26 @@ function renderLane() {
 			return `<button class="pk ${n ? "has" : ""}" data-lane="${p}" aria-pressed="${p === S.lane}" aria-label="${full}${n ? ", " + n + " locked" : ""}" title="${full}: ${n ? n + " locked step" + (n > 1 ? "s" : "") : "no locks yet"}"><span class="pkn">${plain}</span>${n ? `<i>${n}</i>` : ""}</button>`;
 		}).join("");
 	}).join("");
+	const ons = steps().filter(s => tr.trigs[s]), last = ons.length ? ons[ons.length - 1] : -1;
 	lane.innerHTML = steps().map(s => {
 		const on = tr.trigs[s], v = m?.get(s);
-		return `<div class="lb ${on ? "" : "none"} ${s % 16 === 0 && s !== vis()[0] ? "gap" : ""} ${V.playing && s === S.step ? "ph" : ""}" data-s="${s}">${on ? `<div class="base" style="--bf:${(base / 127).toFixed(4)}"></div>${bipLane() ? `<div class="mid"></div>` : ""}${v != null ? barHTML(v) : ""}` : ""}</div>`;
+		return `<div class="lb ${on ? "" : "none"} ${s % 16 === 0 && s !== vis()[0] ? "gap" : ""} ${V.playing && s === S.step ? "ph" : ""} ${inSel(S.sel, s) ? "vsel" : ""}" data-s="${s}">${on ? `<div class="base" style="--bf:${(base / 127).toFixed(4)}"></div>${bipLane() ? `<div class="mid"></div>` : ""}${v != null ? barHTML(v) + valueHTML(v) : ""}${s === last ? kitLabelHTML(base) : ""}` : ""}</div>`;
 	}).join("");
 }
+/* I-035: a lock's value as a number at its bar's end (shown on hover and on a selected step) and the kit value on the
+   kit line at the lane's right end; both in the form the Kit page shows (a signed parameter: -64 to +63) */
+function laneFmt(v) { return BIP.has(S.lane) ? (v - 64 > 0 ? "+" : "") + (v - 64) : String(v); }
+/* where a value's bar ends, as a CSS length from the key's bottom, and whether the number sits below it (a bar's
+   end near the top, or the down end of a bipolar bar, puts the number inside / below) */
+function valueHTML(v) {
+	const bip = bipLane(), end = bip ? `calc(50% + ${((v - 64) / (v >= 64 ? 63 : 64) * 50).toFixed(2)}%)` : `calc(3px + (100% - 6px) * ${(v / 127).toFixed(4)})`;
+	const below = bip ? v < 64 && v > 6 : v / 127 > .8;
+	return `<span class="vl" style="bottom:calc(${end} ${below ? "- 13px" : "+ 1px"})">${laneFmt(v)}</span>`;
+}
+/* near the top the number sits below the line and left of its key, so it never covers the top of a lock's bar */
+function kitLabelCls(base) { return base / 127 > .85 ? "kvl fl" : "kvl"; }
+function kitLabelHTML(base) { return `<span class="${kitLabelCls(base)}" style="bottom:${kitLabelAt(base)}">${laneFmt(base)}</span>`; }
+function kitLabelAt(base) { const f = base / 127; return `calc(3px + (100% - 6px) * ${f.toFixed(4)} ${f > .85 ? "- 15px" : "+ 3px"})`; }
 function syncScroll() { const a = $("#seqscroll"), b = $("#lanescroll"); if (!a || !b) return; a.onscroll = () => { b.scrollLeft = a.scrollLeft; }; b.onscroll = () => { a.scrollLeft = b.scrollLeft; }; }
 function refreshRow(i) { $$(`.st[data-t="${i}"]`).forEach(b => { const s = +b.dataset.s; b.className = stepCls(i, s); b.setAttribute("aria-pressed", V.tracks[i].trigs[s]); }); }
 
@@ -138,5 +153,5 @@ function clickPage(e) {
 	if (e.target.closest("#pgfollow")) { S.follow = !S.follow; render(); return true; }
 	return false;
 }
-Keys.bind({ id: "trig-type", short: "Trig", scope: "seq", keys: ["Escape"], group: "Sequence", does: "Back to Trig after Accent, Swing or Slide: a click on a step paints trigs again",
+Keys.bind({ id: "trig-type", short: "Trig", scope: "seq", keys: ["Escape"], group: "Pattern", does: "Back to Trig after Accent, Swing or Slide: a click on a step paints trigs again",
 	when: () => S.ws === "seq" && S.tt !== "trig", run: () => setTrigType("trig") });

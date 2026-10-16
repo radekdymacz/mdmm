@@ -360,7 +360,7 @@ namespace
 	}
 
 	// A short, fixed burst of host notes for the stopped phase to play, so that the phase renders hits and not only
-	// silence. The MD gets its pads 36 to 51 on the base channel of global slot 0, the MM note 60 on channel 1. Each
+	// silence. The MD gets the notes 36 to 51 on the base channel of global slot 0 (plain MIDI notes through the key map; the pad rewrite is gone since 0.8), the MM note 60 on channel 1. Each
 	// note is held for a while (a released MM note is silent at once), and the burst is played twice, the second time
 	// softer. The notes go out at fixed frames after start(), from the machine's block callback (post()).
 	class HitBurst

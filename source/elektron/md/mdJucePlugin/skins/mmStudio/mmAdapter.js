@@ -76,6 +76,7 @@
 	const songSlot = () => songEdit ?? cur("song");
 	/* B-030: the plug-in's "host" message (a DAW's tempo); the plug-in's, so it stays when the engine changes */
 	let hostTempo = null;
+	let follow = false;	/* I-003: the selected track follows the last track a MIDI controller played (the plug-in keeps it with the project) */
 	let memory = { keep: true, available: false, saved: false, note: "" };	/* I-024: the plug-in's machineMemory */
 	const view = () => { const v = MmView.derive(docs(), { songEdit, host: hostTempo }); return Overlay.over(Overlay.size() ? MmView.own(v) : v); };
 	/* the view shows the machine: the catalogue (MmConvert's enumerations), the current pattern and the kit that plays */
@@ -335,6 +336,12 @@
 		for (const ch of [c.auto, c.multiTrig, c.multiMap, ...[0, 1, 2, 3, 4, 5].map(trackChannel)]) if (ch != null && ch >= 0 && ch < 16) out.add(ch);
 		return out;
 	}
+	/* I-003: with FOLLOW PLAYED TRACK on, a note from a MIDI controller (the plug-in's midiIn, never the editor's own
+	   keyboard) on a synth track's channel (base + t inside CHANNEL SPAN) selects that track */
+	function followPlayed(m) {
+		if (!follow || machine?.capabilities?.engine === "hw") return;	/* HW MIDI: the port carries the real machine's own MIDI out */
+		for (let t = 0; t < 6; t++) if (trackChannel(t) === m.ch) { V().selectTrack(t); return; }
+	}
 	const midi = (b, key) => send({ op: "midi", b }, key ? { key } : {});
 	let held = null;
 	function noteOff() { if (held) { midi([0x80 | held.ch, held.n, 0]); held = null; } }
@@ -431,7 +438,7 @@
 		   yet (mmConvert.js loads after the mockup: it reads the mockup's tables). init() says ready,
 		   and the plug-in answers with the catalogue at once: a catalogue that came before MmConvert
 		   was lost (useCatalogue threw), so every document showed the enumerations as raw firmware
-		   values (LFO PAGE 15 for SYN) and Sound threw on such a track. The page speaks only once
+		   values (LFO PAGE 15 for SYN) and Kit threw on such a track. The page speaks only once
 		   MmConvert is there. */
 		start() { const go = () => typeof MmConvert === "undefined" || typeof MmView === "undefined" ? setTimeout(go, 0) : init(); go(); },
 		/* the gesture ended: the next edit is a new undo step; the drawing it held comes now, and an edit that
@@ -571,6 +578,7 @@
 		removeRom(info) { askRemoveRom(info); },
 		/* I-024 (doc/modern-ux/DESIGN-machine-memory.md): KEEP MEMORY on or off; "factory": RESET MACHINE…'s Start from
 		   factory memory (the question was the panel's, shared/deskSyx.js) */
+		follow() { send({ op: "followSet", on: !follow }, { onResult: r => { if (r.ok) { follow = !follow; V().setFollow(follow); } else V().toast(r.errors[0]); } }); },
 		memory(what) {
 			if (what === "keep") send({ op: "memoryKeep", on: !memory.keep }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } });
 			else send({ op: "memoryFactory" }, { onResult: r => V().toast(r.ok ? r.note : r.errors[0]) });
@@ -581,7 +589,7 @@
 		syxChoose() { send({ op: "chooseSyx" }); },
 		syxExport(request) { send(Object.assign({ op: "syxExport" }, request || {})); },
 		syxStart(kinds, skip, o = {}) {
-			send(Object.assign({ op: "syxImport", kinds, skip: skip || [] }, o.placeAt ? { placeAt: o.placeAt } : {}, o.checkOnly ? { checkOnly: true } : {}),
+			send(Object.assign({ op: "syxImport", kinds, skip: skip || [] }, o.placeAt ? { placeAt: o.placeAt } : {}, o.checkOnly ? { checkOnly: true } : {}, o.readBack === false ? { readBack: false } : {}),
 				{ onResult: r => { if (!r.ok) V().toast(r.errors[0]); } });
 		},
 		syxStop() { send({ op: "syxCancel" }); },
@@ -698,7 +706,8 @@
 		else if (m.type === "machineMemory") { memory = m; V().setMemory(m); }
 		/* 0.6: a note from a MIDI keyboard (the plug-in's midiIn): the Machinedrum's LEARN reads it; the Monomachine's
 		   page shows the notes held instead (midiHeld: a state, so a lost note off cannot leave a key lit) */
-		else if (m.type === "midiIn") { /* read, nothing to show */ }
+		else if (m.type === "midiIn") followPlayed(m);
+		else if (m.type === "follow") { follow = !!m.on; V().setFollow(follow); }
 		/* I-002, B-062: the notes a MIDI keyboard holds light the Perform keyboard's keys, those on a channel the machine
 		   plays (playedChannels) */
 		else if (m.type === "midiHeld") { const chs = playedChannels(); V().setMidiHeld((m.notes || []).filter(n => chs.has(n.ch)).map(n => n.note)); }

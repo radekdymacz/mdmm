@@ -4,7 +4,7 @@
 Each of the six synth tracks plays one machine. A machine is a kind of sound generator. Its output goes through the same chain on every track: the amp, the filter, the effects and the delay. A kit stores the machines of all six tracks and everything that belongs to them.
 
 ## ARRANGEMENT
-<!-- rows: MM-091 MM-092 @9462d3 -->
+<!-- rows: MM-091 MM-092 @30b506 -->
 
 The machines come in families:
 
@@ -37,7 +37,7 @@ The pattern chooser shows, on each pattern, its length and its kit as K and a nu
 To see that a kit is not loaded twice:
 
 1. Pick a pattern. Its kit loads.
-2. Change a value on the **Sound** workspace. The kit reads **edited**.
+2. Change a value on the **Kit** workspace. The kit reads **edited**.
 3. Pick a second pattern that recalls the same kit. The pattern changes, the kit stays as you edited it and the editor asks nothing.
 
 If you pick a pattern with a different kit while the current kit has edits that are not saved, the editor asks. It offers **Save kit, then switch**, a switch that leaves the edits to the machine's UNDO KIT, and **Cancel**.
@@ -125,10 +125,10 @@ NOTE: To hear a kit pasted into the slot that plays, load that slot again.
 The slot gets the empty kit: six sine machines and default settings. The machine has no clear message, so the editor writes the empty kit as a dump, through SYSEX RECV. {key:lib-undo} undoes a paste, clear or rename.
 
 ## ASSIGNING A MACHINE
-<!-- rows: MM-105 MM-106 @d5d62a -->
+<!-- rows: MM-105 MM-106 @71db14 -->
 
 1. Select the track in the rail.
-2. Go to the **Sound** workspace ({key:workspace-2}).
+2. Go to the **Kit** workspace ({key:workspace-2}).
 3. Click the machine name at the head of the workspace. The machine picker opens.
 4. Click a family at the left, then a machine. Move the pointer over a machine to read what it is and what its eight synthesis parameters are called.
 
@@ -143,17 +143,17 @@ NOTE: Changing the machine removes the step locks the track had on the synthesis
 NOTE: A processing machine (an FX machine) needs audio. If the track did not have one, the editor sets its input to INP AB on track 1 or to the track before on the others, and sets AMP DEC and REL to 127 so the sound passes. A note says so.
 
 ## COPY MACHINE
-<!-- rows: MM-107 @a65fd8 -->
+<!-- rows: MM-107 @1b22f5 -->
 
-1. Go to the **Sound** workspace and select the track.
+1. Go to the **Kit** workspace and select the track.
 2. Click <COPY> under the LCD, or press {key:copy}. The machine and all seven DATA pages are copied.
 3. Select another track and click <PASTE>, or press {key:paste}. The track gets the machine and its settings.
 4. Press {key:undo} to take the paste back.
 
 ## CLEAR MACHINE
-<!-- rows: MM-108 @f14cbe -->
+<!-- rows: MM-108 @87a89e -->
 
-On the **Sound** workspace, click <CLR>. The track plays GND-SIN again, with every page at its start values.
+On the **Kit** workspace, click <CLR>. The track plays GND-SIN again, with every page at its start values.
 
 ## SETTING THE MIX BUS
 <!-- rows: MM-109 @0e7166 -->
@@ -161,9 +161,9 @@ On the **Sound** workspace, click <CLR>. The track plays GND-SIN again, with eve
 A track sends its sound to one or two mix buses: AB, CD and EF. In the **Mix** workspace each track strip has three **Out** keys. Click a key to send the track to that bus or to stop sending it. A track can feed two buses. Chapter 18 describes routing.
 
 ## PARAMETER EDITING
-<!-- rows: MM-110 MM-111 MM-112 @233b93 -->
+<!-- rows: MM-110 MM-111 MM-112 @76b96e -->
 
-A track has seven pages of eight parameters, 56 in all. The **Sound** workspace shows them as groups of a few values, with a small picture where the values draw a shape:
+A track has seven pages of eight parameters, 56 in all. The **Kit** workspace shows them as groups of a few values, with a small picture where the values draw a shape:
 
 - the synthesis page, whose groups depend on the machine;
 - the amp, filter and effects pages, the same on every machine;
@@ -171,6 +171,6 @@ A track has seven pages of eight parameters, 56 in all. The **Sound** workspace 
 
 Most synth machines have TUNE, a fine tune in semitones, on the synthesis page. The beat box and the FX machines do not.
 
-![The Sound workspace](shot:mm-sound-workspace)
+![The Kit workspace](shot:mm-sound-workspace)
 
 Every edit goes to the machine at once, as a controller message, but it is not in the stored kit until you save. The **edited** mark in the LCD says so.

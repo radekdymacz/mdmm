@@ -85,7 +85,7 @@ namespace mdJucePlugin
 
 	bool DeskHost::holdState(const void* const _data, const int _size)
 	{
-		if(!m_processor.getPlugin().withDeviceLocked([](synthLib::Device* const _d) { return isNoRomDevice(_d); }))
+		if(m_processor.machineFacts().kind != MachineFacts::Kind::NoRom)
 			return false;
 		std::vector<uint8_t> project(static_cast<const uint8_t*>(_data), static_cast<const uint8_t*>(_data) + std::max(_size, 0));
 		// What lives without a machine follows the project at once: the editor's setup, the DAW's parameters, the MIDI mapping.
@@ -123,7 +123,7 @@ namespace mdJucePlugin
 
 	bool DeskHost::heldState(juce::MemoryBlock& _out) const
 	{
-		if(!m_processor.getPlugin().withDeviceLocked([](synthLib::Device* const _d) { return isNoRomDevice(_d); }))
+		if(m_processor.machineFacts().kind != MachineFacts::Kind::NoRom)
 			return false;
 		const auto project = heldProject();
 		if(!project)

@@ -23,6 +23,8 @@ cmake --build "${build_dir}" --parallel 4 --target \
   mdStateTest \
   mdStateCaptureTest \
   synthLibStateCaptureTest \
+  synthLibDeviceCommandTest \
+  synthLibSeqlockTest \
   mdMemoryFastLaneTest \
   mdFlashTest \
   mdUwFirmwareTest \
@@ -59,6 +61,8 @@ for test_name in \
   mdStateTest \
   mdStateCaptureTest \
   synthLibStateCaptureTest \
+  synthLibDeviceCommandTest \
+  synthLibSeqlockTest \
   mdMemoryFastLaneTest \
   mdFlashTest \
   mdStandaloneRendererPolicyTest \

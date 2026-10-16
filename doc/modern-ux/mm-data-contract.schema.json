@@ -2291,6 +2291,10 @@
                 }
               }
             },
+            "readBack": {
+              "description": "I-038: false when the import was sent without the read-back (the report then says sent, not read back)",
+              "type": "boolean"
+            },
             "check": {
               "description": "0.6: VERIFY ONLY (nothing sent; the report counts same, differs, unknown, no reply)",
               "type": "boolean"
@@ -2574,6 +2578,19 @@
             },
             "ccLimit": {
               "type": "number"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "description": "I-003: whether the selected track follows the last track played from a MIDI controller, as the plug-in keeps it with the project (followSet): said with the solo; never as an echo of followSet.",
+          "required": ["type", "on"],
+          "properties": {
+            "type": {
+              "const": "follow"
+            },
+            "on": {
+              "type": "boolean"
             }
           }
         },
@@ -5545,6 +5562,30 @@
         },
         {
           "type": "object",
+          "description": "setup: I-003: the selected track follows the last track played from a MIDI controller, kept with the project; the plug-in says it again as {\"type\":\"follow\"}",
+          "required": ["op", "on"],
+          "properties": {
+            "op": {
+              "const": "followSet"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "on": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "machine: PATTERN or SONG mode (SET STATUS 0x10), read back from the machine's status",
           "required": ["op", "song"],
           "properties": {
@@ -6245,7 +6286,7 @@
         },
         {
           "type": "object",
-          "description": "host: import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\", the slot an item lands in), sent to the machine as they are (the firmware decides what it takes), then read back and reported (syxProgress); no undo step. placeAt (SPECIFIC, 0.6): per kind the first slot its items land in, in slot order ({\"kit\": 4}; the dumps go with that position byte and checksum); checkOnly (VERIFY ONLY): nothing is sent, each item's slot is read and compared with the file",
+          "description": "host: import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\", the slot an item lands in), sent to the machine as they are (the firmware decides what it takes), then read back and reported (syxProgress); no undo step. placeAt (SPECIFIC, 0.6): per kind the first slot its items land in, in slot order ({\"kit\": 4}; the dumps go with that position byte and checksum); checkOnly (VERIFY ONLY): nothing is sent, each item's slot is read and compared with the file; readBack (I-038, default true): false ends the import after the messages are sent, without reading the slots back, and the report says the items were sent, not read back",
           "required": ["op", "kinds"],
           "properties": {
             "op": {
@@ -6271,6 +6312,9 @@
               "type": "object"
             },
             "checkOnly": {
+              "type": ["boolean", "integer"]
+            },
+            "readBack": {
               "type": ["boolean", "integer"]
             }
           },

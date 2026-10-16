@@ -6,6 +6,7 @@
 #include <string>
 
 #include "audioTypes.h"
+#include "deviceCommand.h"
 #include "deviceTypes.h"
 
 #include "midiTypes.h"
@@ -57,6 +58,11 @@ namespace synthLib
 			// Runs without Plugin's process/device lock, like StateTransaction::prepare: it must own (or share
 			// immutably) every input and must not access the live Device. Appends what getState would append.
 			virtual bool encode(std::vector<uint8_t>& _state) = 0;
+
+			// More of the capture, under the same lock as beginStateCapture (Plugin takes it again for each call and
+			// releases it between, so the audio thread never waits for a whole large copy), while the device that
+			// began it is still the plug-in's. True: call again. The default: the capture is complete at once.
+			virtual bool captureMore() { return false; }
 		};
 
 		Device(const DeviceCreateParams& _params);
@@ -122,6 +128,11 @@ namespace synthLib
 		virtual uint32_t getDspClockPercent() const = 0;
 		virtual uint64_t getDspClockHz() const = 0;
 		virtual bool canModifyDspClock() const { return false; }
+
+		// A command another thread queued with Plugin::sendCommands (deviceCommand.h), on the audio thread at the
+		// start of a block, or under the device lock when no blocks run. Must not block or allocate. False: not
+		// applied (counted by the plug-in as dropped). The default applies none.
+		virtual bool applyCommand(const DeviceCommand&) { return false; }
 
 		BASELIB_NOINLINE virtual void release(std::vector<SMidiEvent>& _events);
 

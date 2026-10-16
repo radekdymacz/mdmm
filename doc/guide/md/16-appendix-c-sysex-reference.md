@@ -51,16 +51,16 @@ Set MIDI note mapping is 0x5a. The map editor in the **GLOBAL** panel sends it w
 Reset MIDI note map is 0x64. **Reset map** sends it. The editor asks first, and {key:undo} takes it back.
 
 ## SOUND SETTINGS
-<!-- rows: MD-285 MD-286 MD-287 MD-288 MD-290 @f8c18d -->
+<!-- rows: MD-285 MD-286 MD-287 MD-288 MD-290 @f993f1 -->
 
 These messages change one part of the sound.
 
-- Assign machine is 0x5b. The machine picker on the **Sound** workspace sends it.
+- Assign machine is 0x5b. The machine picker on the **Kit** workspace sends it.
 - Set track routing is 0x5c. The **OUT** key of a track on the **Mix** workspace sends it, and so does the routing in the **GLOBAL** panel.
 - The Rhythm Echo, Gate Box, Master EQ and Dynamix messages are 0x5d to 0x60. The cards of the **Mix** workspace send them.
 - Set tempo is 0x61. Dragging the <TEMPO> field in the LCD sends it.
-- Set LFO is 0x62. The LFO cards of the **Sound** workspace send it.
-- Trig group is 0x65 and mute group is 0x66. **Mute** and **Trig** in the relations of the **Sound** workspace send them.
+- Set LFO is 0x62. The LFO cards of the **Kit** workspace send it.
+- Trig group is 0x65 and mute group is 0x66. **Mute** and **Trig** in the relations of the **Kit** workspace send them.
 
 ## PATTERNS AND SONGS
 <!-- rows: MD-291 MD-292 MD-295 @83e43c -->

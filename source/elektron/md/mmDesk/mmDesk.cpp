@@ -52,7 +52,7 @@ namespace mmDesk
 
 	// ---- the app modulators (the same engine as the Machinedrum's) ----
 
-	std::vector<std::string> Desk::setupOps() { return {"modSet", "soloSet"}; }
+	std::vector<std::string> Desk::setupOps() { return {"modSet", "soloSet", "followSet"}; }
 
 	// The table's Owner::Setup rows: modSet and soloSet.
 	void Desk::onSetup(const Value& _message)
@@ -61,6 +61,19 @@ namespace mmDesk
 		if(op == "soloSet")
 		{
 			setSolo(_message);
+			return;
+		}
+		if(op == "followSet")
+		{
+			const auto* on = _message.find("on");
+			const bool follow = on && on->isBool() && on->asBool();
+			if(m_follow != follow)
+			{
+				m_follow = follow;
+				if(m_saveSetup)
+					m_saveSetup(setupDoc());
+			}
+			result(_message, {}, {});
 			return;
 		}
 		if(op != "modSet")
@@ -84,6 +97,7 @@ namespace mmDesk
 		deskCore::DeskSetup s;
 		s.modulators = m_mods.setup();
 		s.solo = m_solo;
+		s.followPlayed = m_follow;
 		return deskCore::setupToJson(s, g_mmSetupSpec);
 	}
 
@@ -107,6 +121,10 @@ namespace mmDesk
 	void Desk::publishSolo()
 	{
 		publish(deskCore::solo::message(m_solo));
+		Value f = Value::object();
+		f.set("type", "follow");
+		f.set("on", m_follow);
+		publish(f);
 	}
 
 	std::vector<std::string> Desk::loadSetup(const Value& _setup)
@@ -116,6 +134,7 @@ namespace mmDesk
 		const auto s = deskCore::setupFromJson(_setup, g_mmSetupSpec, errors);
 		m_mods.setSetup(s.modulators);
 		m_solo = s.solo;
+		m_follow = s.followPlayed;
 		publishModulators();
 		publishSolo();
 		flush();

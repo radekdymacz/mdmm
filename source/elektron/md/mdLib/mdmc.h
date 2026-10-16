@@ -195,6 +195,34 @@ namespace md
 			size_t _size) const;
 		bool flashDirty() const { return m_flashDirty; }
 		uint64_t flashIdleCycles() const;
+		// Every change of the flash's bytes counted (a programmed word, an erased sector, a replaced or exchanged
+		// image): a copy taken in parts is the flash of one moment when this did not move while it was taken.
+		// Under the owning Plugin device lock, like the writes.
+		uint64_t flashWrites() const { return m_flashWrites; }
+		// Counts the changes of the patch RAM (the firmware's writes, a restore, a replacement): a copy taken in parts
+		// is of one moment when it did not move meanwhile. Read where the scheduler owner's work is excluded (the
+		// plug-in's device lock), as flashWrites
+		uint64_t patchRamWrites() const { return m_patchRamWrites; }
+		// Write marks by piece of memory (DESIGN-audio-lock.md, copies taken in parts): a number that moves whenever a
+		// byte of that piece may have changed (a write into it, or the whole memory replaced). A copy of a piece whose
+		// mark did not move since it was taken is still the memory as it is. Patch RAM in 16 KiB pieces, flash in
+		// 64 KiB (an erase or program of the Machinedrum marks its own pieces; any other flash change marks all).
+		// _offset: in the patch RAM (copyPatchRamRange) or the flash (copyFlashDataRangeRealtime). As patchRamWrites
+		static constexpr size_t g_patchRamMarkSize = 0x4000;
+		static constexpr size_t g_flashMarkSize = 0x10000;
+		uint64_t patchRamMark(const size_t _offset) const
+		{
+			const auto i = _offset / g_patchRamMarkSize;
+			return m_patchRamEpoch + (i < m_patchRamMarks.size() ? m_patchRamMarks[i] : 0);
+		}
+		uint64_t flashMark(const size_t _offset) const
+		{
+			const auto i = _offset / g_flashMarkSize;
+			return m_flashEpoch + (i < m_flashMarks.size() ? m_flashMarks[i] : 0);
+		}
+		size_t flashSize() const { return m_flashData.size(); }
+		// The patch RAM is _data, compared in place (no copy)
+		bool patchRamEquals(const std::vector<uint8_t>& _data) const;
 		// Optional diagnostic observation of decoded NOR operations. The observer
 		// runs synchronously under the flash lock and must not reenter this device.
 		using FlashOperationObserver = std::function<void(const FlashCommandDecoder::Operation&, uint64_t)>;
@@ -259,6 +287,24 @@ namespace md
 		mutable std::shared_mutex m_flashMutex;
 		bool m_flashDirty = false;
 		uint64_t m_lastFlashWriteCycle = 0;
+		uint64_t m_flashWrites = 0;		// flashWrites()
+		uint64_t m_patchRamWrites = 0;	// patchRamWrites()
+		// patchRamMark / flashMark: the pieces' counts, plus one count for a whole replacement
+		std::vector<uint32_t> m_patchRamMarks;
+		uint64_t m_patchRamEpoch = 0;
+		std::vector<uint32_t> m_flashMarks;
+		uint64_t m_flashEpoch = 0;
+		void markPatchRam(const size_t _offset, const size_t _size = 1)
+		{
+			++m_patchRamWrites;
+			for(auto i = _offset / g_patchRamMarkSize; i <= (_offset + _size - 1) / g_patchRamMarkSize && i < m_patchRamMarks.size(); ++i)
+				++m_patchRamMarks[i];
+		}
+		void markFlash(const size_t _offset, const size_t _size)
+		{
+			for(auto i = _offset / g_flashMarkSize; i <= (_offset + _size - 1) / g_flashMarkSize && i < m_flashMarks.size(); ++i)
+				++m_flashMarks[i];
+		}
 
 		Sim m_sim;	// on-chip SIM peripheral window (MBAR base 0x300000)
 		struct MidiTxBuffer

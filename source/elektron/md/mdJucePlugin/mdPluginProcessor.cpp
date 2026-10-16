@@ -27,6 +27,8 @@
 #include "jucePluginLib/tools.h"
 
 #include "mdLib/mddevice.h"
+#include "mdLib/mddeskdevice.h"
+#include "mdLib/mdstatecapture.h"
 #include "mdLib/mdromloader.h"
 #include "mdLib/mdstate.h"
 #include "mdLib/mdpanel.h"
@@ -150,6 +152,35 @@ namespace
 		return getOptions(_model, _ephemeral);
 	}
 
+}
+
+namespace
+{
+	// The live machine's state captured a part per device-lock hold (md::DeviceStateCapture::captureMore), every part
+	// of _live at _epoch; _mark: the machine's state mark when the capture completed. False: the machine changed.
+	bool captureLiveState(synthLib::Plugin& _plugin, md::Device* const _live, const uint64_t _epoch,
+		std::unique_ptr<md::DeviceStateCapture>& _capture, md::Device::StateMark& _mark)
+	{
+		bool more = true;
+		while(more)
+		{
+			const bool same = _plugin.withDeviceLocked([&](synthLib::Device* const _device)
+			{
+				auto* const device = dynamic_cast<md::Device*>(_device);
+				if(!device || device != _live || device->hardwareEpoch() != _epoch)
+					return false;
+				if(!_capture)
+					_capture = device->beginDeviceStateCapture(synthLib::StateTypeGlobal);
+				more = _capture->captureMore();
+				if(!more)
+					_mark = device->stateMark();
+				return true;
+			});
+			if(!same)
+				return false;
+		}
+		return true;
+	}
 }
 
 namespace mdJucePlugin
@@ -399,7 +430,7 @@ namespace mdJucePlugin
 						// exchange if firmware or panel input changed battery-backed
 						// storage in that interval; otherwise those newer bytes would
 						// exist in neither the replacement nor its recovery image.
-						if(device->getHardware().copyPatchRam() != previousBytes)
+						if(!device->getHardware().patchRamEquals(previousBytes))
 						{
 							commitError = "Live storage was edited while the replacement was preparing; try again.";
 							return false;
@@ -462,6 +493,12 @@ namespace mdJucePlugin
 		, m_memoryDevice(std::make_unique<MachineMemoryDevice>(*this, _model, productName(_model)))
 		, m_memory(*m_memoryDevice, _model)
 	{
+		// DESIGN-audio-lock.md step 2: the machine's facts, published under the device lock by whoever holds it (the
+		// audio thread at each block's end), read by every thread without it. The callback owns the store it writes.
+		getPlugin().setFactsCallback([facts = m_facts](synthLib::Device* const _device)
+		{
+			facts->write(machineFactsOf(_device));
+		});
 		if(m_model == md::MachineModel::Machinedrum)
 			m_ramRecordingMode.store(
 				static_cast<uint8_t>(md::RamRecordingMode::CompleteTail),
@@ -660,34 +697,54 @@ namespace mdJucePlugin
 		md::FactoryFlashSnapshot factoryFlash;
 		std::string cacheError;
 		std::shared_ptr<const md::Device::PreparationContext> preparationContext;
-		getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
+		// The facts first (DESIGN-audio-lock.md step 2): the lock only once they say the machine is ready for its reboot
+		const auto facts = machineFacts();
+		if(facts.kind == MachineFacts::Kind::Machine && facts.valid
+			&& facts.model == static_cast<uint8_t>(md::MachineModel::Machinedrum))
 		{
-			auto* const device = dynamic_cast<md::Device*>(_device);
-			if(!device || device->getModel() != md::MachineModel::Machinedrum
-				|| !device->isValid())
-				return;
-			if(device->isProjectStateRestorePending())
+			if(facts.restorePending)
+				state = State::Waiting;
+			else if(facts.factoryFlashInitializationExpected)
+				state = facts.factoryFlashReadyForReboot ? State::Ready : State::Waiting;
+		}
+		if(state == State::Ready)
+		{
+			state = State::NotNeeded;
+			getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
 			{
-				state = State::Waiting;
-				return;
-			}
-			auto& hardware = device->getHardware();
-			if(!hardware.isFactoryFlashInitializationExpected())
-				return;
-			state = hardware.isFactoryFlashReadyForReboot()
-				? State::Ready : State::Waiting;
-			if(state != State::Ready)
-				return;
+				auto* const device = dynamic_cast<md::Device*>(_device);
+				if(!device || device->getModel() != md::MachineModel::Machinedrum
+					|| !device->isValid())
+					return;
+				if(device->isProjectStateRestorePending())
+				{
+					state = State::Waiting;
+					return;
+				}
+				auto& hardware = device->getHardware();
+				if(!hardware.isFactoryFlashInitializationExpected())
+					return;
+				state = hardware.isFactoryFlashReadyForReboot()
+					? State::Ready : State::Waiting;
+				if(state != State::Ready)
+					return;
 
-			liveDevice = device;
-			liveEpoch = device->hardwareEpoch();
-			preparationContext = device->getPreparationContext();
-			if(hardware.isFactoryFlashCacheReady())
-				(void)device->captureFactoryFlashCachePersistence(cacheFilename,
-					factoryFlash, cacheError);
-			if(!device->getState(originalState, synthLib::StateTypeGlobal))
-				state = State::Waiting;
-		});
+				liveDevice = device;
+				liveEpoch = device->hardwareEpoch();
+				preparationContext = device->getPreparationContext();
+				if(hardware.isFactoryFlashCacheReady())
+					(void)device->captureFactoryFlashCachePersistence(cacheFilename,
+						factoryFlash, cacheError);
+			});
+		}
+		// The machine's state taken a part per hold (DESIGN-audio-lock.md step 1), encoded after the lock, with the
+		// mark and the patch RAM of the moment it was complete: the commit checks against those
+		std::unique_ptr<md::DeviceStateCapture> capture;
+		md::Device::StateMark mark;
+		if(state == State::Ready && !captureLiveState(getPlugin(), liveDevice, liveEpoch, capture, mark))
+			state = State::Waiting;
+		if(capture && state == State::Ready && !capture->encode(originalState))
+			state = State::Waiting;
 
 		if(state == State::NotNeeded)
 		{
@@ -725,9 +782,8 @@ namespace mdJucePlugin
 				if(device != liveDevice || !device
 					|| device->hardwareEpoch() != liveEpoch)
 					return false;
-				std::vector<uint8_t> currentState;
-				if(!device->getState(currentState, synthLib::StateTypeGlobal)
-					|| currentState != originalState)
+				// unchanged since the capture: the same marks and patch RAM give the same state (no getState here)
+				if(device->stateMark() != mark || !device->getHardware().patchRamEquals(capture->patchRam))
 					return false;
 				return device->commitPreparedState(*prepared);
 			});
@@ -757,6 +813,9 @@ namespace mdJucePlugin
 		uint64_t liveEpoch = 0;
 		uint64_t generation = 0;
 		std::unique_ptr<md::Device::PreparedState> validated;
+		// the timer's poll reads the facts; the lock only when a candidate is there to take (DESIGN-audio-lock.md step 2)
+		if(!machineFacts().deferredFinished)
+			return false;
 		getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
 		{
 			auto* const device = dynamic_cast<md::Device*>(_device);
@@ -831,6 +890,11 @@ namespace mdJucePlugin
 	{
 		uint64_t generation = 0;
 		std::string error;
+		// the facts first: the lock (for the error's text) only for a failure not reported yet
+		const auto facts = machineFacts();
+		if(facts.restoreStatus != static_cast<uint8_t>(md::Device::ProjectStateRestoreStatus::Failed)
+			|| facts.restoreGeneration == m_reportedRestoreFailureGeneration)
+			return false;
 		getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
 		{
 			auto* const device = dynamic_cast<md::Device*>(_device);
@@ -860,6 +924,9 @@ namespace mdJucePlugin
 
 	std::string AudioPluginAudioProcessor::getProjectStateRestoreError()
 	{
+		// the error is there only while the restore failed (md::Device::failProjectStateRestore)
+		if(machineFacts().restoreStatus != static_cast<uint8_t>(md::Device::ProjectStateRestoreStatus::Failed))
+			return {};
 		return getPlugin().withDeviceLocked([](synthLib::Device* const _device)
 		{
 			auto* const device = dynamic_cast<md::Device*>(_device);
@@ -901,18 +968,30 @@ namespace mdJucePlugin
 		uint32_t pixels = 0;
 		uint32_t panelBytes = 0;
 		uint32_t tileWrites = 0;
-		getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
+		// the facts and the panel the device publishes, without the device lock (DESIGN-audio-lock.md step 2); the
+		// panel's handle is looked up again only for another device
+		const auto facts = machineFacts();
+		if(facts.kind == MachineFacts::Kind::Machine)
 		{
-			auto* const device = dynamic_cast<md::Device*>(_device);
-			if(!device)
-				return;
-			const auto panel = device->getHardware().getFrontPanelSnapshot();
-			cycles = device->getHardware().hostCurrentCycle();
-			epoch = device->hardwareEpoch();
-			pixels = panel.countLitPixels();
-			panelBytes = panel.getByteCount();
-			tileWrites = panel.getTileWriteCount();
-		});
+			if(facts.deviceId != m_startupPanelDevice)
+			{
+				m_startupPanelDevice = facts.deviceId;
+				m_startupPanel = getPlugin().withDeviceLocked([](synthLib::Device* const _device)
+				{
+					auto* const device = dynamic_cast<md::Device*>(_device);
+					return device ? device->getFrontPanelPublisher() : nullptr;
+				});
+			}
+			cycles = facts.cycles;
+			epoch = facts.hardwareEpoch;
+			if(m_startupPanel)
+			{
+				const auto panel = m_startupPanel->read();
+				pixels = panel.countLitPixels();
+				panelBytes = panel.getByteCount();
+				tileWrites = panel.getTileWriteCount();
+			}
+		}
 
 		juce::String line;
 		line << "ms=" << static_cast<int64_t>(elapsed)
@@ -988,21 +1067,18 @@ namespace mdJucePlugin
 		s.blocks = m_boot.counters.blocks.load(std::memory_order_relaxed);
 		s.bypassed = m_boot.counters.bypassed.load(std::memory_order_relaxed);
 		s.nonRealtime = m_boot.counters.nonRealtime.load(std::memory_order_relaxed);
-		getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
+		// the facts the audio thread published (DESIGN-audio-lock.md step 2): no device lock once a second
+		if(const auto f = machineFacts(); f.kind == MachineFacts::Kind::Machine && f.valid)
 		{
-			auto* const device = dynamic_cast<md::Device*>(_device);
-			if(!device || !device->isValid())
-				return;
-			auto& hw = device->getHardware();
-			s.cycles = hw.hostCurrentCycle();
-			s.dspBooted = (hw.getDspMixer().booted() ? 1 : 0) + (hw.getDspProducer().booted() ? 1 : 0);
-			s.firmwareMidiReady = hw.isFirmwareMidiReady();
+			s.cycles = f.cycles;
+			s.dspBooted = f.dspBooted;
+			s.firmwareMidiReady = f.firmwareMidiReady;
 			s.machine = true;
-			s.speedUps = device->speedUps();
-			s.leversOff = device->speedUpLeversOff();
-			s.exactEssi = device->exactEssiTiming();
-			s.stalled = hw.schedulerStalled();
-		});
+			s.speedUps = f.speedUps;
+			s.leversOff = f.speedUpLeversOff;
+			s.exactEssi = f.exactEssi;
+			s.stalled = f.stalled;
+		}
 		// the scheduler's watchdog (mdschedwatchdog.h) muted the machine: said once, here on the message thread
 		if(s.stalled && !m_stallLogged)
 			std::fprintf(stderr, "[md] the machine stopped moving (the scheduler's step budget ran out) and is muted until "
@@ -1103,16 +1179,13 @@ namespace mdJucePlugin
 	{
 		bool known = false, on = true, essi = false;
 		uint32_t off = 0;
-		getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
+		if(const auto f = machineFacts(); f.kind == MachineFacts::Kind::Machine)
 		{
-			if(const auto* device = dynamic_cast<const md::Device*>(_device))
-			{
-				known = true;
-				on = device->speedUps();
-				off = device->speedUpLeversOff();
-				essi = device->exactEssiTiming();
-			}
-		});
+			known = true;
+			on = f.speedUps;
+			off = f.speedUpLeversOff;
+			essi = f.exactEssi;
+		}
 		std::string levers;
 		for(const auto& l : md::speedUpLevers())
 			if(off & md::bit(l.lever))
@@ -1139,11 +1212,8 @@ namespace mdJucePlugin
 
 	bool AudioPluginAudioProcessor::isExactEssiTiming()
 	{
-		return getPlugin().withDeviceLocked([](synthLib::Device* const _device)
-		{
-			const auto* const device = dynamic_cast<const md::Device*>(_device);
-			return device && device->exactEssiTiming();
-		});
+		const auto f = machineFacts();
+		return f.kind == MachineFacts::Kind::Machine && f.exactEssi;
 	}
 
 	void AudioPluginAudioProcessor::setSpeedUpLeversOff(const uint32_t _off)
@@ -1170,31 +1240,22 @@ namespace mdJucePlugin
 
 	uint32_t AudioPluginAudioProcessor::getSpeedUpLeversOff()
 	{
-		return getPlugin().withDeviceLocked([](synthLib::Device* const _device) -> uint32_t
-		{
-			const auto* const device = dynamic_cast<const md::Device*>(_device);
-			return device ? device->speedUpLeversOff() : 0u;
-		});
+		const auto f = machineFacts();
+		return f.kind == MachineFacts::Kind::Machine ? f.speedUpLeversOff : 0u;
 	}
 
 	bool AudioPluginAudioProcessor::isLegacyEmulation()
 	{
-		return getPlugin().withDeviceLocked([](synthLib::Device* const _device)
-		{
-			const auto* const device = dynamic_cast<const md::Device*>(_device);
-			return device && !device->speedUps();
-		});
+		const auto f = machineFacts();
+		return f.kind == MachineFacts::Kind::Machine && !f.speedUps;
 	}
 
 	bool AudioPluginAudioProcessor::isRamRecordingModeAvailable()
 	{
 		if(m_model != md::MachineModel::Machinedrum)
 			return false;
-		return getPlugin().withDeviceLocked([](synthLib::Device* const _device)
-		{
-			const auto* const device = dynamic_cast<const md::Device*>(_device);
-			return device && device->supportsRamRecordingMode();
-		});
+		const auto f = machineFacts();
+		return f.kind == MachineFacts::Kind::Machine && f.ramRecordingAvailable;
 	}
 
 	void AudioPluginAudioProcessor::setKeepMachineMemory(const bool _keep)
@@ -1214,5 +1275,20 @@ namespace mdJucePlugin
 		// The translator reads and swaps its mappings on the audio, MIDI-input and message threads without
 		// synchronisation (doc/midilearn/THREADING.md); it is made only once that is redesigned and mapping is on.
 		return deskHost::midiMappingEnabled;
+	}
+
+	bool AudioPluginAudioProcessor::sendDeskCommands(const std::vector<synthLib::DeviceCommand>& _commands, const size_t _panelPackets)
+	{
+		const auto f = machineFacts();
+		if(!f.desk || !f.valid || _commands.empty())
+			return false;
+		if(_panelPackets)
+		{
+			// pending counts the held last packet as one more; it is sent already
+			const size_t queued = f.panelPending ? f.panelPending - 1 : 0;
+			if(_panelPackets > md::DeskDevice::PanelSequenceCapacity - std::min(queued, md::DeskDevice::PanelSequenceCapacity))
+				return false;
+		}
+		return getPlugin().sendCommands(_commands.data(), _commands.size());
 	}
 }

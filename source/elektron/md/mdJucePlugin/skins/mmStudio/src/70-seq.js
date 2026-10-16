@@ -24,7 +24,7 @@ function pageKeys(){return`<span class="pagectl rh"><button class="pgkey" id="pg
 function lockPicker(t){const midi=isMidiT(t),list=pagesOf(t),d=dockOf(t);if(!list.includes(S.lanePage))S.lanePage=list[0];
  return`<div class="railparams ${d==="locks"?"":"dockrail"}"><div class="rphead"><span class="cap">${DOCKN[d]}</span><button id="lockLane" class="iconkey" aria-label="Lock the current value on the selected steps" title="Lock ${pidLabel(t,S.lane)} at its current value on the selected steps (the machine: hold the trig, click the knob)"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M4 6.5V4.5a3 3 0 0 1 6 0v2M3 6.5h8v6H3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></button><button id="clearLane" class="iconkey" aria-label="Clear these locks" title="Clear ${pidLabel(t,S.lane)} locks"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 4h10M5.5 4V2.5h3V4M3.5 4l.7 8h5.6l.7-8M6 6.5v3.5M8 6.5v3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
   <div class="lpspace"></div><div class="pagetabs" role="group" aria-label="DATA page">${midi?`<button data-lpage="MID" aria-pressed="true" style="grid-column:1/-1"><i class="led"></i>MIDI PAGE</button>`:PAGES.map(p=>{const n=trackLockPids(t).filter(x=>x.startsWith(p+".")).length;return`<button data-lpage="${p}" aria-pressed="${S.lanePage===p}" aria-label="${PAGEN[p]}${n?", "+n+" locked":""}"><i class="led ${n&&S.lanePage!==p?"g on":""}"></i>${p}</button>`}).join("")}</div>
-  <div class="pkcol">${pnames(t,S.lanePage).map((nm,i)=>{if(!nm)return`<span class="pk empty"></span>`;const pid=S.lanePage+"."+i,n=S.locks.get(lkKey(t,pid))?.size||0;return`<button class="pk ${n?"has":""}" data-lane="${pid}" aria-pressed="${pid===S.lane}" title="${n?n+" locked step"+(n>1?"s":""):"No locks yet"}"><span class="pkn">${nm}</span>${n?`<i>${n}</i>`:""}</button>`}).join("")}${Array.from({length:8-pnames(t,S.lanePage).length},()=>`<span class="pk empty"></span>`).join("")}</div>${d==="locks"?"":`<div class="dockkeys" id="dockkeys">${dockKeys(t,d)}</div>`}</div>`}
+  <div class="pkcol">${pnames(t,S.lanePage).map((nm,i)=>{if(!nm)return`<span class="pk empty"></span>`;const pid=S.lanePage+"."+i,lm=S.locks.get(lkKey(t,pid)),n=lm?.size||0,gh=lm?[...lm.keys()].filter(x=>{const q=trk(t).steps[x];return !q||q.off}).length:0;return`<button class="pk ${n?"has":""}" data-lane="${pid}" aria-pressed="${pid===S.lane}" title="${n?n+" locked step"+(n>1?"s":"")+(gh?` (${gh} on steps without a trig)`:""):"No locks yet"}"><span class="pkn">${nm}</span>${n?`<i>${n}</i>`:""}</button>`}).join("")}${Array.from({length:8-pnames(t,S.lanePage).length},()=>`<span class="pk empty"></span>`).join("")}</div>${d==="locks"?"":`<div class="dockkeys" id="dockkeys">${dockKeys(t,d)}</div>`}</div>`}
 /* B-120: a solo silences every other track, also those of the side the rail does not show; each side's key says when
    a solo holds on its tracks (S), so the M keys on the other side are not taken for dead */
 function sideSw(){const so=ts=>ts.some(x=>x.solo),sign=on=>on?`<b class="sosign" aria-label="a solo holds here">S</b>`:"",tip=on=>on?". S: a solo holds on one of them, so every other track is silent":"";
@@ -33,7 +33,7 @@ function renderRail(){const r=$("#rail"),withSide=S.ws==="seq"||S.ws==="sound";
  const anyMs=[...S.tracks,...S.midi].some(x=>x.mute||x.solo);
  r.innerHTML=`<div class="railhead">Track<button class="iconkey allon" id="allon" ${anyMs?"":"disabled"} title="Unmute and unsolo every track (0)">M/S off</button></div>`+side().map(th).join("")+(withSide?`<div style="margin-top:4px">${sideSw()}</div>`:"")+(S.ws==="seq"?lockPicker(S.sel):"");altLabels()}
 function rowStatus(t){const tr=trk(t),arp=tr.arp.MODE>0,trn=tr.tr.TRACK-64;return[arp?"ARP":"",t<6&&tr.tr.SCALE?["","FIX","MAJ","MIN"][tr.tr.SCALE]:(trn?(trn>0?"+":"")+trn:"")].filter(Boolean).join(" ")}
-const ROLL_TIP=t=>`${tLabel(t)} notes. Click an empty place: a note of ${MmRoll.say(S.rollLen)} (drag sideways paints) · drag a note's end: its length (new notes get it too; a ${isMidiT(t)?"MIDI note's LEN, 6 a step":"NOTE OFF where it ends"}) · drag a note: up or down its pitch, sideways to move it · shift-click adds a chord note · alt-click deletes a note (the one before keeps its length), or sets a NOTE OFF on an empty step · ⌘-click or ⌘-drag selects steps · right-click: the step menu · scroll = pitch${isMidiT(t)?"":" · the keys on the left play the note"}${(()=>{const a=trk(t).arp;return a.MODE&&a.SPD?` · light notes: what the arpeggiator plays${a.PLAY===4?" (random order: outlined, the pitches vary)":""}`:""})()}`;
+const ROLL_TIP=t=>`${tLabel(t)} notes. Click an empty place: a note of ${MmRoll.say(S.rollLen)} (drag sideways paints) · drag a note's end: its length (new notes get it too; a ${isMidiT(t)?"MIDI note's LEN, 6 a step":"NOTE OFF where it ends"}) · drag a note: up or down its pitch, sideways to move it · shift-click adds a chord note · alt-click deletes a note (the earlier note runs on to the next trig or NOTE OFF), or sets a NOTE OFF on an empty step · ⌘-click or ⌘-drag selects steps · right-click: the step menu · scroll = pitch${isMidiT(t)?"":" · the keys on the left play the note"}${(()=>{const a=trk(t).arp;return a.MODE&&a.SPD?` · light notes: what the arpeggiator plays${a.PLAY===4?" (random order: outlined, the pitches vary)":""}`:""})()}`;
 /* ===== Values while live recording (as the MD Editor's): the firmware locks the step that plays when a value arrives (CC; a
    step without a trig gets a trigless lock); the plug-in names it (machine.desk.recLock: track, page.value, step) and
    the trig row's cell and the lock lane's bar show it until the read-back brings the real lock. ===== */
@@ -82,19 +82,29 @@ function fitLane(){const g=$("#seq"),sc=$("#seqscroll");if(!g)return;$$("#seq ca
    One barHTML for render and drag. Heights are fractions of the key's inner meter (key height minus 14 px). */
 const IN="(100% - 14px)";
 function laneMeta(){const t=S.sel,[pg,i]=S.lane.split(".");const m=meta(t,pg,+i);return{m,mx:maxOf(m),bip:!!m.signed}}
-function barHTML(v){const{mx,bip}=laneMeta(),f=v/mx;if(bip)return f>=.5?`<i class="bp up" style="bottom:calc(6px + ${IN}*.5);height:calc(${IN}*${(f-.5).toFixed(4)})"></i>`:`<i class="bp dn" style="top:calc(8px + ${IN}*.5);height:calc(${IN}*${(.5-f).toFixed(4)})"></i>`;
- return`<i style="bottom:6px;height:calc(${IN}*${f.toFixed(4)})"></i>`}
+function barHTML(v){const{mx,bip}=laneMeta(),f=v/mx;if(bip)return f>=.5?`<i class="bp up" style="bottom:calc(6px + ${IN}*.5);height:max(2px,calc(${IN}*${(f-.5).toFixed(4)}))"></i>`:`<i class="bp dn" style="top:calc(8px + ${IN}*.5);height:max(2px,calc(${IN}*${(.5-f).toFixed(4)}))"></i>`;
+ return`<i style="bottom:6px;height:max(2px,calc(${IN}*${f.toFixed(4)}))"></i>`}
 function baseHTML(v,mx){return`<div class="base" style="bottom:calc(6px + ${IN}*${(v/mx).toFixed(4)})"></div>`}
+/* I-035: a lock's value as a number at its bar's end (on hover and on a selected step), and the kit value on the kit
+   line at the lane's right end, both as the knob shows it (fmt: a table's or list's name, a signed value as -64..+63).
+   A bar's end is at 6px + IN*f for every kind of bar; the number sits above it, below it near the top or at the down
+   end of a bipolar bar (the page's line: the kit line's grab, laneKitHit) */
+function valueHTML(m,v,mx){const f=v/mx,below=m.signed?f<.5&&f>.05:f>.8;return`<span class="vl" style="bottom:calc(6px + ${IN}*${f.toFixed(4)} ${below?"- 13px":"+ 1px"})">${fmt(m,v)}</span>`}
+function kitLabelAt(base,mx){const f=base/mx;return`calc(6px + ${IN}*${f.toFixed(4)} ${f>.85?"- 15px":"+ 3px"})`}
+function kitLabelCls(base,mx){return base/mx>.85?"kvl fl":"kvl"}
+function kitLabelHTML(m,base,mx){return`<span class="${kitLabelCls(base,mx)}" style="bottom:${kitLabelAt(base,mx)}">${fmt(m,base)}</span>`}
 function renderLane(){const lane=$("#lane");if(!lane)return;const t=S.sel,tr=trk(t),pid=S.lane,[pg,i]=pid.split("."),m=meta(t,pg,+i),mx=maxOf(m),lm=S.locks.get(lkKey(t,pid)),base=getP(t,pid);
  const sc=$("#lanescale");if(sc)sc.textContent=m.tab?`${m.tab[0].t}…${m.tab[m.tab.length-1].t}`:m.en?`${m.en[0]}…${m.en[mx]}`:m.signed?"−64…+63":"0–127";
- lane.innerHTML=`<div class="lbscale"><b>${fmt(m,mx)}</b><span>${fmt(m,base)}<small>kit</small></span><b>${fmt(m,0)}</b></div>`+steps().map(s=>{const st=tr.steps[s],on=st&&!st.off,v=lm?.get(s);
-  return`<div class="lb ${on?"":"none"} ${on?"k-"+(isMidiT(t)?"full":stepKind(st)):""} ${gapC(s)} " data-s="${s}" title="${on?(v!=null?"Locked "+fmt(m,v):"Kit value "+fmt(m,base)):"No trig here: add one (a trigless trig with alt-click keeps the envelopes quiet)"}">${on?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${v!=null?barHTML(v):""}`:""}</div>`}).join("");
+ const last=steps().filter(s=>{const q=tr.steps[s];return q&&!q.off}).pop();
+ lane.innerHTML=`<div class="lbscale"><b>${fmt(m,mx)}</b><b>${fmt(m,0)}</b></div>`+steps().map(s=>{const st=tr.steps[s],on=st&&!st.off,v=lm?.get(s);
+  const ghost=!on&&v!=null;/* a lock on a step without a trig: kept (a machine's backup holds them), the machine ignores it */
+  return`<div class="lb ${on||ghost?"":"none"} ${ghost?"ghost":""} ${on?"k-"+(isMidiT(t)?"full":stepKind(st)):""} ${gapC(s)} ${inSel(t,s)?"vsel":""} " data-s="${s}" title="${on?(v!=null?"Locked "+fmt(m,v):"Kit value "+fmt(m,base))+(isMidiT(t)?"":{full:" · all envelopes",part:" · some envelopes",trigless:" · trigless"}[stepKind(st)]||""):ghost?"Lock on a step without a trig: the machine ignores it ("+fmt(m,v)+"). Alt-click removes it.":"No trig here: add one (a trigless trig with alt-click keeps the envelopes quiet)"}">${on?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${v!=null?barHTML(v)+valueHTML(m,v,mx):""}${s===last?kitLabelHTML(m,base,mx):""}`:ghost?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${barHTML(v)}${valueHTML(m,v,mx)}`:""}</div>`}).join("");
  requestAnimationFrame(drawSlides)}
 function drawSlides(){const svg=$("#lanesvg"),lane=$("#lane");if(!svg||!lane)return;const t=S.sel,tr=trk(t),lm=S.locks.get(lkKey(t,S.lane));svg.innerHTML="";if(!lm)return;
- const[pg,i]=S.lane.split("."),mx=maxOf(meta(t,pg,+i)),box=lane.getBoundingClientRect(),ink=cssv("--ink");let d="";const locked=[...lm.keys()].sort((a,b)=>a-b);
+ const[pg,i]=S.lane.split("."),mx=maxOf(meta(t,pg,+i)),box=lane.getBoundingClientRect(),ink=cssv("--ink");let d="";const real=x=>{const q=tr.steps[x];return !!q&&!q.off},locked=[...lm.keys()].filter(real).sort((a,b)=>a-b);/* a slide runs between locks on steps with a trig: a lock on a step without one is never played, so no line starts or ends there */
  locked.forEach(s=>{if(!tr.slide.has(s))return;const nx=locked.find(x=>x>s);if(nx==null)return;const a=lane.querySelector(`.lb[data-s="${s}"]`),b=lane.querySelector(`.lb[data-s="${nx}"]`);if(!a)return;
   const ra=a.getBoundingClientRect(),y=v=>ra.bottom-box.top-6-v/mx*(ra.height-14),xa=ra.left-box.left+ra.width/2;
-  const xb=b?b.getBoundingClientRect().left-box.left+b.getBoundingClientRect().width/2:box.width;d+=`<path d="M${xa} ${y(lm.get(s))} L${xb} ${y(lm.get(nx))}" fill="none" stroke="${ink}" stroke-width="2.5" stroke-dasharray="6 3"/><circle cx="${xa}" cy="${y(lm.get(s))}" r="4" fill="${ink}"/>`});
+  const xb=b?b.getBoundingClientRect().left-box.left+b.getBoundingClientRect().width/2:box.width;const ya=y(lm.get(s)),yb=y(lm.get(nx)),hl=cssv("--lcd")||"#fff";/* drawn after the lane, so above the bars; a light halo under the ink line reads on a solid bar and on an empty step */const fl=ra.bottom-box.top-6;/* automation ramp: a translucent fill down to the lane floor, a solid line bar top to bar top, a light halo under it; drawn after the lane so it sits above the bars and reads on solid bars, empty and hatched steps. The slide mark itself is the roll's top mark row (rollTopMarks) */d+=`<path d="M${xa} ${ya} L${xb} ${yb} L${xb} ${fl} L${xa} ${fl} Z" fill="${hl}" fill-opacity=".45"/><path d="M${xa} ${ya} L${xb} ${yb} L${xb} ${fl} L${xa} ${fl} Z" fill="${ink}" fill-opacity=".18"/><path d="M${xa} ${ya} L${xb} ${yb}" fill="none" stroke="${hl}" stroke-width="5" stroke-linecap="round"/><path d="M${xa} ${ya} L${xb} ${yb}" fill="none" stroke="${ink}" stroke-width="2" stroke-linecap="round"/><circle cx="${xa}" cy="${ya}" r="4" fill="${ink}" stroke="${hl}" stroke-width="1.5"/><circle cx="${xb}" cy="${yb}" r="3" fill="${ink}" stroke="${hl}" stroke-width="1.5"/>`});
  svg.setAttribute("width",box.width);svg.setAttribute("height",box.height);svg.innerHTML=d}
 function syncScroll(){const a=$("#seqscroll"),b=$("#lanescroll");if(!a||!b)return;a.onscroll=()=>{b.scrollLeft=a.scrollLeft};b.onscroll=()=>{a.scrollLeft=b.scrollLeft}}
 function refreshRow(t){redraw();return;const gate={},am=ampSteps(t);noteSpans(t).forEach(sp=>{for(let k=sp.s;k<sp.e;k++)gate[k]=(k===sp.s?(sp.e-sp.s>1?"gs":"g1"):k===sp.e-1?"ge":"gm")+(k-sp.s>=am?" gd":"")});$$(`.mst[data-t="${t}"]`).forEach(b=>{const s=+b.dataset.s,st=trk(t).steps[s];b.className=stepCls(t,s);b.setAttribute("aria-pressed",!!st);b.title=stepTitle(t,s,st);b.innerHTML=`<span class="nt">${stepText(t,s,st)}</span>${gate[s]?`<span class="gt ${gate[s]}"></span>`:""}`})}
@@ -105,13 +115,27 @@ function clickStep(t,s,e){const tr=trk(t),st=tr.steps[s];
  else{if(st&&!st.off){tr.steps[s]=null;clearStepLocks(t,s)}else tr.steps[s]=note(lastNote(t,s))}
  editStep(t,s);renderTop();if(t!==S.sel){S.sel=t;stepFocus();autoRange(t);render()}else rerenderSeq()}
 let laneDraw=null;
-function laneAt(e){const lane=$("#lane");if(!lane)return;if(laneDraw.ramp){rampAt(e);return}const el=document.elementFromPoint(e.clientX,e.clientY)?.closest(".lb");if(!el||!lane.contains(el))return;
- const s=+el.dataset.s,t=S.sel,st=trk(t).steps[s];if(!st||st.off)return;const[pg,i]=S.lane.split("."),mx=maxOf(meta(t,pg,+i));const r=el.getBoundingClientRect();const v=clamp(Math.round((r.bottom-6-e.clientY)/(r.height-14)*mx),0,mx);
+function laneAt(e){const lane=$("#lane");if(!lane)return;if(laneDraw.kit==="maybe"){if(Math.abs(e.clientY-laneDraw.y0)<=KIT_MOVE)return;laneDraw.kit=true;$("#lane").classList.add("kitdrag");kitAt(e);return}if(laneDraw.kit){kitAt(e);return}if(laneDraw.ramp){rampAt(e);return}const el=document.elementFromPoint(e.clientX,e.clientY)?.closest(".lb");if(!el||!lane.contains(el))return;
+ const s=+el.dataset.s,t=S.sel,st=trk(t).steps[s];if(!st||st.off){if(!(laneDraw.erase&&S.locks.get(lkKey(t,S.lane))?.has(s)))return}const[pg,i]=S.lane.split("."),mx=maxOf(meta(t,pg,+i));const r=el.getBoundingClientRect();const v=clamp(Math.round((r.bottom-6-e.clientY)/(r.height-14)*mx),0,mx);
  if(laneDraw.erase){const m=S.locks.get(lkKey(t,S.lane));if(!m?.has(s))return;m.delete(s);if(!m.size)S.locks.delete(lkKey(t,S.lane));edit("lock",{t,...pidArgs(S.lane),s,v:null})}
  else{if(S.locks.get(lkKey(t,S.lane))?.get(s)===v)return;if(!setLock(t,S.lane,s,v))return;edit("lock",{t,...pidArgs(S.lane),s,v})}
  el.querySelector("i")?.remove();if(!laneDraw.erase)el.insertAdjacentHTML("beforeend",barHTML(v));
  laneDraw.touched=true;renderTop();drawSlides()}
-function endLaneDraw(){if(!laneDraw)return;const d=laneDraw;if(d.ramp){rampSend();laneDraw=null;renderTop();rerenderSeq();return}laneDraw=null;if(d.touched)rerenderSeq()}
+/* I-035: the kit-value line is grabbed (KIT_HIT px each side of it) and dragged: the lane parameter's kit value on the
+   selected track changes, the edit the knob makes (an intent "param"), one undo step for the drag; nothing is locked */
+/* a press near the line is "maybe": moved more than KIT_MOVE px up or down it is the kit drag, released without that it was a click on the lane (endLaneDraw) */
+const KIT_HIT=4,KIT_MOVE=3;
+function kitLineY(r){const{m,mx}=laneMeta(),f=(getP(S.sel,S.lane)??0)/mx;return r.bottom-6-(r.height-14)*f-1}
+function kitHit(e){const lane=$("#lane");if(!lane||!e.target.closest||!lane.contains(e.target))return null;const el=e.target.closest(".lb");if(!el||!el.querySelector(".base"))return null;
+ return pidArgs(S.lane).page>=0&&Math.abs(e.clientY-kitLineY(el.getBoundingClientRect()))<=KIT_HIT?el:null}
+/* a plain press on the line may begin the drag (Alt erases and Shift ramps: those stay the lane's own) */
+function kitGrab(e){if(e.button!==0||e.altKey||e.shiftKey||!kitHit(e))return false;laneDraw={kit:"maybe",y0:e.clientY,down:{clientX:e.clientX,clientY:e.clientY},touched:false};$("#lane").setPointerCapture(e.pointerId);e.preventDefault();return true}
+function kitAt(e){const el=$("#lane .lb");if(!el)return;const t=S.sel,{m,mx}=laneMeta(),r=el.getBoundingClientRect(),[pg,i]=S.lane.split("."),v=clamp(Math.round((r.bottom-6-e.clientY)/(r.height-14)*mx),0,mx);
+ if(trk(t).v[pg][+i]===v)return;trk(t).v[pg][+i]=v;edit("param",{t,...pidArgs(S.lane),v});
+ /* in place: the page's renders wait for the drag */
+ $$("#lane .base").forEach(b=>b.style.bottom=`calc(6px + ${IN}*${(v/mx).toFixed(4)})`);const k=$("#lane .kvl");if(k){k.textContent=fmt(m,v);k.style.bottom=kitLabelAt(v,mx);k.className=kitLabelCls(v,mx)}
+ syncControls();redraw()}
+function endLaneDraw(){if(!laneDraw)return;if(laneDraw.kit==="maybe"){const dn=laneDraw.down;laneDraw={erase:false,touched:false};laneAt(dn)}const d=laneDraw;$("#lane")?.classList.remove("kitdrag");if(d.kit){laneDraw=null;rerenderSeq();return}if(d.ramp){rampSend();laneDraw=null;renderTop();rerenderSeq();return}laneDraw=null;if(d.touched)rerenderSeq()}
 
 /* ===== the note lane: the selected track's trigs by pitch, same columns as the overview ===== */
 const ROWS=24;
@@ -183,8 +207,8 @@ document.addEventListener("pointerout",e=>{const c=e.target.closest?.("canvas.ro
    key; a NOTE OFF where it ends, or a MIDI note's LEN), a drag sideways paints. Off (select): a drag in an empty place
    boxes notes (the selection both editors share, StepSel: the steps from the first note's trig to the last one's end,
    its NOTE OFF too), a press on a note selects it, a drag of the selection moves it (⌘-drag: a copy, 77-select.js),
-   a double-click adds a note. Both: a note's end drags its length (the draw length follows), up or down its pitch,
-   alt-click deletes it (the note before it keeps its length). Prefs per viewer (localStorage); draw by default. */
+   a double-click on a note deletes it (an empty place: the first click draws, the second is ignored). Both: a note's end drags its length (the draw length follows), up or down its pitch,
+   alt-click deletes it (the earlier note runs on to the next trig or NOTE OFF). Prefs per viewer (localStorage); draw by default. */
 S.rollLen=1;
 (()=>{let v=null;try{v=JSON.parse(localStorage.getItem("mmeditor.roll")||"null")}catch(_){}if(v&&typeof v==="object"){if(v.len>=1&&v.len<=64)S.rollLen=Math.round(v.len)}})();
 function rollPrefs(){try{localStorage.setItem("mmeditor.roll",JSON.stringify({len:S.rollLen}))}catch(_){}}
@@ -193,7 +217,7 @@ function syncRollKeys(){const l=$("#rolllen");if(l)l.textContent=MmRoll.say(S.ro
 function setRollLen(L,say){L=clamp(Math.round(L),1,64);if(L!==S.rollLen){S.rollLen=L;rollPrefs();syncRollKeys()}if(say)toast(`New notes: ${MmRoll.say(L)}.`)}
 /* the Len key: the next (shift: the one before) of 1/16 1/8 1/4 1/2 1 bar, from where it is */
 function stepRollLen(back){const Ls=MmRoll.LENGTHS,n=back?[...Ls].reverse().find(x=>x<S.rollLen)??Ls[Ls.length-1]:Ls.find(x=>x>S.rollLen)??Ls[0];setRollLen(n,true)}
-Keys.bind({id:"roll-length",scope:"seq",area:"Roll",keys:["drag a note's end"],group:"Sequence",does:"The note's length (a NOTE OFF where it ends; a MIDI note's LEN, 6 a step); new notes get it too. Up to the track's next trig, past the pattern's end onto its start"});
+Keys.bind({id:"roll-length",scope:"seq",area:"Roll",keys:["drag a note's end"],group:"Pattern",does:"The note's length (a NOTE OFF where it ends; a MIDI note's LEN, 6 a step); new notes get it too. Up to the track's next trig, past the pattern's end onto its start"});
 const midiOf=t=>isMidiT(t)?{kitLen:trk(t).v.MID[0]}:null;
 /* changes ([step, value]) into the view; the steps changed */
 function rollPut(t,changes){const tr=trk(t);for(const[k,v] of changes){tr.steps[k]=v;if(!v||v.off){tr.slide.delete(k);clearStepLocks(t,k)}}return changes.map(([k])=>k)}
@@ -202,24 +226,34 @@ function rollPut(t,changes){const tr=trk(t);for(const[k,v] of changes){tr.steps[
 function rollLen(t,s,L){const r=MmRoll.setLen(trk(t).steps,S.len,s,L,midiOf(t)),off=(r.steps.find(([,v])=>v&&v.off)||[-1])[0],touched=rollPut(t,r.steps);let lock=false;
  if(isMidiT(t)){const key=lkKey(t,"MID.0"),m=S.locks.get(key),had=m?.get(s);if(r.len==null){if(had!=null){m.delete(s);if(!m.size)S.locks.delete(key);lock=true}}else if(had!==r.len&&setLock(t,"MID.0",s,r.len))lock=true}
  return{touched,lock,L:r.L,off}}
-/* a note removed as a person means it: the note before it keeps its length (MmRoll.remove) */
-function rollRemove(t,s){return rollPut(t,MmRoll.remove(trk(t).steps,S.len,s,isMidiT(t)?k=>midiLenOf(t,k):null))}
+/* a note removed as a person means it (Alt-click, the erase drag, a double-click): the machine's way (MmRoll.remove, I-037): no NOTE OFF is written, the earlier note runs on to the next trig or NOTE OFF */
+function rollRemove(t,s){return rollPut(t,MmRoll.remove(trk(t).steps,S.len,s))}
+/* the note under the pointer deleted (one chord note of several: just that pitch); the steps changed */
+/* the step the last press drew a note on, and when: the second click of a double-click on an empty cell must not delete what the first drew */
+let rollDrawn=null;
+const DBL_MS=400;
+function rollDelNote(t,h){const st=trk(t).steps[h.s];if(h.k>0||(st.n&&st.n.length>1)){st.n.splice(h.k,1);return[h.s]}return rollRemove(t,h.s)}
+/* I-036: a double-click on a note deletes it (the first click selected it; one undo step) */
+document.addEventListener("dblclick",e=>{const c=e.target.closest?.("canvas.roll[data-big]");if(!c||S.ws!=="seq"||+c.dataset.t!==S.sel||e.altKey||e.metaKey||e.ctrlKey||e.shiftKey)return;
+ const G=laneGeom(c);if(onKeys(c,G,e))return;const h=laneHit(c,e);if(!h||h.k<0||h.edge||!trk(S.sel).steps[h.s])return;
+ if(rollDrawn&&rollDrawn.t===S.sel&&rollDrawn.s===h.s&&Date.now()-rollDrawn.at<DBL_MS)return;
+ const t=S.sel,touched=rollDelNote(t,h);S.stepSel=null;editSpan(t,new Set(touched),true);renderTop();rerenderSeq();syncSel();toast(`Deleted the note on ${tLabel(t)} step ${h.s+1} (⌘Z brings it back).`)});
 /* a new note on step s at pitch n that lasts the draw length */
 function rollAdd(t,s,n){trk(t).steps[s]=note(n);const r=rollLen(t,s,S.rollLen);return{touched:new Set([s,...r.touched]),lock:r.lock,off:r.off}}
 function rollDown(c,e){if(e.button!==0)return;const t=+c.dataset.t;if(t!==S.sel){select(t);return}
  {const G=laneGeom(c);if(e.button===0&&onKeys(c,G,e)){const n=rollRow(c,G,e);if(n==null)return;if(isMidiT(t)){kbTell("midi","The keys play the synth tracks: a MIDI track's notes go to the MIDI OUT only.");return}rollDrag={mode:"key",t,c};rollKey(t,n);drawEd(c);return}}
  const h=laneHit(c,e);if(!h)return;const tr=trk(t);
  if(e.metaKey||e.ctrlKey)return;	/* ⌘ selects (77-select.js), Ctrl on a Mac is the step menu's; the fill is in the step menu (K7) */
- if(h.k>=0&&e.altKey){const st=tr.steps[h.s];let touched;if(h.k>0||(st.n&&st.n.length>1)){st.n.splice(h.k,1);touched=[h.s]}else touched=rollRemove(t,h.s);rollDrag={mode:"erase",s:h.s,c,last:h.s,touched:new Set(touched)};redraw();return}
+ if(h.k>=0&&e.altKey){const st=tr.steps[h.s];let touched;touched=rollDelNote(t,h);rollDrag={mode:"erase",s:h.s,c,last:h.s,touched:new Set(touched)};redraw();return}
  if(h.k<0&&e.altKey){const st=tr.steps[h.cell];if(!st||st.off){tr.steps[h.cell]=st?.off?null:{off:1};editStep(t,h.cell);rerenderSeq()}return}
  if(h.k>=0&&h.edge){rollDrag={mode:"len",s:h.s,c,wrap:!!h.wrap,touched:new Set([h.s]),lock:false,L:null};return}
  if(h.k>=0){rollSelectDown(c,e,h);return}	/* a note: its end lengthens it (above), its body moves it, across the steps or its pitch up or down; an empty place draws */
  const st=tr.steps[h.cell];
- if(!st||st.off){const a=rollAdd(t,h.cell,h.n);rollDrag={mode:"pitch",s:h.cell,k:0,c,moved:true,paint:true,touched:a.touched,lock:a.lock,paintOff:a.off}}
+ if(!st||st.off){rollDrawn={t,s:h.cell,at:Date.now()};const a=rollAdd(t,h.cell,h.n);rollDrag={mode:"pitch",s:h.cell,k:0,c,moved:true,paint:true,touched:a.touched,lock:a.lock,paintOff:a.off}}
  else if(e.shiftKey){if(!st.n)st.n=[h.n];else if(!st.n.includes(h.n))st.n.push(h.n);rollDrag={mode:"pitch",s:h.cell,k:st.n.length-1,c,moved:true}}
  else{if(!st.n)st.n=[h.n];else st.n[0]=h.n;rollDrag={mode:"pitch",s:h.cell,k:0,c,moved:true}}
  redraw()}
-/* select mode: a press in an empty place starts a box (a double-click adds a note); on a note it selects the note (shift:
+/* select mode: a press in an empty place starts a box; on a note it selects the note (shift:
    the selection grows to it), and what the drag does next decides: across the steps it moves the selection, up or
    down the note's pitch */
 function rollSelectDown(c,e,h){const t=S.sel,tr=trk(t);
@@ -247,7 +281,7 @@ function rollMove(c,e){const t=+c.dataset.t;if(!rollDrag){if(t!==S.sel){c.style.
 /* Paint (the Machinedrum Editor's drag across steps, MM-PORT-PLAN.md 2026-10-05): a new note dragged sideways out of its
    column paints a note at its pitch on every empty step the pointer crosses, the last one lasting the draw length
    (the NOTE OFF the drag put down moves with it); Alt-press on a note deletes it, and the drag goes on deleting every
-   note it crosses (its slide and locks; the note before keeps its length). The steps: mmPaint (52-gen.js) and
+   note it crosses (its slide and locks; the earlier note runs on to the next trig or NOTE OFF). The steps: mmPaint (52-gen.js) and
    MmRoll. Nothing is sent before the release (an intent shows the view again, which would draw the roll anew under
    the pointer): then one steps intent (editSpan), one undo step. The columns between two moves count too. */
 function rollPaintMove(c,e){const d=rollDrag;if(d.mode==="pitch"&&!d.paint)return false;if(d.mode!=="pitch"&&d.mode!=="paint"&&d.mode!=="erase")return false;
@@ -264,9 +298,9 @@ function rollPaintMove(c,e){const d=rollDrag;if(d.mode==="pitch"&&!d.paint)retur
 function editSpan(t,touched,locks){const ss=[...touched];if(!ss.length)return;const a=Math.min(...ss),b=Math.max(...ss)+1;edit("steps",{from:a,to:b,rows:[rangeRow(t,a,b,locks)]})}
 /* the drag's edit, when it ends: the dragged step's notes, or its length (a synth track's NOTE OFFs, a MIDI track's
    LEN lock), or the steps a paint or an erase touched, or the box's selection, or the selection moved */
-function rollUp(){const d=rollDrag;rollUp0();if(d?.sel&&S.stepSel)clearSel()}
+function rollUp(){rollUp0()}	/* I-036: the note a click selected stays selected (arrows, Delete, double-click act on it) */
 function rollUp0(){const d=rollDrag;rollDrag=null;if(d?.mode==="key"){if(d.n!=null)keyNote(d.t,d.n,0);drawEd(d.c);return}const t=S.sel;
- if(d?.mode==="note")return;	/* a press on a note that went nowhere: nothing changed (rollUp drops the selection the press made) */
+ if(d?.mode==="note")return;	/* a press on a note that went nowhere: nothing changed (the selection the press made stays) */
  if(d?.mode==="move"){syncSel();if(d.ghost)selMoveTo(d.ghost.from);return}
  if(d?.mode==="paint"||d?.mode==="erase"){editSpan(t,d.touched,true);const n=d.mode==="paint"?d.painted.size:d.touched.size;if(n>1)toast(`${d.mode==="paint"?"Painted":"Erased"} ${n} ${d.mode==="paint"?"notes":"steps"} of ${tLabel(t)}${d.mode==="paint"?" with "+noteName(d.n):""} (one undo step).`);renderTop();rerenderSeq();return}
  if(!d?.moved)return;

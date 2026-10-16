@@ -2110,7 +2110,9 @@ namespace
 			}
 		}
 		const ImportTap tap(desk, job);
-		const auto why = job.start(kinds, {}, machineDocs(desk));
+		// SYX_READBACK=0 (I-038): the tick "Read back and compare" off
+		const bool readBack = !(std::getenv("SYX_READBACK") && std::string(std::getenv("SYX_READBACK")) == "0");
+		const auto why = job.start(kinds, {}, machineDocs(desk), false, readBack);
 		check(why.empty(), "the import starts" + (why.empty() ? std::string() : ": " + why));
 		const auto secs = [&] { return double(rig.machine().now()) / g_rate; };
 		using Phase = mdJucePlugin::SyxJob<MdSyxTraits>::Phase;
@@ -2134,8 +2136,12 @@ namespace
 			return !job.running();
 		}, 3600000);
 		const double t1 = secs();
-		std::printf("  import %s: read before %.1f s, sent in %.1f s, read back in %.1f s (emulated time)\n", _hw ? "over HW MIDI" : playing ? "while playing" : "stopped",
-			sendAt - t0, readAt - sendAt, t1 - readAt);
+		if(readAt < 0)	// I-038: no read-back phase
+			std::printf("  import %s: read before %.1f s, sent in %.1f s, not read back (emulated time)\n", _hw ? "over HW MIDI" : playing ? "while playing" : "stopped",
+				sendAt - t0, t1 - sendAt);
+		else
+			std::printf("  import %s: read before %.1f s, sent in %.1f s, read back in %.1f s (emulated time)\n", _hw ? "over HW MIDI" : playing ? "while playing" : "stopped",
+				sendAt - t0, readAt - sendAt, t1 - readAt);
 		if constexpr(std::is_same_v<R, Rig>)
 			if(playing)
 			{
@@ -2147,6 +2153,32 @@ namespace
 			return;
 		std::printf("  report: %s\n", last->find("text")->asString().c_str());
 		const auto& report = *last->find("report");
+		if(!readBack)
+		{
+			// I-038: Send, then done: nothing read back, nothing called imported; Verify only then finds the file on the machine
+			const auto text = last->find("text")->asString();
+			check(!last->find("readBack")->asBool() && !report.find("readBack")->asBool() && report.find("sent")->asNumber() > 0
+				&& text.find("not read back") != std::string::npos && text.find("imported") == std::string::npos, "read-back off: the report says sent, not read back");
+			check(job.outcomes().empty() && readAt < 0, "read-back off: no Reading phase, no outcome");
+			rig.runUntil([&] { return !desk.isBusy(); }, 10000);
+			mdJucePlugin::SyxJob<MdSyxTraits> verify;
+			verify.open(bytes, _file, machineDocs(desk), {st.pattern ? *st.pattern : -1, st.kit ? *st.kit : -1, st.song ? *st.song : -1, st.globalSlot ? *st.globalSlot : -1});
+			const ImportTap vtap(desk, verify);
+			check(verify.start(kinds, {}, machineDocs(desk), true).empty(), "Verify only starts");
+			rig.runUntil([&]
+			{
+				if(desk.lifecycle() == deskCore::Lifecycle::Ready)
+					verify.step(desk.machine(), ms(rig.machine().now()), _hw);
+				rig.run(4);
+				return !verify.running();
+			}, 3600000);
+			std::map<std::string, int> held;
+			for(const auto& [item, o] : verify.outcomes())
+				++held[ed::syxOutcomeName(o)];
+			check(held["taken"] > 0 && held["no reply"] == 0, "the machine holds the file after an import that was not read back (" + std::to_string(held["taken"]) + " of "
+				+ std::to_string(verify.outcomes().size()) + " the same)");
+			return;
+		}
 		int n = 0;
 		for(const auto& i : report.find("items")->asArray())
 			if(n++ < 24)
@@ -3693,11 +3725,12 @@ namespace
 
 	// B-133 (the 0.6 e2e run, 2026-10-13): after any sample went into the machine by SDS (Rename, Load sample, a dropped
 	// file; any ROM slot), live recording looks as it should (RECORD blinks, the pattern plays, the TRIG key reaches the
-	// panel) but the firmware records no TRIG key and no knob lock until the machine starts again. Not fixed: this mode
-	// shows it (FAIL with the sample, PASS without: mdDeskFirmwareTest <rom> recaftersample [nosample]). Measured: no
-	// key (EXIT, PLAY, STOP, RECORD twice, KIT/GLOBAL and out), no pattern or kit load, no longer hold, no wait (30 s) and
-	// no speed-up lever (all off) brings it back; the sample's name alone (0x73) does not cause it. The machine's RAM
-	// (0x250000-0x2b8000) put back as a run without the sample has it does bring it back: the state is in that RAM.
+	// panel) but the firmware records no TRIG key and no knob lock until the machine starts again. Cause (found 2026-10-16
+	// by bisecting the RAM, doc/release/BUGS.md B-133): OS 1.63's RECEIVING SAMPLE screen swaps its screen list and leaves
+	// the head cell 0x28092c at 0x280a6a (one node) instead of 0x2811a2. A firmware bug; the emulator keeps the hardware's
+	// behaviour (Radek, 2026-10-16). This mode DOCUMENTS it: without a sample the TRIG key is recorded, after one it is
+	// NOT (a pass says the emulator still behaves like the firmware; if the sample case ever records, the firmware path
+	// changed: read B-133). Not in the gate list.
 	void recordAfterSample(Rig& _rig, const bool _sample)
 	{
 		auto& m = _rig.machine();
@@ -3736,7 +3769,10 @@ namespace
 		_rig.page(R"({"op":"stop","id":884})");
 		_rig.run(500);
 		std::printf("  track 16 trigs: %zu -> %zu\n", n0, trigs16());
-		check(got, "the TRIG key was recorded");
+		if(_sample)
+			check(!got, "B-133 (OS 1.63 as it is): after a sample by SDS the TRIG key is not recorded");
+		else
+			check(got, "the TRIG key was recorded");
 	}
 
 	// An unsaved kit edit of the kit that plays survives a trig elsewhere (a pattern dump over the current pattern

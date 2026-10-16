@@ -81,12 +81,13 @@ namespace deskHost
 				"converts it and sends it as SDS (sampleLoad messages follow); the file never passes through the page",
 				Action::ChooseSample, Actor::Window),
 			row("syxImport", {{"kinds", ArgType::Array}, {"skip", ArgType::Array, 0, 0, true}, {"placeAt", ArgType::Object, 0, 0, true},
-					{"checkOnly", ArgType::Bool, 0, 0, true}},
+					{"checkOnly", ArgType::Bool, 0, 0, true}, {"readBack", ArgType::Bool, 0, 0, true}},
 				"import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\", the slot "
 				"an item lands in), sent to the machine as they are (the firmware decides what it takes), then read back and reported "
 				"(syxProgress); no undo step. placeAt (SPECIFIC, 0.6): per kind the first slot its items land in, in slot order "
 				"({\"kit\": 4}; the dumps go with that position byte and checksum); checkOnly (VERIFY ONLY): nothing is sent, each item's "
-				"slot is read and compared with the file",
+				"slot is read and compared with the file; readBack (I-038, default true): false ends the import after the messages are sent, "
+				"without reading the slots back, and the report says the items were sent, not read back",
 				Action::SyxImport),
 			row("syxCancel", {}, "stop an import: nothing more is sent, what went is read back and reported", Action::SyxCancel),
 			row("syxPlace", {{"placeAt", ArgType::Object}},

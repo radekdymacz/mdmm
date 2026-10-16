@@ -27,9 +27,14 @@ const scope = new Proxy({}, {
 	set: (t, k, v) => { t[k] = v; return true; } });
 const src = FILES.map(f => fs.readFileSync(path.join(__dirname, f), "utf8").replace(/^"use strict";/, ""))
 	.join("\n;\n");
-const { Keys, piano } = new Function("scope", "with (scope) {\n" + src + "\n;return { Keys, piano: KEYS_PIANO }; }")(scope);
+const { Keys, piano, oct, base, kbOct } = new Function("scope", "with (scope) {\n" + src + "\n;return { Keys, piano: KEYS_PIANO, oct: KEYS_OCT, base: KEYS_BASE, kbOct: KBOCT }; }")(scope);
 const list = Keys.list(), does = b => { try { return typeof b.does === "function" ? String(b.does()) : String(b.does); } catch (_) { return ""; } };
 check(list.length > 40, `the scripts ran to their ends: ${list.length} entries`);
+
+/* ---- I-040: Z / X and the Perform keyboard reach every MIDI note 0-127 ---- */
+const topKey = Math.max(...Object.values(piano));
+check(base + 12 * oct[0] === 0 && base + 12 * oct[1] + topKey >= 127 && base + 12 * (oct[1] - 1) + topKey < 127, `the A key plays from MIDI ${base + 12 * oct[0]} to ${base + 12 * oct[1]}, the top key to ${base + 12 * oct[1] + topKey} (clamped 127): ${oct[1] - oct[0] + 1} octaves`);
+check(12 * (kbOct[0] + 1) === 0 && 12 * (kbOct[1] + 1) + 47 >= 127 && 12 * kbOct[1] + 47 < 127, `the Perform keyboard (four octaves) stops from MIDI ${12 * (kbOct[0] + 1)} to ${12 * (kbOct[1] + 1)}`);
 
 /* ---- the physical key of an entry's key, as the dispatcher matches it (e.key upper-cased, or e.code) ---- */
 const keyId = k => /^[A-Z]$/.test(k) ? "Key" + k : /^[0-9]$/.test(k) ? "Digit" + k : k;
@@ -41,6 +46,8 @@ const run = list.filter(b => b.run), name = b => `${Keys.label(b)} (${b.group})`
 /* ---- rule: no ⇧ chords, ⌘ only for the standard edit keys ---- */
 /* the standard edit keys, and the selection's (K7, as the Machinedrum Editor: ⌘X ⌘D ⌘A, ⇧← ⇧→ extend) */
 const STD_CMD = new Set(["cmd KeyZ", "cmd+shift KeyZ", "cmd KeyY", "cmd KeyC", "cmd KeyV", "cmd KeyX", "cmd KeyD", "cmd KeyA", "shift ArrowLeft", "shift ArrowRight", "shift KeyB",
+	/* I-036 (0.8): one note selected, ⇧↑ ⇧↓ an octave */
+	"shift ArrowUp", "shift ArrowDown",
 	/* wave 2 (DESIGN-machine-menus.md §3, approved 2026-10-11): ⇧Space pauses, ⌘. is panic */
 	"shift Space", "cmd .",
 	/* wave 4: the copy / paste / clear what windows (DESIGN-machine-menus.md §3) */
@@ -53,7 +60,8 @@ check(!badMod.length, "no ⇧ or ⌘ commands but ⇧B (tap tempo), ⌘Z ⌘⇧Z
    ← →: the Song's rows or the selected steps (by workspace); B: tap tempo */
 /* Delete, ⌫: erase while live recording, clear a step while step recording (MM), the selection on Sequence or the row on
    Song otherwise (wave 7; each when() names its state) */
-const EXCLUSIVE = new Set([" Escape", " ArrowLeft", " ArrowRight", " Enter", " KeyB", " Delete", " Backspace"]);
+/* ↑ ↓: one note selected (its pitch, ⇧ an octave) or the track move, by when() (I-036) */
+const EXCLUSIVE = new Set([" Escape", " ArrowUp", " ArrowDown", " ArrowLeft", " ArrowRight", " Enter", " KeyB", " Delete", " Backspace"]);
 const by = new Map();
 for (const b of run) for (const id of ids(b)) for (const m of mods(b)) { const k = m + " " + id; by.set(k, [...(by.get(k) || []), b]); }
 const clash = [...by].filter(([k, bs]) => bs.length > 1 && (bs.some(b => !b.when) || !EXCLUSIVE.has(k)));
@@ -73,7 +81,7 @@ const GONE = [["cmd", "KeyR", "⌘R"], ["shift", "KeyR", "⇧R"], ["shift", "Key
 const still = GONE.filter(([m, id]) => has(m, id));
 /* R randomises: on Sound MUTATE, elsewhere GEN; Alt+R every track (matched on the physical key, e.code) */
 const rKeys = run.filter(b => b.code === "KeyR");
-check(rKeys.length === 2 && rKeys.every(b => /randomise/i.test(does(b))) && rKeys.some(b => b.mod === "alt" && /every/i.test(does(b))), "R and Alt+R randomise (GEN, on Sound MUTATE), on the physical key");
+check(rKeys.length === 2 && rKeys.every(b => /randomise/i.test(does(b))) && rKeys.some(b => b.mod === "alt" && /every/i.test(does(b))), "R and Alt+R randomise (GEN, on Kit MUTATE), on the physical key");
 /* W is a black key now (C♯), not Walk; T is F♯, so tap tempo is B (MM-PORT-PLAN.md 2026-10-05) */
 const walk = run.filter(b => ids(b).includes("KeyW") && /walk/i.test(does(b))), tTap = run.filter(b => ids(b).includes("KeyT") && /tap/i.test(does(b)));
 check(!walk.length && !tTap.length, "W is not Walk and T does not tap (both play notes)" + (walk.length || tTap.length ? ": " + [...walk, ...tTap].map(name).join(", ") : ""));

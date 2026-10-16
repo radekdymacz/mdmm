@@ -830,6 +830,10 @@
               }
             }
           }
+        },
+        "followPlayed": {
+          "type": "boolean",
+          "description": "I-003: the selected track follows the last track played from a MIDI controller; absent: off."
         }
       }
     },
@@ -2556,6 +2560,10 @@
                   }
                 }
               }
+            },
+            "readBack": {
+              "description": "I-038: false when the import was sent without the read-back (the report then says sent, not read back)",
+              "type": "boolean"
             },
             "check": {
               "description": "0.6: VERIFY ONLY (nothing sent; the report counts same, differs, unknown, no reply)",
@@ -6022,6 +6030,30 @@
         },
         {
           "type": "object",
+          "description": "setup: I-003: the selected track follows the last track played from a MIDI controller (kept with the project; the plug-in says it again in the setup document as followPlayed)",
+          "required": ["op", "on"],
+          "properties": {
+            "op": {
+              "const": "followSet"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "on": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "setup: Rename a ROM slot (B-128): the name (0x73), then the slot's own sample again as SDS into the same slot, so the audio stays as it was; refused when the slot's audio cannot be read (a real machine)",
           "required": ["op", "slot", "name"],
           "properties": {
@@ -6344,7 +6376,7 @@
         },
         {
           "type": "object",
-          "description": "host: import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\", the slot an item lands in), sent to the machine as they are (the firmware decides what it takes), then read back and reported (syxProgress); no undo step. placeAt (SPECIFIC, 0.6): per kind the first slot its items land in, in slot order ({\"kit\": 4}; the dumps go with that position byte and checksum); checkOnly (VERIFY ONLY): nothing is sent, each item's slot is read and compared with the file",
+          "description": "host: import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\", the slot an item lands in), sent to the machine as they are (the firmware decides what it takes), then read back and reported (syxProgress); no undo step. placeAt (SPECIFIC, 0.6): per kind the first slot its items land in, in slot order ({\"kit\": 4}; the dumps go with that position byte and checksum); checkOnly (VERIFY ONLY): nothing is sent, each item's slot is read and compared with the file; readBack (I-038, default true): false ends the import after the messages are sent, without reading the slots back, and the report says the items were sent, not read back",
           "required": ["op", "kinds"],
           "properties": {
             "op": {
@@ -6370,6 +6402,9 @@
               "type": "object"
             },
             "checkOnly": {
+              "type": ["boolean", "integer"]
+            },
+            "readBack": {
               "type": ["boolean", "integer"]
             }
           },

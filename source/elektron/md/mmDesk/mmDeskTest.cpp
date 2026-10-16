@@ -1236,6 +1236,27 @@ void modulators()
 	check(list(last("solo"), "tracks") == std::vector<int>{1, 4}, "a page made again gets the solo");
 	msg(R"({"op":"soloSet","id":5,"tracks":[],"mutes":[3]})");
 	check(saved.find("solo") == nullptr, "no solo: the setup says none");
+
+	// I-003: FOLLOW PLAYED TRACK is kept beside the modulators (the 0.x shape: a bare member 0.7 ignores), off by default
+	const auto follow = [&]() { const auto* m = last("follow"); return m && m->find("on")->asBool(); };
+	check(saved.find("followPlayed") == nullptr, "follow: not written while off");
+	msg(R"({"op":"followSet","id":6,"on":true})");
+	check(last("result")->find("ok")->asBool() && saved.find("followPlayed") && saved.find("followPlayed")->asBool() && saved.find("schema")->asString() == "mm-desk/modulators",
+		"followSet on: kept with the project, in the bare shape");
+	const auto followProject = saved;
+	page.clear();
+	check(d.loadSetup(deskCore::modSetupToJson({}, mmDesk::g_mmModLimits)).empty() && !follow(), "a project without it: off, and the page is told");
+	page.clear();
+	check(d.loadSetup(followProject).empty() && follow(), "a project that has it: on, and the page is told");
+	page.clear();
+	msg(R"({"op":"ready"})");
+	check(follow(), "a page made again gets it");
+	check(d.loadSetup(*ed::json::parse(R"({"schema":"mm-desk/setup","version":1,"followPlayed":true})")).empty() && follow(), "the wrapper has it too");
+	check(d.loadSetup(*ed::json::parse(R"({"schema":"mm-desk/modulators","version":1,"sources":[],"links":[],"followPlayed":3})")).size() == 1 && !follow(),
+		"a value that is not a boolean is off, and said");
+	msg(R"({"op":"followSet","id":7,"on":true})");
+	msg(R"({"op":"followSet","id":8,"on":false})");
+	check(saved.find("followPlayed") == nullptr, "followSet off: the setup says nothing");
 }
 
 // P6: the questions, errors, the machine's own screen and a restart, as the page gets them.

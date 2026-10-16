@@ -154,11 +154,7 @@ namespace mdJucePlugin
 
 			uint64_t rxBytes() const
 			{
-				return m_p.getPlugin().withDeviceLocked([](synthLib::Device* _d) -> uint64_t
-				{
-					auto* d = dynamic_cast<md::DeskDevice*>(_d);
-					return d ? d->getHardware().midiRxConsumedCount() : 0;
-				});
+				return m_p.machineFacts().midiRxConsumed;	// no device lock (DESIGN-audio-lock.md step 2)
 			}
 
 			Snap snap() const
