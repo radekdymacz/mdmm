@@ -818,7 +818,8 @@ where it came from, the setup, what happens, what should happen, status.*
 - **What happens:** on the Windows runner `bridgeLibTest` ends with a segmentation fault after 0.01 s, and `mdMachineMidiOutTest`, `mdMachineMidiOutFirmwareTest_md` and `_mm` end with 0xc0000409 (a fail-fast, e.g. an exception through `noexcept` or `abort`). All pass on macOS and Linux. The packaged Windows standalones and VST3s start and close in CI, so the plug-ins themselves are not shown to crash.
 - **For 0.4.0:** the four are built on Windows but left out of its test run (`scripts/windows/build_mdmm.ps1`).
 - **Cause (test-only, the plug-ins are not affected):** `bridgeLibTest` made `bridgeLib::AudioBuffers` on the stack; its sixteen 16384-sample rings are held inline, a megabyte, the whole default stack of a Windows thread (8 MB on macOS and Linux; reproduced on macOS with `ulimit -s 1024`). The client keeps its one inside a heap object. `mdMachineMidiOutTest` began with `setvbuf(stdout, nullptr, _IOLBF, 0)`: the MSVC CRT has no line buffering and takes a size of 0 as an invalid parameter, a fail-fast before anything runs.
-- **Status:** fixed for 0.4.1, waiting on a Windows run: the test makes its buffers on the heap, the MIDI out test's stdout is unbuffered (`_IONBF`), both print each step as it happens, and the four are back in the Windows run. Other tests still use `_IOLBF, 0` (none of them runs on Windows yet): change them before they do.
+- **Fixed in 0.4.1:** the test makes its buffers on the heap, the MIDI out test's stdout is unbuffered (`_IONBF`), both print each step as it happens, and the four are back in the Windows run. 0.8 (WP5, branch `ci/0.8-midi-tests`, 2026-10-16): every remaining `setvbuf(stdout, nullptr, _IOLBF, 0)` in the tests is now `_IONBF`; the Windows run (38968388265) lists `mdMidiInTest`, `midiRoutingMatrixTest`, `synthLibMidiClockTimingTest` and `midiLearnTests`, all passed.
+- **Status:** closed (0.8).
 
 ## B-046 · Monomachine: picking H16 of the Autechre backup leaves the machine on kit 58, not its linked kit 74
 
@@ -837,8 +838,8 @@ where it came from, the setup, what happens, what should happen, status.*
 
 - **From:** the codex review of 2026-10 (the Linux CI rewrite, its second review).
 - **What happens:** `scripts/linux/build_mdmm.sh` runs every unit test but `synthLibMidiClockTimingTest`, a known failure under `-Ofast` (`isfinite` folded away). `midiClock.cpp` and the test are built with `-fno-fast-math` since 2026-10-07 (51183a9fc), so it may pass on Linux now.
-- **To do:** take it out of the script's `exclude` pattern in a CI run; keep it in if it passes, put it back with the reason if it does not.
-- **Status:** open.
+- **Result (0.8, WP5, branch `ci/0.8-midi-tests`, 2026-10-16):** it passes under `-fno-fast-math` on Linux (run 38968383957, 0.04 s), macOS (run 38968392053) and Windows (run 38968388265, MSVC `/fp:precise`). It is out of the Linux `exclude` pattern, in the macOS unit test lists and in the Windows build and test lists.
+- **Status:** closed (0.8).
 
 ## B-043 · M1 users see about twice the CPU of M2 users: most likely Rosetta
 
