@@ -8,20 +8,20 @@ The Monomachine Editor puts the whole instrument on one web page. It runs the re
 The editor runs as a standalone application and as a VST3 or AU plug-in. It has two engines. The emulator runs the firmware on your computer. The HW MIDI engine edits a real Monomachine over MIDI with the same page.
 
 ## HIGHLIGHTS
-<!-- rows: MM-002 MM-003 MM-004 MM-005 MM-006 MM-007 MM-008 MM-009 @f324d3 -->
+<!-- rows: MM-002 MM-003 MM-004 MM-005 MM-006 MM-007 MM-008 MM-009 @dde666 -->
 
 The machine's main features, and where each one is in the editor:
 
-- **Six synth tracks with a sequencer.** The **Sequence** and **Sound** workspaces edit the six tracks of a kit and their patterns.
+- **Six synth tracks with a sequencer.** The **Pattern** and **Kit** workspaces edit the six tracks of a kit and their patterns.
 - **Six MIDI tracks.** The switch in the track rail changes between the synth side and the MIDI side. The MIDI tracks have their own page of settings.
-- **Machines.** Five synthesis families (SuperWave, SID, DigiPRO, FM+ and VO), the basic GND machines and the FX machines. The machine picker on the **Sound** workspace lists them by family.
-- **FX machines.** Through, gate reverb, chorus, dynamics, ring modulator, phaser and flanger process audio from the inputs or from other tracks instead of making sound. Set their input in the **Mix** workspace and their parameters in the **Sound** workspace.
-- **One delay per track.** It is tempo synchronised. Its controls are in the **Effects** groups of the **Sound** workspace.
-- **Three LFOs per track.** They sit at the foot of the **Sound** workspace.
-- **Twelve arpeggiators.** One for each synth track and each MIDI track. They are in the Sequence dock under **Arp**.
+- **Machines.** Five synthesis families (SuperWave, SID, DigiPRO, FM+ and VO), the basic GND machines and the FX machines. The machine picker on the **Kit** workspace lists them by family.
+- **FX machines.** Through, gate reverb, chorus, dynamics, ring modulator, phaser and flanger process audio from the inputs or from other tracks instead of making sound. Set their input in the **Mix** workspace and their parameters in the **Kit** workspace.
+- **One delay per track.** It is tempo synchronised. Its controls are in the **Effects** groups of the **Kit** workspace.
+- **Three LFOs per track.** They sit at the foot of the **Kit** workspace.
+- **Twelve arpeggiators.** One for each synth track and each MIDI track. They are in the Pattern dock under **Arp**.
 - **Real-time control.** Every value box on the page is live. A value you drag reaches the machine as a controller message at once.
 
-![The Sound workspace](shot:mm-sound-workspace)
+![The Kit workspace](shot:mm-sound-workspace)
 
 ![The six MIDI tracks, each with its own roll](shot:mm-midi-roll)
 

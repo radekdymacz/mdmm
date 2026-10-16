@@ -120,7 +120,7 @@ const DeskCompat = (() => {
 		});
 	}
 	/* The stylesheet as WebKit 15 reads it, to see the page as macOS 12 does in a current engine (?compat=safari15,
-	   scripts/mdmm-snap.py --safari15, the Sound rows' journeys): subgrid is no value (the declaration is dropped, an
+	   scripts/mdmm-snap.py --safari15, the Kit rows' journeys): subgrid is no value (the declaration is dropped, an
 	   earlier fallback stays) and a rule with :has() in its selector is dropped whole; with the colour rewrite above. */
 	function safari15(css) {
 		let out = "", pos = 0;

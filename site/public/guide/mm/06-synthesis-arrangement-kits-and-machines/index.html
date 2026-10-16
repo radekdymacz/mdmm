@@ -84,7 +84,7 @@
 <p>Every pattern recalls a kit. When you pick a pattern, the machine loads its kit, unless the kit is already the one that plays.</p>
 <p>The pattern chooser shows, on each pattern, its length and its kit as K and a number. The kit library shows on each kit slot the patterns that link to it. A kit no pattern links to ends its name with a star and reads &quot;no pattern&quot;.</p>
 <p>To see that a kit is not loaded twice:</p>
-<ol class="gd-steps"><li>Pick a pattern. Its kit loads.</li><li>Change a value on the <b class="gd-ui">Sound</b> workspace. The kit reads <b class="gd-ui">edited</b>.</li><li>Pick a second pattern that recalls the same kit. The pattern changes, the kit stays as you edited it and the editor asks nothing.</li></ol>
+<ol class="gd-steps"><li>Pick a pattern. Its kit loads.</li><li>Change a value on the <b class="gd-ui">Kit</b> workspace. The kit reads <b class="gd-ui">edited</b>.</li><li>Pick a second pattern that recalls the same kit. The pattern changes, the kit stays as you edited it and the editor asks nothing.</li></ol>
 <p>If you pick a pattern with a different kit while the current kit has edits that are not saved, the editor asks. It offers <b class="gd-ui">Save kit, then switch</b>, a switch that leaves the edits to the machine's UNDO KIT, and <b class="gd-ui">Cancel</b>.</p>
 <p>Loading a kit from the library makes it the kit of the current pattern. To set the kit of any pattern:</p>
 <ol class="gd-steps"><li>Click the <b class="gd-light">&lt;PATTERN&gt;</b> field in the LCD. The pattern chooser opens.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and click the pattern. It is selected, not loaded.</li><li>Choose a kit in the <b class="gd-ui">Kit</b> list. The pattern now recalls that kit.</li></ol>
@@ -137,7 +137,7 @@
 <section class="gd-sec" id="assigning-a-machine" aria-labelledby="assigning-a-machine-h">
 <div class="gd-body gd-prose"><h2 id="assigning-a-machine-h">ASSIGNING A MACHINE <a class="gd-anchor" href="#assigning-a-machine" aria-label="Link to ASSIGNING A MACHINE">#</a></h2>
 <p class="gd-ref">MM manual p.1-22</p>
-<ol class="gd-steps"><li>Select the track in the rail.</li><li>Go to the <b class="gd-ui">Sound</b> workspace (<kbd class="gd-key">[2]</kbd>).</li><li>Click the machine name at the head of the workspace. The machine picker opens.</li><li>Click a family at the left, then a machine. Move the pointer over a machine to read what it is and what its eight synthesis parameters are called.</li></ol>
+<ol class="gd-steps"><li>Select the track in the rail.</li><li>Go to the <b class="gd-ui">Kit</b> workspace (<kbd class="gd-key">[2]</kbd>).</li><li>Click the machine name at the head of the workspace. The machine picker opens.</li><li>Click a family at the left, then a machine. Move the pointer over a machine to read what it is and what its eight synthesis parameters are called.</li></ol>
 <p>The track now plays the machine, with the machine's start values for the synthesis page.</p>
 <p>The picker has a toggle, <b class="gd-ui">Keep track effects + LFOs</b>. While it is lit, the amp, filter, effects and LFO pages of the track stay as they were. Switch it off to set those pages to their start values too.</p>
 <figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-machine-picker.webp" aria-label="Open the picture full size: The machine picker"><img src="/guide/shots/mm-machine-picker.webp" width="1440" height="924" alt="The machine picker" loading="lazy"></a><figcaption>The machine picker</figcaption></figure>
@@ -146,12 +146,12 @@
 <section class="gd-sec" id="copy-machine" aria-labelledby="copy-machine-h">
 <div class="gd-body gd-prose"><h2 id="copy-machine-h">COPY MACHINE <a class="gd-anchor" href="#copy-machine" aria-label="Link to COPY MACHINE">#</a></h2>
 <p class="gd-ref">MM manual p.1-23</p>
-<ol class="gd-steps"><li>Go to the <b class="gd-ui">Sound</b> workspace and select the track.</li><li>Click <b class="gd-light">&lt;COPY&gt;</b> under the LCD, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>. The machine and all seven DATA pages are copied.</li><li>Select another track and click <b class="gd-light">&lt;PASTE&gt;</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>. The track gets the machine and its settings.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the paste back.</li></ol>
+<ol class="gd-steps"><li>Go to the <b class="gd-ui">Kit</b> workspace and select the track.</li><li>Click <b class="gd-light">&lt;COPY&gt;</b> under the LCD, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>. The machine and all seven DATA pages are copied.</li><li>Select another track and click <b class="gd-light">&lt;PASTE&gt;</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>. The track gets the machine and its settings.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the paste back.</li></ol>
 </div></section>
 <section class="gd-sec" id="clear-machine" aria-labelledby="clear-machine-h">
 <div class="gd-body gd-prose"><h2 id="clear-machine-h">CLEAR MACHINE <a class="gd-anchor" href="#clear-machine" aria-label="Link to CLEAR MACHINE">#</a></h2>
 <p class="gd-ref">MM manual p.1-24</p>
-<p>On the <b class="gd-ui">Sound</b> workspace, click <b class="gd-light">&lt;CLR&gt;</b>. The track plays GND-SIN again, with every page at its start values.</p>
+<p>On the <b class="gd-ui">Kit</b> workspace, click <b class="gd-light">&lt;CLR&gt;</b>. The track plays GND-SIN again, with every page at its start values.</p>
 </div></section>
 <section class="gd-sec" id="setting-the-mix-bus" aria-labelledby="setting-the-mix-bus-h">
 <div class="gd-body gd-prose"><h2 id="setting-the-mix-bus-h">SETTING THE MIX BUS <a class="gd-anchor" href="#setting-the-mix-bus" aria-label="Link to SETTING THE MIX BUS">#</a></h2>
@@ -161,10 +161,10 @@
 <section class="gd-sec" id="parameter-editing" aria-labelledby="parameter-editing-h">
 <div class="gd-body gd-prose"><h2 id="parameter-editing-h">PARAMETER EDITING <a class="gd-anchor" href="#parameter-editing" aria-label="Link to PARAMETER EDITING">#</a></h2>
 <p class="gd-ref">MM manual p.1-25</p>
-<p>A track has seven pages of eight parameters, 56 in all. The <b class="gd-ui">Sound</b> workspace shows them as groups of a few values, with a small picture where the values draw a shape:</p>
+<p>A track has seven pages of eight parameters, 56 in all. The <b class="gd-ui">Kit</b> workspace shows them as groups of a few values, with a small picture where the values draw a shape:</p>
 <ul class="gd-list"><li>the synthesis page, whose groups depend on the machine;</li><li>the amp, filter and effects pages, the same on every machine;</li><li>the three LFOs at the foot.</li></ul>
 <p>Most synth machines have TUNE, a fine tune in semitones, on the synthesis page. The beat box and the FX machines do not.</p>
-<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-sound-workspace.webp" aria-label="Open the picture full size: The Sound workspace"><img src="/guide/shots/mm-sound-workspace.webp" width="1440" height="924" alt="The Sound workspace" loading="lazy"></a><figcaption>The Sound workspace</figcaption></figure>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-sound-workspace.webp" aria-label="Open the picture full size: The Kit workspace"><img src="/guide/shots/mm-sound-workspace.webp" width="1440" height="924" alt="The Kit workspace" loading="lazy"></a><figcaption>The Kit workspace</figcaption></figure>
 <p>Every edit goes to the machine at once, as a controller message, but it is not in the stored kit until you save. The <b class="gd-ui">edited</b> mark in the LCD says so.</p>
 </div></section>
 <nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/05-monomachine-overview/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">5. Monomachine overview</span></a><a href="/guide/mm/07-track-effects/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">7. Track effects</span></a></nav>

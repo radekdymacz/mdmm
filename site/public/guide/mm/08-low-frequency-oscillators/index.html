@@ -65,7 +65,7 @@
 <article class="gd-article">
 <header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">8</span><span class="gd-ctitle">Low frequency oscillators</span></h1><p class="gd-cmeta">MM manual pp.1-35 to 1-37</p></header>
 <div class="gd-intro gd-prose"><p>Each synth track has three LFOs. An LFO moves one parameter of the track, or of the pitch, in a repeating shape. The three LFOs of a track are independent, and an LFO can move a parameter of another LFO.</p>
-<p>The LFOs are the bottom row of the <b class="gd-ui">Sound</b> workspace. Each has its own group, titled <b class="gd-ui">LFO 1</b>, <b class="gd-ui">LFO 2</b> and <b class="gd-ui">LFO 3</b>. A group holds, from the top:</p>
+<p>The LFOs are the bottom row of the <b class="gd-ui">Kit</b> workspace. Each has its own group, titled <b class="gd-ui">LFO 1</b>, <b class="gd-ui">LFO 2</b> and <b class="gd-ui">LFO 3</b>. A group holds, from the top:</p>
 <ul class="gd-list"><li>a picture of the LFO over two bars, with ticks where the LFO is triggered;</li><li>the target: <b class="gd-ui">PAGE</b> and <b class="gd-ui">DEST</b> selects, with the <b class="gd-ui">TRIG</b> keys beside them;</li><li>eleven keys for the shape;</li><li>four value boxes: MULT, SPD, INTL and DPTH.</li></ul>
 <p>The group is marked off while its depth is 0.</p>
 <figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-sound-lfos.webp" aria-label="Open the picture full size: The LFO groups"><img src="/guide/shots/mm-sound-lfos.webp" width="1440" height="924" alt="The LFO groups" loading="lazy"></a><figcaption>The LFO groups</figcaption></figure></div>
@@ -74,7 +74,7 @@
 <p class="gd-ref">MM manual p.1-35</p>
 <p>An LFO needs a target. Its target is a page and a destination on that page.</p>
 <h4 class="gd-h3" id="choose-a-target">Choose a target</h4>
-<ol class="gd-steps"><li>Select the track and go to the <b class="gd-ui">Sound</b> workspace (<kbd class="gd-key">[2]</kbd>).</li><li>In the LFO's group, open the <b class="gd-ui">PAGE</b> select. It lists PTCH, SYN, AMP, FLT, EFX, LF1, LF2, LF3 and MIDI.</li><li>Open the <b class="gd-ui">DEST</b> select and choose the parameter. It lists the parameters of the page. For PTCH it lists eight ranges: 1/12, 2/12, 7/12, 1OCT, 2OCT, 4OCT, 8OCT and 16OCT. For LF1 to LF3 the parameters are those of the other LFOs. For MIDI they are the parameters of the MIDI page.</li><li>Set DPTH, the depth, above 0.</li></ol>
+<ol class="gd-steps"><li>Select the track and go to the <b class="gd-ui">Kit</b> workspace (<kbd class="gd-key">[2]</kbd>).</li><li>In the LFO's group, open the <b class="gd-ui">PAGE</b> select. It lists PTCH, SYN, AMP, FLT, EFX, LF1, LF2, LF3 and MIDI.</li><li>Open the <b class="gd-ui">DEST</b> select and choose the parameter. It lists the parameters of the page. For PTCH it lists eight ranges: 1/12, 2/12, 7/12, 1OCT, 2OCT, 4OCT, 8OCT and 16OCT. For LF1 to LF3 the parameters are those of the other LFOs. For MIDI they are the parameters of the MIDI page.</li><li>Set DPTH, the depth, above 0.</li></ol>
 <p>Changing the page sets the destination back to the first entry.</p>
 <h4 class="gd-h3" id="route-by-dragging">Route by dragging</h4>
 <p>The key marked <b class="gd-ui">~</b> and the LFO's number, at the head of the group, is a handle. Drag it onto any value box on the page. The value boxes that can be a target are marked while you drag. Drop the handle on one. The editor sets PAGE and DEST to that value, and gives the depth a start value of 32 if it was 0. A note names the LFO and the value it now moves.</p>
@@ -119,13 +119,13 @@
 <section class="gd-sec" id="lfo-trigs" aria-labelledby="lfo-trigs-h">
 <div class="gd-body gd-prose"><h2 id="lfo-trigs-h">LFO TRIGS <a class="gd-anchor" href="#lfo-trigs" aria-label="Link to LFO TRIGS">#</a></h2>
 <p class="gd-ref">MM manual p.1-37</p>
-<p>The sequencer triggers the LFOs on its own. A trig with its LFO trig on triggers the LFOs of the track at that step. It matters for the TRIG, HOLD, ONE and HALF keys. In the <b class="gd-ui">Sequence</b> workspace right-click the step and choose <b class="gd-ui">Envelopes</b>, then <b class="gd-ui">LFO</b>, to switch it. A note without its LFO trig shows the letters of the envelopes it does fire.</p>
+<p>The sequencer triggers the LFOs on its own. A trig with its LFO trig on triggers the LFOs of the track at that step. It matters for the TRIG, HOLD, ONE and HALF keys. In the <b class="gd-ui">Pattern</b> workspace right-click the step and choose <b class="gd-ui">Envelopes</b>, then <b class="gd-ui">LFO</b>, to switch it. A note without its LFO trig shows the letters of the envelopes it does fire.</p>
 </div></section>
 <section class="gd-sec" id="shared-lfos" aria-labelledby="shared-lfos-h">
 <div class="gd-body gd-prose"><h2 id="shared-lfos-h">SHARED LFOS <a class="gd-anchor" href="#shared-lfos" aria-label="Link to SHARED LFOS">#</a></h2>
 <p class="gd-ref">MM manual p.1-35</p>
 <p>A MIDI track shares its three LFOs with the synth track of the same number. M1 shares with T1, and so on. An LFO that has PAGE set to MIDI moves the MIDI page.</p>
-<p>On a MIDI track, the <b class="gd-ui">Sound</b> workspace shows the MIDI page, and in the place of the LFO groups a note says which synth track they belong to. Click <b class="gd-ui">Open T1 LFOs</b> (with the number of the track) to go to them.</p>
+<p>On a MIDI track, the <b class="gd-ui">Kit</b> workspace shows the MIDI page, and in the place of the LFO groups a note says which synth track they belong to. Click <b class="gd-ui">Open T1 LFOs</b> (with the number of the track) to go to them.</p>
 </div></section>
 <nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/07-track-effects/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">7. Track effects</span></a><a href="/guide/mm/09-additional-kit-settings/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">9. Additional kit settings</span></a></nav>
 </article>

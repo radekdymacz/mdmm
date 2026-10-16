@@ -8,7 +8,7 @@ The pattern holds locks for 62 parameters. The count is shared by all twelve tra
 ## PARAMETER LOCKS
 <!-- rows: MM-205 MM-206 @767b12 -->
 
-The lock lane is under the piano roll on **Sequence**. Press {key:workspace-1} and select a track.
+The lock lane is under the piano roll on **Pattern**. Press {key:workspace-1} and select a track.
 
 ![The lock lane](shot:mm-lock-lane)
 
@@ -19,7 +19,7 @@ The lane shows one parameter at a time, the one lit in the rail. Each step with 
 A small mark at the top of a bar tells what the trig fires. Red: the trig fires all three envelopes (AMP, FILTER and LFO). Green: it fires only some of them, or none (a trigless trig). The tip of the bar says the same.
 
 ## PARAMETER LOCKS IN GRID RECORDING MODE
-<!-- rows: MM-200 MM-201 MM-202 MM-203 MM-204 @ae7b8d -->
+<!-- rows: MM-200 MM-201 MM-202 MM-203 MM-204 @7fcb0f -->
 
 On the machine you hold a trig and turn a knob. In the editor you draw the value in the lane.
 
@@ -66,7 +66,7 @@ A small ramp over a note marks a step that glides. Set it with **Slide** in the 
 While LIVE RECORDING plays (see chapter 11), turn a value on any page. The machine locks it on the step that plays when the value arrives. A step without a trig gets a trigless lock.
 
 1. Press {key:record} to record live.
-2. Turn a value, for example the filter **BASE** on **Sound**.
+2. Turn a value, for example the filter **BASE** on **Kit**.
 3. The editor marks the step in the trig row and the bar in the lock lane, and says which value it locked and on which step, for example Locks T1 FLT BASE on step 5.
 
 To tidy up, stop recording and draw the values again in the lock lane.

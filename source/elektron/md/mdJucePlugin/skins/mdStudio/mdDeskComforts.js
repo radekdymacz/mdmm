@@ -29,9 +29,9 @@ function secLabels() {
 	const sel = S.ws === "seq" && !!S.stepSel, say = sel ? selSay(S.stepSel) : "";
 	const cp = $('[data-sec="copy"]'), pa = $('[data-sec="paste"]'), c = $('[data-sec="clear"]');
 	for (const b of [cp, pa, c]) if (b) b.classList.toggle("onsel", sel && !(b === c && S.alt));
-	if (cp) cp.title = sel ? `Copy the selected steps, ${say} (⌘C)` : "Copy (⌘C): Sequence, the selected track's page shown; Sound, the sound; Song, the row";
+	if (cp) cp.title = sel ? `Copy the selected steps, ${say} (⌘C)` : "Copy (⌘C): Pattern, the selected track's page shown; Kit, the sound; Song, the row";
 	if (pa) pa.title = sel ? `Paste at the selected step, ${say} (⌘V)` : "Paste (⌘V)";
-	if (c && !S.alt) c.title = sel ? `Clear the selected steps, ${say} (Delete). ⌥: the whole pattern` : "Clear: Sequence, the selected track's page shown (⌥: the whole pattern); Sound, the sound; Song, the row";
+	if (c && !S.alt) c.title = sel ? `Clear the selected steps, ${say} (Delete). ⌥: the whole pattern` : "Clear: Pattern, the selected track's page shown (⌥: the whole pattern); Kit, the sound; Song, the row";
 }
 S.alt = false;
 /* Alt seen up (any key or pointer event without it) also ends a rotate run: its keyup may never reach the page
@@ -134,10 +134,10 @@ function unmuteAll() {
 }
 document.addEventListener("click", e => { if (e.target.closest("#allon")) unmuteAll(); });
 const seqKeys = () => S.ws === "seq" && dlgClosed() && $("#keyspop").hidden;
-Keys.bind({ id: "rotate", short: "Rotate ← / Rotate →", scope: "seq", keys: ["ArrowLeft", "ArrowRight"], mod: "alt", group: "Selected track", does: "Sequence: rotate the selected track one step earlier / later: trigs, accents and locks, wrapping at the length. Presses while ⌥ is down are one undo step. The one Alt that is not \"all\": FUNCTION + arrows on the machine", when: seqKeys, run: e => rotateTrack(e.key === "ArrowRight" ? 1 : -1) });
+Keys.bind({ id: "rotate", short: "Rotate ← / Rotate →", scope: "seq", keys: ["ArrowLeft", "ArrowRight"], mod: "alt", group: "Selected track", does: "Pattern: rotate the selected track one step earlier / later: trigs, accents and locks, wrapping at the length. Presses while ⌥ is down are one undo step. The one Alt that is not \"all\": FUNCTION + arrows on the machine", when: seqKeys, run: e => rotateTrack(e.key === "ArrowRight" ? 1 : -1) });
 Keys.bind({ id: "unmute-all", short: "Unmute all", scope: "any", keys: ["0"], group: "All", does: "Unmute and unsolo every track", when: () => kbOn(), run: () => unmuteAll() });
-Keys.bind({ id: "unmark-paste", short: "Unmark", scope: "seq", keys: ["Escape"], group: "Sequence", does: "Unmark the tracks marked for paste", when: () => seqKeys() && S.multi.size > 0 && !genRunOn(), run: () => { S.multi = new Set(); renderRail(); renderLane(); } });
-Keys.bind({ id: "step-wheel-lock", scope: "seq", area: "Steps", keys: ["wheel on a step"], group: "Sequence", does: "Move its lock in the lane's parameter, 4 a notch (⇧: 1)" });
-Keys.bind({ id: "lane-ramp", scope: "seq", area: "Lock lane", keys: ["lock lane"], mod: "shift", group: "Sequence", does: "Drag: a ramp, a straight line from the press to the release (one undo step)" });
-Keys.bind({ id: "track-mark-paste", scope: "seq", area: "Tracks", keys: ["track header"], mod: "shift", group: "Sequence", does: "Click: mark the track for paste; ⌘V then pastes into every marked track (one undo step)" });
+Keys.bind({ id: "unmark-paste", short: "Unmark", scope: "seq", keys: ["Escape"], group: "Pattern", does: "Unmark the tracks marked for paste", when: () => seqKeys() && S.multi.size > 0 && !genRunOn(), run: () => { S.multi = new Set(); renderRail(); renderLane(); } });
+Keys.bind({ id: "step-wheel-lock", scope: "seq", area: "Steps", keys: ["wheel on a step"], group: "Pattern", does: "Move its lock in the lane's parameter, 4 a notch (⇧: 1)" });
+Keys.bind({ id: "lane-ramp", scope: "seq", area: "Lock lane", keys: ["lock lane"], mod: "shift", group: "Pattern", does: "Drag: a ramp, a straight line from the press to the release (one undo step)" });
+Keys.bind({ id: "track-mark-paste", scope: "seq", area: "Tracks", keys: ["track header"], mod: "shift", group: "Pattern", does: "Click: mark the track for paste; ⌘V then pastes into every marked track (one undo step)" });
 
