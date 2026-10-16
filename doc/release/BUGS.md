@@ -4,6 +4,46 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-152 · Monomachine: no way to make a pitchless trig in the editor
+
+- **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("how do you do pitchless trigs for the dashed bar? They show from my loaded SysEx but I don't know how to create them").
+- **Setup:** Monomachine Editor, Sequence, a pattern loaded from a .syx that holds pitchless trigs (a trig with its envelope trigs and no note of its own; the machine makes one with EXIT held on a trig, manual 1-59).
+- **What happens:** the roll draws them as a dashed bar at the track's last pitch (`mmStudio/src/70-seq.js:148`, `src/80-notes.js:16`) and they play, but the page has no way to make one: a click makes a note, ⌥-click a trigless trig, the step menu has Trigless trig and Envelopes (`src/77-select.js:173`), nothing takes a note away and keeps the trig. B-107 already says so ("the page makes none"); the guide says what one is and not how to make it (`doc/guide/mm/14-advanced-sequencer-control.md` PITCHLESS TRIGS; `doc/guide/OPEN-FACTS.md`: "MM-214: how to make a pitchless trig"), while `doc/features/mm.json` MM-214 says done.
+- **What should happen:** a way to turn a trig pitchless and back (for example a **Pitchless** item in the step menu beside Trigless trig, on a selection, one undo step; the step intent can already write one, `doc/modern-ux/intent-cases.json` "step: pitchless"), the guide's section saying how, and MM-214 partial until then.
+- **Status:** open.
+
+## B-151 · Monomachine: SWAVE-ENS and DPRO-DENS PCH2-PCH4 shown as -64 to +63 semitones; the machine has OFF and ±12 with interval steps
+
+- **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("the chords don't go a semitone per value; at -63 or 64 they just go an octave above and below").
+- **Setup:** Monomachine Editor, Sound, a track with SWAVE-ENS (or DPRO-DENS), the Chord group.
+- **What happens:** the page shows PCH2, PCH3 and PCH4 as signed values -64 to +63 (`mmStudio/src/50-state.js:42`, `/^PCH/` is signed) and the chord keyboard draws value - 64 as semitones above C, with the raw 0 taken as no note (`src/90-sound.js:52`). The machine reads the value as a list: one step about every four values, OFF in the middle (around 64), then +01 +02 +03 6/5 5/4 +04 4/3 +05 +06 +07 3/2 +08 +09 +10 +11 +12 upwards and the same below (-01 to -12 with 5/6 4/5 3/4 2/3). So the ends are an octave, a value step is mostly no change, and the 6/5 to 2/3 steps are interval ratios, not semitones (measured on OS 1.32B: the LCD after single knob steps from OFF, `mmEditorProbeFirmwareTest lab`, 2026-10-16). `doc/features/mm.json` MM-326 already notes "Offset-ratio options of PCH not modelled".
+- **What should happen:** the boxes and the lock lane show the machine's names (OFF, -12 to +12, the ratios) and step one entry at a time; the chord keyboard draws what the machine plays (OFF = no note, the ratios as their nearest key, marked). The exact value ranges of each entry are to be read from the firmware (CC value to LCD text), not guessed.
+- **Status:** open.
+
+## B-150 · Monomachine: DigiPRO wave numbers wrong (DDRW and DENS show 128 waves, DPRO-WAVE reaches only 8 of its 32)
+
+- **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("DigiPRO waves show 128 waves but the real machine only has 64").
+- **Setup:** Monomachine Editor, Sound, a track with DPRO-DDRW (WAV1, WAV2), DPRO-DENS (WAVE) or DPRO-WAVE (WAVE).
+- **What happens:** DPRO-DDRW WAV1 and WAV2 and DPRO-DENS WAVE are plain 0-127 boxes and the drawing labels them "wave 1" to "wave 128" (`mmStudio/src/90-sound.js:57`, `:63`). The machine shows D01 to D64 there, two values a wave (value 71 = D36, 111 = D56, 127 = D64). DPRO-WAVE's WAVE box runs 0 to 31 (`src/50-state.js:41`), while the machine's WAVE is 0-127, four values a wave, S01 to S32 (10 = S03, 34 = S09, 102 = S26, 126 = S32): from the page only S01 to S08 can be reached and a kit's value above 31 shows as its raw number. (Measured on OS 1.32B, MKII: the LCD after knob steps and the kit's byte read back, `mmEditorProbeFirmwareTest lab`, 2026-10-16.)
+- **What should happen:** the boxes show the machine's wave names and numbers (S01-S32, D01-D64) and step one wave at a time; the morph drawing and the lock lane use the same; the full 0-127 value goes to the machine.
+- **Status:** open.
+
+## B-149 · Monomachine: FM+ modulator frequency shown as a made-up "ratio 0.5 to 6.5"
+
+- **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("the FM machines go up to 6 ratio which is incorrect").
+- **Setup:** Monomachine Editor, Sound, a track with FM+STAT, FM+PAR or FM+DYN, a Modulator or Block group.
+- **What happens:** the FM drawing labels the frequency "ratio" 0.5 + value/127 × 6, so up to 6.5 (`mmStudio/src/90-sound.js:76`), and the 1FRQ / 2FRQ / 3FRQ boxes show 0-127. The machine shows a list on FM+STAT and FM+PAR, 1/64 at the bottom to 4 at the top (1/2, 3/4, 1, 1.5, 2 among them), and a number from 0.0 to 2.0 on FM+DYN's 1FRQ (2FRQ showed 1.33 at the start) (measured on OS 1.32B, the LCD at both ends, 2026-10-16).
+- **What should happen:** the boxes, the lock lane and the drawing show the machine's frequency text, and the drawing's carrier uses that ratio. The full value-to-text table per machine is to be read from the firmware.
+- **Status:** open.
+
+## B-148 · Monomachine: filter envelope BOFS and WOFS shown 0-127, drawn upwards only; the machine's are -64 to +63
+
+- **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("the filter envelopes are bidirectional, not just to the right").
+- **Setup:** Monomachine Editor, Sound, the Filter env group (ATK DEC BOFS WOFS), any machine.
+- **What happens:** BOFS and WOFS are not in the page's signed list (`mmStudio/src/40-data.js:55`), so their boxes and the lock lane show 0-127, and the envelope drawing moves BASE and WIDTH only up, by value/127 (`src/90-sound.js:124`); at 0 it says "no offset: the envelope does nothing". The machine shows both as -64 to +63 (measured on OS 1.32B, the LCD at both ends of the knob, 2026-10-16): 0 is the largest downward sweep, 64 is no sweep.
+- **What should happen:** BOFS and WOFS shown signed (-64 to +63) wherever they appear (boxes, lock lane, typed values), and the drawing sweeps up for positive and down for negative, flat at 0.
+- **Status:** open.
+
 ## B-147 · Test harness: `mdSyxPickFirmwareTest` crashed (SIGSEGV, exit 139) after its import checks
 
 - **From:** the full gate on main, 2026-10-15 (every run, a quiet Mac too, Release and dev builds; already so at `mdmm-v0.6.0`).
