@@ -105,12 +105,15 @@ The editor's log shows a `midi: in … out … dropped …` line every 10 second
 
 ## MIDI Learn (both editors, VST3 in Live and standalone)
 
-TODO. MIDI Learn's CONTROL workspace is still being built (WP-L). Do not test Learn from this sheet yet. When the CONTROL page is in, Claude fills this section with the plan's four checks:
+The session side is built (the CONTROL page's new parts follow in L4 and L5, so learn from the page's LEARN key as it is). Check:
 
-1. CONTROL: learn a knob from a controller CC; the knob follows the controller.
-2. Save the Live set, close, open: the mapping is still there.
-3. A CC that is also on the firmware CC map: the editor does what WP-L decided, with no double jumps.
-4. Learn while the transport plays: no drop-outs.
+1. CONTROL: learn a knob from a controller CC (turn it both ways, or press a button that sends 0 and 127); the knob follows the controller and the machine's sound follows the knob.
+2. Learn a CC, save the Live set (or the Reaper project), close, open: the mapping is still there and still moves the parameter.
+3. A CC that is also on the firmware CC map (Machinedrum CC 16 to 39 on channel 1): after the learn, only the learned parameter moves, the machine's own target of that CC does not (no double jump). Remove the mapping: the CC reaches the machine again.
+4. Learn while the transport plays: no drop-outs, the clock and notes keep reaching the machine.
+5. In Cubase or Reaper (VST3): learn a relative encoder and turn it; the value does not jump back (the VST3 echo check), and the DAW records the turns as automation in write mode, one gesture per turn.
+6. HW MIDI engine (the page's engine menu): Learn shows it is off with its reason; CCs from the host pass to the machine untouched. Back on the emulator: Learn works again.
+7. Close the editor window while it waits for a controller: it stops waiting.
 
 ## Items from the log to close
 

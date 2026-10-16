@@ -211,8 +211,67 @@ namespace
 			check(mappingsOf(page)->size() == 1, "learnRemove");
 			router.beginBlock();
 			check(router.table().count == 1, "and the table follows");
+
+			// the host hears the moves in change gestures: one begin, values, one end 250 ms after the last move; a rebuild closes
+			// an open one (none stays stuck), and a bit the old table set names nothing in the new
+			struct Gestures final : juce::AudioProcessorParameter::Listener
+			{
+				void parameterValueChanged(int, float) override { ++values; }
+				void parameterGestureChanged(int, const bool _starting) override { (_starting ? begins : ends)++; }
+				int begins = 0, ends = 0, values = 0;
+			} gestures;
+			auto* gp = a.getController().getParameter(name, 0);
+			gp->addListener(&gestures);
+			router.beginBlock();
+			router.translate(0xb0, static_cast<uint8_t>(ccAny), 10);
+			session->step();
+			check(gestures.begins == 1 && gestures.ends == 0 && gestures.values >= 1, "gesture: a learned move opens one change gesture and tells the host the value");
+			router.translate(0xb0, static_cast<uint8_t>(ccAny), 100);
+			session->step();
+			check(gestures.begins == 1 && gestures.ends == 0, "gesture: the next move is in the same gesture");
+			juce::Thread::sleep(300);
+			session->step();
+			check(gestures.begins == 1 && gestures.ends == 1, "gesture: it ends 250 ms after the last move");
+			router.translate(0xb0, static_cast<uint8_t>(ccAny), 40);
+			session->step();
+			check(gestures.begins == 2 && gestures.ends == 1, "gesture: a new move, a new gesture");
+			router.translate(0xb0, static_cast<uint8_t>(ccAny), 90);
+			say(*session, R"({"op":"learnInvert","id":70,"index":0})");
+			check(gestures.begins == 2 && gestures.ends == 2, "gesture: a rebuild of the table closes the open one (none stays stuck)");
+			check(router.takeTouched() == std::array<uint64_t, 2>{0, 0}, "and the bit the old table set is gone");
+			say(*session, R"({"op":"learnInvert","id":71,"index":0})");
+			gp->removeListener(&gestures);
+			check(gestures.begins == gestures.ends, "every gesture opened was closed");
+
+			// HW MIDI engine: the host's MIDI in is the machine's own MIDI out: nothing is translated or captured, the document says why
+			const auto asOk = [&](const char* _id)
+			{
+				for(auto it = page.rbegin(); it != page.rend(); ++it)
+					if(const auto* t = it->find("type"); t && t->asString() == "result" && it->find("id") && it->find("id")->asNumber() == std::atof(_id))
+						return it->find("ok")->asBool();
+				return true;
+			};
+			say(*session, R"({"op":"learnStart","id":72,)" + target2 + "}");
+			check(router.learning(), "a learn waits for a controller");
+			a.getExternalMidi().set(true);
+			session->step();
+			check(!router.learning() && lastLearn(page)->find("paused") && lastLearn(page)->find("learning")->isNull(), "HW MIDI on: the learn ends, and the document says Learn is off (paused, with the reason)");
+			say(*session, R"({"op":"learnStart","id":73,)" + target2 + "}");
+			check(!asOk("73") && !router.learning(), "and a new learn is refused");
+			const auto applied0 = router.counts().applied, captured0 = router.counts().captured;
+			synthLib::SMidiEvent hostCc(synthLib::MidiEventSource::Host);
+			hostCc.a = 0xb0; hostCc.b = static_cast<uint8_t>(ccAny); hostCc.c = 3;
+			router.beginBlock();
+			check(!a.consumeMidiIn(hostCc) && router.counts().applied == applied0 && router.counts().captured == captured0,
+				"and a mapped CC from the host passes through untouched, not translated and not captured");
+			a.getExternalMidi().set(false);
+			session->step();
+			check(!lastLearn(page)->find("paused") && a.consumeMidiIn(hostCc), "back on the emulator: no reason, and the mapping works again");
 			ja.getStateInformation(saved);
+			say(*session, R"({"op":"learnStart","id":80,)" + target2 + "}");
+			check(router.learning(), "a learn waits when the page goes");
 			session->detach();
+			check(!router.learning(), "the page detached (the editor closed): the learn is cancelled");
 		}
 
 		// a new instance restores the mapping with the project, tells its page and publishes the table
@@ -269,6 +328,9 @@ namespace
 				check(left && left->asArray().size() == 2, "the automatic part and the unknown parameter are left out, said in left");
 				check(c.getDeskHost()->legacyMapping().empty() && c.getDeskHost()->setup().find("\"mappings\"") != std::string::npos,
 					"and it is in the setup now, MDLN is not kept");
+				say(*cs, R"({"op":"learnRemove","id":60,"index":0})");
+				check(c.getDeskHost()->setup().find("\"mappings\":[]") != std::string::npos,
+					"deleting the imported mapping writes mappings: [] so the alpha MDLN is not imported again");
 				cs->detach();
 			}
 		}
@@ -331,6 +393,17 @@ namespace
 		auto& router = a.learnRouter();
 		router.beginBlock();
 		check(router.table().count == 2, "and the table follows");
+		say(R"({"op":"learnAdd","id":4,"cc":22,"t":3,"i":3})");
+		say(R"({"op":"knobs","id":5,"ccs":[22,41,23,24,25,26,27,28]})");
+		session->step();
+		for(auto it = page.rbegin(); it != page.rend(); ++it)
+			if(const auto* t = it->find("type"); t && t->asString() == "learn")
+			{
+				const auto& l2 = it->find("doc")->find("mappings")->asArray();
+				check(l2.size() == 3 && l2[0].find("cc")->asNumber() == 22 && l2[2].find("cc")->asNumber() == 41,
+					"two rows swapped in one command: each mapping follows its own row (22 and 41), none merged");
+				break;
+			}
 		session->detach();
 	}
 }

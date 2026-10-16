@@ -133,13 +133,26 @@ namespace mdJucePlugin
 		m_built = m_host.mappings ? m_host.mappings() : std::vector<deskCore::LearnMapping>{};
 		m_builtValid = true;
 		// the audio thread's view; every parameter in it belongs to the controller, which outlives the session
-		m_router.publish(buildLearnTable(m_built, m_host.parameter, ++m_generation, &m_params));
+		m_router.publishAndSettle(buildLearnTable(m_built, m_host.parameter, ++m_generation, &m_params));
+		// the bits the old table set name its mappings, not these: none is carried over
+		(void)m_router.takeTouched();
 	}
 
 	void MidiLearnCommands::edit(std::vector<deskCore::LearnMapping> _list)
 	{
 		m_host.setMappings(std::move(_list));
 		rebuild();
+	}
+
+	std::string MidiLearnCommands::pausedNow() const
+	{
+		return m_host.pausedReason ? m_host.pausedReason() : std::string();
+	}
+
+	void MidiLearnCommands::cancelLearning()
+	{
+		if(learning())
+			stopLearning();
 	}
 
 	void MidiLearnCommands::stopLearning()
@@ -160,6 +173,11 @@ namespace mdJucePlugin
 		}
 		const auto target = targetOf(_message);
 		const auto name = parameterOf(target);
+		if(_action == A::LearnStart && pausedNow() != "")
+		{
+			reply(_message, false, pausedNow());
+			return;
+		}
 		const auto learnable = [&] { return !name.empty() && m_host.parameter && m_host.parameter(target) != nullptr; };
 		switch(_action)
 		{
@@ -299,6 +317,16 @@ namespace mdJucePlugin
 			rebuild();
 			publish();
 		}
+		// Learn off (the HW MIDI engine): a learn in progress ends; the document says so and is made again on any change
+		const auto paused = pausedNow();
+		if(!paused.empty() && learning())
+		{
+			stopLearning();
+			publish();
+		}
+		const int base = m_host.baseChannel ? m_host.baseChannel() : 0;
+		if(base != m_publishedBase || paused != m_publishedPaused)
+			publish();	// the overrides depend on the base channel, the rest on the engine
 		takeCaptured();
 		notifyHost();
 	}
@@ -312,6 +340,8 @@ namespace mdJucePlugin
 
 	void MidiLearnCommands::publish()
 	{
+		m_publishedBase = m_host.baseChannel ? m_host.baseChannel() : 0;
+		m_publishedPaused = pausedNow();
 		json::Value doc = json::Value::object();
 		doc.set("enabled", m_model.enabled);
 		json::Value mappings = json::Value::array();
@@ -359,6 +389,8 @@ namespace mdJucePlugin
 		if(m_model.enabled)
 		{
 			doc.set("limits", limits());
+			if(!m_publishedPaused.empty())
+				doc.set("paused", m_publishedPaused);
 			if(!m_left.empty())
 			{
 				json::Value left = json::Value::array();

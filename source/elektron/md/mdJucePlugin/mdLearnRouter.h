@@ -98,6 +98,9 @@ namespace mdJucePlugin
 		// controller's parameters may be freed after this. Waits at most _timeoutMs (the audio thread of a host that has
 		// stopped never ends a block; it will read the empty table at its next block start). True: settled.
 		bool publishEmptyAndSettle(unsigned _timeoutMs = 200) noexcept;
+		// The same for a new table: returns once no block that began before it can still be reading the old one, so the
+		// touched bits taken after this belong to the new table (a stale bit cannot name another parameter).
+		bool publishAndSettle(const LearnTable& _table, unsigned _timeoutMs = 20) noexcept;
 
 		// Any thread: a CC that came from a MIDI port (source Physical) passes to the machine raw, counted (the design:
 		// these editors open no such port; a project's port chunk could)

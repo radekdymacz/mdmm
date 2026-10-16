@@ -293,9 +293,22 @@ int main(const int _argc, char** _argv)
 
 	const auto machineIs = [&](const Target& _at, const int _v) { const auto v = rig.machine(_at); return v && *v == _v; };
 
+	// The first CC after the start can be lost (the machine is still settling): the working kit is waited for, and a CC is sent
+	// again until it lands (the checks are about where it goes, not about the delivery of the first try)
+	check(rig.until([&] { return rig.machine(fwA).has_value(); }, 30000), "the machine's working kit is readable");
+	const auto land = [&](const std::function<void()>& _send, const std::function<bool()>& _landed)
+	{
+		for(int attempt = 0; attempt < 6; ++attempt)
+		{
+			_send();
+			if(rig.until(_landed, 2500))
+				return true;
+		}
+		return false;
+	};
+
 	// 1. no mapping: the host's CC reaches the firmware's own target
-	rig.cc(0, ccA, 90);
-	check(rig.until([&] { return machineIs(fwA, 90); }, 8000), "no mapping: the host's CC reaches the firmware's own target");
+	check(land([&] { rig.cc(0, ccA, 90); }, [&] { return machineIs(fwA, 90); }), "no mapping: the host's CC reaches the firmware's own target");
 
 	// 2. a mapping on that (channel, CC): the learned parameter follows, the firmware's target stays
 	const auto mapABefore = rig.machine(mapA);
@@ -305,9 +318,8 @@ int main(const int _argc, char** _argv)
 	const auto* doc = rig.learnDoc();
 	check(doc && doc->find("mappings")->asArray()[0].find("overrides")->asArray().size() == 1, "and it says which firmware target it overrides (one: channel 1)");
 	rig.session()->step();
-	rig.cc(0, ccA, vA);
 	auto* pa = rig.parameter(mapA);
-	check(rig.until([&] { return pa && pa->getUnnormalizedValue() == vA; }, 4000), "the mapped CC moves the plug-in's parameter");
+	check(land([&] { rig.cc(0, ccA, vA); }, [&] { return pa && pa->getUnnormalizedValue() == vA; }), "the mapped CC moves the plug-in's parameter");
 	const int expectA = pa ? pa->getUnnormalizedValue() : -1;
 	check(rig.until([&] { return machineIs(mapA, expectA); }, 8000), "and the machine's working kit follows it");
 	pump(1000);
@@ -317,16 +329,13 @@ int main(const int _argc, char** _argv)
 	const auto fwBBefore = rig.machine(fwB);
 	rig.say(R"({"op":"learnStart","id":2,)" + json(mapB) + "}");
 	rig.session()->step();
-	rig.cc(0, ccB, 12);
-	rig.cc(0, ccB, 117);
-	check(rig.until([&] { return rig.mappings() == 2; }, 8000), "learning: two values make the mapping on the message thread");
+	check(land([&] { rig.cc(0, ccB, 12); rig.cc(0, ccB, 117); }, [&] { return rig.mappings() == 2; }), "learning: two values make the mapping on the message thread");
 	pump(1000);
 	check(fwBBefore && machineIs(fwB, *fwBBefore), "the learning CCs were consumed: the firmware's target of that CC did not move");
 	const auto mapBBefore = rig.machine(mapB);
 	const int vB = mapBBefore && *mapBBefore == 77 ? 79 : 77;
-	rig.cc(0, ccB, vB);
 	auto* pb = rig.parameter(mapB);
-	check(rig.until([&] { return pb && pb->getUnnormalizedValue() == vB; }, 4000), "the learned CC moves its parameter");
+	check(land([&] { rig.cc(0, ccB, vB); }, [&] { return pb && pb->getUnnormalizedValue() == vB; }), "the learned CC moves its parameter");
 	const int expectB = pb ? pb->getUnnormalizedValue() : -1;
 	check(rig.until([&] { return machineIs(mapB, expectB); }, 8000), "and the machine follows");
 	pump(1000);
@@ -336,8 +345,7 @@ int main(const int _argc, char** _argv)
 	rig.say(R"({"op":"learnRemove","id":3,"index":0})");
 	rig.session()->step();
 	check(rig.mappings() == 1, "learnRemove: one mapping left");
-	rig.cc(0, ccA, 20);
-	check(rig.until([&] { return machineIs(fwA, 20); }, 8000), "the CC without its mapping reaches the firmware's own target again");
+	check(land([&] { rig.cc(0, ccA, 20); }, [&] { return machineIs(fwA, 20); }), "the CC without its mapping reaches the firmware's own target again");
 
 	std::printf("mdLearnFirmwareTest %s: %s\n", g_mm ? "mm" : "md", g_failures ? "FAIL" : "PASS");
 	return g_failures ? 1 : 0;

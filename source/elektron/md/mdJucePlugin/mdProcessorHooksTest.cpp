@@ -351,6 +351,19 @@ namespace
 		require(param->getUnnormalizedValue() == 127 && router.counts().applied == 1, "and moves no parameter");
 		require(router.counts().physicalPassed == 1, "a CC from a MIDI port is counted as passed raw");
 
+		// HW MIDI engine: the host's MIDI in is the real machine's own MIDI out, so nothing is translated or captured
+		processor.getExternalMidi().set(true);
+		const auto appliedHw = router.counts().applied;
+		router.setLearning(true);
+		synthLib::SMidiEvent hwCc(synthLib::MidiEventSource::Host);
+		hwCc.a = 0xb0;
+		hwCc.b = 21;
+		hwCc.c = 5;
+		require(!processor.consumeMidiIn(hwCc), "HW MIDI on: a mapped CC passes through, also while learning");
+		require(router.counts().applied == appliedHw && router.counts().captured == 0, "and nothing was applied or captured");
+		router.setLearning(false);
+		processor.getExternalMidi().set(false);
+
 		// the controller is going: an empty table, and the audio thread is past any block that read the old one
 		router.endBlock();
 		require(router.publishEmptyAndSettle(), "publishing the empty table settles when no block runs");

@@ -31,11 +31,14 @@ namespace deskCore
 		// (a missing member is none), read leniently (deskLearn.h). Owned by the message thread; the audio thread sees a table
 		// derived from this, never this.
 		std::vector<LearnMapping> mappings;
+		// The list is empty but the project had mappings (the member was read empty, or the list was emptied): the member is written even when the
+		// list is empty, so an alpha project's MDLN is not imported again after the person deleted what it brought
+		bool mappingsKept = false;
 
 		bool operator==(const DeskSetup& _o) const
 		{
 			return modulators == _o.modulators && knobCcs == _o.knobCcs && solo == _o.solo && followPlayed == _o.followPlayed
-				&& mappings == _o.mappings;
+				&& mappings == _o.mappings && mappingsKept == _o.mappingsKept;
 		}
 		bool operator!=(const DeskSetup& _o) const { return !(*this == _o); }
 	};

@@ -99,14 +99,14 @@ namespace mdDesk
 		if(errors.empty())
 		{
 			// one intent, one command: the knob row's any-channel mappings follow its CC (the learned ones stay learned)
-			auto mappings = m_setup.mappings;
+			std::vector<uint8_t> from, to;
 			for(size_t i = 0; i < m_setup.knobCcs.size() && i < ccs.size(); ++i)
 			{
-				if(m_setup.knobCcs[i] != ccs[i])
-					mappings = deskCore::moveKnobCc(mappings, m_setup.knobCcs[i], static_cast<uint8_t>(ccs[i]));
+				from.push_back(m_setup.knobCcs[i]);
+				to.push_back(static_cast<uint8_t>(ccs[i]));
 				m_setup.knobCcs[i] = static_cast<uint8_t>(ccs[i]);
 			}
-			m_setup.mappings = std::move(mappings);
+			m_setup.mappings = deskCore::moveKnobCcs(m_setup.mappings, from, to);
 			saveSetup();
 		}
 		result(_message, errors, {});
@@ -455,7 +455,9 @@ namespace mdDesk
 	{
 		if(_mappings == m_setup.mappings)
 			return;
+		const bool had = !m_setup.mappings.empty();
 		m_setup.mappings = std::move(_mappings);
+		m_setup.mappingsKept = m_setup.mappings.empty() && (m_setup.mappingsKept || had);
 		saveSetup();
 		publishSetup();
 	}
