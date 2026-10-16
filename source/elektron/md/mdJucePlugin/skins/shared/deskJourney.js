@@ -880,7 +880,53 @@ const Journey = (() => {
 			},
 			screen: c => ok(!c.report.length, c.report.slice(0, 6).join(" | ") + (c.report.length > 6 ? ` (+${c.report.length - 6})` : "")), within: 1000 }],
 		async tidy(hands, c) { raiseFloor(0); if (typeof window.gmView === "function") window.gmView(1440, 924); hands.click(`#tabs [data-ws="${c.start || workspaces[0]}"]`); }
-	}];
+	}, songFit(prefix)];
+	/* B-165: the Song page at the supported window sizes (864 x 600, 1100 x 800, 1280 x 800, 1500 x 1000), each as the page
+	   gets it: as the window's CSS size (a plain page, a user zoom above 100 % leaves this much) and as the plug-in's zoom lays it
+	   out (the window over mdPageZoom's fit: 1440 wide at least). Nothing of the page's Song workspace may run past the window's
+	   right edge, past a box that clips it, or sit in a box that scrolls sideways; a box that scrolls up and down (the song list,
+	   #main) may hold what lies below its edge. */
+	const songViews = [[864, 600], [1100, 800], [1280, 800], [1500, 1000], [1440, 1000], [1440, 1047], [1440, 900], [1442, 961]];
+	const songFitProblems = () => {
+		const out = [], main = $q("#main"), clipsX = cs => cs.overflowX !== "visible", scrolls = cs => cs.overflowY === "auto" || cs.overflowY === "scroll";
+		if (!main) return ["no #main"];
+		const name = e => (e.id ? "#" + e.id : "") + (typeof e.className === "string" && e.className.trim() ? "." + e.className.trim().split(/\s+/).slice(0, 2).join(".") : e.tagName.toLowerCase());
+		const wall = main.getBoundingClientRect().right;
+		for (const e of [main, ...main.querySelectorAll("*")]) {
+			if (!e.getClientRects().length || e.closest("[hidden]") || e.closest("svg") || ["canvas", "script", "style"].includes(e.localName)) continue;
+			const cs = getComputedStyle(e);
+			if (cs.position === "fixed" || cs.visibility === "hidden") continue;
+			const r = e.getBoundingClientRect();
+			if (!r.width || !r.height) continue;
+			if (clipsX(cs) && cs.overflowX !== "hidden" && e.scrollWidth > e.clientWidth + 1) out.push(`${name(e)} scrolls sideways (${e.scrollWidth} in ${e.clientWidth})`);
+			if (r.right > wall + 1 && r.right > innerWidth + 1) out.push(`${name(e)} runs ${Math.round(r.right - Math.min(wall, innerWidth))} px past the window`);
+			for (let a = e.parentElement; a && a !== document.body; a = a.parentElement) {
+				const ac = getComputedStyle(a);
+				if (!clipsX(ac)) continue;
+				const q = a.getBoundingClientRect();
+				if (ac.overflowX === "hidden" && cs.position !== "absolute" && cs.position !== "fixed" && (r.right > q.right + 1 || r.left < q.left - 1)) out.push(`${name(e)} cut by ${name(a)} (${Math.round(r.left)}..${Math.round(r.right)} in ${Math.round(q.left)}..${Math.round(q.right)})`);
+				if (ac.overflowY === "hidden" && !scrolls(ac) && cs.position !== "absolute" && r.bottom > q.bottom + 1 && r.top < q.bottom) out.push(`${name(e)} clipped at the bottom of ${name(a)} (${Math.round(r.bottom)} > ${Math.round(q.bottom)})`);
+			}
+		}
+		return [...new Set(out)];
+	};
+	const songFit = prefix => ({
+		name: `${prefix}-fit-song`, proves: [],
+		steps: [{ say: "the Song page at 864 x 600, 1100 x 800, 1280 x 800 and 1500 x 1000, as a plain page and as the plug-in's zoom lays it out: nothing runs past the right edge, is cut by its box or sits in a box that scrolls sideways (B-165)",
+			act: async (hands, c) => {
+				const resize = typeof window.gmView === "function";
+				c.report = []; c.n = 0; c.start = $q("#tabs [aria-selected=true]")?.dataset.ws;
+				hands.click('#tabs [data-ws="song"]'); await until(() => $q('#tabs [data-ws="song"]').getAttribute("aria-selected") === "true", 3000);
+				for (const [w, h] of resize ? songViews : [[innerWidth, innerHeight]]) {
+					if (resize) { window.gmView(w, h); await until(() => innerWidth === w, 3000); }
+					window.dispatchEvent(new Event("resize")); await sleep(350);
+					if (!$q(".songui")) { c.report.push(`${w} x ${h}: no Song page`); continue; }
+					c.n++; for (const x of songFitProblems()) c.report.push(`${w} x ${h}: ${x}`);
+				}
+			},
+			screen: c => ok(c.n >= 1 && !c.report.length, `${c.n} sizes; ` + c.report.slice(0, 10).join(" | ") + (c.report.length > 10 ? ` (+${c.report.length - 10})` : "")), within: 1000 }],
+		async tidy(hands, c) { if (typeof window.gmView === "function") window.gmView(1440, 924); hands.click(`#tabs [data-ws="${c.start && c.start !== "song" ? c.start : "seq"}"]`); }
+	});
 	/* Screen review 2026-10-13: what a screen cuts or overlaps, measured.
 	   cutText(root): the visible elements whose words the box cuts (overflow hidden or an ellipsis, and more text than box):
 	   ["<tag.class> "text" 12 px cut", ...]. A drawn caption is no element, so canvasProblems (below) records what a canvas draws. */
