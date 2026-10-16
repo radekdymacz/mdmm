@@ -105,7 +105,7 @@ This is a first session. It loads a kit, places trigs, plays them and changes a 
 1. Click the **Kit** field of the LCD. The kit library opens.
 2. Click a kit. The machine loads it at once. If you have unsaved changes, the editor asks first.
 3. Press {key:close-dialog}, then press {key:workspace-1} for the Sequence workspace.
-4. Click steps in the grid. Each click turns a trig on or off. Each row of the grid is a track.
+4. Click steps in the grid. A click on an empty step draws a trig. A click on a trig selects it. Double-click a trig to remove it. Each row of the grid is a track.
 5. Press {key:play-stop}. The pattern plays with your trigs. Press it again to stop.
 6. Click a track in the rail to select it. Press the keys A to L to play it by hand.
 7. Press {key:workspace-2} for the Sound workspace. Drag a value box to change the sound of the selected track.
