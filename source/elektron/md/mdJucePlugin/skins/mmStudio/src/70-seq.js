@@ -217,7 +217,7 @@ function syncRollKeys(){const l=$("#rolllen");if(l)l.textContent=MmRoll.say(S.ro
 function setRollLen(L,say){L=clamp(Math.round(L),1,64);if(L!==S.rollLen){S.rollLen=L;rollPrefs();syncRollKeys()}if(say)toast(`New notes: ${MmRoll.say(L)}.`)}
 /* the Len key: the next (shift: the one before) of 1/16 1/8 1/4 1/2 1 bar, from where it is */
 function stepRollLen(back){const Ls=MmRoll.LENGTHS,n=back?[...Ls].reverse().find(x=>x<S.rollLen)??Ls[Ls.length-1]:Ls.find(x=>x>S.rollLen)??Ls[0];setRollLen(n,true)}
-Keys.bind({id:"roll-length",scope:"seq",area:"Roll",keys:["drag a note's end"],group:"Sequence",does:"The note's length (a NOTE OFF where it ends; a MIDI note's LEN, 6 a step); new notes get it too. Up to the track's next trig, past the pattern's end onto its start"});
+Keys.bind({id:"roll-length",scope:"seq",area:"Roll",keys:["drag a note's end"],group:"Pattern",does:"The note's length (a NOTE OFF where it ends; a MIDI note's LEN, 6 a step); new notes get it too. Up to the track's next trig, past the pattern's end onto its start"});
 const midiOf=t=>isMidiT(t)?{kitLen:trk(t).v.MID[0]}:null;
 /* changes ([step, value]) into the view; the steps changed */
 function rollPut(t,changes){const tr=trk(t);for(const[k,v] of changes){tr.steps[k]=v;if(!v||v.off){tr.slide.delete(k);clearStepLocks(t,k)}}return changes.map(([k])=>k)}

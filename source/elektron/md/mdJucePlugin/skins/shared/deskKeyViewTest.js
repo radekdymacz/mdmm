@@ -47,9 +47,9 @@ check(cap(view({ layer: "cmd" }), "KeyA").entries[0] === "select-all" && cap(vie
 check(cap(mac, "KeyZ").action === "Oct −" && cap(mac, "KeyX").action === "Oct +", "one short per key: Z Oct −, X Oct +");
 
 /* ---- the page shown, or all ---- */
-check(ids(view({ page: "song" }), "ArrowLeft")[0] === "song-row" && ids(view({ page: "seq" }), "ArrowLeft").includes("sel-move"), "← on Song: the previous row; on Sequence: the selection");
+check(ids(view({ page: "song" }), "ArrowLeft")[0] === "song-row" && ids(view({ page: "seq" }), "ArrowLeft").includes("sel-move"), "← on Song: the previous row; on Pattern: the selection");
 check(!view({ page: "seq" }).groups.some(g => g.group === "Kit library, pattern chooser") && view({ all: true }).groups.some(g => g.group === "Kit library, pattern chooser"), "the library's keys show under All only");
-check(view({ page: "sound" }).areas.every(a => a.area !== "Steps") && view({ page: "seq" }).areas.some(a => a.area === "Steps" && a.rows.some(r => r.id === "step-menu")), "Mouse tricks: the steps' on Sequence (the step menu among them), none on Sound");
+check(view({ page: "sound" }).areas.every(a => a.area !== "Steps") && view({ page: "seq" }).areas.some(a => a.area === "Steps" && a.rows.some(r => r.id === "step-menu")), "Mouse tricks: the steps' on Pattern (the step menu among them), none on Kit");
 check(view({ page: "sampler" }).areas.some(a => a.area === "Sampler"), "Mouse tricks: the chop steps on the Sampler");
 
 /* ---- the search ---- */
@@ -72,7 +72,7 @@ const mmCmd = KV.model(mm, { mac: true, layer: "cmd", page: "seq", all: false, q
 check(mmv.tips.length >= 5 && ["Minus", "Equal", "Digit0"].every(c => /zoom/i.test(JSON.stringify(cap(mmCmd, c) || {}))), `MM: tips (${mmv.tips.length}) and the zoom keys on ⌘`);
 const mmAll = KV.model(mm, { mac: true, layer: "", page: "seq", all: true, query: "", mapping: false });
 check(["Values", "Top bar", "LCD", "GEN bar", "Library", "Lock lane", "Roll"].every(a => JSON.stringify(mmAll).includes(a)), "MM: the mouse's tricks of every area the MD's lists (and the roll's)");
-const h = KV.html(view(), { note: "n", pageName: "Sequence" });
+const h = KV.html(view(), { note: "n", pageName: "Pattern" });
 check(h.includes('data-code="KeyR"') && h.includes('data-kvmod="alt"') && h.includes("Mouse tricks") && h.includes("Every key on this page") && !/undefined|NaN/.test(h), "the drawing renders: keys, layer buttons, tricks, the list");
 check(caps(mac).length >= 70, `a whole keyboard: ${caps(mac).length} keys`);
 check(!fs.readFileSync(path.join(__dirname, "deskKeyView.css"), "utf8").includes("color-mix"), "its stylesheet has no color-mix (an older WebKit)");

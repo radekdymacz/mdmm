@@ -1,7 +1,7 @@
 # 16. The MIDI sequencer
 <!-- summary: Write notes, velocities and controller values for the six MIDI tracks. -->
 
-The Monomachine has six MIDI tracks next to its six synth tracks. They send notes and controller values to other instruments. The editor edits them on **Sequence**, with the same roll, docks and rows.
+The Monomachine has six MIDI tracks next to its six synth tracks. They send notes and controller values to other instruments. The editor edits them on **Pattern**, with the same roll, docks and rows.
 
 ## USING THE MIDI SEQUENCER
 <!-- rows: MM-240 MM-241 MM-242 @8c942d -->
@@ -12,7 +12,7 @@ The Monomachine has six MIDI tracks next to its six synth tracks. They send note
 4. Draw notes in the roll as on a synth track. See chapter 11. A note you click in the roll of one MIDI track changes that track only.
 5. To write a chord, hold [⇧] and click another pitch on a step that has a note. The notes of a chord share one length.
 
-On **Sound** the same **SYNTH** and **MIDI** keys switch between the six synth tracks and the six MIDI tracks. On **Perform**, the **Mutes** card has **M1** to **M6** for the MIDI tracks. Click one to mute the track and click it again to unmute it.
+On **Kit** the same **SYNTH** and **MIDI** keys switch between the six synth tracks and the six MIDI tracks. On **Perform**, the **Mutes** card has **M1** to **M6** for the MIDI tracks. Click one to mute the track and click it again to unmute it.
 
 A MIDI note has a real length. To set it:
 

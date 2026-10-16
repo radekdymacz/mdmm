@@ -3,6 +3,13 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-044 · Name the workspaces as the manuals do: SEQUENCE becomes PATTERN, SOUND becomes KIT
+
+- **From:** a beta tester on Discord (suggestion to match the machines' manuals); decided by Radek, 2026-10-16.
+- **The idea:** the first two workspace tabs are called PATTERN and KIT in both editors. Labels only: the internal ids (`data-ws` seq / sound, the CSS classes, journey names, key ids, saved setup values) are unchanged, so saved projects and tests keep working. Keys 1-5 and the layout stay.
+- **Status:** built on branch `feat/0.8-tab-names`, not merged. Changed: the tab markup of both editors, the key view (group "Pattern", the workspace names), toasts, tooltips, journey narration, the guide (both editors), the feature rows' "where" fields, the site's front page captions. Left as they were: chapter titles of the manuals ("Sound synthesis: kits", the Sequencer chapters), the words "sound" and "sequencer" where they mean the machine's own, code comments, past release notes, and the site's screenshots (they show the old tab names until the next shoot).
+- **Release-note line:** The first two tabs are now called Pattern and Kit, as in the machines' manuals (they were Sequence and Sound). Nothing else changes.
+
 ## I-043 · Filter envelope: a larger display with the full BOFS/WOFS range, the second window smaller (square) with attack and decay only
 
 - **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). The filter envelope display should be larger, and left/right on it show the full BOFS/WOFS range (-64 to +63, B-148); the second window smaller and square, with just attack and decay.

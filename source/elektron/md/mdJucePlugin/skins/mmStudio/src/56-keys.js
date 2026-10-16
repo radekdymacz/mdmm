@@ -9,11 +9,11 @@
    letter off the piano row acts on the selected track (M, T; ↑ / ↓ pick it); Alt means all (Alt+M, Alt+Delete,
    Alt-drag, Alt-click). Two Alts are not "all", as on the machine: Alt+←/→ rotate (FUNCTION + arrows) and Alt+Space
    record (RECORD + PLAY). No ⇧ or ⌘ letter commands but the standard ⌘Z ⌘⇧Z ⌘Y ⌘C ⌘V. */
-const KEY_GROUPS=["Playing","Selected track","All","Transport","Workspaces","Sequence","Song","Values","Anywhere","Kit library, pattern chooser","Help"];
+const KEY_GROUPS=["Playing","Selected track","All","Transport","Workspaces","Pattern","Song","Values","Anywhere","Kit library, pattern chooser","Help"];
 /* B-018: ? opens the keyboard view both editors share (skins/shared/deskKeyView.js, DESIGN-keymap.md K-view): a drawn
    keyboard from this map with what each key does on the page shown (or every page), its layers, the mouse's tricks, the
    tips, and every entry by group (the list ? showed before). */
-const WS_NAMES={seq:"Sequence",sound:"Sound",mix:"Mix",perform:"Perform",song:"Song",control:"Control"};
+const WS_NAMES={seq:"Pattern",sound:"Kit",mix:"Mix",perform:"Perform",song:"Song",control:"Control"};
 let keyView=null;
 function drawKeys(){const pop=$("#keyspop");if(!pop)return;
  if(!keyView)keyView=KeyView.mount(pop,{entries:()=>Keys.list(),page:()=>S.ws,pageName:()=>WS_NAMES[S.ws]||"This page",mapping:()=>S.mapping,
@@ -49,7 +49,7 @@ Keys.bind({id:"zoom-reset",short:"Zoom 100 %",scope:"any",keys:["0"],mod:"cmd",g
  ["tempo-drag","any","Top bar",["tempo"],"","Transport","Drag up or down: the tempo, half a BPM a pixel (⇧: a tenth)"],
  ["lcd-value","any","LCD",["LCD value"],"","Anywhere","Click: its next value; ⇧-click the previous one; the wheel steps through them. SWING and PTRN: drag up or down"],
  ["header-menu","any","Anywhere",["right-click"],"","Anywhere","The editor's menu: zoom and window size, updates, the log folder, Developer"],
- ["gen-value","seq","GEN bar",["GEN value"],"","Sequence","Click: +1; ⇧-click: −1; drag up or down, or the wheel (⇧: 10)"],
+ ["gen-value","seq","GEN bar",["GEN value"],"","Pattern","Click: +1; ⇧-click: −1; drag up or down, or the wheel (⇧: 10)"],
  ["rkey","any","GEN bar",["R key"],"","Selected track","Click: randomise the selected track, as R (⌥-click: every track)"],
  ["ms-click","any","Tracks",["M / S key"],"","Selected track","Click: mute / solo that track"],
  ["song-steppers","song","Song",["row value − / +"],"shift","Song","Click: ten at a time"],

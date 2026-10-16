@@ -1,10 +1,10 @@
 # 15. Additional sequencer features
 <!-- summary: Arpeggiator, transpose, swing, slide, the mute window and poly mode. -->
 
-The arpeggiator and transpose are tabs in the header of the lock lane on **Sequence**: **Arp** and **Transpose**. Click a tab to show its keys in the rail and its values and picture under the roll. Swing and slide are in the step menu.
+The arpeggiator and transpose are tabs in the header of the lock lane on **Pattern**: **Arp** and **Transpose**. Click a tab to show its keys in the rail and its values and picture under the roll. Swing and slide are in the step menu.
 
 ## THE ARPEGGIATOR
-<!-- rows: MM-215 @837d12 -->
+<!-- rows: MM-215 @800324 -->
 
 Each of the twelve tracks has its own arpeggiator, six synth tracks and six MIDI tracks. A pattern holds all twelve. The arpeggiator turns the chord notes of a trig into a run of notes.
 
@@ -86,7 +86,7 @@ For MAJ and MIN, click a key of the keyboard picture to set the root key. A clic
 Swing delays every other sixteenth note. The **SWG** field of the LCD sets the amount for the pattern, from 50 to 80 %. Drag the field up or down, or scroll over it.
 
 ### THE SWING TRACK
-<!-- rows: MM-231 MM-232 @3ab762 -->
+<!-- rows: MM-231 MM-232 @3f95c9 -->
 
 Each step of a track can swing. A step that swings comes late by the amount of **SWG**. Swing does something only on a step with a trig.
 
@@ -96,7 +96,7 @@ Each step of a track can swing. A step that swings comes late by the amount of *
 
 To swing four steps at once:
 
-1. Click **Sequence** and pick track 1 in the rail.
+1. Click **Pattern** and pick track 1 in the rail.
 2. Drag over four steps in the roll with [⌘] held, then choose **Swing** in the ⋯ menu. Swing is on for all four, in one undo step.
 3. Press {key:undo}. All four are as before.
 
@@ -105,7 +105,7 @@ Each track has its own swing steps. The marks show for the selected track. A new
 To copy, paste or clear the swing row of a track, tick **Swing** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (chapter 11, "Super copy"). A clear sets it back to every second 16th step. Press {key:undo} to take each back.
 
 ## SLIDE
-<!-- rows: MM-233 MM-234 @8006fc -->
+<!-- rows: MM-233 MM-234 @7db6fa -->
 
 A slide makes a locked value glide to the next lock instead of jumping. Without a lock on the step a slide does nothing. The glide of a pitch is PORTAMENTO, in the trig setup.
 
@@ -157,9 +157,9 @@ In poly mode all six engines play the track in focus, with six voices. The seque
 2. Select the track with the numbered keys in the title of the **Assign** card.
 3. In the **Keyboard** bar, click **Poly**. The machine's poly mode is on, on that track.
 4. Click another numbered key. Poly mode moves to that track.
-5. Click **Sequence**. The rail marks the poly track ×6 and dims the others.
+5. Click **Pattern**. The rail marks the poly track ×6 and dims the others.
 6. On **Perform**, click **Auto track** to switch poly mode off.
 
 ![Poly mode on track 3](shot:mm-perform-poly)
 
-The other five tracks are silent until you leave poly mode. The line under the keyboard modes says so, and on **Sequence** the rail dims those tracks and marks the poly track ×6. Chapter 5 describes poly mode.
+The other five tracks are silent until you leave poly mode. The line under the keyboard modes says so, and on **Pattern** the rail dims those tracks and marks the poly track ×6. Chapter 5 describes poly mode.

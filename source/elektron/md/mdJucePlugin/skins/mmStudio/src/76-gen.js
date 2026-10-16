@@ -1,14 +1,14 @@
 
 /* ===== GEN and MUTATE on the page (MM-PORT-PLAN.md d, the Machinedrum Editor's DESIGN-generators.md §5) =====
-   The GEN bar, always under the piano roll on Sequence (it holds the PAGE control too), and the MUTATE bar, always
-   over the Sound pages. Both are live: a change writes at once. A run of changes in one context (the workspace,
+   The GEN bar, always under the piano roll on Pattern (it holds the PAGE control too), and the MUTATE bar, always
+   over the Kit pages. Both are live: a change writes at once. A run of changes in one context (the workspace,
    the selected track, the pattern or the kit) is one gesture, one undo step: the commits after each click wait
    (genHeld, like rotate's rotHold) until the run ends, on another context, any other edit, undo or redo. Each change
    generates from the run's base, the pattern before it, so a value moved back gives its steps back. The results
    come from the pure functions (skins/shared/deskGen.js, 52-gen.js); here they become the view's own state, and
    GEN's are the steps intent of the tracks it wrote (their steps, slides and locks over the range, so a value moved
    back gives its steps back); MUTATE's are the params intent of the values it moved. Alt is the global "all": Alt + a GEN change
-   every track of the side shown over the whole pattern, Alt+R every track (Sound: every synth track). ===== */
+   every track of the side shown over the whole pattern, Alt+R every track (Kit: every synth track). ===== */
 S.gen={specs:null,last:[],m:[],run:null,session:null,kept:new Set()};
 S.mut={amount:20,seed:genSeed(),scope:new Set(["SYN"]),trial:null,note:""};
 S.genOwn=false;
@@ -249,8 +249,8 @@ document.addEventListener("pointermove",e=>{if(!gvDrag)return;if(e.buttons===0&&
  const n=document.querySelector(`.gv[data-gv="${gvDrag.k}"]`);if(n){n.dataset.dragged="1";gvDrag.v=n}});
 document.addEventListener("pointerup",gvEnd);document.addEventListener("pointercancel",gvEnd);addEventListener("blur",gvEnd);
 Keys.bind({id:"randomise-track",short:"Randomise",scope:"any",keys:["R"],code:"KeyR",group:"Selected track",modal:"genpop",when:()=>kbOn()||genDlgOpen(),run:()=>randomise(false),
- does:"Randomise the selected track: on Sound a fresh random sound (MUTATE, from the sound before the trial); everywhere else a new GEN variation: a new seed, or random hits and rotation"});
+ does:"Randomise the selected track: on Kit a fresh random sound (MUTATE, from the sound before the trial); everywhere else a new GEN variation: a new seed, or random hits and rotation"});
 Keys.bind({id:"randomise-all",short:"Randomise all",scope:"any",keys:["R"],code:"KeyR",mod:"alt",group:"All",modal:"genpop",when:()=>kbOn()||genDlgOpen(),run:()=>randomise(true),
- does:"Randomise every track: on Sound every synth track's sound, everywhere else every GEN spec of the side shown over the whole pattern"});
+ does:"Randomise every track: on Kit every synth track's sound, everywhere else every GEN spec of the side shown over the whole pattern"});
 Keys.bind({id:"gen-value-all",scope:"seq",area:"GEN",keys:["GEN value"],mod:"alt",group:"All",does:"Change a GEN value: every track of the side shown, the whole pattern (one undo step per run)"});
-Keys.bind({id:"rkey-all",scope:"any",area:"GEN",keys:["R key"],mod:"alt",group:"All",does:"Click: randomise every track (Sound: every synth track; VOL and TUNE stay)"});
+Keys.bind({id:"rkey-all",scope:"any",area:"GEN",keys:["R key"],mod:"alt",group:"All",does:"Click: randomise every track (Kit: every synth track; VOL and TUNE stay)"});
