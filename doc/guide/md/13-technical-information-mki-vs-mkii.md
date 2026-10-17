@@ -36,7 +36,7 @@ The editor's Sampler has 48 ROM slots and 4 RAM slots.
 
 ### Design
 
-The MKI machine is silver, the MKII black. The editor gives its panel either colour. Click **MKI** or **MKII** in the top bar to switch.
+The MKI machine is silver, the MKII black. The editor gives its panel either colour. Open the engine menu (the EMU OS entry in the LCD) and choose **PLATE: MKI** or **PLATE: MKII** to switch. The choice is kept for next time.
 
-![The plate key in the top bar](shot:e2e-md-top-plate)
+![The PLATE entry in the engine menu](shot:e2e-md-top-plate)
  The choice is kept for the next time. It changes the colour only.
