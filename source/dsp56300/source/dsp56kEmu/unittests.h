@@ -133,6 +133,7 @@ namespace  dsp56k
 		void max_parallel();
 		void tst();
 		void nop();
+		void hostStatusRegisterReadOnly();
 		void repAtVolatileAddress();
 		void ccrGroundTruth();
 		void bitTestMemoryEaUpdate();
