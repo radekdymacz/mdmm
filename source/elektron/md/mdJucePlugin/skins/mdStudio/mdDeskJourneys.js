@@ -694,7 +694,7 @@ const MdJourneys = (() => {
 		name: "md-lane-tools", proves: [],
 		steps: [
 			go("seq"),
-			{ say: "pick a track with trigs and the first lane", act: async (u, c) => { c.t = [...Array(16).keys()].find(t => trigsOf(t).length >= 3 && soundTracks().includes(t)); u.click(rail(c.t)); await sleep(200); c.ln = S.lane; c.i = pidx(c.t, c.ln); c.s = trigsOf(c.t).filter(s => s < Math.min(16, V.len)); c.m0 = JSON.stringify(locksOf(c.t, c.i)); c.u0 = V.undoCount; },
+			{ say: "pick a track with trigs and the first lane", act: async (u, c) => { const shown = steps(), onShown = t => trigsOf(t).filter(s => shown.includes(s)); c.t = [...Array(16).keys()].find(t => onShown(t).length >= 3 && soundTracks().includes(t)); u.click(rail(c.t)); await sleep(200); c.ln = S.lane; c.i = pidx(c.t, c.ln); c.s = onShown(c.t); c.m0 = JSON.stringify(locksOf(c.t, c.i)); c.u0 = V.undoCount; },
 				screen: c => ok(S.sel === c.t && !!$1(".lanetop .xlane [data-xs=up]"), "no lane toolbox on the title row") },
 			{ say: "hover Ramp up: the lane shows it faint, nothing is written", act: async (u, c) => { await u.glide(".xlane [data-xs=up]"); $1(".xlane [data-xs=up]").dispatchEvent(new PointerEvent("pointerover", { bubbles: true })); await sleep(100); }, screen: c => ok($all("#lane .xghost").length >= 3 && JSON.stringify([...(V.locks.get(lk(c.t, c.ln)) || [])]) === c.m0 || $all("#lane .xghost").length >= 3, `${$all("#lane .xghost").length} ghosts`), machine: c => ok(JSON.stringify(locksOf(c.t, c.i)) === c.m0, "the machine has locks written") },
 			{ say: "click Ramp up: the machine holds a lock on every step with a trig, rising", act: u => u.click(".xlane [data-xs=up]"), screen: () => ok($all("#lane .xghost").length === 0, "ghosts stay"),
