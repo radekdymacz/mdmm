@@ -8,6 +8,9 @@
 //   3. learnStart, two values from a controller (consumed: nothing of them reaches the machine), the step learns the
 //      mapping, and the learned CC moves its parameter in the machine, not the firmware's target of that CC
 //   4. learnRemove: the machine has the CC back
+//   5. project round trip: the project is saved (getStateInformation) with the learned mapping, a new processor loads it
+//      (setStateInformation), starts the firmware again, and the mapping is in the document, its CC still moves the
+//      parameter and the machine, and the firmware's own target of that CC still does not move
 //   GEARMULATOR_MD_FIRMWARE_BIN=<ROM> mdLearnFirmwareTest md
 //   GEARMULATOR_MM_FIRMWARE_BIN=<ROM> mdLearnFirmwareTest mm
 // Exits 77 without the ROM. The config is isolated (EphemeralConfig).
@@ -93,12 +96,15 @@ namespace
 	class Rig
 	{
 	public:
-		explicit Rig(const std::string& _home)
+		// _state: a project to load before the audio starts (nullptr: a fresh instance)
+		explicit Rig(const std::string& _home, const juce::MemoryBlock* _state = nullptr)
 		{
 			Processor::EphemeralConfig config;
 			config.deviceHomePath = _home + "/";
 			processor = std::make_unique<Processor>(g_mm ? md::MachineModel::Monomachine : md::MachineModel::Machinedrum, config);
 			juce::AudioProcessor& ap = *processor;
+			if(_state)
+				ap.setStateInformation(_state->getData(), static_cast<int>(_state->getSize()));
 			ap.prepareToPlay(44100.0, 128);
 			m_audio = std::thread([this, &ap]
 			{
@@ -272,7 +278,8 @@ int main(const int _argc, char** _argv)
 	home.createDirectory();
 	std::printf("mdLearnFirmwareTest %s\n", g_mm ? "mm" : "md");
 
-	Rig rig(home.getFullPathName().toStdString());
+	auto rigOwner = std::make_unique<Rig>(home.getFullPathName().toStdString());
+	Rig& rig = *rigOwner;
 	if(!rig.waitStarted())
 	{
 		std::puts("  FAIL: the firmware did not start");
@@ -346,6 +353,45 @@ int main(const int _argc, char** _argv)
 	rig.session()->step();
 	check(rig.mappings() == 1, "learnRemove: one mapping left");
 	check(land([&] { rig.cc(0, ccA, 20); }, [&] { return machineIs(fwA, 20); }), "the CC without its mapping reaches the firmware's own target again");
+
+	// 5. the project round trip: save with the one mapping left (ccB -> mapB), load into a new processor
+	rig.session()->step();
+	juce::MemoryBlock project;
+	static_cast<juce::AudioProcessor&>(*rig.processor).getStateInformation(project);
+	check(project.getSize() > 0, "the project is saved");
+	rigOwner.reset();
+
+	Rig again(home.getFullPathName().toStdString(), &project);
+	check(again.waitStarted(), "the loaded project starts the firmware");
+	again.attach();
+	again.session()->step();
+	check(again.mappings() == 1, "the loaded project has its mapping in the document");
+	const auto* loadedDoc = again.learnDoc();
+	const auto* loaded = loadedDoc && loadedDoc->find("mappings") && !loadedDoc->find("mappings")->asArray().empty()
+		? &loadedDoc->find("mappings")->asArray()[0] : nullptr;
+	check(loaded && loaded->find("cc")->asNumber() == ccB && loaded->find("t")->asNumber() == mapB.t && loaded->find("i")->asNumber() == mapB.i,
+		"and it is the learned one: the CC and the target it was saved with");
+	check(again.until([&] { return again.machine(fwB).has_value(); }, 30000), "the machine's working kit is readable again");
+	const auto fwBLoaded = again.machine(fwB);
+	const auto mapBLoaded = again.machine(mapB);
+	const int vB2 = mapBLoaded && *mapBLoaded == 101 ? 103 : 101;
+	auto* pb2 = again.parameter(mapB);
+	const auto land2 = [&](const std::function<void()>& _send, const std::function<bool()>& _landed)
+	{
+		for(int attempt = 0; attempt < 6; ++attempt)
+		{
+			_send();
+			if(again.until(_landed, 2500))
+				return true;
+		}
+		return false;
+	};
+	check(land2([&] { again.cc(0, ccB, vB2); }, [&] { return pb2 && pb2->getUnnormalizedValue() == vB2; }), "the loaded mapping moves its parameter");
+	const int expectB2 = pb2 ? pb2->getUnnormalizedValue() : -1;
+	check(again.until([&] { const auto v = again.machine(mapB); return v && *v == expectB2; }, 8000), "and the machine follows");
+	pump(1000);
+	const auto fwBNow = again.machine(fwB);
+	check(fwBLoaded && fwBNow && *fwBLoaded == *fwBNow, "the firmware's own target of that CC did not move (the mapping owns it again)");
 
 	std::printf("mdLearnFirmwareTest %s: %s\n", g_mm ? "mm" : "md", g_failures ? "FAIL" : "PASS");
 	return g_failures ? 1 : 0;
