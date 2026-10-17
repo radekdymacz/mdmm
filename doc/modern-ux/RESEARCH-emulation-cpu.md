@@ -471,6 +471,40 @@ run.
 | Firmware suite | adds `mdDeskFirmwareTest plocktiming-strict`, `mdUwFirmwareTest`, `mmSineFirmwareTest`, `mmSineMidiFirmwareTest`, `mmDigiproFirmwareTest` |
 | Plug-in | in-plugin journeys, pluginval and auval green |
 
+#### The dsp56300 upstream batch of 0.8 (2026-10-17, branch `perf/0.8-dsp-upstream`)
+
+The upstream commits since the base (148 on dsp56300/dsp56300, 2026-08-31 to 10-14, plus one older) were judged and
+copied one at a time; the table is in doc/modern-ux/UPSTREAM.md, "dsp56300 fixes copied in 0.8". 28 were taken, 121 left
+out (most are DSP56362/56367 or firmware-specific), 4 are open because they move the sound (`cbb2398e`, `623c6bce`,
+`b7ce5603`) or cost speed for no observed effect (`65406f8f`'s ADD/SUB/CMP overflow flags).
+
+Gate: all 30 playing goldens equal (MD and MM, stereo and six outputs, speed-ups on and off, plus the 6 exact-ESSI
+keys), so nothing in the batch changed a sample, a byte of RAM or a MIDI byte of the six scenarios. Findings on the way:
+`a1a64bc7`'s REP-scan half moved the MD playing hash (block boundaries) and was taken out again; the ALU-latch half
+stays.
+
+Cost, `mdmmPerfGateTest` (6 s per phase, host instructions and cycles per audio frame from `thread_selfcounts`, ABBA
+interleaved, 4 runs per arm, medians; the Mac was loaded by other sessions, so read the instructions, the cycles
+move by +-2 %; dev build, not the PGO release):
+
+| Scenario | Phase | Instructions per frame | Cycles per frame |
+|---|---|---|---|
+| md-busy | stopped / playing | 150,113 -> 148,876 (-0.8 %) / 159,252 -> 158,246 (-0.6 %) | 29,694 -> 29,424 (-0.9 %) / 30,778 -> 30,908 (+0.4 %) |
+| md-factory | stopped / playing | 149,896 -> 148,668 (-0.8 %) / 155,860 -> 154,780 (-0.7 %) | 30,714 -> 30,618 (-0.3 %) / 31,208 -> 31,818 (+2.0 %) |
+| mm-busy | stopped / playing | 172,844 -> 172,661 (-0.1 %) / 174,570 -> 174,522 (0.0 %) | 35,516 -> 35,348 (-0.5 %) / 38,666 -> 38,943 (+0.7 %) |
+| mm-a01 | stopped / playing | 172,819 -> 171,173 (-1.0 %) / 174,704 -> 173,280 (-0.8 %) | 34,887 -> 34,268 (-1.8 %) / 38,301 -> 38,285 (0.0 %) |
+
+`mdCpuBenchTest` (thread CPU time per second of audio) was run too, 16 runs per arm, ABBA: the machine's load moved
+between 5 and 300 during the runs and the spread of one arm (39.6 to 51 % of a core) is larger than any difference; its
+medians were +0.4 % (stopped) and +8 % (playing), which is noise, not a regression (instructions and cycles above are
+level). `mmCpuBenchTest` was not run again.
+
+Where the gain is and is not: the batch buys about 1 % of instructions on the MD and less on the MM. It is the JIT
+register-pool work (`503b0c98`), not `0155c135`: that commit speeds up `Audio::processAudioOutput`, which nothing of
+ours calls (our rings run single-threaded without their semaphores, LINK_RINGS). The PGO profile
+(`source/elektron/md/pgo`) is stale for `dsp56kEmu` and `dsp56kBase`; retrain on release/0.8.0 after the merge
+(`scripts/macos/train_mdmm_pgo.sh`).
+
 ### Step 3 — long bets (1-3 months)
 
 Ship PGO for the arm64 slice (L6). Then decide on the codegen pass (L13b). Consider threading (L14) only if callback headroom, not average CPU, is the goal.
