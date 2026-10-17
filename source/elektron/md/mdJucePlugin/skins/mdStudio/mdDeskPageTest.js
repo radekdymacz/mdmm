@@ -55,7 +55,7 @@ const src = FILES.map(f => fs.readFileSync(path.join(__dirname, f), "utf8").repl
 const P = new Function("scope", "with (scope) {\n" + src + `
 ;let renders = 0;
 render = () => { renders++; }; syncControls = () => { }; renderTop = () => { }; renderSub = () => { }; redraw = () => { }; refreshAudible = () => { };
-return { overridesText, learnName, progressText, onLearnDoc, learnPaused, learnMax, toggleLearn, kitHit, kitGrab, kitAt, laneAt, valueHTML, kitLabelHTML, laneFmt, grp, Gesture, Boot, hostTempoRefused, l2step, onTelemetry, pauseNow, playsText, songLcd, S, Docs, Overlay, Held, PREP, scheduleRender, clickSteps, secAction, selStart, stepMenu, stepMenuItems, Modifiers, selCut, selDuplicate, clearSel, setSel, endSelect, interacting, genEnsure, genSpec, setGenSpec, clickTrackKeys, userMute, soloWrites, muteSel, msSet, prepToggle, unmuteAll, Keys,
+return { overridesText, learnName, progressText, onLearnDoc, learnPaused, learnMax, toggleLearn, kitHit, kitGrab, kitAt, laneAt, slideGrab, slideNext, slideVal, bandLive, bandEsc, drawSlides, endLaneDraw, valueHTML, kitLabelHTML, laneFmt, grp, Gesture, Boot, hostTempoRefused, l2step, onTelemetry, pauseNow, playsText, songLcd, S, Docs, Overlay, Held, PREP, scheduleRender, clickSteps, secAction, selStart, stepMenu, stepMenuItems, Modifiers, selCut, selDuplicate, clearSel, setSel, endSelect, interacting, genEnsure, genSpec, setGenSpec, clickTrackKeys, userMute, soloWrites, muteSel, msSet, prepToggle, unmuteAll, Keys,
 	get V() { return V; }, setToast(f) { const was = toast; toast = f; return was; }, setV(v) { V = v; }, view, get renders() { return renders; }, get pending() { return pendingRender; } }; }`)(scope);
 
 /* the machine document: its mutes (machine.desk.mutes) as the machine has them */
@@ -725,6 +725,147 @@ return { Bridge, cmd, asked, errors, banners, S, Drop, get V() { return V; }, se
 	P.S.lane = "PAN";
 	check(P.laneFmt(64) === "0" && P.laneFmt(74) === "+10" && P.laneFmt(0) === "-64" && />\+10</.test(P.valueHTML(74)), "a signed parameter's numbers are -64 to +63 as the knob shows it");
 	P.S.lane = "FLTF"; delete P.Docs.kits[3]; delete P.Docs.patterns[5]; P.Overlay.clear(); P.setV(P.view()); for (const k of Object.keys(hooks)) delete hooks[k];
+}
+
+/* ---- I-054: a slide drawn in the lock lane (the Monomachine lane's gestures, in the Machinedrum's terms). The slide is a flag on a
+   step (this track's, or with All tracks the pattern's row every track with a trig there takes), set by the one slide intent
+   (setMark): a lock's dot dragged sideways, Shift-drag out of a lock bar and dropped on the target, a click on the ramp's line
+   to take it off. Up and down from the dot, a click, Alt and a press off the dot and the line are the lane's own. ---- */
+{
+	const HEX62 = "0".repeat(62);
+	const tr = (i) => ({ machine: "GND-EMPTY", model: 0, level: 100, synth: Array(8).fill(0), effects: Array(8).fill(0).map((x, k) => k === 4 && i === 0 ? 64 : 0), routing: Array(8).fill(0),
+		lfo: { track: 0, param: 0, shape1: 0, shape2: 0, update: 0 }, muteGroup: null, trigGroup: null });
+	const pattern = (slideAll, slide) => ({ schema: "md-desk/pattern", version: 2, slot: 5, kit: 3, length: 16, totalLength: 16, tempoMultiplier: "1X", swingAmount: 0, accentAmount: 0,
+		accent: { editAll: 0, steps: [] }, slide: { editAll: slideAll, steps: slideAll ? slide : [] }, swing: { editAll: 0, steps: [] },
+		tracks: Array.from({ length: 16 }, (_, i) => ({ trigs: i === 0 ? [0, 1, 4, 8, 12] : i === 1 ? [4, 8] : [], accent: [], slide: !slideAll && i === 0 ? slide : [], swing: [] })),
+		/* FLTF is parameter 12 of GND-EMPTY: locks on steps 0, 4, 8 (trigs) and 6 (no trig: the machine ignores it) */
+		locks: [{ track: 0, param: 12, steps: [[0, 20], [4, 100], [6, 90], [8, 60]] }], firmware: { format: { version: 2, revision: 0 }, lockedRowsField: 0 } });
+	const load = (slideAll, slide) => {
+		P.Docs.kits[3] = { schema: "md-desk/kit", version: 2, slot: 3, name: "K", tracks: Array.from({ length: 16 }, (_, i) => tr(i)),
+			masterFx: { rhythmEcho: Array(8).fill(0), gateBox: Array(8).fill(0), eq: Array(8).fill(0), dynamix: Array(8).fill(0) },
+			firmware: { format: { version: 2, revision: 0 }, lfoState: Array(16).fill(HEX62) } };
+		P.Docs.patterns[5] = pattern(slideAll, slide);
+		P.Docs.machine = Object.assign({}, P.Docs.machine || {}, { pattern: { current: 5 }, kit: { current: 3 }, desk: {} });
+		P.Overlay.clear(); P.S.multi = new Set(); P.S.sel = 0; P.S.ws = "seq"; P.S.lane = "FLTF"; P.S.tt = "trig"; P.setV(P.view());
+	};
+	/* the lane: 16 keys of 20 px from x 0, 106 px tall with the bottom at 200 (the bars' scale: 3 px in, 100 px high) */
+	const classes = new Set();
+	const BOT = 200, KEYH = 106, dotY = v => BOT - 3 - (KEYH - 6) * v / 127;
+	const keyEls = Array.from({ length: 16 }, (_, s) => { const k = { dataset: { s: String(s) }, insertAdjacentHTML() { }, classList: { add() { }, remove() { } }, getBoundingClientRect: () => ({ bottom: BOT, height: KEYH, top: BOT - KEYH, left: s * 20, right: s * 20 + 20, width: 20 }), querySelector: q => q === ".base" ? {} : null }; k.closest = () => k; return k; });
+	const svg = { innerHTML: "", setAttribute() { } };
+	const lane = { contains: () => true, classList: { add: c => classes.add(c), remove: c => classes.delete(c), toggle: (c, on) => on ? classes.add(c) : classes.delete(c) }, innerHTML: "",
+		getBoundingClientRect: () => ({ left: 0, top: BOT - KEYH, width: 320, height: KEYH, right: 320, bottom: BOT }), querySelector: q => { const m = /data-s="(\d+)"/.exec(q); return m ? keyEls[+m[1]] : null; } };
+	hooks["#lane"] = lane; hooks["#lanesvg"] = svg; keyEls.forEach((k, s) => { hooks[`#lane .lb[data-s="${s}"]`] = k; }); hooks["#lane .lb"] = keyEls[0];
+	document.querySelectorAll = q => q === "#lane .lb" ? keyEls : [];
+	/* the key under the pointer is the one the event names (document.elementFromPoint) */
+	const at = (s, y, m = {}) => { hooks.under = keyEls[s]; return Object.assign({ button: 0, clientX: s * 20 + 10, clientY: y, target: keyEls[s], pointerId: 1, preventDefault() { } }, m); };
+	const slides = () => sent.filter(m => m.op === "slide"), locks = () => sent.filter(m => m.op === "lock");
+	const up = () => { fire("document", "pointerup"); run(); };
+	load(0, []);
+	P.S.lane = "FLTF";
+	const FL = P.V.locks.get("0:FLTF");
+	check(!!FL && FL.get(4) === 100 && FL.get(6) === 90, "the test pattern: FLTF locks 0=20, 4=100, 6=90 (no trig), 8=60: " + (FL ? [...FL].join(" ") : "none"));
+	/* the rule (measured on the firmware, gapProbesFirmwareTest w13slide): the glide ends on the track's next trig, whether that trig locks
+	   the parameter or not; a lock on a step without a trig (step 6) is never a target */
+	check(P.slideNext(0, "FLTF", 0) === 1 && P.slideNext(0, "FLTF", 1) === 4 && P.slideNext(0, "FLTF", 4) === 8 && P.slideNext(0, "FLTF", 8) === 12 && P.slideNext(0, "FLTF", 12) === null,
+		"the next trig after 0 is 1, after 4 is 8 (never step 6, which has no trig), after 12 none");
+	check(P.slideNext(0, "VOL", 4) === 8, "it is the track's next trig, not the parameter's next lock");
+	check(P.slideVal(0, "FLTF", 8) === 60 && P.slideVal(0, "FLTF", 12) === 64, "the value on a trig is its lock (60 on step 9) or the kit value (64) when it has none");
+
+	/* a press on a dot: a maybe-slide; a press off the dot, on the kit line, with Alt, with a right button is not */
+	sent.length = 0;
+	check(!P.slideGrab(at(4, dotY(100) + 20)) && !P.Held.now, "a press 20 px from the dot is the lane's, not the slide's");
+	check(!P.slideGrab(at(4, dotY(100), { altKey: true })) && !P.slideGrab(at(4, dotY(100), { button: 2 })) && !P.Held.now, "Alt (erase) and a right button never begin a slide");
+	check(!P.slideGrab(at(1, dotY(100))) && !P.slideGrab(at(2, dotY(100))), "a step with a trig and no lock, or without a trig, has no dot");
+	check(!P.slideGrab(at(4, dotY(100), { shiftKey: true, target: keyEls[1], clientX: 30 })) && !P.Held.now, "Shift on a key with no lock is the lane's ramp, not the slide's rubber band");
+	check(P.slideGrab(at(4, dotY(100) + 3)) && P.Held.as("lane")?.slide === "maybe" && P.Held.as("lane").s === 4, "a press within 8 px of a lock's dot begins a maybe-slide on that step");
+	/* a click (no more than 4 px of move) is the lane's: it locks the step where the pointer is */
+	P.laneAt(at(4, dotY(100) + 3, { clientX: 4 * 20 + 12 }));
+	check(P.Held.as("lane")?.slide === "maybe", "2 px of movement is still a click");
+	up();
+	check(slides().length === 0 && !P.Held.now, "released without moving it is no slide: " + sent.map(m => m.op).join(" "));
+	check(locks().length === 1 && locks()[0].s === 4, "it is the lane's click: the step's lock is set where the pointer was: " + JSON.stringify(locks().map(m => [m.s, m.v])));
+
+	/* a drag up and down from the dot is the lane's own (the lock's value), no slide */
+	sent.length = 0;
+	P.slideGrab(at(4, dotY(100)));
+	P.laneAt(at(4, dotY(100) - 2)); P.laneAt(at(4, dotY(100) - 30, { clientX: 4 * 20 + 11 }));
+	check(P.Held.as("lane") && !P.Held.as("lane").slide && P.Held.as("lane").erase === false, "up and down from the dot hands the press back to the lane's draw");
+	up();
+	check(slides().length === 0 && locks().length >= 1, "no slide; the lock moved: " + sent.map(m => m.op).join(" "));
+
+	/* a drag sideways from the dot: the preview ramp, then the slide at the release (the slide intent: one command, one undo step) */
+	sent.length = 0; P.Docs.patterns[5] = pattern(0, []); P.Overlay.clear(); P.setV(P.view());
+	const g0 = P.Gesture.id;
+	P.slideGrab(at(4, dotY(100)));
+	check(P.Gesture.id && P.Gesture.id !== g0, "the press begins the gesture (one undo step)");
+	P.laneAt(at(4, dotY(100), { clientX: 4 * 20 + 40 }));
+	check(P.Held.as("lane")?.slide === "on" && P.Held.as("lane").pv === 4, "dragged right: the preview is on step 4 (0-based), the dot's step");
+	P.drawSlides();
+	check(/M90 \S+ L170 \S+ /.test(svg.innerHTML) && /stroke-dasharray="6 4"/.test(svg.innerHTML), "the preview is a dashed ramp from step 5's bar top to the next lock's, step 9: " + svg.innerHTML.slice(0, 90));
+	check(slides().length === 0, "nothing is sent while the drag runs");
+	P.laneAt(at(12, dotY(100), { clientX: 4 * 20 + 300 }));
+	check(P.Held.as("lane").pv === 4, "however far it goes, the slide is that step's");
+	up();
+	check(slides().length === 1 && slides()[0].t === 0 && slides()[0].s === 4 && slides()[0].on === true && slides()[0].g === slides()[0].g, "released: one slide intent for track 1 step 5, on: " + JSON.stringify(slides()));
+	check(P.V.tracks[0].slide.has(4) && !P.Held.now && P.Gesture.id === 0, "the page shows the slide at once and the gesture is over");
+	P.drawSlides();
+	check(/M90 \S+ L170 \S+ /.test(svg.innerHTML) && !/stroke-dasharray/.test(svg.innerHTML), "a set slide is a solid ramp");
+	P.drawSlides(); check((svg.innerHTML.match(/stroke-width="2"/g) || []).length === 1, "one ramp: only step 5 slides");
+	/* a slide on the lock of step 9: the next trig is step 13, which holds no lock of FLTF, so the ramp ends on the kit line there (64) */
+	P.Docs.patterns[5] = pattern(0, [4, 8]); P.Overlay.clear(); P.setV(P.view()); P.drawSlides();
+	{ const m = /M170 (\S+) L250 (\S+) /.exec(svg.innerHTML); check(!!m && Math.abs(+m[1] - (dotY(60) - 94)) < 1e-6 && Math.abs(+m[2] - (dotY(64) - 94)) < 1e-6, "its end is at the kit value's height (64), its start at the lock's (60): " + (m ? m[1] + " " + m[2] : "no ramp")); }
+	P.Docs.patterns[5] = pattern(0, [4]); P.Overlay.clear(); P.setV(P.view()); sent.length = 0;
+
+	/* a click on the ramp's line takes the slide off; a drag from it hands back to the lane */
+	sent.length = 0;
+	const lineY = (dotY(100) + dotY(60)) / 2, midX = 6 * 20 + 10;	/* between step 5's bar and step 9's */
+	check(P.slideGrab(at(6, lineY, { clientX: midX })) && P.Held.as("lane")?.cut === "maybe" && P.Held.as("lane").s === 4, "a press on the ramp's line begins a maybe-cut of that step's slide");
+	up();
+	check(slides().length === 1 && slides()[0].s === 4 && slides()[0].on === false, "a click on the line sends the slide off: " + JSON.stringify(slides()));
+	check(!P.V.tracks[0].slide.has(4), "the page shows it off");
+	P.Docs.patterns[5] = pattern(0, [4]); P.Overlay.clear(); P.setV(P.view());
+	P.slideGrab(at(6, lineY, { clientX: midX })); P.laneAt(at(6, lineY - 20, { clientX: midX + 1 }));
+	check(P.Held.as("lane") && !P.Held.as("lane").cut, "a drag from the line is the lane's draw, as if there were no slide"); sent.length = 0; up();
+	check(slides().length === 0, "and sets no slide");
+	check(!P.slideGrab(at(6, lineY + 30, { clientX: midX })), "a press away from the line is not the cut's");
+
+	/* Shift on a lock bar: a rubber band out of the column; dropped on the next lock it sets the slide; elsewhere nothing */
+	sent.length = 0; P.Docs.patterns[5] = pattern(0, []); P.Overlay.clear(); P.setV(P.view());
+	P.slideGrab(at(4, dotY(100) + 30, { shiftKey: true }));
+	check(P.Held.as("lane")?.band === "maybe" && P.Held.as("lane").s === 4, "Shift on a lock bar begins a maybe-band");
+	P.laneAt(at(4, dotY(100) + 30 - 3, { shiftKey: true, clientX: 4 * 20 + 11 }));
+	check(P.Held.as("lane")?.band === "maybe", "inside its column, a few px of movement keep it a maybe");
+	P.laneAt(at(5, dotY(100) + 5, { shiftKey: true, clientX: 5 * 20 + 6 }));
+	check(P.Held.as("lane")?.band === "on" && P.Held.as("lane").nx === 8 && !!P.bandLive(), "out of the column to the right it is the band, its only target the next trig: step 9 (0-based 8)");
+	P.drawSlides();
+	check(/r="9"/.test(svg.innerHTML) && /M90 \S+ L106 /.test(svg.innerHTML), "a line follows the pointer from the dot and a ring marks the target");
+	P.laneAt(at(8, dotY(60), { shiftKey: true, clientX: 8 * 20 + 8 }));
+	up();
+	check(slides().length === 1 && slides()[0].s === 4 && slides()[0].on === true && P.V.tracks[0].slide.has(4), "dropped on the target: the slide is set on step 5: " + JSON.stringify(slides()));
+	/* dropped elsewhere, Esc, left of the start: nothing */
+	for (const [name, drop] of [["elsewhere", () => P.laneAt(at(11, dotY(60), { shiftKey: true, clientX: 11 * 20 + 8 }))], ["Esc", () => { P.laneAt(at(8, dotY(60), { shiftKey: true, clientX: 8 * 20 + 8 })); P.bandEsc(); }],
+		["left of the start", () => P.laneAt(at(2, dotY(60), { shiftKey: true, clientX: 2 * 20 + 8 }))]]) {
+		sent.length = 0; P.Docs.patterns[5] = pattern(0, []); P.Overlay.clear(); P.setV(P.view());
+		P.slideGrab(at(4, dotY(100) + 30, { shiftKey: true })); P.laneAt(at(5, dotY(100), { shiftKey: true, clientX: 5 * 20 + 6 })); drop(); up();
+		check(slides().length === 0 && !P.V.tracks[0].slide.has(4) && !P.Held.now, `dropped ${name}: no slide`);
+	}
+	/* Shift, up and down inside the column: the lane's ramp of locks */
+	sent.length = 0;
+	P.slideGrab(at(4, dotY(100) + 30, { shiftKey: true })); P.laneAt(at(4, dotY(100) - 20, { shiftKey: true, clientX: 4 * 20 + 11 }));
+	check(P.Held.as("lane")?.ramp === true && !P.Held.as("lane").band, "Shift, then up and down inside the column, is the ramp of locks"); up();
+	check(slides().length === 0, "no slide from it");
+
+	/* All tracks (the pattern's EDIT ALL row): the slide goes on every track with a trig on the step, and shows on them */
+	sent.length = 0; load(1, []);
+	P.slideGrab(at(4, dotY(100))); P.laneAt(at(4, dotY(100), { clientX: 4 * 20 + 40 })); up();
+	check(slides().length === 1 && slides()[0].on === true && P.V.tracks[0].slide.has(4) && P.V.tracks[1].slide.has(4) && !P.V.tracks[1].slide.has(8), "with All tracks the one intent puts the slide on every track with a trig on step 5 (track 2 has one there)");
+	sent.length = 0;
+	P.slideGrab(at(6, lineY, { clientX: midX })); up();
+	check(slides().length === 1 && slides()[0].on === false && !P.V.tracks[1].slide.has(4), "and a click on the ramp takes it off every track's");
+
+	for (const k of Object.keys(hooks)) delete hooks[k]; delete document.querySelectorAll;
+	P.S.lane = "FLTF"; delete P.Docs.kits[3]; delete P.Docs.patterns[5]; P.Overlay.clear(); P.setV(P.view());
 }
 
 /* ---- 0.8 (L4): the Control page's words from the plug-in's learn document ---- */

@@ -3,6 +3,14 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-054 · Machinedrum lock lane: draw a slide as in the Monomachine lane
+
+- **From:** Radek, 2026-10-17 (the Monomachine lock lane draws slides since 0.8.0; the Machinedrum should too).
+- **The idea:** a slide drawn in the lock lane. Drag a lock's dot sideways, or Shift-drag out of a lock bar and drop on the target, and the step slides; click the ramp's line to remove it; Esc cancels the Shift drag.
+- **The rule, measured on the firmware** (`gapProbesFirmwareTest w13slide`, track volume heard as the loudness of each trig): the slide is a flag on a step, per track or for the whole pattern (EDIT ALL, All tracks). A parameter locked on that step glides in a straight line to its value on the track's **next trig** and arrives when that trig plays. The value on that trig is its lock, or the kit value when it has none; a lock further on is not the target (the Monomachine's glide, by contrast, runs on to the parameter's next lock). So the ramp is drawn from the dot to the next trig's bar top, or to the kit line there, and the Shift drag has that one target.
+- **Status:** built for 0.8.0. The flag is set by the existing slide intent (the Slide trig type, so All tracks or This track decides), one undo step; the ramp is an SVG over the lane, drawn on top of the bars; plain drag, the kit line and the Shift ramp from a step without a lock are unchanged. Tests: `mdDeskPageTest.js` (the rule, the three gestures, All tracks), journey `md-lane-draw-slide`, the firmware probe `w13slide`; the intent itself is in `intent-cases.json` (slide, slide with EDIT ALL; `mdIntentCasesFirmwareTest`). Guide: chapter 8, "Parameter lock slide". Left out: a slide on the last trig of the pattern (the next trig would be after the wrap: no ramp, the drag says so).
+- **Release-note line:** In the Machinedrum Editor you can draw a slide in the lock lane: drag a lock's dot sideways, or Shift-drag out of a lock bar and drop on the next trig. The lock glides to the next trig's value (its lock, or the kit value when it has none). Click the ramp to take it off.
+
 ## I-053 · MIDI devices appear and go live, and a remembered input comes back
 
 - **From:** Radek, 2026-10-17 (0.8 test list, line 11: unplug and replug the keyboard).
