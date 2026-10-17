@@ -472,7 +472,23 @@ const MmJourneys = (() => {
 			{ say: "click on the ramp's line: the slide is off, one more undo step", act: async (u, c) => { c.u1 = machine().history?.undoCount || 0; const k1 = `#lane .lb[data-s="${c.on[0]}"]`, a = $1(k1).getBoundingClientRect(), b = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect(), { mx } = laneMeta(), L = S().locks.get(c.t + "|" + c.lane),
 						ya = a.bottom - 6 - L.get(c.on[0]) / mx * (a.height - 14), yb = b.bottom - 6 - L.get(c.on[1]) / mx * (b.height - 14), xa = a.left + a.width / 2, xb = b.left + b.width / 2, mid = { x: (xa + xb) / 2, y: (ya + yb) / 2 };
 					const f = 0.9, px = a.left + a.width * f, t = (px - xa) / (xb - xa), py = ya + (yb - ya) * t; u.click(k1, {}, f, (py - a.top) / a.height); await sleep(500); },
-				machine: c => ok(!slidesOf(c.t).includes(c.on[0]) && (machine().history?.undoCount || 0) === c.u1 + 1, "slides " + slidesOf(c.t).join(",") + `, undo steps ${c.u1} -> ${machine().history?.undoCount}`), within: 15000 }
+				machine: c => ok(!slidesOf(c.t).includes(c.on[0]) && (machine().history?.undoCount || 0) === c.u1 + 1, "slides " + slidesOf(c.t).join(",") + `, undo steps ${c.u1} -> ${machine().history?.undoCount}`), within: 15000 },
+			{ say: "Shift-press the first lock bar and drag out of its column: a line follows the cursor, the second lock is marked, nothing written", act: async (u, c) => {
+					c.u2 = machine().history?.undoCount || 0; const key = `#lane .lb[data-s="${c.on[0]}"]`, r = $1(key).getBoundingClientRect(), t2 = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect(), far = $1(`#lane .lb[data-s="${c.on[2]}"]`).getBoundingClientRect();
+					c.band = u.drag(key, [[r.width + 6, 0], [(t2.left + t2.width / 2) - (r.left + r.width / 2), 0], [far.left - r.left, 0]], { shift: true }, { fy: 0.6, click: false, stepMs: 450, settle: 0 }); await sleep(700); },
+				screen: c => { const h = $1("#lanesvg")?.innerHTML || ""; return ok(/r="9"/.test(h) && /stroke-width="2"/.test(h) && !S().tracks[c.t].slide.has(c.on[0]), "svg " + h.slice(0, 80)); }, within: 4000 },
+			{ say: "Escape, then the release past the second lock: cancelled, nothing written", act: async (u, c) => { u.key("Escape"); await c.band; await sleep(400); },
+				machine: c => ok(!slidesOf(c.t).includes(c.on[0]) && (machine().history?.undoCount || 0) === c.u2, "slides " + slidesOf(c.t).join(",") + `, undo steps ${c.u2} -> ${machine().history?.undoCount}`), within: 8000 },
+			{ say: "Shift-drag from the first lock bar and drop beside the second lock's column: cancelled", act: async (u, c) => { const key = `#lane .lb[data-s="${c.on[0]}"]`, r = $1(key).getBoundingClientRect(), far = $1(`#lane .lb[data-s="${c.on[2]}"]`).getBoundingClientRect();
+					await u.drag(key, [[r.width + 6, 0], [far.left - r.left, 0]], { shift: true }, { fy: 0.6, click: false }); await sleep(400); },
+				machine: c => ok(!slidesOf(c.t).includes(c.on[0]) && (machine().history?.undoCount || 0) === c.u2, "slides " + slidesOf(c.t).join(",")), within: 8000 },
+			{ say: "Shift-drag from the first lock bar and drop on the second lock's column: the slide is set, one undo step", act: async (u, c) => { const key = `#lane .lb[data-s="${c.on[0]}"]`, r = $1(key).getBoundingClientRect(), t2 = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect();
+					await u.drag(key, [[r.width + 6, 0], [(t2.left + t2.width / 2) - (r.left + r.width / 2), 0]], { shift: true }, { fy: 0.6, click: false }); await sleep(500); },
+				machine: c => ok(slidesOf(c.t).includes(c.on[0]) && (machine().history?.undoCount || 0) === c.u2 + 1, "slides " + slidesOf(c.t).join(",") + `, undo steps ${c.u2} -> ${machine().history?.undoCount}`), within: 15000 },
+			{ say: "click on the ramp's line: the slide is off", act: async (u, c) => { const k1 = `#lane .lb[data-s="${c.on[0]}"]`, a = $1(k1).getBoundingClientRect(), b = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect(), { mx } = laneMeta(), L = S().locks.get(c.t + "|" + c.lane),
+						ya = a.bottom - 6 - L.get(c.on[0]) / mx * (a.height - 14), yb = b.bottom - 6 - L.get(c.on[1]) / mx * (b.height - 14), xa = a.left + a.width / 2, xb = b.left + b.width / 2;
+					const f = 0.9, px = a.left + a.width * f, t = (px - xa) / (xb - xa), py = ya + (yb - ya) * t; u.click(k1, {}, f, (py - a.top) / a.height); await sleep(500); },
+				machine: c => ok(!slidesOf(c.t).includes(c.on[0]), "slides " + slidesOf(c.t).join(",")), within: 15000 },
 		],
 		async tidy(u, c) { if (c.sl0 != null) await undoUntil(u, () => JSON.stringify(slidesOf(c.t)) === c.sl0 && !S().locks.get(c.t + "|" + c.lane)?.has(c.on[0]), 6); }
 	};

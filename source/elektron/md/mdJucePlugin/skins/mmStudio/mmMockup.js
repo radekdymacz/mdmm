@@ -3515,6 +3515,10 @@ function drawSlides(){const svg=$("#lanesvg"),lane=$("#lane");if(!svg||!lane)ret
  locked.forEach(s=>{const pv=laneDraw?.pv===s;if(!tr.slide.has(s)&&!pv)return;const nx=locked.find(x=>x>s);if(nx==null)return;const a=lane.querySelector(`.lb[data-s="${s}"]`),b=lane.querySelector(`.lb[data-s="${nx}"]`);if(!a)return;
   const ra=a.getBoundingClientRect(),y=v=>ra.bottom-box.top-6-v/mx*(ra.height-14),xa=ra.left-box.left+ra.width/2;
   const xb=b?b.getBoundingClientRect().left-box.left+b.getBoundingClientRect().width/2:box.width;const ya=y(lm.get(s)),yb=y(lm.get(nx)),hl=cssv("--lcd")||"#fff";/* drawn after the lane, so above the bars; a light halo under the ink line reads on a solid bar and on an empty step */const fl=ra.bottom-box.top-6;/* automation ramp: a translucent fill down to the lane floor, a solid line bar top to bar top, a light halo under it; drawn after the lane so it sits above the bars and reads on solid bars, empty and hatched steps. The slide mark itself is the roll's top mark row (rollTopMarks) */d+=`<path d="M${xa} ${ya} L${xb} ${yb} L${xb} ${fl} L${xa} ${fl} Z" fill="${hl}" fill-opacity=".45"/><path d="M${xa} ${ya} L${xb} ${yb} L${xb} ${fl} L${xa} ${fl} Z" fill="${ink}" fill-opacity=".18"/><path d="M${xa} ${ya} L${xb} ${yb}" fill="none" stroke="${hl}" stroke-width="5" stroke-linecap="round"/><path d="M${xa} ${ya} L${xb} ${yb}" fill="none" stroke="${ink}" stroke-width="2" stroke-linecap="round"${pv&&!tr.slide.has(s)?' stroke-dasharray="6 4"':""}/><circle cx="${xa}" cy="${ya}" r="4" fill="${ink}" stroke="${hl}" stroke-width="1.5"/><circle cx="${xb}" cy="${yb}" r="3" fill="${ink}" stroke="${hl}" stroke-width="1.5"/>`});
+ const lv=bandLive();if(lv){/* the rubber band: from the lock to the cursor, a ring on the only target */const a=lane.querySelector(`.lb[data-s="${lv.s}"]`),ra=a&&a.getBoundingClientRect(),hl=cssv("--lcd")||"#fff";
+  if(ra){const y=v=>ra.bottom-box.top-6-v/mx*(ra.height-14),xa=ra.left-box.left+ra.width/2,ya=y(lm.get(lv.s)),xc=lv.cur.x-box.left,yc=lv.cur.y-box.top;
+   d+=`<path d="M${xa} ${ya} L${xc} ${yc}" fill="none" stroke="${hl}" stroke-width="5" stroke-linecap="round"/><path d="M${xa} ${ya} L${xc} ${yc}" fill="none" stroke="${ink}" stroke-width="2" stroke-linecap="round"/><circle cx="${xa}" cy="${ya}" r="4" fill="${ink}" stroke="${hl}" stroke-width="1.5"/>`;
+   const b=lv.nx!=null&&lane.querySelector(`.lb[data-s="${lv.nx}"]`);if(b){const rb=b.getBoundingClientRect(),xb=rb.left-box.left+rb.width/2,yb=y(lm.get(lv.nx));d+=`<circle cx="${xb}" cy="${yb}" r="9" fill="${hl}" fill-opacity=".6" stroke="${ink}" stroke-width="2"/><circle cx="${xb}" cy="${yb}" r="3" fill="${ink}"/>`}}}
  svg.setAttribute("width",box.width);svg.setAttribute("height",box.height);svg.innerHTML=d}
 function syncScroll(){const a=$("#seqscroll"),b=$("#lanescroll");if(!a||!b)return;a.onscroll=()=>{b.scrollLeft=a.scrollLeft};b.onscroll=()=>{a.scrollLeft=b.scrollLeft}}
 function refreshRow(t){redraw();return;const gate={},am=ampSteps(t);noteSpans(t).forEach(sp=>{for(let k=sp.s;k<sp.e;k++)gate[k]=(k===sp.s?(sp.e-sp.s>1?"gs":"g1"):k===sp.e-1?"ge":"gm")+(k-sp.s>=am?" gd":"")});$$(`.mst[data-t="${t}"]`).forEach(b=>{const s=+b.dataset.s,st=trk(t).steps[s];b.className=stepCls(t,s);b.setAttribute("aria-pressed",!!st);b.title=stepTitle(t,s,st);b.innerHTML=`<span class="nt">${stepText(t,s,st)}</span>${gate[s]?`<span class="gt ${gate[s]}"></span>`:""}`})}
@@ -3534,18 +3538,31 @@ const DOT_HIT=8,LINE_HIT=5,SLIDE_MOVE=4;
 function slideNext(t,pid,s){const tr=trk(t),lm=S.locks.get(lkKey(t,pid));if(!lm)return null;return[...lm.keys()].filter(x=>x>s&&tr.steps[x]&&!tr.steps[x].off).sort((a,b)=>a-b)[0]??null}
 function slidePt(el,v){const r=el.getBoundingClientRect(),{mx}=laneMeta();return{x:r.left+r.width/2,y:r.bottom-6-v/mx*(r.height-14)}}
 function segDist(p,a,b){const dx=b.x-a.x,dy=b.y-a.y,l=dx*dx+dy*dy,k=l?clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/l,0,1):0;return Math.hypot(p.x-a.x-k*dx,p.y-a.y-k*dy)}
-function slideKey(e){const lane=$("#lane");if(e.button!==0||e.altKey||e.shiftKey||!lane||!e.target.closest)return null;let el=e.target.closest(".lb");/* the gap between two keys is the lane itself: the key whose column it is */if(!el&&e.target===lane)el=$$("#lane .lb").find(c=>e.clientX<c.getBoundingClientRect().right);return el&&lane.contains(el)?el:null}
-function slideDown(e){return{button:0,clientX:e.clientX,clientY:e.clientY,target:e.target,pointerId:e.pointerId,altKey:false,shiftKey:false,preventDefault(){}}}
+function slideKey(e){const lane=$("#lane");if(e.button!==0||e.altKey||!lane||!e.target.closest)return null;let el=e.target.closest(".lb");/* the gap between two keys is the lane itself: the key whose column it is */if(!el&&e.target===lane)el=$$("#lane .lb").find(c=>e.clientX<c.getBoundingClientRect().right);return el&&lane.contains(el)?el:null}
+function slideDown(e){return{button:0,clientX:e.clientX,clientY:e.clientY,target:e.target,pointerId:e.pointerId,altKey:false,shiftKey:!!e.shiftKey,preventDefault(){}}}
 /* the dot of a lock on a step with a trig, or the ramp line of a step that slides: which gesture a press begins */
 function slideGrab(e){const el=slideKey(e);if(!el)return false;const t=S.sel,tr=trk(t),s0=+el.dataset.s,lm=S.locks.get(lkKey(t,S.lane));if(!lm||pidArgs(S.lane).page<0)return false;
+ /* Shift on a lock bar (a trig and a lock on this parameter): the slide's rubber band; on any other step Shift is the lane's ramp of locks */
+ if(e.shiftKey){const q=tr.steps[s0];if(!q||q.off||lm.get(s0)==null)return false;const r=el.getBoundingClientRect();
+  laneDraw={band:"maybe",s:s0,down:slideDown(e),x0:r.left,x1:r.right,touched:false};$("#lane").setPointerCapture(e.pointerId);e.preventDefault();return true}
  const p={x:e.clientX,y:e.clientY},st=tr.steps[s0],v0=lm.get(s0);let mode=null,s=s0;
  if(st&&!st.off&&v0!=null){const d=slidePt(el,v0);if(Math.hypot(p.x-d.x,p.y-d.y)<=DOT_HIT)mode="slide"}
  if(!mode)for(const a of tr.slide){const nx=slideNext(t,S.lane,a),v=lm.get(a),ea=$(`#lane .lb[data-s="${a}"]`),eb=nx==null?null:$(`#lane .lb[data-s="${nx}"]`);if(!ea||!eb||v==null)continue;
   if(segDist(p,slidePt(ea,v),slidePt(eb,lm.get(nx)))<=LINE_HIT&&!(a===s0&&st&&!st.off&&Math.hypot(p.x-slidePt(ea,v).x,p.y-slidePt(ea,v).y)<=DOT_HIT)){mode="cut";s=a;break}}
  if(!mode)return false;
  laneDraw={[mode]:"maybe",s,down:slideDown(e),touched:false};$("#lane").setPointerCapture(e.pointerId);e.preventDefault();return true}
+/* the Shift rubber band being drawn (the pointer is out of its column, not cancelled), or null */
+function bandLive(){const d=laneDraw;return d&&d.band==="on"&&!d.esc&&d.cur&&d.cur.x>=d.x0?d:null}
+function bandEsc(){if(laneDraw?.band==="on"){laneDraw.esc=true;drawSlides();toast("Slide cancelled")}}
+function bandAt(e){const d=laneDraw,t=S.sel;
+ if(d.band==="maybe"){const dn=d.down;
+  if(e.clientX<d.x0||e.clientX>=d.x1)d.band="on";/* out of the column sideways: the slide */
+  else{if(Math.abs(e.clientY-dn.clientY)<=SLIDE_MOVE)return true;laneDraw={ramp:true,touched:false};laneAt(dn);laneAt(e);return true}}/* up and down inside it: the Shift ramp of locks */
+ const nx=slideNext(t,S.lane,d.s);d.cur={x:e.clientX,y:e.clientY};d.nx=nx;
+ if(!d.told&&e.clientX>=d.x0){d.told=1;toast(nx==null?"No later lock to slide to":`Drop on step ${nx+1}: this parameter's next lock`)}
+ drawSlides();return true}
 /* true when the event was the slide gesture's; false hands it back to the lane's own paint */
-function slideAt(e){const d=laneDraw,t=S.sel;
+function slideAt(e){const d=laneDraw,t=S.sel;if(d.band)return bandAt(e);
  if(d.cut==="maybe"||d.slide==="maybe"){const dn=d.down,dx=e.clientX-dn.clientX,dy=e.clientY-dn.clientY;if(Math.hypot(dx,dy)<=SLIDE_MOVE)return true;
   if(d.cut==="maybe"||Math.abs(dy)>Math.abs(dx)){/* moved off the line, or up and down from the dot: the lane's own gesture, as if there were no slide */
    laneDraw={erase:false,touched:false};if(!kitGrab(dn))laneAt(dn);laneAt(e);return true}
@@ -3555,12 +3572,16 @@ function slideAt(e){const d=laneDraw,t=S.sel;
  if(right&&!d.told){d.told=1;toast(nx==null?"No later lock on this parameter to slide to":`Slides to step ${nx+1}, this parameter's next lock`)}
  if(was!==d.pv)drawSlides();return true}
 /* the release: true when the slide gesture took it (a plain click on the dot is the lane's click, replayed) */
-function slideEnd(){const d=laneDraw;if(!d||!(d.slide||d.cut))return false;const t=S.sel,tr=trk(t);$("#lane")?.classList.remove("kitdrag");
+function slideEnd(){const d=laneDraw;if(!d||!(d.slide||d.cut||d.band))return false;const t=S.sel,tr=trk(t);$("#lane")?.classList.remove("kitdrag");
+ if(d.band==="maybe"){laneDraw={ramp:true,touched:false};laneAt(d.down);endLaneDraw();return true}
+ if(d.band){const live=bandLive(),nel=live&&live.nx!=null?$(`#lane .lb[data-s="${live.nx}"]`):null,nr=nel?.getBoundingClientRect(),hit=!!nr&&live.cur.x>=nr.left&&live.cur.x<nr.right;
+  laneDraw=null;if(hit&&!tr.slide.has(d.s)){tr.slide.add(d.s);edit("slide",{t,s:d.s,on:true});commit();renderTop()}
+  rerenderSeq();return true}
  if(d.slide==="maybe"){laneDraw={erase:false,touched:false};if(!kitGrab(d.down))laneAt(d.down);endLaneDraw();return true}
  if(d.cut==="maybe"){laneDraw=null;if(tr.slide.has(d.s)){tr.slide.delete(d.s);edit("slide",{t,s:d.s,on:false});toast(`Slide off on step ${d.s+1}: its locked values jump again.`)}commit();renderTop();rerenderSeq();return true}
  const was=d.pv;laneDraw=null;if(was!=null&&!tr.slide.has(d.s)){tr.slide.add(d.s);edit("slide",{t,s:d.s,on:true})}
  commit();renderTop();rerenderSeq();return true}
-function laneAt(e){const lane=$("#lane");if(!lane)return;if(laneDraw.slide||laneDraw.cut){if(slideAt(e))return}if(laneDraw.kit==="maybe"){if(Math.abs(e.clientY-laneDraw.y0)<=KIT_MOVE)return;laneDraw.kit=true;$("#lane").classList.add("kitdrag");kitAt(e);return}if(laneDraw.kit){kitAt(e);return}if(laneDraw.ramp){rampAt(e);return}const el=document.elementFromPoint(e.clientX,e.clientY)?.closest(".lb");if(!el||!lane.contains(el))return;
+function laneAt(e){const lane=$("#lane");if(!lane)return;if(laneDraw.slide||laneDraw.cut||laneDraw.band){if(slideAt(e))return}if(laneDraw.kit==="maybe"){if(Math.abs(e.clientY-laneDraw.y0)<=KIT_MOVE)return;laneDraw.kit=true;$("#lane").classList.add("kitdrag");kitAt(e);return}if(laneDraw.kit){kitAt(e);return}if(laneDraw.ramp){rampAt(e);return}const el=document.elementFromPoint(e.clientX,e.clientY)?.closest(".lb");if(!el||!lane.contains(el))return;
  const s=+el.dataset.s,t=S.sel,st=trk(t).steps[s];if(!st||st.off){if(!(laneDraw.erase&&S.locks.get(lkKey(t,S.lane))?.has(s)))return}const[pg,i]=S.lane.split("."),mx=maxOf(meta(t,pg,+i));const r=el.getBoundingClientRect();const v=clamp(Math.round((r.bottom-6-e.clientY)/(r.height-14)*mx),0,mx);
  if(laneDraw.erase){const m=S.locks.get(lkKey(t,S.lane));if(!m?.has(s))return;m.delete(s);if(!m.size)S.locks.delete(lkKey(t,S.lane));edit("lock",{t,...pidArgs(S.lane),s,v:null})}
  else{if(S.locks.get(lkKey(t,S.lane))?.get(s)===v)return;if(!setLock(t,S.lane,s,v))return;edit("lock",{t,...pidArgs(S.lane),s,v})}
@@ -3952,6 +3973,8 @@ Keys.bind({id:"unmute-all",scope:"any",keys:["0"],group:"All",does:"Unmute and u
 Keys.bind({id:"unmark-paste",scope:"seq",keys:["Escape"],group:"Pattern",does:"Unmark the tracks marked for paste",when:()=>seqKeys()&&S.marks.size>0,run:()=>{S.marks.clear();renderRail()}});
 Keys.bind({id:"lockstep-wheel",scope:"seq",area:"Lock lane",keys:["wheel on a lock step"],group:"Pattern",does:"Move its lock in the lane's parameter, 4 a notch (⇧: 1)"});
 Keys.bind({id:"lane-slide",scope:"seq",area:"Lock lane",keys:["lock's dot"],group:"Pattern",does:"Drag sideways: a slide to the next lock of this parameter, drawn as a ramp (the machine glides every parameter locked on the step; one undo step). Click the ramp's line: slide off. Up and down is the lock's value as before"});
+Keys.bind({id:"lane-slide-band",scope:"seq",area:"Lock lane",keys:["lock bar"],mod:"shift",group:"Pattern",does:"Drag sideways out of a lock bar: a slide, a line to the cursor; drop on this parameter's next lock to set it (one undo step). Anywhere else, Esc or left of the start cancels. From a step without a lock the same drag is the ramp of locks"});
+Keys.bind({id:"lane-slide-cancel",short:"Cancel",hidden:true,scope:"seq",keys:["Escape"],group:"Pattern",does:"While drawing a slide in the lock lane: cancel it",when:()=>laneDraw?.band==="on",run:()=>bandEsc()});
 Keys.bind({id:"lane-ramp",scope:"seq",area:"Lock lane",keys:["lock lane"],mod:"shift",group:"Pattern",does:"Drag: a ramp, a straight line from the press to the release (one undo step)"});
 Keys.bind({id:"track-mark-paste",scope:"seq",area:"Tracks",keys:["track header"],mod:"shift",group:"Pattern",does:"Click: mark the track for paste; ⌘V then pastes into every marked track (one undo step)"});
 

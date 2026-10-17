@@ -1050,7 +1050,7 @@
 <h4 class="gd-h3">Copy a note with its locks</h4>
 <p>The locks of a step go with the step when you copy it. Right-click a note with a lock, choose <b class="gd-ui">Copy</b>, right-click an empty step and choose <b class="gd-ui">Paste here</b>. The new step has the pitch and the lock. See &quot;Note copy&quot; in chapter 11.</p>
 <h4 class="gd-h3">Slide</h4>
-<p>A small ramp over a note marks a step that glides. Set it with <b class="gd-ui">Slide</b> in the step menu. On a step with a slide, a locked value glides to the next lock instead of jumping. Drag sideways from a lock's dot in the lane to draw it. See &quot;Slide&quot; in chapter 15.</p>
+<p>A small ramp over a note marks a step that glides. Set it with <b class="gd-ui">Slide</b> in the step menu. On a step with a slide, a locked value glides to the next lock instead of jumping. Shift-drag from a lock in the lane draws it; Shift-drag from an empty step draws a ramp of locks. See &quot;Slide&quot; in chapter 15.</p>
 </div></section>
 <section class="gd-sec" id="parameter-locks-in-live-recording-mode">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-58</span></span></aside>
@@ -1149,6 +1149,7 @@
 <p>A slide makes a locked value glide to the next lock instead of jumping. Without a lock on the step a slide does nothing. The glide of a pitch is PORTAMENTO, in the trig setup.</p>
 <ol class="gd-steps"><li>Right-click a step in the roll, or select steps and click the ⋯ on the selection.</li><li>Choose <b class="gd-ui">Slide</b>. A tick shows when every selected step slides. On a selection it sets every step, in one undo step.</li><li>A small ramp over a note shows a step that slides and holds a lock. In the lock lane the glide is drawn from one lock to the next.</li></ol>
 <p>You can also draw it in the lock lane. Press on the dot at the top of a lock bar and drag sideways to the right. A dotted ramp shows where the glide goes: to the next lock of that parameter on a step with a trig, whatever further you drag. Trigs between them without a lock do not stop it. Let go and the step slides, in one undo step. A slide belongs to the step, so every parameter locked there glides to its own next lock. If the parameter has no later lock, the lane says so and nothing is set. Click the ramp's line to take the slide off. Dragging up or down from the dot changes the lock as before.</p>
+<p>Shift-drag from a lock draws a slide. Shift-drag from an empty step draws a ramp of locks. Hold Shift on a lock bar and drag sideways out of its column. A line follows the pointer and the next lock of that parameter is marked as the target. Drop on that lock and the step slides, in one undo step. Drop anywhere else, press Esc, or move left of the start, and nothing is set. If there is no later lock, the line still follows and the drop does nothing.</p>
 <p>To copy, paste or clear the slide row of a track, tick <b class="gd-ui">Slide</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu (chapter 11, &quot;Super copy&quot;). Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take each back.</p>
 </div></section>
 <section class="gd-sec" id="the-mute-mode">
