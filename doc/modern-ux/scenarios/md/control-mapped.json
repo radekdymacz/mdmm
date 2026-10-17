@@ -1,0 +1,141 @@
+{
+ "title": "CONTROL: learned CCs, overrides and the limit",
+ "about": "MIDI mapping on: five mappings (a knob row on CC 21 any channel with two targets, CC 21 on channel 1 that overrides the machine's own DEC, CC 22 inverted on any channel hiding four firmware targets, CC 74 on channel 10). Press 6 for CONTROL: the count under the matrix header, an overrides line under each mapping that hides a firmware CC.",
+ "boot": "stub",
+ "steps": [
+  {
+   "at": 300,
+   "send": [
+    {
+     "type": "learn",
+     "doc": {
+      "enabled": true,
+      "mappings": [
+       {
+        "index": 0,
+        "t": 0,
+        "i": 1,
+        "name": "DEC",
+        "cc": 21,
+        "ch": 0,
+        "mode": "Absolute",
+        "invert": false,
+        "overrides": [
+         {
+          "ch": 0,
+          "t": 0,
+          "i": 1
+         }
+        ]
+       },
+       {
+        "index": 1,
+        "t": 2,
+        "i": 0,
+        "name": "PTCH",
+        "cc": 22,
+        "ch": 255,
+        "mode": "Relative Signed",
+        "invert": true,
+        "overrides": [
+         {
+          "ch": 0,
+          "t": 0,
+          "i": 0
+         },
+         {
+          "ch": 1,
+          "t": 1,
+          "i": 0
+         },
+         {
+          "ch": 2,
+          "t": 2,
+          "i": 0
+         },
+         {
+          "ch": 3,
+          "t": 3,
+          "i": 0
+         }
+        ]
+       },
+       {
+        "index": 2,
+        "t": 1,
+        "i": 2,
+        "name": "RAMP",
+        "cc": 74,
+        "ch": 9,
+        "mode": "Absolute",
+        "invert": false,
+        "overrides": []
+       },
+       {
+        "index": 3,
+        "t": 3,
+        "i": 1,
+        "name": "DEC",
+        "cc": 21,
+        "ch": 255,
+        "mode": "Absolute",
+        "invert": false,
+        "overrides": []
+       },
+       {
+        "index": 4,
+        "t": 4,
+        "i": 6,
+        "name": "HARM",
+        "cc": 21,
+        "ch": 255,
+        "mode": "Absolute",
+        "invert": false,
+        "overrides": []
+       }
+      ],
+      "learning": null,
+      "limits": {
+       "tracks": 16,
+       "params": [
+        {
+         "i": 0,
+         "name": "PTCH"
+        },
+        {
+         "i": 1,
+         "name": "DEC"
+        },
+        {
+         "i": 2,
+         "name": "RAMP"
+        },
+        {
+         "i": 3,
+         "name": "RDEC"
+        },
+        {
+         "i": 4,
+         "name": "STRT"
+        },
+        {
+         "i": 5,
+         "name": "NOIS"
+        },
+        {
+         "i": 6,
+         "name": "HARM"
+        },
+        {
+         "i": 7,
+         "name": "CLIP"
+        }
+       ],
+       "max": 128
+      }
+     }
+    }
+   ]
+  }
+ ]
+}
