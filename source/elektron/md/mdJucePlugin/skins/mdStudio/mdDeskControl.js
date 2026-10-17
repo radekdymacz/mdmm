@@ -6,6 +6,7 @@
 function toggleLearn() {
 	const paused = learnPaused();
 	if (!S.ctl.learn && paused) { toast(paused); return; }	/* the HW MIDI engine: the host's MIDI in is the machine's own out */
+	if (!S.ctl.learn && Docs.learn && Docs.learn.mappings.length >= learnMax()) { toast(`The project holds ${learnMax()} mappings at most. Remove one to learn another.`); return; }
 	S.ctl.learn = !S.ctl.learn; S.ctl.learnT = null; document.body.classList.toggle("learn", S.ctl.learn); renderTop(); syncControls();
 	if (S.ctl.learn) toast("LEARN: click a value, then turn a knob on your MIDI controller."); else cmd("learnCancel");
 }

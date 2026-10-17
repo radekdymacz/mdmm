@@ -393,11 +393,13 @@ html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[dat
 .lstat .hot{color:var(--rec);font-weight:700}
 .lstat .paused{color:var(--rec);font-weight:600}
 .lstat .leftout{flex-basis:100%;display:grid;gap:1px;font-size:13px}
-.lstat .leftout span{font:12px var(--mono);overflow-wrap:anywhere}
+.lstat .leftout span{font:12px var(--mono);overflow-wrap:break-word;min-width:0}
 .lnk .ovr{grid-column:1/-1;font-size:12px}
 #caddl:disabled{opacity:.4;cursor:not-allowed}
 /* 0.8 (L4): .skey's own display beats [hidden] (the same weight, later): a hidden LEARN key took its room. With MIDI mapping on the
-   key is shown and the six tabs give back a little padding so the plate key stays inside a 1280 window */
+   key is shown and below 1400 px the six tabs give back a little padding so the plate key stays inside a 1280 window */
 .skey[hidden],.tabs button[hidden]{display:none!important}
+@media (max-width:1400px){
 body.mapping #tabs{gap:2px!important}
 body.mapping #tabs button{padding-left:3px!important;padding-right:3px!important;font-size:11px!important;letter-spacing:.06em!important;min-width:44px!important}
+}

@@ -3386,6 +3386,16 @@ const MdJourneys = (() => {
 		],
 		tidy: learnTidy
 	};
+	/* Esc leaves LEARN from any tab, the Kit tab too */
+	const controlLearnEsc = {
+		name: "md-control-learn-esc", proves: [],
+		steps: [
+			{ say: "LEARN on, the Kit tab", act: async (u, c) => { await learnIn(u, c, ldoc([])); u.click("#learnkey"); u.click(tab("sound")); await sleep(300); }, screen: () => ok(pressed("#learnkey") && S.ws === "sound", `learn ${S.ctl.learn}, ws ${S.ws}`) },
+			{ say: "press Escape: LEARN goes out, still on the Kit tab, learnCancel is sent", act: (u, c) => { c.n = learnSent.mark(); u.key("Escape"); }, screen: () => ok(!pressed("#learnkey") && !S.ctl.learn && S.ws === "sound", `learn ${S.ctl.learn}, ws ${S.ws}`),
+				machine: c => ok(learnSent.since(c.n).some(x => x.op === "learnCancel"), JSON.stringify(learnSent.since(c.n))) }
+		],
+		async tidy(u) { if (S.ctl.learn) u.key("Escape"); await learnTidy(u); S.ws = "seq"; render(); }
+	};
 	/* the limit: 128 mappings, the count says so, Add is off, the 129th is not offered */
 	const controlLearnLimit = {
 		name: "md-control-learn-limit", proves: [],
@@ -3393,6 +3403,7 @@ const MdJourneys = (() => {
 			{ say: "127 mappings: the count, Add target on", act: async (u, c) => { c.maps = n => Array.from({ length: n }, (_, k) => lmap(k, k % 16, k % 8, 40 + (k % 80), k % 15)); await learnIn(u, c, ldoc(c.maps(127))); u.click(tab("control")); await sleep(400); },
 				screen: () => ok($1("#lcount")?.textContent === "127 of 128 mappings" && !$1("#caddl").disabled, `${$1("#lcount")?.textContent}, add disabled ${$1("#caddl")?.disabled}`) },
 			{ say: "128 mappings: the count is marked, Add target is off and says why", act: (u, c) => learnIn(u, c, ldoc(c.maps(128))), screen: () => ok($1("#lcount")?.textContent === "128 of 128 mappings" && $1("#lcount").classList.contains("hot") && $1("#caddl").disabled && /128 mappings at most/.test($1("#caddl").title), `${$1("#lcount")?.textContent} ${$1("#caddl")?.title}`) },
+			{ say: "LEARN at 128 mappings does not start: a toast gives the reason", act: async (u, c) => { await learnIn(u, c, ldoc(c.maps(128))); c.n = learnSent.mark(); u.click("#learnkey"); }, screen: () => ok(!pressed("#learnkey") && /128 mappings at most/.test(toastText()), `key ${$1("#learnkey").getAttribute("aria-pressed")}, toast "${toastText()}"`), machine: c => ok(!learnSent.since(c.n).length, JSON.stringify(learnSent.since(c.n))) },
 			{ say: "a document with no limits.max still says 128", act: (u, c) => learnIn(u, c, ldoc(c.maps(2), { limits: { tracks: 16, params: LP } })), screen: () => ok($1("#lcount")?.textContent === "2 of 128 mappings", $1("#lcount")?.textContent) }
 		],
 		tidy: learnTidy
@@ -3414,7 +3425,7 @@ const MdJourneys = (() => {
 		mixSolo, soloSaved, shiftMutes, allOff, fader, lev, outKey, masterFx,
 		songArrange, songChain, modeCycle, songPlayhead, songSlots, songKeys, shotsSongSlots, samplerSlots, samplerSetup, audition,
 		libDialog, kitCopy, kitRename, kitClear, patGo, patClear, dialogEsc,
-		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, controlLearn, controlLearnOverrides, controlLearnPaused, controlLearnLeft, controlLearnLimit, controlLearnKnob, noteLights, followPlayed, audioPanel, romCard, notePlay,
+		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, controlLearn, controlLearnOverrides, controlLearnPaused, controlLearnLeft, controlLearnLimit, controlLearnKnob, controlLearnEsc, noteLights, followPlayed, audioPanel, romCard, notePlay,
 		lockRamp, pasteMany, mutScope, songInspector, songRowMarks, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
 		syxImportMute, globalReset, shotsGlobal, shotsSound, shotsReview, shots, shotsSong, shotsImport, editorMenuJ, memoryJ, shotsMenu, ...cpuJs, ...volJs,
 		dropSyxJ, dropSampleJ, ...viewJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, modalLock, songFactoryPlay, lockKeysFit, resetFactory, resetEmpty, syxRunningReach];
