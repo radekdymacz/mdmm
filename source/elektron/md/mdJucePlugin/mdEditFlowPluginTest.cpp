@@ -16,13 +16,16 @@
 // sends, queued for the audio thread) dropped while editing fails it too.
 // EDITFLOW_LEARN=1 (0.8, MIDI Learn L6): four CC mappings (three added, one really learned from the stream) and learned
 // CCs arriving at audio rate (a few per block, then a burst of 64 per block) while the page edits and the transport
-// runs. The same lock, dropped-panel-event and dropped-command lines judge it; it fails too when the router applied
-// nothing, dropped a captured CC, or the learned parameters did not move.
+// runs, and a fifth mapping learned at 64 CCs a block while the page edits. The same lock, dropped-panel-event and
+// dropped-command lines judge it; it fails too when any of the four mapped parameters changed value fewer than twice,
+// nothing was captured, or the fifth mapping was not learned.
 
 #include "mdPluginProcessor.h"
 #include "mdController.h"
 #include "mdDeskHost.h"
 #include "mdDeskSession.h"
+#include "mdStudioLink.h"
+#include "mmStudioLink.h"
 
 #include "mdLib/mddeskdevice.h"
 
@@ -106,6 +109,14 @@ namespace
 	};
 	Counts* g_c = nullptr;
 
+	// EDITFLOW_LEARN: the four mapped parameters, and how often each changed value (from any thread)
+	struct LearnWatch
+	{
+		std::atomic<pluginLib::Parameter*> param{nullptr};
+		std::atomic<int> changes{0};
+	};
+	std::array<LearnWatch, 4> g_learnWatch;
+
 	const char* originName(const int _o)
 	{
 		using O = pluginLib::Parameter::Origin;
@@ -186,6 +197,9 @@ namespace
 					paramListeners.emplace_back(p->onValueChanged, [](pluginLib::Parameter* _p)
 					{
 						if(g_c) ++g_c->paramByOrigin[static_cast<int>(_p->getChangeOrigin())];
+						for(auto& w : g_learnWatch)
+							if(w.param.load() == _p)
+								++w.changes;
 					});
 			auto& mdc = dynamic_cast<mdJucePlugin::Controller&>(controller);
 			sysexListener = std::make_unique<baseLib::EventListener<synthLib::SysexBuffer>>(mdc.evDeviceSysex, [](const synthLib::SysexBuffer& _m)
@@ -543,7 +557,22 @@ namespace
 		_r.learnPerBlock = 0;
 		pumpMessages(200);
 		_r.learnBase = 100; _r.learnCount = 4;
-		return _r.learnMappings.load() == 4;
+		if(_r.learnMappings.load() != 4)
+			return false;
+		// the four targets (mapping n is CC 100 + n): watched from here on
+		const bool mm = _r.model == md::MachineModel::Monomachine;
+		const int tracks[4] = {1, 2, 3, 4}, indexes[4] = {3, 4, 5, 6};
+		for(int n = 0; n < 4; ++n)
+		{
+			const std::string name = mm ? mdJucePlugin::MmStudioLink::parameterName(0, static_cast<uint8_t>(indexes[n]))
+				: mdJucePlugin::StudioLink::parameterName(static_cast<uint8_t>(indexes[n]));
+			auto* p = _r.processor->getController().getParameter(name, static_cast<uint8_t>(tracks[n]));
+			if(!p)
+				return false;
+			g_learnWatch[static_cast<size_t>(n)].changes = 0;
+			g_learnWatch[static_cast<size_t>(n)].param = p;
+		}
+		return true;
 	}
 
 	void scenario(Rig& _r, const char* _name, const int _changes, const double _spacingMs, const double _tailMs, const int _kind = 0)
@@ -610,6 +639,8 @@ int main(const int _argc, char** _argv)
 			realtime.reset();
 		}
 		const auto learnStart = r.processor->learnRouter().counts();
+		uint64_t learnCaptured = 0, learnCaptureDropped = 0;
+		bool learnLearned = false;
 		const auto panelDroppedStart = r.panelDropped();
 		const auto commandsDroppedStart = r.processor->getPlugin().getDroppedCommandCount();
 		if(const auto* rec = std::getenv("EDITFLOW_RECORD"))
@@ -670,6 +701,23 @@ int main(const int _argc, char** _argv)
 			scenario(r, "learnburst", 120, 1000.0 / 60, 2000);
 			r.learnPerBlock = 0;
 			pumpMessages(500);
+			// learning really captures under load: a fifth mapping learned from a controller at 64 CCs a block while the page edits
+			const auto beforeCapture = r.processor->learnRouter().counts();
+			r.pageText("{\"op\":\"learnStart\",\"id\":911," + learnTarget(r, 5, 7) + "}");
+			r.learnBase = 110; r.learnCount = 1; r.learnPerBlock = 64;
+			const auto tc = nowMs();
+			int n = 0;
+			while(nowMs() - tc < 10000 && r.learnMappings.load() != 5)
+			{
+				edit(r, n++);
+				pumpMessages(1000.0 / 60);
+			}
+			r.learnPerBlock = 0;
+			pumpMessages(300);
+			const auto afterCapture = r.processor->learnRouter().counts();
+			learnCaptured = afterCapture.captured - beforeCapture.captured;
+			learnCaptureDropped = afterCapture.capturedDropped - beforeCapture.capturedDropped;
+			learnLearned = r.learnMappings.load() == 5;
 		}
 		{
 			const auto snap = realtime.snapshot();
@@ -710,10 +758,19 @@ int main(const int _argc, char** _argv)
 			{
 				const auto c = r.processor->learnRouter().counts();
 				const auto applied = c.applied - learnStart.applied;
-				const auto capturedDropped = c.capturedDropped - learnStart.capturedDropped;
-				learnFail = applied == 0 || capturedDropped != 0;
-				std::printf("learned CCs while editing: applied %llu (touched mappings notified to the host), captured dropped %llu: %s\n",
-					static_cast<unsigned long long>(applied), static_cast<unsigned long long>(capturedDropped), learnFail ? "FAIL" : "PASS");
+				// every mapping applied at least once, and its parameter changed value (the watch counts value changes)
+				std::string each;
+				bool allMoved = true;
+				for(auto& w : g_learnWatch)
+				{
+					each += " " + std::to_string(w.changes.load());
+					allMoved = allMoved && w.changes.load() >= 2;
+				}
+				learnFail = applied == 0 || !allMoved || !learnLearned || learnCaptured == 0;
+				std::printf("learned CCs while editing: applied %llu, value changes per mapping:%s (each needs 2), learning under load: %s, "
+					"%llu captured (%llu dropped by a full ring, not a failure): %s\n",
+					static_cast<unsigned long long>(applied), each.c_str(), learnLearned ? "learned" : "NOT learned",
+					static_cast<unsigned long long>(learnCaptured), static_cast<unsigned long long>(learnCaptureDropped), learnFail ? "FAIL" : "PASS");
 			}
 			if(!pass || dropped || commandsDropped || learnFail)
 				return 1;
