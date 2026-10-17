@@ -2713,6 +2713,8 @@ namespace
 		std::vector<std::pair<int, int>> locks;		// step, VOL
 		std::vector<std::pair<int, int>> pan;		// step, PAN (a second parameter)
 		std::vector<int> slides;					// steps with the slide flag
+		int lockPage = 1, lockParam = 5;			// the parameter the "locks" are on (AMP VOL); B-168 cases use others
+		bool raw = false;							// B-168: print loudness and pitch as % of the unlocked run instead of the VOL scale
 	};
 
 	// The loudness of the sine in 10 ms windows over the second bar (from the first sight of step 0 to the next step 0), and the
@@ -2720,6 +2722,7 @@ namespace
 	struct MmSlideRun
 	{
 		std::vector<double> rms;
+		std::vector<double> zc;	// zero crossings of the left channel per window (pitch)
 		double stepWindows = 0;
 	};
 
@@ -2767,7 +2770,7 @@ namespace
 			p.notes[0][static_cast<size_t>(s)] = 60;
 		}
 		for(const auto& [s, v] : _c.locks)
-			w13mmLock(p, 1, 5, static_cast<size_t>(s), static_cast<uint8_t>(v));
+			w13mmLock(p, static_cast<uint8_t>(_c.lockPage), static_cast<uint8_t>(_c.lockParam), static_cast<size_t>(s), static_cast<uint8_t>(v));
 		for(const auto& [s, v] : _c.pan)
 			w13mmLock(p, 1, 6, static_cast<size_t>(s), static_cast<uint8_t>(v));
 		for(const int s : _c.slides)
@@ -2799,7 +2802,13 @@ namespace
 		if(at.size() < 17)
 			return out;
 		for(size_t i = at[0]; i + 441 <= at[16]; i += 441)
+		{
 			out.rms.push_back(1000 * rms(_r->left(), _r->right(), i, i + 441));
+			int z = 0;
+			for(size_t k = i + 1; k < i + 441; ++k)
+				z += (_r->left()[k - 1] < 0) != (_r->left()[k] < 0);
+			out.zc.push_back(z);
+		}
 		out.stepWindows = double(at[16] - at[0]) / 16 / 441;
 		return out;
 	}
@@ -2809,6 +2818,7 @@ namespace
 		std::puts("== W13 MM: the parameter-lock slide (track 1 AMP VOL). Each case is played twice, with the locks and slides and without (the same trigs):");
 		std::puts("   the ratio of the two loudnesses, in 10 ms windows, is the gain the locks made; shown as the VOL that gain stands for (VOL 60 = the kit; the");
 		std::puts("   sine's loudness goes with VOL squared: VOL 20 -> 0.11, 90 -> 2.25 of VOL 60, measured by K20/K90). Four values a step; '.' where the reference is silent.");
+		std::puts("   Cases MV..MS (B-168): one lock on step 4 on another parameter, printed as 'loudness %/pitch %' of the unlocked run, one line a step.");
 		const std::vector<std::pair<int, int>> t4 = {{0, 0}, {4, 0}, {8, 0}, {12, 0}};
 		const std::vector<MmSlideCase> cases = {
 			{"K20  VOL 20 on every trig", t4, {{0, 20}, {4, 20}, {8, 20}, {12, 20}}, {}, {}},
@@ -2826,6 +2836,14 @@ namespace
 			{"K  locks 0=20 4=90 8=127, NO trig on step 4, slide@0", {{0, 0}, {8, 0}, {12, 0}}, {{0, 20}, {4, 90}, {8, 127}}, {}, {0}},
 			{"M  locks 0=20 4=90 8=127, NO trig on step 4, no slide", {{0, 0}, {8, 0}, {12, 0}}, {{0, 20}, {4, 90}, {8, 127}}, {}, {}},
 			{"I  locks 0=20 4=90 8=127, step 4 TRIGLESS, slide@0", {{0, 0}, {4, 1}, {8, 0}, {12, 0}}, {{0, 20}, {4, 90}, {8, 127}}, {}, {0}},
+			// B-168: a lock on a step with no trig, other parameters (trigs 0 8 12; the lock only on step 4). Printed raw: loudness % | pitch (zero crossings) % of the unlocked run
+			{"MV AMP VOL 20 on step 4, NO trig there, no slide", {{0, 0}, {8, 0}, {12, 0}}, {{4, 20}}, {}, {}, 1, 5, true},
+			{"MW FLT WDTH 0 on step 4, NO trig there, no slide", {{0, 0}, {8, 0}, {12, 0}}, {{4, 0}}, {}, {}, 2, 1, true},
+			{"MB FLT BASE 100 on step 4, NO trig there, no slide", {{0, 0}, {8, 0}, {12, 0}}, {{4, 100}}, {}, {}, 2, 0, true},
+			{"MP SYN TUNE 127 on step 4, NO trig there, no slide", {{0, 0}, {8, 0}, {12, 0}}, {{4, 127}}, {}, {}, 0, 7, true},
+			{"MQ SYN TUNE 127 on step 4, WITH trig there, no slide", {{0, 0}, {4, 0}, {8, 0}, {12, 0}}, {{4, 127}}, {}, {}, 0, 7, true},
+			{"MR AMP VOL 20 on step 4, WITH trig there, no slide (control)", {{0, 0}, {4, 0}, {8, 0}, {12, 0}}, {{4, 20}}, {}, {}, 1, 5, true},
+			{"MS FLT WDTH 0 on step 4, WITH trig there, no slide (control)", {{0, 0}, {4, 0}, {8, 0}, {12, 0}}, {{4, 0}}, {}, {}, 2, 1, true},
 		};
 		const char* only = std::getenv("W13_ONLY");
 		for(const auto& c : cases)
@@ -2850,18 +2868,23 @@ namespace
 			std::string line;
 			for(int st = 0; st < 16; ++st)
 			{
-				line += st % 4 == 0 ? "    " : "  | ";
+				if(c.raw)
+					line += "    step " + std::to_string(st) + ":";
+				else
+					line += st % 4 == 0 ? "    " : "  | ";
 				for(int q = 0; q < 4; ++q)
 				{
 					const auto i = static_cast<size_t>((st + q / 4.0 + 0.12) * base.stepWindows);
 					char x[16];
 					if(i < 1 || i + 2 > base.rms.size() || sm(base.rms, i) < 14)
 						std::snprintf(x, sizeof x, "  .");
+					else if(c.raw)
+						std::snprintf(x, sizeof x, "%3.0f/%-3.0f", 100 * sm(run.rms, i) / sm(base.rms, i), 100 * sm(run.zc, i) / std::max(1.0, sm(base.zc, i)));
 					else
 						std::snprintf(x, sizeof x, "%3.0f", 60 * std::sqrt(sm(run.rms, i) / sm(base.rms, i)));
 					line += x;
 				}
-				if(st % 4 == 3)
+				if(c.raw || st % 4 == 3)
 				{
 					std::printf("%s\n", line.c_str());
 					line.clear();
