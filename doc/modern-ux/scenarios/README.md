@@ -69,6 +69,10 @@ Files starting with `_` are fixtures, not scenarios.
 | `error` | an `error` message at 1 s and a longer one at 6 s (the error line) | the same (a toast) |
 | `midi-loop` | the standalone's AUDIO / MIDI panel (comma key) with the IAC Bus 1 virtual bus on as an input and as the output: the loop warning, External Input on NONE with the microphone note, the Monitor row counting | the same |
 | `midi-hardware` | the same panel with a hardware port (Elektron TM-1) as input and output: no loop warning, no input note | the same |
+| `control-mapped` | MIDI mapping on: five mappings, the count, an overrides line under a mapping that hides a firmware CC (press 6) | (L5) |
+| `control-learning` | LEARN waiting for a controller: 0 of 2, 1 of 2, then the finished mapping and its toast (press 6, then L) | (L5) |
+| `control-paused` | MIDI Learn paused by the HW MIDI engine: the reason under the matrix header | (L5) |
+| `control-left` | a project load left items out: the toast with the count, the list on CONTROL | (L5) |
 | `engine-unavailable` | HW MIDI lost: lifecycle hwLost, capabilities with reasons, the engine menu | the same, and the page's own "no answer" dialog |
 | `control-learning` | (L4, the Machinedrum's own file) | MIDI Learn on, the Control workspace (key 6): a value waits, 1 of 2, 2 of 2, learned (CC 21 on channel 1: a row of its own), then paused by the HW MIDI engine |
 | `control-mapped` | (L4) | the Control workspace with the plug-in's mappings: knob rows with targets, one inverted, a level, a CC that hides the machine's own CC (one line), and what a project load left out |

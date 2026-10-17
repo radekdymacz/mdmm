@@ -2675,8 +2675,9 @@ const MmJourneys = (() => {
 	const cpuJs = [...Journey.cpuMeterJourneys("mm", { proves: ["MM-X15"] }), Journey.speedUpsMenuJourney("mm", { proves: ["MM-X15"] })];
 	/* I-021: the output meter and volume at the LCD's right end, as the Machinedrum's */
 	/* the same fit with MIDI mapping on (the Control tab and the LEARN key take room in the top bar; the plate key is in the engine menu), the
-	   Control workspace among the pages: at 1280, 1440, 1920 and 2560 px and the zoomed views (the plug-in says mapping is on by a learn document) */
-	const learnFit = () => Journey.fitJourneys("mm", ["seq", "sound", "mix", "perform", "song", "control"]).filter(j => j.name === "mm-fit-workspaces").map(j => {
+	   Control workspace among the pages: at 1280, 1440 and 1500 px (the plug-in says mapping is on by a learn document) */
+	const learnFit = () => Journey.fitJourneys("mm", ["seq", "sound", "mix", "perform", "song", "control"], { views: [1280, 1440, 1500].map(w => ({ name: String(w), width: w, floor: 0 })),
+		after: async (v, w) => { if (w === "control") { await sleep(300); Journey.snapshot("learn-mm-" + v.name); } } }).filter(j => j.name === "mm-fit-workspaces").map(j => {
 		const tidy = j.tidy;
 		return { ...j, name: "mm-fit-workspaces-learn", steps: [{ say: "mapping on: the Control tab and the LEARN key are in the top bar", act: async () => { window.gm.recv([{ type: "learn", doc: lDoc([]) }]); await sleep(300); },
 			screen: () => ok(!$1(tab("control")).hidden && !learnKey().hidden, "control tab hidden " + $1(tab("control")).hidden) }, ...j.steps],

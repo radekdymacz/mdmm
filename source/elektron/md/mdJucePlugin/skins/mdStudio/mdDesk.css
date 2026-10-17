@@ -377,7 +377,6 @@ table.song tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 .right{gap:12px!important;align-self:center}
 .save{width:auto}
 .save span{white-space:nowrap}
-.platekey{font:600 11px var(--sans);letter-spacing:.12em;padding:5px 9px}
 @media (max-width:1420px){.save span{display:none}.brand span{display:none}.tabs button small{display:none}}
 @media (max-width:1250px){.top{grid-template-columns:1fr auto!important}.top .wsgroup{grid-column:1/-1!important;grid-row:2!important}}
 
@@ -906,8 +905,6 @@ html,body{min-width:1280px}
 .skey:disabled{opacity:.4;cursor:default}
 .skey small{min-width:1ch}
 .firstlink{display:flex;gap:18px;align-items:center}
-.platekey2{background:transparent!important;box-shadow:none!important;color:var(--print)!important;font:600 11px var(--sans)!important;letter-spacing:.14em;text-transform:uppercase;padding:0!important}
-.platekey2 span{color:var(--led)}
 
 /* header band: logo, key groups and LCD share one top and one bottom line */
 :root{--hband:64px}
@@ -2354,3 +2351,15 @@ html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[dat
 .slotgrid.rmkwide .rmk .rt{display:inline}
 .slotgrid.rmkwide .rmk .rg{display:none}
 .scell small{white-space:nowrap}
+
+/* 0.8 (L4): the Control page's learn lines. The mapping count and the engine's pause sit under the matrix header, what a mapping
+   overrides under its row, what a project load left out in a block of its own; none is a control */
+.lstat{display:flex;flex-wrap:wrap;gap:2px 14px;align-items:baseline}
+.lstat .hot{color:var(--rec);font-weight:700}
+.lstat .paused{color:var(--rec);font-weight:600}
+.lstat .leftout{flex-basis:100%;display:grid;gap:1px;font-size:13px}
+.lstat .leftout span{font:12px var(--mono);overflow-wrap:break-word;min-width:0}
+.lnk .ovr{grid-column:1/-1;font-size:12px}
+#caddl:disabled{opacity:.4;cursor:not-allowed}
+/* 0.8 (L4): .skey's own display beats [hidden] (the same weight, later): a hidden LEARN key took its room. The plate switch lives in the engine menu (PLATE: MKI / MKII), so the six tabs and the LEARN key fit beside the rest of the top bar */
+.skey[hidden],.tabs button[hidden]{display:none!important}

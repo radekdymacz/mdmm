@@ -388,7 +388,7 @@ The Monomachine has no such function. With MIDI Learn a knob or fader of your co
 2. Press **Learn** (L). The key lights.
 3. Click a value, for example the **DEC** of the amplifier on track 1.
 4. Turn a knob on your controller from one end to the other and back. The mapping is made, and the knob now moves that value.
-5. To reverse a mapping, select it in the list and click **Invert**. To remove it, click **Remove**.
+5. To reverse a mapping, select it in the list and click the INV key. To remove it, click the × key.
 6. Press [ESC] to leave Learn.
 
 A button that sends 127 and 0 is learned as the highest and lowest value. Only control changes are mapped, 128 at most, and they are saved with the project. A learned CC wins over the machine's own CC on that channel: the page says what it hides, for example "Overrides the machine's CC 21 on channel 1: T1 DEC", and removing the mapping gives the CC back. Learn is off while the **HW MIDI** engine is in use, and the page says why.

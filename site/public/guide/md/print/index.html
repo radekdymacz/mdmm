@@ -80,12 +80,12 @@
 <section class="gd-sec" id="front-panel">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.4,</span> <span>5</span></span></aside>
 <div class="gd-body gd-prose"><h2>FRONT PANEL</h2>
-<p>The page has three parts. The top bar holds the workspace tabs, the LCD and the Undo, Redo, GLOBAL and panel colour keys. The track rail runs down the left side. The workspace fills the rest.</p>
+<p>The page has three parts. The top bar holds the workspace tabs, the LCD and the Undo, Redo and GLOBAL keys. The track rail runs down the left side. The workspace fills the rest.</p>
 <figure class="gd-shot"><img src="/guide/shots/md-workspaces.webp" width="1440" height="924" alt="The Machinedrum Editor"><figcaption>The Machinedrum Editor</figcaption></figure>
 <h4 class="gd-h3">The workspaces</h4>
 <p>The machine has pages that you reach with keys. The editor has workspaces that you reach with the tabs in the top bar.</p>
 <table class="gd-table"><thead><tr><th>Workspace</th><th>Key</th><th>What it holds</th></tr></thead><tbody><tr><td>Pattern</td><td><kbd class="gd-key">[1]</kbd></td><td>the step grid, the lock lane and the generators</td></tr><tr><td>Kit</td><td><kbd class="gd-key">[2]</kbd></td><td>the selected track's machine, effects, routing and LFO</td></tr><tr><td>Mix</td><td><kbd class="gd-key">[3]</kbd></td><td>one strip a track, and the four master effects</td></tr><tr><td>Sampler</td><td><kbd class="gd-key">[4]</kbd></td><td>the sample slots and the RAM machines</td></tr><tr><td>Song</td><td><kbd class="gd-key">[5]</kbd></td><td>the song arrangement</td></tr></tbody></table>
-<p>The panel colour key at the right of the top bar switches the page between the silver MKI look and the black MKII look. It changes the colours only.</p>
+<p>The PLATE entry in the engine menu (the EMU OS entry in the LCD) switches the page between the silver MKI look and the black MKII look. It changes the colours only.</p>
 <h4 class="gd-h3">From the front panel to the page</h4>
 <table class="gd-table"><thead><tr><th>On the machine</th><th>In the editor</th></tr></thead><tbody><tr><td>Master volume knob</td><td>the volume of your DAW or system</td></tr><tr><td>SOUND SELECTION wheel and LEDs</td><td>the track rail</td></tr><tr><td>TRIG keys 1 to 16</td><td>the steps of the grid, and the piano keys</td></tr><tr><td>SYNTHESIS, EFFECTS and ROUTING key</td><td>groups on the Kit workspace, all in one view</td></tr><tr><td>DATA ENTRY knobs A to H</td><td>the value boxes</td></tr><tr><td>SCALE SETUP key and page LEDs</td><td>the <b class="gd-ui">Page</b> key and four LEDs on the Pattern workspace</td></tr><tr><td>RECORD, PLAY, STOP</td><td><b class="gd-ui">REC</b> and the Play and Stop key in the LCD</td></tr><tr><td>TEMPO key</td><td>the <b class="gd-ui">Tempo</b> field of the LCD</td></tr><tr><td>KIT key</td><td>the <b class="gd-ui">Kit</b> field of the LCD</td></tr><tr><td>BANK key and the A to H keys</td><td>the pattern chooser</td></tr><tr><td>FUNCTION key</td><td>the <kbd class="gd-key">[⌥]</kbd> key</td></tr><tr><td>CLASSIC/EXTENDED key</td><td><b class="gd-ui">MODE</b> on the Pattern workspace's second LCD line</td></tr><tr><td>PATTERN/SONG key</td><td><b class="gd-ui">PLAY</b> on the LCD's second line</td></tr><tr><td>ENTER/YES, EXIT/NO and the arrow keys</td><td>not needed: every menu is a control, and <kbd class="gd-key">[ESC]</kbd> closes a window</td></tr></tbody></table>
 <p>On the machine you move through menus with ENTER/YES, EXIT/NO and the arrow keys. In the editor you click the control. The firmware still takes those keys, but only a real machine's panel (the hardware MIDI engine) can send them.</p>
@@ -1291,8 +1291,8 @@
 <p>The editor's Sampler has 48 ROM slots and 4 RAM slots.</p>
 <p>The MKI model has 32 sample slots. The editor offers the MKII model only.</p>
 <h4 class="gd-h3">Design</h4>
-<p>The MKI machine is silver, the MKII black. The editor gives its panel either colour. Click <b class="gd-ui">MKI</b> or <b class="gd-ui">MKII</b> in the top bar to switch.</p>
-<figure class="gd-shot"><img src="/guide/shots/e2e-md-top-plate.webp" width="1440" height="924" alt="The plate key in the top bar"><figcaption>The plate key in the top bar</figcaption></figure>
+<p>The MKI machine is silver, the MKII black. The editor gives its panel either colour. Open the engine menu (the EMU OS entry in the LCD) and choose <b class="gd-ui">PLATE: MKI</b> or <b class="gd-ui">PLATE: MKII</b> to switch. The choice is kept for next time.</p>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-top-plate.webp" width="1440" height="924" alt="The PLATE entry in the engine menu"><figcaption>The PLATE entry in the engine menu</figcaption></figure>
 <p>The choice is kept for the next time. It changes the colour only.</p>
 </div></section>
 </article>
@@ -1394,6 +1394,7 @@
 <p>The sound parameters of the 16 tracks are reached by control change messages. The machine uses four MIDI channels, starting from its base channel, and each channel serves a group of four tracks. Every parameter of a track has its own control change number.</p>
 <p>In the editor you do not type these numbers. When you move a value on the <b class="gd-ui">Kit</b> workspace, the editor sends the control change for it. A move on a track of each group of four, tracks 1, 5, 9 and 13, reaches the machine through its own channel.</p>
 <p>A DAW reaches the same parameters by host automation. Each track has host parameters for synthesis, effects, routing, level and mute, and a lane of automation sends the control change the knob would send.</p>
+<p>A controller knob learned on the <b class="gd-ui">Control</b> tab (chapter 17) takes over its control change on its channel: the machine's own target of that number no longer moves.</p>
 </div></section>
 <section class="gd-sec" id="level-and-mute">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.B-1</span></span></aside>
@@ -1603,6 +1604,21 @@
 <p>The machine has no such function. With it on, the track you select changes to the last track you played from a MIDI keyboard. It is off until you turn it on, and the project keeps the choice.</p>
 <ol class="gd-steps"><li>Open the engine menu and choose <b class="gd-ui">FOLLOW PLAYED TRACK: OFF</b>. It reads <b class="gd-ui">FOLLOW PLAYED TRACK: ON</b>.</li><li>Play the note of track 5 from a MIDI keyboard on the base channel. Track 5 is selected.</li><li>Play the note of another track on a channel outside the four base channels. The selection stays where it was.</li><li>Choose the entry again to turn it off.</li></ol>
 <p>The notes that play each track are set in &quot;MAP EDITOR&quot; in chapter 10. The keys of the computer keyboard and the audition of a sample never move the selection. Following replaces a selection of several tracks with the one track played. While a question is open, or LEARN waits for its note, the selection stays where it is.</p>
+</div></section>
+<section class="gd-sec" id="midi-learn-a-controller-knob-moves-a-value">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>MIDI LEARN: A CONTROLLER KNOB MOVES A VALUE</h2>
+<p>The machine has no such function. A knob or fader on a MIDI controller can move any sound parameter of any track. The mappings belong to the project. They are saved with it and come back when you open it.</p>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Control</b> tab, or press <kbd class="gd-key">[6]</kbd>. The matrix lists the eight knob rows, every learned CC and the app modulators against the 16 tracks.</li><li>Click <b class="gd-ui">LEARN</b> in the top bar, or press <kbd class="gd-key">[L]</kbd>.</li><li>Click any value on the page, for example DEC on the Kit page. The value shows the learn mark.</li><li>Turn a knob on your controller both ways. The line in the inspector on the Control page counts the values seen: 0 of 2, then 1 of 2.</li><li>The second value completes it. A message names the CC, its channel and the target. The Control page opens the row of that CC with the new mapping.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to leave LEARN.</li></ol>
+<p>A button is learned the same way: press it and release it. It sends its highest value when pressed and its lowest when released. <b class="gd-ui">Inv</b> turns that round. Notes are not learned. The notes that play each track are set in &quot;MAP EDITOR&quot; in chapter 10.</p>
+<h4 class="gd-h3">Add a mapping without learning</h4>
+<p>Select a row of the matrix. Under <b class="gd-ui">Add</b> choose a track and a parameter, then click <b class="gd-ui">Add target</b>. The same row can move several targets. A knob row listens on any channel. A CC learned from a controller listens on the channel it came on, and its row says which. The stepper on a knob row changes the CC that knob sends. Its targets follow in the same edit.</p>
+<h4 class="gd-h3">When a mapping hides the machine's own CC</h4>
+<p>The machine answers many CCs on the four channels from its base channel. A mapping on the same channel and CC wins: the machine no longer hears that CC. The inspector says so under the mapping, for example: Overrides the machine's CC 21 on channel 1: T1 DEC. Remove the mapping and the machine's CC works again. A mapping on a channel the machine does not use hides nothing.</p>
+<h4 class="gd-h3">The count and what was left out</h4>
+<p>The line under the matrix header counts the mappings against the most a project holds, 128. At 128 <b class="gd-ui">Add target</b> is off until you remove one. When a project opens with mappings that could not be kept, for example a track that no longer exists, a message says how many, and the Control page lists each reason under the matrix header.</p>
+<h4 class="gd-h3">With the HW MIDI engine</h4>
+<p>With the HW MIDI engine the plug-in's MIDI in is the machine's own MIDI out, so there is nothing to learn from. The Control page says so under the matrix header, LEARN stays off, and the mappings are kept for when you choose the emulator again.</p>
 </div></section>
 <section class="gd-sec" id="the-cpu-meter-and-the-speed-ups">
 <aside class="gd-margin"></aside>

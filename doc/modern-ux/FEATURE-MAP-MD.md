@@ -285,7 +285,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.82 | Specifications (16 tracks, 128 patterns, 32 songs, 64 locks, 384 CC) | Limits | ✅ | All enforced in the page |  | 1 | pass (e2e-md-limits) |
 | p.83 | Pattern length 64 (MKII) / 32 (MKI) | Length | 🟡 | MKII lengths | MKI model not offered. | – | n/a |
 | p.83 | MKI/MKII sample slots (32/48), RAM machines (2/4) | UW size | 🟡 | 48 ROM, 4 RAM | MKII only. | – | n/a |
-| p.83 | MKI / MKII panel colour | Look | ✅ | Top bar plate key | Colour only. | 1 | pass (e2e-md-top-plate) |
+| p.83 | MKI / MKII panel colour | Look | ✅ | Engine menu: PLATE: MKI / MKII | Colour only. | 1 | pass (e2e-md-top-plate) |
 
 ## 14. Appendix A: machine reference (pp.A-1 to A-16)
 

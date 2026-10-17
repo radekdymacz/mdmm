@@ -55,8 +55,8 @@ const src = FILES.map(f => fs.readFileSync(path.join(__dirname, f), "utf8").repl
 const P = new Function("scope", "with (scope) {\n" + src + `
 ;let renders = 0;
 render = () => { renders++; }; syncControls = () => { }; renderTop = () => { }; renderSub = () => { }; redraw = () => { }; refreshAudible = () => { };
-return { kitHit, kitGrab, kitAt, laneAt, valueHTML, kitLabelHTML, laneFmt, grp, Gesture, Boot, hostTempoRefused, l2step, onTelemetry, pauseNow, playsText, songLcd, S, Docs, Overlay, Held, PREP, scheduleRender, clickSteps, secAction, selStart, stepMenu, stepMenuItems, Modifiers, selCut, selDuplicate, clearSel, setSel, endSelect, interacting, genEnsure, genSpec, setGenSpec, clickTrackKeys, userMute, soloWrites, muteSel, msSet, prepToggle, unmuteAll, Keys,
-	get V() { return V; }, setV(v) { V = v; }, view, get renders() { return renders; }, get pending() { return pendingRender; } }; }`)(scope);
+return { overridesText, learnName, progressText, onLearnDoc, learnPaused, learnMax, toggleLearn, kitHit, kitGrab, kitAt, laneAt, valueHTML, kitLabelHTML, laneFmt, grp, Gesture, Boot, hostTempoRefused, l2step, onTelemetry, pauseNow, playsText, songLcd, S, Docs, Overlay, Held, PREP, scheduleRender, clickSteps, secAction, selStart, stepMenu, stepMenuItems, Modifiers, selCut, selDuplicate, clearSel, setSel, endSelect, interacting, genEnsure, genSpec, setGenSpec, clickTrackKeys, userMute, soloWrites, muteSel, msSet, prepToggle, unmuteAll, Keys,
+	get V() { return V; }, setToast(f) { const was = toast; toast = f; return was; }, setV(v) { V = v; }, view, get renders() { return renders; }, get pending() { return pendingRender; } }; }`)(scope);
 
 /* the machine document: its mutes (machine.desk.mutes) as the machine has them */
 function machineMutes(list) { P.Docs.machine = Object.assign({}, P.Docs.machine || {}, { desk: { mutes: list } }); P.setV(P.view()); }
@@ -725,6 +725,38 @@ return { Bridge, cmd, asked, errors, banners, S, Drop, get V() { return V; }, se
 	P.S.lane = "PAN";
 	check(P.laneFmt(64) === "0" && P.laneFmt(74) === "+10" && P.laneFmt(0) === "-64" && />\+10</.test(P.valueHTML(74)), "a signed parameter's numbers are -64 to +63 as the knob shows it");
 	P.S.lane = "FLTF"; delete P.Docs.kits[3]; delete P.Docs.patterns[5]; P.Overlay.clear(); P.setV(P.view()); for (const k of Object.keys(hooks)) delete hooks[k];
+}
+
+/* ---- 0.8 (L4): the Control page's words from the plug-in's learn document ---- */
+{
+	check(P.learnName(99, 3, "DEC") === "DEC" && P.learnName(99, 3, "") === "#4", "a target outside the tracks keeps the plug-in's name, else its number");
+	check(P.progressText({ got: 1, need: 2 }) === "Turn a knob on your controller both ways (1 of 2)", "progress says got of need: " + P.progressText({ got: 1, need: 2 }));
+	const m = { cc: 21, overrides: [] };
+	check(P.overridesText(m) === "" && P.overridesText({ cc: 21 }) === "", "no overrides, no line");
+	check(P.overridesText({ cc: 21, overrides: [{ ch: 0, t: 98, i: 0 }] }) === "Overrides the machine's CC 21 on channel 1: T99 #1", "one override: " + P.overridesText({ cc: 21, overrides: [{ ch: 0, t: 98, i: 0 }] }));
+	check(P.overridesText({ cc: 22, overrides: [{ ch: 0, t: 98, i: 0 }, { ch: 1, t: 97, i: 1 }, { ch: 0, t: 96, i: 2 }] }) === "Overrides the machine's CC 22 on channel 1: T99 #1, T97 #3; channel 2: T98 #2",
+		"overrides are grouped by channel: " + P.overridesText({ cc: 22, overrides: [{ ch: 0, t: 98, i: 0 }, { ch: 1, t: 97, i: 1 }, { ch: 0, t: 96, i: 2 }] }));
+	const many = P.overridesText({ cc: 30, overrides: Array.from({ length: 9 }, (_, k) => ({ ch: k, t: 98, i: k })) });
+	check(/\+3 more$/.test(many) && (many.match(/T99/g) || []).length === 6, "six overrides at most are listed, the rest counted: " + many);
+	check(P.learnMax() === 128 && P.learnPaused() === "", "before the first document: 128 mappings at most, nothing paused");
+	/* a toast per document: a finished learn names the CC, its channel and the target; the left list is said once */
+	const toasts = []; const t0 = P.setToast(m => toasts.push(m));
+	try {
+		const doc = (maps, o = {}) => Object.assign({ enabled: true, mappings: maps, learning: null }, o);
+		const mm = { index: 0, t: 98, i: 0, name: "DEC", cc: 21, ch: 0, mode: "Absolute", invert: false, overrides: [{ ch: 0, t: 98, i: 0 }] };
+		P.onLearnDoc(doc([]), doc([mm]));
+		check(!toasts.length, "a mapping added with no learn waiting (the Add row) says nothing");
+		P.onLearnDoc(doc([], { learning: { t: 98, i: 0, name: "DEC", got: 1, need: 2 } }), doc([mm]));
+		check(toasts.length === 1 && /^CC 21 on channel 1 now moves T99 DEC\. Overrides the machine's CC 21 on channel 1: T99 #1\.$/.test(toasts[0]), "a finished learn names CC, channel, target and what it overrides: " + toasts[0]);
+		check(P.S.ctl.sel === "0:21", "and the Control page selects its row: " + P.S.ctl.sel);
+		toasts.length = 0;
+		P.onLearnDoc(doc([]), doc([], { left: ["a", "b"] }));
+		P.onLearnDoc(doc([], { left: ["a", "b"] }), doc([], { left: ["a", "b"] }));
+		check(toasts.length === 1 && /^2 mappings left out of the project/.test(toasts[0]), "a project load that left items out is said once: " + toasts.join(" | "));
+		P.onLearnDoc(doc([], { left: ["a", "b"] }), doc([]));
+		P.onLearnDoc(doc([]), doc([], { left: ["c"] }));
+		check(toasts.length === 2 && /^1 mapping left out/.test(toasts[1]), "a later, different list is said again, singular for one: " + toasts.join(" | "));
+	} finally { P.setToast(t0); }
 }
 
 console.log(failures ? `${failures} failure(s)` : "mdDeskPageTest: all passed");
