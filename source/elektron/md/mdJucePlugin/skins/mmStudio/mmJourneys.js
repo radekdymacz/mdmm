@@ -21,7 +21,7 @@ const MmJourneys = (() => {
 	const kitT = t => JSON.stringify(wk()?.tracks[t]);
 	const allKit = () => JSON.stringify(wk()?.tracks);
 	const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-	const tab = ws => `#tabs button[data-ws="${ws}"]`;
+	const tab = ws => ws === "control" ? "#controlkey" : `#tabs button[data-ws="${ws}"]`;	/* CONTROL is a key in Setup, not a workspace tab (0.8) */
 	const onTab = ws => ok(S().ws === ws, "workspace " + S().ws);
 	const synthMuted = i => ((machine().mutes?.synth ?? 0) >> i & 1) === 1;
 	const synthMutes = () => [0, 1, 2, 3, 4, 5].filter(synthMuted);
@@ -2681,13 +2681,13 @@ const MmJourneys = (() => {
 	/* I-018: the CPU meter beside the version and its details, as the Machinedrum's */
 	const cpuJs = [...Journey.cpuMeterJourneys("mm", { proves: ["MM-X15"] }), Journey.speedUpsMenuJourney("mm", { proves: ["MM-X15"] })];
 	/* I-021: the output meter and volume at the LCD's right end, as the Machinedrum's */
-	/* the same fit with MIDI mapping on (the Control tab and the LEARN key take room in the top bar; the plate key is in the engine menu), the
+	/* the same fit with MIDI mapping on (the CONTROL and LEARN keys take room in the top bar; the plate key is in the engine menu), the
 	   Control workspace among the pages: at 1280, 1440 and 1500 px (the plug-in says mapping is on by a learn document) */
 	const learnFit = () => Journey.fitJourneys("mm", ["seq", "sound", "mix", "perform", "song", "control"], { views: [1280, 1440, 1500].map(w => ({ name: String(w), width: w, floor: 0 })),
 		after: async (v, w) => { if (w === "control") { await sleep(300); Journey.snapshot("learn-mm-" + v.name); } } }).filter(j => j.name === "mm-fit-workspaces").map(j => {
 		const tidy = j.tidy;
-		return { ...j, name: "mm-fit-workspaces-learn", proves: [], steps: [{ say: "mapping on: the Control tab and the LEARN key are in the top bar", act: async () => { window.gm.recv([{ type: "learn", doc: lDoc([]) }]); await sleep(300); },
-			screen: () => ok(!$1(tab("control")).hidden && !learnKey().hidden, "control tab hidden " + $1(tab("control")).hidden) }, ...j.steps],
+		return { ...j, name: "mm-fit-workspaces-learn", proves: [], steps: [{ say: "mapping on: the CONTROL key and the LEARN key are in the top bar", act: async () => { window.gm.recv([{ type: "learn", doc: lDoc([]) }]); await sleep(300); },
+			screen: () => ok(!$1(tab("control")).hidden && !learnKey().hidden, "CONTROL key hidden " + $1(tab("control")).hidden) }, ...j.steps],
 			async tidy(u, c) { try { if (tidy) await tidy(u, c); } finally { await learnTidy(u); } } };
 	});
 	const volJs = [...Journey.volumeJourneys("mm", { proves: ["MM-X16"] }), ...Journey.fitJourneys("mm", ["seq", "sound", "mix", "perform", "song"]), ...learnFit()];
@@ -4198,8 +4198,15 @@ const MmJourneys = (() => {
 		start: {
 			name: "mm-control-learn-start", proves: [],
 			steps: [
-				{ say: "the plug-in says mapping is on: the Control tab and the LEARN key appear", act: async u => { lSend(lDoc([])); await sleep(250); },
-					screen: () => ok(!$1(tab("control")).hidden && !learnKey().hidden, "control tab hidden " + $1(tab("control")).hidden + ", LEARN hidden " + learnKey().hidden) },
+				{ say: "the plug-in says mapping is on: the CONTROL and LEARN keys appear in Setup", act: async u => { lSend(lDoc([])); await sleep(250); },
+					screen: () => ok(!$1(tab("control")).hidden && !learnKey().hidden, "CONTROL key hidden " + $1(tab("control")).hidden + ", LEARN hidden " + learnKey().hidden) },
+				{ say: "click the CONTROL key: its page opens and the key is lit; a workspace tab leaves it; key 6 opens it again; the key again leaves it", act: async (u, c) => { c.s = [];
+					const lit = () => $1("#controlkey").getAttribute("aria-pressed") === "true" && $1("#controlkey").classList.contains("on");
+					u.click("#controlkey"); await sleep(250); c.s.push(S().ws === "control" && lit());
+					u.click(tab("seq")); await sleep(250); c.s.push(S().ws === "seq" && !lit());
+					u.key("6"); await sleep(250); c.s.push(S().ws === "control" && lit());
+					u.click("#controlkey"); await sleep(250); c.s.push(S().ws === "seq" && !lit()); },
+					screen: c => ok(c.s.length === 4 && c.s.every(Boolean), "open/lit, tab leaves, key 6, key leaves: " + JSON.stringify(c.s)) },
 				{ say: "open Kit, pick track 3, press LEARN: the page is in LEARN, the toast says what to do", act: async u => { u.click(tab("sound")); await sleep(300); u.click(rail(2)); await sleep(200); learnSent.length = 0; u.click("#learnkey"); },
 					screen: () => ok(S().learn && /turn a knob on your controller/.test(toastText()), "learn " + S().learn + ", toast " + toastText()) },
 				{ say: "click T3 FLT value 1: it waits for a knob, learnStart names track 3, FLT (page 2), value 0", act: u => u.click(FLT0(2).split(",")[0]),

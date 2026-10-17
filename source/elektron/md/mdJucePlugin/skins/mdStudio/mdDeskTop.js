@@ -7,6 +7,7 @@
 let lastQueued = null;
 function renderTop() {
 	$$("#tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.ws === S.ws));
+	const ckk = $("#controlkey"); if (ckk) { ckk.setAttribute("aria-pressed", S.ws === "control"); ckk.classList.toggle("on", S.ws === "control"); const l = ckk.querySelector(".led"); if (l) l.classList.toggle("on", S.ws === "control"); }
 	const lkk = $("#learnkey"); if (lkk) { lkk.setAttribute("aria-pressed", S.ctl.learn); lkk.classList.toggle("on", S.ctl.learn); }
 	const pk = document.querySelector('#engsel option[value="plate"]'); if (pk) { pk.textContent = "PLATE: " + (S.plate === "mk2" ? "MKII" : "MKI"); pk.title = "Switch the page between the silver MKI and the black MKII panel colour. Kept for next time."; }
 	const n = V.locks.size, m = $("#meter"); $("#lockn").textContent = String(n).padStart(2, "0") + "/64"; m.className = "f meter" + (n >= 64 ? " full" : n >= 52 ? " warn" : ""); syncLockBudget();
@@ -395,10 +396,11 @@ function clickEdit(e) {
 	/* #kitf and #pat open the kit library / pattern chooser (mdDeskLibrary.js). */
 	if (e.target.closest("[data-reloadsong]")) { cmd("reloadSong"); return true; }
 	if (e.target.closest("#learnkey")) { toggleLearn(); return true; }
+	if (e.target.closest("#controlkey")) { toggleControlPage(); return true; }
 	return false;
 }
 function clickTop(e) {
-	const tb = e.target.closest("#tabs button"); if (tb) { if (tb.dataset.ws === "control" && !S.mapping) return true; S.ws = tb.dataset.ws; render(); return true; }
+	const tb = e.target.closest("#tabs button"); if (tb) { S.ws = tb.dataset.ws; render(); return true; }
 	if (e.target.closest("#play")) { if (e.shiftKey) pauseToggle(); else playButton(); return true; }
 	if (e.target.closest("#rec")) { cmd("record"); return true; }
 	if (e.target.closest("#patPrev")) { goPattern((V.queued ?? V.pat) - 1); return true; }

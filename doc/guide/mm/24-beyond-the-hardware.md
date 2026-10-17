@@ -381,11 +381,11 @@ What you enter in the sequencer is what the machine plays. The notes you draw re
 7. Press {key:play-stop} again. The position moves through the pattern and the machine plays silence.
 
 ## MIDI LEARN
-<!-- rows: MM-X27 @7050cc -->
+<!-- rows: MM-X27 @d9536a -->
 
 The Monomachine has no such function. With MIDI Learn a knob or fader of your controller moves any value of the editor, on any track. The machine's own CC map stays for everything you do not map.
 
-1. Click the **Control** tab.
+1. Click the **Control** key in the Setup group, right of **Learn**, or press [6]. Click it again to leave.
 2. Press **Learn** (L). The key lights.
 3. Click a value, for example the **DEC** of the amplifier on track 1.
 4. Turn a knob on your controller from one end to the other and back. The mapping is made, and the knob now moves that value.

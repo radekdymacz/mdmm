@@ -1020,7 +1020,7 @@
 			],
 			"mod": "",
 			"group": "Workspaces",
-			"does": "Control",
+			"does": "Control (the CONTROL key in Setup: the MIDI mapping page; again leaves it)",
 			"mapping": true,
 			"dispatched": true
 		},
@@ -2884,7 +2884,7 @@
 			],
 			"mod": "",
 			"group": "Workspaces",
-			"does": "Control",
+			"does": "Control (the CONTROL key in Setup: the MIDI mapping page; again leaves it)",
 			"mapping": true,
 			"dispatched": true
 		},
