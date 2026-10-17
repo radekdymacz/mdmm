@@ -66,6 +66,6 @@ The MM columns are in the skin. The MD columns were tried on this branch and tak
 
 - Monomachine: MKI and MKII had one look (grey-green LCD #b9c4b0, the emulator's mmSfx60 skin). Now MKI light blue,
   MKII bluish-white, each with its own panel, keys and label colours.
-- Machinedrum: unchanged by choice (MKI silver with the yellow-green LCD #b3c03c, MKII black panel with the red LCD,
+- Machinedrum: unchanged by choice (MKI silver with the red-orange LCD #dc4a2c and black pixels since 0.8.0 (was the yellow-green #b3c03c), MKII black panel with the red LCD,
   the dark look the page starts on when the system is in dark mode). The photos show a silver panel and a red LCD on
   every Machinedrum; Radek prefers the current looks.
