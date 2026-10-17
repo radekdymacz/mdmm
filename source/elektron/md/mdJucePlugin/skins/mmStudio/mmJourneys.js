@@ -42,7 +42,7 @@ const MmJourneys = (() => {
 		if (m.op === "midi") { midiSent.push(m.b); if (midiSent.length > 50) midiSent.shift(); }
 		if (m.op === "record") { recSent.push({ mode: m.mode, t: m.t }); if (recSent.length > 20) recSent.shift(); }
 		if (m.op === "poly") { polySent.add({ on: m.on, t: m.t }); }
-		if (/^learn/.test(m.op)) { learnSent.push(JSON.parse(JSON.stringify(m))); if (learnSent.length > 50) learnSent.shift(); } return send0(m, o); }; }
+		if (/^learn/.test(m.op)) { learnSent.push(JSON.parse(JSON.stringify(m))); if (learnSent.length > 50) learnSent.shift(); return; /* the learn journeys play the plug-in (lSend): its real engine would answer each command with its own document and race theirs (0.8.0 e2e) */ } return send0(m, o); }; }
 	let wireSeq = 0;
 	const wireLog = [];	/* what the core handed the device edge, as the wire engine would encode it (the page tier's stub host: {type: "wire", kind, b, n}), newest last */
 	Bridge.onMessage(m => {
@@ -857,7 +857,7 @@ const MmJourneys = (() => {
 				ob.observe($1("#rail"), { subtree: true, attributes: true, attributeFilter: ["class"] });
 				if (!S().playing) u.click("#play"); await until(() => S().playing, 5000); await until(() => c.fwd.size > 0, 15000); ob.disconnect(); Journey.snapshot("mm-seq-rail-lamps-forwarded"); },
 				screen: c => ok(c.fwd.has(c.b) && !c.fwd.has(c.a) && c.own.has(c.a), `second colour on ${[...c.fwd]} (target T${c.b + 1}); first colour on ${[...c.own]} (source T${c.a + 1}); trigpos now ${S().tracks[c.a].trigpos}, ws ${S().ws}`) },
-			{ say: "press STOP, send the trig nowhere: no second-colour lamp stays, and after the change none lights", act: async (u, c) => { if (S().playing) u.click("#play"); await until(() => !S().playing, 5000); u.click(rail(c.a)); await sleep(300); u.click('[data-set="trigpos"] button[data-v=""]'); await until(() => S().tracks[c.a].trigpos == null, 4000); await sleep(400); },
+			{ say: "press STOP, send the trig nowhere: no second-colour lamp stays, and after the change none lights", act: async (u, c) => { if (S().playing) u.click("#play"); await until(() => !S().playing, 5000); u.click(rail(c.a)); await sleep(300); u.click('[data-set="trigpos"] button[data-v=""]'); await until(() => S().tracks[c.a].trigpos == null, 4000); await until(() => (machine().recv?.state === "idle" && !machine().recv?.sending), 20000); await sleep(400); },
 				screen: () => ok(!$1("#rail .th.trig2") && S().tracks.every(t => t.trigpos == null), "a second-colour lamp stays or a trig position is left") }
 		],
 		async tidy(u, c) { if (S().playing) { u.click("#play"); await sleep(500); } if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await back(u, c); }
@@ -868,7 +868,7 @@ const MmJourneys = (() => {
 		name: "mm-perform-poly", proves: ["MM-032", "MM-087", "MM-239"],
 		steps: [
 			go("perform"),
-			{ say: "click POLY", act: u => u.click('[data-pmode="poly"]'), machine: () => ok(machine().poly === true, "poly " + machine().poly), screen: () => ok(pressed('[data-pmode="poly"]'), "not lit"), within: 8000 },
+			{ say: "click POLY", act: async u => { await until(() => (machine().recv?.state === "idle" && !machine().recv?.sending), 20000); u.click('[data-pmode="poly"]'); }, machine: () => ok(machine().poly === true, "poly " + machine().poly), screen: () => ok(pressed('[data-pmode="poly"]'), "not lit"), within: 8000 },
 			{ say: "click Auto track: POLY off", act: u => u.click('[data-pmode="normal"]'), machine: () => ok(machine().poly === false, "poly " + machine().poly), within: 8000 }
 		]
 	};
@@ -4263,7 +4263,7 @@ const MmJourneys = (() => {
 					screen: () => ok($all("#main .lnk").length === 1 && !cell("cc21", 2)?.classList.contains("on") && cell("cc21", 0)?.classList.contains("on"), "targets " + $all("#main .lnk").length) },
 				{ say: "Add target on knob row 1 (T4, a value): learnAdd with CC 21 and no channel (any)", act: async u => { u.pick("lt", "3"); await sleep(200); u.click("#laddl"); },
 					screen: () => { const c = lastLearn("learnAdd"); return ok(c && c.cc === 21 && c.t === 3 && c.ch === undefined && c.pg >= 0 && c.i >= 0, "sent " + JSON.stringify(c)); }, within: 2000 },
-				{ say: "on a row learned for channel 2: Add target sends the channel", act: async u => { lSend(lDoc([lmp(0, 0, 2, 1, 21, 255), lmp(1, 1, 3, 0, 74, 1)])); await sleep(250); u.click('#main .srch[data-src="x1:74"]'); await sleep(200); u.click("#laddl"); },
+				{ say: "on a row learned for channel 2: Add target sends the channel", act: async u => { lSend(lDoc([lmp(0, 0, 2, 1, 21, 255), lmp(1, 1, 3, 0, 74, 1)])); await until(() => !!$1('#main .srch[data-src="x1:74"]'), 3000); u.click('#main .srch[data-src="x1:74"]'); await sleep(200); u.click("#laddl"); },
 					screen: () => { const c = lastLearn("learnAdd"); return ok(c && c.cc === 74 && c.ch === 1, "sent " + JSON.stringify(c)); }, within: 2000 },
 				{ say: "the mapping gone from the document: its row goes (a row exists only while it has a mapping, knob rows stay)", act: async () => { lSend(lDoc([lmp(0, 0, 2, 1, 21, 255)])); await sleep(250); },
 					screen: () => ok($all("#main .srch.k-cc").length === 8 && S().ctl.sel === "cc21", "rows " + $all("#main .srch.k-cc").length + ", selected " + S().ctl.sel) }
