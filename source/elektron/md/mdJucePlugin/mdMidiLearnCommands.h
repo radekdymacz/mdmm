@@ -139,6 +139,7 @@ namespace mdJucePlugin
 		deskCore::LearnCapture m_capture;			// target.t < 0: not learning
 		std::vector<deskCore::LearnMapping> m_built;	// the list the router's table was built from
 		bool m_builtValid = false;
+		bool m_discardTouched = false;		// the last rebuild's settle timed out: the next step drops the touched bits again
 		int m_publishedBase = -1;			// what the published document was made with: it is made again when these change
 		std::string m_publishedPaused;
 		uint32_t m_generation = 0;

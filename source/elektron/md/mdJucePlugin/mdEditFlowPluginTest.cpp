@@ -14,6 +14,10 @@
 // is a pass/fail line: "synth lock wait ...: PASS" or FAIL (exit 1) above EDITFLOW_LOCK_WAIT_MS (default 1, as the
 // local gate's soak). Each wait is blamed on the holder's site; a panel event or a device command (the desk's
 // sends, queued for the audio thread) dropped while editing fails it too.
+// EDITFLOW_LEARN=1 (0.8, MIDI Learn L6): four CC mappings (three added, one really learned from the stream) and learned
+// CCs arriving at audio rate (a few per block, then a burst of 64 per block) while the page edits and the transport
+// runs. The same lock, dropped-panel-event and dropped-command lines judge it; it fails too when the router applied
+// nothing, dropped a captured CC, or the learned parameters did not move.
 
 #include "mdPluginProcessor.h"
 #include "mdController.h"
@@ -149,6 +153,9 @@ namespace
 		juce::AudioProcessor* ap = nullptr;
 		HostListener host;
 		std::atomic<bool> run{true}, loopMidi{false};
+		// EDITFLOW_LEARN: learned CCs from a controller, on the audio thread's block: perBlock CCs of base .. base + count - 1
+		std::atomic<int> learnPerBlock{0}, learnBase{100}, learnCount{4};
+		std::atomic<int> learnMappings{-1};		// what the last learn document said
 		std::thread audio;
 		std::vector<baseLib::EventListener<pluginLib::Parameter*>> paramListeners;
 		std::unique_ptr<baseLib::EventListener<synthLib::SysexBuffer>> sysexListener;
@@ -237,6 +244,14 @@ namespace
 					for(int i = 0; i < n && i < params.size(); ++i)
 						params[i]->setValue(params[i]->getValue());
 				}
+				if(const int perBlock = learnPerBlock.load())
+				{
+					static uint32_t counter = 0;
+					const int base = learnBase.load(), count = std::max(1, learnCount.load());
+					for(int k = 0; k < perBlock; ++k, ++counter)
+						midi.addEvent(juce::MidiMessage::controllerEvent(1, base + static_cast<int>(counter % static_cast<uint32_t>(count)),
+							static_cast<int>((counter * 37u + 5u) % 128u)), k);
+				}
 				buf.clear();
 				const auto t = Clock::now();
 				ap->processBlock(buf, midi);
@@ -279,6 +294,9 @@ namespace
 				++g_c->pubByType[type];
 			}
 			if(type == "reset") resetSeen = true;
+			if(type == "learn")
+				if(const auto* doc = _m.find("doc"); doc && doc->find("mappings"))
+					learnMappings = static_cast<int>(doc->find("mappings")->asArray().size());
 			if(type == "result" && _m.find("ok") && !_m.find("ok")->asBool() && errorsShown < 5)
 			{
 				++errorsShown;
@@ -504,6 +522,30 @@ namespace
 		return fails;
 	}
 
+	// EDITFLOW_LEARN: a parameter of the learn document as the page names it
+	std::string learnTarget(const Rig& _r, const int _t, const int _i)
+	{
+		return "\"t\":" + std::to_string(_t) + (_r.model == md::MachineModel::Monomachine ? ",\"pg\":0" : "") + ",\"i\":" + std::to_string(_i);
+	}
+
+	// Three mappings added (CC 100-102, channel 1) and one learned from the controller's stream (CC 103): true when all four are in
+	bool learnSetup(Rig& _r)
+	{
+		for(int n = 0; n < 3; ++n)
+			_r.pageText("{\"op\":\"learnAdd\",\"id\":" + std::to_string(900 + n) + ",\"cc\":" + std::to_string(100 + n) + ",\"ch\":0,"
+				+ learnTarget(_r, 1 + n, 3 + n) + "}");
+		pumpMessages(300);
+		_r.pageText("{\"op\":\"learnStart\",\"id\":910," + learnTarget(_r, 4, 6) + "}");
+		_r.learnBase = 103; _r.learnCount = 1; _r.learnPerBlock = 2;	// two values of one CC
+		const auto t0 = nowMs();
+		while(nowMs() - t0 < 10000 && _r.learnMappings.load() != 4)
+			pumpMessages(25);
+		_r.learnPerBlock = 0;
+		pumpMessages(200);
+		_r.learnBase = 100; _r.learnCount = 4;
+		return _r.learnMappings.load() == 4;
+	}
+
 	void scenario(Rig& _r, const char* _name, const int _changes, const double _spacingMs, const double _tailMs, const int _kind = 0)
 	{
 		Counts c;
@@ -558,6 +600,16 @@ int main(const int _argc, char** _argv)
 		auto& realtime = r.processor->getPlugin().getRealtimeInstrumentation();
 		realtime.setEnabled(true);
 		realtime.reset();
+		const bool learnOn = std::getenv("EDITFLOW_LEARN") != nullptr;
+		if(learnOn)
+		{
+			const bool ok = learnSetup(r);
+			std::printf("learn: %d mappings in the document: %s\n", r.learnMappings.load(), ok ? "PASS" : "FAIL");
+			if(!ok)
+				return 1;
+			realtime.reset();
+		}
+		const auto learnStart = r.processor->learnRouter().counts();
 		const auto panelDroppedStart = r.panelDropped();
 		const auto commandsDroppedStart = r.processor->getPlugin().getDroppedCommandCount();
 		if(const auto* rec = std::getenv("EDITFLOW_RECORD"))
@@ -607,6 +659,18 @@ int main(const int _argc, char** _argv)
 		r.host.readCount = 0;
 		pumpMessages(500);
 		scenario(r, "idle2", 0, 0, 3000);
+		if(learnOn)
+		{
+			// learned CCs at audio rate beside the edits, the lock lane and the running transport
+			r.learnPerBlock = 4;
+			scenario(r, "learn+drag", 120, 1000.0 / 60, 2000);
+			scenario(r, "learn+tweak", 60, 1000.0 / 60, 2000, 1);
+			scenario(r, "learn+lock", 240, 1000.0 / 60, 2000, 2);
+			r.learnPerBlock = 64;
+			scenario(r, "learnburst", 120, 1000.0 / 60, 2000);
+			r.learnPerBlock = 0;
+			pumpMessages(500);
+		}
 		{
 			const auto snap = realtime.snapshot();
 			const char* const limitText = std::getenv("EDITFLOW_LOCK_WAIT_MS");
@@ -641,7 +705,17 @@ int main(const int _argc, char** _argv)
 			// and none of the commands the desk queued for the audio thread (DESIGN-audio-lock.md step 3)
 			const auto commandsDropped = r.processor->getPlugin().getDroppedCommandCount() - commandsDroppedStart;
 			std::printf("dropped device commands while editing: %llu: %s\n", static_cast<unsigned long long>(commandsDropped), commandsDropped ? "FAIL" : "PASS");
-			if(!pass || dropped || commandsDropped)
+			bool learnFail = false;
+			if(learnOn)
+			{
+				const auto c = r.processor->learnRouter().counts();
+				const auto applied = c.applied - learnStart.applied;
+				const auto capturedDropped = c.capturedDropped - learnStart.capturedDropped;
+				learnFail = applied == 0 || capturedDropped != 0;
+				std::printf("learned CCs while editing: applied %llu (touched mappings notified to the host), captured dropped %llu: %s\n",
+					static_cast<unsigned long long>(applied), static_cast<unsigned long long>(capturedDropped), learnFail ? "FAIL" : "PASS");
+			}
+			if(!pass || dropped || commandsDropped || learnFail)
 				return 1;
 		}
 		if(!r.lastDocJson.empty())
