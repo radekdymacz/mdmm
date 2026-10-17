@@ -334,6 +334,51 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.u0 != null && V.undoCount > c.u0) await undoUntil(u, () => V.undoCount <= c.u0); }
 	};
+	/* 0.8 (I-054): a slide is drawn in the lock lane, as in the Monomachine Editor. The machine's slide is a flag on a step (this track's, or with
+	   All tracks the pattern's row); the parameters it locks glide to their next lock. The dot at the top of a lock bar dragged sideways sets it
+	   (the preview runs to the next lock only), Shift-drag out of the bar and a drop on that lock does too (Esc or another drop cancels), a
+	   click on the ramp's line takes it off; each is one undo step */
+	const slideOn = (t, s) => V.slideAll ? (pat()?.slide?.steps || []).includes(s) : flagsOf(t, "slide").includes(s);
+	const laneDrawSlide = {
+		name: "md-lane-draw-slide", proves: [],
+		steps: [
+			go("seq"),
+			{ say: "pick a track with three trigs on the first page, a lock parameter, and lock all three by drawing across them", act: async (u, c) => {
+					c.t = soundTracks().find(t => trigsOf(t).filter(s => s < Math.min(16, V.len)).length >= 3) ?? soundTrack(); u.click(rail(c.t)); await sleep(250);
+					const k = $1('#chips .pk[data-lane="FLTF"]') || $1("#chips .pk[data-lane]"); c.p = k.dataset.lane; c.i = pidx(c.t, c.p); u.click(k); await sleep(250);
+					c.u00 = V.undoCount; c.on = trigsOf(c.t).filter(s => s < Math.min(16, V.len)).slice(0, 3); c.sl0 = [slideOn(c.t, c.on[0]), slideOn(c.t, c.on[1]), slideOn(c.t, c.on[2])];
+					await u.drag(`#lane .lb[data-s="${c.on[0]}"]`, c.on.slice(1).map(s => `#lane .lb[data-s="${s}"]`), {}, { fy: 0.8 }); await sleep(500); },
+				screen: c => ok(c.on.every(s => $1(`#lane .lb[data-s="${s}"] i`)), "no bars"), machine: c => ok(c.on.every(s => locksOf(c.t, c.i).some(([x]) => x === s)) && !c.sl0.some(Boolean), "locks " + JSON.stringify(locksOf(c.t, c.i)) + ", slides before " + c.sl0), within: 15000 },
+			{ say: "press on the first lock's dot and drag sideways past the second: the release sets the slide on the first step only, one undo step", act: async (u, c) => {
+					c.u0 = V.undoCount; const key = `#lane .lb[data-s="${c.on[0]}"]`, r = $1(key).getBoundingClientRect(), v = locksOf(c.t, c.i).find(([x]) => x === c.on[0])[1],
+						fy = (r.bottom - 3 - (r.height - 6) * v / 127 - r.top) / r.height, far = $1(`#lane .lb[data-s="${c.on[2]}"]`).getBoundingClientRect();
+					await u.drag(key, [[12, 0], [(far.left - r.left) / 2, 0], [far.right - r.left, 0]], {}, { fy, click: false }); await sleep(500); },
+				machine: c => ok(slideOn(c.t, c.on[0]) && !slideOn(c.t, c.on[1]) && !slideOn(c.t, c.on[2]) && V.undoCount === c.u0 + 1, `slide ${c.on.map(s => slideOn(c.t, s))}, undo steps ${c.u0} -> ${V.undoCount}`),
+				screen: c => ok(/M[\d.]+ [\d.]+ L[\d.]+ /.test($1("#lanesvg")?.innerHTML || "") && !/stroke-dasharray/.test($1("#lanesvg")?.innerHTML || ""), "svg " + ($1("#lanesvg")?.innerHTML || "").slice(0, 80)), within: 15000 },
+			{ say: "click on the ramp's line: the slide is off, one more undo step", act: async (u, c) => {
+					c.u1 = V.undoCount; const k1 = `#lane .lb[data-s="${c.on[0]}"]`, a = $1(k1).getBoundingClientRect(), b = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect(), L = locksOf(c.t, c.i),
+						ya = a.bottom - 3 - (a.height - 6) * L.find(([x]) => x === c.on[0])[1] / 127, yb = b.bottom - 3 - (b.height - 6) * L.find(([x]) => x === c.on[1])[1] / 127, xa = a.left + a.width / 2, xb = b.left + b.width / 2;
+					const f = 0.9, px = a.left + a.width * f, t = (px - xa) / (xb - xa), py = ya + (yb - ya) * t; u.click(k1, {}, f, (py - a.top) / a.height); await sleep(500); },
+				machine: c => ok(!slideOn(c.t, c.on[0]) && V.undoCount === c.u1 + 1, `slide ${slideOn(c.t, c.on[0])}, undo steps ${c.u1} -> ${V.undoCount}`), within: 15000 },
+			{ say: "Shift-press the first lock bar and drag out of its column: a line follows the cursor, the second lock is marked, nothing written", act: async (u, c) => {
+					c.u2 = V.undoCount; const key = `#lane .lb[data-s="${c.on[0]}"]`, r = $1(key).getBoundingClientRect(), t2 = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect(), far = $1(`#lane .lb[data-s="${c.on[2]}"]`).getBoundingClientRect();
+					c.band = u.drag(key, [[r.width + 6, 0], [(t2.left + t2.width / 2) - (r.left + r.width / 2), 0], [far.left - r.left, 0]], { shift: true }, { fy: 0.6, click: false, stepMs: 450, settle: 0 }); await sleep(700); },
+				screen: c => { const h = $1("#lanesvg")?.innerHTML || ""; return ok(/r="9"/.test(h) && /stroke-width="2"/.test(h) && !slideOn(c.t, c.on[0]), "svg " + h.slice(0, 80)); }, within: 4000 },
+			{ say: "Escape, then the release past the second lock: cancelled, nothing written", act: async (u, c) => { u.key("Escape"); await c.band; await sleep(400); },
+				machine: c => ok(!slideOn(c.t, c.on[0]) && V.undoCount === c.u2, `slide ${slideOn(c.t, c.on[0])}, undo steps ${c.u2} -> ${V.undoCount}`), within: 8000 },
+			{ say: "Shift-drag from the first lock bar and drop beside the second lock's column: cancelled", act: async (u, c) => { const key = `#lane .lb[data-s="${c.on[0]}"]`, r = $1(key).getBoundingClientRect(), far = $1(`#lane .lb[data-s="${c.on[2]}"]`).getBoundingClientRect();
+					await u.drag(key, [[r.width + 6, 0], [far.left - r.left, 0]], { shift: true }, { fy: 0.6, click: false }); await sleep(400); },
+				machine: c => ok(!slideOn(c.t, c.on[0]) && V.undoCount === c.u2, `slide ${slideOn(c.t, c.on[0])}`), within: 8000 },
+			{ say: "Shift-drag from the first lock bar and drop on the second lock's column: the slide is set, one undo step", act: async (u, c) => { const key = `#lane .lb[data-s="${c.on[0]}"]`, r = $1(key).getBoundingClientRect(), t2 = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect();
+					await u.drag(key, [[r.width + 6, 0], [(t2.left + t2.width / 2) - (r.left + r.width / 2), 0]], { shift: true }, { fy: 0.6, click: false }); await sleep(500); },
+				machine: c => ok(slideOn(c.t, c.on[0]) && V.undoCount === c.u2 + 1, `slide ${slideOn(c.t, c.on[0])}, undo steps ${c.u2} -> ${V.undoCount}`), within: 15000 },
+			{ say: "click on the ramp's line: the slide is off", act: async (u, c) => { const k1 = `#lane .lb[data-s="${c.on[0]}"]`, a = $1(k1).getBoundingClientRect(), b = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect(), L = locksOf(c.t, c.i),
+						ya = a.bottom - 3 - (a.height - 6) * L.find(([x]) => x === c.on[0])[1] / 127, yb = b.bottom - 3 - (b.height - 6) * L.find(([x]) => x === c.on[1])[1] / 127, xa = a.left + a.width / 2, xb = b.left + b.width / 2;
+					const f = 0.9, px = a.left + a.width * f, t = (px - xa) / (xb - xa), py = ya + (yb - ya) * t; u.click(k1, {}, f, (py - a.top) / a.height); await sleep(500); },
+				machine: c => ok(!slideOn(c.t, c.on[0]), `slide ${slideOn(c.t, c.on[0])}`), within: 15000 },
+		],
+		async tidy(u, c) { if (c.u00 != null && V.undoCount > c.u00) await undoUntil(u, () => V.undoCount <= c.u00, 12); }
+	};
 	const pagesJ = {
 		name: "md-seq-pages", proves: ["MD-020", "MD-108"],
 		steps: [
@@ -3441,7 +3486,7 @@ const MdJourneys = (() => {
 		return { ...b, name: "md-fit-workspaces-mapping", proves: [], steps: [{ ...st, say: "MIDI mapping on: " + st.say, act: async (u, c) => { await learnIn(u, c, ldoc([])); return st.act(u, c); } }],
 			async tidy(u, c) { await b.tidy(u, c); await learnTidy(u); } }; })();
 	const all = [screensFit, ...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, kitStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
-		paintUndo, stepClickSelect, accentSlide, trigTypesJ, lockLane, laneKitDrag, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
+		paintUndo, stepClickSelect, accentSlide, trigTypesJ, lockLane, laneKitDrag, laneDrawSlide, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
 		genJourney("md-gen-mutate-undo", false, { proves: ["MD-X04", "MD-X05"] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: ["MD-X04"] }), genKeys, genModal, laneTools, gridFits,
 		shapeSound, typeValue, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
 		mixSolo, soloSaved, shiftMutes, allOff, fader, lev, outKey, masterFx,

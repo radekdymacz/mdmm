@@ -36,6 +36,7 @@
 #include "mdLib/mmtelemetry.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -2383,6 +2384,117 @@ namespace
 		result("W12e MD extend", line);
 	}
 
+	// ---- W13 MD: the parameter-lock slide (MD-141) ---------------------------------------------------------------------
+	// Where does a locked value glide on a SLIDE step: to the next lock of that parameter, or to the next trig's value, and
+	// what when the next trig holds no lock of it? Track 1, one parameter, 16 steps. First the live value is found: the same
+	// pattern twice with the lock on step 0 at 17 and at 99; the main-RAM bytes that read 17 and 99 while step 1..3 plays.
+	// Then every case is played with those bytes read every 20 ms.
+
+	struct SlideCase
+	{
+		const char* name;
+		uint64_t trigs;
+		std::vector<std::pair<int, int>> locks;		// step, value of the probed parameter
+		std::vector<std::pair<int, int>> other;		// step, value of a second parameter
+		bool slide;
+	};
+
+	// plays the case from step 0 (after the second wrap, when _sample runs on every 20 ms); _sample(step, rig)
+	void w13play(Rig& _r, const SlideCase& _c, const std::function<void(int)>& _sample, const size_t param = 2)
+	{
+		constexpr size_t param2 = 3;
+		auto p = *ed::decodeMdPattern(_r->request(ed::mdPatternRequest(0), ed::g_mdPatternDump));
+		p.position = 0;
+		p.length = 16;
+		p.trigs.fill(0);
+		p.trigs[0] = _c.trigs;
+		p.lockMasks.fill(0);
+		for(auto& row : p.lockRows)
+			row.fill(ed::MdPattern::g_noLock);
+		for(const auto& [s, v] : _c.locks)
+			p = *ed::withLock(p, 0, param, static_cast<size_t>(s), static_cast<uint8_t>(v));
+		for(const auto& [s, v] : _c.other)
+			p = *ed::withLock(p, 0, param2, static_cast<size_t>(s), static_cast<uint8_t>(v));
+		p.lockedRows = static_cast<uint8_t>(ed::usedLockRows(p));
+		p.slidePattern = _c.slide ? 1 : 0;
+		p.slideEditAll = 1;
+		p.trackSlide.fill(0);
+		p.accentPattern = p.swingPattern = 0;
+		_r->send(ed::encodeMdPattern(p));
+		_r.run(300);
+		_r.loadPattern(0);
+		key(_r, md::PanelControl::Play);
+		int last = -1, wraps = 0;
+		for(int i = 0; i < 400 && wraps < 2; ++i)
+		{
+			_r.run(20);
+			const int st = _r.step();
+			if(st < last)
+				++wraps;
+			last = st;
+			if(wraps == 1 && st <= 12)
+				_sample(st);
+		}
+		halt(_r);
+	}
+
+	void w13slide(const Bytes& _rom)
+	{
+		std::puts("== W13 MD: the parameter-lock slide (track volume, read as the loudness of each trig)");
+		const std::vector<SlideCase> cases = {
+			{"A0 locks 0=20 8=127, trigs 0 4 8 12, no slide", 0x1111, {{0, 20}, {8, 127}}, {}, false},
+			{"A  locks 0=20 8=127, trigs 0 4 8 12, slide@0", 0x1111, {{0, 20}, {8, 127}}, {}, true},
+			{"B  locks 0=20 4=64 8=127, slide@0", 0x1111, {{0, 20}, {4, 64}, {8, 127}}, {}, true},
+			{"B0 locks 0=20 4=64 8=127, no slide", 0x1111, {{0, 20}, {4, 64}, {8, 127}}, {}, false},
+			{"C  locks 0=20 8=127, trigs 0 8 12, slide@0", 0x1101, {{0, 20}, {8, 127}}, {}, true},
+			{"D  lock 0=20 only, trigs 0 4 8 12, slide@0", 0x1111, {{0, 20}}, {}, true},
+			{"D0 lock 0=20 only, no slide", 0x1111, {{0, 20}}, {}, false},
+			{"E  locks 0=20 8=127, other parameter locked at 4, slide@0", 0x1111, {{0, 20}, {8, 127}}, {{4, 100}}, true},
+			{"F  locks 0=20 12=127, trigs 0 4 8 12, slide@0", 0x1111, {{0, 20}, {12, 127}}, {}, true},
+			{"F0 locks 0=20 12=127, no slide", 0x1111, {{0, 20}, {12, 127}}, {}, false},
+		};
+		std::map<std::string, std::array<double, 4>> loud;
+		for(const auto& c : cases)
+		{
+			Rig r(_rom, false);
+			std::map<int, uint64_t> at;
+			w13play(r, c, [&](const int _st) {
+				if(!at.count(_st))
+					at[_st] = r->now();
+			}, 17);
+			std::string line;
+			for(const int st : {0, 4, 8, 12})
+			{
+				if(!at.count(st) || !((c.trigs >> st) & 1))
+				{
+					line += "  s" + std::to_string(st) + ": -";
+					continue;
+				}
+				const size_t from = at[st] > 882 ? at[st] - 882 : 0;
+				char x[64];
+				const double l = rms(r->left(), r->right(), from, std::min(r->left().size(), from + 4400));
+				loud[std::string(c.name, 2)][static_cast<size_t>(st / 4)] = l;
+				std::snprintf(x, sizeof x, "  s%d: %.4f", st, l);
+				line += x;
+			}
+			std::printf("  %-62s%s\n", c.name, line.c_str());
+		}
+		// What the loudness says. The slide on step 0 makes the first trig's tail louder (the volume climbs while it rings), by as much
+		// as the climb is steep. The trig on step 4 plays the kit value when it holds no lock, with the slide or without.
+		// - A and D (D has no later lock at all) climb the same: the target is not the next lock (A has one on step 9);
+		// - the climb is steeper with the target further up and the next trig nearer: A (kit value, 4 steps) > C (127, 8 steps, no trig
+		//   on step 5) > B (64, 4 steps) > no slide.
+		const auto at0 = [&](const char* _k) { return loud[_k][0]; };
+		check(std::abs(at0("A ") - at0("D ")) < 1e-4, "the glide of A and D is the same: its target is not the next lock");
+		check(at0("A ") > at0("C ") && at0("C ") > at0("B ") && at0("B ") > at0("A0"), "the climb orders A (to the kit value over 4 steps) > C (to 127 over 8) > B (to 64 over 4) > no slide");
+		check(std::abs(loud["A "][1] - loud["A0"][1]) < 1e-4, "the trig on step 5 with no lock plays the kit value, slide or not");
+		// F (a lock on step 13, none between) rings louder on step 1 because the trig of step 13 before it is louder; what the slide adds
+		// (the energy, F minus F0, in quadrature with the tail) is A's: the target of both is the kit value on step 5
+		const auto e = [&](const char* _k) { return at0(_k) * at0(_k); };
+		check(std::abs((e("F ") - e("F0")) - (e("A ") - e("A0"))) < 3e-6, "a lock further on (F: step 13) changes nothing: what the slide adds to F is what it adds to A");
+		result("W13 MD slide", "a slide glides to the next trig's value (its lock, or the kit value when it has none), arriving when it plays");
+	}
+
 	// ---- W12f MD: where the firmware counts a song row's repeats (MD-147) -------------------------------------------------
 	// Song 8: row 0 = A02 (8 steps) x4 (REPEATS 3), row 1 = A03 x3 (REPEATS 2), END. SONG mode, PLAY; main RAM snapshot in
 	// the middle of every pass (step 4); the bytes that count the passes of a row (up or down by one a pass, again for the
@@ -2638,6 +2750,8 @@ int main(const int _argc, char** _argv)
 			w12stop(mmRom, true);
 		if(!mdRom.empty() && only == "w12extend")
 			w12extend(mdRom);
+		if(!mdRom.empty() && only == "w13slide")
+			w13slide(mdRom);
 		if(!mdRom.empty() && only == "w12repeats")
 			w12repeats(mdRom);
 		if(!mmRom.empty() && only == "w12patkit")
