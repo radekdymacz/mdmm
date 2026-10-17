@@ -2,6 +2,7 @@
 
 #include "mdMidiHotplug.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <string>
 
@@ -95,6 +96,98 @@ int main()
 			"the change lists the port that came and the one that went");
 		const auto none = change({kbd}, {kbd});
 		check(none.added.empty() && none.removed.empty(), "the same list is no change");
+	}
+
+	// twins: a second identical device switched on does not switch the first off
+	{
+		const Ports twins{{"a", "USB MIDI"}, {"b", "USB MIDI"}};
+		Ports wanted;
+		remember(wanted, twins[0], true, twins);
+		remember(wanted, twins[1], true, twins);
+		check(wanted.size() == 2, "two identical devices are two entries in the memory");
+		const auto plan = reconcile(wanted, twins, {"a", "b"});
+		check(plan.enable.empty() && plan.disable.empty(), "and the next hot-plug leaves both on");
+	}
+
+	// the devices as a fake
+	struct Fake final : Devices
+	{
+		Ports in, out;
+		Ids on;
+		std::string current;
+		std::vector<std::string> calls;
+		Ports inputs() const override { return in; }
+		Ports outputs() const override { return out; }
+		Ids enabledInputs() const override { return on; }
+		void setInput(const std::string& _id, const bool _on) override
+		{
+			calls.push_back((_on ? "on " : "off ") + _id);
+			if(_on)
+			{
+				if(!contains(on, _id) && listed(in, _id))
+					on.push_back(_id);
+			}
+			else
+				on.erase(std::remove(on.begin(), on.end(), _id), on.end());
+		}
+		std::string output() const override { return current; }
+		void setOutput(const std::string& _id) override { calls.push_back("out " + _id); current = _id; }
+	};
+	{
+		// the output the user chose, not the start-up one, is what comes back
+		Fake f;
+		f.out = {{"o1", "TM-1"}, {"o2", "IAC Bus"}};
+		f.current = "o2";
+		Memory m;
+		m.output = f.out[1];
+		auto o = apply(m, f);
+		check(!o.outputChanged && f.calls.empty(), "the chosen output already open: nothing to do");
+		f.out = {{"o1", "TM-1"}};	// the IAC bus goes
+		o = apply(m, f);
+		check(o.outputChanged && f.current.empty(), "an output that went is closed");
+		check(m.output.id == "o2", "and stays remembered");
+		f.out.push_back({"o2", "IAC Bus"});
+		o = apply(m, f);
+		check(o.outputBack && f.current == "o2", "it comes back when listed again");
+		// the user chose none: a stale list that brings one back is undone
+		m.output = {};
+		f.current = "o1";
+		o = apply(m, f);
+		check(o.outputChanged && f.current.empty(), "none chosen: an output that JUCE brought back is closed");
+	}
+	{
+		// the user switched an input off, JUCE's stale list switched it on: off again; a dead handle goes; twins stay
+		Fake f;
+		f.in = {{"a", "USB MIDI"}, {"b", "USB MIDI"}, {"k", "Keys"}};
+		f.on = {"a", "b", "k", "dead"};
+		Memory m;
+		m.inputs = {{"a", "USB MIDI"}, {"b", "USB MIDI"}};
+		const auto o = apply(m, f);
+		check(f.on == Ids({"a", "b"}) && o.switchedOff.size() == 2, "unremembered and dead inputs go off, twins stay on");
+		f.on = {};
+		const auto back = apply(m, f);
+		check(back.switchedOn.size() == 2 && f.on.size() == 2, "both twins come back");
+	}
+	{
+		// a change from another source (the settings dialog) is taken into the memory
+		Fake f;
+		f.in = {{"a", "Keys"}, {"b", "Pads"}};
+		f.on = {"b"};
+		f.out = {{"o1", "TM-1"}};
+		f.current = "o1";
+		Memory m;
+		m.inputs = {{"a", "Keys"}};
+		sync(m, f);
+		check(m.inputs.size() == 1 && m.inputs[0].id == "b", "an input switched on elsewhere is remembered, one switched off is forgotten");
+		check(m.output.id == "o1", "the output chosen elsewhere is remembered");
+		f.current.clear();
+		sync(m, f);
+		check(m.output.id.empty(), "none chosen elsewhere is remembered");
+		Memory away;
+		away.inputs = {{"gone", "Away"}};
+		away.output = {"og", "Away out"};
+		sync(away, f);
+		check(listed(away.inputs, "gone") && away.output.id == "og", "ports that are away are left alone");
 	}
 
 	std::printf("mdMidiHotplugTest: %s (%d failure(s))\n", g_failed ? "FAIL" : "PASS", g_failed);

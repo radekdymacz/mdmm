@@ -51,12 +51,19 @@ namespace mdJucePlugin
 			return nullptr;
 		}
 
-		// The user switched a port on (it is remembered, with its current identifier) or off (it is forgotten).
-		inline void remember(std::vector<Port>& _wanted, const Port& _port, const bool _on)
+		inline bool listed(const std::vector<Port>& _list, const std::string& _id)
+		{
+			return std::any_of(_list.begin(), _list.end(), [&](const Port& _p) { return _p.id == _id; });
+		}
+
+		// The user switched a port on (it is remembered, with its current identifier) or off (it is forgotten). An older
+		// entry of the same name goes only when its identifier is no longer listed (_available): that is the same device
+		// back with a new identifier. Two identical devices on the bus are two entries.
+		inline void remember(std::vector<Port>& _wanted, const Port& _port, const bool _on, const std::vector<Port>& _available = {})
 		{
 			_wanted.erase(std::remove_if(_wanted.begin(), _wanted.end(), [&](const Port& _w)
 			{
-				return _w.id == _port.id || (_on && !_port.name.empty() && _w.name == _port.name);
+				return _w.id == _port.id || (_on && !_port.name.empty() && _w.name == _port.name && !listed(_available, _w.id));
 			}), _wanted.end());
 			if(_on)
 				_wanted.push_back(_port);
@@ -124,6 +131,93 @@ namespace mdJucePlugin
 				return {};
 			const auto* p = find(_available, _wanted);
 			return p ? p->id : std::string();
+		}
+
+		// The system's MIDI devices as the editor needs them (the standalone's AudioDeviceManager; a fake in the test).
+		class Devices
+		{
+		public:
+			virtual ~Devices() = default;
+			virtual std::vector<Port> inputs() const = 0;
+			virtual std::vector<Port> outputs() const = 0;
+			virtual std::vector<std::string> enabledInputs() const = 0;	// open inputs, a port that went included
+			virtual void setInput(const std::string& _id, bool _on) = 0;
+			virtual std::string output() const = 0;						// the open output, "" = none
+			virtual void setOutput(const std::string& _id) = 0;			// "" = none
+		};
+
+		// What the editor remembers: the inputs the user had on and the chosen output ({} = none).
+		struct Memory
+		{
+			std::vector<Port> inputs;
+			Port output;
+		};
+
+		struct Outcome
+		{
+			std::vector<Port> switchedOn;	// inputs that came back
+			std::vector<Port> notOpened;	// inputs that are back but did not open
+			std::vector<Port> switchedOff;	// inputs switched off (gone, or not remembered)
+			bool outputChanged = false;
+			bool outputBack = false;		// the remembered output was switched on again
+		};
+
+		// The devices changed: bring the system to what is remembered.
+		inline Outcome apply(Memory& _m, Devices& _d)
+		{
+			Outcome o;
+			const auto inputs = _d.inputs();
+			const auto plan = reconcile(_m.inputs, inputs, _d.enabledInputs());
+			for(const auto& id : plan.disable)
+			{
+				_d.setInput(id, false);
+				o.switchedOff.push_back({id, {}});
+			}
+			for(const auto& id : plan.enable)
+			{
+				_d.setInput(id, true);
+				Port p{id, {}};
+				for(const auto& q : inputs)
+					if(q.id == id)
+						p = q;
+				const auto now = _d.enabledInputs();
+				(contains(now, id) ? o.switchedOn : o.notOpened).push_back(p);
+			}
+			const auto outs = _d.outputs();
+			const auto wanted = outputFor(outs, _m.output);
+			const auto current = _d.output();
+			if(!wanted.empty() && wanted != current)
+			{
+				_d.setOutput(wanted);
+				o.outputChanged = o.outputBack = true;
+			}
+			else if(wanted.empty() && !current.empty() && ((_m.output.id.empty() && _m.output.name.empty()) || !listed(outs, current)))
+			{
+				// none was chosen (a stale list brought one back), or the port went and JUCE holds a dead one
+				_d.setOutput({});
+				o.outputChanged = true;
+			}
+			return o;
+		}
+
+		// The system changed behind our back (the fallback settings dialog, JUCE itself): what is on now is what the user
+		// wants. Ports that are away are left alone.
+		inline void sync(Memory& _m, const Devices& _d)
+		{
+			const auto inputs = _d.inputs();
+			const auto enabled = _d.enabledInputs();
+			for(const auto& p : inputs)
+				remember(_m.inputs, p, contains(enabled, p.id), inputs);
+			const auto outs = _d.outputs();
+			const auto current = _d.output();
+			if(!current.empty())
+			{
+				for(const auto& o : outs)
+					if(o.id == current)
+						_m.output = o;
+			}
+			else if(_m.output.id.empty() || listed(outs, _m.output.id))
+				_m.output = {};
 		}
 	}
 }

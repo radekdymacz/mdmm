@@ -97,6 +97,37 @@ int main()
 	check(has(log, "input plugged in: USB Keyboard"), "a plug is in the log");
 	check(has(log, "output unplugged: Elektron TM-1"), "an output unplug is in the log");
 
+	// the saved state says what the user chose: switched-off inputs go, the output follows, none removes it
+	{
+		juce::XmlElement xml("DEVICESETUP");
+		xml.setAttribute("deviceType", "CoreAudio");
+		auto* old = xml.createNewChildElement("MIDIINPUT");
+		old->setAttribute("name", "Switched off");
+		old->setAttribute("identifier", "off");
+		xml.setAttribute("defaultMidiOutput", "Old out");
+		xml.setAttribute("defaultMidiOutputDevice", "oo");
+		AudioMidiLink::patchStateXml(xml, {{"a", "USB MIDI"}, {"b", "USB MIDI"}}, {"o2", "IAC Bus"});
+		int inputsInXml = 0;
+		bool offListed = false;
+		for(auto* c : xml.getChildWithTagNameIterator("MIDIINPUT"))
+		{
+			++inputsInXml;
+			offListed = offListed || c->getStringAttribute("identifier") == "off";
+		}
+		check(inputsInXml == 2 && !offListed, "the saved state lists the remembered inputs (twins too) and not a switched-off one");
+		check(xml.getStringAttribute("defaultMidiOutputDevice") == "o2" && xml.getStringAttribute("defaultMidiOutput") == "IAC Bus",
+			"the saved state holds the chosen output");
+		check(xml.getStringAttribute("deviceType") == "CoreAudio", "the rest of the state is untouched");
+		AudioMidiLink::patchStateXml(xml, {}, {});
+		check(!xml.hasAttribute("defaultMidiOutputDevice") && xml.getChildByName("MIDIINPUT") == nullptr, "none chosen: no output and no input in the state");
+		// the round trip: what the state lists is what the memory reads back
+		AudioMidiLink::patchStateXml(xml, {{"k", "Keys"}}, {"o1", "TM-1"});
+		const auto text = xml.toString();
+		const auto again = juce::parseXML(text);
+		check(again && again->getChildByName("MIDIINPUT")->getStringAttribute("name") == "Keys"
+			&& again->getStringAttribute("defaultMidiOutput") == "TM-1", "the state survives a write and a read");
+	}
+
 	std::printf("mdAudioMidiLinkTest: %s (%d failure(s))\n", g_failed ? "FAIL" : "PASS", g_failed);
 	return g_failed ? 1 : 0;
 }

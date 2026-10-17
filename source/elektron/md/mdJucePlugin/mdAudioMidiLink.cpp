@@ -101,6 +101,7 @@ namespace mdJucePlugin
 
 	void AudioMidiLink::changeListenerCallback(juce::ChangeBroadcaster*)
 	{
+		syncFromManager();	// any source of a change (the fallback settings dialog too) is what the user wants
 		publish();
 		logDevices();
 	}
@@ -113,33 +114,102 @@ namespace mdJucePlugin
 		m_seenOutputs = m_listOutputs();
 	}
 
+	namespace
+	{
+		// The standalone's AudioDeviceManager as midiHotplug::Devices. The lists come from the link (a test replaces them).
+		class ManagerDevices final : public midiHotplug::Devices
+		{
+		public:
+			ManagerDevices(juce::StandalonePluginHolder& _h, std::function<std::vector<midiHotplug::Port>()> _in,
+				std::function<std::vector<midiHotplug::Port>()> _out) : m_h(_h), m_in(std::move(_in)), m_out(std::move(_out)) {}
+
+			std::vector<midiHotplug::Port> inputs() const override { return m_in(); }
+			std::vector<midiHotplug::Port> outputs() const override { return m_out(); }
+
+			std::vector<std::string> enabledInputs() const override
+			{
+				// JUCE keeps a port open after its device went: those are in its state XML, not in the list
+				std::vector<std::string> ids;
+				auto& dm = m_h.deviceManager;
+				for(const auto& p : m_in())
+					if(dm.isMidiInputDeviceEnabled(juce::String(p.id)))
+						ids.push_back(p.id);
+				if(const auto state = dm.createStateXml())
+					for(auto* c : state->getChildWithTagNameIterator("MIDIINPUT"))
+					{
+						const auto id = str(c->getStringAttribute("identifier"));
+						if(dm.isMidiInputDeviceEnabled(juce::String(id)) && !midiHotplug::contains(ids, id))
+							ids.push_back(id);
+					}
+				return ids;
+			}
+
+			void setInput(const std::string& _id, const bool _on) override
+			{
+				m_h.deviceManager.setMidiInputDeviceEnabled(juce::String(_id), _on);
+			}
+
+			std::string output() const override { return str(m_h.deviceManager.getDefaultMidiOutputIdentifier()); }
+
+			void setOutput(const std::string& _id) override
+			{
+				m_h.deviceManager.setDefaultMidiOutputDevice(juce::String(_id));
+				m_h.player.setMidiOutput(m_h.deviceManager.getDefaultMidiOutput());
+			}
+
+		private:
+			juce::StandalonePluginHolder& m_h;
+			std::function<std::vector<midiHotplug::Port>()> m_in, m_out;
+		};
+	}
+
+	void AudioMidiLink::patchStateXml(juce::XmlElement& _xml, const std::vector<midiHotplug::Port>& _inputs, const midiHotplug::Port& _output)
+	{
+		// the saved state says what the user chose: JUCE's own list of unplugged inputs (from the state it loaded) goes
+		_xml.deleteAllChildElementsWithTagName("MIDIINPUT");
+		for(const auto& w : _inputs)
+		{
+			auto* child = _xml.createNewChildElement("MIDIINPUT");
+			child->setAttribute("name", juce::String(w.name));
+			child->setAttribute("identifier", juce::String(w.id));
+		}
+		if(_output.id.empty())
+		{
+			_xml.removeAttribute("defaultMidiOutput");
+			_xml.removeAttribute("defaultMidiOutputDevice");
+		}
+		else
+		{
+			_xml.setAttribute("defaultMidiOutput", juce::String(_output.name));
+			_xml.setAttribute("defaultMidiOutputDevice", juce::String(_output.id));
+		}
+	}
+
 	void AudioMidiLink::rememberFromState()
 	{
 		auto* h = holder();
 		if(!h)
 			return;
-		auto& dm = h->deviceManager;
-		// the inputs on now, the ones the saved state lists (JUCE keeps those that are not plugged in) and the ones this
-		// editor wrote for a port that was not plugged in
-		const auto readXml = [&](const juce::XmlElement& _xml)
-		{
-			for(auto* c : _xml.getChildWithTagNameIterator("MIDIINPUT"))
-				if(c->getStringAttribute("identifier").isNotEmpty() || c->getStringAttribute("name").isNotEmpty())
-					midiHotplug::remember(m_wantedInputs, {str(c->getStringAttribute("identifier")), str(c->getStringAttribute("name"))}, true);
-			if(m_wantedOutput.id.empty() && m_wantedOutput.name.empty())
-				m_wantedOutput = {str(_xml.getStringAttribute("defaultMidiOutputDevice")), str(_xml.getStringAttribute("defaultMidiOutput"))};
-		};
-		for(const auto& m : m_listInputs())
-			if(dm.isMidiInputDeviceEnabled(m.id))
-				midiHotplug::remember(m_wantedInputs, m, true);
-		if(const auto state = dm.createStateXml())
-			readXml(*state);
+		ManagerDevices devices(*h, m_listInputs, m_listOutputs);
+		// what the saved state lists (this editor wrote it, with the ports that were not plugged in), then what is on now
+		const auto inputs = m_listInputs();
 		if(h->settings != nullptr)
 			if(const auto saved = h->settings->getXmlValue("audioSetup"))
-				readXml(*saved);
-		const auto out = dm.getDefaultMidiOutputIdentifier();
-		if(out.isNotEmpty())
-			m_wantedOutput = {str(out), portName(juce::MidiOutput::getAvailableDevices(), str(out))};
+			{
+				for(auto* c : saved->getChildWithTagNameIterator("MIDIINPUT"))
+					if(c->getStringAttribute("identifier").isNotEmpty() || c->getStringAttribute("name").isNotEmpty())
+						midiHotplug::remember(m_memory.inputs, {str(c->getStringAttribute("identifier")), str(c->getStringAttribute("name"))}, true, inputs);
+				m_memory.output = {str(saved->getStringAttribute("defaultMidiOutputDevice")), str(saved->getStringAttribute("defaultMidiOutput"))};
+			}
+		const auto enabled = devices.enabledInputs();
+		for(const auto& p : inputs)
+			if(midiHotplug::contains(enabled, p.id))
+				midiHotplug::remember(m_memory.inputs, p, true, inputs);
+		const auto out = devices.output();
+		if(!out.empty())
+			for(const auto& o : m_listOutputs())
+				if(o.id == out)
+					m_memory.output = o;
 	}
 
 	void AudioMidiLink::saveState()
@@ -150,31 +220,11 @@ namespace mdJucePlugin
 		h->saveAudioDeviceState();
 		if(h->settings == nullptr)
 			return;
-		auto xml = h->settings->getXmlValue("audioSetup");
-		if(!xml)
-			return;
-		// JUCE writes the unplugged inputs it knew at start; the ones switched on since, and the output, are ours
-		bool changed = false;
-		for(const auto& w : m_wantedInputs)
+		if(auto xml = h->settings->getXmlValue("audioSetup"))
 		{
-			bool listed = false;
-			for(auto* c : xml->getChildWithTagNameIterator("MIDIINPUT"))
-				listed = listed || c->getStringAttribute("identifier") == juce::String(w.id);
-			if(listed)
-				continue;
-			auto* child = xml->createNewChildElement("MIDIINPUT");
-			child->setAttribute("name", juce::String(w.name));
-			child->setAttribute("identifier", juce::String(w.id));
-			changed = true;
-		}
-		if(!m_wantedOutput.id.empty() && xml->getStringAttribute("defaultMidiOutputDevice") != juce::String(m_wantedOutput.id))
-		{
-			xml->setAttribute("defaultMidiOutput", juce::String(m_wantedOutput.name));
-			xml->setAttribute("defaultMidiOutputDevice", juce::String(m_wantedOutput.id));
-			changed = true;
-		}
-		if(changed)
+			patchStateXml(*xml, m_memory.inputs, m_memory.output);
 			h->settings->setValue("audioSetup", xml.get());
+		}
 	}
 
 	void AudioMidiLink::logPlugs()
@@ -202,55 +252,30 @@ namespace mdJucePlugin
 		auto* h = holder();
 		if(!h)
 			return;
-		auto& dm = h->deviceManager;
-		const auto available = m_listInputs();
-		std::vector<std::string> enabled;
-		for(const auto& m : juce::MidiInput::getAvailableDevices())
-			if(dm.isMidiInputDeviceEnabled(m.identifier))
-				enabled.push_back(str(m.identifier));
-		// a port JUCE still holds open after it went is not in the list: find it among the remembered ones too
-		for(const auto& w : m_wantedInputs)
-			if(dm.isMidiInputDeviceEnabled(juce::String(w.id)) && !midiHotplug::contains(enabled, w.id))
-				enabled.push_back(w.id);
-		const auto plan = midiHotplug::reconcile(m_wantedInputs, available, enabled);
-		for(const auto& id : plan.disable)
-			dm.setMidiInputDeviceEnabled(juce::String(id), false);
-		for(const auto& id : plan.enable)
+		ManagerDevices devices(*h, m_listInputs, m_listOutputs);
+		const auto o = midiHotplug::apply(m_memory, devices);
+		if(m_log)
 		{
-			dm.setMidiInputDeviceEnabled(juce::String(id), true);
-			const auto name = portName(juce::MidiInput::getAvailableDevices(), id);
-			if(m_log)
-				m_log(dm.isMidiInputDeviceEnabled(juce::String(id)) ? "MIDI: input switched back on: " + name
-					: "MIDI: input " + name + " is back but did not open");
+			for(const auto& p : o.switchedOn)
+				m_log("MIDI: input switched back on: " + p.name);
+			for(const auto& p : o.notOpened)
+				m_log("MIDI: input " + p.name + " is back but did not open");
+			if(o.outputBack)
+				m_log("MIDI: output switched back on: " + m_memory.output.name);
 		}
-		// the output: the remembered one when it is listed again, none while it is away (JUCE holds a dead port otherwise)
-		const auto outputId = midiHotplug::outputFor(m_listOutputs(), m_wantedOutput);
-		const auto current = str(dm.getDefaultMidiOutputIdentifier());
-		bool outputChanged = false;
-		if(!outputId.empty() && outputId != current)
-		{
-			dm.setDefaultMidiOutputDevice(juce::String(outputId));
-			outputChanged = true;
-			if(m_log)
-				m_log("MIDI: output switched back on: " + m_wantedOutput.name);
-		}
-		else if(outputId.empty() && !current.empty())
-		{
-			bool listed = false;
-			for(const auto& o : m_listOutputs())
-				listed = listed || o.id == current;
-			if(!listed)
-			{
-				dm.setDefaultMidiOutputDevice({});
-				outputChanged = true;
-			}
-		}
-		if(outputChanged)
-			h->player.setMidiOutput(dm.getDefaultMidiOutput());
-		if(!plan.enable.empty() || !plan.disable.empty())
+		if(!o.switchedOn.empty() || !o.switchedOff.empty() || !o.notOpened.empty())
 			if(auto* p = dynamic_cast<pluginLib::Processor*>(&m_processor))
 				p->midiInputsChanged();	// a note held on a port that went gets no note off
 		saveState();
+	}
+
+	void AudioMidiLink::syncFromManager()
+	{
+		auto* h = holder();
+		if(!h)
+			return;
+		ManagerDevices devices(*h, m_listInputs, m_listOutputs);
+		midiHotplug::sync(m_memory, devices);
 	}
 
 	void AudioMidiLink::midiDevicesChanged()
@@ -544,8 +569,8 @@ namespace mdJucePlugin
 				return needs("device and on");
 			dm.setMidiInputDeviceEnabled(juce::String(*device), onValue);
 			// the remembered ports follow what the user chose (an input that did not open is not remembered)
-			midiHotplug::remember(m_wantedInputs, {*device, portName(juce::MidiInput::getAvailableDevices(), *device)},
-				onValue && dm.isMidiInputDeviceEnabled(juce::String(*device)));
+			midiHotplug::remember(m_memory.inputs, {*device, portName(juce::MidiInput::getAvailableDevices(), *device)},
+				onValue && dm.isMidiInputDeviceEnabled(juce::String(*device)), m_listInputs());
 			if(auto* p = dynamic_cast<pluginLib::Processor*>(&m_processor))
 				p->midiInputsChanged();	// a note held on a port that went gets no note off
 			saved();
@@ -563,6 +588,11 @@ namespace mdJucePlugin
 				return needs("device");
 			dm.setDefaultMidiOutputDevice(juce::String(*device));
 			h->player.setMidiOutput(dm.getDefaultMidiOutput());
+			// what the manager holds now is what is remembered (none when the port did not open or none was chosen)
+			{
+				const auto held = str(dm.getDefaultMidiOutputIdentifier());
+				m_memory.output = held.empty() ? midiHotplug::Port() : midiHotplug::Port{held, portName(juce::MidiOutput::getAvailableDevices(), held)};
+			}
 			saved();
 			// B-037: JUCE goes back to no output when the port did not open
 			const auto refused = midiPortRefusal::text(midiPortRefusal::Kind::Output,
