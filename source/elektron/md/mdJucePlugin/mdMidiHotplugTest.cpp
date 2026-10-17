@@ -110,7 +110,7 @@ int main()
 	}
 
 	// the devices as a fake
-	struct Fake final : Devices
+	struct Fake : Devices
 	{
 		Ports in, out;
 		Ids on;
@@ -188,6 +188,28 @@ int main()
 		away.output = {"og", "Away out"};
 		sync(away, f);
 		check(listed(away.inputs, "gone") && away.output.id == "og", "ports that are away are left alone");
+	}
+
+	{
+		// an input that is back but did not open is tried again, not forgotten by the next look
+		struct Stubborn final : Fake
+		{
+			bool opens = false;
+			void setInput(const std::string& _id, const bool _on) override { if(!_on || opens) Fake::setInput(_id, _on); }
+		};
+		Stubborn f;
+		f.in = {{"k", "Keys"}};
+		Memory m;
+		m.inputs = {{"k", "Keys"}};
+		auto o = apply(m, f);
+		check(o.notOpened.size() == 1 && f.on.empty(), "an input that does not open is reported");
+		sync(m, f);
+		check(m.inputs.size() == 1, "and stays remembered after a look");
+		f.opens = true;
+		o = apply(m, f);
+		check(o.switchedOn.size() == 1 && contains(f.on, "k"), "and opens at the next device change");
+		sync(m, f);
+		check(m.failed.empty() && m.inputs.size() == 1, "then it is an ordinary remembered input");
 	}
 
 	std::printf("mdMidiHotplugTest: %s (%d failure(s))\n", g_failed ? "FAIL" : "PASS", g_failed);

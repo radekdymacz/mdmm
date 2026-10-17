@@ -151,6 +151,7 @@ namespace mdJucePlugin
 		{
 			std::vector<Port> inputs;
 			Port output;
+			std::vector<std::string> failed;	// remembered inputs that are back but did not open: tried again at the next change
 		};
 
 		struct Outcome
@@ -181,7 +182,11 @@ namespace mdJucePlugin
 					if(q.id == id)
 						p = q;
 				const auto now = _d.enabledInputs();
-				(contains(now, id) ? o.switchedOn : o.notOpened).push_back(p);
+				const bool open = contains(now, id);
+				(open ? o.switchedOn : o.notOpened).push_back(p);
+				_m.failed.erase(std::remove(_m.failed.begin(), _m.failed.end(), id), _m.failed.end());
+				if(!open)
+					_m.failed.push_back(id);
 			}
 			const auto outs = _d.outputs();
 			const auto wanted = outputFor(outs, _m.output);
@@ -207,7 +212,14 @@ namespace mdJucePlugin
 			const auto inputs = _d.inputs();
 			const auto enabled = _d.enabledInputs();
 			for(const auto& p : inputs)
-				remember(_m.inputs, p, contains(enabled, p.id), inputs);
+			{
+				const bool on = contains(enabled, p.id);
+				if(on)
+					_m.failed.erase(std::remove(_m.failed.begin(), _m.failed.end(), p.id), _m.failed.end());
+				else if(contains(_m.failed, p.id))
+					continue;	// wanted, but the system did not open it: not the same as switched off
+				remember(_m.inputs, p, on, inputs);
+			}
 			const auto outs = _d.outputs();
 			const auto current = _d.output();
 			if(!current.empty())
