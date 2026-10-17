@@ -24,7 +24,7 @@ const FILES = ["shared/deskBridge.js", "shared/deskDocs.js", "shared/deskOverlay
    run when the test says; the bridge's dev transport collects what the page sends ---- */
 /* a DOM that keeps what the page writes to #lane and answers the rest with "any" */
 /* the lane's keys: one per step, 10 px wide, 124 px tall (what drawSlides measures) */
-const keyEl = s => ({ dataset: { s: String(s) }, getBoundingClientRect: () => ({ left: s * 10, top: 0, width: 10, height: 124, bottom: 124 }), querySelector: () => null, closest: () => keyEl(s) });
+const keyEl = s => ({ dataset: { s: String(s) }, getBoundingClientRect: () => ({ left: s * 10, top: 0, width: 10, right: s * 10 + 10, height: 124, bottom: 124 }), querySelector: () => null, closest: () => keyEl(s) });
 const meterEl = { title: "", className: "", classList: { add() { }, remove() { } }, style: {}, dataset: {} };
 const svgEl = { innerHTML: "", setAttribute() { } };
 const laneEl = { getBoundingClientRect: () => ({ left: 0, top: 0, width: 640, height: 124, bottom: 124 }), contains: () => true, querySelector: q => { const m = /data-s="(\d+)"/.exec(q); return m ? keyEl(+m[1]) : null; }, innerHTML: "", textContent: "", style: {}, dataset: {}, classList: { add() { }, remove() { } } };
@@ -58,7 +58,7 @@ function page() {
 	const src = FILES.map(f => fs.readFileSync(f, "utf8").replace(/^"use strict";/, "") + (/mmAdapter/.test(f) ? hold : "")).join("\n;\n")
 		+ "\n;__start();\nreturn { S: () => S, renderLane, Overlay, MmView, docStore, storeDoc, MM_SEAM, Dlg, Banner, mockup: { " +
 			"mutApply, genLive, genEnd, setMachine, songAction, secAction, setSel, clearSel, selCut, selDuplicate, selTrigs, selMark, selMove, selGrow, stepMenuItems, Keys, HOST, " +
-			"drawSlides, slideGrab, slideNext, lockPicker, kitHit, kitGrab, kitAt, laneAt, endLaneDraw, commit, laneMeta, valueHTML, kitLabelHTML, laneNow: () => laneDraw, laneSet: d => { laneDraw = d; }, renderTop, laneAlt: s => { window.__pick = s; laneDraw = { erase: true, touched: false }; try { laneAt({ clientX: 0, clientY: 0 }); } catch (e) { console.log('ERR', e.message); } }, rollAdd, rollLen, rollRemove, editSpan, setRollLen, selMoveTo, selClear, noteSpans, vis } };";
+			"drawSlides, slideGrab, slideNext, bandLive, bandEsc, lockPicker, kitHit, kitGrab, kitAt, laneAt, endLaneDraw, commit, laneMeta, valueHTML, kitLabelHTML, laneNow: () => laneDraw, laneSet: d => { laneDraw = d; }, renderTop, laneAlt: s => { window.__pick = s; laneDraw = { erase: true, touched: false }; try { laneAt({ clientX: 0, clientY: 0 }); } catch (e) { console.log('ERR', e.message); } }, rollAdd, rollLen, rollRemove, editSpan, setRollLen, selMoveTo, selClear, noteSpans, vis } };";
 	const out = new Function("scope", "with (scope) {\n" + src + "\n}")(scope);
 	const run = () => { for (let n = 0; timers.length && n < 10000; n++) timers.shift()(); };
 	run();
@@ -212,7 +212,7 @@ check(/of 62 locked parameters/.test(meterEl.title), "the lock meter's tooltip c
 	check(!!M.slideGrab(at(25, yOf(90) + 7)) && M.laneNow()?.slide === "maybe", "a press within 8 px of the dot is a maybe-slide");
 	M.laneSet(null);
 	check(!M.slideGrab(at(25, yOf(90) + 12)) && !M.laneNow(), "12 px below the dot is the lane's own paint");
-	check(!M.slideGrab(at(25, yOf(90), keys[2], { altKey: true })) && !M.slideGrab(at(25, yOf(90), keys[2], { shiftKey: true })) && !M.slideGrab(at(25, yOf(90), keys[2], { button: 2 })), "Alt (erase), Shift (ramp) and a right button never grab the dot");
+	check(!M.slideGrab(at(25, yOf(90), keys[2], { altKey: true })) && (M.slideGrab(at(25, yOf(90), keys[2], { shiftKey: true })), M.laneNow()?.slide == null && M.laneSet(null) == null) && !M.slideGrab(at(25, yOf(90), keys[2], { button: 2 })), "Alt (erase), Shift (ramp) and a right button never grab the dot");
 	check(!M.slideGrab(at(25, yOf(90), keys[4])), "a step with no lock has no dot");
 
 	/* drag sideways, far past the next lock: the preview runs to it only; the release sets the flag, one commit, no lock edit */
@@ -254,6 +254,33 @@ check(/of 62 locked parameters/.test(meterEl.title), "the lock meter's tooltip c
 	fresh({ 2: 90, 10: 30 }, [2]); M.slideGrab(at(mid.x, mid.y, keys[3])); M.laneAt(at(mid.x + 1, mid.y - 20, keys[3])); M.endLaneDraw(); p.run();
 	check(S.tracks[TRK].slide.has(2) && !slides().length, "moving off the line paints a lock instead and keeps the slide");
 
+
+	/* Shift on a lock bar: the rubber band. Out of the column sideways it follows the cursor, the parameter's next lock is the one
+	   target; dropped on its column it sets the slide, anywhere else (or Esc, or left of the start) nothing is written */
+	const sh = (x, y, el = keys[2]) => at(x, y, el, { shiftKey: true });
+	fresh({ 2: 90, 10: 30 });
+	check(!!M.slideGrab(sh(25, 100)) && M.laneNow()?.band === "maybe", "Shift on a lock bar (anywhere on it) is a maybe-band");
+	M.laneSet(null); check(!M.slideGrab(sh(25, 100, keys[4])) && !M.laneNow(), "Shift on a step without a lock on this parameter is the lane's ramp (no grab)");
+	check(!M.slideGrab(at(25, 100)) || M.laneNow()?.band !== "maybe", "without Shift a press low on the bar is not a band"); M.laneSet(null);
+	fresh({ 2: 90, 10: 30 }); M.slideGrab(sh(25, 60)); M.laneAt(sh(26, 60)); check(M.laneNow()?.band === "maybe", "inside the column, without vertical movement, it waits");
+	M.laneAt(sh(26, 100)); check(M.laneNow()?.ramp === true && !M.laneNow()?.band, "up and down inside the column is the Shift ramp of locks"); M.laneSet(null);
+	fresh({ 2: 90, 10: 30 }); commits = 0; M.slideGrab(sh(25, 70));
+	M.laneAt(sh(33, 70)); check(M.laneNow()?.band === "on" && !!M.bandLive() && M.laneNow().nx === 10, "out of the column to the right: the band, target step index 10 (past the trig at 4 with no lock)");
+	M.laneAt(sh(60, 50)); check(/M25 \S+ L60 50/.test(svgEl.innerHTML) && /r="9"/.test(svgEl.innerHTML) && !/stroke-dasharray/.test(svgEl.innerHTML), "a solid line to the cursor and a ring on the target");
+	M.laneAt(sh(300, 20)); check(/L300 20/.test(svgEl.innerHTML), "the line follows the pointer freely, far past the target");
+	check(commits === 0 && !slides().length && !lockOps().length, "nothing is written while it runs");
+	M.laneAt(sh(105, 60)); M.endLaneDraw(); p.run();
+	check(slides().length === 1 && /"t":3,"s":2,"on":true/.test(slides()[0]) && S.tracks[TRK].slide.has(2) && !lockOps().length && commits === 1 && !M.laneNow(), "dropped on the next lock: one slide intent, one commit: " + ops().join(" ").slice(0, 100));
+	check(/M25 \S+ L105 /.test(svgEl.innerHTML) && !/r="9"/.test(svgEl.innerHTML), "the line snaps to the next lock as the normal ramp");
+	for (const x of [45, 300, 99]) { fresh({ 2: 90, 10: 30 }); commits = 0; M.slideGrab(sh(25, 70)); M.laneAt(sh(33, 70)); M.laneAt(sh(x, 60)); M.endLaneDraw(); p.run();
+		check(!slides().length && !lockOps().length && commits === 0 && !M.laneNow(), `dropped at x ${x}: cancelled, nothing written`); }
+	fresh({ 2: 90, 10: 30 }); M.slideGrab(sh(25, 70)); M.laneAt(sh(33, 70)); M.laneAt(sh(105, 60)); M.bandEsc(); check(!M.bandLive(), "Esc: the band is gone"); M.endLaneDraw(); p.run();
+	check(!slides().length, "Esc: nothing is set");
+	fresh({ 2: 90, 10: 30 }); M.slideGrab(sh(25, 70)); M.laneAt(sh(33, 70)); M.laneAt(sh(105, 60)); M.laneAt(sh(5, 60)); check(!M.bandLive(), "left of the start: no band"); M.endLaneDraw(); p.run();
+	check(!slides().length, "released left of the start: nothing set");
+	fresh({ 2: 90 }); M.slideGrab(sh(25, 70)); M.laneAt(sh(33, 70)); M.laneAt(sh(105, 60));
+	check(!!M.bandLive() && M.laneNow().nx == null && !/r="9"/.test(svgEl.innerHTML), "no later lock: the band follows, no target"); M.endLaneDraw(); p.run();
+	check(!slides().length, "and the drop sets nothing");
 	M.HOST.commit = hc; clearHooks(); S.tracks[TRK].slide = new Set();
 }
 
