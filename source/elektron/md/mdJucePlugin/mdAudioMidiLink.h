@@ -64,6 +64,9 @@ namespace mdJucePlugin
 		void publish();
 		// The system's MIDI devices changed (the hot-plug callback; public so a test can call it): reconcile, publish, log.
 		void midiDevicesChanged();
+		// The saved audio device state with the remembered MIDI ports: the inputs the user has on (also those whose device
+		// is away) and the output, nothing else (public so a test can check the round trip).
+		static void patchStateXml(juce::XmlElement& _xml, const std::vector<midiHotplug::Port>& _inputs, const midiHotplug::Port& _output);
 		// What the system offers (the hot-plug test replaces it with a fake list).
 		using PortList = std::function<std::vector<midiHotplug::Port>()>;
 		void setPortLists(PortList _inputs, PortList _outputs);
@@ -92,6 +95,7 @@ namespace mdJucePlugin
 		// The device state into the settings, with the remembered MIDI ports that are not plugged in.
 		void saveState();
 		void rememberFromState();
+		void syncFromManager();
 
 		juce::AudioProcessor& m_processor;
 		ToPage m_toPage;
@@ -102,8 +106,7 @@ namespace mdJucePlugin
 		juce::AudioDeviceManager* m_listening = nullptr;
 		juce::MidiDeviceListConnection m_midiConnection;
 		PortList m_listInputs, m_listOutputs;
-		std::vector<midiHotplug::Port> m_wantedInputs;	// the inputs the user had on (identifier and name)
-		midiHotplug::Port m_wantedOutput;				// the chosen MIDI output, {} = none
+		midiHotplug::Memory m_memory;	// the inputs the user had on (identifier and name) and the chosen output
 		std::vector<midiHotplug::Port> m_seenInputs, m_seenOutputs;	// what the last look at the system listed
 		juce::AudioDeviceManager::LevelMeter::Ptr m_inputLevel;
 		bool m_meter = false;
