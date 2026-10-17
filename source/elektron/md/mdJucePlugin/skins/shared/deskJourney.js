@@ -848,12 +848,12 @@ const Journey = (() => {
 		for (const e of row.children) { const r = e.getBoundingClientRect(); if (r.width > 0 && r.right > panel.right + 0.5) cut.push(e.id || e.className); }
 		return cut;
 	};
-	const fitJourneys = (prefix, workspaces) => [{
+	const fitJourneys = (prefix, workspaces, opts = {}) => [{
 		name: `${prefix}-fit-workspaces`, proves: [],
 		steps: [{ say: "every workspace at every window size and text floor: the top bar's keys wholly in the window, every slot of the LCD's second row visible, the LCD one size",
 			act: async (hands, c) => {
 				const resize = typeof window.gmView === "function";
-				const views = resize ? fitViews : [{ name: "this window", width: innerWidth, floor: 0 }];
+				const views = resize ? (opts.views || fitViews) : [{ name: "this window", width: innerWidth, floor: 0 }];
 				c.report = []; c.boxes = {}; c.start = $q("#tabs [aria-selected=true]")?.dataset.ws || workspaces[0];
 				if (typeof CpuMeter !== "undefined" && !$q("#cpumeter")) CpuMeter.update({ type: "cpuLoad", state: "running", load: 0.35, worst: 0.55, realtime: 3.1, sampleRate: 48000, blockSize: 256 });
 				if (typeof DeskVolume !== "undefined" && !$q("#volf")) DeskVolume.update({ type: "outputLevel", peakL: 0.2, peakR: 0.2, clip: false, gainDb: 0 });
@@ -871,6 +871,7 @@ const Journey = (() => {
 						if (over.length) c.report.push(`${v.name} ${w}: the top bar overlaps itself: ${over.join(", ")}`);
 						if (cut.length) c.report.push(`${v.name} ${w}: LCD row 2 cut: ${cut.join("; ")}`);
 						(c.boxes[v.name] = c.boxes[v.name] || {})[w] = [r.width, r.height];
+						if (opts.after) await opts.after(v, w);
 					}
 					raiseFloor(0);
 				}

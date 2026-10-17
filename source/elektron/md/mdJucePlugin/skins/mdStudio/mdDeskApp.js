@@ -42,7 +42,7 @@ S.ctl = { learn: false, learnT: null, sel: null, selT: null, addT: 1 };
    "enabled" (mdmm::midiMappingEnabled, deskHost.h). Off: no tab, no LEARN key, the keys do nothing. */
 S.mapping = false;
 function applyMapping(on) {
-	S.mapping = !!on;
+	S.mapping = !!on; document.body.classList.toggle("mapping", S.mapping);
 	const tab = document.querySelector('#tabs [data-ws="control"]'), key = document.getElementById("learnkey");
 	if (tab) tab.hidden = !on;
 	if (key) key.hidden = !on;

@@ -149,7 +149,7 @@ wanted = (set(re.findall(r'\$\("#([A-Za-z][\w-]*)', scripts)) | set(re.findall(r
 made = (set(re.findall(r'id="([A-Za-z][\w-]*)"', scripts)) | set(re.findall(r'id=\\"([\w-]+)', scripts))
         | set(re.findall(r'\.id\s*=\s*"([\w-]+)"', scripts)))
 present = set(re.findall(r'id="([\w-]+)"', m))
-# the MIDI mapping UI (the Control tab, LEARN) is out of the markup until the controller feature (FOUNDATION.md)
+# the MIDI mapping UI (the Control tab, LEARN) is back in the markup (0.8, MIDI Learn on); the page still tolerates its absence
 optional = {'learnkey'}
 missing = sorted(wanted - present - made - optional)
 if missing:
