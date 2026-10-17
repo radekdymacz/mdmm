@@ -115,6 +115,8 @@ A slide makes a locked value glide to the next lock instead of jumping. Without 
 
 You can also draw it in the lock lane. Press on the dot at the top of a lock bar and drag sideways to the right. A dotted ramp shows where the glide goes: to the next lock of that parameter on a step with a trig, whatever further you drag. Trigs between them without a lock do not stop it. Let go and the step slides, in one undo step. A slide belongs to the step, so every parameter locked there glides to its own next lock. If the parameter has no later lock, the lane says so and nothing is set. Click the ramp's line to take the slide off. Dragging up or down from the dot changes the lock as before.
 
+Shift-drag from a lock draws a slide. Shift-drag from an empty step draws a ramp of locks. Hold Shift on a lock bar and drag sideways out of its column. A line follows the pointer and the next lock of that parameter is marked as the target. Drop on that lock and the step slides, in one undo step. Drop anywhere else, press Esc, or move left of the start, and nothing is set. If there is no later lock, the line still follows and the drop does nothing.
+
 To copy, paste or clear the slide row of a track, tick **Slide** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (chapter 11, "Super copy"). Press {key:undo} to take each back.
 
 ## THE MUTE MODE
