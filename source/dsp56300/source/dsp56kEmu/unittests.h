@@ -127,6 +127,9 @@ namespace  dsp56k
 		void subr();
 		void mpyi();
 		void mpy_su();
+		void maci_xxxx();
+		void mpyMacSignedUnsigned();
+		void macr_rounded();
 		void max_parallel();
 		void tst();
 		void nop();
