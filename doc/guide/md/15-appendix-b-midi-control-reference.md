@@ -20,13 +20,15 @@ To see or change the map:
 TIP: {key:undo} takes back a change to the map.
 
 ## CONTROL CHANGES
-<!-- rows: MD-277 @10cc2d -->
+<!-- rows: MD-277 @cac626 -->
 
 The sound parameters of the 16 tracks are reached by control change messages. The machine uses four MIDI channels, starting from its base channel, and each channel serves a group of four tracks. Every parameter of a track has its own control change number.
 
 In the editor you do not type these numbers. When you move a value on the **Kit** workspace, the editor sends the control change for it. A move on a track of each group of four, tracks 1, 5, 9 and 13, reaches the machine through its own channel.
 
 A DAW reaches the same parameters by host automation. Each track has host parameters for synthesis, effects, routing, level and mute, and a lane of automation sends the control change the knob would send.
+
+A controller knob learned on the **Control** tab (chapter 17) takes over its control change on its channel: the machine's own target of that number no longer moves.
 
 ## LEVEL AND MUTE
 <!-- rows: MD-278 @52366f -->
