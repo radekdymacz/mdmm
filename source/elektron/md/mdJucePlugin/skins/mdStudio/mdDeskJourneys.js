@@ -3421,7 +3421,7 @@ const MdJourneys = (() => {
 	/* the top bar with MIDI mapping ON (the Control tab and the LEARN key shown), on every workspace including Control, at every window size */
 	const fitMapping = (() => { const mapViews = [1280, 1440, 1500].map(w => ({ name: String(w), width: w, floor: 0 })),
 			b = Journey.fitJourneys("md", ["seq", "sound", "mix", "sampler", "song", "control"], { views: mapViews, after: async (v, w) => { if (w === "control") { await sleep(300); Journey.snapshot("learn-md-" + v.name); } } })[0], st = b.steps[0];
-		return { ...b, name: "md-fit-workspaces-mapping", steps: [{ ...st, say: "MIDI mapping on: " + st.say, act: async (u, c) => { await learnIn(u, c, ldoc([])); return st.act(u, c); } }],
+		return { ...b, name: "md-fit-workspaces-mapping", proves: [], steps: [{ ...st, say: "MIDI mapping on: " + st.say, act: async (u, c) => { await learnIn(u, c, ldoc([])); return st.act(u, c); } }],
 			async tidy(u, c) { await b.tidy(u, c); await learnTidy(u); } }; })();
 	const all = [screensFit, ...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, kitStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, stepClickSelect, accentSlide, trigTypesJ, lockLane, laneKitDrag, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,

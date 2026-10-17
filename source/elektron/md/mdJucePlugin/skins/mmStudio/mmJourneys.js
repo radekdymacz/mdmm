@@ -2679,7 +2679,7 @@ const MmJourneys = (() => {
 	const learnFit = () => Journey.fitJourneys("mm", ["seq", "sound", "mix", "perform", "song", "control"], { views: [1280, 1440, 1500].map(w => ({ name: String(w), width: w, floor: 0 })),
 		after: async (v, w) => { if (w === "control") { await sleep(300); Journey.snapshot("learn-mm-" + v.name); } } }).filter(j => j.name === "mm-fit-workspaces").map(j => {
 		const tidy = j.tidy;
-		return { ...j, name: "mm-fit-workspaces-learn", steps: [{ say: "mapping on: the Control tab and the LEARN key are in the top bar", act: async () => { window.gm.recv([{ type: "learn", doc: lDoc([]) }]); await sleep(300); },
+		return { ...j, name: "mm-fit-workspaces-learn", proves: [], steps: [{ say: "mapping on: the Control tab and the LEARN key are in the top bar", act: async () => { window.gm.recv([{ type: "learn", doc: lDoc([]) }]); await sleep(300); },
 			screen: () => ok(!$1(tab("control")).hidden && !learnKey().hidden, "control tab hidden " + $1(tab("control")).hidden) }, ...j.steps],
 			async tidy(u, c) { try { if (tidy) await tidy(u, c); } finally { await learnTidy(u); } } };
 	});
