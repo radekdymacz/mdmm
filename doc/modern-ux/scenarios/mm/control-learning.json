@@ -1,0 +1,1575 @@
+{
+ "title": "Control: MIDI Learn waiting, progress, learned, paused",
+ "about": "The Control workspace (key 6) and the LEARN key with mapping on. A value waits for a controller (T3 FLT, the first value): 1 of 2 values seen, then 2 of 2, then the mapping lands (CC 21 on channel 1: a row of its own with T3 in its column, the toast names it and what it hides), then the HW MIDI engine pauses LEARN (the inspector says why).",
+ "boot": "stub",
+ "steps": [
+  {
+   "at": 500,
+   "send": [
+    {
+     "type": "learn",
+     "doc": {
+      "enabled": true,
+      "mappings": [],
+      "learning": null,
+      "limits": {
+       "tracks": 6,
+       "max": 128,
+       "params": [
+        {
+         "pg": 0,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 7,
+         "i": 0,
+         "name": "Level"
+        }
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "at": 3000,
+   "send": [
+    {
+     "type": "learn",
+     "doc": {
+      "enabled": true,
+      "mappings": [],
+      "learning": {
+       "t": 2,
+       "pg": 2,
+       "i": 0,
+       "name": "p",
+       "got": 1,
+       "need": 2
+      },
+      "limits": {
+       "tracks": 6,
+       "max": 128,
+       "params": [
+        {
+         "pg": 0,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 7,
+         "i": 0,
+         "name": "Level"
+        }
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "at": 5000,
+   "send": [
+    {
+     "type": "learn",
+     "doc": {
+      "enabled": true,
+      "mappings": [],
+      "learning": {
+       "t": 2,
+       "pg": 2,
+       "i": 0,
+       "name": "p",
+       "got": 2,
+       "need": 2
+      },
+      "limits": {
+       "tracks": 6,
+       "max": 128,
+       "params": [
+        {
+         "pg": 0,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 7,
+         "i": 0,
+         "name": "Level"
+        }
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "at": 7000,
+   "send": [
+    {
+     "type": "learn",
+     "doc": {
+      "enabled": true,
+      "mappings": [
+       {
+        "index": 0,
+        "t": 2,
+        "pg": 2,
+        "i": 0,
+        "name": "p",
+        "cc": 21,
+        "ch": 0,
+        "mode": "Absolute",
+        "invert": false,
+        "overrides": [
+         {
+          "ch": 0,
+          "t": 2,
+          "pg": 2,
+          "i": 0
+         }
+        ]
+       }
+      ],
+      "learning": null,
+      "limits": {
+       "tracks": 6,
+       "max": 128,
+       "params": [
+        {
+         "pg": 0,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 7,
+         "i": 0,
+         "name": "Level"
+        }
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "at": 10000,
+   "send": [
+    {
+     "type": "learn",
+     "doc": {
+      "enabled": true,
+      "mappings": [
+       {
+        "index": 0,
+        "t": 2,
+        "pg": 2,
+        "i": 0,
+        "name": "p",
+        "cc": 21,
+        "ch": 0,
+        "mode": "Absolute",
+        "invert": false,
+        "overrides": []
+       }
+      ],
+      "learning": null,
+      "limits": {
+       "tracks": 6,
+       "max": 128,
+       "params": [
+        {
+         "pg": 0,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 7,
+         "i": 0,
+         "name": "Level"
+        }
+       ]
+      },
+      "paused": "MIDI learn is off with the HW MIDI engine."
+     }
+    }
+   ]
+  }
+ ]
+}

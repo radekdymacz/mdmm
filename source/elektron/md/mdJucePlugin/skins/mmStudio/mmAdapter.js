@@ -273,6 +273,7 @@
 		   targets, which it does not take, stay on the page */
 		if (!modInFlight && m.doc && !sameValue(C().modToFw(setup), m.doc)) {
 			const page = C().modToPage(m.doc), ids = new Set(page.sources.map(x => x.id));
+			if (page.links.length < m.doc.links.length) log(`modulators: ${m.doc.links.length - page.links.length} link(s) from no source left out`);
 			page.links.push(...setup.links.filter(l => l.t >= SYNTH_TRACKS && ids.has(l.src)));
 			V().setCtlSetup(page);
 		}
@@ -362,15 +363,15 @@
 	}
 	const learnRef = lt => { const [pg, i] = lt.pid.split("."); return { t: lt.t, pg: PAGES.indexOf(pg), i: +i }; };
 	const notLearnable = "The plug-in's MIDI learn cannot map this value (MIDI page values are NRPN on the machine).";
+	let leftLogged = "";
 	function onLearn(doc) {
-		const prev = learn;
 		learn = doc;
 		V().setMapping(!!doc.enabled);	/* MIDI mapping is off unless the plug-in says so (deskHost.h) */
-		if (prev && prev.learning && !doc.learning && doc.mappings.length > prev.mappings.length) {
-			const m = doc.mappings[doc.mappings.length - 1];
-			V().toast(`Learned: CC ${m.cc} → T${m.t + 1} ${PAGES[m.pg] || ""} ${V().pname(m.t, PAGES[m.pg] + "." + m.i) || ""}. Stored with the plug-in.`);
-			V().clearLearnTarget();
-		}
+		/* the page shows the rows, the progress, what a mapping hides and the learned toast; what a project load left out is logged once */
+		V().setLearn(doc);
+		const left = (doc.left || []).join("\n");
+		if (left && left !== leftLogged) (doc.left || []).forEach(l => log("learn: left out when the project loaded: " + l));
+		leftLogged = left;
 	}
 
 	/* ---------------- what the plug-in asks, and what it refused ---------------- */
@@ -561,14 +562,18 @@
 		learning(on) { if (!on) send({ op: "learnCancel" }); },
 		learnTarget(lt) {
 			if (!learnable(lt)) { V().toast(notLearnable); V().clearLearnTarget(); return; }
-			send(Object.assign({ op: "learnStart" }, learnRef(lt)), { onResult: r => r.ok ? V().toast("Move a knob on your controller, or press 1-8 for CC 21-28.") : V().toast(r.errors[0]) });
+			send(Object.assign({ op: "learnStart" }, learnRef(lt)), { onResult: r => r.ok ? V().toast("Turn a knob on your controller both ways, or press 1-8 for a knob row.") : (V().clearLearnTarget(), V().toast(r.errors[0])) });
 		},
-		learnBind(lt, k) {
+		/* the knob row pressed (1-8) for the value clicked: the row's CC, on any channel; the mapping comes back in the learn document */
+		learnBind(lt, cc) {
 			if (!learnable(lt)) { V().toast(notLearnable); return; }
 			send({ op: "learnCancel" });
-			/* the mockup's knob k is CC 20 + k; its Control workspace then binds that knob on screen too */
-			send(Object.assign({ op: "learnAdd", cc: 20 + k }, learnRef(lt)), { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } });
+			send(Object.assign({ op: "learnAdd", cc }, learnRef(lt)), { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } });
 		},
+		/* the CC rows' Add target (a: cc, ch (255: any), t, pg, i), Inv and x: the plug-in's mappings */
+		learnAdd(a) { send(Object.assign({ op: "learnAdd", cc: a.cc, t: a.t, pg: a.pg, i: a.i }, a.ch === 255 ? {} : { ch: a.ch }), { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); },
+		learnInvert(index) { send({ op: "learnInvert", index }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); },
+		learnRemove(index) { send({ op: "learnRemove", index }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); },
 		/* the Control workspace's LFO and Random sources and their links: the plug-in runs them */
 		modulators(setup) { sendMods(setup); },
 		engine(kind) { send({ op: "engine", kind }, { onResult: r => V().toast(r.ok ? r.note : r.errors[0]) }); },

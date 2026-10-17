@@ -37,8 +37,11 @@
      noteOn(t, pitch, vel),           the home row, the piano roll's and the transpose keyboard's keys: the
      noteOff(t, pitch)                note intent, as on the MD (synth track t, pitch semitones from C3; the
                                       core plays it on the track's own MIDI channel)
-     learning(on), learnTarget(target), learnBind(target, knob)
-                                      LEARN on or off, the value clicked, the knob pressed for it
+     learning(on), learnTarget(target), learnBind(target, cc)
+                                      LEARN on or off, the value clicked, the knob row pressed for it (1-8): that row's CC
+     learnAdd({cc, ch, t, pg, i}), learnInvert(index), learnRemove(index)
+                                      the CC rows' Add target, Inv and x: the plug-in's mappings, by index in the learn
+                                      document; the document comes back through MMView.setLearn
      modulators(setup)                the Control workspace's app sources or links changed: the
                                       host's engine runs them ({sources, links}, ctlSetup()); it
                                       shows their moving values with MMView.setModulation
