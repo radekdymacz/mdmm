@@ -360,6 +360,8 @@ The roll on **Pattern** draws notes with a length and moves them. There is no mo
 9. Hold [⌘] and drag over steps to select them, then press {key:delete} to remove what is selected.
 10. Press {key:undo} for each step you took.
 
+The keys at the left of the roll play the track. A key is lit while you hold it with the mouse, with the computer keyboard or with a MIDI keyboard, as on **Perform**.
+
 On **Transpose**, click a key of its keyboard to set the transpose of the track. On a MIDI track the length is a number of ticks: a 1/16 note is 6, and three steps are 18.
 
 ## WHAT YOU DRAW IS WHAT PLAYS

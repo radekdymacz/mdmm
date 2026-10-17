@@ -93,7 +93,7 @@ function flashTracks(ts){ts.forEach(i=>{const l=$(`[data-lamp="${i}"]`);if(!l)re
    mouse holds and those the computer keyboard holds (KB.held), mi those a MIDI keyboard holds (the plug-in's midiHeld) */
 const KBLIT={mouse:null,midi:new Set()};
 function kbLit(n){return(KBLIT.mouse===n||[...KB.held.values()].some(h=>h.n===n)?" dn":"")+(KBLIT.midi.has(n)?" mi":"")}
-function paintKb(){$$(".kb [data-key]").forEach(k=>{const c=kbLit(+k.dataset.key);k.classList.toggle("dn",c.includes("dn"));k.classList.toggle("mi",c.includes("mi"))})}
+function paintKb(){$$("canvas.roll[data-big]").forEach(drawEd);$$(".kb [data-key]").forEach(k=>{const c=kbLit(+k.dataset.key);k.classList.toggle("dn",c.includes("dn"));k.classList.toggle("mi",c.includes("mi"))})}
 function setMidiHeld(notes){KBLIT.midi=new Set(notes||[]);paintKb()}
 /* a key shown held by the mouse (null: none) and the keyboard's info line (null: unchanged) */
 function setKeyDown(n,info){KBLIT.mouse=n;paintKb();const el=$("#kbinfo");if(el&&info!=null)el.textContent=info}

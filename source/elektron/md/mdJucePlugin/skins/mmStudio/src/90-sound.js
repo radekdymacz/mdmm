@@ -318,7 +318,7 @@ function drawPicker(){const tr=trk(S.sel),list=machList(S.pickFam);
    track go with the old machine (clearLane each) */
 function setMachine(v){const t=S.sel,tr=trk(t);const old=tr.m,synLocks=trackLockPids(t).filter(p=>p.startsWith("SYN."));tr.m=v;tr.name=machName(v);tr.v.SYN=synDefaults(v);if(!S.keepFx){tr.v.AMP=[...DEFV.AMP];tr.v.FLT=[...DEFV.FLT];tr.v.EFX=[...DEFV.EFX];tr.v.LF1=[...DEFV.LFO];tr.v.LF2=[...DEFV.LFO];tr.v.LF3=[...DEFV.LFO]}
  for(const k of [...S.locks.keys()]){const[x,p]=k.split("|");if(+x===t&&p.startsWith("SYN."))S.locks.delete(k)}
- if(isFx(v)&&!isFx(old)){tr.inp=t===0?"INP AB":"NEIBOR";tr.v.AMP[2]=127;tr.v.AMP[3]=127;toast(`${v} needs audio in: input ${tr.inp}. AMP DEC and REL are at 127 so the sound passes.`)}
+ if(isFx(v)&&!isFx(old)){tr.inp=t===0?"INP AB":"NEIBOR";tr.v.AMP[2]=FX_AMP_DEF;tr.v.AMP[3]=FX_AMP_DEF;toast(`${v} needs audio in: input ${tr.inp}.`)}
  if(!S.lane.startsWith("SYN.")||pname(t,S.lane))0;else S.lane="FLT.1";
  edit("machine",{t,model:MACH[v].id,keepFx:!!S.keepFx});synLocks.forEach(pid=>edit("clearLane",{t,...pidArgs(pid)}));closePicker();render()}
 document.addEventListener("click",e=>{
