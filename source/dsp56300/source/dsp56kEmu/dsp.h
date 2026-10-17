@@ -684,14 +684,17 @@ namespace dsp56k
 
 		// -- status register management
 
-		void 	sr_set					( CCRMask _bits )					{ reg.sr.var |= _bits;	}
+		// Writing a CCR bit explicitly makes it clean: a deferred update must not come back later
+		// and overwrite it. Only the CCRMask/CCRBit overloads do this - SRMask values all start at
+		// 0x400, above every CCR bit, so they can never name one.
+		void 	sr_set					( CCRMask _bits )					{ reg.sr.var |= _bits;	ccrCache.dirty &= ~static_cast<uint32_t>(_bits); }
 		void 	sr_set					( SRMask _bits )					{ reg.sr.var |= _bits;	}
-		void 	sr_clear				( CCRMask _bits )					{ reg.sr.var &= ~_bits; }
+		void 	sr_clear				( CCRMask _bits )					{ reg.sr.var &= ~_bits; ccrCache.dirty &= ~static_cast<uint32_t>(_bits); }
 		void 	sr_clear				( SRMask _bits )					{ reg.sr.var &= ~_bits; }
 
 		void 	sr_toggle				( CCRMask _bits, bool _set )		{ if( _set ) { sr_set(_bits); } else { sr_clear(_bits); } }
 		void 	sr_toggle				( SRMask _bits, bool _set )			{ if( _set ) { sr_set(_bits); } else { sr_clear(_bits); } }
-		void 	sr_toggle				( CCRBit _bit, Bit _value )			{ bitset<int32_t>(reg.sr.var, static_cast<int32_t>(_bit), _value); }
+		void 	sr_toggle				( CCRBit _bit, Bit _value )			{ bitset<int32_t>(reg.sr.var, static_cast<int32_t>(_bit), _value); ccrCache.dirty &= ~(1u << static_cast<uint32_t>(_bit)); }
 
 	public:
 		int 	sr_test					( CCRMask _bits ) const				{ updateDirtyCCR(); return sr_test_noCache(_bits); }
