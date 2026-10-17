@@ -71,6 +71,7 @@ namespace dsp56k
 		rep_div();
 
 		parallelMoveXY();
+		parallelAluMoveSameAccumulator();
 		boundedDispatch();
 		nopLoopFastForward();
 		pollLoopFastForward();
@@ -1821,4 +1822,17 @@ namespace dsp56k
 		if constexpr(g_useDspMode)
 			block->setMode(nullptr);
 	}
+
+	void JitUnittests::parallelAluMoveSameAccumulator()
+	{
+		runTest([&]()
+		{
+			dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(0x00000002000001)));
+			emit(0x280023);
+		}, [&]()
+		{
+			verify(dsp.aluA().var == 0x00000001000000);
+		});
+	}
+
 }
