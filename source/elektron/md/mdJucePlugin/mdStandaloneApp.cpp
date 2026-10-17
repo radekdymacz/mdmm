@@ -9,6 +9,7 @@
 #include "jucePluginEditorLib/standaloneApp.h"
 
 #include "mdAbout.h"
+#include "mdAudioMidiLink.h"
 #include "mdPluginProcessor.h"
 #include "mdSettingsMigration.h"
 #include "mdUpdater.h"
@@ -82,6 +83,12 @@ namespace mdJucePlugin
 			m_record = std::make_unique<RecordMenu>(_window, editorName(*p), isMonomachine(*p) ? "Monomachine" : "Machinedrum", owner);
 			_window.addMenu({"Record", [this] { return m_record ? m_record->menu() : juce::PopupMenu(); }});
 #endif
+		}
+
+		// I-053: the holder's last save at quit writes JUCE's own MIDI list over ours; put the remembered ports back
+		void windowClosed(juce::PropertySet& _settings) override
+		{
+			mdJucePlugin::AudioMidiLink::patchSavedSettings(_settings);
 		}
 
 #if JUCE_MAC

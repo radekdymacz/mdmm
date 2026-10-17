@@ -3,6 +3,67 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-054 · Machinedrum lock lane: draw a slide as in the Monomachine lane
+
+- **From:** Radek, 2026-10-17 (the Monomachine lock lane draws slides since 0.8.0; the Machinedrum should too).
+- **The idea:** a slide drawn in the lock lane. Drag a lock's dot sideways, or Shift-drag out of a lock bar and drop on the target, and the step slides; click the ramp's line to remove it; Esc cancels the Shift drag.
+- **The rule, measured on the firmware** (`gapProbesFirmwareTest w13slide`, track volume heard as the loudness of each trig): the slide is a flag on a step, per track or for the whole pattern (EDIT ALL, All tracks). A parameter locked on that step glides in a straight line to its value on the track's **next trig** and arrives when that trig plays. The value on that trig is its lock, or the kit value when it has none; a lock further on is not the target (the Monomachine's glide, by contrast, runs on to the parameter's next lock). So the ramp is drawn from the dot to the next trig's bar top, or to the kit line there, and the Shift drag has that one target.
+- **Status:** built for 0.8.0. The flag is set by the existing slide intent (the Slide trig type, so All tracks or This track decides), one undo step; the ramp is an SVG over the lane, drawn on top of the bars; plain drag, the kit line and the Shift ramp from a step without a lock are unchanged. Tests: `mdDeskPageTest.js` (the rule, the three gestures, All tracks), journey `md-lane-draw-slide`, the firmware probe `w13slide`; the intent itself is in `intent-cases.json` (slide, slide with EDIT ALL; `mdIntentCasesFirmwareTest`). Guide: chapter 8, "Parameter lock slide". Left out: a slide on the last trig of the pattern (the next trig would be after the wrap: no ramp, the drag says so).
+- **Release-note line:** In the Machinedrum Editor you can draw a slide in the lock lane: drag a lock's dot sideways, or Shift-drag out of a lock bar and drop on the next trig. The lock glides to the next trig's value (its lock, or the kit value when it has none). Click the ramp to take it off.
+
+## I-053 · MIDI devices appear and go live, and a remembered input comes back
+
+- **From:** Radek, 2026-10-17 (0.8 test list, line 11: unplug and replug the keyboard).
+- **Idea:** the standalone's MIDI list updates when a device is plugged in or out, and an input that was on comes back on when its device returns.
+- **Status:** built for 0.8.0. The link listens with JUCE's `MidiDeviceListConnection` (message thread; nothing on the audio thread) and on a change publishes the `gm-audio/devices` document again, switches the vanished inputs off, switches the remembered inputs and the chosen output back on (matched by identifier, then by name, because an identifier can change on replug) and logs each plug and unplug. The logic is `mdMidiHotplug.h` (pure, over a `Devices` interface). What the user chose is the memory: an input switched off stays off (JUCE's own reopening from the state it loaded is undone at once, so an input may open and close for a moment on a plug), the output chosen in the panel, or none, is the one that returns, and two identical devices are two entries. A change from another source (the fallback settings dialog) is read back into the memory. An input that is back but did not open is tried again at the next device change. The saved audio device state is rewritten from the memory on every save, and once more at quit after the standalone holder's own last save (`windowClosed` in the app, `AudioMidiLink::patchSavedSettings`): the inputs on (also while their device is away) and the output, nothing JUCE kept from an older choice. Standalone only. Tests: mdMidiHotplugTest (matching, twins, output, a fake device set), mdAudioMidiLinkTest (the callback republishes and logs with a fake port list; the saved-state round trip). The real AudioDeviceManager is not driven in a test (JUCE cannot plug a device); Radek's hand test is TEST-0.8 line 11.
+- **Release-note line:** The MIDI list in the standalone updates when you plug a device in or out, and an input you had switched on comes back on when the device returns.
+
+## I-052 · Monomachine Mix: double-click a track's level resets it to the default
+
+- **From:** a beta tester on Discord, 2026-10-17. On the Machinedrum Editor a double-click on a level fader sets it to its default; the Monomachine Mix did nothing.
+- **Status:** built for 0.8.0. The Machinedrum Editor sets a LEVEL fader to 100 on a double-click; the Monomachine's new tracks and cleared kit start at LEVEL 100 too (`LEV_DEF`), so a double-click on a Mix level fader (or its number) sets 100: one edit, one undo step. Other values keep their default (64 or the row's own). Page: `130-main.js` (dblclick), `50-state.js`; journey `mm-mix-level-reset`; guide: Mix.
+
+## I-051 · Monomachine Pattern: the roll's keys light when played, as on Perform
+
+- **From:** a beta tester on Discord, 2026-10-17. The keyboard on Perform lights a key when it is pressed; the piano-roll keys on the Pattern tab should do the same.
+- **Status:** built for 0.8.0. The roll's key column already lit a key under the mouse; it now also lights the keys held on the computer keyboard (A S D F ... and W E T Y U ...) and on a MIDI keyboard (the plug-in's held notes), like the Perform keyboard, and goes dark on release. Page: `rollLit` (70-seq.js), `paintKb` (110-perform.js); journey `mm-seq-keyboard-lit`; guide: Pattern, the piano roll.
+
+## I-050 · Machinedrum MKI: black text on the LCD, as the Monomachine has
+
+- **From:** a beta tester on Discord, 2026-10-17 (visual items on the plates).
+- **Idea:** the black LCD text the Monomachine uses on both plates would look good on the Machinedrum MKI too.
+- **Status:** built for 0.8.0. The MD MKI LCD pixels (`--ink`) are black (#0b0403) on the new reddish-orange ground, contrast 4.9:1 (journey md-top-plate checks 4.5 and up). The MKII keeps its dark red-brown pixels.
+
+## I-049 · Monomachine MKII: the indicator LEDs are grey, give them the dim burgundy of the MKI
+
+- **From:** a beta tester on Discord, 2026-10-17 (visual items on the plates).
+- **Idea:** the unlit LEDs beside the labels (workspace, setup, MIDI, scope and the other sections) are grey on the MKII.
+- **Status:** built for 0.8.0. `--ledoff` of the MKII plate is the MKI's dim burgundy (#7b4035; was grey #7a6e66). Journey mm-plate-greys checks both plates.
+
+## I-048 · Machinedrum MKI: the LCD backlight is reddish orange, not green
+
+- **From:** a beta tester on Discord, 2026-10-17 (visual items on the plates).
+- **Idea:** the real MKI backlight is reddish orange (the MKII a purer orange); the editor showed green on the MKI.
+- **Status:** built for 0.8.0. MKI `--lcd` is #dc4a2c, redder than the MKII's #ef5a39 (kept as it was). Photos in SKIN-COLOURS.md show red backlit LCDs on every Machinedrum; no photo separates the two models more finely, so the tone is chosen by eye: a say-so from the tester or Radek can move it.
+
+## I-047 · Machinedrum: the same popup the Monomachine shows when the plate switches
+
+- **From:** a beta tester on Discord, 2026-10-17 (visual items on the plates).
+- **Idea:** the Monomachine pops up a note when MKI / MKII is chosen; the Machinedrum showed nothing.
+- **Status:** built for 0.8.0. The Machinedrum shows a toast on PLATE: MKI / MKII (mdDeskTop.js `setPlate`). The text is its own (no machine is lost on the MD between plates).
+
+## I-046 · Monomachine: remove the "MKII" label under the display
+
+- **From:** a beta tester on Discord, 2026-10-17 (visual items on the plates).
+- **Idea:** the MKII print under the display looks out of place; the Machinedrum has none.
+- **Status:** built for 0.8.0. The print is gone (20-mm.css and shared/deskLcd.css). The plate is in the engine menu (PLATE: MKI / MKII).
+
+## I-045 · The MKI / MKII switch changes the LCD display size (more on the Monomachine)
+
+- **From:** a beta tester on Discord, 2026-10-17 (visual items on the plates).
+- **Idea:** the display should be the same size on both plates, both editors.
+- **Status:** built for 0.8.0. The LCD box is measured the same (874x70 MD, 781x70 MM) in the page on both plates; what reached the tester was most likely the MKII print under the display (now removed) and the two different LCD tones. Journeys md-top-plate and mm-top-plate now fail when the box sizes differ. If a real plug-in still shows a difference, send a screenshot of both plates.
+
 ## I-044 · Name the workspaces as the manuals do: SEQUENCE becomes PATTERN, SOUND becomes KIT
 
 - **From:** a beta tester on Discord (suggestion to match the machines' manuals); decided by Radek, 2026-10-16.

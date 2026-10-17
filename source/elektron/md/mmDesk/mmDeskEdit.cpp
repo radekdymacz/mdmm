@@ -1206,7 +1206,7 @@ namespace mmDesk
 		}
 		// Track _t gets machine _id with its SYN defaults; without _keepFx its other pages go neutral too. A processing
 		// machine on a track that had none listens (INP A+B on track 1, the neighbour on the others) and lets the sound
-		// through (AMP DEC and REL at 127).
+		// through (B-166: AMP DEC and REL at 64, as the hardware starts an FX machine).
 		void assignMachine(MmKit& _k, const size_t _t, const uint8_t _id, const bool _keepFx)
 		{
 			const auto* was = ed::mmMachine(_k.machines[_t]);
@@ -1219,8 +1219,8 @@ namespace mmDesk
 			if(m && m->fx && !(was && was->fx))
 			{
 				ed::mmSetKitInput(_k, _t, static_cast<uint8_t>(_t == 0 ? 3 : 0));
-				_k.tracks[_t].pages[1][2] = 127;
-				_k.tracks[_t].pages[1][3] = 127;
+				_k.tracks[_t].pages[1][2] = 64;
+				_k.tracks[_t].pages[1][3] = 64;
 			}
 		}
 

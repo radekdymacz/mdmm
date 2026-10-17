@@ -227,7 +227,7 @@ if not na_sel or not na_info:
     problems.append('the mockup has no NA_SEL / NA_INFO')
 else:
     problems += pc.check_caps(re.findall(r'(?:^|[,{\n])\s*(\w+):', na_sel.group(1)), re.findall(r'"(\w+)"', na_info.group(1)), schema, 'the mockup')
-problems += pc.check_mapping_gate(js, ['setMapping(!window.MMHost)', 'if(ws==="control"&&!S.mapping)return', 'mapping:true,when:()=>S.mapping&&S.learn'], 'the mockup')
+problems += pc.check_mapping_gate(js, ['setMapping(!window.MMHost)', 'if(ws==="control"&&!S.mapping)return', 'if(!S.mapping)return;if(S.ws==="control")', 'mapping:true,when:()=>S.mapping&&S.learn'], 'the mockup')
 problems += pc.check_mapping_gate(adapter, ['V().setMapping(!!doc.enabled)'], 'mmAdapter.js')
 # both ways: every host call the mockup makes is one the adapter has, and every one it has is made
 if not seam_data:

@@ -10,6 +10,13 @@ function toggleLearn() {
 	S.ctl.learn = !S.ctl.learn; S.ctl.learnT = null; document.body.classList.toggle("learn", S.ctl.learn); renderTop(); syncControls();
 	if (S.ctl.learn) toast("LEARN: click a value, then turn a knob on your MIDI controller."); else cmd("learnCancel");
 }
+/* The CONTROL key (Setup, right of LEARN): opens the Control page; again, or any workspace tab, leaves it (back to the tab it came from). */
+function toggleControlPage() {
+	if (!S.mapping) return;
+	if (S.ws === "control") S.ws = S.wsBeforeControl && S.wsBeforeControl !== "control" ? S.wsBeforeControl : "seq";
+	else { S.wsBeforeControl = S.ws; S.ws = "control"; }
+	render();
+}
 /* ===== The learn document, in the page's words (DESIGN-learn-0.8.md, "Host to page") ===== */
 const LEARN_MAX = 128;	/* limits.max says it; the same number until the first document */
 function learnPaused() { return (Docs.learn && Docs.learn.paused) || ""; }

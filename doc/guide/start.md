@@ -56,6 +56,7 @@ The editors answer to MIDI as the machines do. This part says how to get MIDI in
 1. Open the engine menu and choose **AUDIO/MIDI…**, or press [,].
 2. In the **MIDI** card switch on the input you play from. No MIDI input is on until you switch it on. The note under the **Input** row says why an audio input stays on NONE, for example when macOS has not been given microphone access.
 3. Choose the **Output** that should take the machine's own MIDI. Leave it on NONE if you do not need it.
+   The list follows the system: plug a MIDI device in or out and it appears or goes within a moment, with the panel open. An input you had switched on comes back on by itself when its device returns, and so does the output you chose. An input you switched off stays off.
 4. Look at the **Monitor** row. **IN** counts what reached the editor from a port, **OUT** what it sent. Hover a number to see the types: notes, controllers, program changes, clock, transport.
 
 A button pairs a Bluetooth MIDI device. The system opens its own pairing window.

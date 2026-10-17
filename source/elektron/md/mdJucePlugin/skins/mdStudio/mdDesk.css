@@ -246,7 +246,7 @@ details.rules li{margin:0 0 5px;break-inside:avoid}
 :root{
   --plate:#d9dad6;--plate2:#cdcec9;--plate3:#e5e6e2;--print:#94552b;--print2:#7a5a44;--print3:#8d7a6c;--rule:#b99a80;--body:#2f2c29;
   --key:#3a4049;--key2:#4a525c;--keytext:#e9e4d6;--keydim:#a9aeb6;--cream:#e9e4d6;--creamtext:#2d2b27;
-  --led:#ff3b2f;--ledoff:#8a3a33;--rec:#e0472e;--lcd:#b3c03c;--ink:#1f2a0e;--labfill:#b07a4a;--labtext:#f6efe3;--knob:#3a4049;
+  --led:#ff3b2f;--ledoff:#8a3a33;--rec:#e0472e;--lcd:#dc4a2c;--ink:#0b0403;--labfill:#b07a4a;--labtext:#f6efe3;--knob:#3a4049;
   --trig:var(--led);--oxblood:var(--print);
 }
 :root[data-plate="mk2"]{
@@ -1279,6 +1279,9 @@ body{box-sizing:border-box;overflow:hidden}
 .lanetop{border-top:0!important;padding-top:0!important}
 #lanescroll{flex:1 1 auto;min-height:96px;display:flex;flex-direction:column;box-sizing:border-box}
 #lane{flex:1 1 auto;min-height:0;align-items:stretch!important}
+/* a slide in the lock lane (I-054): the ramp is an SVG over the lane, in a box that takes the lane's width and height */
+.lanebox{position:relative;flex:1 1 auto;display:flex;flex-direction:column;min-height:0;min-width:max-content}
+.lanesvg{position:absolute;inset:0;pointer-events:none;overflow:visible}
 .lb{height:auto!important;min-height:90px}
 .lb i:not(.bp){height:calc((100% - 6px) * var(--f,0))!important;bottom:3px}
 .lb .base{bottom:calc(3px + (100% - 6px) * var(--bf,0))!important}
@@ -1329,8 +1332,6 @@ body{box-sizing:border-box;overflow:hidden}
 @media (prefers-reduced-motion:reduce){.lcdpanel .syncf.warn .led{animation:none}}
 /* the background read of the library (READ n/m): a thin bar along the slot's foot */
 .syncf.read{background:linear-gradient(color-mix(in srgb,var(--ink) 70%,transparent),color-mix(in srgb,var(--ink) 70%,transparent)) no-repeat left bottom/calc(var(--rf,0) * 100%) 2px}
-/* the MKII print sits centred under the display's bezel */
-:root[data-plate="mk2"] .lcdgroup::after{bottom:-14px!important;font:600 8px/8px var(--sans)!important;letter-spacing:.4em!important;padding-left:.4em}
 /* The one modal layer (P7, deskModal.js): a dimmed backdrop, the
    dialog centred on the window above it, the newest on top; a listbox opened from a dialog above both */
 .modalbg{position:fixed;inset:0;z-index:var(--mz,59);background:rgba(8,8,6,.52)}

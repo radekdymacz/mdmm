@@ -127,8 +127,19 @@ namespace  dsp56k
 		void subr();
 		void mpyi();
 		void mpy_su();
+		void maci_xxxx();
+		void mpyMacSignedUnsigned();
+		void macr_rounded();
+		void max_parallel();
 		void tst();
 		void nop();
+		void hostStatusRegisterReadOnly();
+		void ccrGroundTruth();
+		void bitTestMemoryEaUpdate();
+		void subr_leftAligned();
+		void timerPrescaler();
+		void bitmodOnSR();
+		void bitmodOnSR_deferredCCR();
 
 		// branches
 		void bra();

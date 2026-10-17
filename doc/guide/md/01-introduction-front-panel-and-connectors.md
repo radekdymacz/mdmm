@@ -216,7 +216,7 @@ The editor has no power switch or power input. It runs as a plug-in in your DAW,
 
 ### MIDI
 
-In a DAW the plug-in takes MIDI from the host. In the standalone, open the **AUDIO / MIDI** settings with {key:audio-settings}. The **MIDI** card lists the MIDI inputs, the output and Bluetooth devices. No MIDI input is on until you switch it on. The **Monitor** row counts what came in and went out. A red line under the output warns when a virtual bus, such as an IAC bus, is both an input and the output: switch the input off or send to another bus. See "MIDI and sync" in the installation guide.
+In a DAW the plug-in takes MIDI from the host. In the standalone, open the **AUDIO / MIDI** settings with {key:audio-settings}. The **MIDI** card lists the MIDI inputs, the output and Bluetooth devices. No MIDI input is on until you switch it on. The list follows the system: a device plugged in or out appears or goes at once, and an input or output you had chosen comes back when its device returns. The **Monitor** row counts what came in and went out. A red line under the output warns when a virtual bus, such as an IAC bus, is both an input and the output: switch the input off or send to another bus. See "MIDI and sync" in the installation guide.
 
 The machine's own MIDI out reaches your DAW through the plug-in's MIDI output, and the standalone's MIDI output. It carries notes, controllers, program changes, pitch bend, pressure, clock, start, stop and continue. It never carries SysEx.
 

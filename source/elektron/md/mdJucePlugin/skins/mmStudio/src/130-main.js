@@ -161,14 +161,15 @@ main.addEventListener("wheel",e=>{
  const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el){e.preventDefault();const d=(e.deltaY||e.deltaX)<0?1:-1;stepV(el,d*(e.shiftKey?10:1));return}
  const st=e.target.closest(".mst");if(st){const t=+st.dataset.t,s=+st.dataset.s,x=trk(t).steps[s];if(!x?.n)return;e.preventDefault();const d=((e.deltaY||e.deltaX)<0?1:-1)*(e.shiftKey?12:1);x.n=x.n.map(n=>clamp(n+d));editStep(t,s);refreshRow(t);return}
  const roll=e.target.closest("canvas.roll[data-big]");if(roll){e.preventDefault();const t=+roll.dataset.t;S.rollLoT[t]=clamp((S.rollLoT[t]??S.rollLo)+((e.deltaY)<0?1:-1)*(e.shiftKey?12:2),0,127-ROWS);redraw()}},{passive:false});
-main.addEventListener("dblclick",e=>{const el=e.target.closest(".pc[data-g]");if(el&&!ValueEdit.isOpenClick(e)){const m=ref(el)[2];setV(el,m.def??(m.en?0:64))}});
+main.addEventListener("dblclick",e=>{const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el&&!ValueEdit.isOpenClick(e)){const m=ref(el)[2];/* I-052: a Mix level goes back to the kit default, 100, as on the Machinedrum Editor */setV(el,el.dataset.g==="lev"?LEV_DEF:m.def??(m.en?0:64))}});
 main.addEventListener("keydown",e=>{const el=e.target.closest("[data-g]");if(!el)return;if(e.key==="Enter"&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&el.matches(".pc,.fader")){e.preventDefault();ValueEdit.open(el,ValueBox);return}const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1,PageUp:10,PageDown:-10}[e.key];if(d==null)return;e.preventDefault();stepV(el,d*(e.shiftKey?10:1))});
 
 /* ===== Clicks ===== */
 function autoRange(t){const ns=trk(t).steps.flatMap(x=>x?.n||[]);if(!ns.length)return;const lo=Math.min(...ns),hi=Math.max(...ns),cur=S.rollLoT[t];if(cur==null||lo<cur||hi>cur+ROWS-1)S.rollLoT[t]=clamp(Math.round((lo+hi)/2)-Math.floor(ROWS/2),0,127-ROWS)}
 /* MIDI mapping (the CONTROL workspace and LEARN) is hidden until the host says it is on (the learn document's
    "enabled", mmAdapter.js); the mockup on its own shows it. */
-function setMapping(on){S.mapping=!!on;{const t=$("#tabs [data-ws=control]"),k=$("#learnkey");if(t)t.hidden=!on;if(k)k.hidden=!on}if(!on){S.learn=false;S.learnT=null;document.body.classList.remove("learn");if(S.ws==="control")S.ws="seq"}}
+function setMapping(on){S.mapping=!!on;{const t=$("#controlkey"),k=$("#learnkey");if(t)t.hidden=!on;if(k)k.hidden=!on}if(!on){S.learn=false;S.learnT=null;document.body.classList.remove("learn");if(S.ws==="control")S.ws="seq"}}
+function toggleControlPage(){if(!S.mapping)return;if(S.ws==="control")goWs(S.wsBeforeControl&&S.wsBeforeControl!=="control"?S.wsBeforeControl:"seq");else{S.wsBeforeControl=S.ws;goWs("control")}}
 function goWs(ws){if(ws==="control"&&!S.mapping)return;S.ws=ws;const t=S.sel%6+((ws==="seq"||ws==="sound")&&S.side==="midi"?6:0);select(t)}
 /* Midi -> Synth in POLY selects the machine's own POLY track, not S.sel%6 (the M2 would pick T2): only a person's own
    track pick moves POLY (polyFollows), and a rail switch is no pick */
@@ -230,7 +231,7 @@ document.addEventListener("click",e=>{
   const rw=e.target.closest(".scell:not(.empty),.db[data-row]");if(rw){S.songSel=+rw.dataset.row;render();return}
   const ra=e.target.closest("[data-rowact]");if(ra){songAction(ra.dataset.rowact);return}
   const stp=e.target.closest("[data-step]");if(stp){songStep(stp.dataset.step,+stp.dataset.d*(e.shiftKey?10:1));return}
-  const tt=e.target.closest("[data-ttr]");if(tt){const r=S.song[S.songSel];r.ttr=r.ttr||T64();const k=+tt.dataset.ttr;r.ttr[k]=clamp(r.ttr[k]+ +tt.dataset.d,28,100);editRow();render();return}
+  const tt=e.target.closest("[data-ttr]");if(tt){const r=S.song[S.songSel];r.ttr=r.ttr||T64();const k=+tt.dataset.ttr;r.ttr[k]=clamp(r.ttr[k]+ +tt.dataset.d,0,127);editRow();render();return}
   const mk=e.target.closest("[data-rowmute]");if(mk){const r=S.song[S.songSel],k=+mk.dataset.rowmute;r.mutes=r.mutes||[];r.mutes=r.mutes.includes(k)?r.mutes.filter(x=>x!==k):[...r.mutes,k];editRow();render();return}
   if(e.target.closest("[data-bpmkeep]")){const r=S.song[S.songSel];r.bpm=r.bpm?undefined:Math.round(S.bpm);editRow();render();return}
   if(e.target.closest("[data-rowmore]")){S.songMore=!S.songMore;render();return}
@@ -246,6 +247,7 @@ document.addEventListener("click",e=>{
  if(e.target.closest("#kitf")){toggleLib("kit");return}
  if(e.target.closest("#pat")){toggleLib("pat");return}
  if(e.target.closest("#learnkey")){if(!S.learn&&LD().paused){toast("LEARN is paused: "+LD().paused);return}S.learn=!S.learn;S.learnT=null;document.body.classList.toggle("learn",S.learn);renderTop();if(S.learn)toast("LEARN: click a value, then turn a knob on your controller, or press 1-8 for a knob row.");if(HOST.learning)HOST.learning(S.learn);return}
+ if(e.target.closest("#controlkey")){toggleControlPage();return}
  const tb=e.target.closest("#tabs button");if(tb){goWs(tb.dataset.ws);return}
  if(e.target.closest("#play")){if(e.shiftKey)pauseToggle();else playButton();return}
  if(e.target.closest("#rec")){if(e.shiftKey||stepOn()){stepRecord();return}if(HOST.record)return HOST.record();S.rec=!S.rec;renderTop();if(S.rec)toast("GRID RECORD on. On the machine: hold a trig to see its note, turn a knob to lock it. Here: just click and draw.");return}
@@ -284,7 +286,8 @@ Keys.bind({id:"learn-knob",scope:"control",keys:["1 – 8"],group:"Anywhere",doe
 Keys.bind({id:"audio-settings",scope:"any",keys:[","],group:"Anywhere",does:"AUDIO / MIDI settings (also in the engine menu)"});
 Keys.bind({id:"play-stop",scope:"any",keys:["Space"],group:"Transport",does:"Play / stop (paused: go on from the step)",run:()=>playButton()});
 Keys.bind({id:"record",scope:"any",keys:["Space"],code:"Space",mod:"alt",group:"Transport",does:"Live recording (RECORD + PLAY): Alt + play, the other Alt that is not \"all\". Again: recording off",run:()=>liveRecord()});
-["seq","sound","mix","perform","song","control"].forEach((ws,i)=>Keys.bind({id:"workspace-"+(i+1),scope:"any",keys:[String(i+1)],group:"Workspaces",does:["Pattern","Kit","Mix","Perform","Song","Control"][i],mapping:ws==="control",when:ws==="control"?()=>S.mapping:null,run:()=>goWs(ws)}));
+["seq","sound","mix","perform","song"].forEach((ws,i)=>Keys.bind({id:"workspace-"+(i+1),scope:"any",keys:[String(i+1)],group:"Workspaces",does:["Pattern","Kit","Mix","Perform","Song"][i],run:()=>goWs(ws)}));
+Keys.bind({id:"workspace-6",scope:"any",keys:["6"],group:"Workspaces",does:"Control (the CONTROL key in Setup: the MIDI mapping page; again leaves it)",mapping:true,when:()=>S.mapping,run:()=>toggleControlPage()});
 Keys.bind({id:"page-prev-next",scope:"seq",keys:["[","]"],group:"Pattern",does:"Previous / next page",when:()=>S.ws==="seq"&&pages16()>1,run:e=>{const n=pages16();S.viewAll=false;S.page=(S.page+(e.key==="]"?1:-1)+n)%n;render()}});
 Keys.bind({id:"delete",scope:"seq song",keys:["Delete","Backspace"],group:"Pattern",does:"Clear the selected steps; with none selected nothing (Clr clears the page shown, ⌥Delete the pattern). Song: delete the row",when:()=>(S.ws==="song"||S.ws==="seq")&&S.recMode!=="step"&&S.recMode!=="live",
  run:()=>S.ws==="song"?songAction("del"):S.stepSel?secAction("clear"):toast(Modifiers.say("Nothing selected: ⌘-click or ⌘-drag steps first. Clr clears the page shown, ⌥Delete the whole pattern."))});

@@ -191,7 +191,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.48 | Locks only play in EXTENDED, kept in CLASSIC | Behaviour | ✅ | Lane greyed in CLASSIC |  | 1 | pass (md-top-mode-classic) |
 | p.48 | Live-recorded locks (move a value while recording) | Live locks | ✅ | REC and move a value | Locks next unplayed trig. | 1 | stub-only (md-live-recording) |
 | p.48 | Remove live locks (EXIT + knob) | Erase live locks | ✅ | Press a track value, then hold Delete while live recording: its locks go as they play | EXIT/NO with the knob's switch on the machine (measured: either order, a tap does not latch, trigs and other locks stay); the core selects the track and shows the knob's page first | 1 | pass (e2e-md-seq-live-unlock) |
-| p.49 | Slide trigs (ALL and per track) | Parameter slide | ✅ | Alt+Shift-click a step; Slide in the trig types under the grid, then click or drag steps; All tracks or This track |  | 2 | pass (md-accent) |
+| p.49 | Slide trigs (ALL and per track) | Parameter slide | ✅ | Alt+Shift-click a step; Slide in the trig types under the grid, then click or drag steps; All tracks or This track; in the lock lane: drag a lock's dot sideways, or Shift-drag out of a lock bar and drop on the next trig, click the ramp to remove |  | 2 | pass (md-accent) |
 | p.50 | Copy / paste / clear slide | Slide clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Slide ticked); a selection's copy includes slides | With EDIT ALL on, the slide row is the pattern's. | 1 | pass (md-copy-what-menu) |
 
 ## 9. Song mode (pp.51-56)
@@ -417,7 +417,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p. | What you draw is what plays | What you enter in the sequencer is what the machine plays. | ✅ | Pattern: the grid or the roll; Alt+Delete clears the pattern; Cmd+Z takes it back | e2e: drawn, played, cleared, undone, each checked on the machine's output | 1 | pass (md-real-sequence-drawn) |
 | p. | Clear (was Revert track) | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Kit: Clear key at the right end of the MUTATE bar, next to R |  | 1 | pass (e2e-md-sound-revert-track) |
 | p. | The selected track follows the last track played | No such function. With it on, the track you select changes to the last one you played from a MIDI keyboard. | ✅ | Engine menu: FOLLOW PLAYED TRACK (off at first) | I-003 | 1 | – |
-| p. | MIDI Learn | No such function. A controller's knob or fader moves a value of your choice; the machine's own CC map stays for the rest. | ✅ | CONTROL workspace: the LEARN key (L), click a value, turn a knob both ways; the matrix and inspector list, invert and remove the mappings | CCs only (a 0/127 button is learned as an absolute value). 128 mappings at most, saved with the project, off in the HW MIDI engine. Page journeys: md-control-learn-*, mdLearnFirmwareTest. | – | – |
+| p. | MIDI Learn | No such function. A controller's knob or fader moves a value of your choice; the machine's own CC map stays for the rest. | ✅ | CONTROL key in Setup (right of LEARN, key 6): the LEARN key (L), click a value, turn a knob both ways; the matrix and inspector list, invert and remove the mappings | CCs only (a 0/127 button is learned as an absolute value). 128 mappings at most, saved with the project, off in the HW MIDI engine. Page journeys: md-control-learn-*, mdLearnFirmwareTest. | – | – |
 
 ## Summary
 

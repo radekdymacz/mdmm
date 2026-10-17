@@ -16,7 +16,7 @@ The editor's log shows a `midi: in … out … dropped …` line every 10 second
 8. Live sends clock and Start over IAC Bus 1, Tempo in EXT, a pattern playing: the sound is clean for 2 minutes and the Monitor row shows a steady IN rate (B-154). Then Tempo in INT with notes only from Live: the pattern runs on its own tempo and the notes play.
 9. Bluetooth MIDI: click **BLUETOOTH MIDI…**. The pairing window opens and the app stays up (B-155). Pair or cancel.
 10. External Input: pick the audio interface. The choice stays. If it goes back to NONE, the note under the row says why. The first time, macOS asks for microphone access.
-11. Unplug and replug the keyboard while playing. Note what happens: the input list and the notes after the replug.
+11. With AUDIO / MIDI open and the keyboard switched on, unplug the keyboard and plug it in again, while playing. On unplug the keyboard leaves the list; on replug it is in the list and switched on again, without a click, and the notes sound. The log (Help > Show log) has "input unplugged" and "input plugged in" lines. Repeat with the MIDI output set to a USB interface: it stays chosen after the replug. An input you switched off before the unplug stays off after the replug. Then switch the keyboard on, unplug it, quit the app, start it again and plug the keyboard in: it comes back switched on. A second keyboard of the same model stays on beside the first.
 12. MD channel 10 drums (base channels): a DAW drum track on channel 10 with the factory base channel plays nothing. Setting the Global base channel so that channel 10 is among the four makes it play the key map notes.
 
 ## Stacked LFOs (Machinedrum, B-161)
@@ -42,6 +42,7 @@ The editor's log shows a `midi: in … out … dropped …` line every 10 second
 1. A lock lane shows a 2 px kit-value line with its number. Drag the line up or down: the kit value of the lane's parameter changes (the Kit page shows it) and no lock is drawn. One undo takes it back.
 2. A short click near the line still sets a lock.
 3. MM, a lock on a step without a trig shows as a hollow dashed ghost bar and the step is hatched. Alt-click erases it. A lock of 0 keeps a 2 px mark. The panel says "n locked steps" and the LCD LOCKS tip says "n of 62 locked parameters" (B-164).
+   On a real Monomachine (B-168): lock AMP VOL low on a step with no trig, with a trig on an earlier step still sounding. Does the sound drop on that step and come back at the next trig? The page says the machine plays it (probe: yes, for VOL, filter and TUNE).
 4. MM, a slide between two locks draws a ramp, above the bars, only between real locks.
 5. MM, Shift-drag from a lock draws a slide: hold Shift on a lock bar and drag sideways out of its column. A line follows the pointer and the next lock of that parameter is marked. Drop on it: the step slides, in one undo step. Drop elsewhere or press Esc: nothing changes.
 6. On a real Monomachine: a p-locked LFO parameter (for example SPD or DPTH) on one step. Does it revert to the kit value after its step? The LFO preview assumes yes (I-042). Note the answer.
@@ -108,13 +109,24 @@ The editor's log shows a `midi: in … out … dropped …` line every 10 second
 
 Learn is on in both editors. Mappings are saved with the project only. Check:
 
-1. CONTROL: learn a knob from a controller CC (turn it both ways, or press a button that sends 0 and 127); the knob follows the controller and the machine's sound follows the knob.
+1. CONTROL (the key in Setup, right of LEARN, or key 6; lit while open, again leaves): learn a knob from a controller CC (turn it both ways, or press a button that sends 0 and 127); the knob follows the controller and the machine's sound follows the knob.
 2. Learn a CC, save the Live set (or the Reaper project), close, open: the mapping is still there and still moves the parameter.
 3. A CC that is also on the firmware CC map (Machinedrum CC 16 to 39 on channel 1): after the learn, only the learned parameter moves, the machine's own target of that CC does not (no double jump). Remove the mapping: the CC reaches the machine again.
 4. Learn while the transport plays: no drop-outs, the clock and notes keep reaching the machine.
 5. In Cubase or Reaper (VST3): learn a relative encoder and turn it; the value does not jump back (the VST3 echo check), and the DAW records the turns as automation in write mode, one gesture per turn.
 6. HW MIDI engine (the page's engine menu): Learn shows it is off with its reason; CCs from the host pass to the machine untouched. Back on the emulator: Learn works again.
 7. Close the editor window while it waits for a controller: it stops waiting.
+
+## Third tester round (0.8.0)
+
+1. PLATE: MKI / MKII in the engine menu, both editors. The LCD keeps its size. The MD MKI LCD is red-orange with black pixels; the MD shows a short message on the switch. The MM MKII has no "MKII" print under the display and its unlit LEDs are dim burgundy.
+2. CONTROL is a key right of LEARN (not a tab). It lights while the mapping page is open; a tab click leaves it; key 6 opens it.
+3. MM Pattern: play notes from the computer keyboard or a MIDI keyboard; the roll's piano keys light and go dark on release.
+4. MM Mix: double-click a track's level; it goes to 100, one Cmd+Z undoes it.
+5. MM: pick an FX machine (FX-REVERB, FX-CHORUS); AMP DEC and REL read 64. If you have a real Monomachine, compare.
+6. MM Song: set a row's TRN and a track transpose to -64 and +63; the machine plays them (if it clamps, say where).
+7. MD lock lane: a slide ramp is drawn between locks; drag a lock's dot sideways or Shift-drag from a lock to draw one; click the line to remove it.
+8. Mix meters (MM) move with the sound and never jump above the peak.
 
 ## Controls that moved or are new (both editors)
 

@@ -10,16 +10,16 @@ Click a track in the drawing to select its strip. The lines under the drawing sa
 ## THE MIXER
 <!-- rows: MM-276 @9c50c8 -->
 
-Each strip holds, from the top: the sound's trim values (AMP VOL, DIST, DSND), PAN, the LEVEL fader, the buses the track sends to, the input, and the **M** and **S** keys.
+Each strip holds, from the top: the sound's trim values (AMP VOL, DIST, DSND), PAN, the LEVEL fader, the buses the track sends to, the input, and the **M** and **S** keys. Double-click the LEVEL fader to set it to 100, the level a new track starts at. That is one undo step.
 
 The **Out** keys **AB**, **CD** and **EF** on a strip choose the buses the track feeds. A lit key means the track sends to that bus. A track can feed more than one bus.
 
 Tracks add into a bus in track order. An effect on a bus therefore hears only the tracks before it.
 
 ## FX MACHINES
-<!-- rows: MM-277 @f5476c -->
+<!-- rows: MM-277 @8187eb -->
 
-An effect machine needs an input and a trig to work. When you choose an effect machine for a track on **Kit**, the editor sets its input and sets the amplitude envelope values DEC and REL to 127 so that the sound passes. The page tells you so. A trig on the track then opens the effect.
+An effect machine needs an input and a trig to work. When you choose an effect machine for a track on **Kit**, the editor sets its input and sets the amplitude envelope values DEC and REL to 64, as the machine starts it. The page tells you so. A trig on the track then opens the effect.
 
 ## AUDIO INPUTS
 <!-- rows: MM-278 MM-279 @458e30 -->

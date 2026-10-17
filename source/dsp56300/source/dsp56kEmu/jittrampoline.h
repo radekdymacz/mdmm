@@ -47,6 +47,7 @@ namespace dsp56k
 		}
 
 	private:
+		void initCodeHolder(asmjit::CodeHolder& _codeHolder);
 		void generateExecLoopFunc();
 		void generateExecUntilCyclesFunc();
 		void generateExecOneFunc();
