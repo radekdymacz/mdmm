@@ -36,6 +36,8 @@ cmake --build "${build_dir}" --parallel 4 --target \
   mdWindowsPolicyTest \
   mdMachineMidiOutTest \
   mdMidiLoopTest \
+  mdMidiHotplugTest \
+  mdAudioMidiLinkTest \
   mdProcessArchTest \
   mdDeskSetupStateTest \
   mdLearnRouterTest \
@@ -80,6 +82,8 @@ for test_name in \
   mdWindowsPolicyTest \
   mdMachineMidiOutTest \
   mdMidiLoopTest \
+  mdMidiHotplugTest \
+  mdAudioMidiLinkTest \
   mdProcessArchTest \
   mdDeskSetupStateTest \
   mdLearnRouterTest \
