@@ -137,7 +137,7 @@ NOTE: A row with a tempo of its own sets the tempo of the machine when it plays.
 NOTE: The machine sends and follows MIDI song position by itself. The editor does not change that.
 
 ## SONG EDITING
-<!-- rows: MM-260 MM-261 MM-262 MM-263 MM-265 MM-268 MM-269 MM-271 MM-275 @e2845a -->
+<!-- rows: MM-260 MM-261 MM-262 MM-263 MM-265 MM-268 MM-269 MM-271 MM-275 @0a5c91 -->
 
 The **Arrangement** is where you build the song. Each cell is a row: the pattern it plays, with marks under the name for what else the row does. You can edit the song while it plays.
 
@@ -230,7 +230,7 @@ The marks come in that order, for example 120 M3 +2 T±. A row with none of them
 
 On the machine a T replaces the TRN value. The editor shows both.
 
-The **Arrangement** header counts the rows, out of 200. The line under the chip in the **Songs** column shows the song's rows, its length in bars and its playing time at the current tempo. On the Song workspace the LCD's second line shows the same: SONG, ROWS, BARS and TIME.
+The **Arrangement** header counts the rows, out of 200. While the song plays, it reads Playing and the machine's place in bars and beats. The line under the chip in the **Songs** column shows the song's rows, its length in bars and its playing time at the current tempo. On the Song workspace the LCD's second line shows the same: SONG, ROWS, BARS and TIME.
 
 ### When the machine hears an edit
 
@@ -292,7 +292,7 @@ On the machine a loop becomes a halt when it points at itself. In the editor you
 To go on after a halt, start the song from a row before it with **▶ From here**. A row after the halt cannot be counted to: start it on the machine.
 
 ## SONG TRACK TRANSPOSE
-<!-- rows: MM-264 @40319f -->
+<!-- rows: MM-264 @95e15d -->
 
 Besides the transpose of the whole pattern, a row can transpose single tracks: the six synth tracks and the six MIDI tracks.
 
@@ -303,7 +303,7 @@ Besides the transpose of the whole pattern, a row can transpose single tracks: t
 NOTE: A track transpose holds for that row only.
 
 ## SONG EXTRA
-<!-- rows: MM-266 MM-267 @3ce026 -->
+<!-- rows: MM-266 MM-267 @b82b36 -->
 
 A row can mute tracks and set a tempo of its own.
 
@@ -311,7 +311,7 @@ A row can mute tracks and set a tempo of its own.
 
 1. Select the row and click **More**.
 2. Under **Mutes**, click T1 to T6 for the synth tracks, M1 to M6 for the MIDI tracks. A muted track's key is dark. Click it again to unmute.
-3. The cell shows M.
+3. The cell shows M and the number of muted tracks, for example M3.
 
 ![The selected row with its settings](shot:e2e-mm-song-row-inspector)
 
@@ -321,6 +321,6 @@ On the machine you set the mutes with the [TRIG] keys 1 to 6 and 9 to 14.
 
 1. Select the row. Beside **Tempo**, **Keep** is lit: the row plays at the tempo before it.
 2. Click **Keep**. The row takes the current tempo as its own, and **Keep** goes out.
-3. Click **−** or **+** to set the tempo, 30 to 300 BPM. The cell shows B.
+3. Click **−** or **+** to set the tempo, 30 to 300 BPM. The cell shows the tempo as a number.
 
 To take the row's tempo off, click **Keep** again.

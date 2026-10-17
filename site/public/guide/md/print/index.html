@@ -141,7 +141,7 @@
 <h4 class="gd-h3">Pattern or song</h4>
 <p>The LCD's second line has a <b class="gd-ui">PLAY</b> field on every workspace. It reads PAT in pattern mode and SONG in song mode, and each click switches. On the Song workspace the <b class="gd-ui">PATTERN</b>, <b class="gd-ui">CHAIN</b> and <b class="gd-ui">SONG</b> keys over the pattern palette set what plays. <b class="gd-ui">PATTERN</b> and <b class="gd-ui">CHAIN</b> keep the machine in pattern mode: in PATTERN a click on a pad queues that pattern, in CHAIN the pads number the chain. <b class="gd-ui">SONG</b> puts the machine in song mode, and the pads add rows to the arrangement. The field shows what the machine reports.</p>
 <h4 class="gd-h3">Kits and songs</h4>
-<p>Click the <b class="gd-ui">Kit</b> field of the LCD to open the kit library. Chapter 3 describes it.</p>
+<p>Click the <b class="gd-ui">Kit</b> field of the LCD to open the kit library. Chapter 3 describes it. The ‹ and › keys beside the kit name load the previous and the next kit, and go round from K64 to K01. If the kit has unsaved edits, the editor asks first.</p>
 <p>The machine's song menu is the <b class="gd-ui">Songs</b> column of the Song workspace: load, save, save to another slot with a name, copy, paste, clear and rename. Chapter 9 describes it.</p>
 <h4 class="gd-h3">TRIG keys</h4>
 <p>The steps of the grid are the TRIG keys. Click an empty step to draw a trig. Click a trig to select it, and it stays selected: <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> removes it and the arrows move the selection. Double-click a trig to remove it. Select more steps with ⌘-click, then click the small ⋯ on a selected step for its menu, or right-click the step.</p>
@@ -1104,9 +1104,10 @@
 <div class="gd-body gd-prose"><h2>GENERAL SYSEX RECEIVE</h2>
 <p>The machine takes SysEx at any time. In the editor you open the file first and choose what to send.</p>
 <ol class="gd-steps"><li>Choose <b class="gd-ui">IMPORT SYSEX…</b> in the engine menu. Or drop the .syx file on the window. Drag and drop works on macOS only.</li><li>Choose the file. The <b class="gd-ui">Import SysEx</b> panel opens. Its header names the model and says &quot;full backup&quot; when the file is one.</li><li>Read the tabs: <b class="gd-ui">Kits</b>, <b class="gd-ui">Patterns</b>, <b class="gd-ui">Songs</b>, <b class="gd-ui">Globals</b> and <b class="gd-ui">Other</b>. A tab shows the slots of the machine as a grid, and the number of items of that kind in the file. Each tab has a box: tick it to send that kind.</li><li>A slot in the grid is marked when it overwrites a slot that holds data on the machine. A slot marked ▶ plays now. Click a slot to leave it out. Click it again to take it back. Click with <kbd class="gd-key">[⇧]</kbd> to change a range.</li><li>Click <b class="gd-ui">All</b>, <b class="gd-ui">Empty slots only</b> or <b class="gd-ui">None</b> to set the whole tab.</li><li>Read the line at the foot. It says how many slots on the machine are overwritten.</li><li>Click <b class="gd-ui">Import</b>. The button says how many items it sends.</li></ol>
+<p>The tick <b class="gd-ui">Read back and compare</b>, beside <b class="gd-ui">Verify only</b>, is on at first and stays as you set it. With it on, the import reads every slot back after <b class="gd-ui">Send</b> and compares it with the file. With it off, the import ends after <b class="gd-ui">Send</b>. The report then says how many items were sent and that they were not read back.</p>
 <p>While the import runs, the panel shows three steps: <b class="gd-ui">Read the slots</b>, <b class="gd-ui">Send</b> and <b class="gd-ui">Read back</b>, and a bar for each kind. Click <b class="gd-ui">Stop</b> to cancel or <b class="gd-ui">Hide</b> to put the panel away. The import goes on: <b class="gd-ui">IMPORT SYSEX…</b> in the engine menu shows the panel again, with its report when it is done. While it runs, <kbd class="gd-key">[ESC]</kbd> and a click beside the panel leave it open. The panel keeps one size from the preview to the report.</p>
 <p>At the end the panel gives a report, slot by slot:</p>
-<table class="gd-table"><thead><tr><th>Mark</th><th>Meaning</th></tr></thead><tbody><tr><td>✓</td><td>taken as in the file</td></tr><tr><td>≈</td><td>converted</td></tr><tr><td>✕</td><td>ignored</td></tr><tr><td>≠</td><td>different from the file</td></tr><tr><td>~</td><td>not comparable</td></tr><tr><td>?</td><td>no answer, or not known</td></tr></tbody></table>
+<table class="gd-table"><thead><tr><th>Mark</th><th>Meaning</th></tr></thead><tbody><tr><td>✓</td><td>taken as in the file</td></tr><tr><td>≈</td><td>converted</td></tr><tr><td>✕</td><td>ignored</td></tr><tr><td>≠</td><td>different from the file</td></tr><tr><td>→</td><td>sent, not read back</td></tr><tr><td>~</td><td>not comparable</td></tr><tr><td>?</td><td>no answer, or not known</td></tr></tbody></table>
 <p>Click <b class="gd-ui">Show problems only</b> to list only the slots that did not go as in the file. Click <b class="gd-ui">Done</b> to close the panel.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The import has no undo. A kit that plays, and has unsaved edits, can lose them when a dump takes its place.</p></aside>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p><b class="gd-ui">Globals</b> and <b class="gd-ui">Other</b> are off until you tick them. A global changes the MIDI channels the machine listens on, and so which tracks the editor can mute, play and edit live. The active global becomes active at once.</p></aside>
@@ -1131,7 +1132,7 @@
 <p>The report marks each slot:</p>
 <table class="gd-table"><thead><tr><th>Mark</th><th>Meaning</th></tr></thead><tbody><tr><td>=</td><td>the same as the file</td></tr><tr><td>≠</td><td>different from the file</td></tr><tr><td>?</td><td>no answer</td></tr></tbody></table>
 <p>The line at the foot says how many slots are the same. Nothing was written to the machine.</p>
-<p>An import reads every item back as well. Its report lists the items that differ from the file, marked ≠.</p>
+<p>An import reads every item back as well, unless you have turned off <b class="gd-ui">Read back and compare</b>. Its report lists the items that differ from the file, marked ≠.</p>
 </div></section>
 <section class="gd-sec" id="sync">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.75,</span> <span>76,</span> <span>77,</span> <span>78</span></span></aside>
@@ -1588,7 +1589,7 @@
 <section class="gd-sec" id="sysex-import-with-a-preview">
 <aside class="gd-margin"></aside>
 <div class="gd-body gd-prose"><h2>SYSEX IMPORT WITH A PREVIEW</h2>
-<p>Choose <b class="gd-ui">IMPORT SYSEX…</b> in the engine menu to look inside a SysEx file before you send it. You tick the kinds, choose where each goes and read the report. The steps are in &quot;GENERAL SYSEX RECEIVE&quot; in chapter 10.</p>
+<p>Choose <b class="gd-ui">IMPORT SYSEX…</b> in the engine menu to look inside a SysEx file before you send it. You tick the kinds, choose where each goes and read the report. The steps are in &quot;GENERAL SYSEX RECEIVE&quot; in chapter 10. The tick <b class="gd-ui">Read back and compare</b> at the foot of the panel decides whether the import reads the slots back after it sends them.</p>
 </div></section>
 <section class="gd-sec" id="midi-note-lights">
 <aside class="gd-margin"></aside>

@@ -80,7 +80,7 @@ The machine goes to SONG mode if it was in pattern mode and plays the song from 
 NOTE: A loop or jump row before the chosen row cannot be counted through. The editor says so; start the song and let it play to the row. The machine's <CTRL IN> must be on.
 
 ## SONG EDITING
-<!-- rows: MD-149 MD-150 MD-151 MD-152 @fb26fa -->
+<!-- rows: MD-149 MD-150 MD-151 MD-152 @885ce9 -->
 
 ### Add patterns
 
@@ -204,7 +204,7 @@ A halt row stops the song where it stands. It waits there until you pick a row t
 2. Under **Command**, click **HALT**. The cell reads HALT.
 
 ## SONG MUTE
-<!-- rows: MD-157 @27744c -->
+<!-- rows: MD-157 @291b41 -->
 
 A row can mute tracks while it plays.
 

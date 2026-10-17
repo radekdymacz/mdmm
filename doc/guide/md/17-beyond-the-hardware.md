@@ -79,7 +79,7 @@ What you draw in the grid is what the machine plays. Four trigs drawn in an empt
 8. Press [⌘] [Z] once. The four trigs are back, and they play again.
 
 ## GEN ROLLS A RHYTHM
-<!-- rows: MD-X04 @ea987e -->
+<!-- rows: MD-X04 @45388e -->
 
 The machine has no such function: you set every hit by hand. The **GEN** bar on the **Pattern** workspace rolls a rhythm for the selected track from a few settings. **Random** rolls a new one, **Defaults** sets the generator the track's sound suits, and **Hits** says how many hits it holds. The key [R] rolls too. A whole roll is one undo step.
 
@@ -99,7 +99,7 @@ The machine has no such function. **MUTATE** in the **GEN** bar nudges the sound
 To mutate and roll together, pick a drum track on the **Pattern** workspace and click **Random** in the **GEN** bar until the rhythm changes. Then click the **Kit** tab and **Random** in **MUTATE**. Click **UNDO** once: the sound is back. Click it again: the rhythm is back.
 
 ## CLEAR
-<!-- rows: MD-X25 @8f52bc -->
+<!-- rows: MD-X25 @db4e83 -->
 
 When you play with a sound, **Clear** puts the selected track back as the kit's slot stores it. It restores the machine, every value, the level, the LFO and the two relations of that track. The other tracks, the master effects and the kit name stay as they are. The kit library's **Reload** loads the whole kit again. **Clear** does one track.
 
@@ -208,9 +208,9 @@ To load a sample:
 ![A sample dropped on ROM slot 33](shot:e2e-md-drop-sample)
 
 ## SYSEX IMPORT WITH A PREVIEW
-<!-- rows: MD-X13 @1ada43 -->
+<!-- rows: MD-X13 @9e13a0 -->
 
-Choose **IMPORT SYSEX…** in the engine menu to look inside a SysEx file before you send it. You tick the kinds, choose where each goes and read the report. The steps are in "GENERAL SYSEX RECEIVE" in chapter 10.
+Choose **IMPORT SYSEX…** in the engine menu to look inside a SysEx file before you send it. You tick the kinds, choose where each goes and read the report. The steps are in "GENERAL SYSEX RECEIVE" in chapter 10. The tick **Read back and compare** at the foot of the panel decides whether the import reads the slots back after it sends them.
 
 ## MIDI NOTE LIGHTS
 <!-- rows: MD-X14 @9da4be -->
