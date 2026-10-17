@@ -1186,6 +1186,9 @@ body{box-sizing:border-box;overflow:hidden}
 .lanetop{border-top:0!important;padding-top:0!important}
 #lanescroll{flex:1 1 auto;min-height:96px;display:flex;flex-direction:column;box-sizing:border-box}
 #lane{flex:1 1 auto;min-height:0;align-items:stretch!important}
+/* a slide in the lock lane (I-054): the ramp is an SVG over the lane, in a box that takes the lane's width and height */
+.lanebox{position:relative;flex:1 1 auto;display:flex;flex-direction:column;min-height:0;min-width:max-content}
+.lanesvg{position:absolute;inset:0;pointer-events:none;overflow:visible}
 .lb{height:auto!important;min-height:90px}
 .lb i:not(.bp){height:calc((100% - 6px) * var(--f,0))!important;bottom:3px}
 .lb .base{bottom:calc(3px + (100% - 6px) * var(--bf,0))!important}
@@ -1443,7 +1446,7 @@ function renderSeq(){
  h+=`</div></div><div class="seqfoot"><span></span><div class="legend"><span><i class="lg on"></i>Trig</span><span><i class="lg on acc"></i>Accent: shift-click</span><span><i class="lg on sl"></i>Slide: alt-click</span><span><i class="lg on lk"></i>Has locks</span></div>${pageCtl()}</div><div class="lanewrap"><div class="lanetop"><span class="cap">Lock lane · ${S.sel+1} ${S.tracks[S.sel].name} · <b id="lanename">${laneLabel(S.sel,S.lane)}</b> <span class="lanescale">${bipLane()?"L 64 · centre · R 63":"0–127"}</span></span>${S.mode==="CLASSIC"?`<span class="warnline" title="Locks stay in the pattern but do nothing until you switch to EXTENDED.">CLASSIC: locks muted</span>`:""}<span class="lanehelp" title="Draw across the bars to lock this parameter per step. Alt-drag erases. Hatched steps have no trig, so they cannot hold a lock. Dashed line = kit value.">Draw to lock · alt-drag erases</span>
 </div>
 </div>
-  <div class="scroll" id="lanescroll"><div class="lane" id="lane" style="grid-template-columns:${cols()}"></div></div></div>`;
+  <div class="scroll" id="lanescroll"><div class="lanebox"><div class="lane" id="lane" style="grid-template-columns:${cols()}"></div><svg class="lanesvg" id="lanesvg" aria-hidden="true"></svg></div></div></div>`;
  $("#main").innerHTML=h;renderLane();syncScroll();
 }
 function segbar(key,min,max,v,unit){const n=max-min;let h=`<span class="segbar" data-bar="${key}" data-min="${min}" data-max="${max}" data-unit="${unit}" role="slider" tabindex="0" aria-valuemin="${min}" aria-valuemax="${max}" aria-valuenow="${v}" aria-label="${key==="swing"?"Swing":"Accent"}">`;
