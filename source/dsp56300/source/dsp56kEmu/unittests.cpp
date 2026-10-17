@@ -139,6 +139,7 @@ namespace dsp56k
 		subr();
 		tst();
 		nop();
+		hostStatusRegisterReadOnly();
 		repAtVolatileAddress();
 		ccrGroundTruth();
 		bitTestMemoryEaUpdate();
@@ -5822,6 +5823,25 @@ namespace dsp56k
 
 		verify(dsp.memory().get(MemArea_P, 0x200) == 0x0602a0);	// the rewrite really landed
 		verify(dsp.regs().r[0].var == 3);						// once, then twice - not three times
+	}
+
+	void UnitTests::hostStatusRegisterReadOnly()
+	{
+		auto& hdi08 = peripheralsX.getHDI08();
+
+		hdi08.setHostFlags(1, 0);
+
+		runTest([&]()
+		{
+			emit("bclr #3,x:<<$ffffc3");		// HF0
+			emit("bset #4,x:<<$ffffc3");		// HF1
+		}, [&]()
+		{
+			verify(bittest(hdi08.readStatusRegister(), HDI08::HSR_HF0));
+			verify(!bittest(hdi08.readStatusRegister(), HDI08::HSR_HF1));
+		});
+
+		hdi08.reset();
 	}
 
 }
