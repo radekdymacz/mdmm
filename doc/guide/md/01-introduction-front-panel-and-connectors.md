@@ -6,7 +6,7 @@ The Machinedrum Editor runs the Elektron Machinedrum firmware (OS 1.63) behind o
 This chapter maps the machine's front panel and rear connectors to the page. Later chapters follow the manual's order and say how to do each job.
 
 ## FRONT PANEL
-<!-- rows: MD-001 MD-002 MD-003 MD-004 MD-005 MD-006 MD-007 MD-008 MD-009 MD-010 MD-011 MD-012 MD-013 MD-014 MD-015 MD-016 MD-017 MD-018 MD-019 MD-020 MD-021 @b23237 -->
+<!-- rows: MD-001 MD-002 MD-003 MD-004 MD-005 MD-006 MD-007 MD-008 MD-009 MD-010 MD-011 MD-012 MD-013 MD-014 MD-015 MD-016 MD-017 MD-018 MD-019 MD-020 MD-021 @e039de -->
 
 The page has three parts. The top bar holds the workspace tabs, the LCD and the Undo, Redo and GLOBAL keys. The track rail runs down the left side. The workspace fills the rest.
 
@@ -178,7 +178,7 @@ The LCD's second line has a **PLAY** field on every workspace. It reads PAT in p
 
 ### Kits and songs
 
-Click the **Kit** field of the LCD to open the kit library. Chapter 3 describes it.
+Click the **Kit** field of the LCD to open the kit library. Chapter 3 describes it. The ‹ and › keys beside the kit name load the previous and the next kit, and go round from K64 to K01. If the kit has unsaved edits, the editor asks first.
 
 The machine's song menu is the **Songs** column of the Song workspace: load, save, save to another slot with a name, copy, paste, clear and rename. Chapter 9 describes it.
 

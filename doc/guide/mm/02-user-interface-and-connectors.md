@@ -66,13 +66,14 @@ To see what the multi envelope shapes:
 5. Click the first mode again, then **Auto track**.
 
 ## TRACK KEYS
-<!-- rows: MM-019 MM-020 MM-021 @6c403a -->
+<!-- rows: MM-019 MM-020 MM-021 @4f8ecc -->
 
 The six TRACK keys select the track you edit.
 
 - Click a track in the rail at the left of the page.
 - Press {key:track-prev-next} to select the track before or after.
 - In the **Mix** workspace, click the track's node in the routing graph.
+- Play the track from a MIDI controller with **FOLLOW PLAYED TRACK** on in the engine menu. See "THE SELECTED TRACK FOLLOWS THE LAST TRACK PLAYED" in chapter 24.
 
 To mute a track, click **M** in its rail row or press {key:mute-track}. Click **S** to solo it. Drag across several **M** keys to mute or unmute each track you cross as the first one became.
 
@@ -137,7 +138,7 @@ The GLOBAL page opens over the workspace. It holds the eight global slots and th
 2. Click the **Mix** tab. The page closes and **Mix** shows.
 
 ## TRIG KEYS
-<!-- rows: MM-027 MM-028 MM-029 MM-030 @beca1b -->
+<!-- rows: MM-027 MM-028 MM-029 MM-030 @440f39 -->
 
 The sixteen TRIG keys play notes and set trigs. In the editor:
 
@@ -178,7 +179,7 @@ To switch between pattern and song:
 3. Click the **PATTERN** key. The machine reports pattern mode.
 
 ## ENTER, EXIT AND ARROW KEYS
-<!-- rows: MM-033 MM-034 @35f8b7 -->
+<!-- rows: MM-033 MM-034 @e2f686 -->
 
 The machine's [ENTER/YES] and [EXIT/NO] confirm and cancel. The editor asks in dialogs on the page: answer with the dialog's buttons, and close one with {key:close-dialog}.
 
@@ -301,7 +302,7 @@ On the machine [TRIG SELECT] chooses which trig track the TRIG keys edit: AMP, F
 ![The MIDI tracks](shot:mm-midi-roll)
 
 ## THE KEYBOARD (SFX-6)
-<!-- rows: MM-049 MM-050 MM-051 MM-052 MM-053 MM-054 @6dfed2 -->
+<!-- rows: MM-049 MM-050 MM-051 MM-052 MM-053 MM-054 @dc13e8 -->
 
 The SFX-6 has a keyboard and a joystick. The editor has the same functions on the **Perform** workspace.
 

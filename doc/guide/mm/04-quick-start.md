@@ -46,7 +46,7 @@ Play the pattern and listen to each track.
 The piano roll plays the pitch of a note when you click it.
 
 ## GRID RECORDING
-<!-- rows: MM-075 MM-076 MM-077 MM-078 @825ab0 -->
+<!-- rows: MM-075 MM-076 MM-077 MM-078 @e03c31 -->
 
 In grid recording you place notes on the steps of a pattern one by one. The machine does this with the TRIG keys. In the editor you draw in the piano roll of the **Pattern** workspace.
 
@@ -54,6 +54,8 @@ In grid recording you place notes on the steps of a pattern one by one. The mach
 2. If you want the pattern's own kit, open the kit library and load it: click <KIT>, choose a kit, click **Load**. Chapter 6 describes the library.
 3. Click an empty step in the roll. A note goes on it, as long as the **Len** key says.
 4. Drag the end of the note to make it longer or shorter, drag it up or down to change its pitch, or sideways to move it.
+
+Click a note to select it. It stays selected, and {key:delete} removes it. Double-click a note to remove it at once. With one note selected, [↑] and [↓] change its pitch by a semitone. Deleting a note writes no NOTE OFF: the note before it runs on to the next trig or NOTE OFF, as on the machine.
 
 To paint the same note on several steps, drag sideways. The steps you cross get the note. A drag is one undo step. Hold [⌥] and drag over the notes to erase them, which is also one undo step.
 
@@ -84,7 +86,7 @@ In live recording you play the keys while the pattern runs, and the machine writ
 To erase while recording, hold {key:live-erase}, the machine's [EXIT]. The selected track's notes go on each step that plays while the key is down. The other tracks keep their notes. Let go of the key, switch recording off and stop the machine.
 
 ## PARAMETER LOCKS
-<!-- rows: MM-081 MM-082 MM-083 @b42b03 -->
+<!-- rows: MM-081 MM-082 MM-083 @9067a5 -->
 
 A parameter lock gives one parameter a value of its own for one step.
 
@@ -93,10 +95,12 @@ A parameter lock gives one parameter a value of its own for one step.
 1. In the **Pattern** workspace, click the **Locks** tab under the roll, then a page tab in the rail, for example FLT.
 2. Click the parameter, for example BASE. The lock lane under the roll now edits it.
 3. Drag over the bars of the lane. Each step with a trig gets a lock with the value where you dragged.
-4. To draw a straight line of values, hold [⇧] and drag. The locks make a ramp over the notes.
+4. To draw a straight line of values, hold [⇧] and drag from a step that has no lock. The locks make a ramp over the notes. Hold [⇧] on a lock and drag sideways to draw a slide to the next lock instead (see "Slide" in chapter 15).
 5. To set a locked value from the keys, turn the wheel over a lock step. Each notch is 4, and [⇧] makes it 1.
 
-The <LOCKS> field of the LCD counts the locks of the pattern, out of 62.
+The lane draws a solid line at the kit value of the parameter, with its number. Drag the line up or down to change the kit value. A lock on a step with no trig is drawn hatched, as a ghost bar: the machine keeps it and does not play it. Hold [⌥] and click it to remove it.
+
+The <LOCKS> field of the LCD counts the locked parameters of the pattern, out of 62.
 
 ![The lock lane under the roll](shot:e2e-mm-seq-lock-lane)
 

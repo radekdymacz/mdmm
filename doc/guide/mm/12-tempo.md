@@ -2,9 +2,9 @@
 <!-- summary: Set the tempo by hand or by tapping, and follow a DAW or an external clock. -->
 
 ## TEMPO
-<!-- rows: MM-193 MM-199 @5b6847 -->
+<!-- rows: MM-193 MM-199 @131b5d -->
 
-The tempo is global. A pattern does not store it, so changing the pattern never changes the tempo. A song row can carry a tempo of its own (see chapter 17, "Set a tempo for a row").
+The tempo is global. A pattern does not store it, so changing the pattern never changes the tempo. A song row can carry a tempo of its own (see chapter 17, "Set a tempo for a row"). A row that has a tempo shows it as a number on its cell in the arrangement.
 
 The **Tempo** field of the LCD shows the tempo in BPM with one decimal. It is on every workspace.
 
