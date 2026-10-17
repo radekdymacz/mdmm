@@ -1278,16 +1278,16 @@ namespace dsp56k
 				m_asm.bitTest(shifter, 23);
 				m_asm.jnz(_toFalse);
 			},
-			[&]	// S[23] == 0: ASR
+			[&]	// S[23] == 0: ASR. NORMF leaves C alone (FM 13-147): the helpers are told not to write it
 			{
-				alu_asr(D, D, &shifter);
+				alu_asr(D, D, &shifter, 0, false);
 			},
 			[&]	// S[23] == 1: ASL by the negated count
 			{
 				m_asm.shl(r32(shifter), asmjit::Imm(8));
 				m_asm.neg(shifter);
 				m_asm.shr(r32(shifter), asmjit::Imm(8));
-				alu_asl(D, D, &shifter);
+				alu_asl(D, D, &shifter, 0, false);
 			},
 			true, true, true);
 	}
