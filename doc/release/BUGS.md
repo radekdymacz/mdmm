@@ -4,6 +4,12 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-168 · Monomachine: the page says a lock on a step with no trig is ignored, the machine plays it
+
+- **From:** Claude Code, 2026-10-17, firmware probe `w13mmslide` (case M, `gapProbesFirmwareTest.cpp`).
+- **Found:** a lock on AMP VOL on a step with no trig changed the sound (VOL 20 to 90, held), with and without a slide. The lock lane draws such a lock as a ghost bar, and its tooltip, `25-mm.css` and the guide (`mm/04-quick-start.md`, `mm/13-parameter-locks.md`) say the machine ignores it. Since 0.8 such a lock is also the end of a slide.
+- **Status:** open. Only VOL was measured. Next: probe one more parameter (a filter or a pitch lock), then fix the tooltip, the CSS note, the two guide pages and the `mmLockLaneTest` text. Not in 0.8.0.
+
 ## B-167 · Monomachine: the editor does not allow the machine's full pitch range ("about 11 octaves")
 
 - **From:** a beta tester on Discord, 2026-10-17 (0.8): the synthesis engines and the sequencer cover about 11 octaves; the editor does not allow all of it.
