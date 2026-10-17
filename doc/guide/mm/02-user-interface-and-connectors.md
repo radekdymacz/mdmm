@@ -3,7 +3,7 @@
 
 The Monomachine has a front panel of keys and knobs, an LCD, a keyboard on the SFX-6 and a row of sockets at the back. The editor has none of these as pictures. Its page holds the same functions as controls of its own, and this chapter names, for each part of the machine, the control that does its job.
 
-The page has a top bar and a body. The top bar holds the five workspace tabs, the LCD with its two lines, and the setup keys **Undo**, **Redo**, **Global** and **MKII**. The body shows the track rail on the left and the workspace on the right.
+The page has a top bar and a body. The top bar holds the workspace tabs, the LCD with its two lines, and the setup keys **Undo**, **Redo**, **Global** and **Learn**. The MKI / MKII plate is in the engine menu of the LCD. The body shows the track rail on the left and the workspace on the right.
 
 ![The Monomachine Editor](shot:mm-page-overview)
 

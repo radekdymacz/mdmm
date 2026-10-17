@@ -369,6 +369,3 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
 .slotgrid.rmkwide .rmk .rt{display:inline}
 .slotgrid.rmkwide .rmk .rg{display:none}
 .scell small{white-space:nowrap}
-/* 0.8 (L5): the Control tab and the LEARN key are back (mapping is on), six workspace keys: at the tightest fit step (tf3, windows about 1280 px)
-   the keys of the workspace row sit 4 px apart instead of 8, so the top bar's last key stays in the window; no key is narrower */
-header.top.tf3 .tabs{gap:4px!important}

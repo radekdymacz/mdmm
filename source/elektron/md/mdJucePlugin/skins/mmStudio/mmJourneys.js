@@ -160,18 +160,21 @@ const MmJourneys = (() => {
 			{ say: "press Escape: it closes", act: u => u.key("Escape"), screen: () => ok($1("#keyspop").hidden, "still open") }
 		]
 	};
+	/* the plate is a key of the engine menu (PLATE: MKI / MKII), no longer a key of the top bar */
+	const plateLabel = () => $1('#engsel option[value="plate"]')?.textContent.trim();
+	const platePick = u => u.pick("engsel", "plate");
 	const plate = {
 		name: "mm-top-plate", proves: ["MM-322"],
 		steps: [
 			/* MM-322 (wave 10): each plate is its own look, true to the product photos: MKI a light-blue LCD, MKII a bluish-white one */
 			{ say: "click the plate key: the other model, its own LCD colour and label", act: (u, c) => {
 				const root = document.documentElement;
-				c.p0 = root.dataset.plate; c.lcd0 = getComputedStyle(root).getPropertyValue("--lcd").trim(); c.key0 = $1("#platekey").textContent.trim(); u.click("#platekey");
+				c.p0 = root.dataset.plate; c.lcd0 = getComputedStyle(root).getPropertyValue("--lcd").trim(); c.key0 = plateLabel(); return platePick(u);
 			}, screen: c => {
-				const root = document.documentElement, lcd = getComputedStyle(root).getPropertyValue("--lcd").trim(), key = $1("#platekey").textContent.trim();
+				const root = document.documentElement, lcd = getComputedStyle(root).getPropertyValue("--lcd").trim(), key = plateLabel();
 				return ok(root.dataset.plate !== c.p0 && lcd !== c.lcd0 && key !== c.key0, `plate ${root.dataset.plate}, LCD ${c.lcd0} -> ${lcd}, key ${c.key0} -> ${key}`);
 			} },
-			{ say: "click it again: the first look is back", act: u => u.click("#platekey"), screen: c => {
+			{ say: "click it again: the first look is back", act: u => platePick(u), screen: c => {
 				const root = document.documentElement, lcd = getComputedStyle(root).getPropertyValue("--lcd").trim();
 				return ok(root.dataset.plate === c.p0 && lcd === c.lcd0, `plate ${root.dataset.plate}, LCD ${lcd}`);
 			} }
@@ -1709,9 +1712,9 @@ const MmJourneys = (() => {
 		name: "mm-plate-greys", proves: [],
 		steps: [go("seq"), { say: "MKI and MKII: the panel greys of the MD's MKI plate (#d9dad6, #cdcec9, #e5e6e2), the roll's ground its grey (--scr #cdcec9), the top bar's LCD light blue on MKI, bluish white on MKII", act: async (u, c) => {
 				c.p0 = S().plate; c.seen = {};
-				for (const pl of ["mk1", "mk2"]) { if (S().plate !== pl) u.click("#platekey"); await until(() => S().plate === pl, 1500); await sleep(150); c.seen[pl] = ["--plate", "--plate2", "--plate3", "--lcd", "--scr"].map(cssTok); const roll = $1("#seq canvas.roll"), lcd = $1(".lcdpanel"); c.seen[pl].push(roll ? getComputedStyle(roll).backgroundColor : "no roll", lcd ? getComputedStyle(lcd).backgroundColor : "no lcd"); } },
+				for (const pl of ["mk1", "mk2"]) { if (S().plate !== pl) await platePick(u); await until(() => S().plate === pl, 1500); await sleep(150); c.seen[pl] = ["--plate", "--plate2", "--plate3", "--lcd", "--scr"].map(cssTok); const roll = $1("#seq canvas.roll"), lcd = $1(".lcdpanel"); c.seen[pl].push(roll ? getComputedStyle(roll).backgroundColor : "no roll", lcd ? getComputedStyle(lcd).backgroundColor : "no lcd"); } },
 				screen: c => ok(["mk1", "mk2"].every(pl => c.seen[pl] && c.seen[pl].slice(0, 3).join() === "#d9dad6,#cdcec9,#e5e6e2" && c.seen[pl][4] === "#cdcec9" && (c.seen[pl][5] === "rgb(205, 206, 201)" || c.seen[pl][5] === "no roll")) && c.seen.mk1[3] === "#b6d2e8" && c.seen.mk2[3] === "#dfeaf1" && c.seen.mk1[6] === "rgb(182, 210, 232)" && c.seen.mk2[6] === "rgb(223, 234, 241)", JSON.stringify(c.seen)) }],
-		async tidy(u, c) { if (c.p0 && S().plate !== c.p0) u.click("#platekey"); } };
+		async tidy(u, c) { if (c.p0 && S().plate !== c.p0) await platePick(u); } };
 	/* Radek's review 2026-10-15: left to right the multi envelope, the joystick, the setup and the mutes; the envelope's screen
 	   and the stick's pad start on one line and are as tall as each other; the assign rows sit under the pad, the ADSR faders under the screen. */
 	const performLayout = {
@@ -2599,7 +2602,7 @@ const MmJourneys = (() => {
 				await sleep(600); Journey.snapshot("review-perform"); } },
 			{ say: "REL 40", act: async u => { await typeVal(u, '#main .pc[data-g="menv"][data-n="REL"]', 40); await typeVal(u, '#main .pc[data-g="menv"][data-n="SUS"]', 80); await typeVal(u, '#main .pc[data-g="menv"][data-n="DEC"]', 50); await sleep(600); Journey.snapshot("review-perform-rel40"); } },
 			go("seq"),
-			{ say: "both plates", act: async u => { for (const pl of ["mk1", "mk2"]) { if (S().plate !== pl) u.click("#platekey"); await sleep(600); Journey.snapshot("review-plate-" + pl); } } },
+			{ say: "both plates", act: async u => { for (const pl of ["mk1", "mk2"]) { if (S().plate !== pl) await platePick(u); await sleep(600); Journey.snapshot("review-plate-" + pl); } } },
 			{ say: "GLOBAL", act: async u => { u.click("#globkey"); await sleep(800); Journey.snapshot("review-global"); u.key("Escape"); await sleep(300); } }],
 		async tidy(u, c) { await back(u, c); } };
 	/* B-054: every view, as macOS 12's WebKit 15 lays it out (Journey.viewJourneys: mm-old-webkit in every run,
@@ -2628,7 +2631,15 @@ const MmJourneys = (() => {
 	/* I-018: the CPU meter beside the version and its details, as the Machinedrum's */
 	const cpuJs = [...Journey.cpuMeterJourneys("mm", { proves: ["MM-X15"] }), Journey.speedUpsMenuJourney("mm", { proves: ["MM-X15"] })];
 	/* I-021: the output meter and volume at the LCD's right end, as the Machinedrum's */
-	const volJs = [...Journey.volumeJourneys("mm", { proves: ["MM-X16"] }), ...Journey.fitJourneys("mm", ["seq", "sound", "mix", "perform", "song"])];
+	/* the same fit with MIDI mapping on (the Control tab and the LEARN key take room in the top bar; the plate key is in the engine menu), the
+	   Control workspace among the pages: at 1280, 1440, 1920 and 2560 px and the zoomed views (the plug-in says mapping is on by a learn document) */
+	const learnFit = () => Journey.fitJourneys("mm", ["seq", "sound", "mix", "perform", "song", "control"]).filter(j => j.name === "mm-fit-workspaces").map(j => {
+		const tidy = j.tidy;
+		return { ...j, name: "mm-fit-workspaces-learn", steps: [{ say: "mapping on: the Control tab and the LEARN key are in the top bar", act: async () => { window.gm.recv([{ type: "learn", doc: lDoc([]) }]); await sleep(300); },
+			screen: () => ok(!$1(tab("control")).hidden && !learnKey().hidden, "control tab hidden " + $1(tab("control")).hidden) }, ...j.steps],
+			async tidy(u, c) { try { if (tidy) await tidy(u, c); } finally { await learnTidy(u); } } };
+	});
+	const volJs = [...Journey.volumeJourneys("mm", { proves: ["MM-X16"] }), ...Journey.fitJourneys("mm", ["seq", "sound", "mix", "perform", "song"]), ...learnFit()];
 
 	/* ---------- wave 2: the transport beyond PLAY and STOP (doc/modern-ux/DESIGN-machine-menus.md §2) ---------- */
 	const paused = () => $1("#play")?.classList.contains("paused");
@@ -2855,7 +2866,7 @@ const MmJourneys = (() => {
 			go("sound"), sel(0),
 			{ say: "the Kit page has seven pages of eight values: SYN, AMP, FLT, EFX and the three LFOs, and the kit holds them all", screen: () => ok(["AMP", "FLT", "EFX"].every(g => $all(`#main .pc[data-g="${g}"]`).length === 8) && ["LF1", "LF2", "LF3"].every(g => $all(`#main .pc[data-g="${g}"]`).length === 4 && $1(`#lp${g[2]}`) && $1(`#ld${g[2]}`) && $all(`[data-set="ltrig"][data-l="${g}"] button`).length === 5 && $all(`[data-lwave="${g}"]`).length === 11), "boxes " + ["AMP", "FLT", "EFX", "LF1"].map(g => g + $all(`#main .pc[data-g="${g}"]`).length)),
 				machine: () => ok(wk().tracks.every(tr => tr.pages.length >= 7 && tr.pages.slice(0, 7).every(pg => pg.length === 8)), "pages " + wk().tracks[0].pages.map(p => p.length)) },
-			{ say: "the MKII plate on (two of the machines are MKII only)", act: (u, c) => { c.plate0 = document.documentElement.dataset.plate; if (c.plate0 !== "mk2") u.click("#platekey"); }, screen: () => ok(document.documentElement.dataset.plate === "mk2", "plate " + document.documentElement.dataset.plate) },
+			{ say: "the MKII plate on (two of the machines are MKII only)", act: (u, c) => { c.plate0 = document.documentElement.dataset.plate; if (c.plate0 !== "mk2") return platePick(u); }, screen: () => ok(document.documentElement.dataset.plate === "mk2", "plate " + document.documentElement.dataset.plate) },
 			{ say: "pick each machine of the manual (its family, then its key): the machine is in the kit, the page shows the manual's knobs in the manual's order, each knob moves its own value and sends its own CC", act: async (u, c) => {
 				c.n0 = histN(); c.bad = []; c.n = 0; c.knobs = 0; c.t = 0;
 				for (const [m, want] of MANUAL_MACHINES) {
@@ -2881,7 +2892,7 @@ const MmJourneys = (() => {
 				c.note = `${c.n} machines, ${c.knobs} knobs`; },
 				screen: c => ok(!c.bad.length, c.bad.slice(0, 6).join(" | ") + (c.bad.length > 6 ? ` (+${c.bad.length - 6})` : "")), machine: c => ok(c.n === MANUAL_MACHINES.length, c.n + " of " + MANUAL_MACHINES.length + " machines"), within: 1000 }
 		],
-		async tidy(u, c) { await back(u, c); if (c.plate0 && document.documentElement.dataset.plate !== c.plate0) u.click("#platekey"); }
+		async tidy(u, c) { await back(u, c); if (c.plate0 && document.documentElement.dataset.plate !== c.plate0) await platePick(u); }
 	};
 	/* ---- Sound: the track effects, every value of AMP, FLT and EFX in the manual's order (Track effects chapter) ---- */
 	const EFFECT_PAGES = [["AMP", "ATK HOLD DEC REL DIST VOL PAN PORT"], ["FLT", "BASE WDTH HPQ LPQ ATK DEC BOFS WOFS"], ["EFX", "EQF EQG SRR DTIM DSND DFB DBAS DWID"]];
@@ -3046,7 +3057,7 @@ const MmJourneys = (() => {
 		name: "mm-wire-cc", proves: ["MM-353", "MM-354", "MM-355", "MM-356", "MM-357", "MM-358", "MM-359", "MM-360", "MM-362", "MM-289"],
 		steps: [
 			go("sound"), sel(0),
-			{ say: "a machine with all eight SYN values (DPRO-DDRW, MKII): each value of the page sends its own CC, 48 to 55, on the track's channel with the value the kit holds", act: async (u, c) => { c.n0 = histN(); c.bad = []; c.plate0 = document.documentElement.dataset.plate; if (c.plate0 !== "mk2") u.click("#platekey"); await sleep(200);
+			{ say: "a machine with all eight SYN values (DPRO-DDRW, MKII): each value of the page sends its own CC, 48 to 55, on the track's channel with the value the kit holds", act: async (u, c) => { c.n0 = histN(); c.bad = []; c.plate0 = document.documentElement.dataset.plate; if (c.plate0 !== "mk2") await platePick(u); await sleep(200);
 					u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500); u.click('#machpop .mf[data-fam="DPRO"]'); await sleep(50); u.click('#machpop .mk[data-mach="DPRO-DDRW"]'); await until(() => wk().tracks[0].machineName === "DPRO-DDRW", 4000); await sleep(300);
 					for (let i = 0; i < 8; i++) { const e = checkBox(await nudgeBox(u, 0, "SYN", i), 0, "SYN", i); if (e) c.bad.push(e); } },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
@@ -3088,7 +3099,7 @@ const MmJourneys = (() => {
 			if (!$1("#globpop").hidden) u.key("Escape");
 			if (S().side === "midi") u.click('[data-side="int"]');
 			await back(u, c);
-			if (c.plate0 && document.documentElement.dataset.plate !== c.plate0) u.click("#platekey");
+			if (c.plate0 && document.documentElement.dataset.plate !== c.plate0) await platePick(u);
 		}
 	};
 	/* ---- Sequence: the envelope trigs, pitch and the keys (the sequencer chapters) ---- */
