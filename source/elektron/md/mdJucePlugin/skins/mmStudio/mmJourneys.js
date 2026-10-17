@@ -454,6 +454,49 @@ const MmJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.u0 != null && (machine().history?.undoCount || 0) > c.u0) await undoUntil(u, () => (machine().history?.undoCount || 0) <= c.u0, 3); }
 	};
+	/* 0.8: a slide is drawn in the lock lane. The machine's slide is a flag on a step: its locked values glide to the next lock of the same
+	   parameter (past trigs without one). The dot at the top of a lock bar dragged sideways sets it (the preview runs to that next lock only,
+	   however far the pointer goes); a click on the ramp's line takes it off; each is one undo step */
+	const laneDrawSlide = {
+		name: "mm-lane-draw-slide", proves: [],
+		steps: [
+			go("seq"),
+			{ say: "pick a track with three notes, the Locks tab, and lock all three with a Shift-drag ramp", act: async (u, c) => { c.t = [0, 1, 2, 3, 4, 5].find(t => trigsOf(t).filter(s => s < Math.min(16, S().len)).length >= 3) ?? 0; u.click(rail(c.t)); await sleep(200); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await sleep(250);
+					c.lane = S().lane; c.on = trigsOf(c.t).filter(s => s < Math.min(16, S().len)).slice(0, 3); c.sl0 = JSON.stringify(slidesOf(c.t));
+					await u.drag(`#lane .lb[data-s="${c.on[0]}"]`, c.on.slice(1).map(s => `#lane .lb[data-s="${s}"]`), { shift: true }, { fy: 0.8 }); await sleep(500); },
+				screen: c => ok(c.on.every(s => S().locks.get(c.t + "|" + c.lane)?.has(s)), "locks " + [...(S().locks.get(c.t + "|" + c.lane)?.keys() || [])].join(",")), machine: c => ok(c.on.length === 3 && slidesOf(c.t).length === 0 || c.sl0 != null, "notes " + c.on.join(",")), within: 15000 },
+			{ say: "press on the first lock's dot and drag sideways past the second: a ramp preview to the second only, nothing written yet", act: async (u, c) => {
+					c.u0 = machine().history?.undoCount || 0; const key = `#lane .lb[data-s="${c.on[0]}"]`, r = $1(key).getBoundingClientRect(), { mx } = laneMeta(), v = S().locks.get(c.t + "|" + c.lane).get(c.on[0]);
+					const fy = (r.bottom - 6 - v / mx * (r.height - 14) - r.top) / r.height, far = $1(`#lane .lb[data-s="${c.on[2]}"]`).getBoundingClientRect();
+					c.hold = u.drag(key, [[12, 0], [(far.left - r.left) / 2, 0], [far.right - r.left, 0]], {}, { fy, click: false, settle: 0 }); await sleep(250); },
+				screen: c => ok(true), within: 4000 },
+			{ say: "the release sets the slide on the first step only: one flag, the ramp is solid from lock to lock", act: async (u, c) => { await c.hold; await sleep(500); },
+				machine: c => ok(slidesOf(c.t).includes(c.on[0]) && !slidesOf(c.t).includes(c.on[1]) && !slidesOf(c.t).includes(c.on[2]), "slides " + slidesOf(c.t).join(",")),
+				screen: c => ok(S().tracks[c.t].slide.has(c.on[0]) && /M[\d.]+ [\d.]+ L[\d.]+ /.test($1("#lanesvg")?.innerHTML || "") && !/stroke-dasharray/.test($1("#lanesvg")?.innerHTML || ""), "svg " + ($1("#lanesvg")?.innerHTML || "").slice(0, 80)), within: 15000 },
+			{ say: "it was one undo step", machine: c => ok((machine().history?.undoCount || 0) === c.u0 + 1, `undo steps ${c.u0} -> ${machine().history?.undoCount}`), within: 8000 },
+			{ say: "click on the ramp's line: the slide is off, one more undo step", act: async (u, c) => { c.u1 = machine().history?.undoCount || 0; const k1 = `#lane .lb[data-s="${c.on[0]}"]`, a = $1(k1).getBoundingClientRect(), b = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect(), { mx } = laneMeta(), L = S().locks.get(c.t + "|" + c.lane),
+						ya = a.bottom - 6 - L.get(c.on[0]) / mx * (a.height - 14), yb = b.bottom - 6 - L.get(c.on[1]) / mx * (b.height - 14), xa = a.left + a.width / 2, xb = b.left + b.width / 2, mid = { x: (xa + xb) / 2, y: (ya + yb) / 2 };
+					const f = 0.9, px = a.left + a.width * f, t = (px - xa) / (xb - xa), py = ya + (yb - ya) * t; u.click(k1, {}, f, (py - a.top) / a.height); await sleep(500); },
+				machine: c => ok(!slidesOf(c.t).includes(c.on[0]) && (machine().history?.undoCount || 0) === c.u1 + 1, "slides " + slidesOf(c.t).join(",") + `, undo steps ${c.u1} -> ${machine().history?.undoCount}`), within: 15000 },
+			{ say: "Shift-press the first lock bar and drag out of its column: a line follows the cursor, the second lock is marked, nothing written", act: async (u, c) => {
+					c.u2 = machine().history?.undoCount || 0; const key = `#lane .lb[data-s="${c.on[0]}"]`, r = $1(key).getBoundingClientRect(), t2 = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect(), far = $1(`#lane .lb[data-s="${c.on[2]}"]`).getBoundingClientRect();
+					c.band = u.drag(key, [[r.width + 6, 0], [(t2.left + t2.width / 2) - (r.left + r.width / 2), 0], [far.left - r.left, 0]], { shift: true }, { fy: 0.6, click: false, stepMs: 450, settle: 0 }); await sleep(700); },
+				screen: c => { const h = $1("#lanesvg")?.innerHTML || ""; return ok(/r="9"/.test(h) && /stroke-width="2"/.test(h) && !S().tracks[c.t].slide.has(c.on[0]), "svg " + h.slice(0, 80)); }, within: 4000 },
+			{ say: "Escape, then the release past the second lock: cancelled, nothing written", act: async (u, c) => { u.key("Escape"); await c.band; await sleep(400); },
+				machine: c => ok(!slidesOf(c.t).includes(c.on[0]) && (machine().history?.undoCount || 0) === c.u2, "slides " + slidesOf(c.t).join(",") + `, undo steps ${c.u2} -> ${machine().history?.undoCount}`), within: 8000 },
+			{ say: "Shift-drag from the first lock bar and drop beside the second lock's column: cancelled", act: async (u, c) => { const key = `#lane .lb[data-s="${c.on[0]}"]`, r = $1(key).getBoundingClientRect(), far = $1(`#lane .lb[data-s="${c.on[2]}"]`).getBoundingClientRect();
+					await u.drag(key, [[r.width + 6, 0], [far.left - r.left, 0]], { shift: true }, { fy: 0.6, click: false }); await sleep(400); },
+				machine: c => ok(!slidesOf(c.t).includes(c.on[0]) && (machine().history?.undoCount || 0) === c.u2, "slides " + slidesOf(c.t).join(",")), within: 8000 },
+			{ say: "Shift-drag from the first lock bar and drop on the second lock's column: the slide is set, one undo step", act: async (u, c) => { const key = `#lane .lb[data-s="${c.on[0]}"]`, r = $1(key).getBoundingClientRect(), t2 = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect();
+					await u.drag(key, [[r.width + 6, 0], [(t2.left + t2.width / 2) - (r.left + r.width / 2), 0]], { shift: true }, { fy: 0.6, click: false }); await sleep(500); },
+				machine: c => ok(slidesOf(c.t).includes(c.on[0]) && (machine().history?.undoCount || 0) === c.u2 + 1, "slides " + slidesOf(c.t).join(",") + `, undo steps ${c.u2} -> ${machine().history?.undoCount}`), within: 15000 },
+			{ say: "click on the ramp's line: the slide is off", act: async (u, c) => { const k1 = `#lane .lb[data-s="${c.on[0]}"]`, a = $1(k1).getBoundingClientRect(), b = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect(), { mx } = laneMeta(), L = S().locks.get(c.t + "|" + c.lane),
+						ya = a.bottom - 6 - L.get(c.on[0]) / mx * (a.height - 14), yb = b.bottom - 6 - L.get(c.on[1]) / mx * (b.height - 14), xa = a.left + a.width / 2, xb = b.left + b.width / 2;
+					const f = 0.9, px = a.left + a.width * f, t = (px - xa) / (xb - xa), py = ya + (yb - ya) * t; u.click(k1, {}, f, (py - a.top) / a.height); await sleep(500); },
+				machine: c => ok(!slidesOf(c.t).includes(c.on[0]), "slides " + slidesOf(c.t).join(",")), within: 15000 },
+		],
+		async tidy(u, c) { if (c.sl0 != null) await undoUntil(u, () => JSON.stringify(slidesOf(c.t)) === c.sl0 && !S().locks.get(c.t + "|" + c.lane)?.has(c.on[0]), 6); }
+	};
 	/* the grid shows the pattern's length in the ALL view; LEN to the next length widens it at once, Undo narrows it */
 	const gridFits = {
 		name: "mm-seq-grid-fits-length", proves: [],
@@ -2659,7 +2702,7 @@ const MmJourneys = (() => {
 				machine: c => ok(playing() && tele.steps.length >= 2 && (tele.steps[0] === c.held || tele.steps[0] === c.held + 1), `steps after ${c.held + 1}: ${tele.steps.map(s => s + 1).join(",")}`), within: 4000 },
 			{ say: "⇧Space: paused again; ⇧Space: it plays on", act: async u => { blur(); u.key(" ", { shift: true }); await until(paused, 2000); u.key(" ", { shift: true }); },
 				screen: () => ok(!paused() && S().playing, "paused " + paused()), machine: () => ok(playing(), "not playing"), within: 4000 },
-			{ say: "⇧-click ▶, then Stop from the ▾ menu: the pause ends, the position goes", act: async u => { u.click("#play", { shift: true }); await until(paused, 2000); u.click("#playmore"); await until(() => !!$1('#deskmenu [data-mid="play"]'), 2000); u.click('#deskmenu [data-mid="play"]'); },
+			{ say: "⇧-click ▶, then Stop from the right-click menu: the pause ends, the position goes", act: async u => { u.click("#play", { shift: true }); await until(paused, 2000); u.rightClick("#play"); await until(() => !!$1('#deskmenu [data-mid="play"]'), 2000); u.click('#deskmenu [data-mid="play"]'); },
 				screen: () => ok(!paused() && !S().playing && $1("#pos").textContent === "--.--", "POSITION " + $1("#pos").textContent), machine: () => ok(!playing(), "playing"), within: 3000 }
 		],
 		async tidy(u) { await stopAll(u); }
@@ -2668,7 +2711,7 @@ const MmJourneys = (() => {
 		name: "mm-top-panic", proves: ["MM-041", "MM-361"],
 		steps: [
 			{ say: "press PLAY", act: u => u.click("#play"), machine: () => ok(playing(), "not playing"), within: 6000 },
-			{ say: "click the ▾ in the ▶ key's corner: the transport menu, Panic in it", act: u => u.click("#playmore"),
+			{ say: "right-click ▶: the transport menu, Panic in it", act: u => u.rightClick("#play"),
 				screen: () => ok(!!$1('#deskmenu [data-mid="panic"]') && !$1('#deskmenu [data-mid="panic"]').disabled && !!$1('#deskmenu [data-mid="record"]'), "menu " + ($1("#deskmenu")?.textContent || "none")), within: 2000 },
 			{ say: "click Panic: every note off and STOP", act: u => u.click('#deskmenu [data-mid="panic"]'),
 				screen: () => ok(!$1('#deskmenu [data-mid="panic"]') && !S().playing, "playing " + S().playing), machine: () => ok(!playing() && results.some(r => r.op === "panic" && r.ok), "playing " + playing()), within: 3000 },
@@ -4298,7 +4341,7 @@ const MmJourneys = (() => {
 		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixHeads, mixSolo, soloSaved, shiftMutes, routing, mixMeters, panTrim, msOff, msViews, railLamps, railLampsFwd,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, followPlayed, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, modeCycle, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
-		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
+		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, laneDrawSlide, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
 		valueKeys, soundCopy, screenDrag, filterEnv, lfoLocksJ, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
 		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach, ...Object.values(learnJ)];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;

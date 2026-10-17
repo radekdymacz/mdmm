@@ -240,9 +240,9 @@
 <figure class="gd-shot"><img src="/guide/shots/e2e-mm-seq-step-record.webp" width="1440" height="924" alt="Step recording"><figcaption>Step recording</figcaption></figure>
 <p>On the machine a second press of <kbd class="gd-key">[PLAY]</kbd> pauses. In the editor:</p>
 <ol class="gd-steps"><li>Hold <kbd class="gd-key">[⇧]</kbd> and click the play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The machine holds its step. The play key blinks and <b class="gd-light">&lt;POSITION&gt;</b> keeps the step.</li><li>Click the play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd> again. The machine goes on from the step it held.</li><li>To end the pause instead, choose <b class="gd-ui">Stop</b> in the transport menu. <b class="gd-light">&lt;POSITION&gt;</b> reads --.--.</li></ol>
-<p>The transport menu has Play or Stop, Pause or Continue, Live record and Panic, each with its key. Right-click the play key to open it, or click the small ▾ in the key's corner.</p>
+<p>The transport menu has Play or Stop, Pause or Continue, Live record and Panic, each with its key. Right-click the play key to open it. With the play key focused, Shift+F10 or the menu key opens it too.</p>
 <p>On the machine a double press of <kbd class="gd-key">[STOP]</kbd> rewinds the pattern and silences the notes. In the editor this is <b class="gd-ui">Panic</b>.</p>
-<ol class="gd-steps"><li>Press the play key. The machine plays.</li><li>Click the small ▾ in the corner of the play key. The transport menu opens with <b class="gd-ui">Panic</b> in it.</li><li>Click <b class="gd-ui">Panic</b>. Every note goes off and the machine stops.</li></ol>
+<ol class="gd-steps"><li>Press the play key. The machine plays.</li><li>Right-click the play key. The transport menu opens with <b class="gd-ui">Panic</b> in it.</li><li>Click <b class="gd-ui">Panic</b>. Every note goes off and the machine stops.</li></ol>
 <p>Right-click the play key for the same menu, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[.]</kbd>. The editor sends All Notes Off on the channel of each track and stops the machine. The notes fade out with their release.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Over a MIDI cable the pause is MIDI Stop and Continue, which the Monomachine takes only with <b class="gd-light">&lt;TRANSPORT&gt;</b> set to ACCEPT (GLOBAL, CONTROL IN). The editor asks to set it the first time.</p></aside>
 <p>COPY, CLEAR and PASTE are the three keys under the LCD, <b class="gd-light">&lt;COPY&gt;</b>, <b class="gd-light">&lt;CLR&gt;</b> and <b class="gd-light">&lt;PASTE&gt;</b>, with <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>, <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> and <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>. What they act on depends on the workspace:</p>
@@ -1050,7 +1050,7 @@
 <h4 class="gd-h3">Copy a note with its locks</h4>
 <p>The locks of a step go with the step when you copy it. Right-click a note with a lock, choose <b class="gd-ui">Copy</b>, right-click an empty step and choose <b class="gd-ui">Paste here</b>. The new step has the pitch and the lock. See &quot;Note copy&quot; in chapter 11.</p>
 <h4 class="gd-h3">Slide</h4>
-<p>A small ramp over a note marks a step that glides. Set it with <b class="gd-ui">Slide</b> in the step menu. On a step with a slide, a locked value glides to the next lock instead of jumping. See &quot;Slide&quot; in chapter 15.</p>
+<p>A small ramp over a note marks a step that glides. Set it with <b class="gd-ui">Slide</b> in the step menu. On a step with a slide, a locked value glides to the next lock instead of jumping. Shift-drag from a lock in the lane draws it; Shift-drag from an empty step draws a ramp of locks. See &quot;Slide&quot; in chapter 15.</p>
 </div></section>
 <section class="gd-sec" id="parameter-locks-in-live-recording-mode">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-58</span></span></aside>
@@ -1148,6 +1148,8 @@
 <div class="gd-body gd-prose"><h2>SLIDE</h2>
 <p>A slide makes a locked value glide to the next lock instead of jumping. Without a lock on the step a slide does nothing. The glide of a pitch is PORTAMENTO, in the trig setup.</p>
 <ol class="gd-steps"><li>Right-click a step in the roll, or select steps and click the ⋯ on the selection.</li><li>Choose <b class="gd-ui">Slide</b>. A tick shows when every selected step slides. On a selection it sets every step, in one undo step.</li><li>A small ramp over a note shows a step that slides and holds a lock. In the lock lane the glide is drawn from one lock to the next.</li></ol>
+<p>You can also draw it in the lock lane. Press on the dot at the top of a lock bar and drag sideways to the right. A dotted ramp shows where the glide goes: to the next lock of that parameter on a step with a trig, whatever further you drag. Trigs between them without a lock do not stop it. Let go and the step slides, in one undo step. A slide belongs to the step, so every parameter locked there glides to its own next lock. If the parameter has no later lock, the lane says so and nothing is set. Click the ramp's line to take the slide off. Dragging up or down from the dot changes the lock as before.</p>
+<p>Shift-drag from a lock draws a slide. Shift-drag from an empty step draws a ramp of locks. Hold Shift on a lock bar and drag sideways out of its column. A line follows the pointer and the next lock of that parameter is marked as the target. Drop on that lock and the step slides, in one undo step. Drop anywhere else, press Esc, or move left of the start, and nothing is set. If there is no later lock, the line still follows and the drop does nothing.</p>
 <p>To copy, paste or clear the slide row of a track, tick <b class="gd-ui">Slide</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu (chapter 11, &quot;Super copy&quot;). Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take each back.</p>
 </div></section>
 <section class="gd-sec" id="the-mute-mode">
@@ -1798,7 +1800,7 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.B-3</span></span></aside>
 <div class="gd-body gd-prose"><h2>CC: ALL NOTES OFF</h2>
 <p>The panic command, <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[.]</kbd> or <b class="gd-ui">Panic</b> in the transport menu, lets every held note go. It sends controller 123 on the channel of each track. Controller 120, which the manual names for this, does nothing on OS 1.32B.</p>
-<ol class="gd-steps"><li>Press <kbd class="gd-key">[SPACE]</kbd>. The machine plays.</li><li>Click the small ▾ in the corner of the play key and click <b class="gd-ui">Panic</b>. Every note goes off and the machine stops.</li></ol>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[SPACE]</kbd>. The machine plays.</li><li>Right-click the play key and click <b class="gd-ui">Panic</b>. Every note goes off and the machine stops.</li></ol>
 </div></section>
 <section class="gd-sec" id="nrpn-parameters">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.B-5</span></span></aside>
