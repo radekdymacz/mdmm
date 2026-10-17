@@ -1098,7 +1098,12 @@ namespace dsp56k
 
 	void JitOps::op_Max(TWord)
 	{
-		AluRef a(m_block, 0, true);
+		// MAX only writes the destination accumulator B; A is a read-only source.
+		// Take A as a read-only temp copy (NOT an AluRef, which defaults to write=true):
+		// a writeback of A here gets latched and, when MAX carries a parallel move into A
+		// (e.g. the coef builder's `max a,b  x1,a`, $20AE1D), the deferred A
+		// writeback clobbers that move in the parallel-op epilog. See unittest max_parallel().
+		AluReg a(m_block, 0, true);
 		AluReg b(m_block, 1, false);
 
 		aluSignextendTo64(a);
@@ -1113,7 +1118,6 @@ namespace dsp56k
 #endif
 		ccr_update_ifLess(CCRB_C);
 
-		m_dspRegs.mask56(a);
 		m_dspRegs.mask56(b);
 	}
 

@@ -163,6 +163,7 @@ namespace dsp56k
 		// multiply
 		mpyi();
 		mpy_su();
+		max_parallel();
 
 		// newly implemented
 		eor_xx();
@@ -5093,4 +5094,35 @@ namespace dsp56k
 
 		verify(dsp.aluA().var == 0x00000003000000);	// 3 adds total
 	}
+
+	void UnitTests::max_parallel()
+	{
+		// Regression for the coef-builder $47b: `max a,b  x1,a` (opcode $20AE1D).
+		// The parallel move x1->a MUST be applied alongside the ALU max. The JIT's op_Max
+		// took its accumulator via AluRef(...,true) which writes `a` back; in the parallel-op
+		// latch commit that OVERWROTE the x1->a move, leaving `a` unchanged. The interpreter's
+		// op_Max never touches reg.a, so it was already correct -> a JIT-only divergence that
+		// only surfaces when MAX carries a parallel move into A/B. Caught by diffing our DSP
+		// against Freescale sim56300 (which keeps a=x1). Runs on JIT + interpreter.
+		auto chk = [&](const uint64_t aIn, const uint64_t bIn, const TWord x1In,
+					   const uint64_t expA, const uint64_t expB, const char* tag)
+		{
+			runTest([&]()
+			{
+				dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(aIn)));
+				dsp.setALU(true , TReg56(static_cast<TReg56::MyType>(bIn)));
+				dsp.regs().x.var = static_cast<uint64_t>(x1In) << 24;	// x1 = hiword(x), x0 = 0
+				emit(0x20AE1D);											// max a,b  x1,a
+			}, [&]()
+			{
+				verify(dsp.aluA().var == expA);	// the parallel move x1 -> a (the JIT regression)
+				verify(dsp.aluB().var == expB);	// the ALU max result -> b
+			});
+		};
+		// a<b — the firmware case: min_q (a, negative) vs formula (b, positive). b kept, move applies.
+		chk(0xFFF15A00000000ULL, 0x0008A593E88000ULL, 0x03050A, 0x0003050A000000ULL, 0x0008A593E88000ULL, "minq<0 movex1");
+		// a>b — transfer performed (b<-a); the parallel move into A must STILL apply.
+		chk(0x00400000000000ULL, 0x00100000000000ULL, 0x123456, 0x00123456000000ULL, 0x00400000000000ULL, "a>b movex1");
+	}
+
 }
