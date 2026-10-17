@@ -133,6 +133,7 @@ namespace  dsp56k
 		void max_parallel();
 		void tst();
 		void nop();
+		void timerPrescaler();
 		void bitmodOnSR();
 		void bitmodOnSR_deferredCCR();
 
