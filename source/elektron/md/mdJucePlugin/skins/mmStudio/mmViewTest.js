@@ -217,7 +217,7 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 	p.host.intent("machine", { t: 2, model: 13, keepFx: false });
 	p.run();
 	const mc = lastOp(p, "machine");
-	check(mc && mc.k === 0 && mc.model === 13 && S.tracks[2].m === "FX-REVERB" && S.tracks[2].v.AMP[2] === 127 && S.tracks[2].v.FLT[1] === 127 && S.tracks[2].inp === "NEIBOR",
+	check(mc && mc.k === 0 && mc.model === 13 && S.tracks[2].m === "FX-REVERB" && S.tracks[2].v.AMP[2] === 64 && S.tracks[2].v.AMP[3] === 64 && S.tracks[2].v.FLT[1] === 127 && S.tracks[2].inp === "NEIBOR",
 		"a machine: k, the machine's id; FX-REVERB with its start values, shown at once");
 	p.recv([result(mc, false, ["no"])]);
 

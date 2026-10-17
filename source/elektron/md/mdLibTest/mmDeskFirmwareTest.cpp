@@ -3144,6 +3144,37 @@ namespace
 
 	int anotherMachine(const int _model) { return _model == 3 ? 5 : 3; }	// SID-6581 or SWAVE-PULS
 
+	// B-166: what the firmware's own machine change leaves in the AMP page of a track, for each machine: a machine change
+	// by 0x5B alone (no page values from the editor), read from the machine's memory
+	void fxDefaults(const Bytes& _rom)
+	{
+		std::puts("machine change, AMP page by machine (B-166)");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		r.run(1500);
+		int gid = 8000;
+		for(const int id : {3, 13, 14, 15, 16, 3, 17, 18, 19, 0, 13, 12})
+		{
+			const auto* info = ed::mmMachine(static_cast<uint8_t>(id));
+			if(!info)
+				continue;
+			auto k = *r.desk->workingKit();
+			k.machines[4] = static_cast<uint8_t>(id);
+			r.msg(R"({"op":"set","id":)" + std::to_string(++gid) + R"(,"kind":"workingKit","doc":)" + ed::json::write(ed::mmKitToJson(k)) + "}");
+			r.run(800);
+			const auto mem = workingKitInMemory(r);
+			if(!mem)
+				continue;
+			const auto& a = mem->tracks[4].pages[1];
+			std::printf("  %-12s fx %d  memory machine %d  AMP ATK %d HLD %d DEC %d REL %d DIST %d VOL %d PAN %d PORT %d\n", info->name, info->fx ? 1 : 0,
+				mem->machines[4], a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]);
+		}
+	}
+
 	// B-027: a track's machine changed on the Sound page stays, with the kit's other unsaved edits, after what the
 	// tester did next: back on the Sequence page a step of the pattern that plays (its dump, taken on SYSEX RECV, makes
 	// the OS 1.32B load the kit the pattern links from its slot), stopped and while playing; PLAY and STOP; another
@@ -5336,6 +5367,8 @@ int main(const int _argc, char** _argv)
 			machineStays(rom);
 			machineStaysHw(rom);
 		}
+		if(only == "fxdefaults")
+			fxDefaults(rom);
 		if(only == "machine" || only == "pianoroll")
 			pianoRollKeepsSound(rom);
 		if(only == "ampenv")

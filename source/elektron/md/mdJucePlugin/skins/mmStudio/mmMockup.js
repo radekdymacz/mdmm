@@ -100,6 +100,8 @@ const TAB={"FM+STAT.1FRQ":FMFRQ,"FM+STAT.2FRQ":FMFRQ,"FM+PAR.1FRQ":FMFRQ,"FM+PAR
  "DPRO-DDRW.WAV1":WAVD,"DPRO-DDRW.WAV2":WAVD,"DPRO-DENS.WAVE":WAVD};
 /* B-148: the filter envelope's BOFS and WOFS are -64 to +63 on the machine (OS 1.32B LCD at both ends; 64 = no sweep) */
 const SIGNED=new Set(["PAN","EQG","DIST","DSND","TUNE","PB","BOFS","WOFS"]);
+/* B-166: AMP DEC and REL of an FX machine as the hardware starts it (a tester on Discord: 64, not 127) */
+const FX_AMP_DEF=64;
 const DEFV={SYN:[0,0,0,0,0,0,0,64],AMP:[0,40,64,20,64,100,64,0],FLT:[0,127,0,0,0,40,64,64],EFX:[64,64,0,32,64,0,0,127],LFO:[2,1,1,0,1,32,0,0],MID:[64,100,64,0,0,0,0,0]};
 
 /* Note names, the MM way: C-4 = MIDI 60 */
@@ -116,6 +118,7 @@ const $=q=>document.querySelector(q),$$=q=>[...document.querySelectorAll(q)];
 function clamp(v,a=0,b=127){return Math.max(a,Math.min(b,v))}
 const newArp=()=>({MODE:0,PLAY:1,SPD:6,RNGE:1,OJMP:0,amp:1,flt:1,lfo:1,len:8,rhy:Array(16).fill(true),ofs:Array(16).fill(0)});
 const newAssign=()=>({mirr:true,hpf:true,lpf:true,tabs:{"JOY RL":[{pg:3,d:1,add:88},{pg:2,d:5,add:64}],"JOY U":[{pg:5,d:7,add:94},{pg:3,d:3,add:64}],"JOY D":[{pg:3,d:0,add:40},{pg:2,d:5,add:64}],VEL:[{pg:2,d:5,add:84},{pg:3,d:7,add:64}],KEY:[{pg:3,d:0,add:64},{pg:3,d:1,add:64}]}});
+const LEV_DEF=100;/* the level a new track has (newTrack, the cleared kit) */
 function synDefaults(m){const p=MACH[m].p;return Array.from({length:8},(_,i)=>{const n=p[i];if(!n)return 0;if(n==="TUNE")return 64;if(n==="INP")return 100;if(n==="MIX")return 64;return({UNIL:40,UNIW:20,UNIX:0,SUB1:30,PW:64,VOC1:64,VOC2:64,"V-SW":1,CVOL:100,LP:127,GATE:127,DEC:64,"1ENV":80,TONE:64,PCH2:63,PCH3:63,PCH4:63})[n]??0})}
 function newTrack(m,name){return{m,name,v:{SYN:synDefaults(m),AMP:[...DEFV.AMP],FLT:[...DEFV.FLT],EFX:[...DEFV.EFX],LF1:[...DEFV.LFO],LF2:[...DEFV.LFO],LF3:[...DEFV.LFO]},
  lev:100,out:{AB:true,CD:false,EF:false},inp:"NEIBOR",mute:false,solo:false,steps:Array(64).fill(null),slide:new Set(),swing:new Set([1,3,5,7,9,11,13,15].flatMap(x=>[x,x+16,x+32,x+48])),
@@ -3621,13 +3624,13 @@ ED.lane={draw(g,W,H,c){const G=laneGeom(c),t=G.t,tr=trk(t),ink=cssv("--ink");if(
   if(!audible(t))g.globalAlpha=.45;
   /* the keys sit in the rows' left gutter, as a DAW's piano roll: white keys the gutter's width, black keys from
      its left edge; C and the top row are named on the key's right end. The hovered row is lit, the key held lit more */
-  if(G.big){const X0=G.firstX,KW=G.kw,BW=Math.round(KW*.55),led=cssv("--led"),hov=S.rollHov?.t===t?S.rollHov.n:null,held=rollDrag?.mode==="key"?rollDrag.n:null;
+  if(G.big){const X0=G.firstX,KW=G.kw,BW=Math.round(KW*.55),led=cssv("--led"),hov=S.rollHov?.t===t?S.rollHov.n:null,lit=rollLit(t);
    for(let n=G.lo;n<=G.hi;n++){const y=G.y(n),blk=[1,3,6,8,10].includes(n%12);if(blk){g.fillStyle=inkA(.05);g.fillRect(X0,y,G.lastX-X0,G.rh)}
    if(!inScale(tr,n)){g.fillStyle=inkA(.07);for(let x=X0;x<G.lastX;x+=6)g.fillRect(x,y,3,G.rh)}
    if(n%12===0){g.fillStyle=inkA(.3);g.fillRect(X0,y+G.rh-.5,G.lastX-X0,1)}
-   if(n===hov||n===held){g.fillStyle=inkA(n===held?.16:.09);g.fillRect(X0,y,G.lastX-X0,G.rh)}
+   if(n===hov||lit.has(n)){g.fillStyle=inkA(lit.has(n)?.16:.09);g.fillRect(X0,y,G.lastX-X0,G.rh)}
    g.fillStyle=inkA(.12);g.fillRect(0,y+.5,KW,G.rh-1);if(blk){g.fillStyle=ink;g.fillRect(0,y+.5,BW,G.rh-1)}
-   if(n===hov||n===held){g.save();g.globalAlpha=n===held?.85:.45;g.fillStyle=led;g.fillRect(0,y+.5,blk?BW:KW,G.rh-1);g.restore()}
+   if(n===hov||lit.has(n)){g.save();g.globalAlpha=lit.has(n)?.85:.45;g.fillStyle=led;g.fillRect(0,y+.5,blk?BW:KW,G.rh-1);g.restore()}
    if(n%12===0||n===G.hi){g.fillStyle=ink;g.font="9px Silkscreen, monospace";g.textAlign="right";g.fillText(noteName(n),KW-3,y+G.rh/2+3.5);g.textAlign="left"}}}
   else{g.fillStyle=ink;g.font="8px Silkscreen, monospace";const ns=tr.steps.slice(0,S.len).flatMap(x=>x?.n||[]);if(ns.length){const mn=Math.min(...ns),mx=Math.max(...ns);g.fillText(mn===mx?noteName(mn).replace("-",""):noteName(mn).replace("-","")+"-"+noteName(mx).replace("-",""),G.lastX+4,11)}const st=rowStatus(t);if(st)g.fillText(st,G.lastX+4,H-5)}
   G.vs.forEach(s=>{const x=G.col[s];if(!x)return;if(s%4===0){g.fillStyle=inkA(G.big?.1:.07);g.fillRect(x.x0,0,x.x1-x.x0,G.H)}});
@@ -3669,6 +3672,8 @@ function laneHit(c,e){const G=laneGeom(c),r=c.getBoundingClientRect(),x=e.client
 S.rollHov=null;
 const rollRow=(c,G,e)=>{const r=c.getBoundingClientRect(),n=G.lo+G.rows-1-Math.floor((e.clientY-r.top-G.top)/G.rh);return n>=G.lo&&n<=G.hi?n:null};
 const onKeys=(c,G,e)=>e.clientX-c.getBoundingClientRect().left<G.firstX-1.5;
+/* I-051: the roll's keys are lit as the Perform keyboard's: while held by the mouse, the computer keyboard or a MIDI keyboard */
+function rollLit(t){const l=new Set();if(rollDrag?.mode==="key"&&rollDrag.n!=null)l.add(rollDrag.n);for(const h of KB.held.values())if(h.t===t)l.add(h.n);KBLIT.midi.forEach(n=>l.add(n));return l}
 function rollKey(t,n){rollDrag.n=n;if(n!=null)keyNote(t,n,KB.vel)}
 document.addEventListener("pointerout",e=>{const c=e.target.closest?.("canvas.roll");if(c&&!c.contains(e.relatedTarget)&&S.rollHov){S.rollHov=null;drawEd(c)}});
 /* ===== Draw or select, and note lengths (I-007, I-010; 58-roll.js has what the machine does with a length) =====
@@ -5102,7 +5107,7 @@ function drawPicker(){const tr=trk(S.sel),list=machList(S.pickFam);
    track go with the old machine (clearLane each) */
 function setMachine(v){const t=S.sel,tr=trk(t);const old=tr.m,synLocks=trackLockPids(t).filter(p=>p.startsWith("SYN."));tr.m=v;tr.name=machName(v);tr.v.SYN=synDefaults(v);if(!S.keepFx){tr.v.AMP=[...DEFV.AMP];tr.v.FLT=[...DEFV.FLT];tr.v.EFX=[...DEFV.EFX];tr.v.LF1=[...DEFV.LFO];tr.v.LF2=[...DEFV.LFO];tr.v.LF3=[...DEFV.LFO]}
  for(const k of [...S.locks.keys()]){const[x,p]=k.split("|");if(+x===t&&p.startsWith("SYN."))S.locks.delete(k)}
- if(isFx(v)&&!isFx(old)){tr.inp=t===0?"INP AB":"NEIBOR";tr.v.AMP[2]=127;tr.v.AMP[3]=127;toast(`${v} needs audio in: input ${tr.inp}. AMP DEC and REL are at 127 so the sound passes.`)}
+ if(isFx(v)&&!isFx(old)){tr.inp=t===0?"INP AB":"NEIBOR";tr.v.AMP[2]=FX_AMP_DEF;tr.v.AMP[3]=FX_AMP_DEF;toast(`${v} needs audio in: input ${tr.inp}.`)}
  if(!S.lane.startsWith("SYN.")||pname(t,S.lane))0;else S.lane="FLT.1";
  edit("machine",{t,model:MACH[v].id,keepFx:!!S.keepFx});synLocks.forEach(pid=>edit("clearLane",{t,...pidArgs(pid)}));closePicker();render()}
 document.addEventListener("click",e=>{
@@ -5325,7 +5330,7 @@ function flashTracks(ts){ts.forEach(i=>{const l=$(`[data-lamp="${i}"]`);if(!l)re
    mouse holds and those the computer keyboard holds (KB.held), mi those a MIDI keyboard holds (the plug-in's midiHeld) */
 const KBLIT={mouse:null,midi:new Set()};
 function kbLit(n){return(KBLIT.mouse===n||[...KB.held.values()].some(h=>h.n===n)?" dn":"")+(KBLIT.midi.has(n)?" mi":"")}
-function paintKb(){$$(".kb [data-key]").forEach(k=>{const c=kbLit(+k.dataset.key);k.classList.toggle("dn",c.includes("dn"));k.classList.toggle("mi",c.includes("mi"))})}
+function paintKb(){$$("canvas.roll[data-big]").forEach(drawEd);$$(".kb [data-key]").forEach(k=>{const c=kbLit(+k.dataset.key);k.classList.toggle("dn",c.includes("dn"));k.classList.toggle("mi",c.includes("mi"))})}
 function setMidiHeld(notes){KBLIT.midi=new Set(notes||[]);paintKb()}
 /* a key shown held by the mouse (null: none) and the keyboard's info line (null: unchanged) */
 function setKeyDown(n,info){KBLIT.mouse=n;paintKb();const el=$("#kbinfo");if(el&&info!=null)el.textContent=info}
@@ -5835,7 +5840,7 @@ function songAction(a){const i=S.songSel,r=S.song[i];
  render()}
 function songStep(k,d){const r=S.song[S.songSel];
  if(k==="pat")r.pat=(r.pat+d+128)%128;if(k==="rep")r.rep=Math.max(1,Math.min(64,r.rep+d));if(k==="bpm")r.bpm=Math.max(30,Math.min(300,(r.bpm||S.bpm)+d));
- if(k==="trn")r.trn=clamp((r.trn??64)+d,28,100);
+ if(k==="trn")r.trn=clamp((r.trn??64)+d,0,127)/* B-167: -64 to +63 as the pattern transpose, not the mockup's +-36 */;
  if(k==="ofs"){const L=patLen(r.pat);r.ofs=Math.max(0,Math.min(L-1,(r.ofs||0)+d));if(r.len&&r.ofs+r.len>L)r.len=L-r.ofs}
  if(k==="len"){const L=patLen(r.pat);r.len=Math.max(1,Math.min(L-(r.ofs||0),rowLen(r)+d))}
  if(k==="to")r.to=Math.max(0,Math.min(r.type==="jump"?S.song.length-1:S.songSel-(r.type==="loop"?1:0),r.to+d));
@@ -6465,7 +6470,7 @@ main.addEventListener("wheel",e=>{
  const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el){e.preventDefault();const d=(e.deltaY||e.deltaX)<0?1:-1;stepV(el,d*(e.shiftKey?10:1));return}
  const st=e.target.closest(".mst");if(st){const t=+st.dataset.t,s=+st.dataset.s,x=trk(t).steps[s];if(!x?.n)return;e.preventDefault();const d=((e.deltaY||e.deltaX)<0?1:-1)*(e.shiftKey?12:1);x.n=x.n.map(n=>clamp(n+d));editStep(t,s);refreshRow(t);return}
  const roll=e.target.closest("canvas.roll[data-big]");if(roll){e.preventDefault();const t=+roll.dataset.t;S.rollLoT[t]=clamp((S.rollLoT[t]??S.rollLo)+((e.deltaY)<0?1:-1)*(e.shiftKey?12:2),0,127-ROWS);redraw()}},{passive:false});
-main.addEventListener("dblclick",e=>{const el=e.target.closest(".pc[data-g]");if(el&&!ValueEdit.isOpenClick(e)){const m=ref(el)[2];setV(el,m.def??(m.en?0:64))}});
+main.addEventListener("dblclick",e=>{const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el&&!ValueEdit.isOpenClick(e)){const m=ref(el)[2];/* I-052: a Mix level goes back to the kit default, 100, as on the Machinedrum Editor */setV(el,el.dataset.g==="lev"?LEV_DEF:m.def??(m.en?0:64))}});
 main.addEventListener("keydown",e=>{const el=e.target.closest("[data-g]");if(!el)return;if(e.key==="Enter"&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&el.matches(".pc,.fader")){e.preventDefault();ValueEdit.open(el,ValueBox);return}const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1,PageUp:10,PageDown:-10}[e.key];if(d==null)return;e.preventDefault();stepV(el,d*(e.shiftKey?10:1))});
 
 /* ===== Clicks ===== */
@@ -6534,7 +6539,7 @@ document.addEventListener("click",e=>{
   const rw=e.target.closest(".scell:not(.empty),.db[data-row]");if(rw){S.songSel=+rw.dataset.row;render();return}
   const ra=e.target.closest("[data-rowact]");if(ra){songAction(ra.dataset.rowact);return}
   const stp=e.target.closest("[data-step]");if(stp){songStep(stp.dataset.step,+stp.dataset.d*(e.shiftKey?10:1));return}
-  const tt=e.target.closest("[data-ttr]");if(tt){const r=S.song[S.songSel];r.ttr=r.ttr||T64();const k=+tt.dataset.ttr;r.ttr[k]=clamp(r.ttr[k]+ +tt.dataset.d,28,100);editRow();render();return}
+  const tt=e.target.closest("[data-ttr]");if(tt){const r=S.song[S.songSel];r.ttr=r.ttr||T64();const k=+tt.dataset.ttr;r.ttr[k]=clamp(r.ttr[k]+ +tt.dataset.d,0,127);editRow();render();return}
   const mk=e.target.closest("[data-rowmute]");if(mk){const r=S.song[S.songSel],k=+mk.dataset.rowmute;r.mutes=r.mutes||[];r.mutes=r.mutes.includes(k)?r.mutes.filter(x=>x!==k):[...r.mutes,k];editRow();render();return}
   if(e.target.closest("[data-bpmkeep]")){const r=S.song[S.songSel];r.bpm=r.bpm?undefined:Math.round(S.bpm);editRow();render();return}
   if(e.target.closest("[data-rowmore]")){S.songMore=!S.songMore;render();return}

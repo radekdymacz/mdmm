@@ -3,6 +3,16 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-052 · Monomachine Mix: double-click a track's level resets it to the default
+
+- **From:** a beta tester on Discord, 2026-10-17. On the Machinedrum Editor a double-click on a level fader sets it to its default; the Monomachine Mix did nothing.
+- **Status:** built for 0.8.0. The Machinedrum Editor sets a LEVEL fader to 100 on a double-click; the Monomachine's new tracks and cleared kit start at LEVEL 100 too (`LEV_DEF`), so a double-click on a Mix level fader (or its number) sets 100: one edit, one undo step. Other values keep their default (64 or the row's own). Page: `130-main.js` (dblclick), `50-state.js`; journey `mm-mix-level-reset`; guide: Mix.
+
+## I-051 · Monomachine Pattern: the roll's keys light when played, as on Perform
+
+- **From:** a beta tester on Discord, 2026-10-17. The keyboard on Perform lights a key when it is pressed; the piano-roll keys on the Pattern tab should do the same.
+- **Status:** built for 0.8.0. The roll's key column already lit a key under the mouse; it now also lights the keys held on the computer keyboard (A S D F ... and W E T Y U ...) and on a MIDI keyboard (the plug-in's held notes), like the Perform keyboard, and goes dark on release. Page: `rollLit` (70-seq.js), `paintKb` (110-perform.js); journey `mm-seq-keyboard-lit`; guide: Pattern, the piano roll.
+
 ## I-044 · Name the workspaces as the manuals do: SEQUENCE becomes PATTERN, SOUND becomes KIT
 
 - **From:** a beta tester on Discord (suggestion to match the machines' manuals); decided by Radek, 2026-10-16.

@@ -4,6 +4,18 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-167 · Monomachine: the editor does not allow the machine's full pitch range ("about 11 octaves")
+
+- **From:** a beta tester on Discord, 2026-10-17 (0.8): the synthesis engines and the sequencer cover about 11 octaves; the editor does not allow all of it.
+- **Checked (Claude Code, 2026-10-17):** the machine plays MIDI notes 0 to 127 (the core refuses others, `mmDeskEdit.cpp`); that is 10.6 octaves. 0.8 already widened Z / X (-4 to +6) and the Perform keyboard (I-040). Everything else matches the machine: the piano roll scrolls over all 128 notes (24 rows, lowest row 0 to 103) and a drawn note clamps to 0-127; the track transpose (TRACK) and the pattern transpose (PAT) run -64 to +63; the arpeggiator RNGE has 1 to 9 octaves (the machine's own list); the TRANSPOSE keys and the Z / X / Perform octave moves clamp at the note limits only. **One tighter clamp found:** the Song page's row transpose (TRN) and the six track transposes of a row (SONG TRACK TRANSPOSE) stopped at -36 and +36 (a leftover of the browser mockup, `clamp(..,28,100)`), where the pattern transpose runs -64 to +63.
+- **Status:** built for 0.8.0. Song row TRN and TR1..6 now run -64 to +63 as the pattern transpose (clamp 0-127 of the stored byte; the manual gives no range for the song transposes, and the firmware stores the byte as it is, so this was not read from the firmware's own screen: if a tester finds the machine stops sooner, narrow it again). Nothing else changed: the rest already matches. Page: `120-song.js`, `130-main.js`.
+
+## B-166 · Monomachine: FX machines start with AMP DEC and REL at 127, the hardware starts them at 64
+
+- **From:** a beta tester on Discord, 2026-10-17 (0.8). On the AMP page of FX-REVERB, FX-CHORUS, FX-THRU and the other FX machines DEC and REL are 127 in the editor; on the hardware the default is 64.
+- **Cause:** a deliberate editor choice (0.2): picking an FX machine on a track that had none set DEC and REL to 127 "so the sound passes", on the page (`90-sound.js` setMachine, `mmView.js` machineWrites) and in the core (`mmDeskEdit.cpp` assignMachine). The firmware itself does not do this: a machine change by SysEx 0x5B leaves the AMP page as it was (probe `mmDeskFirmwareTest <rom> fxdefaults`, all 8 FX machines and 4 others, the OS 1.32B ROM). So the tester's report is the only source for the hardware's own start value; the ROM has no start-up values to read for a machine picked from the panel.
+- **Status:** built for 0.8.0. An FX machine picked on a track that had none now sets DEC and REL to 64 (page `FX_AMP_DEF`, core `assignMachine`); the input rule (INP AB / NEIBOR) is unchanged, the toast no longer talks about 127. Defaults apply only when a machine is picked: saved projects and kits are untouched. Tests: `mmViewTest`, journeys `mm-machine-*` (FX input), `mmDeskTest`.
+
 ## B-165 · Monomachine Editor: at 1100 x 800 the Song page's song list is cut off on the right and its bottom row is clipped
 
 - **From:** found by Claude Code while checking the song row marks (I-039), 2026-10-16. Not a tester report; not caused by I-039 (the list is outside the arrangement).
