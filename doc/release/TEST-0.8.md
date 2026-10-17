@@ -42,6 +42,7 @@ The editor's log shows a `midi: in … out … dropped …` line every 10 second
 1. A lock lane shows a 2 px kit-value line with its number. Drag the line up or down: the kit value of the lane's parameter changes (the Kit page shows it) and no lock is drawn. One undo takes it back.
 2. A short click near the line still sets a lock.
 3. MM, a lock on a step without a trig shows as a hollow dashed ghost bar and the step is hatched. Alt-click erases it. A lock of 0 keeps a 2 px mark. The panel says "n locked steps" and the LCD LOCKS tip says "n of 62 locked parameters" (B-164).
+   On a real Monomachine (B-168): lock AMP VOL low on a step with no trig, with a trig on an earlier step still sounding. Does the sound drop on that step and come back at the next trig? The page says the machine plays it (probe: yes, for VOL, filter and TUNE).
 4. MM, a slide between two locks draws a ramp, above the bars, only between real locks.
 5. MM, Shift-drag from a lock draws a slide: hold Shift on a lock bar and drag sideways out of its column. A line follows the pointer and the next lock of that parameter is marked. Drop on it: the step slides, in one undo step. Drop elsewhere or press Esc: nothing changes.
 6. On a real Monomachine: a p-locked LFO parameter (for example SPD or DPTH) on one step. Does it revert to the kit value after its step? The LFO preview assumes yes (I-042). Note the answer.

@@ -4,11 +4,12 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
-## B-168 · Monomachine: the page says a lock on a step with no trig is ignored, the machine plays it
+## B-168 · Monomachine: the page says a lock on a step with no trig is ignored, the machine plays it (fixed in 0.8.0)
 
 - **From:** Claude Code, 2026-10-17, firmware probe `w13mmslide` (case M, `gapProbesFirmwareTest.cpp`).
 - **Found:** a lock on AMP VOL on a step with no trig changed the sound (VOL 20 to 90, held), with and without a slide. The lock lane draws such a lock as a ghost bar, and its tooltip, `25-mm.css` and the guide (`mm/04-quick-start.md`, `mm/13-parameter-locks.md`) say the machine ignores it. Since 0.8 such a lock is also the end of a slide.
-- **Status:** open. Only VOL was measured. Next: probe one more parameter (a filter or a pitch lock), then fix the tooltip, the CSS note, the two guide pages and the `mmLockLaneTest` text. Not in 0.8.0.
+- **Probed (Claude Code, 2026-10-17, `w13mmslide` cases MV MW MB MP MQ MR MS, MM OS 1.32B, track 1, trigs on 0 8 12, one lock on step 4, no slide; loudness and pitch as % of the same run without the lock, windows after the lock arrives, the sound reaches the output about 2.25 steps late):** AMP VOL 20 (kit 60): 11% loudness (the K20 figure for VOL 20), back to about 100% at the next trig; with a trig on step 4 as well (MR): 11%, same timing. FLT WDTH 0: 1 to 2% (with a trig, MS: 1 to 3%). FLT BASE 100: 0% (the sine is cut). SYN TUNE 127 (GND-SIN, the one SYN parameter that machine has): pitch (zero crossings) 106 to 120%, loudness 88% (with a trig, MQ: pitch 112%). PTCH is not a lock parameter on the Monomachine (a trig carries its note), so there is no pitch lock to probe. So the machine plays a lock on a step with no trig for every parameter tried, from its step to the next trig, like a lock on a trig minus the new note. The Machinedrum was not re-probed: its page claim (lock kept, never played, I-019) is the one measured in 0.5.1 and stays.
+- **Status:** fixed in 0.8.0. Wording only; the ghost bar stays (it marks "no trig here"). Tooltip: "Lock on a step without a trig: the machine plays it (value) from this step until the next trig." Also the CSS note, `70-seq.js` comment, the guide (`mm/04-quick-start.md`, `mm/13-parameter-locks.md`) and `mmLockLaneTest.js`. Probe cases MV MW MB MP MQ MR MS added to `w13mmslide`.
 
 ## B-167 · Monomachine: the editor does not allow the machine's full pitch range ("about 11 octaves")
 
