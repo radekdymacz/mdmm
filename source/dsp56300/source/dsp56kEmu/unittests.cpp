@@ -139,6 +139,7 @@ namespace dsp56k
 		subr();
 		tst();
 		nop();
+		subr_leftAligned();
 		timerPrescaler();
 		bitmodOnSR();
 		bitmodOnSR_deferredCCR();
@@ -5520,6 +5521,34 @@ namespace dsp56k
 		runInstructions(g_reload * g_compare * 4);
 
 		verify(tcf(0));
+	}
+
+	void UnitTests::subr_leftAligned()
+	{
+		struct Case { uint64_t a, b, result; TWord ccr; };
+		static constexpr Case cases[] =
+		{
+			{ 0x7fffffffffffffull, 0x00000000000001ull, 0x3ffffffffffffeull, 0x30 },
+			{ 0x80000000000000ull, 0x00ffffffffffffull, 0xbf000000000001ull, 0x38 },
+			{ 0xc0000000000000ull, 0x40000000000000ull, 0xa0000000000000ull, 0x38 },
+		};
+
+		for (const auto& c : cases)
+		{
+			runTest([&]()
+			{
+				dsp.setSR(0x000300);
+				dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(c.a)));
+				dsp.setALU(true , TReg56(static_cast<TReg56::MyType>(c.b)));
+				emit("subr b,a");
+			},
+			[&]()
+			{
+				verify(static_cast<uint64_t>(dsp.aluA().var) == c.result);
+				for (const auto bit : {CCR_C, CCR_V, CCR_Z, CCR_N, CCR_U, CCR_E})
+					verify((dsp.sr_test(bit) != 0) == ((c.ccr & bit) != 0));
+			});
+		}
 	}
 
 }
