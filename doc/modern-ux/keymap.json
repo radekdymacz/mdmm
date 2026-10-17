@@ -807,7 +807,7 @@
 			],
 			"mod": "",
 			"group": "Transport",
-			"does": "The transport menu: Play / Stop, Pause / Continue, Record, Panic (also the ▾ in the key's corner)",
+			"does": "The transport menu: Play / Stop, Pause / Continue, Record, Panic (right-click ▶; Shift+F10 or the menu key with ▶ focused)",
 			"area": "Top bar"
 		},
 		{
@@ -2613,7 +2613,7 @@
 			],
 			"mod": "",
 			"group": "Transport",
-			"does": "The transport menu: Play / Stop, Pause / Continue, Live record, Step record, Panic (also the ▾ in the key's corner)",
+			"does": "The transport menu: Play / Stop, Pause / Continue, Live record, Step record, Panic (right-click ▶; Shift+F10 or the menu key with ▶ focused)",
 			"area": "Top bar"
 		},
 		{

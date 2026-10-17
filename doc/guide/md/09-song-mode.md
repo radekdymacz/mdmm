@@ -166,7 +166,7 @@ On the machine [STOP] holds the song where it is, and [PLAY] goes on from there.
 
 1. Hold [⇧] and click the Play key, or press {key:pause}. The song holds its position. The Play key blinks.
 2. Click the Play key to go on from that position.
-3. To stop the song from the hold, choose **Stop** in the transport menu (right-click the Play key, or click its ▾). The hold ends and the position goes.
+3. To stop the song from the hold, choose **Stop** in the transport menu (right-click the Play key). The hold ends and the position goes.
 
 ![The Play key blinking while the song is held](shot:e2e-md-top-pause)
 
