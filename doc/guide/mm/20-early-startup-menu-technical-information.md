@@ -42,12 +42,12 @@ The soft reset restarts the machine and keeps its data. In the editor, close the
 The OS upgrade runs on the real machine. The editor does not upgrade the OS. It runs the Monomachine OS 1.32B that you give it as a ROM.
 
 ## MKI / MKII DIFFERENCES
-<!-- rows: MM-322 @0634ce -->
+<!-- rows: MM-322 @19ab03 -->
 
 The MKI and the MKII run the same OS. The MKII adds the user waveforms of the DigiPRO machines. The editor draws the panel of either model.
 
-1. Click **MKI** or **MKII** at the right of the top bar. The panel changes to the other model: the MKI has a light-blue LCD, the MKII a bluish-white one.
-2. Click it again to go back.
+1. Open the engine menu at the left of the LCD and choose **PLATE: MKI** or **PLATE: MKII**. The panel changes to the other model: the MKI has a light-blue LCD, the MKII a bluish-white one.
+2. Choose it again to go back.
 
 ![The MKII panel](shot:e2e-mm-top-plate)
 
