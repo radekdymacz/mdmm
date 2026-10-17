@@ -551,6 +551,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | WHAT YOU DRAW IS WHAT PLAYS | What you draw is what plays | What you enter in the sequencer is what the machine plays. | ✅ | Pattern: the grid or the roll; Alt+Delete clears the pattern; Cmd+Z takes it back | e2e: drawn, played, cleared, undone, each checked on the machine's output | 1 | pass (mm-real-sequence-drawn) |
 | CLEAR | Clear (was Revert track) | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Kit: Clear key at the right end of the MUTATE bar, next to R |  | 1 | pass (e2e-mm-sound-revert-track) |
 |  | The selected track follows the last track played | No such function. With it on, the track you select changes to the last one you played from a MIDI keyboard. | ✅ | Engine menu: FOLLOW PLAYED TRACK (off at first) | I-003 | 1 | – |
+|  | MIDI Learn | No such function. A controller's knob or fader moves a value of your choice; the machine's own CC map stays for the rest. | ✅ | CONTROL workspace: the LEARN key (L), click a value, turn a knob both ways; the matrix and inspector list, invert and remove the mappings | CCs only (a 0/127 button is learned as an absolute value). 128 mappings at most, saved with the project, off in the HW MIDI engine. Page journeys: mm-control-learn-*, mdLearnFirmwareTest. | – | – |
 
 ## 24. Editor features with no manual counterpart (for orientation)
 
@@ -562,11 +563,11 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 362 |
+| ✅ | 363 |
 | 🟡 | 14 |
 | ❌ | 1 |
 | ➖ | 34 |
-| Total | 411 |
+| Total | 412 |
 
 ### Top gaps, ranked (our UI)
 
