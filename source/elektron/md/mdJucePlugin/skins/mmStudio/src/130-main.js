@@ -161,7 +161,7 @@ main.addEventListener("wheel",e=>{
  const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el){e.preventDefault();const d=(e.deltaY||e.deltaX)<0?1:-1;stepV(el,d*(e.shiftKey?10:1));return}
  const st=e.target.closest(".mst");if(st){const t=+st.dataset.t,s=+st.dataset.s,x=trk(t).steps[s];if(!x?.n)return;e.preventDefault();const d=((e.deltaY||e.deltaX)<0?1:-1)*(e.shiftKey?12:1);x.n=x.n.map(n=>clamp(n+d));editStep(t,s);refreshRow(t);return}
  const roll=e.target.closest("canvas.roll[data-big]");if(roll){e.preventDefault();const t=+roll.dataset.t;S.rollLoT[t]=clamp((S.rollLoT[t]??S.rollLo)+((e.deltaY)<0?1:-1)*(e.shiftKey?12:2),0,127-ROWS);redraw()}},{passive:false});
-main.addEventListener("dblclick",e=>{const el=e.target.closest(".pc[data-g]");if(el&&!ValueEdit.isOpenClick(e)){const m=ref(el)[2];setV(el,m.def??(m.en?0:64))}});
+main.addEventListener("dblclick",e=>{const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el&&!ValueEdit.isOpenClick(e)){const m=ref(el)[2];/* I-052: a Mix level goes back to the kit default, 100, as on the Machinedrum Editor */setV(el,el.dataset.g==="lev"?LEV_DEF:m.def??(m.en?0:64))}});
 main.addEventListener("keydown",e=>{const el=e.target.closest("[data-g]");if(!el)return;if(e.key==="Enter"&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&el.matches(".pc,.fader")){e.preventDefault();ValueEdit.open(el,ValueBox);return}const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1,PageUp:10,PageDown:-10}[e.key];if(d==null)return;e.preventDefault();stepV(el,d*(e.shiftKey?10:1))});
 
 /* ===== Clicks ===== */
@@ -230,7 +230,7 @@ document.addEventListener("click",e=>{
   const rw=e.target.closest(".scell:not(.empty),.db[data-row]");if(rw){S.songSel=+rw.dataset.row;render();return}
   const ra=e.target.closest("[data-rowact]");if(ra){songAction(ra.dataset.rowact);return}
   const stp=e.target.closest("[data-step]");if(stp){songStep(stp.dataset.step,+stp.dataset.d*(e.shiftKey?10:1));return}
-  const tt=e.target.closest("[data-ttr]");if(tt){const r=S.song[S.songSel];r.ttr=r.ttr||T64();const k=+tt.dataset.ttr;r.ttr[k]=clamp(r.ttr[k]+ +tt.dataset.d,28,100);editRow();render();return}
+  const tt=e.target.closest("[data-ttr]");if(tt){const r=S.song[S.songSel];r.ttr=r.ttr||T64();const k=+tt.dataset.ttr;r.ttr[k]=clamp(r.ttr[k]+ +tt.dataset.d,0,127);editRow();render();return}
   const mk=e.target.closest("[data-rowmute]");if(mk){const r=S.song[S.songSel],k=+mk.dataset.rowmute;r.mutes=r.mutes||[];r.mutes=r.mutes.includes(k)?r.mutes.filter(x=>x!==k):[...r.mutes,k];editRow();render();return}
   if(e.target.closest("[data-bpmkeep]")){const r=S.song[S.songSel];r.bpm=r.bpm?undefined:Math.round(S.bpm);editRow();render();return}
   if(e.target.closest("[data-rowmore]")){S.songMore=!S.songMore;render();return}
