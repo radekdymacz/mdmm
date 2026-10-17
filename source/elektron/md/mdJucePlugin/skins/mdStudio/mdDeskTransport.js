@@ -174,13 +174,8 @@ Bridge.onMessage(m => {
 	toast("The machine did not show the value's knob page: no locks were removed.");
 });
 
-/* ===== the ▾ in the ▶ key's corner (the menu without a right-click) and the tempo's click ===== */
+/* ===== the tempo's click ===== */
 (() => {
-	document.addEventListener("click", e => {
-		const m = e.target.closest?.("#playmore"); if (!m) return;
-		e.preventDefault(); e.stopImmediatePropagation();
-		const r = m.getBoundingClientRect(); transportMenu(r.left, r.bottom + 2);
-	}, true);
 	const b = document.getElementById("bpm");
 	if (b) { b.setAttribute("aria-haspopup", "dialog"); DeskTransport.bindClick(b, openTempo); }
 })();
@@ -192,7 +187,7 @@ Keys.bind({ id: "tempo-nudge", short: "Nudge", scope: "any", keys: ["-", "="], g
 Keys.bind({ id: "live-erase", short: "Erase", scope: "any", keys: ["Delete", "Backspace"], group: "Transport", does: "While live recording, hold: erase the selected track's trigs as they play (EXIT/NO + its TRIG key on the machine). With a track value pressed: that parameter's locks instead (EXIT/NO + its DATA ENTRY knob)", when: () => erasing(), run: e => eraseDown(e) });
 Keys.bind({ id: "song-play-from", short: "From here", scope: "song", keys: ["Enter"], group: "Song", does: "Play the song from the selected row (▶ From here)", when: () => kbOn() && S.ws === "song" && !document.activeElement?.closest?.(".songlib,[data-rowact]"), run: () => playFromRow() });
 [
-	["transport-menu", "any", "Top bar", ["right-click ▶"], "", "Transport", "The transport menu: Play / Stop, Pause / Continue, Record, Panic (also the ▾ in the key's corner)"],
+	["transport-menu", "any", "Top bar", ["right-click ▶"], "", "Transport", "The transport menu: Play / Stop, Pause / Continue, Record, Panic (right-click ▶; Shift+F10 or the menu key with ▶ focused)"],
 	["pause-click", "any", "Top bar", ["▶"], "shift", "Transport", "Click: pause; ▶ again goes on from the step"],
 	["tempo-click", "any", "Top bar", ["tempo"], "", "Transport", "Click (no drag): the TEMPO window: − / +, TAP, nudge, change on release"],
 	["tempo-delayed", "any", "Top bar", ["tempo"], "alt", "Transport", "Drag: the tempo changes when you let go (FUNCTION held on the machine)"]
