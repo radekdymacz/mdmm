@@ -441,7 +441,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Soft reset 1-111 | Restart keeping data | Restart | ➖ | – | Reopen the editor | – | n/a |
 | MIDI upgrade, send upgrade 1-111, 1-112 | OS update over MIDI | OS update | ➖ | – | The editor loads the OS 1.32B image | – | n/a |
 | Specifications 1-113 | Data sheet | Specs | ➖ | – |  | – | n/a |
-| MKI / MKII differences 1-114 | Hardware, user waveforms | Model | ✅ | MKI / MKII plate key: each model its own look (MKI light-blue LCD, MKII bluish-white, wave 10); MKI greys the MKII-only machines | Wave 10 made the plates true to the product photos | 1 | pass (e2e-mm-top-plate) |
+| MKI / MKII differences 1-114 | Hardware, user waveforms | Model | ✅ | MKI / MKII PLATE entry of the engine menu: each model its own look (MKI light-blue LCD, MKII bluish-white, wave 10); MKI greys the MKII-only machines | Wave 10 made the plates true to the product photos | 1 | pass (e2e-mm-top-plate) |
 | Credits, contact 1-115, 1-116 | – | – | ➖ | About box |  | – | n/a |
 
 ## 21. Appendix A: machine reference (A-1 to A-15)

@@ -1,0 +1,388 @@
+{
+ "title": "Control: learned mappings, what they hide, what a load left out",
+ "about": "The Control workspace (key 6) with the plug-in's mappings: knob rows 1 and 2 on any channel with targets (one inverted), a CC learned on channel 2 that hides the machine's own CC 73 (one line under the target), a mapping on a level, and the line for what the project load left out.",
+ "boot": "stub",
+ "steps": [
+  {
+   "at": 500,
+   "send": [
+    {
+     "type": "learn",
+     "doc": {
+      "enabled": true,
+      "mappings": [
+       {
+        "index": 0,
+        "t": 2,
+        "pg": 2,
+        "i": 0,
+        "name": "p",
+        "cc": 21,
+        "ch": 255,
+        "mode": "Absolute",
+        "invert": false,
+        "overrides": []
+       },
+       {
+        "index": 1,
+        "t": 0,
+        "pg": 2,
+        "i": 1,
+        "name": "p",
+        "cc": 21,
+        "ch": 255,
+        "mode": "Absolute",
+        "invert": false,
+        "overrides": []
+       },
+       {
+        "index": 2,
+        "t": 3,
+        "pg": 0,
+        "i": 0,
+        "name": "p",
+        "cc": 22,
+        "ch": 255,
+        "mode": "Absolute",
+        "invert": true,
+        "overrides": []
+       },
+       {
+        "index": 3,
+        "t": 1,
+        "pg": 7,
+        "i": 0,
+        "name": "p",
+        "cc": 22,
+        "ch": 255,
+        "mode": "Absolute",
+        "invert": false,
+        "overrides": []
+       },
+       {
+        "index": 4,
+        "t": 0,
+        "pg": 2,
+        "i": 1,
+        "name": "p",
+        "cc": 73,
+        "ch": 1,
+        "mode": "RelativeSigned",
+        "invert": false,
+        "overrides": [
+         {
+          "ch": 1,
+          "t": 0,
+          "pg": 2,
+          "i": 1
+         },
+         {
+          "ch": 2,
+          "t": 1,
+          "pg": 2,
+          "i": 1
+         }
+        ]
+       }
+      ],
+      "learning": null,
+      "limits": {
+       "tracks": 6,
+       "max": 128,
+       "params": [
+        {
+         "pg": 0,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 0,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 1,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 2,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 3,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 4,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 5,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 0,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 1,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 2,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 3,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 4,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 5,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 6,
+         "name": "p"
+        },
+        {
+         "pg": 6,
+         "i": 7,
+         "name": "p"
+        },
+        {
+         "pg": 7,
+         "i": 0,
+         "name": "Level"
+        }
+       ]
+      },
+      "left": [
+       "$.mappings[5]: track 17 is outside 1..6"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}
