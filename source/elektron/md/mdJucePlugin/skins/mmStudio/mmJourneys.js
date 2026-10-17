@@ -177,7 +177,14 @@ const MmJourneys = (() => {
 			{ say: "click it again: the first look is back", act: u => platePick(u), screen: c => {
 				const root = document.documentElement, lcd = getComputedStyle(root).getPropertyValue("--lcd").trim();
 				return ok(root.dataset.plate === c.p0 && lcd === c.lcd0, `plate ${root.dataset.plate}, LCD ${lcd}`);
-			} }
+			} },
+			/* I-045, I-046: the LCD box has one size on both plates and no MKII print sits under it */
+			{ say: "both plates: the LCD box has one size and no print under it", act: async (u, c) => {
+				const box = () => { const r = $1(".lcdpanel").getBoundingClientRect(), g = $1(".lcdgroup").getBoundingClientRect(); return `${Math.round(r.width)}x${Math.round(r.height)} group ${Math.round(g.width)}x${Math.round(g.height)} after ${getComputedStyle($1(".lcdgroup"), "::after").content}`; };
+				c.box = {};
+				for (const pl of ["mk1", "mk2"]) { if (S().plate !== pl) await platePick(u); await until(() => S().plate === pl, 1500); await sleep(150); c.box[pl] = box(); }
+				if (S().plate !== c.p0) await platePick(u);
+			}, screen: c => ok(c.box.mk1 === c.box.mk2 && /after (none|normal)/.test(c.box.mk2), JSON.stringify(c.box)) }
 		]
 	};
 	const undoRedo = {
@@ -1755,8 +1762,8 @@ const MmJourneys = (() => {
 		name: "mm-plate-greys", proves: [],
 		steps: [go("seq"), { say: "MKI and MKII: the panel greys of the MD's MKI plate (#d9dad6, #cdcec9, #e5e6e2), the roll's ground its grey (--scr #cdcec9), the top bar's LCD light blue on MKI, bluish white on MKII", act: async (u, c) => {
 				c.p0 = S().plate; c.seen = {};
-				for (const pl of ["mk1", "mk2"]) { if (S().plate !== pl) await platePick(u); await until(() => S().plate === pl, 1500); await sleep(150); c.seen[pl] = ["--plate", "--plate2", "--plate3", "--lcd", "--scr"].map(cssTok); const roll = $1("#seq canvas.roll"), lcd = $1(".lcdpanel"); c.seen[pl].push(roll ? getComputedStyle(roll).backgroundColor : "no roll", lcd ? getComputedStyle(lcd).backgroundColor : "no lcd"); } },
-				screen: c => ok(["mk1", "mk2"].every(pl => c.seen[pl] && c.seen[pl].slice(0, 3).join() === "#d9dad6,#cdcec9,#e5e6e2" && c.seen[pl][4] === "#cdcec9" && (c.seen[pl][5] === "rgb(205, 206, 201)" || c.seen[pl][5] === "no roll")) && c.seen.mk1[3] === "#b6d2e8" && c.seen.mk2[3] === "#dfeaf1" && c.seen.mk1[6] === "rgb(182, 210, 232)" && c.seen.mk2[6] === "rgb(223, 234, 241)", JSON.stringify(c.seen)) }],
+				for (const pl of ["mk1", "mk2"]) { if (S().plate !== pl) await platePick(u); await until(() => S().plate === pl, 1500); await sleep(150); c.seen[pl] = ["--plate", "--plate2", "--plate3", "--lcd", "--scr"].map(cssTok); c.led = c.led || {}; c.led[pl] = cssTok("--ledoff"); const roll = $1("#seq canvas.roll"), lcd = $1(".lcdpanel"); c.seen[pl].push(roll ? getComputedStyle(roll).backgroundColor : "no roll", lcd ? getComputedStyle(lcd).backgroundColor : "no lcd"); } },
+				screen: c => ok(["mk1", "mk2"].every(pl => c.seen[pl] && c.seen[pl].slice(0, 3).join() === "#d9dad6,#cdcec9,#e5e6e2" && c.seen[pl][4] === "#cdcec9" && (c.seen[pl][5] === "rgb(205, 206, 201)" || c.seen[pl][5] === "no roll")) && c.led.mk1 === c.led.mk2 && /^#[78]/.test(c.led.mk2) && parseInt(c.led.mk2.slice(1, 3), 16) > parseInt(c.led.mk2.slice(5, 7), 16) + 30 && c.seen.mk1[3] === "#b6d2e8" && c.seen.mk2[3] === "#dfeaf1" && c.seen.mk1[6] === "rgb(182, 210, 232)" && c.seen.mk2[6] === "rgb(223, 234, 241)", JSON.stringify(c.seen) + JSON.stringify(c.led)) }],
 		async tidy(u, c) { if (c.p0 && S().plate !== c.p0) await platePick(u); } };
 	/* Radek's review 2026-10-15: left to right the multi envelope, the joystick, the setup and the mutes; the envelope's screen
 	   and the stick's pad start on one line and are as tall as each other; the assign rows sit under the pad, the ADSR faders under the screen. */

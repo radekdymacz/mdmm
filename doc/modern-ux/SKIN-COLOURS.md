@@ -1,5 +1,7 @@
 # Skin colours, true to the product photos (0.6, branch `feat/0.6-skins`)
 
+Update 2026-10-17 (I-045 to I-050, a beta tester on Discord): the Machinedrum MKI LCD is reddish orange (#dc4a2c) with black pixels (#0b0403) instead of green; the Monomachine MKII unlit LEDs take the MKI burgundy (#7b4035); the MKII print under the Monomachine display is gone.
+
 Radek, 2026-10-12: the Monomachine Editor looks like the machines in the product photos; the MKI / MKII plate key
 chooses the look. **The Machinedrum Editor stays as it was, by choice** (Radek, after the side-by-side comparison): the
 light MKI with the green LCD and the dark MKII, so the MD keeps its dark look. The MD photo findings and the tokens

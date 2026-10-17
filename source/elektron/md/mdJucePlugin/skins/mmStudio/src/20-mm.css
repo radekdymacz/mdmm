@@ -23,7 +23,7 @@
   color-scheme:light;
   --plate:#d9dad6;--plate2:#cdcec9;--plate3:#e5e6e2;--print:#3b3a3c;--print2:#5a585a;--print3:#787577;--rule:#a8a6a1;--body:#262527;
   --key:#1a1c22;--key2:#2a2d35;--keytext:#efeee8;--keydim:#a7a8ad;--cream:#ecebe4;--creamtext:#262527;
-  --led:#ff3b2f;--ledoff:#7a6e66;--ledg:#7fd13b;--ledgoff:#5d6656;--ledy:#e4c45c;--rec:#e2452a;
+  --led:#ff3b2f;--ledoff:#7b4035;--ledg:#7fd13b;--ledgoff:#5d6656;--ledy:#e4c45c;--rec:#e2452a;
   --lcd:#dfeaf1;--scr:#cdcec9;--ink:#121b28;--bezel:#1c1a1d;--labfill:#84434d;--labtext:#f6eff0;--knob:#141416;--rust:#b8433d;
   --trig:var(--led);--oxblood:var(--rust);--fwd:#3d8cff;
 }
@@ -451,9 +451,7 @@ canvas.roll{width:100%;display:block;border-radius:4px;background:var(--lcd);box
 .lcdpanel .f,.lcdpanel .row2{transition:opacity .3s}
 .lcdt .lt:disabled{opacity:.4;cursor:default}
 body.engwait #main,body.engwait #rail{pointer-events:none;opacity:.6;transition:opacity .3s}
-/* MKII: the only visible difference is the print under the screen */
 .lcdgroup{position:relative}
-:root[data-plate="mk2"] .lcdgroup::after{content:"MKII";position:absolute;left:50%;transform:translateX(-50%);bottom:-11px;font:600 8px var(--sans);letter-spacing:.3em;color:var(--print2)}
 /* ===== Perform: controls on top, the keyboard at the bottom ===== */
 .perf{gap:12px!important}
 .perf3{border-bottom:2px solid var(--print);padding-bottom:12px;align-items:stretch}
