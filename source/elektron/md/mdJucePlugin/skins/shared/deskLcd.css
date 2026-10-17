@@ -31,5 +31,3 @@
 @media (prefers-reduced-motion:reduce){.lcdpanel .syncf.warn .led{animation:none}}
 /* the background read of the library (READ n/m): a thin bar along the slot's foot */
 .syncf.read{background:linear-gradient(color-mix(in srgb,var(--ink) 70%,transparent),color-mix(in srgb,var(--ink) 70%,transparent)) no-repeat left bottom/calc(var(--rf,0) * 100%) 2px}
-/* the MKII print sits centred under the display's bezel */
-:root[data-plate="mk2"] .lcdgroup::after{bottom:-14px!important;font:600 8px/8px var(--sans)!important;letter-spacing:.4em!important;padding-left:.4em}

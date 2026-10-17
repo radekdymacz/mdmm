@@ -108,7 +108,7 @@ The editor's log shows a `midi: in … out … dropped …` line every 10 second
 
 Learn is on in both editors. Mappings are saved with the project only. Check:
 
-1. CONTROL: learn a knob from a controller CC (turn it both ways, or press a button that sends 0 and 127); the knob follows the controller and the machine's sound follows the knob.
+1. CONTROL (the key in Setup, right of LEARN, or key 6; lit while open, again leaves): learn a knob from a controller CC (turn it both ways, or press a button that sends 0 and 127); the knob follows the controller and the machine's sound follows the knob.
 2. Learn a CC, save the Live set (or the Reaper project), close, open: the mapping is still there and still moves the parameter.
 3. A CC that is also on the firmware CC map (Machinedrum CC 16 to 39 on channel 1): after the learn, only the learned parameter moves, the machine's own target of that CC does not (no double jump). Remove the mapping: the CC reaches the machine again.
 4. Learn while the transport plays: no drop-outs, the clock and notes keep reaching the machine.

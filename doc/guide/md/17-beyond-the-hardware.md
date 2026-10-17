@@ -239,11 +239,11 @@ The machine has no such function. With it on, the track you select changes to th
 The notes that play each track are set in "MAP EDITOR" in chapter 10. The keys of the computer keyboard and the audition of a sample never move the selection. Following replaces a selection of several tracks with the one track played. While a question is open, or LEARN waits for its note, the selection stays where it is.
 
 ## MIDI LEARN: A CONTROLLER KNOB MOVES A VALUE
-<!-- rows: MD-X27 @fce013 -->
+<!-- rows: MD-X27 @d614b0 -->
 
 The machine has no such function. A knob or fader on a MIDI controller can move any sound parameter of any track. The mappings belong to the project. They are saved with it and come back when you open it.
 
-1. Click the **Control** tab, or press [6]. The matrix lists the eight knob rows, every learned CC and the app modulators against the 16 tracks.
+1. Click the **Control** key in the Setup group, right of **Learn**, or press [6]. Click it again to leave. The matrix lists the eight knob rows, every learned CC and the app modulators against the 16 tracks.
 2. Click **LEARN** in the top bar, or press [L].
 3. Click any value on the page, for example DEC on the Kit page. The value shows the learn mark.
 4. Turn a knob on your controller both ways. The line in the inspector on the Control page counts the values seen: 0 of 2, then 1 of 2.

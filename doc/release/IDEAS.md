@@ -13,6 +13,42 @@
 - **From:** a beta tester on Discord, 2026-10-17. The keyboard on Perform lights a key when it is pressed; the piano-roll keys on the Pattern tab should do the same.
 - **Status:** built for 0.8.0. The roll's key column already lit a key under the mouse; it now also lights the keys held on the computer keyboard (A S D F ... and W E T Y U ...) and on a MIDI keyboard (the plug-in's held notes), like the Perform keyboard, and goes dark on release. Page: `rollLit` (70-seq.js), `paintKb` (110-perform.js); journey `mm-seq-keyboard-lit`; guide: Pattern, the piano roll.
 
+## I-050 · Machinedrum MKI: black text on the LCD, as the Monomachine has
+
+- **From:** a beta tester on Discord, 2026-10-17 (visual items on the plates).
+- **Idea:** the black LCD text the Monomachine uses on both plates would look good on the Machinedrum MKI too.
+- **Status:** built for 0.8.0. The MD MKI LCD pixels (`--ink`) are black (#0b0403) on the new reddish-orange ground, contrast 4.9:1 (journey md-top-plate checks 4.5 and up). The MKII keeps its dark red-brown pixels.
+
+## I-049 · Monomachine MKII: the indicator LEDs are grey, give them the dim burgundy of the MKI
+
+- **From:** a beta tester on Discord, 2026-10-17 (visual items on the plates).
+- **Idea:** the unlit LEDs beside the labels (workspace, setup, MIDI, scope and the other sections) are grey on the MKII.
+- **Status:** built for 0.8.0. `--ledoff` of the MKII plate is the MKI's dim burgundy (#7b4035; was grey #7a6e66). Journey mm-plate-greys checks both plates.
+
+## I-048 · Machinedrum MKI: the LCD backlight is reddish orange, not green
+
+- **From:** a beta tester on Discord, 2026-10-17 (visual items on the plates).
+- **Idea:** the real MKI backlight is reddish orange (the MKII a purer orange); the editor showed green on the MKI.
+- **Status:** built for 0.8.0. MKI `--lcd` is #dc4a2c, redder than the MKII's #ef5a39 (kept as it was). Photos in SKIN-COLOURS.md show red backlit LCDs on every Machinedrum; no photo separates the two models more finely, so the tone is chosen by eye: a say-so from the tester or Radek can move it.
+
+## I-047 · Machinedrum: the same popup the Monomachine shows when the plate switches
+
+- **From:** a beta tester on Discord, 2026-10-17 (visual items on the plates).
+- **Idea:** the Monomachine pops up a note when MKI / MKII is chosen; the Machinedrum showed nothing.
+- **Status:** built for 0.8.0. The Machinedrum shows a toast on PLATE: MKI / MKII (mdDeskTop.js `setPlate`). The text is its own (no machine is lost on the MD between plates).
+
+## I-046 · Monomachine: remove the "MKII" label under the display
+
+- **From:** a beta tester on Discord, 2026-10-17 (visual items on the plates).
+- **Idea:** the MKII print under the display looks out of place; the Machinedrum has none.
+- **Status:** built for 0.8.0. The print is gone (20-mm.css and shared/deskLcd.css). The plate is in the engine menu (PLATE: MKI / MKII).
+
+## I-045 · The MKI / MKII switch changes the LCD display size (more on the Monomachine)
+
+- **From:** a beta tester on Discord, 2026-10-17 (visual items on the plates).
+- **Idea:** the display should be the same size on both plates, both editors.
+- **Status:** built for 0.8.0. The LCD box is measured the same (874x70 MD, 781x70 MM) in the page on both plates; what reached the tester was most likely the MKII print under the display (now removed) and the two different LCD tones. Journeys md-top-plate and mm-top-plate now fail when the box sizes differ. If a real plug-in still shows a difference, send a screenshot of both plates.
+
 ## I-044 · Name the workspaces as the manuals do: SEQUENCE becomes PATTERN, SOUND becomes KIT
 
 - **From:** a beta tester on Discord (suggestion to match the machines' manuals); decided by Radek, 2026-10-16.
