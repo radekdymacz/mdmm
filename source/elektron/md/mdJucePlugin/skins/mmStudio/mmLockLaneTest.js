@@ -4,7 +4,7 @@
    The tester's pattern: track 4, 8 trigs; the parameter panel counts ATK 4, DEC 4, VOL 4, PAN 4 (16 locked steps),
    the LCD says LOCKS 07/62 (locked parameters over all tracks: another unit), the lane shows ATK, VOL and PAN bars but
    nothing for DEC, and the machine shows 12. Two causes would make a counted lock invisible, both checked here:
-   - a lock on a step without a trig (the machine keeps such locks in a backup but plays and shows none): counted in
+   - a lock on a step without a trig (the machine plays such a lock, B-168, but its screens show none): counted in
      the panel, drawn nowhere;
    - a lock of 0: a bar of no height.
    A lock the panel counts must be seen in the lane, or not counted.
@@ -83,14 +83,14 @@ const draw = pid => { S.lane = pid; S.lanePage = pid.split(".")[0]; p.renderLane
 const bars = pid => [...draw(pid).matchAll(/<div class="lb ([^"]*)" data-s="(\d+)" title="([^"]*)">(.*?)<\/div>(?=<div class="lb|$)/g)]
 	.map(m => { const h = m[4].match(/<i style="[^"]*height:max\(2px,calc\(\(100% - 14px\)\*([0-9.]+)\)\)"/); return h && { s: +m[2], ghost: /\bghost\b/.test(m[1]), h: +h[1], title: m[3] }; }).filter(Boolean);
 
-/* 1. a lock on a step with no trig (a machine's backup holds such locks): kept, and drawn as a ghost bar */
+/* 1. a lock on a step with no trig (the machine plays it, B-168): kept, and drawn as a ghost bar */
 lane("AMP.0", { 2: 90, 10: 90, 18: 90, 26: 90 });
 lane("AMP.2", { 3: 90, 11: 90, 19: 90, 27: 90 });
 const counted = pid => S.locks.get(TRK + "|" + pid)?.size || 0;	// the panel's number (70-seq.js, the rail)
 check(bars("AMP.0").length === counted("AMP.0") && bars("AMP.0").every(b => !b.ghost), "ATK: the 4 counted locks are 4 solid bars");
 const dec = bars("AMP.2");
 check(dec.length === counted("AMP.2") && dec.every(b => b.ghost), "DEC: the 4 locks on steps without a trig are 4 ghost bars (" + dec.length + " drawn, " + dec.filter(b => b.ghost).length + " ghost)");
-check(dec.every(b => /without a trig: the machine ignores it/.test(b.title)), "a ghost bar's tooltip says the machine ignores it");
+check(dec.every(b => /without a trig: the machine plays it/.test(b.title)), "a ghost bar's tooltip says the machine plays it");
 check(counted("AMP.2") === 4 && S.locks.has(TRK + "|AMP.2"), "the locks stay in the data (nothing is dropped)");
 
 /* 2. a lock of 0 is a bar of no height by value: it keeps a minimum mark (CSS max(2px, ...)) */
