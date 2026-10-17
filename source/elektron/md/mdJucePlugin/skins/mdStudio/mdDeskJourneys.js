@@ -155,8 +155,8 @@ const MdJourneys = (() => {
 	const plate = {
 		name: "md-top-plate", proves: ["MD-210"],
 		steps: [
-			{ say: "click the plate key (MK1 / MK2)", act: (u, c) => { c.p0 = document.documentElement.dataset.plate; c.bg = getComputedStyle(document.body).backgroundColor; u.click("#platekey"); }, screen: c => ok(document.documentElement.dataset.plate !== c.p0, "plate " + document.documentElement.dataset.plate) },
-			{ say: "click it again", act: u => u.click("#platekey"), screen: c => ok(document.documentElement.dataset.plate === c.p0, "plate " + document.documentElement.dataset.plate) }
+			{ say: "choose PLATE in the engine menu", act: async (u, c) => { c.p0 = document.documentElement.dataset.plate; c.bg = getComputedStyle(document.body).backgroundColor; await u.pick("engsel", "plate"); }, screen: c => ok(document.documentElement.dataset.plate !== c.p0 && document.querySelector('#engsel option[value="plate"]').textContent === "PLATE: " + (document.documentElement.dataset.plate === "mk2" ? "MKII" : "MKI") && !document.querySelector(".skey[aria-label=\"Switch panel colour\"]"), "plate " + document.documentElement.dataset.plate + ", menu " + document.querySelector('#engsel option[value="plate"]').textContent) },
+			{ say: "choose it again", act: u => u.pick("engsel", "plate"), screen: c => ok(document.documentElement.dataset.plate === c.p0, "plate " + document.documentElement.dataset.plate) }
 		]
 	};
 	const wsKeys = {
@@ -1975,7 +1975,7 @@ const MdJourneys = (() => {
 	/* Radek's 0.6 review 1 (2026-10-12) as snapshots (scripts/mdmm-snap.py): the MKI light plate's Sequence and Sound,
 	   GLOBAL as a modal */
 	const shotsReview = { name: "md-shots-review", proves: [], needs: () => !/md-shots/.test(location.search) ? "screenshots only when asked by name" : null,
-		steps: [{ say: "MKI", act: async u => { if (document.documentElement.dataset.plate === "mk2") u.click("#platekey"); await sleep(400); } },
+		steps: [{ say: "MKI", act: async u => { if (document.documentElement.dataset.plate === "mk2") await u.pick("engsel", "plate"); await sleep(400); } },
 			go("seq"), { say: "Pattern", act: async () => { await sleep(600); Journey.snapshot("review-md-seq"); } },
 			go("sound"), { say: "Kit", act: async () => { await sleep(600); Journey.snapshot("review-md-sound"); } },
 			{ say: "GLOBAL", act: async u => { u.click("#globkey"); await sleep(800); Journey.snapshot("review-md-global"); u.key("Escape"); await sleep(300); } }] };
@@ -3418,6 +3418,10 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.cc0 != null && knobCcs()[7] !== c.cc0) { u.click(`.srch[data-src="255:${knobCcs()[7]}"]`); await sleep(100); u.click('[data-knobcc="-1"]'); await until(() => knobCcs()[7] === c.cc0, 3000); } await learnTidy(u); }
 	};
+	/* the top bar with MIDI mapping ON (the Control tab and the LEARN key shown), on every workspace including Control, at every window size */
+	const fitMapping = (() => { const b = Journey.fitJourneys("md", ["seq", "sound", "mix", "sampler", "song", "control"])[0], st = b.steps[0];
+		return { ...b, name: "md-fit-workspaces-mapping", steps: [{ ...st, say: "MIDI mapping on: " + st.say, act: async (u, c) => { await learnIn(u, c, ldoc([])); return st.act(u, c); } }],
+			async tidy(u, c) { await b.tidy(u, c); await learnTidy(u); } }; })();
 	const all = [screensFit, ...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, kitStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, stepClickSelect, accentSlide, trigTypesJ, lockLane, laneKitDrag, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
 		genJourney("md-gen-mutate-undo", false, { proves: ["MD-X04", "MD-X05"] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: ["MD-X04"] }), genKeys, genModal, laneTools, gridFits,
@@ -3425,7 +3429,7 @@ const MdJourneys = (() => {
 		mixSolo, soloSaved, shiftMutes, allOff, fader, lev, outKey, masterFx,
 		songArrange, songChain, modeCycle, songPlayhead, songSlots, songKeys, shotsSongSlots, samplerSlots, samplerSetup, audition,
 		libDialog, kitCopy, kitRename, kitClear, patGo, patClear, dialogEsc,
-		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, controlLearn, controlLearnOverrides, controlLearnPaused, controlLearnLeft, controlLearnLimit, controlLearnKnob, controlLearnEsc, noteLights, followPlayed, audioPanel, romCard, notePlay,
+		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, controlLearn, controlLearnOverrides, controlLearnPaused, controlLearnLeft, controlLearnLimit, controlLearnKnob, controlLearnEsc, fitMapping, noteLights, followPlayed, audioPanel, romCard, notePlay,
 		lockRamp, pasteMany, mutScope, songInspector, songRowMarks, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
 		syxImportMute, globalReset, shotsGlobal, shotsSound, shotsReview, shots, shotsSong, shotsImport, editorMenuJ, memoryJ, shotsMenu, ...cpuJs, ...volJs,
 		dropSyxJ, dropSampleJ, ...viewJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, modalLock, songFactoryPlay, lockKeysFit, resetFactory, resetEmpty, syxRunningReach];
