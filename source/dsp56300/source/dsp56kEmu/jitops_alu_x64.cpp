@@ -57,9 +57,9 @@ namespace dsp56k
 		ccr_clear(CCR_V);
 	}
 	
-	void JitOps::alu_asl(const TWord _abSrc, const TWord _abDst, const ShiftReg* _v, TWord _bits/* = 0*/)
+	void JitOps::alu_asl(const TWord _abSrc, const TWord _abDst, const ShiftReg* _v, TWord _bits/* = 0*/, const bool _updateCarry/* = true*/)
 	{
-		CcrBatchUpdate bu(*this, CCR_C, CCR_V);
+		CcrBatchUpdate bu(*this, _updateCarry ? static_cast<CCRMask>(CCR_C | CCR_V) : CCR_V);
 
 		AluRef alu(m_block, _abDst, _abDst == _abSrc, true);
 		if (_abDst != _abSrc)
@@ -77,7 +77,8 @@ namespace dsp56k
 		else
 			m_asm.sal(alu, asmjit::Imm(_bits));
 
-		ccr_update_ifCarry(CCRB_C);					// copy the host carry flag to the DSP carry flag
+		if(_updateCarry)
+			ccr_update_ifCarry(CCRB_C);					// copy the host carry flag to the DSP carry flag
 
 		// Overflow: Set if Bit 55 is changed any time during the shift operation, cleared otherwise.
 		// The easiest way to check this is to shift back and compare if the initial alu value is identical to the backshifted one
@@ -101,13 +102,13 @@ namespace dsp56k
 		ccr_dirty(_abDst, alu, static_cast<CCRMask>(CCR_E | CCR_N | CCR_U | CCR_Z));
 	}
 
-	void JitOps::alu_asr(const TWord _abSrc, const TWord _abDst, const ShiftReg* _v, TWord _immediate/* = 0*/)
+	void JitOps::alu_asr(const TWord _abSrc, const TWord _abDst, const ShiftReg* _v, TWord _immediate/* = 0*/, const bool _updateCarry/* = true*/)
 	{
 		AluRef alu(m_block, _abDst, _abDst == _abSrc, true);
 		if (_abDst != _abSrc)
 			m_dspRegs.getALU(alu, _abSrc);
 
-		CcrBatchUpdate bu(*this, CCR_C, CCR_V);
+		CcrBatchUpdate bu(*this, _updateCarry ? static_cast<CCRMask>(CCR_C | CCR_V) : CCR_V);
 
 		aluExtendTo64(alu);
 		if(_v)
@@ -116,7 +117,8 @@ namespace dsp56k
 			m_asm.sar(alu, asmjit::Imm(_immediate));
 		// The 56-bit accumulator is extended/aligned to bits 63:8. Its
 		// last discarded bit is now bit 7, not the host SAR carry bit.
-		copyBitToCCR(alu, 7, CCRB_C);
+		if(_updateCarry)
+			copyBitToCCR(alu, 7, CCRB_C);
 		// discards the bits shifted below the accumulator - the hardware has no resolution there
 		aluRestoreFrom64(alu);
 		

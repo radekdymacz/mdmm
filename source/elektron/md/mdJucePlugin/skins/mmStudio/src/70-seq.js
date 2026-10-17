@@ -97,12 +97,12 @@ function renderLane(){const lane=$("#lane");if(!lane)return;const t=S.sel,tr=trk
  const sc=$("#lanescale");if(sc)sc.textContent=m.tab?`${m.tab[0].t}…${m.tab[m.tab.length-1].t}`:m.en?`${m.en[0]}…${m.en[mx]}`:m.signed?"−64…+63":"0–127";
  const last=steps().filter(s=>{const q=tr.steps[s];return q&&!q.off}).pop();
  lane.innerHTML=`<div class="lbscale"><b>${fmt(m,mx)}</b><b>${fmt(m,0)}</b></div>`+steps().map(s=>{const st=tr.steps[s],on=st&&!st.off,v=lm?.get(s);
-  const ghost=!on&&v!=null;/* a lock on a step without a trig: kept (a machine's backup holds them), the machine ignores it */
-  return`<div class="lb ${on||ghost?"":"none"} ${ghost?"ghost":""} ${on?"k-"+(isMidiT(t)?"full":stepKind(st)):""} ${gapC(s)} ${inSel(t,s)?"vsel":""} " data-s="${s}" title="${on?(v!=null?"Locked "+fmt(m,v)+" · drag its dot sideways to slide to the next lock":"Kit value "+fmt(m,base))+(isMidiT(t)?"":{full:" · all envelopes",part:" · some envelopes",trigless:" · trigless"}[stepKind(st)]||""):ghost?"Lock on a step without a trig: the machine ignores it ("+fmt(m,v)+"). Alt-click removes it.":"No trig here: add one (a trigless trig with alt-click keeps the envelopes quiet)"}">${on?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${v!=null?barHTML(v)+valueHTML(m,v,mx):""}${s===last?kitLabelHTML(m,base,mx):""}`:ghost?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${barHTML(v)}${valueHTML(m,v,mx)}`:""}</div>`}).join("");
+  const ghost=!on&&v!=null;/* a lock on a step without a trig: kept and played: the Monomachine applies it on that step and holds it to the next trig (B-168, measured w13mmslide), the page draws it as a ghost bar because there is no trig */
+  return`<div class="lb ${on||ghost?"":"none"} ${ghost?"ghost":""} ${on?"k-"+(isMidiT(t)?"full":stepKind(st)):""} ${gapC(s)} ${inSel(t,s)?"vsel":""} " data-s="${s}" title="${on?(v!=null?"Locked "+fmt(m,v)+" · drag its dot sideways to slide to the next lock":"Kit value "+fmt(m,base))+(isMidiT(t)?"":{full:" · all envelopes",part:" · some envelopes",trigless:" · trigless"}[stepKind(st)]||""):ghost?"Lock on a step without a trig: the machine plays it ("+fmt(m,v)+") from this step until the next trig. Alt-click removes it.":"No trig here: add one (a trigless trig with alt-click keeps the envelopes quiet)"}">${on?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${v!=null?barHTML(v)+valueHTML(m,v,mx):""}${s===last?kitLabelHTML(m,base,mx):""}`:ghost?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${barHTML(v)}${valueHTML(m,v,mx)}`:""}</div>`}).join("");
  requestAnimationFrame(drawSlides)}
 function drawSlides(){const svg=$("#lanesvg"),lane=$("#lane");if(!svg||!lane)return;const t=S.sel,tr=trk(t),lm=S.locks.get(lkKey(t,S.lane));svg.innerHTML="";if(!lm)return;
- const[pg,i]=S.lane.split("."),mx=maxOf(meta(t,pg,+i)),box=lane.getBoundingClientRect(),ink=cssv("--ink");let d="";const real=x=>{const q=tr.steps[x];return !!q&&!q.off},locked=[...lm.keys()].filter(real).sort((a,b)=>a-b);/* a slide runs between locks on steps with a trig: a lock on a step without one is never played, so no line starts or ends there */
- locked.forEach(s=>{const pv=laneDraw?.pv===s;if(!tr.slide.has(s)&&!pv)return;const nx=locked.find(x=>x>s);if(nx==null)return;const a=lane.querySelector(`.lb[data-s="${s}"]`),b=lane.querySelector(`.lb[data-s="${nx}"]`);if(!a)return;
+ const[pg,i]=S.lane.split("."),mx=maxOf(meta(t,pg,+i)),box=lane.getBoundingClientRect(),ink=cssv("--ink");let d="";const real=x=>{const q=tr.steps[x];return !!q&&!q.off},locked=[...lm.keys()].sort((a,b)=>a-b);/* a slide starts on a lock on a step with a trig and ends on the parameter's next lock, on a step with a trig or without one (measured on OS 1.32B, mmDeskFirmwareTest/gapProbes w13mmslide: a lock on an empty step is the glide's target, and holds) */
+ locked.forEach(s=>{const pv=laneDraw?.pv===s;if(!real(s)||!tr.slide.has(s)&&!pv)return;const nx=locked.find(x=>x>s);if(nx==null)return;const a=lane.querySelector(`.lb[data-s="${s}"]`),b=lane.querySelector(`.lb[data-s="${nx}"]`);if(!a)return;
   const ra=a.getBoundingClientRect(),y=v=>ra.bottom-box.top-6-v/mx*(ra.height-14),xa=ra.left-box.left+ra.width/2;
   const xb=b?b.getBoundingClientRect().left-box.left+b.getBoundingClientRect().width/2:box.width;const ya=y(lm.get(s)),yb=y(lm.get(nx)),hl=cssv("--lcd")||"#fff";/* drawn after the lane, so above the bars; a light halo under the ink line reads on a solid bar and on an empty step */const fl=ra.bottom-box.top-6;/* automation ramp: a translucent fill down to the lane floor, a solid line bar top to bar top, a light halo under it; drawn after the lane so it sits above the bars and reads on solid bars, empty and hatched steps. The slide mark itself is the roll's top mark row (rollTopMarks) */d+=`<path d="M${xa} ${ya} L${xb} ${yb} L${xb} ${fl} L${xa} ${fl} Z" fill="${hl}" fill-opacity=".45"/><path d="M${xa} ${ya} L${xb} ${yb} L${xb} ${fl} L${xa} ${fl} Z" fill="${ink}" fill-opacity=".18"/><path d="M${xa} ${ya} L${xb} ${yb}" fill="none" stroke="${hl}" stroke-width="5" stroke-linecap="round"/><path d="M${xa} ${ya} L${xb} ${yb}" fill="none" stroke="${ink}" stroke-width="2" stroke-linecap="round"${pv&&!tr.slide.has(s)?' stroke-dasharray="6 4"':""}/><circle cx="${xa}" cy="${ya}" r="4" fill="${ink}" stroke="${hl}" stroke-width="1.5"/><circle cx="${xb}" cy="${yb}" r="3" fill="${ink}" stroke="${hl}" stroke-width="1.5"/>`});
  const lv=bandLive();if(lv){/* the rubber band: from the lock to the cursor, a ring on the only target */const a=lane.querySelector(`.lb[data-s="${lv.s}"]`),ra=a&&a.getBoundingClientRect(),hl=cssv("--lcd")||"#fff";
@@ -120,12 +120,13 @@ function clickStep(t,s,e){const tr=trk(t),st=tr.steps[s];
  editStep(t,s);renderTop();if(t!==S.sel){S.sel=t;stepFocus();autoRange(t);render()}else rerenderSeq()}
 let laneDraw=null;
 /* ---- a slide drawn in the lock lane. The machine's slide is a flag on a step (the slide track): every parameter locked on that
-   step glides to its own next lock, past trigs that do not lock it, and holds it there (manual, SLIDE). So the lane draws it
-   from a lock's dot sideways to the next trig that locks this parameter: the drag only ever targets that step, whatever
+   step glides to its own next lock, past trigs that do not lock it, and holds it there (manual, SLIDE; the Monomachine's rule
+   measured, a trig between that does not lock it plays the kit value and the glide goes on from there). So the lane draws it
+   from a lock's dot sideways to the next lock of this parameter, on a step with a trig or without: the drag only ever targets that step, whatever
    further the pointer goes. A press on the dot and a sideways drag sets the flag at the release (one undo step); a click on
    the ramp's line takes it away; a vertical drag from the dot is the lane's own (the lock's value, or the kit line). ---- */
 const DOT_HIT=8,LINE_HIT=5,SLIDE_MOVE=4;
-function slideNext(t,pid,s){const tr=trk(t),lm=S.locks.get(lkKey(t,pid));if(!lm)return null;return[...lm.keys()].filter(x=>x>s&&tr.steps[x]&&!tr.steps[x].off).sort((a,b)=>a-b)[0]??null}
+function slideNext(t,pid,s){const lm=S.locks.get(lkKey(t,pid));if(!lm)return null;return[...lm.keys()].filter(x=>x>s).sort((a,b)=>a-b)[0]??null}
 function slidePt(el,v){const r=el.getBoundingClientRect(),{mx}=laneMeta();return{x:r.left+r.width/2,y:r.bottom-6-v/mx*(r.height-14)}}
 function segDist(p,a,b){const dx=b.x-a.x,dy=b.y-a.y,l=dx*dx+dy*dy,k=l?clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/l,0,1):0;return Math.hypot(p.x-a.x-k*dx,p.y-a.y-k*dy)}
 function slideKey(e){const lane=$("#lane");if(e.button!==0||e.altKey||!lane||!e.target.closest)return null;let el=e.target.closest(".lb");/* the gap between two keys is the lane itself: the key whose column it is */if(!el&&e.target===lane)el=$$("#lane .lb").find(c=>e.clientX<c.getBoundingClientRect().right);return el&&lane.contains(el)?el:null}
@@ -208,13 +209,13 @@ ED.lane={draw(g,W,H,c){const G=laneGeom(c),t=G.t,tr=trk(t),ink=cssv("--ink");if(
   if(!audible(t))g.globalAlpha=.45;
   /* the keys sit in the rows' left gutter, as a DAW's piano roll: white keys the gutter's width, black keys from
      its left edge; C and the top row are named on the key's right end. The hovered row is lit, the key held lit more */
-  if(G.big){const X0=G.firstX,KW=G.kw,BW=Math.round(KW*.55),led=cssv("--led"),hov=S.rollHov?.t===t?S.rollHov.n:null,held=rollDrag?.mode==="key"?rollDrag.n:null;
+  if(G.big){const X0=G.firstX,KW=G.kw,BW=Math.round(KW*.55),led=cssv("--led"),hov=S.rollHov?.t===t?S.rollHov.n:null,lit=rollLit(t);
    for(let n=G.lo;n<=G.hi;n++){const y=G.y(n),blk=[1,3,6,8,10].includes(n%12);if(blk){g.fillStyle=inkA(.05);g.fillRect(X0,y,G.lastX-X0,G.rh)}
    if(!inScale(tr,n)){g.fillStyle=inkA(.07);for(let x=X0;x<G.lastX;x+=6)g.fillRect(x,y,3,G.rh)}
    if(n%12===0){g.fillStyle=inkA(.3);g.fillRect(X0,y+G.rh-.5,G.lastX-X0,1)}
-   if(n===hov||n===held){g.fillStyle=inkA(n===held?.16:.09);g.fillRect(X0,y,G.lastX-X0,G.rh)}
+   if(n===hov||lit.has(n)){g.fillStyle=inkA(lit.has(n)?.16:.09);g.fillRect(X0,y,G.lastX-X0,G.rh)}
    g.fillStyle=inkA(.12);g.fillRect(0,y+.5,KW,G.rh-1);if(blk){g.fillStyle=ink;g.fillRect(0,y+.5,BW,G.rh-1)}
-   if(n===hov||n===held){g.save();g.globalAlpha=n===held?.85:.45;g.fillStyle=led;g.fillRect(0,y+.5,blk?BW:KW,G.rh-1);g.restore()}
+   if(n===hov||lit.has(n)){g.save();g.globalAlpha=lit.has(n)?.85:.45;g.fillStyle=led;g.fillRect(0,y+.5,blk?BW:KW,G.rh-1);g.restore()}
    if(n%12===0||n===G.hi){g.fillStyle=ink;g.font="9px Silkscreen, monospace";g.textAlign="right";g.fillText(noteName(n),KW-3,y+G.rh/2+3.5);g.textAlign="left"}}}
   else{g.fillStyle=ink;g.font="8px Silkscreen, monospace";const ns=tr.steps.slice(0,S.len).flatMap(x=>x?.n||[]);if(ns.length){const mn=Math.min(...ns),mx=Math.max(...ns);g.fillText(mn===mx?noteName(mn).replace("-",""):noteName(mn).replace("-","")+"-"+noteName(mx).replace("-",""),G.lastX+4,11)}const st=rowStatus(t);if(st)g.fillText(st,G.lastX+4,H-5)}
   G.vs.forEach(s=>{const x=G.col[s];if(!x)return;if(s%4===0){g.fillStyle=inkA(G.big?.1:.07);g.fillRect(x.x0,0,x.x1-x.x0,G.H)}});
@@ -256,6 +257,8 @@ function laneHit(c,e){const G=laneGeom(c),r=c.getBoundingClientRect(),x=e.client
 S.rollHov=null;
 const rollRow=(c,G,e)=>{const r=c.getBoundingClientRect(),n=G.lo+G.rows-1-Math.floor((e.clientY-r.top-G.top)/G.rh);return n>=G.lo&&n<=G.hi?n:null};
 const onKeys=(c,G,e)=>e.clientX-c.getBoundingClientRect().left<G.firstX-1.5;
+/* I-051: the roll's keys are lit as the Perform keyboard's: while held by the mouse, the computer keyboard or a MIDI keyboard */
+function rollLit(t){const l=new Set();if(rollDrag?.mode==="key"&&rollDrag.n!=null)l.add(rollDrag.n);for(const h of KB.held.values())if(h.t===t)l.add(h.n);KBLIT.midi.forEach(n=>l.add(n));return l}
 function rollKey(t,n){rollDrag.n=n;if(n!=null)keyNote(t,n,KB.vel)}
 document.addEventListener("pointerout",e=>{const c=e.target.closest?.("canvas.roll");if(c&&!c.contains(e.relatedTarget)&&S.rollHov){S.rollHov=null;drawEd(c)}});
 /* ===== Draw or select, and note lengths (I-007, I-010; 58-roll.js has what the machine does with a length) =====

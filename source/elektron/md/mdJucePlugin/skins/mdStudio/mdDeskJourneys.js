@@ -28,7 +28,7 @@ const MdJourneys = (() => {
 	const pressed = q => $1(q)?.getAttribute("aria-pressed") === "true";
 	const cell = (t, s) => `#seq .st[data-t="${t}"][data-s="${s}"]`;
 	const rail = t => `#rail .th[data-sel="${t}"] .nm`;
-	const tab = ws => `#tabs [data-ws="${ws}"]`;
+	const tab = ws => ws === "control" ? "#controlkey" : `#tabs [data-ws="${ws}"]`;	/* CONTROL is a key in Setup, not a workspace tab (0.8) */
 	const onTab = ws => ok(S.ws === ws, `workspace ${S.ws}`);
 	const lit = t => V.tracks[t].trigs.map((on, s) => on ? s : -1).filter(s => s >= 0 && s < V.len);
 	const gridShows = t => lit(t).every(s => pressed(cell(t, s))) && $all(`#seq .st[data-t="${t}"][aria-pressed="true"]`).length === lit(t).length;
@@ -152,11 +152,21 @@ const MdJourneys = (() => {
 		],
 		async tidy(u) { if (V.playing) u.click("#play"); }
 	};
+	/* I-045..I-048, I-050: the LCD box is the same size on both plates, the MKI LCD is reddish orange with black pixels (contrast 4.5 and up), the switch shows a popup */
+	const lcdBox = () => { const r = document.querySelector(".lcdpanel").getBoundingClientRect(); return Math.round(r.width) + "x" + Math.round(r.height); };
+	const lum = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(x => x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4)); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+	const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+	const plateTok = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim().toLowerCase();
 	const plate = {
 		name: "md-top-plate", proves: ["MD-210"],
 		steps: [
 			{ say: "choose PLATE in the engine menu", act: async (u, c) => { c.p0 = document.documentElement.dataset.plate; c.bg = getComputedStyle(document.body).backgroundColor; await u.pick("engsel", "plate"); }, screen: c => ok(document.documentElement.dataset.plate !== c.p0 && document.querySelector('#engsel option[value="plate"]').textContent === "PLATE: " + (document.documentElement.dataset.plate === "mk2" ? "MKII" : "MKI") && !document.querySelector(".skey[aria-label=\"Switch panel colour\"]"), "plate " + document.documentElement.dataset.plate + ", menu " + document.querySelector('#engsel option[value="plate"]').textContent) },
-			{ say: "choose it again", act: u => u.pick("engsel", "plate"), screen: c => ok(document.documentElement.dataset.plate === c.p0, "plate " + document.documentElement.dataset.plate) }
+			{ say: "choose it again", act: u => u.pick("engsel", "plate"), screen: c => ok(document.documentElement.dataset.plate === c.p0, "plate " + document.documentElement.dataset.plate) },
+			{ say: "both plates: the switch shows a popup, the LCD box has one size, MKI is reddish orange with black pixels", act: async (u, c) => {
+				c.seen = {}; c.toasts = {};
+				for (const pl of ["mk1", "mk2"]) { if (document.documentElement.dataset.plate !== pl) { await u.pick("engsel", "plate"); c.toasts[pl] = $1("#toast").textContent; c.on = $1("#toast").classList.contains("on"); } await sleep(200); c.seen[pl] = { box: lcdBox(), lcd: plateTok("--lcd"), ink: plateTok("--ink") }; }
+				if (document.documentElement.dataset.plate !== c.p0) await u.pick("engsel", "plate");
+			}, screen: c => ok(c.seen.mk1.box === c.seen.mk2.box && c.seen.mk1.lcd !== c.seen.mk2.lcd && /^#d/.test(c.seen.mk1.lcd) && contrast(c.seen.mk1.lcd, c.seen.mk1.ink) >= 4.5 && contrast(c.seen.mk1.ink, "#000000") < 1.6 && Object.values(c.toasts).every(t => /^MK/.test(t)), JSON.stringify(c.seen) + JSON.stringify(c.toasts)) }
 		]
 	};
 	const wsKeys = {
@@ -323,6 +333,51 @@ const MdJourneys = (() => {
 			{ ...undoKey, say: "press Cmd+Z: the kit value is back", machine: c => ok((grp(c.t, c.p)[c.p] ?? 0) === c.k0 && V.undoCount === c.u0, `kit ${grp(c.t, c.p)[c.p]} (was ${c.k0}), undo steps ${V.undoCount}`), within: 8000 }
 		],
 		async tidy(u, c) { if (c.u0 != null && V.undoCount > c.u0) await undoUntil(u, () => V.undoCount <= c.u0); }
+	};
+	/* 0.8 (I-054): a slide is drawn in the lock lane, as in the Monomachine Editor. The machine's slide is a flag on a step (this track's, or with
+	   All tracks the pattern's row); the parameters it locks glide to their next lock. The dot at the top of a lock bar dragged sideways sets it
+	   (the preview runs to the next lock only), Shift-drag out of the bar and a drop on that lock does too (Esc or another drop cancels), a
+	   click on the ramp's line takes it off; each is one undo step */
+	const slideOn = (t, s) => V.slideAll ? (pat()?.slide?.steps || []).includes(s) : flagsOf(t, "slide").includes(s);
+	const laneDrawSlide = {
+		name: "md-lane-draw-slide", proves: [],
+		steps: [
+			go("seq"),
+			{ say: "pick a track with three trigs on the first page, a lock parameter, and lock all three by drawing across them", act: async (u, c) => {
+					c.t = soundTracks().find(t => trigsOf(t).filter(s => s < Math.min(16, V.len)).length >= 3) ?? soundTrack(); u.click(rail(c.t)); await sleep(250);
+					const k = $1('#chips .pk[data-lane="FLTF"]') || $1("#chips .pk[data-lane]"); c.p = k.dataset.lane; c.i = pidx(c.t, c.p); u.click(k); await sleep(250);
+					c.u00 = V.undoCount; c.on = trigsOf(c.t).filter(s => s < Math.min(16, V.len)).slice(0, 3); c.sl0 = [slideOn(c.t, c.on[0]), slideOn(c.t, c.on[1]), slideOn(c.t, c.on[2])];
+					await u.drag(`#lane .lb[data-s="${c.on[0]}"]`, c.on.slice(1).map(s => `#lane .lb[data-s="${s}"]`), {}, { fy: 0.8 }); await sleep(500); },
+				screen: c => ok(c.on.every(s => $1(`#lane .lb[data-s="${s}"] i`)), "no bars"), machine: c => ok(c.on.every(s => locksOf(c.t, c.i).some(([x]) => x === s)) && !c.sl0.some(Boolean), "locks " + JSON.stringify(locksOf(c.t, c.i)) + ", slides before " + c.sl0), within: 15000 },
+			{ say: "press on the first lock's dot and drag sideways past the second: the release sets the slide on the first step only, one undo step", act: async (u, c) => {
+					c.u0 = V.undoCount; const key = `#lane .lb[data-s="${c.on[0]}"]`, r = $1(key).getBoundingClientRect(), v = locksOf(c.t, c.i).find(([x]) => x === c.on[0])[1],
+						fy = (r.bottom - 3 - (r.height - 6) * v / 127 - r.top) / r.height, far = $1(`#lane .lb[data-s="${c.on[2]}"]`).getBoundingClientRect();
+					await u.drag(key, [[12, 0], [(far.left - r.left) / 2, 0], [far.right - r.left, 0]], {}, { fy, click: false }); await sleep(500); },
+				machine: c => ok(slideOn(c.t, c.on[0]) && !slideOn(c.t, c.on[1]) && !slideOn(c.t, c.on[2]) && V.undoCount === c.u0 + 1, `slide ${c.on.map(s => slideOn(c.t, s))}, undo steps ${c.u0} -> ${V.undoCount}`),
+				screen: c => ok(/M[\d.]+ [\d.]+ L[\d.]+ /.test($1("#lanesvg")?.innerHTML || "") && !/stroke-dasharray/.test($1("#lanesvg")?.innerHTML || ""), "svg " + ($1("#lanesvg")?.innerHTML || "").slice(0, 80)), within: 15000 },
+			{ say: "click on the ramp's line: the slide is off, one more undo step", act: async (u, c) => {
+					c.u1 = V.undoCount; const k1 = `#lane .lb[data-s="${c.on[0]}"]`, a = $1(k1).getBoundingClientRect(), b = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect(), L = locksOf(c.t, c.i),
+						ya = a.bottom - 3 - (a.height - 6) * L.find(([x]) => x === c.on[0])[1] / 127, yb = b.bottom - 3 - (b.height - 6) * L.find(([x]) => x === c.on[1])[1] / 127, xa = a.left + a.width / 2, xb = b.left + b.width / 2;
+					const f = 0.9, px = a.left + a.width * f, t = (px - xa) / (xb - xa), py = ya + (yb - ya) * t; u.click(k1, {}, f, (py - a.top) / a.height); await sleep(500); },
+				machine: c => ok(!slideOn(c.t, c.on[0]) && V.undoCount === c.u1 + 1, `slide ${slideOn(c.t, c.on[0])}, undo steps ${c.u1} -> ${V.undoCount}`), within: 15000 },
+			{ say: "Shift-press the first lock bar and drag out of its column: a line follows the cursor, the second lock is marked, nothing written", act: async (u, c) => {
+					c.u2 = V.undoCount; const key = `#lane .lb[data-s="${c.on[0]}"]`, r = $1(key).getBoundingClientRect(), t2 = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect(), far = $1(`#lane .lb[data-s="${c.on[2]}"]`).getBoundingClientRect();
+					c.band = u.drag(key, [[r.width + 6, 0], [(t2.left + t2.width / 2) - (r.left + r.width / 2), 0], [far.left - r.left, 0]], { shift: true }, { fy: 0.6, click: false, stepMs: 450, settle: 0 }); await sleep(700); },
+				screen: c => { const h = $1("#lanesvg")?.innerHTML || ""; return ok(/r="9"/.test(h) && /stroke-width="2"/.test(h) && !slideOn(c.t, c.on[0]), "svg " + h.slice(0, 80)); }, within: 4000 },
+			{ say: "Escape, then the release past the second lock: cancelled, nothing written", act: async (u, c) => { u.key("Escape"); await c.band; await sleep(400); },
+				machine: c => ok(!slideOn(c.t, c.on[0]) && V.undoCount === c.u2, `slide ${slideOn(c.t, c.on[0])}, undo steps ${c.u2} -> ${V.undoCount}`), within: 8000 },
+			{ say: "Shift-drag from the first lock bar and drop beside the second lock's column: cancelled", act: async (u, c) => { const key = `#lane .lb[data-s="${c.on[0]}"]`, r = $1(key).getBoundingClientRect(), far = $1(`#lane .lb[data-s="${c.on[2]}"]`).getBoundingClientRect();
+					await u.drag(key, [[r.width + 6, 0], [far.left - r.left, 0]], { shift: true }, { fy: 0.6, click: false }); await sleep(400); },
+				machine: c => ok(!slideOn(c.t, c.on[0]) && V.undoCount === c.u2, `slide ${slideOn(c.t, c.on[0])}`), within: 8000 },
+			{ say: "Shift-drag from the first lock bar and drop on the second lock's column: the slide is set, one undo step", act: async (u, c) => { const key = `#lane .lb[data-s="${c.on[0]}"]`, r = $1(key).getBoundingClientRect(), t2 = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect();
+					await u.drag(key, [[r.width + 6, 0], [(t2.left + t2.width / 2) - (r.left + r.width / 2), 0]], { shift: true }, { fy: 0.6, click: false }); await sleep(500); },
+				machine: c => ok(slideOn(c.t, c.on[0]) && V.undoCount === c.u2 + 1, `slide ${slideOn(c.t, c.on[0])}, undo steps ${c.u2} -> ${V.undoCount}`), within: 15000 },
+			{ say: "click on the ramp's line: the slide is off", act: async (u, c) => { const k1 = `#lane .lb[data-s="${c.on[0]}"]`, a = $1(k1).getBoundingClientRect(), b = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect(), L = locksOf(c.t, c.i),
+						ya = a.bottom - 3 - (a.height - 6) * L.find(([x]) => x === c.on[0])[1] / 127, yb = b.bottom - 3 - (b.height - 6) * L.find(([x]) => x === c.on[1])[1] / 127, xa = a.left + a.width / 2, xb = b.left + b.width / 2;
+					const f = 0.9, px = a.left + a.width * f, t = (px - xa) / (xb - xa), py = ya + (yb - ya) * t; u.click(k1, {}, f, (py - a.top) / a.height); await sleep(500); },
+				machine: c => ok(!slideOn(c.t, c.on[0]), `slide ${slideOn(c.t, c.on[0])}`), within: 15000 },
+		],
+		async tidy(u, c) { if (c.u00 != null && V.undoCount > c.u00) await undoUntil(u, () => V.undoCount <= c.u00, 12); }
 	};
 	const pagesJ = {
 		name: "md-seq-pages", proves: ["MD-020", "MD-108"],
@@ -3327,8 +3382,15 @@ const MdJourneys = (() => {
 	const controlLearn = {
 		name: "md-control-learn-flow", proves: [],
 		steps: [
-			{ say: "the plug-in says MIDI mapping is on: the CONTROL tab and the LEARN key appear", act: (u, c) => learnIn(u, c, ldoc([])),
-				screen: () => ok(!$1(tab("control")).hidden && !$1("#learnkey").hidden, "tab hidden " + $1(tab("control")).hidden + ", key hidden " + $1("#learnkey").hidden) },
+			{ say: "the plug-in says MIDI mapping is on: the CONTROL and LEARN keys appear in Setup", act: (u, c) => learnIn(u, c, ldoc([])),
+				screen: () => ok(!$1(tab("control")).hidden && !$1("#learnkey").hidden, "CONTROL key hidden " + $1(tab("control")).hidden + ", key hidden " + $1("#learnkey").hidden) },
+			{ say: "click the CONTROL key: its page opens and the key is lit; a workspace tab leaves it; key 6 opens it again; the key again leaves it", act: async (u, c) => { c.s = [];
+				const lit = () => $1("#controlkey").getAttribute("aria-pressed") === "true" && $1("#controlkey").classList.contains("on");
+				u.click("#controlkey"); await sleep(250); c.s.push(S.ws === "control" && lit());
+				u.click(tab("seq")); await sleep(250); c.s.push(S.ws === "seq" && !lit());
+				u.key("6"); await sleep(250); c.s.push(S.ws === "control" && lit());
+				u.click("#controlkey"); await sleep(250); c.s.push(S.ws === "seq" && !lit()); },
+				screen: c => ok(c.s.length === 4 && c.s.every(Boolean), "open/lit, tab leaves, key 6, key leaves: " + JSON.stringify(c.s)) },
 			{ say: "click LEARN, the Kit tab, then a knob: learnStart goes with that track and parameter", act: async (u, c) => { c.n = learnSent.mark(); u.click("#learnkey"); u.click(tab("sound")); await sleep(300); const k = $1('#main .pc[data-g="syn"]'); c.n2 = k.dataset.n; c.t = S.sel; c.i = pidx(S.sel, c.n2, "syn"); u.click('#main .pc[data-g="syn"]'); },
 				screen: c => ok(pressed("#learnkey") && S.ctl.learnT && S.ctl.learnT.p === c.n2, "learn key " + $1("#learnkey").getAttribute("aria-pressed") + ", target " + JSON.stringify(S.ctl.learnT)),
 				machine: c => { const m = learnSent.since(c.n).find(x => x.op === "learnStart"); return ok(m && m.t === c.t && m.i === c.i, "sent " + JSON.stringify(learnSent.since(c.n))); } },
@@ -3418,13 +3480,13 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.cc0 != null && knobCcs()[7] !== c.cc0) { u.click(`.srch[data-src="255:${knobCcs()[7]}"]`); await sleep(100); u.click('[data-knobcc="-1"]'); await until(() => knobCcs()[7] === c.cc0, 3000); } await learnTidy(u); }
 	};
-	/* the top bar with MIDI mapping ON (the Control tab and the LEARN key shown), on every workspace including Control, at every window size */
+	/* the top bar with MIDI mapping ON (the CONTROL and LEARN keys shown in Setup), on every workspace including Control, at every window size */
 	const fitMapping = (() => { const mapViews = [1280, 1440, 1500].map(w => ({ name: String(w), width: w, floor: 0 })),
 			b = Journey.fitJourneys("md", ["seq", "sound", "mix", "sampler", "song", "control"], { views: mapViews, after: async (v, w) => { if (w === "control") { await sleep(300); Journey.snapshot("learn-md-" + v.name); } } })[0], st = b.steps[0];
 		return { ...b, name: "md-fit-workspaces-mapping", proves: [], steps: [{ ...st, say: "MIDI mapping on: " + st.say, act: async (u, c) => { await learnIn(u, c, ldoc([])); return st.act(u, c); } }],
 			async tidy(u, c) { await b.tidy(u, c); await learnTidy(u); } }; })();
 	const all = [screensFit, ...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, kitStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
-		paintUndo, stepClickSelect, accentSlide, trigTypesJ, lockLane, laneKitDrag, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
+		paintUndo, stepClickSelect, accentSlide, trigTypesJ, lockLane, laneKitDrag, laneDrawSlide, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
 		genJourney("md-gen-mutate-undo", false, { proves: ["MD-X04", "MD-X05"] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: ["MD-X04"] }), genKeys, genModal, laneTools, gridFits,
 		shapeSound, typeValue, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
 		mixSolo, soloSaved, shiftMutes, allOff, fader, lev, outKey, masterFx,

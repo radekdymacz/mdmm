@@ -1,6 +1,7 @@
 #pragma once
 
 #include "mdMidiLoop.h"
+#include "mdMidiHotplug.h"
 
 #include "deskHost/deskHost.h"
 
@@ -10,6 +11,7 @@
 
 #include <functional>
 #include <string>
+#include <vector>
 
 namespace juce
 {
@@ -37,6 +39,10 @@ namespace mdJucePlugin
 	// The document also says (0.8, WP4): setupError (the device setup's error, B-155), inputPermission (the microphone:
 	// granted, denied, notAsked, unknown), inputNote (why the input is on NONE) and midiLoop (an input that is also the
 	// output, B-154), each "" when there is nothing to say.
+	// MIDI hot-plug (0.8, I-053; mdMidiHotplug.h): JUCE's MidiDeviceListConnection calls on the message thread when a MIDI
+	// device is plugged in or out. The link then publishes the document again, switches back on the inputs the user had
+	// on (matched by identifier, then by name) and the chosen output when they return, and logs each plug and unplug.
+	// The remembered ports (identifier and name) are also written into the saved audio device state.
 	// The start-up log (B-036, B-037): the standalone's devices as one line when the link starts and whenever they
 	// change (summary), and each MIDI port that did not open.
 	class AudioMidiLink final : juce::ChangeListener
@@ -56,6 +62,19 @@ namespace mdJucePlugin
 		// The editor's timer: the input level, a few times a second, while the page asks.
 		void tick();
 		void publish();
+		// The system's MIDI devices changed (the hot-plug callback; public so a test can call it): reconcile, publish, log.
+		void midiDevicesChanged();
+		// The saved audio device state with the remembered MIDI ports: the inputs the user has on (also those whose device
+		// is away) and the output, nothing else (public so a test can check the round trip).
+		// At quit: the standalone holder saves JUCE's own state last, after the link is gone. The link keeps its memory when it
+		// goes; the app calls this with its settings after the window closed, and the saved state is the user's again.
+		// False when there was no standalone link or no saved state.
+		static bool patchSavedSettings(juce::PropertySet& _settings);
+		static bool patchSettings(juce::PropertySet& _settings, const midiHotplug::Memory& _memory);
+		static void patchStateXml(juce::XmlElement& _xml, const std::vector<midiHotplug::Port>& _inputs, const midiHotplug::Port& _output);
+		// What the system offers (the hot-plug test replaces it with a fake list).
+		using PortList = std::function<std::vector<midiHotplug::Port>()>;
+		void setPortLists(PortList _inputs, PortList _outputs);
 
 		bool standalone() const { return holder() != nullptr; }
 		// The standalone's audio and MIDI devices in one line: the driver, the device, its rate and buffer, running or
@@ -74,6 +93,14 @@ namespace mdJucePlugin
 		std::string apply(const elektronData::json::Value& _command);
 		// The summary into the start-up log when it changed.
 		void logDevices();
+		// Switch the remembered inputs and the output back on, the vanished ones off (standalone only).
+		void reconcileMidi();
+		// The plugs and unplugs since the last look, into the log.
+		void logPlugs();
+		// The device state into the settings, with the remembered MIDI ports that are not plugged in.
+		void saveState();
+		void rememberFromState();
+		void syncFromManager();
 
 		juce::AudioProcessor& m_processor;
 		ToPage m_toPage;
@@ -82,6 +109,10 @@ namespace mdJucePlugin
 		std::string m_loopLogged;	// the loop warning last logged
 		std::string m_setupError;	// what the last audio device setup returned ("" = it applied)
 		juce::AudioDeviceManager* m_listening = nullptr;
+		juce::MidiDeviceListConnection m_midiConnection;
+		PortList m_listInputs, m_listOutputs;
+		midiHotplug::Memory m_memory;	// the inputs the user had on (identifier and name) and the chosen output
+		std::vector<midiHotplug::Port> m_seenInputs, m_seenOutputs;	// what the last look at the system listed
 		juce::AudioDeviceManager::LevelMeter::Ptr m_inputLevel;
 		bool m_meter = false;
 		int m_meterTicks = 0;

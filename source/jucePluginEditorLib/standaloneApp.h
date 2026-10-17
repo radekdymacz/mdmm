@@ -306,12 +306,16 @@ namespace jucePluginEditorLib
 		// The window is up (the place to add menus of the application's own), and it is about to go.
 		virtual void windowOpened(StandaloneWindow&) {}
 		virtual void windowClosing(StandaloneWindow&) {}
+		// The window is gone: the holder has made its last save of the settings (the place to correct what it wrote).
+		virtual void windowClosed(juce::PropertySet&) {}
 
 		void shutdown() override
 		{
 			if(m_window)
 				windowClosing(*m_window);
 			m_window = nullptr;
+			if(auto* settings = m_appProperties.getUserSettings())
+				windowClosed(*settings);
 			m_appProperties.saveIfNeeded();
 		}
 

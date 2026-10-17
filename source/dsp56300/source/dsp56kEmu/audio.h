@@ -1,9 +1,12 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <cstdint>
 #include <functional>
+#include <memory>
+#include <vector>
 #include <cstring> // memcpy
 
 #include "dsp56kBase/fastmath.h"
@@ -127,9 +130,18 @@ namespace dsp56k
 
 		bool hasRingBuffers() const { return m_useRingBuffers; }
 
+		// The DSP thread calls the current callback from writeTXimpl while the host thread swaps it
+		// here (boot hand-off, terminate()). Assigning the std::function in place let the DSP thread
+		// observe it mid-swap and throw bad_function_call, which nothing catches on a DSP thread, so
+		// the process aborted. Publish an immutable new callback with one atomic store instead and
+		// keep the replaced ones alive - setCallback is a boot/teardown operation, a handful of calls
+		// per instance, and only ever from the host/UC thread.
 		void setCallback(const AudioCallback& _ac)
 		{
-			m_callback = _ac ? _ac : [](Audio*) {};
+			auto cb = std::make_unique<AudioCallback>(_ac ? _ac : AudioCallback([](Audio*) {}));
+			auto* const c = cb.get();
+			m_callbacks.emplace_back(std::move(cb));
+			m_callback.store(c, std::memory_order_release);
 		}
 
 		void writeEmptyAudioIn(const size_t _len)
@@ -206,13 +218,18 @@ namespace dsp56k
 		template<typename T, typename TFunc>
 		void processAudioOutput(const uint32_t _frames, const TFunc& _readOutputCbk)
 		{
-			for (uint32_t i = 0; i < _frames; ++i)
+			// One wait for many frames: a wait per frame woke this thread for every frame the DSP wrote. At most half
+			// of the ring at once, the DSP must find room for the frames after them
+			constexpr uint32_t maxChunk = static_cast<uint32_t>(decltype(m_audioOutputs)::capacity() / 2);
+
+			for (uint32_t i = 0; i < _frames;)
 			{
-				m_audioOutputs.waitNotEmpty();
-				m_audioOutputs.pop_front([&](TxFrame& _frame)
+				const auto count = std::min(_frames - i, maxChunk);
+				m_audioOutputs.pop_front(count, [&](const size_t _j, TxFrame& _frame)
 				{
-					_readOutputCbk(i, _frame);
+					_readOutputCbk(i + static_cast<uint32_t>(_j), _frame);
 				});
+				i += count;
 			}
 		}
 
@@ -271,7 +288,8 @@ namespace dsp56k
 		void readRXimpl(RxFrame& _values);
 		void writeTXimpl(const TxFrame& _values);
 
-		AudioCallback m_callback;
+		std::atomic<const AudioCallback*> m_callback;
+		std::vector<std::unique_ptr<AudioCallback>> m_callbacks;	// owns every callback ever set, see setCallback
 
 		static void incFrameSync(uint32_t& _frameSync)
 		{

@@ -360,6 +360,8 @@ The roll on **Pattern** draws notes with a length and moves them. There is no mo
 9. Hold [⌘] and drag over steps to select them, then press {key:delete} to remove what is selected.
 10. Press {key:undo} for each step you took.
 
+The keys at the left of the roll play the track. A key is lit while you hold it with the mouse, with the computer keyboard or with a MIDI keyboard, as on **Perform**.
+
 On **Transpose**, click a key of its keyboard to set the transpose of the track. On a MIDI track the length is a number of ticks: a 1/16 note is 6, and three steps are 18.
 
 ## WHAT YOU DRAW IS WHAT PLAYS
@@ -381,11 +383,11 @@ What you enter in the sequencer is what the machine plays. The notes you draw re
 7. Press {key:play-stop} again. The position moves through the pattern and the machine plays silence.
 
 ## MIDI LEARN
-<!-- rows: MM-X27 @7050cc -->
+<!-- rows: MM-X27 @d9536a -->
 
 The Monomachine has no such function. With MIDI Learn a knob or fader of your controller moves any value of the editor, on any track. The machine's own CC map stays for everything you do not map.
 
-1. Click the **Control** tab.
+1. Click the **Control** key in the Setup group, right of **Learn**, or press [6]. Click it again to leave.
 2. Press **Learn** (L). The key lights.
 3. Click a value, for example the **DEC** of the amplifier on track 1.
 4. Turn a knob on your controller from one end to the other and back. The mapping is made, and the knob now moves that value.

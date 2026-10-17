@@ -61,8 +61,6 @@ namespace dsp56k
 		m_tx.fill(0);
 		m_rx.fill(0);
 
-		m_sr.set(SSISR_TDE);
-		m_sr.set(SSISR_TFS);
 	}
 
 	void Essi::reset()

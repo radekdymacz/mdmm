@@ -79,7 +79,7 @@ namespace dsp56k
 	{
 		auto& p = m_block.dspRegPool();
 
-		if(p.isParallelOp() && m_write)
+		if(p.aluNeedsWriteReg(m_aluIndex) && m_write)
 		{
 			// ALU write registers stay locked
 		}
@@ -116,9 +116,15 @@ namespace dsp56k
 			}
 		};
 
-		if(p.isParallelOp() && m_write)
+		if(p.aluNeedsWriteReg(m_aluIndex) && m_write)
 		{
 			JitRegGP rRead;
+
+			// A parallel instruction takes the write latch in whichever half writes the accumulator first.
+			// If the move half writes part of the same accumulator after the ALU half, the latch already
+			// holds the ALU result, and seeding it from the read register again would throw that result
+			// away - an "lsr a  #0,a0" kept A1 unshifted. Seed it only when this instruction has not taken it.
+			const bool latchHeld = p.isLocked(dspRegW);
 
 			if(m_read)
 			{
@@ -133,7 +139,8 @@ namespace dsp56k
 
 			if(m_read)
 			{
-				m_block.asm_().mov(r, rRead);
+				if(!latchHeld)
+					m_block.asm_().mov(r, rRead);
 
 				if(m_lockedByUs)
 				{

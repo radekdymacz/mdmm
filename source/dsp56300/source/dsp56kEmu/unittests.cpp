@@ -139,6 +139,13 @@ namespace dsp56k
 		subr();
 		tst();
 		nop();
+		hostStatusRegisterReadOnly();
+		ccrGroundTruth();
+		bitTestMemoryEaUpdate();
+		subr_leftAligned();
+		timerPrescaler();
+		bitmodOnSR();
+		bitmodOnSR_deferredCCR();
 
 		// jumps
 		jmp();
@@ -163,6 +170,10 @@ namespace dsp56k
 		// multiply
 		mpyi();
 		mpy_su();
+		maci_xxxx();
+		mpyMacSignedUnsigned();
+		macr_rounded();
+		max_parallel();
 
 		// newly implemented
 		eor_xx();
@@ -235,7 +246,7 @@ namespace dsp56k
 		run(+1, {CCCC_Plus, CCCC_GreaterEqual, CCCC_GreaterThan, CCCC_NotEqual, CCCC_CarryClear, CCCC_ExtensionClear});
 		run(-1, {CCCC_Minus, CCCC_LessEqual, CCCC_LessThan, CCCC_NotEqual, CCCC_CarryClear, CCCC_ExtensionClear});
 
-		run(0, {CCCC_Equal, CCCC_LessEqual, CCCC_GreaterEqual, CCCC_CarryClear, CCCC_ExtensionClear, CCCC_NotNormalized});
+		run(0, {CCCC_Equal, CCCC_LessEqual, CCCC_GreaterEqual, CCCC_CarryClear, CCCC_ExtensionClear, CCCC_Normalized});
 
 		run(0xff'ffffff'ffffff, {CCCC_Minus, CCCC_ExtensionClear});
 		run(0xff'800000'000000, {CCCC_Minus, CCCC_ExtensionClear});
@@ -244,7 +255,7 @@ namespace dsp56k
 		run(0x00'800000'000000, {CCCC_Plus, CCCC_ExtensionSet});
 
 		run(0x00'c00000'000000, {CCCC_Plus, CCCC_NotNormalized});
-		run(0x00'000000'000000, {CCCC_Plus, CCCC_NotNormalized});
+		run(0x00'000000'000000, {CCCC_Plus, CCCC_Normalized});
 		run(0xff'800000'000000, {CCCC_Minus, CCCC_Normalized});
 		run(0x00'400000'000000, {CCCC_Plus, CCCC_Normalized});
 
@@ -275,6 +286,47 @@ namespace dsp56k
 								<< " sr=" << dsp.getSR().var << " expected=" << extension);
 						verify(bool(dsp.sr_test(CCR_E)) == extension);
 					});
+			}
+		}
+
+		// The whole CCR space, for the conditions that combine several bits. It is the only way to pin
+		// these rules down: an accumulator value can only reach a handful of the 256 states, so tst
+		// alone cannot tell a correct rule from one that happens to agree on the reachable ones. Both
+		// references are sim56300 with SR preloaded across $00..$ff.
+		//
+		// NR is Z | (!U & !E), not (Z|U|E) == 0 - a zero accumulator is normalized however U and E
+		// read. jnr branches in 160 states; requiring all three bits clear branches in 32 and
+		// disagrees in exactly the 128 that have Z set.
+		//
+		// LE is Z | (N ^ V) and GT its exact complement. jle branches in 192 states, jgt in 64.
+		for (TWord ccr = 0; ccr < 256; ++ccr)
+		{
+			const bool normalized = (ccr & CCR_Z) != 0 || (ccr & (CCR_U | CCR_E)) == 0;
+			const bool lessEqual = (ccr & CCR_Z) != 0 || ((ccr & CCR_N) != 0) != ((ccr & CCR_V) != 0);
+
+			for (const ConditionCode cc : {CCCC_Normalized, CCCC_NotNormalized, CCCC_LessEqual, CCCC_GreaterThan})
+			{
+				runTest([&]()
+				{
+					dsp.resetHW();
+					dsp.setSR(0x000300 | ccr);
+
+					dsp.reg.r[0].var = 0x1;
+					dsp.reg.r[1].var = 0x0;
+
+					emit(0x020801 | (cc << 12));	// tcc r0,r1
+				}, [&]()
+				{
+					bool expected = false;
+					switch (cc)
+					{
+					case CCCC_Normalized:		expected = normalized;	break;
+					case CCCC_NotNormalized:	expected = !normalized;	break;
+					case CCCC_LessEqual:		expected = lessEqual;	break;
+					default:					expected = !lessEqual;	break;
+					}
+					verify(dsp.regs().r[1] == (expected ? 1 : 0));
+				});
 			}
 		}
 	}
@@ -355,6 +407,23 @@ namespace dsp56k
 		}, [&]()
 		{
 			verify(dsp.regs().r[0] == 0x0ba601);
+		});
+
+		runTest([&]()
+		{
+			// a buffer at address zero, stepping below it
+			dsp.set_m(0, 0x0000ff);
+			dsp.regs().r[0].var = 0x000000;
+			dsp.set_m(1, 0x0000ff);
+			dsp.regs().r[1].var = 0x000010;
+			dsp.regs().n[1].var = 0x000020;
+
+			emit("move (r0)-");
+			emit("move (r1)-n1");
+		}, [&]()
+		{
+			verify(dsp.regs().r[0] == 0x0000ff);
+			verify(dsp.regs().r[1] == 0x0000f0);
 		});
 	}
 
@@ -2041,7 +2110,50 @@ namespace dsp56k
 		{
 			verify(dsp.regs().n[0].var == 0x2a);
 		});
-	}
+	
+		// Ground truth captured from the reference simulator with a = $0000ff00123456. The shift count in
+		// S is signed: S[23] set means shift left by -S.
+		//
+		//     y0 $000000 -> $0000ff00123456 sr $000310     y0 $ffffff -> $0001fe002468ac sr $000310
+		//     y0 $000001 -> $00007f80091a2b sr $000310     y0 $fffffc -> $000ff001234560 sr $000310
+		//     y0 $000004 -> $00000ff0012345 sr $000310     y0 $ffffe9 -> $80091a2b000000 sr $00037a
+		//     y0 $000017 -> $0000000001fe00 sr $000310     y0 $ffffc1 -> $00000000000000 sr $000356
+		//     y0 $00003f -> $00000000000000 sr $000314
+		//
+		// Only the accumulator is asserted. The CCR is not faithful for this instruction yet: hardware
+		// leaves C untouched where both engines write it, and neither sets L on the ASL overflow that
+		// $ffffe9 and $ffffc1 produce - sr $37a and $356 both carry it. Pre-existing, tracked separately;
+		// the values above are what to fix them against.
+		{
+			struct Case { TWord shift; uint64_t result; TWord ccr; };
+			static constexpr Case cases[] =
+			{
+				{ 0x000000, 0x0000ff00123456ull, 0x10 }, { 0x000001, 0x00007f80091a2bull, 0x10 },
+				{ 0x000004, 0x00000ff0012345ull, 0x10 }, { 0x000017, 0x0000000001fe00ull, 0x10 },
+				{ 0x00003f, 0x00000000000000ull, 0x14 }, { 0xffffff, 0x0001fe002468acull, 0x10 },
+				{ 0xfffffc, 0x000ff001234560ull, 0x10 }, { 0xffffe9, 0x80091a2b000000ull, 0x7a },
+				{ 0xffffc1, 0x00000000000000ull, 0x56 },
+			};
+
+			for (const auto& c : cases)
+			{
+				runTest([&]()
+				{
+					dsp.setSR(0x000300);
+					dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(0x0000ff00123456ull)));
+					dsp.y0(TReg24(static_cast<int>(c.shift)));
+					emit("normf y0,a");
+				},
+				[&]()
+				{
+					verify(static_cast<uint64_t>(dsp.aluA().var) == c.result);
+
+					for (const auto bit : {CCR_C, CCR_V, CCR_Z, CCR_N, CCR_U, CCR_E, CCR_L})
+						verify((dsp.sr_test(bit) != 0) == ((c.ccr & bit) != 0));
+				});
+			}
+		}
+}
 
 	void UnitTests::lsl()
 	{
@@ -4038,15 +4150,36 @@ namespace dsp56k
 
 	void UnitTests::mpyi()
 	{
-		runTest([&]()
+		// The immediate is a SIGNED 24-bit value (the interpreter sign extends it via
+		// TReg24::signextend), so an immediate with bit 23 set is negative. Anything at or
+		// above $800000 is the only regime where that is observable - below it signed and
+		// unsigned agree, which is why the firmware's own `maci #>$7fdf3b` never exposed it.
+		auto check = [&](const char* _op, const TWord _x0, const TWord _imm, const bool _negate)
 		{
-			dsp.x0(0x100000);
-			dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(0)));
-			emit("mpyi #>$4,x0,a");
-		}, [&]()
-		{
-			verify(dsp.aluA().var != 0);
-		});
+			runTest([&]()
+			{
+				dsp.x0(_x0);
+				dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(0)));
+				emit(_op);
+			}, [&]()
+			{
+				const int64_t s1 = (_x0  & 0x800000) ? static_cast<int64_t>(_x0)  - 0x1000000 : static_cast<int64_t>(_x0);
+				const int64_t s2 = (_imm & 0x800000) ? static_cast<int64_t>(_imm) - 0x1000000 : static_cast<int64_t>(_imm);
+
+				int64_t res = (s1 * s2) << 1;
+				if (_negate)
+					res = -res;
+
+				verify(dsp.aluA().var == (static_cast<uint64_t>(res) & 0x00FFFFFFFFFFFFFFULL));
+			});
+		};
+
+		check("mpyi #>$4,x0,a",       0x100000, 0x000004, false);	// original case, small positive
+		check("mpyi #>$400000,x0,a",  0x400000, 0x400000, false);	// +0.5 * +0.5
+		check("mpyi #>$c00000,x0,a",  0x400000, 0xc00000, false);	// immediate NEGATIVE (bit 23 set)
+		check("mpyi #>$400000,x0,a",  0xc00000, 0x400000, false);	// operand negative
+		check("mpyi #>$ffffff,x0,a",  0x7fffff, 0xffffff, false);	// immediate = -1 ulp
+		check("mpyi #>$800000,x0,a",  0x400000, 0x800000, false);	// immediate = -1.0 exactly
 	}
 
 	void UnitTests::mpy_su()
@@ -5093,4 +5226,612 @@ namespace dsp56k
 
 		verify(dsp.aluA().var == 0x00000003000000);	// 3 adds total
 	}
+
+	void UnitTests::max_parallel()
+	{
+		// Regression for the coef-builder $47b: `max a,b  x1,a` (opcode $20AE1D).
+		// The parallel move x1->a MUST be applied alongside the ALU max. The JIT's op_Max
+		// took its accumulator via AluRef(...,true) which writes `a` back; in the parallel-op
+		// latch commit that OVERWROTE the x1->a move, leaving `a` unchanged. The interpreter's
+		// op_Max never touches reg.a, so it was already correct -> a JIT-only divergence that
+		// only surfaces when MAX carries a parallel move into A/B. Caught by diffing our DSP
+		// against Freescale sim56300 (which keeps a=x1). Runs on JIT + interpreter.
+		auto chk = [&](const uint64_t aIn, const uint64_t bIn, const TWord x1In,
+					   const uint64_t expA, const uint64_t expB, const char* tag)
+		{
+			runTest([&]()
+			{
+				dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(aIn)));
+				dsp.setALU(true , TReg56(static_cast<TReg56::MyType>(bIn)));
+				dsp.regs().x.var = static_cast<uint64_t>(x1In) << 24;	// x1 = hiword(x), x0 = 0
+				emit(0x20AE1D);											// max a,b  x1,a
+			}, [&]()
+			{
+				verify(dsp.aluA().var == expA);	// the parallel move x1 -> a (the JIT regression)
+				verify(dsp.aluB().var == expB);	// the ALU max result -> b
+			});
+		};
+		// a<b — the firmware case: min_q (a, negative) vs formula (b, positive). b kept, move applies.
+		chk(0xFFF15A00000000ULL, 0x0008A593E88000ULL, 0x03050A, 0x0003050A000000ULL, 0x0008A593E88000ULL, "minq<0 movex1");
+		// a>b — transfer performed (b<-a); the parallel move into A must STILL apply.
+		chk(0x00400000000000ULL, 0x00100000000000ULL, 0x123456, 0x00123456000000ULL, 0x00400000000000ULL, "a>b movex1");
+	}
+
+	void UnitTests::maci_xxxx()
+	{
+		// MACI accumulates s1 * immediate into the destination accumulator.
+		// the firmware uses `maci #>$7fdf3b,x0,b` at DSP1 PC=$152
+		// inside the oscillator handler. Without this op the DSP crashes the
+		// first time it reaches voice synthesis.
+		auto check = [&](const TWord _x0, const TWord _imm, const uint64_t _seed)
+		{
+			runTest([&]()
+			{
+				dsp.x0(_x0);
+				dsp.setALU(true, TReg56(static_cast<TReg56::MyType>(_seed)));
+				emit(0x0141ca, _imm);				// maci #>$imm,x0,b
+			}, [&]()
+			{
+				const auto sext = [](const TWord _v) -> int64_t
+				{
+					return (_v & 0x800000) ? static_cast<int64_t>(_v) - 0x1000000 : static_cast<int64_t>(_v);
+				};
+				const int64_t res = static_cast<int64_t>(_seed) + ((sext(_x0) * sext(_imm)) << 1);
+				verify(dsp.aluB().var == (static_cast<uint64_t>(res) & 0x00FFFFFFFFFFFFFFULL));
+			});
+		};
+
+		check(0x400000, 0x7fdf3b, 0x00100000000000);	// the real firmware operand
+		check(0x400000, 0x400000, 0x00100000000000);
+		check(0x400000, 0xc00000, 0x00100000000000);	// immediate NEGATIVE (bit 23 set)
+		check(0xc00000, 0x7fdf3b, 0x00100000000000);	// operand negative
+		check(0x400000, 0xffffff, 0x00000000000000);	// immediate = -1 ulp, zero seed
+	}
+
+	void UnitTests::mpyMacSignedUnsigned()
+	{
+		// The full signed/unsigned matrix for the multiplier, because the three modes do
+		// NOT share one code path: ss reaches alu_mpy through alu_multiply, while su and
+		// uu reach it through op_Mpy_su, which decodes its operands differently (s2 is
+		// never sign extended, s1 only in su) and hands alu_mpy a differently scaled
+		// operand. macuu in particular had no coverage at all before this.
+		//
+		// Every operand pair below is checked against a value derived from the ISA
+		// definition rather than a recorded result, and the pairs deliberately straddle
+		// $800000 - below it signed and unsigned agree and the modes are
+		// indistinguishable, so a mode mix-up only shows up above it.
+
+		enum Mode { SS, SU, UU };
+
+		auto sext = [](const TWord _v) -> int64_t
+		{
+			return (_v & 0x800000) ? static_cast<int64_t>(_v) - 0x1000000 : static_cast<int64_t>(_v);
+		};
+
+		// s1 = y1, s2 = y0: the only register pair encodable in BOTH the 3-bit qqq used
+		// by mpy/mac and the 4-bit qqqq used by the su/uu forms (entry 3 in either table)
+		auto check = [&](const char* _op, const Mode _mode, const bool _accumulate, const bool _negate,
+						 const TWord _s1, const TWord _s2, const uint64_t _seed)
+		{
+			runTest([&]()
+			{
+				dsp.y1(_s1);
+				dsp.y0(_s2);
+				dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(_seed)));
+				emit(_op);
+			}, [&]()
+			{
+				const int64_t a = (_mode == UU) ? static_cast<int64_t>(_s1) : sext(_s1);
+				const int64_t b = (_mode == SS) ? sext(_s2) : static_cast<int64_t>(_s2);
+
+				int64_t prod = (a * b) << 1;			// fractional multiply: one post-shift
+				if (_negate)
+					prod = -prod;
+
+				const int64_t seed = static_cast<int64_t>(_seed);
+				const uint64_t expected = static_cast<uint64_t>(_accumulate ? seed + prod : prod) & 0x00FFFFFFFFFFFFFFULL;
+
+				verify(dsp.aluA().var == expected);
+			});
+		};
+
+		constexpr uint64_t seed = 0x00001234560000ULL;	// non-zero, so mac cannot pass as mpy
+
+		// operands: below $800000 (signed==unsigned), at and above it (they diverge), and the extremes
+		constexpr TWord lo = 0x400000, hi = 0xC00000, max = 0x7FFFFF, top = 0xFFFFFF, tiny = 0x000020;
+
+		struct Case { const char* mpy; const char* mac; Mode mode; };
+		const Case cases[] =
+		{
+			{ "mpy y1,y0,a",   "mac y1,y0,a",   SS },
+			{ "mpysu y1,y0,a", "macsu y1,y0,a", SU },
+			{ "mpyuu y1,y0,a", "macuu y1,y0,a", UU },
+		};
+
+		for (const auto& c : cases)
+		{
+			for (const auto s1 : { lo, hi, max, top, tiny })
+			{
+				for (const auto s2 : { lo, hi, max, top, tiny })
+				{
+					check(c.mpy, c.mode, false, false, s1, s2, seed);
+					check(c.mac, c.mode, true , false, s1, s2, seed);
+				}
+			}
+		}
+
+		// negated forms: -s1 flips the sign of the product, and for mac that is a
+		// subtract from the accumulator rather than an add
+		check("mpy -y1,y0,a",   SS, false, true, hi,  lo,  seed);
+		check("mac -y1,y0,a",   SS, true , true, hi,  lo,  seed);
+		check("mpy -y1,y0,a",   SS, false, true, max, top, seed);
+		check("mac -y1,y0,a",   SS, true , true, max, top, seed);
+		check("mpysu -y1,y0,a", SU, false, true, hi,  hi,  seed);
+		check("macsu -y1,y0,a", SU, true , true, hi,  hi,  seed);
+		check("mpyuu -y1,y0,a", UU, false, true, hi,  hi,  seed);
+		check("macuu -y1,y0,a", UU, true , true, hi,  hi,  seed);
+	}
+
+	void UnitTests::macr_rounded()
+	{
+		// MACR/MPYR are MAC/MPY followed by alu_rnd. Nothing exercised the rounded forms
+		// before, so the rounding half of four instructions (Macr_S1S2, Macr_S, Mpyr_S1S2D,
+		// Macri_xxxx) was unverified. SR is pinned to 0: no scaling, so the rounding position
+		// is bit 23, and convergent rounding (RM clear) rather than two's complement.
+		auto round = [](uint64_t _a)
+		{
+			constexpr uint64_t rounder = 0x800000ULL;
+			constexpr uint64_t mask = (rounder << 1) - 1;
+			_a += rounder;
+			if ((_a & mask) == 0)
+				_a &= ~(rounder << 1);			// convergent: force even at the rounding position
+			_a &= ~mask;
+			return _a & 0x00FFFFFFFFFFFFFFULL;
+		};
+
+		auto check = [&](const char* _op, const bool _accumulate, const TWord _s1, const TWord _s2, const uint64_t _seed)
+		{
+			runTest([&]()
+			{
+				dsp.y1(_s1);
+				dsp.y0(_s2);
+				dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(_seed)));
+				dsp.setSR(0);
+				emit(_op);
+			}, [&]()
+			{
+				const auto sext = [](const TWord _v) -> int64_t
+				{
+					return (_v & 0x800000) ? static_cast<int64_t>(_v) - 0x1000000 : static_cast<int64_t>(_v);
+				};
+
+				const int64_t prod = (sext(_s1) * sext(_s2)) << 1;
+				const int64_t sum = _accumulate ? static_cast<int64_t>(_seed) + prod : prod;
+
+				verify(dsp.aluA().var == round(static_cast<uint64_t>(sum) & 0x00FFFFFFFFFFFFFFULL));
+			});
+		};
+
+		// seeds chosen to land on both sides of the rounding position, including the exact
+		// tie ($800000) where convergent rounding differs from round-half-up
+		for (const uint64_t seed : { 0x00000000000000ULL, 0x00000000800000ULL,
+									 0x00000000c00000ULL, 0x00000001800000ULL,
+									 0x00fffffff0000000ULL & 0x00FFFFFFFFFFFFFFULL })
+		{
+			check("mpyr y1,y0,a", false, 0x400000, 0x400000, seed);
+			check("macr y1,y0,a", true , 0x400000, 0x400000, seed);
+			check("macr y1,y0,a", true , 0xc00000, 0x400000, seed);	// negative product
+			check("macr y1,y0,a", true , 0x000020, 0x000020, seed);	// tiny product: rounding dominates
+			check("macr y1,y0,a", true , 0x7fffff, 0x7fffff, seed);
+		}
+	}
+
+	void UnitTests::bitmodOnSR()
+	{
+		// BSET/BCLR/BCHG normally write C from the tested bit. When the destination is SR that write
+		// does not survive: the modified SR is written back wholesale, bit 0 included, so the bit
+		// operation behaves as a plain read-modify-write of SR. All eight cases below were measured on
+		// the Freescale reference simulator - note in particular that bchg/bclr of a SET bit 3 leave C
+		// clear rather than setting it from the old bit.
+		const auto run = [&](const char* _code, const TWord _srIn)
+		{
+			TWord result = 0;
+			runTest([&]()
+			{
+				dsp.setSR(_srIn);
+				emit(_code);
+			},
+			[&]()
+			{
+				dsp.sr_test(CCR_C);		// force any lazy evaluation before reading the raw value
+				result = dsp.getSR().var;
+			});
+			return result;
+		};
+
+		verify(run("bchg #$3,sr", 0xc00308) == 0xc00300);	// N toggled off, C NOT set from the old bit
+		verify(run("bchg #$3,sr", 0xc00300) == 0xc00308);	// N toggled on
+		verify(run("bclr #$3,sr", 0xc00308) == 0xc00300);	// N cleared, C still clear
+		verify(run("bset #$3,sr", 0xc00300) == 0xc00308);	// N set
+
+		// bit 0 is C itself, where the bit operation and the C write would collide - the bit wins
+		verify(run("bchg #$0,sr", 0xc00301) == 0xc00300);
+		verify(run("bchg #$0,sr", 0xc00300) == 0xc00301);
+		verify(run("bclr #$0,sr", 0xc00301) == 0xc00300);
+		verify(run("bset #$0,sr", 0xc00300) == 0xc00301);
+	}
+
+	void UnitTests::bitmodOnSR_deferredCCR()
+	{
+		// The JIT evaluates condition codes lazily, so an ALU result can still be pending when a bit
+		// operation on SR runs. Modifying SR through a plain register reference used to change the bit
+		// while that update was outstanding, and the update then overwrote it - so this toggle of N
+		// silently did nothing. Interpreter path was never affected; this only fails under the JIT.
+		//
+		// The idiom is real: a softfloat compare in TC M-One XL firmware inverts N in front of a
+		// conditional branch to reverse the sense of a comparison for negative operands.
+		const auto run = [&](const bool _withToggle)
+		{
+			dsp.resetHW();
+
+			TWord pc = 0x100;
+			pc = emitToMemory("jsr $200", pc);
+			const auto returnPC = pc;
+			emitToMemory("nop", pc);
+
+			pc = 0x200;
+			pc = emitToMemory("move #>$6,b", pc);
+			pc = emitToMemory("move #>$9,x0", pc);
+			pc = emitToMemory("cmp x0,b", pc);		// 6 - 9, N set and left deferred
+			if(_withToggle)
+				pc = emitToMemory("bchg #$3,sr", pc);
+			emitToMemory("rts", pc);
+
+			dsp.setPC(0x100);
+			execUntil(returnPC);
+
+			return dsp.sr_test(CCR_N) != 0;
+		};
+
+		verify(run(false));		// the compare on its own leaves N set
+		verify(!run(true));		// and the toggle has to clear it
+	}
+
+	void UnitTests::timerPrescaler()
+	{
+		constexpr TWord g_reload = 1000;			// TPLR+1
+		constexpr TWord g_compare = 10;
+
+		const auto tcf = [&](const int _index)
+		{
+			return (peripheralsX.getTimers().readTCSR(_index) & (1 << Timer::M_TCF)) != 0;
+		};
+
+		const auto runInstructions = [&](const uint32_t _count)
+		{
+			for (uint32_t i = 0; i < _count; ++i)
+				execStep();
+		};
+
+		dsp.memWritePeriph(MemArea_X, Timers::M_TPLR, g_reload - 1);
+
+		// timer 0 prescaled, timer 1 straight off the prescaler input
+		dsp.memWritePeriph(MemArea_X, Timers::M_TCPR0, g_compare);
+		dsp.memWritePeriph(MemArea_X, Timers::M_TLR0, 0);
+		dsp.memWritePeriph(MemArea_X, Timers::M_TCPR1, g_compare);
+		dsp.memWritePeriph(MemArea_X, Timers::M_TLR1, 0);
+
+		// a two instruction loop to burn time in - earlier tests have left opcodes lying around in
+		// P memory, so running from an arbitrary address is not the field of NOPs it looks like
+		dsp.memWriteP(0x100, 0x000000);				// nop
+		emitToMemory("jmp $100", 0x101);
+		dsp.setPC(0x100);
+		dsp.memWritePeriph(MemArea_X, Timers::M_TCSR0, (1 << Timer::M_TE) | (1 << Timer::M_PCE));
+		dsp.memWritePeriph(MemArea_X, Timers::M_TCSR1, (1 << Timer::M_TE));
+
+		// Enough input clocks for the unprescaled timer to compare many times over, but only a couple
+		// of prescaler output ticks - far short of the compare value. Without the prescaler both
+		// timers fire here, which is the bug.
+		runInstructions(4096);
+
+		verify(tcf(1));								// unprescaled: long past its compare
+		verify(!tcf(0));							// prescaled: must not have got there yet
+
+		// ... and now give it enough prescaler ticks to actually reach the compare value
+		runInstructions(g_reload * g_compare * 4);
+
+		verify(tcf(0));
+	}
+
+	void UnitTests::subr_leftAligned()
+	{
+		struct Case { uint64_t a, b, result; TWord ccr; };
+		static constexpr Case cases[] =
+		{
+			{ 0x7fffffffffffffull, 0x00000000000001ull, 0x3ffffffffffffeull, 0x30 },
+			{ 0x80000000000000ull, 0x00ffffffffffffull, 0xbf000000000001ull, 0x38 },
+			{ 0xc0000000000000ull, 0x40000000000000ull, 0xa0000000000000ull, 0x38 },
+		};
+
+		for (const auto& c : cases)
+		{
+			runTest([&]()
+			{
+				dsp.setSR(0x000300);
+				dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(c.a)));
+				dsp.setALU(true , TReg56(static_cast<TReg56::MyType>(c.b)));
+				emit("subr b,a");
+			},
+			[&]()
+			{
+				verify(static_cast<uint64_t>(dsp.aluA().var) == c.result);
+				for (const auto bit : {CCR_C, CCR_V, CCR_Z, CCR_N, CCR_U, CCR_E})
+					verify((dsp.sr_test(bit) != 0) == ((c.ccr & bit) != 0));
+			});
+		}
+	}
+
+	void UnitTests::bitTestMemoryEaUpdate()
+	{
+		// not taken: the bit is set, jclr jumps only when clear
+		runTest([&]()
+		{
+			dsp.setSR(0x000300);
+			dsp.regs().r[4].var = 0x100;
+			dsp.memWrite(MemArea_Y, 0x100, 0x000001);
+			emit(0x0a5cc0, 0x000200);		// jclr #$0,y:(r4)+,$200
+		}, [&]()
+		{
+			verify(dsp.regs().r[4].var == 0x101);
+		});
+
+		// taken: the bit is clear. The update has to happen here too, and did before the fix.
+		runTest([&]()
+		{
+			dsp.setSR(0x000300);
+			dsp.regs().r[4].var = 0x100;
+			dsp.memWrite(MemArea_Y, 0x100, 0x000000);
+			emit(0x0a5cc0, 0x000200);
+		}, [&]()
+		{
+			verify(dsp.regs().r[4].var == 0x101);
+		});
+
+		// The remaining updating addressing modes, all on the not-taken path, plus the pc-relative form.
+		// The bug was in the shared bitTestMemory, so these cover the same fix through different decoders
+		// rather than a different defect.
+
+		// post-decrement, X memory, jset: jset jumps when the bit is SET, so a clear bit is not taken
+		runTest([&]()
+		{
+			dsp.setSR(0x000300);
+			dsp.regs().r[2].var = 0x100;
+			dsp.memWrite(MemArea_X, 0x100, 0x000000);
+			emit(0x0a52a0, 0x000200);		// jset #$0,x:(r2)-,$200
+		}, [&]()
+		{
+			verify(dsp.regs().r[2].var == 0xff);
+		});
+
+		// indexed by Nn: r4 must advance by n4, not by one
+		runTest([&]()
+		{
+			dsp.setSR(0x000300);
+			dsp.regs().r[4].var = 0x100;
+			dsp.regs().n[4].var = 0x5;
+			dsp.memWrite(MemArea_Y, 0x100, 0x000001);
+			emit(0x0a4cc0, 0x000200);		// jclr #$0,y:(r4)+n4,$200
+		}, [&]()
+		{
+			verify(dsp.regs().r[4].var == 0x105);
+		});
+
+		// brclr: the pc-relative branch form goes through the same helper
+		runTest([&]()
+		{
+			dsp.setSR(0x000300);
+			dsp.regs().r[4].var = 0x100;
+			dsp.memWrite(MemArea_Y, 0x100, 0x000001);
+			emit(0x0c9c40, 0x000100);		// brclr #$0,y:(r4)+,+$100
+		}, [&]()
+		{
+			verify(dsp.regs().r[4].var == 0x101);
+		});
+	}
+
+	void UnitTests::ccrGroundTruth()
+	{
+		constexpr auto ccr = [](const TWord _sr) { return _sr & 0xff; };
+
+		// ---- DIV: V is set when bits 55 and 54 of the destination differ, and L follows V.
+		// sim: sr=$000300 a=$40000000000000 x0=$40d249 -> a=$7fbf2db7000000 sr=$000343
+		runTest([&]()
+		{
+			dsp.setSR(0x000300);
+			dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(0x40000000000000)));
+			dsp.x0(0x40d249);
+			emit("div x0,a");
+		}, [&]()
+		{
+			verify(dsp.aluA().var == 0x7fbf2db7000000);
+			verify(ccr(dsp.getSR().var) == 0x43);		// C | V | L
+		});
+
+		// sim: sr=$000300 a=$00000000000000 x0=$40d249 -> a=$ffbf2db7000000 sr=$000300
+		runTest([&]()
+		{
+			dsp.setSR(0x000300);
+			dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(0x00000000000000)));
+			dsp.x0(0x40d249);
+			emit("div x0,a");
+		}, [&]()
+		{
+			verify(dsp.aluA().var == 0xffbf2db7000000);
+			verify(ccr(dsp.getSR().var) == 0x00);
+		});
+
+		// sim: sr=$000300 a=$c0000000000000 x0=$40d249 -> a=$8040d249000000 sr=$000300
+		runTest([&]()
+		{
+			dsp.setSR(0x000300);
+			dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(0xc0000000000000)));
+			dsp.x0(0x40d249);
+			emit("div x0,a");
+		}, [&]()
+		{
+			verify(dsp.aluA().var == 0x8040d249000000);
+			verify(ccr(dsp.getSR().var) == 0x00);
+		});
+
+		// ---- NEG: negating the 56 bit minimum is the one input that overflows.
+		// sim: sr=$000300 a=$80000000000000 -> a=$80000000000000 sr=$00037a
+		runTest([&]()
+		{
+			dsp.setSR(0x000300);
+			dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(0x80000000000000)));
+			emit("neg a");
+		}, [&]()
+		{
+			verify(dsp.aluA().var == 0x80000000000000);
+			verify(ccr(dsp.getSR().var) == 0x7a);		// V | N | U | E | L
+		});
+
+		// sim: sr=$000300 a=$00000000000001 -> a=$ffffffffffffff sr=$000318
+		runTest([&]()
+		{
+			dsp.setSR(0x000300);
+			dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(0x00000000000001)));
+			emit("neg a");
+		}, [&]()
+		{
+			verify(dsp.aluA().var == 0xffffffffffffff);
+			verify(ccr(dsp.getSR().var) == 0x18);		// N | U
+		});
+
+		// ---- E in Scale Up mode (S1=1, S0=0): the integer portion is bits 55..46, so bit 55
+		// takes part. Both values below have bits 54..46 all-equal and bit 55 different, which
+		// is precisely the case a mask that drops bit 55 gets wrong.
+		// sim: sr=$000b00 a=$80000000000000 tst a -> sr=$000b38
+		runTest([&]()
+		{
+			dsp.setSR(0x000b00);
+			dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(0x80000000000000)));
+			emit("tst a");
+		}, [&]()
+		{
+			verify(ccr(dsp.getSR().var) == 0x38);		// N | U | E
+		});
+
+		// sim: sr=$000b00 a=$7fc00000000000 tst a -> sr=$000b20
+		runTest([&]()
+		{
+			dsp.setSR(0x000b00);
+			dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(0x7fc00000000000)));
+			emit("tst a");
+		}, [&]()
+		{
+			verify(ccr(dsp.getSR().var) == 0x20);		// E
+		});
+
+		// control: the same accumulator with no scaling, where the mask is already right.
+		// sim: sr=$000300 a=$80000000000000 tst a -> sr=$000338
+		runTest([&]()
+		{
+			dsp.setSR(0x000300);
+			dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(0x80000000000000)));
+			emit("tst a");
+		}, [&]()
+		{
+			verify(ccr(dsp.getSR().var) == 0x38);		// N | U | E
+		});
+
+		// ---- A logical op after an arithmetic one. The logical result defines N from bit 47
+		// and Z from A1 alone; a deferred arithmetic N (bit 55) must not come back afterwards.
+		// sim: sr=$000300 a=$ff800000000000 x0=0, "tst a" then "and x0,a"
+		//      -> a=$ff000000000000 sr=$000304
+		runTest([&]()
+		{
+			dsp.setSR(0x000300);
+			dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(0xff800000000000)));
+			dsp.x0(0x000000);
+			emit("tst a");
+			emit("and x0,a");
+		}, [&]()
+		{
+			verify(dsp.aluA().var == 0xff000000000000);
+			verify(ccr(dsp.getSR().var) == 0x04);		// Z only, N clear
+		});
+
+		// sim: sr=$000300 a=$80000000000000 b=0, "tst a" then "clr b" -> sr=$000314
+		runTest([&]()
+		{
+			dsp.setSR(0x000300);
+			dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(0x80000000000000)));
+			dsp.setALU(true, TReg56(static_cast<TReg56::MyType>(0x00000000000000)));
+			emit("tst a");
+			emit("clr b");
+		}, [&]()
+		{
+			verify(ccr(dsp.getSR().var) == 0x14);		// Z | U, and E/N from B not A
+		});
+
+		// sim: sr=$000300 a=0, "tst a" then "not a" -> a=$00ffffff000000 sr=$000318
+		runTest([&]()
+		{
+			dsp.setSR(0x000300);
+			dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(0x00000000000000)));
+			emit("tst a");
+			emit("not a");
+		}, [&]()
+		{
+			verify(dsp.aluA().var == 0x00ffffff000000);
+			verify(ccr(dsp.getSR().var) == 0x18);		// N | U
+		});
+
+		// ---- ASL V and the sticky L that follows it. Already correct, kept as a guard because
+		// the shared V/L helper below the DIV cases is the same one this path uses.
+		// sim: sr=$000300 a=$40000000000000 asl a -> a=$80000000000000 sr=$00037a
+		runTest([&]()
+		{
+			dsp.setSR(0x000300);
+			dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(0x40000000000000)));
+			emit("asl a");
+		}, [&]()
+		{
+			verify(dsp.aluA().var == 0x80000000000000);
+			verify(ccr(dsp.getSR().var) == 0x7a);		// V | N | U | E | L
+		});
+
+		// sim: sr=$000300 a=$00400000000000 asl a -> a=$00800000000000 sr=$000320
+		runTest([&]()
+		{
+			dsp.setSR(0x000300);
+			dsp.setALU(false, TReg56(static_cast<TReg56::MyType>(0x00400000000000)));
+			emit("asl a");
+		}, [&]()
+		{
+			verify(dsp.aluA().var == 0x00800000000000);
+			verify(ccr(dsp.getSR().var) == 0x20);		// E, V clear
+		});
+	}
+
+	void UnitTests::hostStatusRegisterReadOnly()
+	{
+		auto& hdi08 = peripheralsX.getHDI08();
+
+		hdi08.setHostFlags(1, 0);
+
+		runTest([&]()
+		{
+			emit("bclr #3,x:<<$ffffc3");		// HF0
+			emit("bset #4,x:<<$ffffc3");		// HF1
+		}, [&]()
+		{
+			verify(bittest(hdi08.readStatusRegister(), HDI08::HSR_HF0));
+			verify(!bittest(hdi08.readStatusRegister(), HDI08::HSR_HF1));
+		});
+
+		hdi08.reset();
+	}
+
 }

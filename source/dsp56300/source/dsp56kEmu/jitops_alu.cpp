@@ -464,8 +464,21 @@ namespace dsp56k
 		ccr_clear(CCR_V);
 	}
 
-	void JitOps::alu_mpy(TWord ab, DspValue& _s1, DspValue& _s2, bool _negate, bool _accumulate, bool _s1Unsigned, bool _s2Unsigned, bool _round)
+	void JitOps::alu_mpy(TWord ab, DspValue& _s1, DspValue& _s2, bool _negate, bool _accumulate, bool _s1Unsigned, bool _s2Unsigned, bool _round, const uint32_t _s1Shift)
 	{
+		// _s1Shift is how much of g_mpyProductShift the caller already folded into _s1
+		assert(_s1Shift <= g_mpyProductShift);
+
+		if (_s2.isImmediate())
+		{
+			// The immediate is a SIGNED 24-bit fractional value, but DspValue stores it raw.
+			// The interpreter sign extends it through TReg24; without the same here, every
+			// immediate >= $800000 multiplies as a large positive instead of a negative - on
+			// x64 through imul's constant, on aarch64 through the register smull materialises.
+			// The Virus firmware only uses `maci #>$7fdf3b`, below that threshold, which is why
+			// the two engines agreed until now.
+			_s2.imm() = TReg24(_s2.imm24()).signextend<int64_t>();
+		}
 //		assert( sr_test(SR_S0) == 0 && sr_test(SR_S1) == 0 );
 
 		AluRef d(m_block, ab, _accumulate, true);
@@ -504,7 +517,13 @@ namespace dsp56k
 #else
 		if(_s2.isImmediate())
 		{
-			const int64_t i = static_cast<int64_t>(_s2.imm24()) * 2;
+			// Same accounting as the register path: g_mpyProductShift of scale is needed, minus
+			// whatever the caller already folded into _s1's sign extension. The constant can
+			// absorb one bit of it for free (imm * 2 still fits an imm32); the rest is a shift,
+			// and when _s1 arrives pre-scaled there is nothing left to do at all.
+			const auto remainingShift = g_mpyProductShift - _s1Shift;
+
+			const int64_t i = _s2.imm() << (remainingShift ? 1 : 0);	// sign extended above
 
 			if(_negate)
 			{
@@ -512,7 +531,7 @@ namespace dsp56k
 			}
 			else
 			{
-				if (asmjit::Support::isPowerOf2(i))
+				if (i > 0 && asmjit::Support::isPowerOf2(i))
 				{
 					const auto shift = static_cast<uint32_t>(log2(i));
 					m_asm.shl(r64(_s1), asmjit::Imm(shift));
@@ -522,9 +541,9 @@ namespace dsp56k
 					m_asm.imul(r64(_s1), asmjit::Imm(i));
 				}
 			}
-			// scale the product into the ALU representation before it meets the accumulator
-			if constexpr (g_leftAlignedAlu)
-				m_asm.shl(r64(_s1), asmjit::Imm(8));
+
+			if (remainingShift > 1)
+				m_asm.shl(r64(_s1), asmjit::Imm(remainingShift - 1));
 
 			if (_accumulate)
 			{
@@ -541,38 +560,29 @@ namespace dsp56k
 			m_asm.imul(r64(_s1), r64(_s2));
 			_s2.release();
 
-			// scale the product into the ALU representation before it meets the accumulator
-			if constexpr (g_leftAlignedAlu)
-				m_asm.shl(r64(_s1), asmjit::Imm(8));
+			// The product needs scaling by one for the fractional multiply plus g_aluBitOffset for
+			// the left-aligned accumulator. decode_QQQQ_read can bake that into the sign extension
+			// of _s1 for free (see signextend24to64), in which case nothing is left to do here and
+			// the accumulate is a plain add instead of a shift plus a scaled lea.
+			const auto remainingShift = g_mpyProductShift - _s1Shift;
 
-			if(!_accumulate && !_negate)
+			if (remainingShift)
+				m_asm.shl(r64(_s1), asmjit::Imm(remainingShift));
+
+			if (_accumulate)
 			{
-				m_asm.lea(r64(d.get()), asmjit::x86::ptr(r64(_s1.get()), r64(_s1.get())));
+				aluSignextendTo64(d);
+
+				if (_negate)
+					m_asm.sub(d, r64(_s1));
+				else
+					m_asm.add(d, r64(_s1));
 			}
 			else
 			{
-				if (_accumulate)
-					aluSignextendTo64(d);
-
-				if(_accumulate && !_negate)
-				{
-					m_asm.lea(d, asmjit::x86::ptr(d, r64(_s1), 1));
-				}
-				else
-				{
-					// fractional multiplication requires one post-shift to be correct
-					m_asm.add(r64(_s1), r64(_s1));	// add r,r is faster than shl r,1 on Haswell, can run on more ports and has a TP of 0.25 vs 0.5
-
-					if(_accumulate && _negate)
-					{
-						m_asm.sub(d, r64(_s1));
-					}
-					else/* if(_negate)*/
-					{
-						m_asm.neg(r64(_s1));
-						m_asm.mov(d, r64(_s1));
-					}
-				}
+				if (_negate)
+					m_asm.neg(r64(_s1));
+				m_asm.mov(d, r64(_s1));
 			}
 		}
 #endif
@@ -617,9 +627,9 @@ namespace dsp56k
 			DspValue s1(m_block);
 			DspValue s2(m_block);
 
-			decode_QQQQ_read(s1, true, s2, true, qqq);
+			decode_QQQQ_read(s1, true, s2, true, qqq, g_mpyOperandShift);
 
-			alu_mpy(ab, s1, s2, negative, mulAcc, false, false, round);
+			alu_mpy(ab, s1, s2, negative, mulAcc, false, false, round, g_mpyOperandShift);
 		}
 	}
 
@@ -808,13 +818,10 @@ namespace dsp56k
 #else
 		m_asm.imul(r64(s1), r64(s2));
 #endif
-		// fractional multiplication requires one post-shift to be correct
-		m_asm.sal(r64(s1), asmjit::Imm(1));
-
-		// scale the product into the ALU representation. Note the accumulator's own sar by 24 below
-		// already yields the correct left-aligned form, since (d >> 24) << 8 == (d << 8) >> 24.
-		if constexpr (g_leftAlignedAlu)
-			m_asm.sal(r64(s1), asmjit::Imm(8));
+		// One shift, not two: the fractional post-shift and the left-alignment scale are both
+		// applied to the same register, so they combine. Note the accumulator's own sar by 24
+		// below already yields the correct left-aligned form, since (d >> 24) << 8 == (d << 8) >> 24.
+		m_asm.sal(r64(s1), asmjit::Imm(g_mpyProductShift));
 
 		if (negate)
 			m_asm.neg(r64(s1));
@@ -1098,7 +1105,12 @@ namespace dsp56k
 
 	void JitOps::op_Max(TWord)
 	{
-		AluRef a(m_block, 0, true);
+		// MAX only writes the destination accumulator B; A is a read-only source.
+		// Take A as a read-only temp copy (NOT an AluRef, which defaults to write=true):
+		// a writeback of A here gets latched and, when MAX carries a parallel move into A
+		// (e.g. the coef builder's `max a,b  x1,a`, $20AE1D), the deferred A
+		// writeback clobbers that move in the parallel-op epilog. See unittest max_parallel().
+		AluReg a(m_block, 0, true);
 		AluReg b(m_block, 1, false);
 
 		aluSignextendTo64(a);
@@ -1113,7 +1125,6 @@ namespace dsp56k
 #endif
 		ccr_update_ifLess(CCRB_C);
 
-		m_dspRegs.mask56(a);
 		m_dspRegs.mask56(b);
 	}
 
@@ -1184,9 +1195,9 @@ namespace dsp56k
 		getSignedOpWordB(s);
 
 		DspValue reg(m_block);
-		decode_qq_read(reg, qq, true);
+		decode_qq_read(reg, qq, true, g_mpyOperandShift);
 
-		alu_mpy(ab, reg, s, negate, false, false, false, false);
+		alu_mpy(ab, reg, s, negate, false, false, false, false, g_mpyOperandShift);
 	}
 
 	void JitOps::op_Mpyri(TWord op)
@@ -1204,9 +1215,9 @@ namespace dsp56k
 		getSignedOpWordB(s);
 
 		DspValue reg(m_block);
-		decode_qq_read(reg, qq, true);
+		decode_qq_read(reg, qq, true, g_mpyOperandShift);
 
-		alu_mpy(ab, reg, s, negate, false, false, false, true);
+		alu_mpy(ab, reg, s, negate, false, false, false, true, g_mpyOperandShift);
 	}
 
 	void JitOps::op_Neg(TWord op)
@@ -1267,16 +1278,16 @@ namespace dsp56k
 				m_asm.bitTest(shifter, 23);
 				m_asm.jnz(_toFalse);
 			},
-			[&]	// S[23] == 0: ASR
+			[&]	// S[23] == 0: ASR. NORMF leaves C alone (FM 13-147): the helpers are told not to write it
 			{
-				alu_asr(D, D, &shifter);
+				alu_asr(D, D, &shifter, 0, false);
 			},
 			[&]	// S[23] == 1: ASL by the negated count
 			{
 				m_asm.shl(r32(shifter), asmjit::Imm(8));
 				m_asm.neg(shifter);
 				m_asm.shr(r32(shifter), asmjit::Imm(8));
-				alu_asl(D, D, &shifter);
+				alu_asl(D, D, &shifter, 0, false);
 			},
 			true, true, true);
 	}
@@ -1380,32 +1391,40 @@ namespace dsp56k
 
 	void JitOps::op_Subr(TWord op)
 	{
-		// D = D/2 - S (reverse subtract: subtract source from half of destination)
+		// D = D/2 - S. Mirrors the interpreter op_Subr: arithmetic halve of D keeping the 56-bit
+		// format, subtract S, then Z and C explicitly with E/U/N deferred. C is the accumulator MSB
+		// (bit 55) changing, as the interpreter's sr_c_update_arithmetic does. V, L and S are untouched.
 		const auto ab = getFieldValue<Subr, Field_d>(op);
 
 		AluReg aluD(m_block, ab);
 
-		// D/2: arithmetic shift right by 1, maintaining 56-bit format
-		m_asm.sal(aluD, asmjit::Imm(8));
+		// keep the pre-op value: C is set when accumulator bit 55 changes between old and new
+		const RegGP oldD(m_block);
+		m_asm.mov(oldD.get(), aluD.get());
+
+		// D/2, arithmetic, keeping the left-aligned 56-bit layout (same idiom as op_Addr). The old
+		// sal 8 / sar 1 / shr 8 was the right-aligned recipe: on the left-aligned ALU it discarded the
+		// extension byte and took the sign from bit 47 instead of bit 55.
+		aluExtendTo64(aluD);
 		m_asm.sar(aluD, asmjit::Imm(1));
-		m_asm.shr(aluD, asmjit::Imm(8));
+		aluRestoreFrom64(aluD);
 
 		{
 			AluRef aluS(m_block, ab ? 0 : 1, true, false);
 			m_asm.sub(aluD, aluS.get());
 		}
 
-		{
-			const RegScratch aluMax(m_block);
-			m_asm.mov(aluMax, asmjit::Imm(g_alu_max_56_u));
-			m_asm.cmp(aluD, aluMax);
-		}
+		m_dspRegs.mask56(aluD);
 
-		ccr_update_ifGreater(CCRB_C);
+		// Z first, from an explicit test, before any bit-copy clobbers the host flags.
+		m_asm.test_(aluD);
+		ccr_update_ifZero(CCRB_Z);
+
+		// C = accumulator bit 55 changed. oldD XOR new leaves the change at bit 55.
+		m_asm.xor_(oldD.get(), aluD.get());
+		copyBitToCCR(oldD.get(), 55 + g_aluBitOffset, CCRB_C);
 
 		ccr_dirty(ab, aluD, static_cast<CCRMask>(CCR_E | CCR_U | CCR_N));
-		ccr_n_update_by55(aluD);
-		ccr_s_update(aluD);
 	}
 
 	void JitOps::op_Tcc_S1D1(TWord op)

@@ -142,7 +142,7 @@ The picker has a toggle, **Keep track effects + LFOs**. While it is lit, the amp
 
 NOTE: Changing the machine removes the step locks the track had on the synthesis page, because the old machine's parameters do not exist on the new one.
 
-NOTE: A processing machine (an FX machine) needs audio. If the track did not have one, the editor sets its input to INP AB on track 1 or to the track before on the others, and sets AMP DEC and REL to 127 so the sound passes. A note says so.
+NOTE: A processing machine (an FX machine) needs audio. If the track did not have one, the editor sets its input to INP AB on track 1 or to the track before on the others, and sets AMP DEC and REL to 64, as the machine starts it. A note says so.
 
 ## COPY MACHINE
 <!-- rows: MM-107 @1b22f5 -->

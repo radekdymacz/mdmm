@@ -15,7 +15,7 @@
    built from documents). writes(view, command, clip) is what an edit intent shows at once, copied(view, command) the
    page's copy of what a copy puts on the core's clipboard, toFw(command, view, docs) an intent's values in the
    contract's units, kindOf(op) the document an op edits. Depends on MmConvert and the mockup's tables (MACH, FIXED,
-   PAGES, INPUTS, DEFV, synDefaults, isFx, machName), and Overlay, all loaded before it is called. */
+   PAGES, INPUTS, DEFV, FX_AMP_DEF, synDefaults, isFx, machName), and Overlay, all loaded before it is called. */
 const MmView = (() => {
 	const C = () => MmConvert;
 	const SONGS = 24;
@@ -392,7 +392,7 @@ const MmView = (() => {
 		if (!keepFx) Object.assign(pages, { AMP: [...DEFV.AMP], FLT: [...DEFV.FLT], EFX: [...DEFV.EFX], LF1: [...DEFV.LFO], LF2: [...DEFV.LFO], LF3: [...DEFV.LFO] });
 		if (isFx(m) && !isFx(v.tracks[t].m)) {
 			pages.AMP = [...pages.AMP];
-			pages.AMP[2] = pages.AMP[3] = 127;
+			pages.AMP[2] = pages.AMP[3] = FX_AMP_DEF;
 			out.push([["tracks", t, "inp"], INPUTS[t === 0 ? 3 : 0]]);
 		}
 		return out.concat(soundWrites(v, t, m, pages));

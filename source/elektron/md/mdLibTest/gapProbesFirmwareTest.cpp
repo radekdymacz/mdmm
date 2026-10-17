@@ -36,6 +36,7 @@
 #include "mdLib/mmtelemetry.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -2383,6 +2384,117 @@ namespace
 		result("W12e MD extend", line);
 	}
 
+	// ---- W13 MD: the parameter-lock slide (MD-141) ---------------------------------------------------------------------
+	// Where does a locked value glide on a SLIDE step: to the next lock of that parameter, or to the next trig's value, and
+	// what when the next trig holds no lock of it? Track 1, one parameter, 16 steps. First the live value is found: the same
+	// pattern twice with the lock on step 0 at 17 and at 99; the main-RAM bytes that read 17 and 99 while step 1..3 plays.
+	// Then every case is played with those bytes read every 20 ms.
+
+	struct SlideCase
+	{
+		const char* name;
+		uint64_t trigs;
+		std::vector<std::pair<int, int>> locks;		// step, value of the probed parameter
+		std::vector<std::pair<int, int>> other;		// step, value of a second parameter
+		bool slide;
+	};
+
+	// plays the case from step 0 (after the second wrap, when _sample runs on every 20 ms); _sample(step, rig)
+	void w13play(Rig& _r, const SlideCase& _c, const std::function<void(int)>& _sample, const size_t param = 2)
+	{
+		constexpr size_t param2 = 3;
+		auto p = *ed::decodeMdPattern(_r->request(ed::mdPatternRequest(0), ed::g_mdPatternDump));
+		p.position = 0;
+		p.length = 16;
+		p.trigs.fill(0);
+		p.trigs[0] = _c.trigs;
+		p.lockMasks.fill(0);
+		for(auto& row : p.lockRows)
+			row.fill(ed::MdPattern::g_noLock);
+		for(const auto& [s, v] : _c.locks)
+			p = *ed::withLock(p, 0, param, static_cast<size_t>(s), static_cast<uint8_t>(v));
+		for(const auto& [s, v] : _c.other)
+			p = *ed::withLock(p, 0, param2, static_cast<size_t>(s), static_cast<uint8_t>(v));
+		p.lockedRows = static_cast<uint8_t>(ed::usedLockRows(p));
+		p.slidePattern = _c.slide ? 1 : 0;
+		p.slideEditAll = 1;
+		p.trackSlide.fill(0);
+		p.accentPattern = p.swingPattern = 0;
+		_r->send(ed::encodeMdPattern(p));
+		_r.run(300);
+		_r.loadPattern(0);
+		key(_r, md::PanelControl::Play);
+		int last = -1, wraps = 0;
+		for(int i = 0; i < 400 && wraps < 2; ++i)
+		{
+			_r.run(20);
+			const int st = _r.step();
+			if(st < last)
+				++wraps;
+			last = st;
+			if(wraps == 1 && st <= 12)
+				_sample(st);
+		}
+		halt(_r);
+	}
+
+	void w13slide(const Bytes& _rom)
+	{
+		std::puts("== W13 MD: the parameter-lock slide (track volume, read as the loudness of each trig)");
+		const std::vector<SlideCase> cases = {
+			{"A0 locks 0=20 8=127, trigs 0 4 8 12, no slide", 0x1111, {{0, 20}, {8, 127}}, {}, false},
+			{"A  locks 0=20 8=127, trigs 0 4 8 12, slide@0", 0x1111, {{0, 20}, {8, 127}}, {}, true},
+			{"B  locks 0=20 4=64 8=127, slide@0", 0x1111, {{0, 20}, {4, 64}, {8, 127}}, {}, true},
+			{"B0 locks 0=20 4=64 8=127, no slide", 0x1111, {{0, 20}, {4, 64}, {8, 127}}, {}, false},
+			{"C  locks 0=20 8=127, trigs 0 8 12, slide@0", 0x1101, {{0, 20}, {8, 127}}, {}, true},
+			{"D  lock 0=20 only, trigs 0 4 8 12, slide@0", 0x1111, {{0, 20}}, {}, true},
+			{"D0 lock 0=20 only, no slide", 0x1111, {{0, 20}}, {}, false},
+			{"E  locks 0=20 8=127, other parameter locked at 4, slide@0", 0x1111, {{0, 20}, {8, 127}}, {{4, 100}}, true},
+			{"F  locks 0=20 12=127, trigs 0 4 8 12, slide@0", 0x1111, {{0, 20}, {12, 127}}, {}, true},
+			{"F0 locks 0=20 12=127, no slide", 0x1111, {{0, 20}, {12, 127}}, {}, false},
+		};
+		std::map<std::string, std::array<double, 4>> loud;
+		for(const auto& c : cases)
+		{
+			Rig r(_rom, false);
+			std::map<int, uint64_t> at;
+			w13play(r, c, [&](const int _st) {
+				if(!at.count(_st))
+					at[_st] = r->now();
+			}, 17);
+			std::string line;
+			for(const int st : {0, 4, 8, 12})
+			{
+				if(!at.count(st) || !((c.trigs >> st) & 1))
+				{
+					line += "  s" + std::to_string(st) + ": -";
+					continue;
+				}
+				const size_t from = at[st] > 882 ? at[st] - 882 : 0;
+				char x[64];
+				const double l = rms(r->left(), r->right(), from, std::min(r->left().size(), from + 4400));
+				loud[std::string(c.name, 2)][static_cast<size_t>(st / 4)] = l;
+				std::snprintf(x, sizeof x, "  s%d: %.4f", st, l);
+				line += x;
+			}
+			std::printf("  %-62s%s\n", c.name, line.c_str());
+		}
+		// What the loudness says. The slide on step 0 makes the first trig's tail louder (the volume climbs while it rings), by as much
+		// as the climb is steep. The trig on step 4 plays the kit value when it holds no lock, with the slide or without.
+		// - A and D (D has no later lock at all) climb the same: the target is not the next lock (A has one on step 9);
+		// - the climb is steeper with the target further up and the next trig nearer: A (kit value, 4 steps) > C (127, 8 steps, no trig
+		//   on step 5) > B (64, 4 steps) > no slide.
+		const auto at0 = [&](const char* _k) { return loud[_k][0]; };
+		check(std::abs(at0("A ") - at0("D ")) < 1e-4, "the glide of A and D is the same: its target is not the next lock");
+		check(at0("A ") > at0("C ") && at0("C ") > at0("B ") && at0("B ") > at0("A0"), "the climb orders A (to the kit value over 4 steps) > C (to 127 over 8) > B (to 64 over 4) > no slide");
+		check(std::abs(loud["A "][1] - loud["A0"][1]) < 1e-4, "the trig on step 5 with no lock plays the kit value, slide or not");
+		// F (a lock on step 13, none between) rings louder on step 1 because the trig of step 13 before it is louder; what the slide adds
+		// (the energy, F minus F0, in quadrature with the tail) is A's: the target of both is the kit value on step 5
+		const auto e = [&](const char* _k) { return at0(_k) * at0(_k); };
+		check(std::abs((e("F ") - e("F0")) - (e("A ") - e("A0"))) < 3e-6, "a lock further on (F: step 13) changes nothing: what the slide adds to F is what it adds to A");
+		result("W13 MD slide", "a slide glides to the next trig's value (its lock, or the kit value when it has none), arriving when it plays");
+	}
+
 	// ---- W12f MD: where the firmware counts a song row's repeats (MD-147) -------------------------------------------------
 	// Song 8: row 0 = A02 (8 steps) x4 (REPEATS 3), row 1 = A03 x3 (REPEATS 2), END. SONG mode, PLAY; main RAM snapshot in
 	// the middle of every pass (step 4); the bytes that count the passes of a row (up or down by one a pass, again for the
@@ -2569,6 +2681,219 @@ namespace
 		result("W12h MM counter", "rows " + rowLine + "; growing:" + (found.empty() ? std::string(" none") : found));
 	}
 
+	// RULE (measured 2026-10-17, OS 1.32B; cases D, A, B, C, G, H, I, K, M): the glide goes to the NEXT LOCK of the parameter, not the next trig.
+	// ---- W13 MM: the parameter-lock slide (MM-141) ---------------------------------------------------------------------
+	// Where does a locked value glide on a SLIDE step: to the next lock of that parameter, or to the next trig's value, and
+	// what when the next trig holds no lock of it, or is a trigless / envelope-only step? Track 1 plays a sustained sine
+	// (GND-SIN, DEC 127, the P10 "plain" track, kit VOL 60); the probed parameter is the AMP page VOL (page 1, parameter 5),
+	// read as the loudness of the sine over a window early and late in each of the 16 steps.
+
+	// The lock of one parameter of track 1 on one step; the row is made (or found) in the firmware's order.
+	void w13mmLock(ed::MmPattern& _p, const uint8_t _page, const uint8_t _param, const size_t _step, const uint8_t _v)
+	{
+		const ed::MmLockParam lp{0, _page, _param};
+		int row = ed::mmLockRow(_p, lp);
+		if(row < 0)
+		{
+			_p.lockMasks[0][_page] |= static_cast<uint8_t>(1u << _param);
+			row = ed::mmLockRow(_p, lp);
+			const auto n = static_cast<size_t>(_p.lockRowCount);
+			for(size_t r = n; r > static_cast<size_t>(row); --r)
+				_p.lockRows[r] = _p.lockRows[r - 1];
+			_p.lockRows[static_cast<size_t>(row)].fill(ed::MmPattern::g_noLock);
+			_p.lockRowCount = static_cast<uint8_t>(n + 1);
+		}
+		_p.lockRows[static_cast<size_t>(row)][_step] = _v;
+	}
+
+	struct MmSlideCase
+	{
+		const char* name;
+		std::vector<std::pair<int, int>> trigs;		// step, kind: 0 full trig, 1 trigless (pitch only), 2 envelope-only (no pitch bit)
+		std::vector<std::pair<int, int>> locks;		// step, VOL
+		std::vector<std::pair<int, int>> pan;		// step, PAN (a second parameter)
+		std::vector<int> slides;					// steps with the slide flag
+		int lockPage = 1, lockParam = 5;			// the parameter the "locks" are on (AMP VOL); B-168 cases use others
+		bool raw = false;							// B-168: print loudness and pitch as % of the unlocked run instead of the VOL scale
+	};
+
+	// The loudness of the sine in 10 ms windows over the second bar (from the first sight of step 0 to the next step 0), and the
+	// length of a step in windows.
+	struct MmSlideRun
+	{
+		std::vector<double> rms;
+		std::vector<double> zc;	// zero crossings of the left channel per window (pitch)
+		double stepWindows = 0;
+	};
+
+	MmSlideRun w13mmPlay(Rig& _r, const MmSlideCase& _c)
+	{
+		auto kit = *ed::decodeMmKit(_r.dump(0x52, 0));
+		kit.position = g_p10Kit;
+		for(size_t t = 0; t < 6; ++t)
+		{
+			kit.machines[t] = 1;
+			kit.levels[t] = 48;
+			auto& pg = kit.tracks[t].pages;
+			pg[0] = {0, 0, 0, 0, 0, 0, 0, 64};
+			pg[1] = {0, 0, 127, 8, 64, 60, 64, 0};
+			pg[2] = {0, 127, 0, 0, 0, 40, 0, 0};
+			pg[3] = {64, 64, 0, 32, 0, 0, 0, 127};
+			for(size_t l = 4; l < 7; ++l)
+				pg[l] = {0, 0, 0, 0, 0, 0, 0, 0};	// no LFO depth
+			kit.tracks[t].midi = {};
+		}
+		for(size_t i = 0; i < ed::MmKit::g_assignSources; ++i)
+			kit.assignPage[i].fill(0), kit.assignDest[i].fill(0), kit.assignAdd[i].fill(0);
+		auto p = *ed::decodeMmPattern(_r.dump(0x67, 0));
+		p.position = g_p10Pattern;
+		p.kit = g_p10Kit;
+		p.length = 16;
+		p.multiplier = 0;
+		for(auto* m : {&p.amp, &p.filter, &p.lfo, &p.noteOff, &p.midiTrig, &p.midiNoteOff, &p.pitch, &p.chord, &p.midiNote, &p.slide, &p.midiSlide})
+			m->fill(0);
+		for(auto& n : p.notes)
+			n.fill(ed::MmPattern::g_noNote);
+		p.lockMasks = {};
+		p.lockRowCount = 0;
+		for(auto& row : p.lockRows)
+			row.fill(ed::MmPattern::g_noLock);
+		p.midiNoteCount = 0;
+		p.chordNoteCount = 0;
+		for(const auto& [s, kind] : _c.trigs)
+		{
+			const uint64_t b = ed::mmStepBit(static_cast<size_t>(s));
+			if(kind != 1)
+				p.amp[0] |= b, p.filter[0] |= b, p.lfo[0] |= b;
+			if(kind != 2)
+				p.pitch[0] |= b;
+			p.notes[0][static_cast<size_t>(s)] = 60;
+		}
+		for(const auto& [s, v] : _c.locks)
+			w13mmLock(p, static_cast<uint8_t>(_c.lockPage), static_cast<uint8_t>(_c.lockParam), static_cast<size_t>(s), static_cast<uint8_t>(v));
+		for(const auto& [s, v] : _c.pan)
+			w13mmLock(p, 1, 6, static_cast<size_t>(s), static_cast<uint8_t>(v));
+		for(const int s : _c.slides)
+			p.slide[0] |= ed::mmStepBit(static_cast<size_t>(s));
+		mmSendDumps(_r, {ed::encodeMmKit(kit), ed::encodeMmPattern(p)});
+		halt(_r);
+		_r.loadPattern(g_p10Pattern);
+		_r->send(ed::mmLoadKit(g_p10Kit));
+		_r.run(600);
+		const auto back = ed::decodeMmPattern(_r.dump(0x67, g_p10Pattern));
+		check(back && back->slide[0] == p.slide[0] && back->lockRowCount == p.lockRowCount && back->lockRows == p.lockRows, "W13 MM: the pattern is stored as written");
+		key(_r, md::PanelControl::Play);
+		std::map<int, uint64_t> at;
+		int last = -1, wraps = 0;
+		for(int i = 0; i < 1600 && wraps < 3; ++i)
+		{
+			_r.run(5);
+			const int st = _r.step();
+			if(st < last)
+				++wraps;
+			last = st;
+			if(wraps == 1 && !at.count(st))
+				at[st] = _r->now();
+			if(wraps == 2 && !at.count(16))
+				at[16] = _r->now();
+		}
+		halt(_r);
+		MmSlideRun out;
+		if(at.size() < 17)
+			return out;
+		for(size_t i = at[0]; i + 441 <= at[16]; i += 441)
+		{
+			out.rms.push_back(1000 * rms(_r->left(), _r->right(), i, i + 441));
+			int z = 0;
+			for(size_t k = i + 1; k < i + 441; ++k)
+				z += (_r->left()[k - 1] < 0) != (_r->left()[k] < 0);
+			out.zc.push_back(z);
+		}
+		out.stepWindows = double(at[16] - at[0]) / 16 / 441;
+		return out;
+	}
+
+	void w13mmslide(const Bytes& _rom)
+	{
+		std::puts("== W13 MM: the parameter-lock slide (track 1 AMP VOL). Each case is played twice, with the locks and slides and without (the same trigs):");
+		std::puts("   the ratio of the two loudnesses, in 10 ms windows, is the gain the locks made; shown as the VOL that gain stands for (VOL 60 = the kit; the");
+		std::puts("   sine's loudness goes with VOL squared: VOL 20 -> 0.11, 90 -> 2.25 of VOL 60, measured by K20/K90). Four values a step; '.' where the reference is silent.");
+		std::puts("   Cases MV..MS (B-168): one lock on step 4 on another parameter, printed as 'loudness %/pitch %' of the unlocked run, one line a step.");
+		const std::vector<std::pair<int, int>> t4 = {{0, 0}, {4, 0}, {8, 0}, {12, 0}};
+		const std::vector<MmSlideCase> cases = {
+			{"K20  VOL 20 on every trig", t4, {{0, 20}, {4, 20}, {8, 20}, {12, 20}}, {}, {}},
+			{"K90  VOL 90 on every trig", t4, {{0, 90}, {4, 90}, {8, 90}, {12, 90}}, {}, {}},
+			{"A0 locks 0=20 8=127, trigs 0 4 8 12, no slide", t4, {{0, 20}, {8, 127}}, {}, {}},
+			{"A  locks 0=20 8=127, trigs 0 4 8 12, slide@0", t4, {{0, 20}, {8, 127}}, {}, {0}},
+			{"B  locks 0=20 4=90 8=127, slide@0", t4, {{0, 20}, {4, 90}, {8, 127}}, {}, {0}},
+			{"C  locks 0=20 8=127, trigs 0 8 12, slide@0", {{0, 0}, {8, 0}, {12, 0}}, {{0, 20}, {8, 127}}, {}, {0}},
+			{"D  lock 0=20 only, trigs 0 4 8 12, slide@0", t4, {{0, 20}}, {}, {0}},
+			{"D0 lock 0=20 only, no slide", t4, {{0, 20}}, {}, {}},
+			{"E  locks 0=20 8=127, PAN lock on 4, slide@0", t4, {{0, 20}, {8, 127}}, {{4, 100}}, {0}},
+			{"F  locks 0=20 12=127, slide@0", t4, {{0, 20}, {12, 127}}, {}, {0}},
+			{"G  locks 0=20 8=127, step 4 TRIGLESS, slide@0", {{0, 0}, {4, 1}, {8, 0}, {12, 0}}, {{0, 20}, {8, 127}}, {}, {0}},
+			{"H  locks 0=20 8=127, step 4 ENVELOPE-ONLY, slide@0", {{0, 0}, {4, 2}, {8, 0}, {12, 0}}, {{0, 20}, {8, 127}}, {}, {0}},
+			{"K  locks 0=20 4=90 8=127, NO trig on step 4, slide@0", {{0, 0}, {8, 0}, {12, 0}}, {{0, 20}, {4, 90}, {8, 127}}, {}, {0}},
+			{"M  locks 0=20 4=90 8=127, NO trig on step 4, no slide", {{0, 0}, {8, 0}, {12, 0}}, {{0, 20}, {4, 90}, {8, 127}}, {}, {}},
+			{"I  locks 0=20 4=90 8=127, step 4 TRIGLESS, slide@0", {{0, 0}, {4, 1}, {8, 0}, {12, 0}}, {{0, 20}, {4, 90}, {8, 127}}, {}, {0}},
+			// B-168: a lock on a step with no trig, other parameters (trigs 0 8 12; the lock only on step 4). Printed raw: loudness % | pitch (zero crossings) % of the unlocked run
+			{"MV AMP VOL 20 on step 4, NO trig there, no slide", {{0, 0}, {8, 0}, {12, 0}}, {{4, 20}}, {}, {}, 1, 5, true},
+			{"MW FLT WDTH 0 on step 4, NO trig there, no slide", {{0, 0}, {8, 0}, {12, 0}}, {{4, 0}}, {}, {}, 2, 1, true},
+			{"MB FLT BASE 100 on step 4, NO trig there, no slide", {{0, 0}, {8, 0}, {12, 0}}, {{4, 100}}, {}, {}, 2, 0, true},
+			{"MP SYN TUNE 127 on step 4, NO trig there, no slide", {{0, 0}, {8, 0}, {12, 0}}, {{4, 127}}, {}, {}, 0, 7, true},
+			{"MQ SYN TUNE 127 on step 4, WITH trig there, no slide", {{0, 0}, {4, 0}, {8, 0}, {12, 0}}, {{4, 127}}, {}, {}, 0, 7, true},
+			{"MR AMP VOL 20 on step 4, WITH trig there, no slide (control)", {{0, 0}, {4, 0}, {8, 0}, {12, 0}}, {{4, 20}}, {}, {}, 1, 5, true},
+			{"MS FLT WDTH 0 on step 4, WITH trig there, no slide (control)", {{0, 0}, {4, 0}, {8, 0}, {12, 0}}, {{4, 0}}, {}, {}, 2, 1, true},
+		};
+		const char* only = std::getenv("W13_ONLY");
+		for(const auto& c : cases)
+		{
+			if(only && std::string(c.name, 2) != only)
+				continue;
+			MmSlideCase ref = c;
+			ref.locks.clear();
+			ref.pan.clear();
+			ref.slides.clear();
+			Rig r1(_rom, true), r2(_rom, true);
+			r1.setSongMode(false);
+			r2.setSongMode(false);
+			const auto base = w13mmPlay(r1, ref);
+			const auto run = w13mmPlay(r2, c);
+			std::printf("  %s\n", c.name);
+			check(!base.rms.empty() && base.rms.size() == run.rms.size(), "W13 MM: both runs cover the bar");
+			check(!base.rms.empty() && *std::max_element(base.rms.begin(), base.rms.end()) > 5, "W13 MM: the rig: the sine sounds");
+			if(base.rms.empty() || base.rms.size() != run.rms.size())
+				continue;
+			const auto sm = [&](const std::vector<double>& _v, const size_t _i) { return (_v[_i - 1] + _v[_i] + _v[_i + 1]) / 3; };
+			std::string line;
+			for(int st = 0; st < 16; ++st)
+			{
+				if(c.raw)
+					line += "    step " + std::to_string(st) + ":";
+				else
+					line += st % 4 == 0 ? "    " : "  | ";
+				for(int q = 0; q < 4; ++q)
+				{
+					const auto i = static_cast<size_t>((st + q / 4.0 + 0.12) * base.stepWindows);
+					char x[16];
+					if(i < 1 || i + 2 > base.rms.size() || sm(base.rms, i) < 14)
+						std::snprintf(x, sizeof x, "  .");
+					else if(c.raw)
+						std::snprintf(x, sizeof x, "%3.0f/%-3.0f", 100 * sm(run.rms, i) / sm(base.rms, i), 100 * sm(run.zc, i) / std::max(1.0, sm(base.zc, i)));
+					else
+						std::snprintf(x, sizeof x, "%3.0f", 60 * std::sqrt(sm(run.rms, i) / sm(base.rms, i)));
+					line += x;
+				}
+				if(c.raw || st % 4 == 3)
+				{
+					std::printf("%s\n", line.c_str());
+					line.clear();
+				}
+			}
+		}
+		result("W13 MM slide", "a slide glides to the parameter's next LOCK (trig or no trig on its step), past trigs that do not lock it; no later lock: no glide; a full trig between plays the kit value and the glide goes on");
+	}
+
 	// ---- explore ------------------------------------------------------------------------------------------------------
 
 	void explore(const Bytes& _rom, const bool _mm, const std::string& _keys)
@@ -2638,10 +2963,14 @@ int main(const int _argc, char** _argv)
 			w12stop(mmRom, true);
 		if(!mdRom.empty() && only == "w12extend")
 			w12extend(mdRom);
+		if(!mdRom.empty() && only == "w13slide")
+			w13slide(mdRom);
 		if(!mdRom.empty() && only == "w12repeats")
 			w12repeats(mdRom);
 		if(!mmRom.empty() && only == "w12patkit")
 			w12patkit(mmRom);
+		if(!mmRom.empty() && only == "w13mmslide")
+			w13mmslide(mmRom);
 		if(!mmRom.empty() && only == "w12mmcounter")
 			w12mmcounter(mmRom);
 		if(!mdRom.empty() && only == "w12clip")
