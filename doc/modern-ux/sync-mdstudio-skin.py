@@ -149,8 +149,8 @@ wanted = (set(re.findall(r'\$\("#([A-Za-z][\w-]*)', scripts)) | set(re.findall(r
 made = (set(re.findall(r'id="([A-Za-z][\w-]*)"', scripts)) | set(re.findall(r'id=\\"([\w-]+)', scripts))
         | set(re.findall(r'\.id\s*=\s*"([\w-]+)"', scripts)))
 present = set(re.findall(r'id="([\w-]+)"', m))
-# the MIDI mapping UI (the Control tab, LEARN) is back in the markup (0.8, MIDI Learn on); the page still tolerates its absence
-optional = {'learnkey'}
+# the MIDI mapping UI (the CONTROL key, LEARN) is back in the markup (0.8, MIDI Learn on); the page still tolerates its absence
+optional = {'learnkey', 'controlkey'}
 missing = sorted(wanted - present - made - optional)
 if missing:
     print('contract check: the page looks up ids the mockup markup no longer has:', ', '.join(missing))
@@ -191,8 +191,8 @@ if life is None:
 else:
     problems += pc.check_lifecycle(pc.object_keys(life) or set(), schema, 'the app (mdDeskTop.js)')
 problems += pc.check_mapping_gate(app, ['S.mapping = false;', 'applyMapping(m.doc.enabled)', 'when: () => S.mapping && S.ctl.learn',
-                                        'mapping: ws === "control", when: ws === "control" ? () => S.mapping : null',
-                                        'tb.dataset.ws === "control" && !S.mapping'], 'the app')
+                                        'id: "workspace-6", scope: "any", keys: ["6"], group: "Workspaces", does: "Control (the CONTROL key in Setup: the MIDI mapping page; again leaves it)", mapping: true, when: () => S.mapping',
+                                        'if (ctl) ctl.hidden = !on;'], 'the app')
 all_js = ''.join(page_js.values())
 problems += pc.check_message_types(pc.message_types_handled(all_js), schema, 'mdStudio')
 if problems:
