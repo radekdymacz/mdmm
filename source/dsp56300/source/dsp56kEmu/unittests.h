@@ -134,7 +134,6 @@ namespace  dsp56k
 		void tst();
 		void nop();
 		void hostStatusRegisterReadOnly();
-		void repAtVolatileAddress();
 		void ccrGroundTruth();
 		void bitTestMemoryEaUpdate();
 		void subr_leftAligned();
