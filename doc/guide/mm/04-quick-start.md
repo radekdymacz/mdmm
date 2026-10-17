@@ -98,7 +98,7 @@ A parameter lock gives one parameter a value of its own for one step.
 4. To draw a straight line of values, hold [⇧] and drag from a step that has no lock. The locks make a ramp over the notes. Hold [⇧] on a lock and drag sideways to draw a slide to the next lock instead (see "Slide" in chapter 15).
 5. To set a locked value from the keys, turn the wheel over a lock step. Each notch is 4, and [⇧] makes it 1.
 
-The lane draws a solid line at the kit value of the parameter, with its number. Drag the line up or down to change the kit value. A lock on a step with no trig is drawn hatched, as a ghost bar: the machine keeps it and does not play it. Hold [⌥] and click it to remove it.
+The lane draws a solid line at the kit value of the parameter, with its number. Drag the line up or down to change the kit value. A lock on a step with no trig is drawn hatched, as a ghost bar: the machine plays it, from that step until the next trig. Hold [⌥] and click it to remove it.
 
 The <LOCKS> field of the LCD counts the locked parameters of the pattern, out of 62.
 
