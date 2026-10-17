@@ -20,7 +20,7 @@ The editor keeps to the limits of the machine. It refuses what the machine canno
 ![The limits as the editor shows them](shot:e2e-md-limits)
 
 ## DIFFERENCES BETWEEN THE MKI AND MKII MODELS
-<!-- rows: MD-208 MD-209 MD-210 @a63b4f -->
+<!-- rows: MD-208 MD-209 MD-210 @cbb868 -->
 
 ### Pattern length
 
