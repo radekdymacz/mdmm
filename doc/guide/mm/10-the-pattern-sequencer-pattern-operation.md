@@ -25,7 +25,7 @@ NOTE: A pattern is linked to a kit and loads it. On the OS 1.32B, only a pattern
 Press [ESC] to close the chooser.
 
 ### PATTERN CHAINING
-<!-- rows: MM-165 @833213 -->
+<!-- rows: MM-165 @c83cae -->
 
 A chain plays patterns of one bank one after the other, each once, and then starts again. You build a chain on the **Song** workspace, on the same pattern palette that builds a song.
 
@@ -43,6 +43,8 @@ The machine plays the chain as soon as there are two pads. If it plays, the chai
 - **Clear** ends the chain.
 
 Choosing a pattern from the pattern field or the chooser also ends the chain. Editing the patterns of a chain does not.
+
+The pads follow the machine. If the chain ends on the machine, for example because you chose a pattern on the LCD, the pads start over and the key over the palette goes back to **PATTERN**. If the machine plays a chain that the pads do not show, the pads show it. The editor sends a chain a moment after your last click on a pad. If you click **PATTERN** or **SONG** inside that moment, the chain is not sent.
 
 NOTE: A chain holds the patterns of one bank. Choosing another bank starts the list again.
 

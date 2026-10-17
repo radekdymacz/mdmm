@@ -130,7 +130,7 @@ The **Pattern** list of a range offers CUR and all 128 patterns, A01 to H16.
 Knob resolution, the velocity curve and the joystick mapping belong to the hardware. The editor has no setting for them.
 
 ## FILE
-<!-- rows: MM-307 MM-308 MM-309 @e1a17c -->
+<!-- rows: MM-307 MM-308 MM-309 @a183b4 -->
 
 On the machine the FILE menu sends and receives SysEx. In the editor you write a .syx file on your computer, and you open one to send it to the machine.
 
@@ -152,6 +152,8 @@ NOTE: On the machine KIT, PAT+KIT and SONG+PAT+KIT take the kits and patterns wi
 4. Click **Import**. The window shows a bar. **Stop** ends the import, **Hide** puts the window away. The import goes on: **IMPORT SYSEX…** in the engine menu shows the window again, with its report when it is done. While it runs, [ESC] and a click beside the window leave it open.
 5. A report lists what the machine did with each slot.
 
+The tick **Read back and compare**, beside **Verify only**, is on at first and stays as you set it. With it on, the import reads every slot back after it sends and compares it with the file. With it off, the import ends after the send. The report then says how many items were sent and that they were not read back.
+
 Globals and other messages are off unless you tick them. Importing a global changes the channels the machine listens on. There is no undo, so use **Export SysEx…** first.
 
 ### Original and specific place
@@ -162,7 +164,7 @@ The **Place** row under the grid has two keys. **Original place**, the default, 
 
 ### Verify only
 
-**Verify only**, beside **Import**, is VERF. It writes nothing. The editor reads each slot the items land in and compares it with the file. The report marks = the same, ≠ different and ? no answer.
+**Verify only**, beside **Import**, is VERF. It writes nothing. The editor reads each slot the items land in and compares it with the file. The report marks = the same, ≠ different and ? no answer. Verify only reads the slots whatever the state of **Read back and compare**.
 
 ### The machine's SYSEX RECV screen
 
