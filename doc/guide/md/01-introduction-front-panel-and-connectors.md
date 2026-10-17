@@ -8,7 +8,7 @@ This chapter maps the machine's front panel and rear connectors to the page. Lat
 ## FRONT PANEL
 <!-- rows: MD-001 MD-002 MD-003 MD-004 MD-005 MD-006 MD-007 MD-008 MD-009 MD-010 MD-011 MD-012 MD-013 MD-014 MD-015 MD-016 MD-017 MD-018 MD-019 MD-020 MD-021 @b23237 -->
 
-The page has three parts. The top bar holds the workspace tabs, the LCD and the Undo, Redo, GLOBAL and panel colour keys. The track rail runs down the left side. The workspace fills the rest.
+The page has three parts. The top bar holds the workspace tabs, the LCD and the Undo, Redo and GLOBAL keys. The track rail runs down the left side. The workspace fills the rest.
 
 ![The Machinedrum Editor](shot:md-workspaces)
 
@@ -24,7 +24,7 @@ The machine has pages that you reach with keys. The editor has workspaces that y
 | Sampler | {key:workspace-4} | the sample slots and the RAM machines |
 | Song | {key:workspace-5} | the song arrangement |
 
-The panel colour key at the right of the top bar switches the page between the silver MKI look and the black MKII look. It changes the colours only.
+The PLATE entry in the engine menu (the EMU OS entry in the LCD) switches the page between the silver MKI look and the black MKII look. It changes the colours only.
 
 ### From the front panel to the page
 

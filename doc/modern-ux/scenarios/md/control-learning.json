@@ -1,0 +1,312 @@
+{
+ "title": "CONTROL: learning a target, progress and completion",
+ "about": "Press 6 for CONTROL, then LEARN (L). At 2 s track 3 DEC waits for a controller (0 of 2), at 5 s one value is in (1 of 2), at 8 s the second completes it: a mapping on CC 23, channel 1, and the toast names what it overrides.",
+ "boot": "stub",
+ "steps": [
+  {
+   "at": 300,
+   "send": [
+    {
+     "type": "learn",
+     "doc": {
+      "enabled": true,
+      "mappings": [
+       {
+        "index": 0,
+        "t": 0,
+        "i": 1,
+        "name": "DEC",
+        "cc": 21,
+        "ch": 0,
+        "mode": "Absolute",
+        "invert": false,
+        "overrides": [
+         {
+          "ch": 0,
+          "t": 0,
+          "i": 1
+         }
+        ]
+       }
+      ],
+      "learning": null,
+      "limits": {
+       "tracks": 16,
+       "params": [
+        {
+         "i": 0,
+         "name": "PTCH"
+        },
+        {
+         "i": 1,
+         "name": "DEC"
+        },
+        {
+         "i": 2,
+         "name": "RAMP"
+        },
+        {
+         "i": 3,
+         "name": "RDEC"
+        },
+        {
+         "i": 4,
+         "name": "STRT"
+        },
+        {
+         "i": 5,
+         "name": "NOIS"
+        },
+        {
+         "i": 6,
+         "name": "HARM"
+        },
+        {
+         "i": 7,
+         "name": "CLIP"
+        }
+       ],
+       "max": 128
+      }
+     }
+    }
+   ]
+  },
+  {
+   "at": 2000,
+   "send": [
+    {
+     "type": "learn",
+     "doc": {
+      "enabled": true,
+      "mappings": [
+       {
+        "index": 0,
+        "t": 0,
+        "i": 1,
+        "name": "DEC",
+        "cc": 21,
+        "ch": 0,
+        "mode": "Absolute",
+        "invert": false,
+        "overrides": [
+         {
+          "ch": 0,
+          "t": 0,
+          "i": 1
+         }
+        ]
+       }
+      ],
+      "learning": {
+       "t": 2,
+       "i": 1,
+       "name": "DEC",
+       "got": 0,
+       "need": 2
+      },
+      "limits": {
+       "tracks": 16,
+       "params": [
+        {
+         "i": 0,
+         "name": "PTCH"
+        },
+        {
+         "i": 1,
+         "name": "DEC"
+        },
+        {
+         "i": 2,
+         "name": "RAMP"
+        },
+        {
+         "i": 3,
+         "name": "RDEC"
+        },
+        {
+         "i": 4,
+         "name": "STRT"
+        },
+        {
+         "i": 5,
+         "name": "NOIS"
+        },
+        {
+         "i": 6,
+         "name": "HARM"
+        },
+        {
+         "i": 7,
+         "name": "CLIP"
+        }
+       ],
+       "max": 128
+      }
+     }
+    }
+   ]
+  },
+  {
+   "at": 5000,
+   "send": [
+    {
+     "type": "learn",
+     "doc": {
+      "enabled": true,
+      "mappings": [
+       {
+        "index": 0,
+        "t": 0,
+        "i": 1,
+        "name": "DEC",
+        "cc": 21,
+        "ch": 0,
+        "mode": "Absolute",
+        "invert": false,
+        "overrides": [
+         {
+          "ch": 0,
+          "t": 0,
+          "i": 1
+         }
+        ]
+       }
+      ],
+      "learning": {
+       "t": 2,
+       "i": 1,
+       "name": "DEC",
+       "got": 1,
+       "need": 2
+      },
+      "limits": {
+       "tracks": 16,
+       "params": [
+        {
+         "i": 0,
+         "name": "PTCH"
+        },
+        {
+         "i": 1,
+         "name": "DEC"
+        },
+        {
+         "i": 2,
+         "name": "RAMP"
+        },
+        {
+         "i": 3,
+         "name": "RDEC"
+        },
+        {
+         "i": 4,
+         "name": "STRT"
+        },
+        {
+         "i": 5,
+         "name": "NOIS"
+        },
+        {
+         "i": 6,
+         "name": "HARM"
+        },
+        {
+         "i": 7,
+         "name": "CLIP"
+        }
+       ],
+       "max": 128
+      }
+     }
+    }
+   ]
+  },
+  {
+   "at": 8000,
+   "send": [
+    {
+     "type": "learn",
+     "doc": {
+      "enabled": true,
+      "mappings": [
+       {
+        "index": 0,
+        "t": 0,
+        "i": 1,
+        "name": "DEC",
+        "cc": 21,
+        "ch": 0,
+        "mode": "Absolute",
+        "invert": false,
+        "overrides": [
+         {
+          "ch": 0,
+          "t": 0,
+          "i": 1
+         }
+        ]
+       },
+       {
+        "index": 1,
+        "t": 2,
+        "i": 1,
+        "name": "DEC",
+        "cc": 23,
+        "ch": 0,
+        "mode": "Absolute",
+        "invert": false,
+        "overrides": [
+         {
+          "ch": 0,
+          "t": 2,
+          "i": 1
+         }
+        ]
+       }
+      ],
+      "learning": null,
+      "limits": {
+       "tracks": 16,
+       "params": [
+        {
+         "i": 0,
+         "name": "PTCH"
+        },
+        {
+         "i": 1,
+         "name": "DEC"
+        },
+        {
+         "i": 2,
+         "name": "RAMP"
+        },
+        {
+         "i": 3,
+         "name": "RDEC"
+        },
+        {
+         "i": 4,
+         "name": "STRT"
+        },
+        {
+         "i": 5,
+         "name": "NOIS"
+        },
+        {
+         "i": 6,
+         "name": "HARM"
+        },
+        {
+         "i": 7,
+         "name": "CLIP"
+        }
+       ],
+       "max": 128
+      }
+     }
+    }
+   ]
+  }
+ ]
+}

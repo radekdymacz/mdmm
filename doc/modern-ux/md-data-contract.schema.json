@@ -3077,6 +3077,10 @@
                     }
                   ]
                 },
+                "paused": {
+                  "type": "string",
+                  "description": "Why MIDI Learn is off right now (the HW MIDI engine: the host's MIDI in is the machine's own MIDI out); absent: not paused. The page says it and keeps LEARN off."
+                },
                 "left": {
                   "type": "array",
                   "description": "What the last project load left out (the setup's mappings and an alpha project's MDLN mapping), one reason each; absent: nothing.",

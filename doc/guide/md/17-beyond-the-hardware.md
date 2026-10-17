@@ -238,6 +238,36 @@ The machine has no such function. With it on, the track you select changes to th
 
 The notes that play each track are set in "MAP EDITOR" in chapter 10. The keys of the computer keyboard and the audition of a sample never move the selection. Following replaces a selection of several tracks with the one track played. While a question is open, or LEARN waits for its note, the selection stays where it is.
 
+## MIDI LEARN: A CONTROLLER KNOB MOVES A VALUE
+<!-- rows: MD-X27 @fce013 -->
+
+The machine has no such function. A knob or fader on a MIDI controller can move any sound parameter of any track. The mappings belong to the project. They are saved with it and come back when you open it.
+
+1. Click the **Control** tab, or press [6]. The matrix lists the eight knob rows, every learned CC and the app modulators against the 16 tracks.
+2. Click **LEARN** in the top bar, or press [L].
+3. Click any value on the page, for example DEC on the Kit page. The value shows the learn mark.
+4. Turn a knob on your controller both ways. The line in the inspector on the Control page counts the values seen: 0 of 2, then 1 of 2.
+5. The second value completes it. A message names the CC, its channel and the target. The Control page opens the row of that CC with the new mapping.
+6. Press [ESC] to leave LEARN.
+
+A button is learned the same way: press it and release it. It sends its highest value when pressed and its lowest when released. **Inv** turns that round. Notes are not learned. The notes that play each track are set in "MAP EDITOR" in chapter 10.
+
+### Add a mapping without learning
+
+Select a row of the matrix. Under **Add** choose a track and a parameter, then click **Add target**. The same row can move several targets. A knob row listens on any channel. A CC learned from a controller listens on the channel it came on, and its row says which. The stepper on a knob row changes the CC that knob sends. Its targets follow in the same edit.
+
+### When a mapping hides the machine's own CC
+
+The machine answers many CCs on the four channels from its base channel. A mapping on the same channel and CC wins: the machine no longer hears that CC. The inspector says so under the mapping, for example: Overrides the machine's CC 21 on channel 1: T1 DEC. Remove the mapping and the machine's CC works again. A mapping on a channel the machine does not use hides nothing.
+
+### The count and what was left out
+
+The line under the matrix header counts the mappings against the most a project holds, 128. At 128 **Add target** is off until you remove one. When a project opens with mappings that could not be kept, for example a track that no longer exists, a message says how many, and the Control page lists each reason under the matrix header.
+
+### With the HW MIDI engine
+
+With the HW MIDI engine the plug-in's MIDI in is the machine's own MIDI out, so there is nothing to learn from. The Control page says so under the matrix header, LEARN stays off, and the mappings are kept for when you choose the emulator again.
+
 ## THE CPU METER AND THE SPEED-UPS
 <!-- rows: MD-X15 @ca9b71 -->
 
