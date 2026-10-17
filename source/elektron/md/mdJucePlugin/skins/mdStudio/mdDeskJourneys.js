@@ -152,11 +152,21 @@ const MdJourneys = (() => {
 		],
 		async tidy(u) { if (V.playing) u.click("#play"); }
 	};
+	/* I-045..I-048, I-050: the LCD box is the same size on both plates, the MKI LCD is reddish orange with black pixels (contrast 4.5 and up), the switch shows a popup */
+	const lcdBox = () => { const r = document.querySelector(".lcdpanel").getBoundingClientRect(); return Math.round(r.width) + "x" + Math.round(r.height); };
+	const lum = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(x => x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4)); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+	const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+	const plateTok = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim().toLowerCase();
 	const plate = {
 		name: "md-top-plate", proves: ["MD-210"],
 		steps: [
 			{ say: "choose PLATE in the engine menu", act: async (u, c) => { c.p0 = document.documentElement.dataset.plate; c.bg = getComputedStyle(document.body).backgroundColor; await u.pick("engsel", "plate"); }, screen: c => ok(document.documentElement.dataset.plate !== c.p0 && document.querySelector('#engsel option[value="plate"]').textContent === "PLATE: " + (document.documentElement.dataset.plate === "mk2" ? "MKII" : "MKI") && !document.querySelector(".skey[aria-label=\"Switch panel colour\"]"), "plate " + document.documentElement.dataset.plate + ", menu " + document.querySelector('#engsel option[value="plate"]').textContent) },
-			{ say: "choose it again", act: u => u.pick("engsel", "plate"), screen: c => ok(document.documentElement.dataset.plate === c.p0, "plate " + document.documentElement.dataset.plate) }
+			{ say: "choose it again", act: u => u.pick("engsel", "plate"), screen: c => ok(document.documentElement.dataset.plate === c.p0, "plate " + document.documentElement.dataset.plate) },
+			{ say: "both plates: the switch shows a popup, the LCD box has one size, MKI is reddish orange with black pixels", act: async (u, c) => {
+				c.seen = {}; c.toasts = {};
+				for (const pl of ["mk1", "mk2"]) { if (document.documentElement.dataset.plate !== pl) { await u.pick("engsel", "plate"); c.toasts[pl] = $1("#toast").textContent; c.on = $1("#toast").classList.contains("on"); } await sleep(200); c.seen[pl] = { box: lcdBox(), lcd: plateTok("--lcd"), ink: plateTok("--ink") }; }
+				if (document.documentElement.dataset.plate !== c.p0) await u.pick("engsel", "plate");
+			}, screen: c => ok(c.seen.mk1.box === c.seen.mk2.box && c.seen.mk1.lcd !== c.seen.mk2.lcd && /^#d/.test(c.seen.mk1.lcd) && contrast(c.seen.mk1.lcd, c.seen.mk1.ink) >= 4.5 && contrast(c.seen.mk1.ink, "#000000") < 1.6 && Object.values(c.toasts).every(t => /^MK/.test(t)), JSON.stringify(c.seen) + JSON.stringify(c.toasts)) }
 		]
 	};
 	const wsKeys = {
