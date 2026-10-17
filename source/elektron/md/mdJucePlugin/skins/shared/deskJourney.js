@@ -814,7 +814,7 @@ const Journey = (() => {
 	   LCD's second row is cut, or when the LCD's box is another size on another workspace. The CPU meter and the output
 	   strip are fed as the plug-in does (a standalone has them already); the tidy puts the window back. */
 	const fitViews = [
-		{ name: "1440", width: 1440, floor: 0 }, { name: "1280", width: 1280, floor: 0 }, { name: "1920", width: 1920, floor: 0 }, { name: "2560", width: 2560, floor: 0 },
+		{ name: "1440", width: 1440, floor: 0 }, { name: "1280", width: 1280, floor: 0 }, { name: "1500", width: 1500, floor: 0 }, { name: "1920", width: 1920, floor: 0 }, { name: "2560", width: 2560, floor: 0 },
 		{ name: "1440-zoom-90", width: 1440, floor: 10.1 }, { name: "1440-zoom-75", width: 1440, floor: 12 }, { name: "1440-zoom-60", width: 1440, floor: 15 }
 	];
 	/* the text floor of a page zoomed out, as WebKit applies it (its "smart minimum": a text that was specified at 9 px or more
