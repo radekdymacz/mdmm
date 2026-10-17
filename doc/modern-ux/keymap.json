@@ -592,7 +592,7 @@
 			],
 			"mod": "",
 			"group": "Pattern",
-			"does": "Drag sideways: a slide to the next lock of this parameter, drawn as a ramp (the machine glides every parameter locked on the step; with All tracks the slide goes on every track's step; one undo step). Click the ramp's line: slide off. Up and down is the lock's value as before",
+			"does": "Drag sideways: a slide, drawn as a ramp to the next trig: its lock, or the kit value when it has none (the machine glides every parameter locked on the step; with All tracks the slide goes on every track's step; one undo step). Click the ramp's line: slide off. Up and down is the lock's value as before",
 			"area": "Lock lane"
 		},
 		{
@@ -603,7 +603,7 @@
 			],
 			"mod": "shift",
 			"group": "Pattern",
-			"does": "Drag sideways out of a lock bar: a slide, a line to the cursor; drop on this parameter's next lock to set it (one undo step). Anywhere else, Esc or left of the start cancels. From a step without a lock the same drag is the ramp of locks",
+			"does": "Drag sideways out of a lock bar: a slide, a line to the cursor; drop on the next trig to set it (one undo step). Anywhere else, Esc or left of the start cancels. From a step without a lock the same drag is the ramp of locks",
 			"area": "Lock lane"
 		},
 		{
