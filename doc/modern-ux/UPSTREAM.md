@@ -296,6 +296,13 @@ without it).
   fails on these cases (`add b,a max + 1`, `sub` and `cmp` overflow).
 - `31ee15c0` also carries x64 JIT shift-count and NORM-carry fixes inside the Sixteen-bit Arithmetic work; not split out
   (x64 builds only; `normf`'s carry is covered by `e32c7059`). Worth a look when the x64 builds get a golden of their own.
+- **AArch64 `transferSaturation48` under Scale Up, mode not known at compile time** (found by the reviewer, fixed upstream
+  inside `65406f8f`): the left-aligned value is scaled up before it is sign-extended, so bit 55 leaves the host word and
+  the limit takes the wrong sign (x64 is right). A small fix exists (sign-extend with `asr 8` first, drop the last
+  `asr 8` of that path) but could not be built and checked here, so it is not in the branch.
+- `f50b4dc7` and `e8b56f7f` (8 MB DSP thread stack, atomic audio callback) help `DSPThread` users; MD/MM run both
+  DSPs on the calling thread and never create a `DSPThread`, so they change nothing for the editors.
+- `0155c135` needs a single waiter per semaphore (it wakes one waiter per block). Every user in our tree has one.
 - Older upstream commits (before 2026-08-31) were not audited one by one.
 
 **Why the headline commit buys little here.** `0155c135` (audio frames waited for at once, `SpscSemaphoreWithCount` wakes
