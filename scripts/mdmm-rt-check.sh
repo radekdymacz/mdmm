@@ -16,7 +16,7 @@
 #                   the desk's sends go through, DESIGN-audio-lock.md step 3) while editing. Each wait is blamed
 #                   on the holder's site (file:line of the withDeviceLocked or plugin.cpp hold). The run has MIDI Learn on
 #                   (EDITFLOW_LEARN=1, 0.8 L6): four mappings, learned CCs at audio rate and then a burst of 64 a block beside
-#                   the edits and the transport; it fails too when the router applied nothing or dropped a captured CC
+#                   the edits and the transport; it fails too when a mapped parameter did not move or a learn under load did not finish
 #     --load N      N busy loops run beside the checks (a busy Mac on purpose, so the --lock result does not depend
 #                   on what else the Mac runs); the load average is printed before and after each result
 #     VAR=value     passed on: GEARMULATOR_MDMM_EDIT_RATE=0 measures without the stream (0.3.3), ACTIONS=a,b

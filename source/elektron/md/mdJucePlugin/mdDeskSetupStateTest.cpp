@@ -224,6 +224,7 @@ namespace
 			gp->addListener(&gestures);
 			session->step();	// the rebuilds above timed out (this test never ends its block): the step that drops their bits
 			router.beginBlock();
+			session->step();	// ... until a block began after them: this step sees it and drops the last ones
 			router.translate(0xb0, static_cast<uint8_t>(ccAny), 10);
 			session->step();
 			check(gestures.begins == 1 && gestures.ends == 0 && gestures.values >= 1, "gesture: a learned move opens one change gesture and tells the host the value");
@@ -257,7 +258,9 @@ namespace
 				router.translate(0xb0, static_cast<uint8_t>(ccAny), 55);		// the old block, after the rebuild: bit 0
 				session->step();
 				check(stale.begins == 0 && stale.values == 0, "settle timeout: the stale bit names no parameter of the new table (the next step discards it)");
-				router.beginBlock();
+				router.beginBlock();		// the old block is over, a block of the new table began
+				session->step();			// the step that sees it still drops the bits (the old block's last ones are in them)
+				check(stale.begins == 0, "settle timeout: the stale bits are dropped until a block of the new table has begun");
 				check(router.translate(0xb0, 31, 66) && gp2->getUnnormalizedValue() == 66, "and the new table works");
 				session->step();
 				check(stale.begins == 1, "and a move after that is told to the host as usual");
@@ -562,7 +565,11 @@ int main()
 	// would otherwise start a machine, and the no-ROM hold path is what this test checks)
 	const auto root = juce::File::getSpecialLocation(juce::File::tempDirectory).getNonexistentChildFile("mdDeskSetupStateTest", "");
 	root.createDirectory();
+#if defined(_WIN32)
+	_putenv_s("GEARMULATOR_DATA_ROOT", (root.getFullPathName() + "/").toRawUTF8());
+#else
 	setenv("GEARMULATOR_DATA_ROOT", (root.getFullPathName() + "/").toRawUTF8(), 1);
+#endif
 	juce::ScopedJuceInitialiser_GUI juce;
 	idlePace();
 	wirePace(md::MachineModel::Machinedrum, "Machinedrum");

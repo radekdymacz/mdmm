@@ -137,8 +137,10 @@ namespace mdJucePlugin
 		// the bits the old table set name its mappings, not these: none is carried over
 		(void)m_router.takeTouched();
 		// settle timed out: a block that began before the new table may still be running and set one more old bit when it
-		// ends; the next step discards the bits again (by then that block is over)
+		// ends; the steps discard the bits until a block began after this (that one reads the new table, and the old block
+		// is over, its bits are in)
 		m_discardTouched = !settled;
+		m_blocksAtRebuild = m_router.blocks();
 	}
 
 	void MidiLearnCommands::edit(std::vector<deskCore::LearnMapping> _list)
@@ -285,10 +287,12 @@ namespace mdJucePlugin
 	void MidiLearnCommands::notifyHost()
 	{
 		const double now = m_host.nowMs ? m_host.nowMs() : 0;
+		const auto blocks = m_router.blocks();	// before the bits: a bit the old block set is set before the next block begins
 		auto touched = m_router.takeTouched();
 		if(m_discardTouched)
 		{
-			m_discardTouched = false;
+			if(blocks != m_blocksAtRebuild)
+				m_discardTouched = false;
 			touched = {0, 0};
 		}
 		for(size_t n = 0; n < m_params.size() && n < m_touch.size(); ++n)
