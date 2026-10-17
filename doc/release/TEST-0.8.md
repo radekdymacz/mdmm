@@ -116,6 +116,17 @@ Learn is on in both editors. Mappings are saved with the project only. Check:
 6. HW MIDI engine (the page's engine menu): Learn shows it is off with its reason; CCs from the host pass to the machine untouched. Back on the emulator: Learn works again.
 7. Close the editor window while it waits for a controller: it stops waiting.
 
+## Third tester round (0.8.0)
+
+1. PLATE: MKI / MKII in the engine menu, both editors. The LCD keeps its size. The MD MKI LCD is red-orange with black pixels; the MD shows a short message on the switch. The MM MKII has no "MKII" print under the display and its unlit LEDs are dim burgundy.
+2. CONTROL is a key right of LEARN (not a tab). It lights while the mapping page is open; a tab click leaves it; key 6 opens it.
+3. MM Pattern: play notes from the computer keyboard or a MIDI keyboard; the roll's piano keys light and go dark on release.
+4. MM Mix: double-click a track's level; it goes to 100, one Cmd+Z undoes it.
+5. MM: pick an FX machine (FX-REVERB, FX-CHORUS); AMP DEC and REL read 64. If you have a real Monomachine, compare.
+6. MM Song: set a row's TRN and a track transpose to -64 and +63; the machine plays them (if it clamps, say where).
+7. MD lock lane: a slide ramp is drawn between locks; drag a lock's dot sideways or Shift-drag from a lock to draw one; click the line to remove it.
+8. Mix meters (MM) move with the sound and never jump above the peak.
+
 ## Controls that moved or are new (both editors)
 
 1. Transport menu: right-click the ▶ key. The menu opens with Play or Stop, Pause or Continue, Record and Panic. The ▾ key beside ▶ is gone.
