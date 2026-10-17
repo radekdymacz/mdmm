@@ -127,6 +127,7 @@ namespace  dsp56k
 		void subr();
 		void mpyi();
 		void mpy_su();
+		void max_parallel();
 		void tst();
 		void nop();
 
