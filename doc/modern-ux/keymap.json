@@ -2785,7 +2785,7 @@
 			],
 			"mod": "",
 			"group": "Anywhere",
-			"does": "LEARN: the controller knob for the value clicked",
+			"does": "LEARN: the value clicked gets that knob row's CC",
 			"mapping": true
 		},
 		{

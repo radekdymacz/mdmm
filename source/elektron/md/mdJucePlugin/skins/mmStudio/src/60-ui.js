@@ -75,7 +75,7 @@ function applyPattern(p){const kc=S.patKit[p]!==S.kit;
 function renderTop(){
  $$("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.ws===S.ws));
  const lkk=$("#learnkey");if(lkk){lkk.setAttribute("aria-pressed",S.learn);lkk.classList.toggle("on",!!S.learn)}
- $("#platekey span").textContent=S.plate==="mk1"?"MKI":"MKII";
+ {const o=document.querySelector('#engsel option[value="plate"]');if(o)o.textContent="PLATE: "+(S.plate==="mk1"?"MKI":"MKII")}
  const n=S.locks.size,m=$("#meter");$("#lockn").textContent=String(n).padStart(2,"0")+"/62";m.title=`${n} of 62 locked parameters (the machine's limit). A parameter with any lock counts once.`;m.className="f meter"+(n>=62?" full":n>=52?" warn":"");
  $("#bpm").textContent=(S.tempoDraft??S.bpm).toFixed(1);$("#pat").textContent=patName(S.queued??S.pat);$("#pat").parentElement.classList.toggle("queued",S.queued!=null);songLcd();
  /* B-030: the host's tempo (in a DAW the machine follows): marked, and not edited here */
@@ -153,7 +153,7 @@ function syncControls(){
   const b=el.querySelector("b");const dw=!el.classList.contains("pan")&&m.tab&&v!=null?tabAt(m.tab,v):null,wn=dw&&dw.n;/* B-150: a D wave box shows the wave's name (the number is in the tip and the screen) */if(b){b.textContent=wn||txt;b.classList.toggle("long",!!wn)}if(wn)el.title=txt;el.setAttribute("aria-valuetext",txt);
   if(PAGES.includes(g)||g==="MID"){const pid=g+"."+n;el.classList.toggle("lk",S.locks.has(lkKey(t,pid)));const mb=modBy(t,g,+n);let md=el.querySelector(".mod");
    if(mb.length){if(!md){md=document.createElement("i");md.className="mod";el.appendChild(md)}md.textContent="~"+mb.join("");el.title=`Modulated by LFO ${mb.join(" + ")}`}else if(md)md.remove();
-   const mp=S.ctl.links.filter(l=>l.t===t&&l.pid===pid);el.classList.toggle("mapped",mp.length>0)}});
+   const mp=S.ctl.links.some(l=>l.t===t&&l.pid===pid)||LD().mappings.some(m=>m.t===t&&m.pg!==LEVELPG&&PAGES[m.pg]===g&&m.i===+n);el.classList.toggle("mapped",mp)}});
  $$("#main [data-show]").forEach(el=>{const t=+el.dataset.show;el.textContent=trk(t).lev});
  if(typeof syncDock==="function")syncDock();
  if(typeof syncRevert==="function")syncRevert()}

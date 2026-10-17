@@ -274,12 +274,15 @@ const MmConvert = (() => {
 		}).filter(Boolean);
 		return { schema: "mm-desk/modulators", version: 1, sources, links };
 	}
+	/* only links from a source of the setup: the plug-in's codec leaves the others out, and a link from any other id (an
+	   old page's knob link) is not an app link; the knob rows are the plug-in's mappings now (the learn document) */
 	function modToPage(d) {
+		const ids = new Set(d.sources.map(x => x.id));
 		return {
 			sources: d.sources.map(x => x.kind === "lfo"
 				? { id: x.id, kind: "lfo", label: x.label, val: 64, SHAPE: SHAPE_PAGE[x.shape] ?? 0, RATE: x.rate, DEPTH: x.depth }
 				: { id: x.id, kind: "rnd", label: x.label, val: 64, RATE: x.rate, SMOOTH: x.smooth, _t: 64 }),
-			links: d.links.map(l => ({ src: l.source, t: l.track, pid: PAGES[l.param >> 3] + "." + (l.param & 7), min: l.min, max: l.max, curve: l.curve, inv: !!l.invert }))
+			links: d.links.filter(l => ids.has(l.source)).map(l => ({ src: l.source, t: l.track, pid: PAGES[l.param >> 3] + "." + (l.param & 7), min: l.min, max: l.max, curve: l.curve, inv: !!l.invert }))
 		};
 	}
 

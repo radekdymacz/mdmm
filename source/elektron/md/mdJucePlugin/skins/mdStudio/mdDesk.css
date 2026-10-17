@@ -377,7 +377,6 @@ table.song tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 .right{gap:12px!important;align-self:center}
 .save{width:auto}
 .save span{white-space:nowrap}
-.platekey{font:600 11px var(--sans);letter-spacing:.12em;padding:5px 9px}
 @media (max-width:1420px){.save span{display:none}.brand span{display:none}.tabs button small{display:none}}
 @media (max-width:1250px){.top{grid-template-columns:1fr auto!important}.top .wsgroup{grid-column:1/-1!important;grid-row:2!important}}
 
@@ -906,8 +905,6 @@ html,body{min-width:1280px}
 .skey:disabled{opacity:.4;cursor:default}
 .skey small{min-width:1ch}
 .firstlink{display:flex;gap:18px;align-items:center}
-.platekey2{background:transparent!important;box-shadow:none!important;color:var(--print)!important;font:600 11px var(--sans)!important;letter-spacing:.14em;text-transform:uppercase;padding:0!important}
-.platekey2 span{color:var(--led)}
 
 /* header band: logo, key groups and LCD share one top and one bottom line */
 :root{--hband:64px}

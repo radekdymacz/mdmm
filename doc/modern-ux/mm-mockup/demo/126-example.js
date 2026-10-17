@@ -49,9 +49,14 @@ S.songs={names:["DEMO SONG","ACID LIVE","VOCODER JAM",...Array(21).fill("")],row
  L(7,"MID.1",[[16,70]]);
 })();
 S.ctl.sources.push({id:"lfoA",kind:"lfo",label:"LFO A",val:64,SHAPE:0,RATE:"1/2",DEPTH:100},{id:"rndA",kind:"rnd",label:"Random A",val:64,RATE:"1/16",SMOOTH:30,_t:64});
-S.ctl.links=[{src:"cc21",t:0,pid:"FLT.1",min:20,max:110,curve:"lin",inv:false},{src:"cc21",t:2,pid:"FLT.0",min:0,max:80,curve:"exp",inv:false},
- {src:"cc22",t:2,pid:"EFX.4",min:64,max:127,curve:"lin",inv:false},{src:"cc22",t:3,pid:"SYN.0",min:10,max:127,curve:"log",inv:false},
- {src:"lfoA",t:2,pid:"AMP.6",min:30,max:98,curve:"lin",inv:false},{src:"rndA",t:7,pid:"MID.4",min:0,max:127,curve:"lin",inv:false}];
+/* the plug-in's mappings, as its learn document says them (the page keeps no links of its own for the knob rows): Knob 1 and
+   Knob 2 on any channel, and one learned CC on channel 2 that hides the machine's own CC (T1 FLT BASE is CC 73) */
+S.ctl.links=[{src:"lfoA",t:2,pid:"AMP.6",min:30,max:98,curve:"lin",inv:false},{src:"rndA",t:7,pid:"MID.4",min:0,max:127,curve:"lin",inv:false}];
+S.ctl.doc={enabled:true,learning:null,limits:{tracks:6,max:128,params:[]},mappings:[
+ {index:0,t:0,pg:2,i:1,name:"",cc:21,ch:255,mode:"Absolute",invert:false,overrides:[]},{index:1,t:2,pg:2,i:0,name:"",cc:21,ch:255,mode:"Absolute",invert:false,overrides:[]},
+ {index:2,t:2,pg:3,i:4,name:"",cc:22,ch:255,mode:"Absolute",invert:true,overrides:[]},{index:3,t:3,pg:0,i:0,name:"",cc:22,ch:255,mode:"Absolute",invert:false,overrides:[]},
+ {index:4,t:0,pg:2,i:1,name:"",cc:73,ch:1,mode:"RelativeSigned",invert:false,overrides:[{ch:1,t:1,pg:2,i:1}]}]};
+S.ctl.doc.limits.params=[...Array(7).keys()].flatMap(pg=>[...Array(8).keys()].map(i=>({pg,i,name:""}))).concat([{pg:7,i:0,name:"Level"}]);
 S.song=[{pat:0,rep:2},{pat:1,rep:2,trn:69},{pat:0,rep:2,mutes:[3]},{pat:2,rep:1,ofs:8,len:16},{pat:1,rep:2,ttr:[64,64,64,71,64,64,64,64,64,64,64,64]},{pat:3,rep:1,bpm:124,mutes:[4,7]},{type:"loop",to:1,count:2},{type:"end"}];
 S.songSel=1;
 /* the kit library: kit 1 is the example kit, the other named ones made from it (factoryKit) */

@@ -378,7 +378,6 @@ table.song tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 .right{gap:12px!important;align-self:center}
 .save{width:auto}
 .save span{white-space:nowrap}
-.platekey{font:600 11px var(--sans);letter-spacing:.12em;padding:5px 9px}
 @media (max-width:1420px){.save span{display:none}.brand span{display:none}.tabs button small{display:none}}
 @media (max-width:1250px){.top{grid-template-columns:1fr auto!important}.top .wsgroup{grid-column:1/-1!important;grid-row:2!important}}
 
@@ -906,8 +905,6 @@ html,body{min-width:1280px}
 .skey:disabled{opacity:.4;cursor:default}
 .skey small{min-width:1ch}
 .firstlink{display:flex;gap:18px;align-items:center}
-.platekey2{background:transparent!important;box-shadow:none!important;color:var(--print)!important;font:600 11px var(--sans)!important;letter-spacing:.14em;text-transform:uppercase;padding:0!important}
-.platekey2 span{color:var(--led)}
 
 /* header band: logo, key groups and LCD share one top and one bottom line */
 :root{--hband:64px}
@@ -2844,12 +2841,13 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
       <button role="tab" data-ws="mix"><i class="led"></i><span>Mix</span><small>3</small></button>
       <button role="tab" data-ws="perform"><i class="led"></i><span>Perform</span><small>4</small></button>
       <button role="tab" data-ws="song"><i class="led"></i><span>Song</span><small>5</small></button>
+      <button role="tab" data-ws="control" hidden><i class="led"></i><span>Control</span><small>6</small></button>
     </nav></div>
     </div>
     <div class="midgrp">
       <div class="lcdgroup">
         <div class="lcdpanel"><div class="bootscr" id="bootscr" aria-hidden="true"><div class="bs1">MONOMACHINE <span id="bsmk">SFX-60 MKII</span></div><div class="bs2" id="bstxt">OS 1.32B · STARTING</div><div class="bsbar"><i id="bsbar"></i></div></div>
-          <div class="f trf"><small class="engf"><select id="engsel" data-k="1" hidden><option value="emu">EMU OS 1.32B</option><option value="hw">HW MIDI</option><option value="audio">AUDIO/MIDI…</option><option value="global">GLOBAL…</option><option value="rom">LOAD ROM</option><option value="import">IMPORT SYSEX…</option><option value="export">EXPORT SYSEX…</option><option value="reset">RESET MACHINE…</option><option value="memoryKeep" hidden>KEEP MEMORY: ON</option><option value="followPlayed" hidden>FOLLOW PLAYED TRACK: OFF</option></select><button class="kselbtn lcdeng" type="button" data-for="engsel" aria-haspopup="listbox" aria-expanded="false" aria-label="Engine: emulator or hardware" title="Engine: run the emulator, or edit a real Monomachine over MIDI"><i class="led on" id="engled"></i><span>EMU OS 1.32B</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button></small><span class="lcdt">
+          <div class="f trf"><small class="engf"><select id="engsel" data-k="1" hidden><option value="emu">EMU OS 1.32B</option><option value="hw">HW MIDI</option><option value="audio">AUDIO/MIDI…</option><option value="global">GLOBAL…</option><option value="rom">LOAD ROM</option><option value="import">IMPORT SYSEX…</option><option value="export">EXPORT SYSEX…</option><option value="reset">RESET MACHINE…</option><option value="memoryKeep" hidden>KEEP MEMORY: ON</option><option value="followPlayed" hidden>FOLLOW PLAYED TRACK: OFF</option><option value="plate" title="MKI or MKII. Same silver plate; the MKII adds user waveforms and the DigiPRO Doubledraw and Ensemble machines.">PLATE: MKII</option></select><button class="kselbtn lcdeng" type="button" data-for="engsel" aria-haspopup="listbox" aria-expanded="false" aria-label="Engine: emulator or hardware" title="Engine: run the emulator, or edit a real Monomachine over MIDI"><i class="led on" id="engled"></i><span>EMU OS 1.32B</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button></small><span class="lcdt">
             <button class="lt rec" id="rec" aria-pressed="false" aria-label="Record" title="Record: stopped = GRID RECORDING, playing = LIVE RECORDING. Alt+Space: live recording. ⇧-click (stopped): STEP RECORDING."><i class="led" id="recled"></i>●</button>
             <button class="lt" id="play" aria-pressed="false" aria-label="Play" title="Play / stop (Space) · right-click: Pause, Record, Panic"><i class="led" id="playled"></i><span id="playico">▶</span></button>
 </span></div>
@@ -2868,7 +2866,7 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
       <button class="skey" id="undo" aria-label="Undo" title="Undo (Cmd+Z)"><i class="ico">↶</i><span>Undo</span><small id="undon"></small></button>
       <button class="skey" id="redo" aria-label="Redo" title="Redo (Shift+Cmd+Z)"><i class="ico">↷</i><span>Redo</span><small id="redon"></small></button>
       <button class="skey" id="globkey" aria-pressed="false" aria-label="Global settings" title="GLOBAL: the machine's MIDI settings (the channels each track listens on, sync in), kept in its active global"><i class="led"></i><span>Global</span></button>
-      <button class="skey" id="platekey" aria-label="Switch MKI or MKII" title="MKI or MKII. Same silver plate; the MKII adds user waveforms and the DigiPRO Doubledraw and Ensemble machines."><i class="led"></i><span>MKII</span></button>
+      <button class="skey" id="learnkey" hidden aria-pressed="false" title="Click a value, then turn a knob on your controller (Esc leaves)"><i class="led"></i><span>Learn</span></button>
      </div></div>
     </div>
   </header>
@@ -3476,14 +3474,14 @@ const MM_SEAM={
  "host":[
   "ownsClock","engineLabels","notes","start","commit","intent","library","undo","redo","history","togglePlay",
   "selectPattern","kit","tempo","mutes","keyMode","record","chain","chainClear","seqMode","loadSong","saveSong","waiting",
-  "sendNow","playKey","keyUp","transport","noteOn","noteOff","joy","learning","learnTarget","learnBind","modulators",
+  "sendNow","playKey","keyUp","transport","noteOn","noteOff","joy","learning","learnTarget","learnBind","learnAdd","learnInvert","learnRemove","modulators",
   "engine","chooseRom","removeRom","romManage","syxChoose","syxExport","syxStart","syxStop","syxPlace","syxExportInfo","machineReset","revealRom",
   "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","mixMeters","globalSlot","memory","follow"],
  "view":[
   "audible","soloed","engReady","asgT","noteName","pname","machName","kitName","gated","busy","sel","mode",
   "playing","step","tempo","engineState","kitState","learnTarget","learning","ctlSetup","show","startEmpty",
   "setPatternSlot","setKitSlot","setReading","setTempo","setSolo","setInput","setPlaying","setStep","setPausedStep","setSongRow","setSongSteps","setEng","dlgOpen",
-  "setEngineLabel","setEngineTip","setEngines","setAudioEntry","setMemory","setFollow","selectTrack","clearLearnTarget","setMapping","setModulation",
+  "setEngineLabel","setEngineTip","setEngines","setAudioEntry","setMemory","setFollow","selectTrack","clearLearnTarget","setMapping","setLearn","setModulation",
   "setCtlSetup","disable","setRecord","setRecLock","setLcd","setKeyDown","setMidiHeld","setPst","closeFirmwareDialog","bootRom",
   "bootInstalled","syxPreview","syxProgress","syxExported","syxExportInfo","render","renderTop","drawLib","toast","ask","redraw","movePH",
   "setPos","flashTracks","goWs","clickStep","autoRange","kitSave","redrawAudio","audioLevel","audioStats","openAudio","mixLevels","mixMeterState"]};
@@ -3570,8 +3568,11 @@ window.MMDemoHost=window.MMHost?null:(()=>{
      noteOn(t, pitch, vel),           the home row, the piano roll's and the transpose keyboard's keys: the
      noteOff(t, pitch)                note intent, as on the MD (synth track t, pitch semitones from C3; the
                                       core plays it on the track's own MIDI channel)
-     learning(on), learnTarget(target), learnBind(target, knob)
-                                      LEARN on or off, the value clicked, the knob pressed for it
+     learning(on), learnTarget(target), learnBind(target, cc)
+                                      LEARN on or off, the value clicked, the knob row pressed for it (1-8): that row's CC
+     learnAdd({cc, ch, t, pg, i}), learnInvert(index), learnRemove(index)
+                                      the CC rows' Add target, Inv and x: the plug-in's mappings, by index in the learn
+                                      document; the document comes back through MMView.setLearn
      modulators(setup)                the Control workspace's app sources or links changed: the
                                       host's engine runs them ({sources, links}, ctlSetup()); it
                                       shows their moving values with MMView.setModulation
@@ -6156,7 +6157,7 @@ function applyPattern(p){const kc=S.patKit[p]!==S.kit;
 function renderTop(){
  $$("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.ws===S.ws));
  const lkk=$("#learnkey");if(lkk){lkk.setAttribute("aria-pressed",S.learn);lkk.classList.toggle("on",!!S.learn)}
- $("#platekey span").textContent=S.plate==="mk1"?"MKI":"MKII";
+ {const o=document.querySelector('#engsel option[value="plate"]');if(o)o.textContent="PLATE: "+(S.plate==="mk1"?"MKI":"MKII")}
  const n=S.locks.size,m=$("#meter");$("#lockn").textContent=String(n).padStart(2,"0")+"/62";m.title=`${n} of 62 locked parameters (the machine's limit). A parameter with any lock counts once.`;m.className="f meter"+(n>=62?" full":n>=52?" warn":"");
  $("#bpm").textContent=(S.tempoDraft??S.bpm).toFixed(1);$("#pat").textContent=patName(S.queued??S.pat);$("#pat").parentElement.classList.toggle("queued",S.queued!=null);songLcd();
  /* B-030: the host's tempo (in a DAW the machine follows): marked, and not edited here */
@@ -6234,7 +6235,7 @@ function syncControls(){
   const b=el.querySelector("b");const dw=!el.classList.contains("pan")&&m.tab&&v!=null?tabAt(m.tab,v):null,wn=dw&&dw.n;/* B-150: a D wave box shows the wave's name (the number is in the tip and the screen) */if(b){b.textContent=wn||txt;b.classList.toggle("long",!!wn)}if(wn)el.title=txt;el.setAttribute("aria-valuetext",txt);
   if(PAGES.includes(g)||g==="MID"){const pid=g+"."+n;el.classList.toggle("lk",S.locks.has(lkKey(t,pid)));const mb=modBy(t,g,+n);let md=el.querySelector(".mod");
    if(mb.length){if(!md){md=document.createElement("i");md.className="mod";el.appendChild(md)}md.textContent="~"+mb.join("");el.title=`Modulated by LFO ${mb.join(" + ")}`}else if(md)md.remove();
-   const mp=S.ctl.links.filter(l=>l.t===t&&l.pid===pid);el.classList.toggle("mapped",mp.length>0)}});
+   const mp=S.ctl.links.some(l=>l.t===t&&l.pid===pid)||LD().mappings.some(m=>m.t===t&&m.pg!==LEVELPG&&PAGES[m.pg]===g&&m.i===+n);el.classList.toggle("mapped",mp)}});
  $$("#main [data-show]").forEach(el=>{const t=+el.dataset.show;el.textContent=trk(t).lev});
  if(typeof syncDock==="function")syncDock();
  if(typeof syncRevert==="function")syncRevert()}
@@ -6853,7 +6854,7 @@ Keys.bind({id:"unmark-paste",scope:"seq",keys:["Escape"],group:"Pattern",does:"U
 Keys.bind({id:"lockstep-wheel",scope:"seq",area:"Lock lane",keys:["wheel on a lock step"],group:"Pattern",does:"Move its lock in the lane's parameter, 4 a notch (⇧: 1)"});
 Keys.bind({id:"lane-slide",scope:"seq",area:"Lock lane",keys:["lock's dot"],group:"Pattern",does:"Drag sideways: a slide to the next lock of this parameter, drawn as a ramp (the machine glides every parameter locked on the step; one undo step). Click the ramp's line: slide off. Up and down is the lock's value as before"});
 Keys.bind({id:"lane-slide-band",scope:"seq",area:"Lock lane",keys:["lock bar"],mod:"shift",group:"Pattern",does:"Drag sideways out of a lock bar: a slide, a line to the cursor; drop on this parameter's next lock to set it (one undo step). Anywhere else, Esc or left of the start cancels. From a step without a lock the same drag is the ramp of locks"});
-Keys.bind({id:"lane-slide-cancel",scope:"seq",area:"Lock lane",keys:["Escape"],group:"Pattern",does:"While drawing a slide in the lock lane: cancel it",when:()=>laneDraw?.band==="on",run:()=>bandEsc()});
+Keys.bind({id:"lane-slide-cancel",short:"Cancel",hidden:true,scope:"seq",keys:["Escape"],group:"Pattern",does:"While drawing a slide in the lock lane: cancel it",when:()=>laneDraw?.band==="on",run:()=>bandEsc()});
 Keys.bind({id:"lane-ramp",scope:"seq",area:"Lock lane",keys:["lock lane"],mod:"shift",group:"Pattern",does:"Drag: a ramp, a straight line from the press to the release (one undo step)"});
 Keys.bind({id:"track-mark-paste",scope:"seq",area:"Tracks",keys:["track header"],mod:"shift",group:"Pattern",does:"Click: mark the track for paste; ⌘V then pastes into every marked track (one undo step)"});
 
@@ -8193,20 +8194,52 @@ function playKey(n){if(HOST.playKey)return HOST.playKey(n);setKeyDown(n,null);le
   else{S.mtTrn=n-60;msg=`${m===2?"Restart":"Transpose"} pattern ${S.mtTrn>=0?"+":""}${S.mtTrn}${S.multi.timing?" at the next "+TIMS[S.multi.timing]:""}`;if(!S.playing)togglePlay();else if(m===2){S.step=-1}ts=[0,1,2,3,4,5]}}
  else{const i=mapRow(n);if(i>=0){const r=S.mmap[i];S.mmapSel=i;msg=`${noteName(n)} › ${r.pat<0?"current":patName(r.pat)} from step ${r.ofs+1}${r.len?", "+r.len+" steps":""}${r.trn!==64&&r.trn?"":""}`;$$(".band").forEach(b=>b.classList.toggle("sel",+b.dataset.band===i))}}
  flashTracks(ts);setKeyDown(n,msg)}
-
-/* ===== Control (from the MD Editor): CC mapping matrix, targets with curves, app-only LFO / Random =====
-   Targets are any value on the 7 DATA pages of a synth track, or the MIDI page of a MIDI track.
-   The editor sends each target's CC on the track channel (Appendix B: SYN 48-55, AMP 56-63, FLT 72-79,
-   EFX 80-87, LFO1 88-95, LFO2 104-111, LFO3 112-119). Locks are not involved. */
+/* ===== Control (from the MD Editor): the plug-in's MIDI mappings against the tracks, app-only LFO / Random =====
+   The CC rows (the eight knob rows, then any other learned CC) show the plug-in's mappings, from the learn document
+   (setLearn): a controller CC that moves a DATA page value or a level (MIDI Learn, 0.8; DESIGN-learn-0.8.md). They are
+   the plug-in's, saved with the project; the page keeps no links of its own for them. The app LFO and Random rows keep
+   their own links (min, max, curve): those are the plug-in's modulators and send CCs to the machine (Appendix B: SYN 48-55,
+   AMP 56-63, FLT 72-79, EFX 80-87, LFO1 88-95, LFO2 104-111, LFO3 112-119). Locks are not involved. */
 S.ctl={sel:"cc21",selT:null,sent:0,addT:0,phase:0,
- /* the eight knobs, no app sources and no links: the browser mockup's example adds its own (demo/126-example.js) */
+ /* the eight knobs (CC 21-28: the knob rows' CCs; the Monomachine has no setting for them yet), no app sources: the
+    browser mockup's example adds its own (demo/126-example.js) */
  sources:Array.from({length:8},(_,k)=>({id:"cc"+(21+k),kind:"cc",cc:21+k,label:"Knob "+(k+1),val:[64,40,0,0,0,0,0,0][k]})),
- links:[]};
+ xsrc:{},links:[],doc:null,left:""};
+/* the learn document (host to page; the mockup builds its own) and its words */
+const NOLEARN={enabled:false,mappings:[],learning:null};
+const LD=()=>S.ctl.doc||NOLEARN;
+const LEVELPG=7;
+const knobRows=()=>S.ctl.sources.filter(x=>x.kind==="cc");
+/* a CC row: a knob row (any channel, the knob's CC) or "x<ch>:<cc>" for any other learned (channel, CC) */
+const rowIdOf=m=>{if(m.ch===255){const k=knobRows().find(x=>x.cc===m.cc);if(k)return k.id}return"x"+m.ch+":"+m.cc};
+const srcById=id=>S.ctl.sources.find(x=>x.id===id)||(/^x\d+:\d+$/.test(id)?(S.ctl.xsrc[id]||(S.ctl.xsrc[id]={id,kind:"cc",val:0})):undefined);
+function ccRows(){const rows=knobRows().map(x=>({id:x.id,ch:255,cc:x.cc,label:x.label}));
+ for(const m of LD().mappings){const id=rowIdOf(m);if(!rows.some(r=>r.id===id))rows.push({id,ch:m.ch,cc:m.cc,label:m.ch===255?"CC "+m.cc:"CC "+m.cc+" ch "+(m.ch+1)})}
+ return rows}
+const mapsOf=id=>LD().mappings.filter(m=>rowIdOf(m)===id);
+/* the learn document's names are the plug-in's parameter names; the page shows its own (the machine's SYN names) */
+const tgtPid=x=>PAGES[x.pg]+"."+x.i;
+const tgtName=x=>x.pg===LEVELPG?"LEVEL":(pname(x.t,tgtPid(x))||x.name||PAGES[x.pg]+" "+x.i);
+const tgtLabel=x=>tLabel(x.t)+" "+(x.pg===LEVELPG?"LEVEL":PAGES[x.pg]+" "+tgtName(x));
+const chWords=ch=>ch===255?"any channel":"channel "+(ch+1);
+/* what a mapping hides: the machine's own targets of that (channel, CC), one line */
+function overrideLine(m){const o=m.overrides||[];if(!o.length)return"";const it=o.slice(0,4).map(x=>`on channel ${x.ch+1}: ${tgtLabel(x)}`);
+ return`Overrides the machine's CC ${m.cc} ${it.join("; ")}${o.length>4?`; +${o.length-4} more`:""}`}
+const learnedText=m=>`Learned CC ${m.cc} on ${chWords(m.ch)}: ${tgtLabel(m)}.`+(m.overrides&&m.overrides.length?" "+overrideLine(m)+".":"");
+const limitMax=()=>LD().limits?.max||128;
+/* the targets the plug-in's learn takes: the document's limits (without a host: the synth tracks' DATA pages and levels) */
+const canLearn=(t,pg,i)=>{const L=LD().limits;return L?t<L.tracks&&L.params.some(q=>q.pg===pg&&q.i===i):t<6&&pg<=LEVELPG&&(pg<LEVELPG||i===0)};
+const learnTracks=()=>LD().limits?.tracks??6;
 const RATES={"1/16":1,"1/8":2,"1/4":4,"1/2":8,"1":16,"2":32,"4":64};
-const srcById=id=>S.ctl.sources.find(x=>x.id===id);
 function curveF(c,x){return c==="exp"?x*x:c==="log"?Math.sqrt(x):x}
 function ccOf(t,pid){const[pg,i]=pid.split(".");if(pg==="MID")return"NRPN "+(0x38+ +i);return"CC "+(CCBASE[pg]+ +i)}
 function applySrc(src){S.ctl.links.filter(l=>l.src===src.id).forEach(l=>{if(!pname(l.t,l.pid))return;let x=src.val/127;if(l.inv)x=1-x;x=curveF(l.curve,x);const[pg,i]=l.pid.split(".");const m=meta(l.t,pg,+i);trk(l.t).v[pg][+i]=clamp(Math.round((l.min+(l.max-l.min)*x)/127*maxOf(m)),0,maxOf(m));S.ctl.sent++})}
+/* the on-screen knob row drives the plug-in's mappings of its CC (absolute: its value over 0-127, Inv turns it round) */
+function applyMaps(id){const row=srcById(id);let n=0;
+ for(const m of mapsOf(id)){let x=row.val/127;if(m.invert)x=1-x;
+  if(m.pg===LEVELPG){const v=clamp(Math.round(x*127));if(trk(m.t).lev!==v){trk(m.t).lev=v;edit("level",{t:m.t,v})}n++;continue}
+  const pid=tgtPid(m);if(!pname(m.t,pid))continue;const[pg,i]=pid.split("."),mt=meta(m.t,pg,+i);trk(m.t).v[pg][+i]=clamp(Math.round(x*maxOf(mt)),0,maxOf(mt));n++}
+ S.ctl.sent+=n}
 let ctlRaf=0;function ctlRefresh(){if(ctlRaf)return;ctlRaf=requestAnimationFrame(()=>{ctlRaf=0;syncControls();$$(".srch").forEach(h=>{const s2=srcById(h.dataset.src);h.style.setProperty("--f",s2.val/127*100+"%");h.querySelector(".sv").textContent=s2.val})})}
 setInterval(()=>{const r=$("#ccrate"),n=S.ctl.rate??S.ctl.sent;if(r){r.textContent=`${n}/s`;r.classList.toggle("hot",n>300)}S.ctl.sent=0},1000);
 function ctlTick(){S.ctl.phase++;S.ctl.sources.forEach(sr=>{const n=RATES[sr.RATE]||8;
@@ -8217,38 +8250,80 @@ function ctlTick(){S.ctl.phase++;S.ctl.sources.forEach(sr=>{const n=RATES[sr.RAT
 function ctlSetup(){const app=S.ctl.sources.filter(x=>x.kind!=="cc");return JSON.parse(JSON.stringify({sources:app,links:S.ctl.links.filter(l=>app.some(x=>x.id===l.src))}))}
 /* the app sources' setup changed: a host that runs them gets the new one */
 function ctlChanged(){tx();if(HOST.modulators)HOST.modulators(ctlSetup())}
-function learnBind(k){const lt=S.learnT;if(!lt)return;if(HOST.learnBind)HOST.learnBind(lt,k);const id="cc"+(20+k);if(S.ctl.links.some(l=>l.src===id&&l.t===lt.t&&l.pid===lt.pid)){toast("Already mapped.");return}
- S.ctl.links.push({src:id,t:lt.t,pid:lt.pid,min:0,max:127,curve:"lin",inv:false});S.learnT=null;S.ctl.sel=id;syncControls();toast(`Knob ${k} (CC ${20+k}) → ${tLabel(lt.t)} ${pidLabel(lt.t,lt.pid)}.`);if(S.ws==="control")render()}
+/* The browser mockup has no plug-in: the same edits on its own learn document. A host answers with the document. */
+function localLearn(op,a){const d=S.ctl.doc||(S.ctl.doc={enabled:true,mappings:[],learning:null}),ms=d.mappings;
+ if(op==="add"){if(ms.some(m=>m.cc===a.cc&&m.ch===a.ch&&m.t===a.t&&m.pg===a.pg&&m.i===a.i)){toast("Already mapped.");return}
+  ms.push({index:ms.length,t:a.t,pg:a.pg,i:a.i,name:"",cc:a.cc,ch:a.ch,mode:"Absolute",invert:false,overrides:[]})}
+ else if(op==="remove")ms.splice(a.index,1);else if(op==="invert")ms[a.index].invert=!ms[a.index].invert;
+ ms.forEach((m,n)=>m.index=n);if(S.ws==="control")render();else syncControls()}
+const pidRef=pid=>pid==="LVL.0"?{pg:LEVELPG,i:0}:{pg:PAGES.indexOf(pid.split(".")[0]),i:+pid.split(".")[1]};
+/* LEARN's digit k: the value clicked gets knob row k's CC (the row's own CC, as set) on any channel */
+function learnBind(k){const lt=S.learnT,row=knobRows()[k-1];if(!lt||!row)return;
+ if(HOST.learnBind)HOST.learnBind(lt,row.cc);else{localLearn("add",{t:lt.t,...pidRef(lt.pid),cc:row.cc,ch:255});toast(`Knob ${k} (CC ${row.cc}) → ${tLabel(lt.t)} ${pidLabel(lt.t,lt.pid)}.`)}
+ S.learnT=null;S.ctl.sel=row.id;S.ctl.selT=null;syncControls();if(S.ws==="control")render()}
+/* the host's learn document: progress, the result of a learn, paused, what a load left out */
+function setLearn(doc){const prev=S.ctl.doc;S.ctl.doc=doc;const ms=doc.mappings||[];
+ if(prev&&prev.learning&&!doc.learning){S.learnT=null;if(ms.length>prev.mappings.length)toast(learnedText(ms[ms.length-1]))}
+ else if(doc.learning&&(!prev||!prev.learning||doc.learning.got>prev.learning.got)&&doc.learning.got>0)toast(`Turn the knob both ways (${doc.learning.got} of ${doc.learning.need}).`);
+ if(doc.paused&&S.learn){S.learn=false;S.learnT=null;document.body.classList.remove("learn");renderTop();toast("LEARN is paused: "+doc.paused)}
+ const lf=(doc.left||[]).join("\n");if(lf&&lf!==S.ctl.left)toast(`${doc.left.length} saved mapping${doc.left.length===1?"":"s"} could not be loaded (see the log).`);S.ctl.left=lf;
+ if(S.ws==="control")render();else syncControls()}
 const ALLT=[0,1,2,3,4,5,6,7,8,9,10,11];
 function targetOpts(t){return pagesOf(t).flatMap(pg=>pnames(t,pg).map((n,i)=>n?opt(pg+"."+i,pg+" "+n,""):"")).join("")}
-function renderControl(){const C=S.ctl,sel=srcById(C.sel)||C.sources[0];
+/* the values a CC row can take: only what the plug-in's learn takes (limits), the level last */
+function learnOpts(t){if(t>=learnTracks())return"";const o=[];PAGES.forEach((pg,p)=>pnames(t,pg).forEach((n,i)=>{if(n&&canLearn(t,p,i))o.push(opt(pg+"."+i,pg+" "+n,""))}));if(canLearn(t,LEVELPG,0))o.push(opt("LVL.0","LEVEL",""));return o.join("")}
+const clampT=t=>t<learnTracks()?t:0;
+function renderControl(){const C=S.ctl,rows=ccRows();
+ const isCc=rows.some(r=>r.id===C.sel);
+ if(!isCc&&!C.sources.some(x=>x.id===C.sel&&x.kind!=="cc"))C.sel=rows[0].id;
+ const selRow=rows.find(r=>r.id===C.sel),sel=selRow?{...selRow,kind:"cc"}:srcById(C.sel);
+ const cs=rows.map(r=>({...r,kind:"cc",val:srcById(r.id).val})),srcs=[...cs,...C.sources.filter(x=>x.kind!=="cc")];
  const mx=`<div class="mx"><span></span>${ALLT.map(i=>`<span class="mxh" title="${trk(i).name}"><b>${tLabel(i)}</b><small>${i<6?shortM(trk(i).m):"CH"+String(trk(i).ch).padStart(2,"0")}</small></span>`).join("")}
-  ${C.sources.map(sr=>`<button class="srch ${sr.id===C.sel?"sel":""} k-${sr.kind}" data-src="${sr.id}" style="--f:${sr.val/127*100}%"${HOST.notes?` title="${sr.kind==="cc"?HOST.notes.ccSource:HOST.notes.appSource}"`:""}><span class="sk">${sr.kind==="cc"?"CC "+sr.cc:"APP"}</span><b>${sr.label}</b><span class="sv mono">${sr.val}</span></button>
-   ${ALLT.map(i=>{const ls=C.links.filter(l=>l.src===sr.id&&l.t===i);return`<button class="mxc ${ls.length?"on":""} ${sr.id===C.sel&&C.selT===i?"sel":""}" data-mxsrc="${sr.id}" data-mxt="${i}" title="${ls.map(l=>pidLabel(i,l.pid)).join(", ")||"no link"}">${ls.slice(0,2).map(l=>`<i>${pname(i,l.pid)}</i>`).join("")}${ls.length>2?`<i>+${ls.length-2}</i>`:""}</button>`}).join("")}`).join("")}</div>`;
+  ${srcs.map(sr=>{const cc=sr.kind==="cc",ms=cc?mapsOf(sr.id):[];return`<button class="srch ${sr.id===C.sel?"sel":""} k-${sr.kind}" data-src="${sr.id}" style="--f:${sr.val/127*100}%"${HOST.notes?` title="${cc?HOST.notes.ccSource:HOST.notes.appSource}"`:""}><span class="sk">${cc?"CC "+sr.cc:"APP"}</span><b>${sr.label}</b><span class="sv mono">${sr.val}</span></button>
+   ${ALLT.map(i=>{const sl=sr.id===C.sel&&C.selT===i?"sel":"";
+    if(cc){const ls=ms.filter(m=>m.t===i);return`<button class="mxc ${ls.length?"on":""} ${sl}" data-mxsrc="${sr.id}" data-mxt="${i}" title="${ls.map(tgtLabel).join(", ")||"no mapping"}">${ls.slice(0,2).map(m=>`<i>${tgtName(m)}</i>`).join("")}${ls.length>2?`<i>+${ls.length-2}</i>`:""}</button>`}
+    const ls=C.links.filter(l=>l.src===sr.id&&l.t===i);return`<button class="mxc ${ls.length?"on":""} ${sl}" data-mxsrc="${sr.id}" data-mxt="${i}" title="${ls.map(l=>pidLabel(i,l.pid)).join(", ")||"no link"}">${ls.slice(0,2).map(l=>`<i>${pname(i,l.pid)}</i>`).join("")}${ls.length>2?`<i>+${ls.length-2}</i>`:""}</button>`}).join("")}`}).join("")}</div>`;
+ let insp;
+ if(sel.kind==="cc"){
+  const D=LD(),all=sel.id?mapsOf(sel.id):[],ms=all.filter(m=>C.selT==null||m.t===C.selT),full=D.mappings.length>=limitMax(),addT=clampT(C.addT),lt=D.learning;
+  const status=D.paused?`<div class="note" data-learnnote="paused">LEARN is paused: ${D.paused}</div>`
+   :lt?`<div class="note" data-learnnote="learning">Learning <b>${tgtLabel(lt)}</b>: turn a knob on your controller both ways (${lt.got} of ${lt.need}).</div>`
+   :`<div class="note" data-learnnote="hint">Pick a target below, or press LEARN, click any value and turn a knob on your controller (or press 1-8 for a knob row).</div>`;
+  const left=D.left&&D.left.length?`<div class="note" data-learnnote="left">Left out when the project loaded (${D.left.length}): ${D.left.slice(0,3).join("; ")}${D.left.length>3?`; +${D.left.length-3} more`:""}</div>`:"";
+  insp=`<section class="card"><header><h3>${sel.label}</h3><span>CC ${sel.cc} · ${chWords(sel.ch)} · saved with the project</span></header>
+  ${status}${left}
+  <div class="lhead"><span class="cap">Targets</span>${C.selT!=null?`<button class="ptog on" data-selt="all"><i class="led"></i>${tLabel(C.selT)} only</button>`:`<span class="note">${ms.length} target${ms.length===1?"":"s"} · ${D.mappings.length} of ${limitMax()} mappings</span>`}</div>
+  <div class="lnks">${ms.map(m=>`<div class="lnk"><span class="lcdchip" title="${tgtLabel(m)}">${tgtLabel(m)}</span><span class="note" style="grid-column:span 2">${m.mode==="RelativeSigned"?"Relative (signed)":m.mode==="RelativeOffset"?"Relative (offset)":"Absolute"}</span><span></span>
+   <button class="ptog ${m.invert?"on":""}" data-minv="${m.index}"><i class="led"></i>Inv</button><button class="iconkey" data-mdel="${m.index}" aria-label="Remove mapping" title="Remove">×</button></div>${m.overrides&&m.overrides.length?`<div class="note" style="font-size:12px" data-ovr="${m.index}">${overrideLine(m)}</div>`:""}`).join("")||`<div class="note">Not mapped: this row does nothing yet.</div>`}</div>
+  ${full?`<div class="note" data-learnnote="full">${limitMax()} mappings at most: remove one to add another.</div>`:""}
+  <div class="irow addrow"><span class="ilab">Add</span><select id="lt" aria-label="Target track">${ALLT.filter(i=>i<learnTracks()).map(i=>opt(i,tLabel(i)+" · "+trk(i).m,addT)).join("")}</select>
+   <select id="lp" aria-label="Target value">${learnOpts(addT)}</select><button class="cream" id="laddl"${full?" disabled":""}>Add target</button></div>
+  <div class="irow"><span class="ilab"></span><button data-addsrc="lfo">+ App LFO</button><button data-addsrc="rnd">+ Random</button></div></section>`;
+ }else{
  const links=C.links.map((l,li)=>({l,li})).filter(o=>o.l.src===sel.id&&(C.selT==null||o.l.t===C.selT));
  const appParams=sel.kind==="lfo"?`<div class="irow"><span class="ilab">Shape</span><div class="shapes">${[0,2,4,6,8,10].map(i=>`<button data-srcshape="${i}" aria-pressed="${sel.SHAPE===i}" title="${LWAVE[i]}">${shapeIcon(i)}</button>`).join("")}</div></div>
    <div class="irow"><span class="ilab">Rate</span><span class="seg" data-set="srcrate">${Object.keys(RATES).map(r=>`<button data-v="${r}" aria-pressed="${sel.RATE===r}">${r}</button>`).join("")}</span></div>
    <div class="irow"><span class="ilab">Depth</span><div style="width:140px"><div class="pc" role="slider" tabindex="0" aria-label="DEPTH" data-g="src" data-n="DEPTH" data-src="${sel.id}"><span>DEPTH</span><b></b></div></div></div>`
-  :sel.kind==="rnd"?`<div class="irow"><span class="ilab">Rate</span><span class="seg" data-set="srcrate">${Object.keys(RATES).map(r=>`<button data-v="${r}" aria-pressed="${sel.RATE===r}">${r}</button>`).join("")}</span></div>
-   <div class="irow"><span class="ilab">Smooth</span><div style="width:140px"><div class="pc" role="slider" tabindex="0" aria-label="SMOOTH" data-g="src" data-n="SMOOTH" data-src="${sel.id}"><span>SMOOTH</span><b></b></div></div></div>`:"";
- const insp=`<section class="card"><header><h3>${sel.label}</h3><span>${sel.kind==="cc"?"CC "+sel.cc+" · from your controller":"<b class='apponly'>App only</b> · not saved in the kit"}</span></header>
-  ${sel.kind!=="cc"?`<div class="note">${HOST.notes?.appSource||"Runs in the app and sends CCs to the Monomachine while it plays. A lock wins on its step."}</div>`:""}
+  :`<div class="irow"><span class="ilab">Rate</span><span class="seg" data-set="srcrate">${Object.keys(RATES).map(r=>`<button data-v="${r}" aria-pressed="${sel.RATE===r}">${r}</button>`).join("")}</span></div>
+   <div class="irow"><span class="ilab">Smooth</span><div style="width:140px"><div class="pc" role="slider" tabindex="0" aria-label="SMOOTH" data-g="src" data-n="SMOOTH" data-src="${sel.id}"><span>SMOOTH</span><b></b></div></div></div>`;
+ insp=`<section class="card"><header><h3>${sel.label}</h3><span><b class='apponly'>App only</b> · not saved in the kit</span></header>
+  <div class="note">${HOST.notes?.appSource||"Runs in the app and sends CCs to the Monomachine while it plays. A lock wins on its step."}</div>
   ${appParams}
   <div class="lhead"><span class="cap">Targets</span>${C.selT!=null?`<button class="ptog on" data-selt="all"><i class="led"></i>${tLabel(C.selT)} only</button>`:`<span class="note">${links.length} target${links.length===1?"":"s"}</span>`}</div>
   <div class="lnks">${links.map(({l,li})=>`<div class="lnk"><span class="lcdchip" title="${ccOf(l.t,l.pid)} on the track channel">${tLabel(l.t)} ${pidLabel(l.t,l.pid)}</span>
    <div class="pc" role="slider" tabindex="0" aria-label="Min" data-g="link" data-n="min" data-li="${li}"><span>MIN</span><b></b></div><div class="pc" role="slider" tabindex="0" aria-label="Max" data-g="link" data-n="max" data-li="${li}"><span>MAX</span><b></b></div>
    <span class="seg" data-set="lcurve" data-li="${li}">${["lin","exp","log"].map(c=>`<button data-v="${c}" aria-pressed="${l.curve===c}">${c.toUpperCase()}</button>`).join("")}</span>
-   <button class="ptog ${l.inv?"on":""}" data-linv="${li}"><i class="led"></i>Inv</button><button class="iconkey" data-ldel="${li}" aria-label="Remove target" title="Remove">×</button></div>`).join("")||`<div class="note">No targets yet. Add one below, or use LEARN.</div>`}</div>
+   <button class="ptog ${l.inv?"on":""}" data-linv="${li}"><i class="led"></i>Inv</button><button class="iconkey" data-ldel="${li}" aria-label="Remove target" title="Remove">×</button></div>`).join("")||`<div class="note">No targets yet. Add one below.</div>`}</div>
   <div class="irow addrow"><span class="ilab">Add</span><select id="lt" aria-label="Target track">${ALLT.map(i=>opt(i,tLabel(i)+" · "+(i<6?trk(i).m:"MIDI CH"+trk(i).ch),C.addT)).join("")}</select>
    <select id="lp" aria-label="Target value">${targetOpts(C.addT)}</select><button class="cream" id="laddl">Add target</button></div>
-  <div class="irow"><span class="ilab"></span><button data-addsrc="lfo">+ App LFO</button><button data-addsrc="rnd">+ Random</button></div></section>`;
+  <div class="irow"><span class="ilab"></span><button data-addsrc="lfo">+ App LFO</button><button data-addsrc="rnd">+ Random</button></div></section>`}
  $("#main").innerHTML=`<div class="ctlui"><section class="card"><header><h3>Mapping matrix</h3><span>rows = sources · columns = tracks · drag a knob row to turn it</span></header>${mx}</section>${insp}</div>`;
  syncControls()}
 let knobDrag=null;
 document.addEventListener("pointerdown",e=>{const h=e.target.closest(".srch.k-cc");if(h){knobDrag={h,src:srcById(h.dataset.src),y:e.clientY,x:e.clientX,v:srcById(h.dataset.src).val,moved:false};h.setPointerCapture(e.pointerId)}},true);
 document.addEventListener("pointermove",e=>{if(!knobDrag)return;if(e.buttons===0&&e.pointerType==="mouse"){knobDrag=null;return}const d=((e.clientX-knobDrag.x)+(knobDrag.y-e.clientY))/2;if(Math.abs(d)>2)knobDrag.moved=true;knobDrag.src.val=clamp(Math.round(knobDrag.v+d));
  /* the knob row drives its targets through the editor: the kit values it moved, as param intents */
- const was={};for(let t=0;t<6;t++)was[t]=pagesCopy(t);applySrc(knobDrag.src);editParams(was);ctlRefresh()});
+ const was={};for(let t=0;t<6;t++)was[t]=pagesCopy(t);applyMaps(knobDrag.src.id);editParams(was);ctlRefresh()});
 document.addEventListener("pointerup",()=>{if(knobDrag){const k=knobDrag;knobDrag=null;if(k.moved)k.h.dataset.moved="1"}},true);
 document.addEventListener("click",e=>{if(S.ws!=="control")return;const C=S.ctl;
  const sh=e.target.closest(".srch");if(sh){if(sh.dataset.moved){sh.dataset.moved="";return}C.sel=sh.dataset.src;C.selT=null;render();return}
@@ -8259,7 +8334,12 @@ document.addEventListener("click",e=>{if(S.ws!=="control")return;const C=S.ctl;
  const lc=e.target.closest(".seg[data-set=lcurve] button");if(lc){C.links[+lc.parentElement.dataset.li].curve=lc.dataset.v;ctlChanged();render();return}
  const li=e.target.closest("[data-linv]");if(li){const l=C.links[+li.dataset.linv];l.inv=!l.inv;ctlChanged();render();return}
  const ld=e.target.closest("[data-ldel]");if(ld){C.links.splice(+ld.dataset.ldel,1);ctlChanged();render();return}
- if(e.target.closest("#laddl")){const pid=$("#lp").value,t=C.addT;if(C.links.some(l=>l.src===C.sel&&l.t===t&&l.pid===pid)){toast("Already a target.");return}C.links.push({src:C.sel,t,pid,min:0,max:127,curve:"lin",inv:false});ctlChanged();render();return}
+ /* the plug-in's mappings: invert and remove by their index in the learn document */
+ const mi=e.target.closest("[data-minv]");if(mi){if(HOST.learnInvert)HOST.learnInvert(+mi.dataset.minv);else localLearn("invert",{index:+mi.dataset.minv});return}
+ const md=e.target.closest("[data-mdel]");if(md){if(HOST.learnRemove)HOST.learnRemove(+md.dataset.mdel);else localLearn("remove",{index:+md.dataset.mdel});return}
+ if(e.target.closest("#laddl")){const pid=$("#lp").value,t=C.addT,row=ccRows().find(r=>r.id===C.sel);
+  if(row){if(!pid)return;const a={cc:row.cc,t,...pidRef(pid),ch:row.ch};if(HOST.learnAdd)HOST.learnAdd(a);else localLearn("add",a);return}
+  if(C.links.some(l=>l.src===C.sel&&l.t===t&&l.pid===pid)){toast("Already a target.");return}C.links.push({src:C.sel,t,pid,min:0,max:127,curve:"lin",inv:false});ctlChanged();render();return}
  const as=e.target.closest("[data-addsrc]");if(as){const k=as.dataset.addsrc,n=C.sources.filter(x=>x.kind===k).length;const id=k+"X"+Date.now();C.sources.push(k==="lfo"?{id,kind:"lfo",label:"LFO "+"ABCDEFGH"[n],val:64,SHAPE:2,RATE:"1",DEPTH:80}:{id,kind:"rnd",label:"Random "+"ABCDEFGH"[n],val:64,RATE:"1/8",SMOOTH:0,_t:64});C.sel=id;ctlChanged();render();return}});
 document.addEventListener("change",e=>{if(e.target.id==="lt"){S.ctl.addT=+e.target.value;render()}});
 "use strict";
@@ -8868,9 +8948,14 @@ S.songs={names:["DEMO SONG","ACID LIVE","VOCODER JAM",...Array(21).fill("")],row
  L(7,"MID.1",[[16,70]]);
 })();
 S.ctl.sources.push({id:"lfoA",kind:"lfo",label:"LFO A",val:64,SHAPE:0,RATE:"1/2",DEPTH:100},{id:"rndA",kind:"rnd",label:"Random A",val:64,RATE:"1/16",SMOOTH:30,_t:64});
-S.ctl.links=[{src:"cc21",t:0,pid:"FLT.1",min:20,max:110,curve:"lin",inv:false},{src:"cc21",t:2,pid:"FLT.0",min:0,max:80,curve:"exp",inv:false},
- {src:"cc22",t:2,pid:"EFX.4",min:64,max:127,curve:"lin",inv:false},{src:"cc22",t:3,pid:"SYN.0",min:10,max:127,curve:"log",inv:false},
- {src:"lfoA",t:2,pid:"AMP.6",min:30,max:98,curve:"lin",inv:false},{src:"rndA",t:7,pid:"MID.4",min:0,max:127,curve:"lin",inv:false}];
+/* the plug-in's mappings, as its learn document says them (the page keeps no links of its own for the knob rows): Knob 1 and
+   Knob 2 on any channel, and one learned CC on channel 2 that hides the machine's own CC (T1 FLT BASE is CC 73) */
+S.ctl.links=[{src:"lfoA",t:2,pid:"AMP.6",min:30,max:98,curve:"lin",inv:false},{src:"rndA",t:7,pid:"MID.4",min:0,max:127,curve:"lin",inv:false}];
+S.ctl.doc={enabled:true,learning:null,limits:{tracks:6,max:128,params:[]},mappings:[
+ {index:0,t:0,pg:2,i:1,name:"",cc:21,ch:255,mode:"Absolute",invert:false,overrides:[]},{index:1,t:2,pg:2,i:0,name:"",cc:21,ch:255,mode:"Absolute",invert:false,overrides:[]},
+ {index:2,t:2,pg:3,i:4,name:"",cc:22,ch:255,mode:"Absolute",invert:true,overrides:[]},{index:3,t:3,pg:0,i:0,name:"",cc:22,ch:255,mode:"Absolute",invert:false,overrides:[]},
+ {index:4,t:0,pg:2,i:1,name:"",cc:73,ch:1,mode:"RelativeSigned",invert:false,overrides:[{ch:1,t:1,pg:2,i:1}]}]};
+S.ctl.doc.limits.params=[...Array(7).keys()].flatMap(pg=>[...Array(8).keys()].map(i=>({pg,i,name:""}))).concat([{pg:7,i:0,name:"Level"}]);
 S.song=[{pat:0,rep:2},{pat:1,rep:2,trn:69},{pat:0,rep:2,mutes:[3]},{pat:2,rep:1,ofs:8,len:16},{pat:1,rep:2,ttr:[64,64,64,71,64,64,64,64,64,64,64,64]},{pat:3,rep:1,bpm:124,mutes:[4,7]},{type:"loop",to:1,count:2},{type:"end"}];
 S.songSel=1;
 /* the kit library: kit 1 is the example kit, the other named ones made from it (factoryKit) */
@@ -9230,7 +9315,7 @@ addEventListener("click",e=>{if(!msClickEaten)return;msClickEaten=false;e.stopIm
 let drag=null,joyDrag=null,splitDrag=null,arpDrag=null;
 const main=$("#main");
 main.addEventListener("pointerdown",e=>{
- if(S.learn){const el=e.target.closest(".pc[data-g]");if(el&&(PAGES.includes(el.dataset.g)||el.dataset.g==="MID")){e.preventDefault();e.stopPropagation();const t=el.dataset.t!=null?+el.dataset.t:S.sel;S.learnT={t,pid:el.dataset.g+"."+el.dataset.n};toast(`Target: ${tLabel(t)} ${pidLabel(t,S.learnT.pid)}. Now press 1-8 for a knob.`);if(HOST.learnTarget)HOST.learnTarget({...S.learnT});return}}
+ if(S.learn){const el=e.target.closest(".pc[data-g]");if(el&&(PAGES.includes(el.dataset.g)||el.dataset.g==="MID")){e.preventDefault();e.stopPropagation();const t=el.dataset.t!=null?+el.dataset.t:S.sel;S.learnT={t,pid:el.dataset.g+"."+el.dataset.n};toast(`Target: ${tLabel(t)} ${pidLabel(t,S.learnT.pid)}. Now turn a knob on your controller, or press 1-8 for a knob row.`);if(HOST.learnTarget)HOST.learnTarget({...S.learnT});return}}
  const h=e.target.closest(".lfohandle");if(h){cordStart(e,h);return}
  const pk=e.button===0&&e.target.closest('canvas[data-ed="dktrn"]');if(pk){trnDown(pk,e);e.preventDefault();return}
  const roll=e.target.closest("canvas.roll");if(roll){roll.setPointerCapture(e.pointerId);rollDown(roll,e);e.preventDefault();return}
@@ -9373,9 +9458,8 @@ document.addEventListener("click",e=>{
  if(e.target.closest("#kitPrev,#kitNext")){kitStep(e.target.closest("#kitNext")?1:-1);return}
  if(e.target.closest("#kitf")){toggleLib("kit");return}
  if(e.target.closest("#pat")){toggleLib("pat");return}
- if(e.target.closest("#learnkey")){S.learn=!S.learn;S.learnT=null;document.body.classList.toggle("learn",S.learn);renderTop();if(S.learn)toast("LEARN: click a value, then press 1-8 for a controller knob.");if(HOST.learning)HOST.learning(S.learn);return}
+ if(e.target.closest("#learnkey")){if(!S.learn&&LD().paused){toast("LEARN is paused: "+LD().paused);return}S.learn=!S.learn;S.learnT=null;document.body.classList.toggle("learn",S.learn);renderTop();if(S.learn)toast("LEARN: click a value, then turn a knob on your controller, or press 1-8 for a knob row.");if(HOST.learning)HOST.learning(S.learn);return}
  const tb=e.target.closest("#tabs button");if(tb){goWs(tb.dataset.ws);return}
- if(e.target.closest("#platekey")){setPlate(S.plate==="mk1"?"mk2":"mk1");return}
  if(e.target.closest("#play")){if(e.shiftKey)pauseToggle();else playButton();return}
  if(e.target.closest("#rec")){if(e.shiftKey||stepOn()){stepRecord();return}if(HOST.record)return HOST.record();S.rec=!S.rec;renderTop();if(S.rec)toast("GRID RECORD on. On the machine: hold a trig to see its note, turn a knob to lock it. Here: just click and draw.");return}
  if(e.target.closest("#patPrev")){goPattern((S.queued??S.pat)-1);return}
@@ -9385,6 +9469,7 @@ document.addEventListener("change",e=>{const id=e.target.id,v=e.target.value,tr=
  if(id==="engsel"){const btn=document.querySelector(".lcdeng");if(v==="global"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;openGlobal();return}if(v==="audio"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;openAudio();return}if(v==="rom"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.romManage)HOST.romManage();else firstRun();return}
   if(v==="import"||v==="export"||v==="reset"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;Syx.menu(v);return}
   if(v==="memoryKeep"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.memory)HOST.memory("keep");return}
+  if(v==="plate"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;setPlate(S.plate==="mk1"?"mk2":"mk1");return}
   if(v==="followPlayed"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.follow)HOST.follow();return}
   S.engine=v;S.pend=0;renderPst();if(HOST.engine)HOST.engine(v);else startEngine(v);return}
  let m=id.match(/^lp(\d)$/);if(m){editTrack(S.sel,()=>{const l=V("LF"+m[1]);l[0]=+v;l[1]=0});render();return}
@@ -9408,7 +9493,7 @@ Keys.bind({id:"redo-y",scope:"any",keys:["Y"],mod:"cmd",group:"Anywhere",does:"R
 Keys.bind({id:"copy",scope:"any",keys:["C"],mod:"cmd",group:"Anywhere",does:"Copy (Pattern: the selected steps, or the page shown of the track; Kit: the machine; Perform: the assign; Song: the row)",run:()=>secAction("copy")});
 Keys.bind({id:"paste",scope:"any",keys:["V"],mod:"cmd",group:"Anywhere",does:"Paste (Pattern: at the selected step, the block from its first step and track; into every track marked for paste)",run:()=>secAction("paste")});
 Keys.bind({id:"leave-learn",scope:"control",keys:["Escape"],group:"Anywhere",does:"Leave LEARN",mapping:true,when:()=>S.mapping&&S.learn,run:()=>leaveLearn()});
-Keys.bind({id:"learn-knob",scope:"control",keys:["1 – 8"],group:"Anywhere",does:"LEARN: the controller knob for the value clicked",mapping:true});
+Keys.bind({id:"learn-knob",scope:"control",keys:["1 – 8"],group:"Anywhere",does:"LEARN: the value clicked gets that knob row's CC",mapping:true});
 Keys.bind({id:"audio-settings",scope:"any",keys:[","],group:"Anywhere",does:"AUDIO / MIDI settings (also in the engine menu)"});
 Keys.bind({id:"play-stop",scope:"any",keys:["Space"],group:"Transport",does:"Play / stop (paused: go on from the step)",run:()=>playButton()});
 Keys.bind({id:"record",scope:"any",keys:["Space"],code:"Space",mod:"alt",group:"Transport",does:"Live recording (RECORD + PLAY): Alt + play, the other Alt that is not \"all\". Again: recording off",run:()=>liveRecord()});
@@ -9666,7 +9751,7 @@ function setRecord(mode,at=-1){const on=mode==="grid"||mode==="live",was=S.recMo
 /* an engine state's LCD label: [text, led "on" | "blink" | "off", tooltip] */
 function setEngineLabel(st,label){ENG[st]=label;if(S.eng===st)setEng(st)}
 /* a host's engine map ([{id, label, available, reason}]) in the engine menu, before the menu's own entries */
-function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const own=["audio","global","rom","import","export","reset","memoryKeep","followPlayed"];
+function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const own=["audio","global","rom","import","export","reset","memoryKeep","followPlayed","plate"];
  for(const o of [...sel.options])if(!own.includes(o.value)&&!list.some(e=>e.id===o.value))o.remove();
  const first=[...sel.options].find(o=>own.includes(o.value))||null;
  for(const e of list){let o=sel.querySelector(`option[value="${e.id}"]`);if(!o){o=document.createElement("option");o.value=e.id}sel.insertBefore(o,first);o.textContent=e.label;o.disabled=!e.available;o.title=e.available?"":e.reason||""}
@@ -9688,10 +9773,11 @@ function followSelect(t){FOLLOW.t=t;if(FOLLOW.raf)return;FOLLOW.raf=requestAnima
  if(FOLLOW.t===S.sel||!$("#dlg").hidden||GP.learn!=null)return;select(FOLLOW.t)})}
 /* the AUDIO / MIDI entry of the engine menu: only where the host has the devices (a standalone) */
 function setAudioEntry(on){const o=document.querySelector('#engsel option[value="audio"]');if(o)o.hidden=o.disabled=!on;Boot.midiRefresh()}
-/* the app sources and their links as the host's engine took them (ctlSetup() shape); the knob rows and their links stay */
-function setCtlSetup({sources,links}){const cc=S.ctl.sources.filter(x=>x.kind==="cc"),ccIds=new Set(cc.map(x=>x.id)),old=S.ctl.sources;
+/* the app sources and their links as the host's engine took them (ctlSetup() shape); the knob rows stay */
+function setCtlSetup({sources,links}){const cc=S.ctl.sources.filter(x=>x.kind==="cc"),old=S.ctl.sources,ids=new Set(sources.map(x=>x.id));
  S.ctl.sources=[...cc,...sources.map(x=>({...x,val:old.find(o=>o.id===x.id)?.val??64}))];
- S.ctl.links=[...S.ctl.links.filter(l=>ccIds.has(l.src)),...links];
+ /* only links from the app sources: a link from any other id (an old page's knob link) is left out, the plug-in's mappings are the knob rows' */
+ S.ctl.links=links.filter(l=>ids.has(l.src));
  if(!srcById(S.ctl.sel))S.ctl.sel=S.ctl.sources[0]?.id;if(S.ws==="control")render()}
 /* the app sources as the host's engine runs them: their values ({id: 0-127}) and the CC rate */
 function setModulation({values,ccPerSecond}){for(const sr of S.ctl.sources)if(values[sr.id]!=null)sr.val=values[sr.id];S.ctl.rate=ccPerSecond;if(S.ws==="control")ctlRefresh()}
@@ -9745,7 +9831,7 @@ window.MMView={
  show,startEmpty,setPatternSlot,setKitSlot,setReading,setSolo,setTempo:bpm=>{S.bpm=bpm},
  setInput,setPlaying,setStep,setPausedStep,setSongRow:r=>{S.songRow=r;markSongRow()},
  setSongSteps:n=>{S.songSteps=n;const st=document.getElementById("arrstate");if(st&&st.textContent!==arrState())st.textContent=arrState()},
- setEng,dlgOpen:()=>!$("#dlg").hidden,setEngineLabel,setEngineTip,setEngines,setAudioEntry,setMemory,clearLearnTarget:()=>{S.learnT=null},setMapping,setModulation,setCtlSetup,disable,
+ setEng,dlgOpen:()=>!$("#dlg").hidden,setEngineLabel,setEngineTip,setEngines,setAudioEntry,setMemory,clearLearnTarget:()=>{S.learnT=null},setMapping,setLearn,setModulation,setCtlSetup,disable,
  setRecord,setRecLock,
  setFollow,selectTrack:followSelect,setLcd,setKeyDown,setMidiHeld,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
  /* calls */
@@ -10417,12 +10503,15 @@ const MmConvert = (() => {
 		}).filter(Boolean);
 		return { schema: "mm-desk/modulators", version: 1, sources, links };
 	}
+	/* only links from a source of the setup: the plug-in's codec leaves the others out, and a link from any other id (an
+	   old page's knob link) is not an app link; the knob rows are the plug-in's mappings now (the learn document) */
 	function modToPage(d) {
+		const ids = new Set(d.sources.map(x => x.id));
 		return {
 			sources: d.sources.map(x => x.kind === "lfo"
 				? { id: x.id, kind: "lfo", label: x.label, val: 64, SHAPE: SHAPE_PAGE[x.shape] ?? 0, RATE: x.rate, DEPTH: x.depth }
 				: { id: x.id, kind: "rnd", label: x.label, val: 64, RATE: x.rate, SMOOTH: x.smooth, _t: 64 }),
-			links: d.links.map(l => ({ src: l.source, t: l.track, pid: PAGES[l.param >> 3] + "." + (l.param & 7), min: l.min, max: l.max, curve: l.curve, inv: !!l.invert }))
+			links: d.links.filter(l => ids.has(l.source)).map(l => ({ src: l.source, t: l.track, pid: PAGES[l.param >> 3] + "." + (l.param & 7), min: l.min, max: l.max, curve: l.curve, inv: !!l.invert }))
 		};
 	}
 

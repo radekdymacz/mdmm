@@ -35,12 +35,14 @@ const MmJourneys = (() => {
 	const midiSent = [];	/* the raw MIDI the keyboard and the joystick sent (op midi), newest last */
 	const polySent = Journey.recent(20);	/* the poly commands ({on, t}), newest last (0.6 wave 9) */
 	const recSent = [];	/* the record commands ({mode, t}), newest last */
+	const learnSent = [];	/* the learn commands (learnStart, learnAdd, learnCancel, learnRemove, learnInvert) with their arguments, newest last */
 	const noteCmds = Object.assign([], { seq: 0 });	/* the keyboard's noteOn / noteOff commands ({on, t, pitch, vel}), newest last: the firmware run's stand-in for the wire (I-027) */
 	{ const send0 = Bridge.send; Bridge.send = (m, o) => { sent.add(m.op); if (m.op === "noteOn") { notesOn.push(m.pitch); if (notesOn.length > 50) notesOn.shift(); }
 		if (m.op === "noteOn" || m.op === "noteOff") { noteCmds.push({ seq: ++noteCmds.seq, on: m.op === "noteOn" && m.vel > 0, t: m.t, pitch: m.pitch, vel: m.vel || 0 }); if (noteCmds.length > 50) noteCmds.shift(); }
 		if (m.op === "midi") { midiSent.push(m.b); if (midiSent.length > 50) midiSent.shift(); }
 		if (m.op === "record") { recSent.push({ mode: m.mode, t: m.t }); if (recSent.length > 20) recSent.shift(); }
-		if (m.op === "poly") { polySent.add({ on: m.on, t: m.t }); } return send0(m, o); }; }
+		if (m.op === "poly") { polySent.add({ on: m.on, t: m.t }); }
+		if (/^learn/.test(m.op)) { learnSent.push(JSON.parse(JSON.stringify(m))); if (learnSent.length > 50) learnSent.shift(); } return send0(m, o); }; }
 	let wireSeq = 0;
 	const wireLog = [];	/* what the core handed the device edge, as the wire engine would encode it (the page tier's stub host: {type: "wire", kind, b, n}), newest last */
 	Bridge.onMessage(m => {
@@ -158,18 +160,21 @@ const MmJourneys = (() => {
 			{ say: "press Escape: it closes", act: u => u.key("Escape"), screen: () => ok($1("#keyspop").hidden, "still open") }
 		]
 	};
+	/* the plate is a key of the engine menu (PLATE: MKI / MKII), no longer a key of the top bar */
+	const plateLabel = () => $1('#engsel option[value="plate"]')?.textContent.trim();
+	const platePick = u => u.pick("engsel", "plate");
 	const plate = {
 		name: "mm-top-plate", proves: ["MM-322"],
 		steps: [
 			/* MM-322 (wave 10): each plate is its own look, true to the product photos: MKI a light-blue LCD, MKII a bluish-white one */
 			{ say: "click the plate key: the other model, its own LCD colour and label", act: (u, c) => {
 				const root = document.documentElement;
-				c.p0 = root.dataset.plate; c.lcd0 = getComputedStyle(root).getPropertyValue("--lcd").trim(); c.key0 = $1("#platekey").textContent.trim(); u.click("#platekey");
+				c.p0 = root.dataset.plate; c.lcd0 = getComputedStyle(root).getPropertyValue("--lcd").trim(); c.key0 = plateLabel(); return platePick(u);
 			}, screen: c => {
-				const root = document.documentElement, lcd = getComputedStyle(root).getPropertyValue("--lcd").trim(), key = $1("#platekey").textContent.trim();
+				const root = document.documentElement, lcd = getComputedStyle(root).getPropertyValue("--lcd").trim(), key = plateLabel();
 				return ok(root.dataset.plate !== c.p0 && lcd !== c.lcd0 && key !== c.key0, `plate ${root.dataset.plate}, LCD ${c.lcd0} -> ${lcd}, key ${c.key0} -> ${key}`);
 			} },
-			{ say: "click it again: the first look is back", act: u => u.click("#platekey"), screen: c => {
+			{ say: "click it again: the first look is back", act: u => platePick(u), screen: c => {
 				const root = document.documentElement, lcd = getComputedStyle(root).getPropertyValue("--lcd").trim();
 				return ok(root.dataset.plate === c.p0 && lcd === c.lcd0, `plate ${root.dataset.plate}, LCD ${lcd}`);
 			} }
@@ -1750,9 +1755,9 @@ const MmJourneys = (() => {
 		name: "mm-plate-greys", proves: [],
 		steps: [go("seq"), { say: "MKI and MKII: the panel greys of the MD's MKI plate (#d9dad6, #cdcec9, #e5e6e2), the roll's ground its grey (--scr #cdcec9), the top bar's LCD light blue on MKI, bluish white on MKII", act: async (u, c) => {
 				c.p0 = S().plate; c.seen = {};
-				for (const pl of ["mk1", "mk2"]) { if (S().plate !== pl) u.click("#platekey"); await until(() => S().plate === pl, 1500); await sleep(150); c.seen[pl] = ["--plate", "--plate2", "--plate3", "--lcd", "--scr"].map(cssTok); const roll = $1("#seq canvas.roll"), lcd = $1(".lcdpanel"); c.seen[pl].push(roll ? getComputedStyle(roll).backgroundColor : "no roll", lcd ? getComputedStyle(lcd).backgroundColor : "no lcd"); } },
+				for (const pl of ["mk1", "mk2"]) { if (S().plate !== pl) await platePick(u); await until(() => S().plate === pl, 1500); await sleep(150); c.seen[pl] = ["--plate", "--plate2", "--plate3", "--lcd", "--scr"].map(cssTok); const roll = $1("#seq canvas.roll"), lcd = $1(".lcdpanel"); c.seen[pl].push(roll ? getComputedStyle(roll).backgroundColor : "no roll", lcd ? getComputedStyle(lcd).backgroundColor : "no lcd"); } },
 				screen: c => ok(["mk1", "mk2"].every(pl => c.seen[pl] && c.seen[pl].slice(0, 3).join() === "#d9dad6,#cdcec9,#e5e6e2" && c.seen[pl][4] === "#cdcec9" && (c.seen[pl][5] === "rgb(205, 206, 201)" || c.seen[pl][5] === "no roll")) && c.seen.mk1[3] === "#b6d2e8" && c.seen.mk2[3] === "#dfeaf1" && c.seen.mk1[6] === "rgb(182, 210, 232)" && c.seen.mk2[6] === "rgb(223, 234, 241)", JSON.stringify(c.seen)) }],
-		async tidy(u, c) { if (c.p0 && S().plate !== c.p0) u.click("#platekey"); } };
+		async tidy(u, c) { if (c.p0 && S().plate !== c.p0) await platePick(u); } };
 	/* Radek's review 2026-10-15: left to right the multi envelope, the joystick, the setup and the mutes; the envelope's screen
 	   and the stick's pad start on one line and are as tall as each other; the assign rows sit under the pad, the ADSR faders under the screen. */
 	const performLayout = {
@@ -2640,7 +2645,7 @@ const MmJourneys = (() => {
 				await sleep(600); Journey.snapshot("review-perform"); } },
 			{ say: "REL 40", act: async u => { await typeVal(u, '#main .pc[data-g="menv"][data-n="REL"]', 40); await typeVal(u, '#main .pc[data-g="menv"][data-n="SUS"]', 80); await typeVal(u, '#main .pc[data-g="menv"][data-n="DEC"]', 50); await sleep(600); Journey.snapshot("review-perform-rel40"); } },
 			go("seq"),
-			{ say: "both plates", act: async u => { for (const pl of ["mk1", "mk2"]) { if (S().plate !== pl) u.click("#platekey"); await sleep(600); Journey.snapshot("review-plate-" + pl); } } },
+			{ say: "both plates", act: async u => { for (const pl of ["mk1", "mk2"]) { if (S().plate !== pl) await platePick(u); await sleep(600); Journey.snapshot("review-plate-" + pl); } } },
 			{ say: "GLOBAL", act: async u => { u.click("#globkey"); await sleep(800); Journey.snapshot("review-global"); u.key("Escape"); await sleep(300); } }],
 		async tidy(u, c) { await back(u, c); } };
 	/* B-054: every view, as macOS 12's WebKit 15 lays it out (Journey.viewJourneys: mm-old-webkit in every run,
@@ -2669,7 +2674,16 @@ const MmJourneys = (() => {
 	/* I-018: the CPU meter beside the version and its details, as the Machinedrum's */
 	const cpuJs = [...Journey.cpuMeterJourneys("mm", { proves: ["MM-X15"] }), Journey.speedUpsMenuJourney("mm", { proves: ["MM-X15"] })];
 	/* I-021: the output meter and volume at the LCD's right end, as the Machinedrum's */
-	const volJs = [...Journey.volumeJourneys("mm", { proves: ["MM-X16"] }), ...Journey.fitJourneys("mm", ["seq", "sound", "mix", "perform", "song"])];
+	/* the same fit with MIDI mapping on (the Control tab and the LEARN key take room in the top bar; the plate key is in the engine menu), the
+	   Control workspace among the pages: at 1280, 1440 and 1500 px (the plug-in says mapping is on by a learn document) */
+	const learnFit = () => Journey.fitJourneys("mm", ["seq", "sound", "mix", "perform", "song", "control"], { views: [1280, 1440, 1500].map(w => ({ name: String(w), width: w, floor: 0 })),
+		after: async (v, w) => { if (w === "control") { await sleep(300); Journey.snapshot("learn-mm-" + v.name); } } }).filter(j => j.name === "mm-fit-workspaces").map(j => {
+		const tidy = j.tidy;
+		return { ...j, name: "mm-fit-workspaces-learn", steps: [{ say: "mapping on: the Control tab and the LEARN key are in the top bar", act: async () => { window.gm.recv([{ type: "learn", doc: lDoc([]) }]); await sleep(300); },
+			screen: () => ok(!$1(tab("control")).hidden && !learnKey().hidden, "control tab hidden " + $1(tab("control")).hidden) }, ...j.steps],
+			async tidy(u, c) { try { if (tidy) await tidy(u, c); } finally { await learnTidy(u); } } };
+	});
+	const volJs = [...Journey.volumeJourneys("mm", { proves: ["MM-X16"] }), ...Journey.fitJourneys("mm", ["seq", "sound", "mix", "perform", "song"]), ...learnFit()];
 
 	/* ---------- wave 2: the transport beyond PLAY and STOP (doc/modern-ux/DESIGN-machine-menus.md §2) ---------- */
 	const paused = () => $1("#play")?.classList.contains("paused");
@@ -2896,7 +2910,7 @@ const MmJourneys = (() => {
 			go("sound"), sel(0),
 			{ say: "the Kit page has seven pages of eight values: SYN, AMP, FLT, EFX and the three LFOs, and the kit holds them all", screen: () => ok(["AMP", "FLT", "EFX"].every(g => $all(`#main .pc[data-g="${g}"]`).length === 8) && ["LF1", "LF2", "LF3"].every(g => $all(`#main .pc[data-g="${g}"]`).length === 4 && $1(`#lp${g[2]}`) && $1(`#ld${g[2]}`) && $all(`[data-set="ltrig"][data-l="${g}"] button`).length === 5 && $all(`[data-lwave="${g}"]`).length === 11), "boxes " + ["AMP", "FLT", "EFX", "LF1"].map(g => g + $all(`#main .pc[data-g="${g}"]`).length)),
 				machine: () => ok(wk().tracks.every(tr => tr.pages.length >= 7 && tr.pages.slice(0, 7).every(pg => pg.length === 8)), "pages " + wk().tracks[0].pages.map(p => p.length)) },
-			{ say: "the MKII plate on (two of the machines are MKII only)", act: (u, c) => { c.plate0 = document.documentElement.dataset.plate; if (c.plate0 !== "mk2") u.click("#platekey"); }, screen: () => ok(document.documentElement.dataset.plate === "mk2", "plate " + document.documentElement.dataset.plate) },
+			{ say: "the MKII plate on (two of the machines are MKII only)", act: (u, c) => { c.plate0 = document.documentElement.dataset.plate; if (c.plate0 !== "mk2") return platePick(u); }, screen: () => ok(document.documentElement.dataset.plate === "mk2", "plate " + document.documentElement.dataset.plate) },
 			{ say: "pick each machine of the manual (its family, then its key): the machine is in the kit, the page shows the manual's knobs in the manual's order, each knob moves its own value and sends its own CC", act: async (u, c) => {
 				c.n0 = histN(); c.bad = []; c.n = 0; c.knobs = 0; c.t = 0;
 				for (const [m, want] of MANUAL_MACHINES) {
@@ -2922,7 +2936,7 @@ const MmJourneys = (() => {
 				c.note = `${c.n} machines, ${c.knobs} knobs`; },
 				screen: c => ok(!c.bad.length, c.bad.slice(0, 6).join(" | ") + (c.bad.length > 6 ? ` (+${c.bad.length - 6})` : "")), machine: c => ok(c.n === MANUAL_MACHINES.length, c.n + " of " + MANUAL_MACHINES.length + " machines"), within: 1000 }
 		],
-		async tidy(u, c) { await back(u, c); if (c.plate0 && document.documentElement.dataset.plate !== c.plate0) u.click("#platekey"); }
+		async tidy(u, c) { await back(u, c); if (c.plate0 && document.documentElement.dataset.plate !== c.plate0) await platePick(u); }
 	};
 	/* ---- Sound: the track effects, every value of AMP, FLT and EFX in the manual's order (Track effects chapter) ---- */
 	const EFFECT_PAGES = [["AMP", "ATK HOLD DEC REL DIST VOL PAN PORT"], ["FLT", "BASE WDTH HPQ LPQ ATK DEC BOFS WOFS"], ["EFX", "EQF EQG SRR DTIM DSND DFB DBAS DWID"]];
@@ -3087,7 +3101,7 @@ const MmJourneys = (() => {
 		name: "mm-wire-cc", proves: ["MM-353", "MM-354", "MM-355", "MM-356", "MM-357", "MM-358", "MM-359", "MM-360", "MM-362", "MM-289"],
 		steps: [
 			go("sound"), sel(0),
-			{ say: "a machine with all eight SYN values (DPRO-DDRW, MKII): each value of the page sends its own CC, 48 to 55, on the track's channel with the value the kit holds", act: async (u, c) => { c.n0 = histN(); c.bad = []; c.plate0 = document.documentElement.dataset.plate; if (c.plate0 !== "mk2") u.click("#platekey"); await sleep(200);
+			{ say: "a machine with all eight SYN values (DPRO-DDRW, MKII): each value of the page sends its own CC, 48 to 55, on the track's channel with the value the kit holds", act: async (u, c) => { c.n0 = histN(); c.bad = []; c.plate0 = document.documentElement.dataset.plate; if (c.plate0 !== "mk2") await platePick(u); await sleep(200);
 					u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500); u.click('#machpop .mf[data-fam="DPRO"]'); await sleep(50); u.click('#machpop .mk[data-mach="DPRO-DDRW"]'); await until(() => wk().tracks[0].machineName === "DPRO-DDRW", 4000); await sleep(300);
 					for (let i = 0; i < 8; i++) { const e = checkBox(await nudgeBox(u, 0, "SYN", i), 0, "SYN", i); if (e) c.bad.push(e); } },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
@@ -3129,7 +3143,7 @@ const MmJourneys = (() => {
 			if (!$1("#globpop").hidden) u.key("Escape");
 			if (S().side === "midi") u.click('[data-side="int"]');
 			await back(u, c);
-			if (c.plate0 && document.documentElement.dataset.plate !== c.plate0) u.click("#platekey");
+			if (c.plate0 && document.documentElement.dataset.plate !== c.plate0) await platePick(u);
 		}
 	};
 	/* ---- Sequence: the envelope trigs, pitch and the keys (the sequencer chapters) ---- */
@@ -4155,13 +4169,182 @@ const MmJourneys = (() => {
 		],
 		async tidy(u) { await closeLib(u); u.click(tab("seq")); }
 	};
+	/* ---------- 0.8 MIDI Learn, the Control workspace (L5): the plug-in's mappings, from the learn document ----------
+	   The page tier's stub host has no learn engine (it says "enabled: false"), so these journeys play the plug-in: they send
+	   the learn document the plug-in would send after each command (the commands are checked as sent), and look at what the
+	   page shows. The editor-tier run with the real engine is L6's (*-control-learn). */
+	const lmp = (index, t, pg, i, cc, ch, o = {}) => Object.assign({ index, t, pg, i, name: "x", cc, ch, mode: "Absolute", invert: false, overrides: [] }, o);
+	const lLimits = () => ({ tracks: 6, max: 128, params: [...Array(7).keys()].flatMap(pg => [...Array(8).keys()].map(i => ({ pg, i, name: "p" }))).concat([{ pg: 7, i: 0, name: "Level" }]) });
+	const lDoc = (mappings, o = {}) => Object.assign({ enabled: true, mappings, learning: null, limits: lLimits() }, o);
+	const lSend = doc => window.gm.recv([{ type: "learn", doc }]);
+	const toastText = () => $1("#toast")?.textContent || "";
+	const learnKey = () => $1("#learnkey");
+	const note = k => $1(`#main [data-learnnote="${k}"]`)?.textContent || "";
+	const lastLearn = op => [...learnSent].reverse().find(m => m.op === op);
+	const cell = (src, t) => $1(`#main .mxc[data-mxsrc="${src}"][data-mxt="${t}"]`);
+	const FLT0 = t => `#main .pc[data-g="FLT"][data-n="0"][data-t="${t}"], #main .pc[data-g="FLT"][data-n="0"]`;
+	/* the journey's start: mapping on (the plug-in's learn document says enabled), the Kit page shown, track 3 selected */
+	const learnOn = async (u, mappings = [], o = {}) => { S().ctl.sel = "cc21"; S().ctl.selT = null; lSend(lDoc(mappings, o)); await sleep(200); u.click(tab("sound")); await sleep(300); u.click(rail(2)); await sleep(200); learnSent.length = 0; };
+	/* put back: the page says mapping is off again (the stub's own document), nothing waits, back on the Pattern page */
+	const learnTidy = async u => { if (S().learn) u.key("Escape"); lSend({ enabled: false, mappings: [], learning: null }); await sleep(150); S().ctl.doc = null; S().ctl.left = ""; S().ctl.sel = "cc21"; S().ctl.selT = null; if (S().ws !== "seq") u.click(tab("seq")); };
+	const learnJ = {
+		start: {
+			name: "mm-control-learn-start", proves: [],
+			steps: [
+				{ say: "the plug-in says mapping is on: the Control tab and the LEARN key appear", act: async u => { lSend(lDoc([])); await sleep(250); },
+					screen: () => ok(!$1(tab("control")).hidden && !learnKey().hidden, "control tab hidden " + $1(tab("control")).hidden + ", LEARN hidden " + learnKey().hidden) },
+				{ say: "open Kit, pick track 3, press LEARN: the page is in LEARN, the toast says what to do", act: async u => { u.click(tab("sound")); await sleep(300); u.click(rail(2)); await sleep(200); learnSent.length = 0; u.click("#learnkey"); },
+					screen: () => ok(S().learn && /turn a knob on your controller/.test(toastText()), "learn " + S().learn + ", toast " + toastText()) },
+				{ say: "click T3 FLT value 1: it waits for a knob, learnStart names track 3, FLT (page 2), value 0", act: u => u.click(FLT0(2).split(",")[0]),
+					screen: () => { const c = lastLearn("learnStart"); return ok(S().learnT && S().learnT.t === 2 && S().learnT.pid === "FLT.0" && c && c.t === 2 && c.pg === 2 && c.i === 0, "waiting " + JSON.stringify(S().learnT) + ", sent " + JSON.stringify(c)); }, within: 2000 },
+				{ say: "press LEARN again: learnCancel goes out, nothing waits", act: u => u.click("#learnkey"),
+					screen: () => ok(!S().learn && lastLearn("learnCancel") && !$1("body").classList.contains("learn"), "learn " + S().learn) }
+			],
+			tidy: learnTidy
+		},
+		progress: {
+			name: "mm-control-learn-progress", proves: [],
+			steps: [
+				go("seq"),
+				{ say: "LEARN on, a value waits; the plug-in has seen one value of two", act: async u => { await learnOn(u); u.click("#learnkey"); await sleep(150); u.click(FLT0(2).split(",")[0]); await sleep(150);
+						lSend(lDoc([], { learning: { t: 2, pg: 2, i: 0, name: "x", got: 1, need: 2 } })); await sleep(250); },
+					screen: () => ok(S().learnT && /1 of 2/.test(toastText()), "waiting " + JSON.stringify(S().learnT) + ", toast " + toastText()) },
+				{ say: "open Control: the inspector says Learning T3 FLT ... both ways (1 of 2)", act: u => u.click(tab("control")),
+					screen: () => ok(/Learning T3 FLT .*both ways \(1 of 2\)/.test(note("learning")), "note " + note("learning")), within: 2000 },
+				{ say: "the second value: 2 of 2 is shown until the plug-in completes it", act: async () => { lSend(lDoc([], { learning: { t: 2, pg: 2, i: 0, name: "x", got: 2, need: 2 } })); await sleep(200); },
+					screen: () => ok(/2 of 2/.test(note("learning")), "note " + note("learning")) }
+			],
+			tidy: learnTidy
+		},
+		complete: {
+			name: "mm-control-learn-complete", proves: [],
+			steps: [
+				go("seq"),
+				{ say: "LEARN on, T3 FLT value 1 clicked, the plug-in learns CC 21 on channel 1", act: async u => { await learnOn(u); u.click("#learnkey"); await sleep(150); u.click(FLT0(2).split(",")[0]); await sleep(150);
+						lSend(lDoc([], { learning: { t: 2, pg: 2, i: 0, name: "x", got: 1, need: 2 } })); await sleep(100);
+						lSend(lDoc([lmp(0, 2, 2, 0, 21, 0)])); await sleep(250); },
+					screen: () => ok(!S().learnT && /^Learned CC 21 on channel 1: T3 FLT /.test(toastText()), "waiting " + JSON.stringify(S().learnT) + ", toast " + toastText()) },
+				{ say: "open Control: a row for CC 21 on channel 1 (a learned CC that is not a knob row's) has T3 in its column", act: u => u.click(tab("control")),
+					screen: () => { const r = $all("#main .srch.k-cc").map(x => x.textContent); return ok(r.length === 9 && /CC 21 ch 1/.test(r[8]) && cell("x0:21", 2)?.classList.contains("on"), "rows " + r.length + ", last " + r[8]); }, within: 2000 },
+				{ say: "select that row: its inspector header says CC 21, channel 1, saved with the project; one target T3 FLT", act: u => u.click('#main .srch[data-src="x0:21"]'),
+					screen: () => ok(/CC 21 · channel 1 · saved with the project/.test($1("#main .ctlui .card:last-child header")?.textContent || "") && $all("#main .lnk").length === 1, $1("#main .ctlui .card:last-child header")?.textContent), within: 2000 }
+			],
+			tidy: learnTidy
+		},
+		digit: {
+			name: "mm-control-learn-digit", proves: [],
+			steps: [
+				go("seq"),
+				{ say: "LEARN on, a value waits: pressing 3 adds knob row 3's CC (23) on any channel; the page keeps no link of its own", act: async u => { await learnOn(u); u.click("#learnkey"); await sleep(150); u.click(FLT0(2).split(",")[0]); await sleep(150); learnSent.length = 0; u.key("3"); await sleep(250); },
+					screen: () => { const c = lastLearn("learnAdd"); return ok(c && c.cc === 23 && c.t === 2 && c.pg === 2 && c.i === 0 && c.ch === undefined && S().ctl.links.length === 0 && !S().learnT, "sent " + JSON.stringify(c) + ", links " + S().ctl.links.length); } },
+				{ say: "the plug-in's document comes back: knob row 3 has T3 in its column", act: async u => { lSend(lDoc([lmp(0, 2, 2, 0, 23, 255)])); u.click(tab("control")); await sleep(300); },
+					screen: () => ok(cell("cc23", 2)?.classList.contains("on") && S().ctl.sel === "cc23", "cell on " + cell("cc23", 2)?.classList.contains("on") + ", row " + S().ctl.sel), within: 2000 }
+			],
+			tidy: learnTidy
+		},
+		override: {
+			name: "mm-control-learn-override", proves: [],
+			steps: [
+				go("seq"),
+				{ say: "a mapping of CC 73 on channel 1 hides the machine's own targets: the inspector says so in one line", act: async u => { await learnOn(u, [lmp(0, 0, 2, 3, 73, 0, { overrides: [{ ch: 0, t: 0, pg: 2, i: 1 }] }), lmp(1, 2, 2, 0, 21, 255)]); u.click(tab("control")); await sleep(300); u.click('#main .srch[data-src="x0:73"]'); },
+					screen: () => ok(/^Overrides the machine's CC 73 on channel 1: T1 FLT /.test($1("#main [data-ovr]")?.textContent || ""), "line " + $1("#main [data-ovr]")?.textContent), within: 2000 },
+				{ say: "a mapping that hides nothing (CC 21, knob row 1) has no such line", act: u => u.click('#main .srch[data-src="cc21"]'),
+					screen: () => ok(!$1("#main [data-ovr]") && $all("#main .lnk").length === 1, "lines " + $all("#main [data-ovr]").length), within: 2000 }
+			],
+			tidy: learnTidy
+		},
+		remove: {
+			name: "mm-control-learn-remove", proves: [],
+			steps: [
+				go("seq"),
+				{ say: "Control, knob row 1 has two targets; click x on the first: learnRemove index 0", act: async u => { await learnOn(u, [lmp(0, 2, 2, 0, 21, 255), lmp(1, 0, 2, 1, 21, 255)]); u.click(tab("control")); await sleep(300); u.click('#main .srch[data-src="cc21"]'); await sleep(200); u.click('#main [data-mdel="0"]'); },
+					screen: () => ok(lastLearn("learnRemove")?.index === 0, "sent " + JSON.stringify(lastLearn("learnRemove"))), within: 2000 },
+				{ say: "the plug-in's document without it: one target left, the cell is empty", act: async () => { lSend(lDoc([lmp(0, 0, 2, 1, 21, 255)])); await sleep(250); },
+					screen: () => ok($all("#main .lnk").length === 1 && !cell("cc21", 2)?.classList.contains("on") && cell("cc21", 0)?.classList.contains("on"), "targets " + $all("#main .lnk").length) },
+				{ say: "Add target on knob row 1 (T4, a value): learnAdd with CC 21 and no channel (any)", act: async u => { u.pick("lt", "3"); await sleep(200); u.click("#laddl"); },
+					screen: () => { const c = lastLearn("learnAdd"); return ok(c && c.cc === 21 && c.t === 3 && c.ch === undefined && c.pg >= 0 && c.i >= 0, "sent " + JSON.stringify(c)); }, within: 2000 },
+				{ say: "on a row learned for channel 2: Add target sends the channel", act: async u => { lSend(lDoc([lmp(0, 0, 2, 1, 21, 255), lmp(1, 1, 3, 0, 74, 1)])); await sleep(250); u.click('#main .srch[data-src="x1:74"]'); await sleep(200); u.click("#laddl"); },
+					screen: () => { const c = lastLearn("learnAdd"); return ok(c && c.cc === 74 && c.ch === 1, "sent " + JSON.stringify(c)); }, within: 2000 },
+				{ say: "the mapping gone from the document: its row goes (a row exists only while it has a mapping, knob rows stay)", act: async () => { lSend(lDoc([lmp(0, 0, 2, 1, 21, 255)])); await sleep(250); },
+					screen: () => ok($all("#main .srch.k-cc").length === 8 && S().ctl.sel === "cc21", "rows " + $all("#main .srch.k-cc").length + ", selected " + S().ctl.sel) }
+			],
+			tidy: learnTidy
+		},
+		invert: {
+			name: "mm-control-learn-invert", proves: [],
+			steps: [
+				go("seq"),
+				{ say: "Control, one target: Inv is off; click it: learnInvert index 0", act: async u => { await learnOn(u, [lmp(0, 2, 2, 0, 21, 255)]); u.click(tab("control")); await sleep(300); u.click('#main [data-minv="0"]'); },
+					screen: () => ok(!pressed('#main [data-minv="0"]') && lastLearn("learnInvert")?.index === 0 && !$1('#main [data-minv="0"]').classList.contains("on"), "sent " + JSON.stringify(lastLearn("learnInvert"))), within: 2000 },
+				{ say: "the plug-in's document with it inverted: Inv is lit", act: async () => { lSend(lDoc([lmp(0, 2, 2, 0, 21, 255, { invert: true })])); await sleep(250); },
+					screen: () => ok($1('#main [data-minv="0"]').classList.contains("on"), "lit " + $1('#main [data-minv="0"]').className) }
+			],
+			tidy: learnTidy
+		},
+		esc: {
+			name: "mm-control-learn-esc", proves: [],
+			steps: [
+				go("seq"),
+				{ say: "LEARN on with a value waiting, on the Kit page: Esc leaves LEARN and cancels it", act: async u => { await learnOn(u); u.click("#learnkey"); await sleep(150); u.click(FLT0(2).split(",")[0]); await sleep(150); learnSent.length = 0; blur(); u.key("Escape"); },
+					screen: () => ok(!S().learn && !$1("body").classList.contains("learn") && lastLearn("learnCancel"), "learn " + S().learn), within: 2000 },
+				{ say: "again on the Control page", act: async u => { u.click(tab("control")); await sleep(250); u.click("#learnkey"); await sleep(150); learnSent.length = 0; blur(); u.key("Escape"); },
+					screen: () => ok(!S().learn && lastLearn("learnCancel"), "learn " + S().learn), within: 2000 }
+			],
+			tidy: learnTidy
+		},
+		paused: {
+			name: "mm-control-learn-paused", proves: [],
+			steps: [
+				go("seq"),
+				{ say: "the HW MIDI engine: the document says paused; the inspector says why; LEARN does not start", act: async u => { await learnOn(u, [], { paused: "MIDI learn is off with the HW MIDI engine." }); u.click(tab("control")); await sleep(300); learnSent.length = 0; u.click("#learnkey"); await sleep(250); },
+					screen: () => ok(/LEARN is paused: MIDI learn is off with the HW MIDI engine/.test(note("paused")) && !S().learn && /paused/.test(toastText()) && !lastLearn("learnStart"), "note " + note("paused") + ", toast " + toastText()), within: 2000 },
+				{ say: "LEARN on first, then the engine changes to HW: LEARN is left and the toast says why", act: async u => { lSend(lDoc([])); await sleep(200); u.click("#learnkey"); await sleep(150);
+						lSend(lDoc([], { paused: "MIDI learn is off with the HW MIDI engine." })); await sleep(250); },
+					screen: () => ok(!S().learn && /LEARN is paused/.test(toastText()), "learn " + S().learn + ", toast " + toastText()) }
+			],
+			tidy: learnTidy
+		},
+		limit: {
+			name: "mm-control-learn-limit", proves: [],
+			steps: [
+				go("seq"),
+				{ say: "128 mappings: the inspector counts them and says it is the most; Add target is off", act: async u => { const ms = Array.from({ length: 128 }, (_, n) => lmp(n, n % 6, 2, n % 8, 21 + (n >> 3) % 8, 255));
+						await learnOn(u, ms); u.click(tab("control")); await sleep(400); },
+					screen: () => ok(/128 mappings at most/.test(note("full")) && /128 of 128 mappings/.test($1("#main .lhead")?.textContent || "") && $1("#laddl")?.disabled, "note " + note("full") + ", add disabled " + $1("#laddl")?.disabled), within: 3000 },
+				{ say: "one fewer: Add target is on again", act: async () => { lSend(lDoc(Array.from({ length: 127 }, (_, n) => lmp(n, n % 6, 2, n % 8, 21 + (n >> 3) % 8, 255)))); await sleep(300); },
+					screen: () => ok(!note("full") && !$1("#laddl")?.disabled, "note " + note("full")) }
+			],
+			tidy: learnTidy
+		},
+		left: {
+			name: "mm-control-learn-left", proves: [],
+			steps: [
+				go("seq"),
+				{ say: "a project that left two mappings out: one toast with the count, the inspector lists them", act: async u => { await learnOn(u, [], { left: ["$.mappings[3]: track 17 is outside 1..6", "$.mappings[5]: no such value"] }); u.click(tab("control")); await sleep(300); },
+					screen: () => ok(/Left out when the project loaded \(2\)/.test(note("left")) && /track 17/.test(note("left")) && /2 saved mappings could not be loaded/.test(toastText()), "note " + note("left") + ", toast " + toastText()), within: 2000 }
+			],
+			tidy: learnTidy
+		},
+		nolinks: {
+			name: "mm-control-learn-no-links", proves: [],
+			steps: [
+				go("seq"),
+				{ say: "a CC row's inspector has no MIN, MAX or curve controls (the page's own links are gone); the mapping shows Absolute, Inv and x", act: async u => { await learnOn(u, [lmp(0, 2, 2, 0, 21, 255)]); u.click(tab("control")); await sleep(300); },
+					screen: () => ok(!$1('#main .pc[data-g="link"]') && !$1('#main [data-set="lcurve"]') && !$1("#main [data-linv]") && $1('#main [data-minv="0"]') && $1('#main [data-mdel="0"]') && /Absolute/.test($1("#main .lnk")?.textContent || ""),
+						"link controls " + $all('#main .pc[data-g="link"]').length), within: 2000 },
+				{ say: "a value on the Kit page that a mapping drives is marked as mapped", act: async u => { u.click(tab("sound")); await sleep(300); },
+					screen: () => ok($1('#main .pc[data-g="FLT"][data-n="0"]')?.classList.contains("mapped") && !$1('#main .pc[data-g="FLT"][data-n="1"]')?.classList.contains("mapped"), "mapped " + document.querySelectorAll("#main .pc.mapped").length) }
+			],
+			tidy: learnTidy
+		}
+	};
 	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowMarks, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixHeads, mixSolo, soloSaved, shiftMutes, routing, mixMeters, panTrim, msOff, msViews, railLamps, railLampsFwd,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, followPlayed, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, modeCycle, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, laneDrawSlide, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
 		valueKeys, soundCopy, screenDrag, filterEnv, lfoLocksJ, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
-		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach];
+		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach, ...Object.values(learnJ)];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
 	   its guard, "left:", names what stays). What back cannot put back, the journey keeps first (keep, keepMany) or is alone: true (doc/modern-ux/JOURNEYS.md, "Independent journeys") */
 	for (const j of all) { const own = j.tidy; j.tidy = async (u, c) => { try { if (own) await own(u, c); } finally { if (c.back0?.state && Journey.stateDiff(c.back0.state, state())) await back(u, c); } }; }
