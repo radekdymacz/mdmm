@@ -174,7 +174,7 @@ reached at all.
 | F10 | ~~Piano roll: a clear note-length handle (I-010), draw mode and box select (I-007)~~ done in 0.5.0 | MM | M | done |
 | F11 | Track copy, super copy, melody copy | MM | M | 1.x |
 | F12 | Projects: save and load a whole set in the standalone (the +Drive equivalent) | both | M | 1.x |
-| F13 | The Control / MIDI Learn workspace, now hidden | both | M-L | later |
+| F13 | The Control / MIDI Learn workspace: done in 0.8 (DESIGN-learn-0.8.md): CC learn into the project, a mapped CC overrides the machine's own CC, the router on the audio thread, the Control tab and LEARN on both pages, off in the HW MIDI engine. Not built: a toggle mode, MIDI feedback to the controller, a default set for new instances (added if testers ask) | both | M-L | done 0.8 |
 | F14 | DigiPRO user waveforms (MKII) | MM | L | later |
 | F15 | TurboMIDI for bulk transfers to a real machine | both | L | later |
 | F16 | Small wishes: turn off the unsaved-kit warning (I-009), show incoming notes (I-002), follow the last-played track (I-003) | both | S each | later |

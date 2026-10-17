@@ -14,10 +14,10 @@
 | WP5 CI parity | done, merged | B-044, B-047 closed |
 | WP6 B-133 | done, merged | cause found (OS 1.63 screen list); no repair (Radek); stays in Known |
 | WP7 follow played track | done, merged | I-003 |
-| WP8 docs, test sheet, notes | in progress | guide MIDI and sync sections, log upkeep, TEST-0.8.md and v0.8.0.md drafted; Learn docs (`doc/midilearn`, ROADMAP F13, FOUNDATION) wait for WP-L |
+| WP8 docs, test sheet, notes | in progress | guide MIDI and sync sections, log upkeep, TEST-0.8.md and v0.8.0.md drafted; Learn docs done in L7 (`doc/midilearn`, ROADMAP F13, FOUNDATION, feature rows, notes); the guide chapters for Learn come with the L4 and L5 pages |
 | WP9 Monomachine tester items | done, merged | B-148 to B-152, I-030 to I-032 |
 | WP10 feedback 2026-10-16b | done, merged | B-161 to B-164, I-035 to I-044; B-165 logged, open |
-| WP-L MIDI Learn | in progress | design, pure core, codec and realtime router merged (L0, L1, L3); switch off; CONTROL page not built |
+| WP-L MIDI Learn | in progress | Learn is on. L0, L1, L2, L3, L6 done and merged (core and codec, router, session wiring and switch, translator hygiene, firmware boundary and realtime gate); L4 (Machinedrum page, `feat/0.8-learn-l4`) and L5 (Monomachine page, `feat/0.8-learn-l5`) in review; L7 (docs) done |
 | Lock-free audio | done, merged | rt gate 0 ms under load |
 
 ## Problem
@@ -214,8 +214,9 @@ Install both .pkg files. Gear: USB MIDI keyboard, IAC driver with two buses, Abl
 **MIDI Learn (both editors, VST3 in Live and standalone)**
 1. CONTROL: learn a knob from a controller CC; the knob follows the controller.
 2. Save the Live set, close, open: the mapping is still there.
-3. A CC that is also on the firmware CC map: the editor does what WP-L decided, with no double jumps.
+3. A CC that is also on the firmware CC map: the mapping wins and the machine's own target does not move (no double jump); removing it gives the CC back.
 4. Learn while the transport plays: no drop-outs.
+5. The full list is in TEST-0.8.md.
 
 **macOS AU in Logic (one editor)**
 1. MIDI in plays; transport plays and stops. Note whether Logic offers the AU's MIDI out.

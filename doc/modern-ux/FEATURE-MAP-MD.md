@@ -362,7 +362,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys | E2E |
 |---|---|---|---|---|---|---|---|
 | p.B-1 | Default note map (tracks C2.., patterns E4..) | Defaults | ✅ | GLOBAL > Map editor | Set in the machine's global. | 1 | pass (md-map-editor) |
-| p.B-1 | CC mapping, 4 channels from base, all parameters | Remote control | ✅ | Live edits go out as CCs; HW MIDI engine; Control (MIDI learn) | Control workspace hidden unless the plug-in enables it. | 1 | pass (e2e-md-sound-cc-channels) |
+| p.B-1 | CC mapping, 4 channels from base, all parameters | Remote control | ✅ | Live edits go out as CCs; HW MIDI engine; CONTROL workspace (MIDI Learn) | A learned CC overrides the machine's own target of that CC on its channel (MD-X27). | 1 | pass (e2e-md-sound-cc-channels) |
 | p.B-1 | Level and mute CCs per track | CC 8-15 | ✅ | Mix: LEV sends the level CC; the mute keys use machine memory | The level CC measured (P9). | 1 | pass (e2e-md-mix-lev) |
 
 ## 16. Appendix C: sysex reference
@@ -417,18 +417,19 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p. | What you draw is what plays | What you enter in the sequencer is what the machine plays. | ✅ | Pattern: the grid or the roll; Alt+Delete clears the pattern; Cmd+Z takes it back | e2e: drawn, played, cleared, undone, each checked on the machine's output | 1 | pass (md-real-sequence-drawn) |
 | p. | Clear (was Revert track) | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Kit: Clear key at the right end of the MUTATE bar, next to R |  | 1 | pass (e2e-md-sound-revert-track) |
 | p. | The selected track follows the last track played | No such function. With it on, the track you select changes to the last one you played from a MIDI keyboard. | ✅ | Engine menu: FOLLOW PLAYED TRACK (off at first) | I-003 | 1 | – |
+| p. | MIDI Learn | No such function. A controller's knob or fader moves a value of your choice; the machine's own CC map stays for the rest. | ✅ | CONTROL workspace: the LEARN key (L), click a value, turn a knob both ways; the matrix and inspector list, invert and remove the mappings | CCs only (a 0/127 button is learned as an absolute value). 128 mappings at most, saved with the project, off in the HW MIDI engine. Page journeys: md-control-learn-*, mdLearnFirmwareTest. | – | – |
 
 ## Summary
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 290 |
+| ✅ Yes | 291 |
 | 🟡 Partial | 9 |
 | ❌ No | 6 |
 | ➖ Not applicable | 16 |
-| Total | 321 |
+| Total | 322 |
 
-Of the 305 applicable rows, 290 are fully covered, 9 partly, 6 not at all.
+Of the 306 applicable rows, 291 are fully covered, 9 partly, 6 not at all.
 
 ### Top gaps (our UI), most important first
 
