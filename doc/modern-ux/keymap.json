@@ -2152,6 +2152,17 @@
 			"area": "Lock lane"
 		},
 		{
+			"id": "lane-slide",
+			"scope": "seq",
+			"keys": [
+				"lock's dot"
+			],
+			"mod": "",
+			"group": "Pattern",
+			"does": "Drag sideways: a slide to the next lock of this parameter, drawn as a ramp (the machine glides every parameter locked on the step; one undo step). Click the ramp's line: slide off. Up and down is the lock's value as before",
+			"area": "Lock lane"
+		},
+		{
 			"id": "lane-ramp",
 			"scope": "seq",
 			"keys": [
