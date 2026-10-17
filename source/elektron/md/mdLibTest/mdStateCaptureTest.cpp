@@ -5,7 +5,10 @@
 
 #include "baseLib/filesystem.h"
 #include "mdLib/mddevice.h"
+#include "mdLib/mdmemorymap.h"
+#include "mdLib/mdonemomentcopy.h"
 #include "mdLib/mdromdata.h"
+#include "mdLib/mdstatecapture.h"
 #include "mdLib/mdstate.h"
 
 #include <algorithm>
@@ -183,8 +186,8 @@ namespace
 			first.lockedMs, again.lockedMs, first.holds, first.encodeMs, again.encodeMs);
 		check(first.lockedMs < 1.0 && again.lockedMs < 1.0 && first.holds > 1, "capture: the MD flash is taken a part per hold, each under 1 ms");
 
-		// The flash written while the capture is taken in parts (DESIGN-audio-lock.md step 1): the capture begins
-		// again and saves the flash as it is after the write, never parts of before and after
+		// The flash written while the capture is taken in parts (DESIGN-audio-lock.md step 1): the pieces written
+		// are copied again and the save is the flash as it is after the write, never parts of before and after
 		{
 			auto capture = cached->beginStateCapture(synthLib::StateTypeGlobal);
 			const bool parts = capture && capture->captureMore() && capture->captureMore();
@@ -200,7 +203,7 @@ namespace
 			check(parts && capture && capture->encode(bytes)
 				&& md::encodeStateWithFactoryBaseline(expected, hardware.copyPatchRam(), changed, factory, _rom,
 					md::MachineModel::Machinedrum, synthLib::StateTypeGlobal)
-				&& bytes == expected, "capture: a flash write during the parts begins the capture again (the flash after it)");
+				&& bytes == expected, "capture: a flash write during the parts is copied again (the flash after it)");
 			hardware.replaceFlashData(flash, true);
 		}
 
@@ -225,6 +228,43 @@ namespace
 				&& bytes == expected, "capture: patch RAM written during the parts is saved as it is after the writes");
 			uc.pokePatchRamForTest(0x123, before[0x123]);
 			uc.pokePatchRamForTest(0xf0000, before[0xf0000]);
+		}
+
+		// Written faster than it is copied (DESIGN-audio-lock.md, the rest): 17 pieces of the patch RAM (more than the
+		// 256 KiB one hold may copy) written between every part never settle. The holds stay one part each through the
+		// restarts; then the save is finished in one hold, so it is never lost, and it is the memory as of that hold
+		{
+			auto capture = cached->beginStateCapture(synthLib::StateTypeGlobal);
+			auto* const typed = dynamic_cast<md::DeviceStateCapture*>(capture.get());
+			auto& uc = hardware.getUC();
+			const auto patchBefore = hardware.copyPatchRam();
+			uint32_t holds = 0;
+			size_t worstBytes = 0;
+			size_t worstBeforeFinish = 0;
+			while(typed && holds < 20000)
+			{
+				for(size_t i = 0; i < 17; ++i)
+					uc.pokePatchRamForTest(i * md::Microcontroller::g_patchRamMarkSize, static_cast<uint8_t>(holds));
+				const bool more = capture->captureMore();
+				if(typed->restarts <= md::DeviceStateCapture::g_restarts && more)
+					worstBeforeFinish = std::max(worstBeforeFinish, typed->copy.maxStepBytes());
+				worstBytes = std::max(worstBytes, typed->copy.maxStepBytes());
+				++holds;
+				if(!more)
+					break;
+			}
+			std::vector<uint8_t> bytes, expected;
+			std::printf("  state save with the patch RAM written faster than copied: finished after %u holds, the hold before the last "
+				"copied at most %zu KiB, the finishing hold %zu KiB\n", holds, worstBeforeFinish / 1024, worstBytes / 1024);
+			check(typed && holds < 20000 && capture->encode(bytes)
+				&& md::encodeStateWithFactoryBaseline(expected, hardware.copyPatchRam(), flash, factory, _rom,
+					md::MachineModel::Machinedrum, synthLib::StateTypeGlobal)
+				&& bytes == expected,
+				"capture: a memory written faster than it is copied is still saved, finished in one hold, as it is then");
+			check(typed && worstBeforeFinish <= md::OneMomentCopy::g_restLimit,
+				"capture: until the finishing hold, no hold copies more than the rest limit (256 KiB)");
+			for(size_t i = 0; i < 17; ++i)
+				uc.pokePatchRamForTest(i * md::Microcontroller::g_patchRamMarkSize, patchBefore[i * md::Microcontroller::g_patchRamMarkSize]);
 		}
 
 		// No factory cache yet: a complete flash image
@@ -271,6 +311,37 @@ namespace
 		check(captured.bytes == expected, "capture: Monomachine patch RAM and user flash, byte for byte");
 		check(sameAsGetState(*mm, synthLib::StateTypeGlobal, expected), "capture: getState writes the same");
 		std::printf("  state save, MM: under the lock %.2f ms, encode %.2f ms\n", captured.lockedMs, captured.encodeMs);
+
+		// A firmware flash write (the AM29F program command through the CPU's write path) while the capture is taken in
+		// parts: it marks its own 64 KiB piece of the flash, which is copied again, and the save is the flash after it
+		{
+			auto capture = mm->beginStateCapture(synthLib::StateTypeGlobal);
+			bool parts = capture != nullptr;
+			for(int i = 0; parts && i < 20; ++i)	// the patch RAM's parts and the first of the user flash's
+				parts = capture->captureMore();
+			auto& uc = mm->getHardware().getUC();
+			const auto base = md::memorymap::g_flashFull.begin;
+			const auto userBase = md::memorymap::g_flashFull.offset(md::memorymap::g_mmUserFlash.begin);
+			const auto flashBefore = uc.flashMark(userBase);
+			const auto otherBefore = uc.flashMark(userBase + 3 * md::Microcontroller::g_flashMarkSize);
+			const auto userBefore = mm->getHardware().copyUserFlash();
+			uc.write16(base + 0xaaa, 0xaa);
+			uc.write16(base + 0x554, 0x55);
+			uc.write16(base + 0xaaa, 0xa0);
+			uc.write16(base + userBase + 0x20, 0x0000);	// the first piece, copied already
+			const bool marked = uc.flashMark(userBase) != flashBefore
+				&& uc.flashMark(userBase + 3 * md::Microcontroller::g_flashMarkSize) == otherBefore;
+			while(capture && capture->captureMore())
+			{
+			}
+			const auto userAfter = mm->getHardware().copyUserFlash();
+			std::vector<uint8_t> bytes, expectedAfter;
+			check(parts && marked && userAfter != userBefore && capture && capture->encode(bytes)
+				&& md::encodeState(expectedAfter, mm->getHardware().copyPatchRam(), md::MachineModel::Monomachine,
+					synthLib::StateTypeGlobal, userAfter)
+				&& bytes == expectedAfter,
+				"capture: Monomachine firmware flash write during the parts marks its own piece and is saved as after the write");
+		}
 	}
 
 	void testStateCapture()

@@ -324,10 +324,12 @@ namespace synthLib
 				capture = m_device->beginStateCapture(_type);
 				if(!capture)
 				{
-					_state.push_back(g_stateVersion);
-					_state.push_back(_type);
-
-					return m_device->getState(_state, _type);
+					// _state is the caller's only when the state was made: never a header without its payload
+					std::vector<uint8_t> state{g_stateVersion, static_cast<uint8_t>(_type)};
+					if(!m_device->getState(state, _type))
+						return false;
+					_state.insert(_state.end(), state.begin(), state.end());
+					return true;
 				}
 			}
 			if(!capture->captureMore())
@@ -335,10 +337,11 @@ namespace synthLib
 		}
 		// The device encodes from what it captured, without the process/device lock the audio thread needs. The
 		// capture may own copies of whole memories: it is destroyed here too, after the lock is released.
-		_state.push_back(g_stateVersion);
-		_state.push_back(_type);
-
-		return capture->encode(_state);
+		std::vector<uint8_t> state{g_stateVersion, static_cast<uint8_t>(_type)};
+		if(!capture->encode(state))
+			return false;
+		_state.insert(_state.end(), state.begin(), state.end());
+		return true;
 	}
 
 	bool Plugin::setStateUnshared(Device& _device, const std::vector<uint8_t>& _state)
