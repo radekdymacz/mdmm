@@ -11,6 +11,7 @@ namespace md
 		m_areas = std::move(_areas);
 		m_chunks.clear();
 		m_steps = 0;
+		m_maxStepBytes = 0;
 		size_t total = 0;
 		for(size_t a = 0; a < m_areas.size(); ++a)
 		{
@@ -28,6 +29,7 @@ namespace md
 			}
 		}
 		m_maxSteps = static_cast<uint32_t>((total + g_partSize - 1) / g_partSize + 1) * g_passes;
+		m_giveUpSteps = m_maxSteps * 2;
 	}
 
 	uint64_t OneMomentCopy::markOf(const Hardware& _hardware, const Chunk& _chunk) const
@@ -51,6 +53,23 @@ namespace md
 		return ok;
 	}
 
+	OneMomentCopy::Step OneMomentCopy::finishWhole(Hardware& _hardware)
+	{
+		size_t bytes = 0;
+		for(auto& c : m_chunks)
+		{
+			if(!c.stale && markOf(_hardware, c) != c.mark)
+				c.stale = true;
+			if(!c.stale)
+				continue;
+			if(!copy(_hardware, c))
+				return Step::Failed;
+			bytes += c.size;
+		}
+		m_maxStepBytes = std::max(m_maxStepBytes, bytes);
+		return Step::Done;
+	}
+
 	OneMomentCopy::Step OneMomentCopy::step(Hardware& _hardware)
 	{
 		++m_steps;
@@ -62,7 +81,11 @@ namespace md
 			if(c.stale)
 				staleBytes += c.size;
 		}
-		const bool all = staleBytes <= g_partSize || m_steps >= m_maxSteps;
+		// everything stale goes in this hold when it is one part, or (after the passes) when it is a few parts; a rest
+		// that is larger goes a part per hold for as many steps again, then the copy gives up
+		const bool all = staleBytes <= g_partSize || (m_steps >= m_maxSteps && staleBytes <= g_restLimit);
+		if(!all && m_steps >= m_giveUpSteps)
+			return Step::Busy;
 		size_t bytes = 0;
 		for(auto& c : m_chunks)
 		{
@@ -74,6 +97,7 @@ namespace md
 				return Step::Failed;
 			bytes += c.size;
 		}
+		m_maxStepBytes = std::max(m_maxStepBytes, bytes);
 		return all ? Step::Done : Step::More;
 	}
 }

@@ -294,11 +294,23 @@ namespace pluginLib
 
 	protected:
 		synthLib::DeviceError m_deviceError = synthLib::DeviceError::None;
+		// The machine state a host save captures; a test replaces it to make a capture fail
+		virtual bool captureMachineState(std::vector<uint8_t>& _state);
+		// A project's machine state put in (load): also the state a failed save falls back to
+		void restoreMachineState(const std::vector<uint8_t>& _state);
 		std::unique_ptr<synthLib::Device> m_device;
 		std::unique_ptr<synthLib::Plugin> m_plugin;
 		std::vector<synthLib::SMidiEvent> m_midiOut;
 
+	public:
+		// A device or ROM change: the kept state belonged to the machine that is gone
+		void clearLastGoodMachineState();
+
 	private:
+		// saveChunkData: kept when a capture fails. Saves run on the host's thread and the message thread.
+		std::mutex m_lastGoodMutex;
+		std::vector<uint8_t> m_lastGoodMachineState;
+
 		void requestLatencyUpdate();
 		void recoverInvalidDevice();
 		void addHostMidiFeedback(const synthLib::SMidiEvent& _event);

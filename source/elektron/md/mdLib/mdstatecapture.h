@@ -38,6 +38,8 @@ namespace md
 		// still be the plug-in's (synthLib::Plugin::getState checks).
 		bool captureMore() override;
 
+		// The copy is begun again at most this many times (the hardware changed, or the memory was written faster than
+		// it is copied); then the rest is copied in one hold (OneMomentCopy::finishWhole)
 		static constexpr uint32_t g_restarts = 4;
 
 		const MachineModel model;

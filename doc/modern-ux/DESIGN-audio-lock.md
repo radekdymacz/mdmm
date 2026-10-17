@@ -1,7 +1,7 @@
 # The audio thread and the device lock (1.0, architecture review finding 1)
 
 Status: steps 1, 2, 3 (the panel sends) and 6 done, 2026-10-16; the gate passes (below). Steps 4 and 5 not needed for
-it and not done. Branch fix/1.0-lock-free-audio.
+it and not done. Branch fix/1.0-lock-free-audio (merged); follow-ups on fix/0.8-lock-followups (below, not merged).
 
 ## Status (2026-10-16, M-series Mac, 12 cores, dev build temp/dev)
 
@@ -57,7 +57,24 @@ memory, the state save of both machines) goes through `md::OneMomentCopy`: parts
 piece in `md::Microcontroller` (16 KiB of patch RAM, 64 KiB of flash; counted in the slow write path only, the fast
 lane never maps patch RAM, so the emulation is unchanged). Each hold first marks stale every piece written since it was
 copied; when what is stale is no more than one part it is copied in that hold, and the copy is of that moment. After
-four full passes' worth of holds the rest is copied in one hold (not reached in the runs). The look's check no longer
+four full passes' worth of holds what is still stale is copied in one hold only when it is at most 4 parts (256 KiB,
+`OneMomentCopy::g_restLimit`); a larger rest goes on a part per hold for as many holds again and then the copy gives up
+(`Step::Busy`, nothing copied): the look and the sample flash copy return false and are tried again by the next look, the
+state save begins again (at most `DeviceStateCapture::g_restarts` times) and then finishes in one hold (below).
+**A state save under constant writes is never given up** (a lost save is a lost project: a header-only chunk reloads as
+"nothing to restore"). After the restarts `OneMomentCopy::finishWhole` copies everything stale in one hold, however large
+(at worst the 1 MiB patch RAM and, MD, the flash: a rare long hold, only when the firmware writes more than 4 parts between
+every two holds for about 5800 holds). The save is the memory as of that hold. Defence in depth: `Plugin::getState` leaves
+the caller's state untouched when it fails (no envelope header without a payload), and `Processor::saveChunkData` never
+writes an empty machine chunk: a failed capture saves the last good state and logs "SAVE FAILED" (no earlier state: the
+chunk is left out). mdProjectStateRestoreTest saves through the processor while a thread writes 17 pieces of patch RAM
+every hold: the chunk is never empty and is the patch RAM of one moment. So only the look and the sample flash copy give
+up (Busy: retried by the next look); no hold of those copies more than 256 KiB, whatever the firmware writes (follow-ups 2026-10-16, branch fix/0.8-lock-followups;
+mdStateCaptureTest writes 17 pieces of patch RAM between every part: gave up after 5800 holds, none over 64 KiB). The
+Monomachine's flash writes (programmed word, erased sector) mark their own 64 KiB piece, as the Machinedrum's do
+(`hwLib::Am29f::changedAt/changedSize`), so a firmware flash save during a copy re-copies one piece, not the whole flash;
+the machine of a look is compared as the exact pair (device id, hardware epoch), not a hash. `memoryMarksTest` (no ROM)
+fails when the patch RAM or flash write path stops marking. The look's check no longer
 makes the factory baseline in its hold (`hasFactoryFlashBaseline`, the making copied the factory cache: a 3.2 ms hold).
 mdStateCaptureTest: patch RAM written between the parts of a save is saved as it is after the writes.
 

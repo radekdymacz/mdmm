@@ -855,7 +855,10 @@ namespace md
 			m_flashDirty = true;
 			m_lastFlashWriteCycle = getCycles();
 			++m_flashWrites;
-			++m_flashEpoch;
+			// only the bytes this write changed (a programmed word, an erased sector): the pieces of a copy in parts
+			// that it did not touch stay as they were copied
+			if(m_monomachineFlash->changedSize())
+				markFlash(m_monomachineFlash->changedAt(), m_monomachineFlash->changedSize());
 			m_immPageAddress = 0xffffffffu;
 			m_immPageData = nullptr;
 			return;
