@@ -3,6 +3,13 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-053 · MIDI devices appear and go live, and a remembered input comes back
+
+- **From:** Radek, 2026-10-17 (0.8 test list, line 11: unplug and replug the keyboard).
+- **Idea:** the standalone's MIDI list updates when a device is plugged in or out, and an input that was on comes back on when its device returns.
+- **Status:** built for 0.8.0. The link listens with JUCE's `MidiDeviceListConnection` (message thread; nothing on the audio thread) and on a change publishes the `gm-audio/devices` document again, switches the vanished inputs off, switches the remembered inputs and the chosen output back on (matched by identifier, then by name, because an identifier can change on replug; `mdMidiHotplug.h`) and logs each plug and unplug. An input the user switched off stays off (JUCE's own list from the saved state would have brought it back). The inputs and the output are remembered by identifier and name, also in the saved audio device state when the port is away. Standalone only. Tests: mdMidiHotplugTest (the matching), mdAudioMidiLinkTest (the callback republishes and logs, with a fake port list).
+- **Release-note line:** The MIDI list in the standalone updates when you plug a device in or out, and an input you had switched on comes back on when the device returns.
+
 ## I-044 · Name the workspaces as the manuals do: SEQUENCE becomes PATTERN, SOUND becomes KIT
 
 - **From:** a beta tester on Discord (suggestion to match the machines' manuals); decided by Radek, 2026-10-16.
