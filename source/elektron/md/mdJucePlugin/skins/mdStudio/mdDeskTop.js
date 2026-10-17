@@ -8,7 +8,7 @@ let lastQueued = null;
 function renderTop() {
 	$$("#tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.ws === S.ws));
 	const lkk = $("#learnkey"); if (lkk) { lkk.setAttribute("aria-pressed", S.ctl.learn); lkk.classList.toggle("on", S.ctl.learn); }
-	const pk = $("#platekey"); if (pk) pk.querySelector("span").textContent = S.plate === "mk2" ? "MKII" : "MKI";
+	const pk = document.querySelector('#engsel option[value="plate"]'); if (pk) { pk.textContent = "PLATE: " + (S.plate === "mk2" ? "MKII" : "MKI"); pk.title = "Switch the page between the silver MKI and the black MKII panel colour. Kept for next time."; }
 	const n = V.locks.size, m = $("#meter"); $("#lockn").textContent = String(n).padStart(2, "0") + "/64"; m.className = "f meter" + (n >= 64 ? " full" : n >= 52 ? " warn" : ""); syncLockBudget();
 	$("#bpm").textContent = (+shownBpm()).toFixed(1);
 	/* B-030: the host's tempo (in a DAW the machine follows): marked, and not edited here */
@@ -78,7 +78,7 @@ const LIFE = {
 	ready: { label: "READY", led: "on" } };
 const lifeOf = l => LIFE[l] || LIFE.booting;
 /* the engine menu's own entries (not engines) */
-const ENGINE_ACTIONS = ["global", "audio", "rom", "import", "export", "reset", "memoryKeep", "followPlayed"];
+const ENGINE_ACTIONS = ["global", "audio", "rom", "import", "export", "reset", "memoryKeep", "followPlayed", "plate"];
 function engineLabel() {
 	const e = lifeOf(V.lifecycle);
 	if (V.lifecycle === "ready") return [V.caps.label || e.label, e.led, V.caps.about || ""];
@@ -141,6 +141,7 @@ document.addEventListener("change", e => {
 	else if (v === "global") { sel.value = V.caps.engine; openGlobal(); }
 	else if (v === "audio") { sel.value = V.caps.engine; openAudio(); }
 	else if (v === "followPlayed") { sel.value = V.caps.engine; renderEngine(); cmd("followSet", { on: !Follow.on }, undefined, undefined, r => { if (r.ok) { Follow.on = !Follow.on; renderFollowMenu(); } }); }
+	else if (v === "plate") { sel.value = V.caps.engine; renderEngine(); setPlate(S.plate === "mk2" ? "mk1" : "mk2"); }
 	else if (v === "memoryKeep") { sel.value = V.caps.engine; renderEngine(); cmd("memoryKeep", { on: !Memory.keep }); }
 	else if (Syx.menu(v)) { sel.value = V.caps.engine; renderEngine(); }	/* IMPORT SYSEX…, EXPORT SYSEX…, RESET MACHINE… (wave 6) */
 	else if ((machineState().engines || []).some(x => x.id === v)) cmd("engine", { kind: v });
@@ -398,7 +399,6 @@ function clickEdit(e) {
 }
 function clickTop(e) {
 	const tb = e.target.closest("#tabs button"); if (tb) { if (tb.dataset.ws === "control" && !S.mapping) return true; S.ws = tb.dataset.ws; render(); return true; }
-	if (e.target.closest("#platekey")) { setPlate(S.plate === "mk2" ? "mk1" : "mk2"); return true; }
 	if (e.target.closest("#play")) { if (e.shiftKey) pauseToggle(); else playButton(); return true; }
 	if (e.target.closest("#rec")) { cmd("record"); return true; }
 	if (e.target.closest("#patPrev")) { goPattern((V.queued ?? V.pat) - 1); return true; }
