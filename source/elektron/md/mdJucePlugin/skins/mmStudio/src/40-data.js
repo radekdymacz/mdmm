@@ -98,6 +98,8 @@ const TAB={"FM+STAT.1FRQ":FMFRQ,"FM+STAT.2FRQ":FMFRQ,"FM+PAR.1FRQ":FMFRQ,"FM+PAR
  "DPRO-DDRW.WAV1":WAVD,"DPRO-DDRW.WAV2":WAVD,"DPRO-DENS.WAVE":WAVD};
 /* B-148: the filter envelope's BOFS and WOFS are -64 to +63 on the machine (OS 1.32B LCD at both ends; 64 = no sweep) */
 const SIGNED=new Set(["PAN","EQG","DIST","DSND","TUNE","PB","BOFS","WOFS"]);
+/* B-166: AMP DEC and REL of an FX machine as the hardware starts it (a tester on Discord: 64, not 127) */
+const FX_AMP_DEF=64;
 const DEFV={SYN:[0,0,0,0,0,0,0,64],AMP:[0,40,64,20,64,100,64,0],FLT:[0,127,0,0,0,40,64,64],EFX:[64,64,0,32,64,0,0,127],LFO:[2,1,1,0,1,32,0,0],MID:[64,100,64,0,0,0,0,0]};
 
 /* Note names, the MM way: C-4 = MIDI 60 */

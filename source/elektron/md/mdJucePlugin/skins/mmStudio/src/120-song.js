@@ -190,7 +190,7 @@ function songAction(a){const i=S.songSel,r=S.song[i];
  render()}
 function songStep(k,d){const r=S.song[S.songSel];
  if(k==="pat")r.pat=(r.pat+d+128)%128;if(k==="rep")r.rep=Math.max(1,Math.min(64,r.rep+d));if(k==="bpm")r.bpm=Math.max(30,Math.min(300,(r.bpm||S.bpm)+d));
- if(k==="trn")r.trn=clamp((r.trn??64)+d,28,100);
+ if(k==="trn")r.trn=clamp((r.trn??64)+d,0,127)/* B-167: -64 to +63 as the pattern transpose, not the mockup's +-36 */;
  if(k==="ofs"){const L=patLen(r.pat);r.ofs=Math.max(0,Math.min(L-1,(r.ofs||0)+d));if(r.len&&r.ofs+r.len>L)r.len=L-r.ofs}
  if(k==="len"){const L=patLen(r.pat);r.len=Math.max(1,Math.min(L-(r.ofs||0),rowLen(r)+d))}
  if(k==="to")r.to=Math.max(0,Math.min(r.type==="jump"?S.song.length-1:S.songSel-(r.type==="loop"?1:0),r.to+d));

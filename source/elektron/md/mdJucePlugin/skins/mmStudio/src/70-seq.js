@@ -208,13 +208,13 @@ ED.lane={draw(g,W,H,c){const G=laneGeom(c),t=G.t,tr=trk(t),ink=cssv("--ink");if(
   if(!audible(t))g.globalAlpha=.45;
   /* the keys sit in the rows' left gutter, as a DAW's piano roll: white keys the gutter's width, black keys from
      its left edge; C and the top row are named on the key's right end. The hovered row is lit, the key held lit more */
-  if(G.big){const X0=G.firstX,KW=G.kw,BW=Math.round(KW*.55),led=cssv("--led"),hov=S.rollHov?.t===t?S.rollHov.n:null,held=rollDrag?.mode==="key"?rollDrag.n:null;
+  if(G.big){const X0=G.firstX,KW=G.kw,BW=Math.round(KW*.55),led=cssv("--led"),hov=S.rollHov?.t===t?S.rollHov.n:null,lit=rollLit(t);
    for(let n=G.lo;n<=G.hi;n++){const y=G.y(n),blk=[1,3,6,8,10].includes(n%12);if(blk){g.fillStyle=inkA(.05);g.fillRect(X0,y,G.lastX-X0,G.rh)}
    if(!inScale(tr,n)){g.fillStyle=inkA(.07);for(let x=X0;x<G.lastX;x+=6)g.fillRect(x,y,3,G.rh)}
    if(n%12===0){g.fillStyle=inkA(.3);g.fillRect(X0,y+G.rh-.5,G.lastX-X0,1)}
-   if(n===hov||n===held){g.fillStyle=inkA(n===held?.16:.09);g.fillRect(X0,y,G.lastX-X0,G.rh)}
+   if(n===hov||lit.has(n)){g.fillStyle=inkA(lit.has(n)?.16:.09);g.fillRect(X0,y,G.lastX-X0,G.rh)}
    g.fillStyle=inkA(.12);g.fillRect(0,y+.5,KW,G.rh-1);if(blk){g.fillStyle=ink;g.fillRect(0,y+.5,BW,G.rh-1)}
-   if(n===hov||n===held){g.save();g.globalAlpha=n===held?.85:.45;g.fillStyle=led;g.fillRect(0,y+.5,blk?BW:KW,G.rh-1);g.restore()}
+   if(n===hov||lit.has(n)){g.save();g.globalAlpha=lit.has(n)?.85:.45;g.fillStyle=led;g.fillRect(0,y+.5,blk?BW:KW,G.rh-1);g.restore()}
    if(n%12===0||n===G.hi){g.fillStyle=ink;g.font="9px Silkscreen, monospace";g.textAlign="right";g.fillText(noteName(n),KW-3,y+G.rh/2+3.5);g.textAlign="left"}}}
   else{g.fillStyle=ink;g.font="8px Silkscreen, monospace";const ns=tr.steps.slice(0,S.len).flatMap(x=>x?.n||[]);if(ns.length){const mn=Math.min(...ns),mx=Math.max(...ns);g.fillText(mn===mx?noteName(mn).replace("-",""):noteName(mn).replace("-","")+"-"+noteName(mx).replace("-",""),G.lastX+4,11)}const st=rowStatus(t);if(st)g.fillText(st,G.lastX+4,H-5)}
   G.vs.forEach(s=>{const x=G.col[s];if(!x)return;if(s%4===0){g.fillStyle=inkA(G.big?.1:.07);g.fillRect(x.x0,0,x.x1-x.x0,G.H)}});
@@ -256,6 +256,8 @@ function laneHit(c,e){const G=laneGeom(c),r=c.getBoundingClientRect(),x=e.client
 S.rollHov=null;
 const rollRow=(c,G,e)=>{const r=c.getBoundingClientRect(),n=G.lo+G.rows-1-Math.floor((e.clientY-r.top-G.top)/G.rh);return n>=G.lo&&n<=G.hi?n:null};
 const onKeys=(c,G,e)=>e.clientX-c.getBoundingClientRect().left<G.firstX-1.5;
+/* I-051: the roll's keys are lit as the Perform keyboard's: while held by the mouse, the computer keyboard or a MIDI keyboard */
+function rollLit(t){const l=new Set();if(rollDrag?.mode==="key"&&rollDrag.n!=null)l.add(rollDrag.n);for(const h of KB.held.values())if(h.t===t)l.add(h.n);KBLIT.midi.forEach(n=>l.add(n));return l}
 function rollKey(t,n){rollDrag.n=n;if(n!=null)keyNote(t,n,KB.vel)}
 document.addEventListener("pointerout",e=>{const c=e.target.closest?.("canvas.roll");if(c&&!c.contains(e.relatedTarget)&&S.rollHov){S.rollHov=null;drawEd(c)}});
 /* ===== Draw or select, and note lengths (I-007, I-010; 58-roll.js has what the machine does with a length) =====

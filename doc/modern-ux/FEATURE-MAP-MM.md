@@ -386,7 +386,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys | E2E |
 |---|---|---|---|---|---|---|---|
 | Mixer 1-81 | OUT BUS AB, CD, EF per track | Mix buses | ✅ | Mix > Out |  | 1 | pass (mm-mix-routing) |
-| FX machines 1-81 | Need input and a trig | FX input | ✅ | Mix IN select; new FX sets DEC and REL to 127 |  | 1 | pass (mm-mix-routing) |
+| FX machines 1-81 | Need input and a trig | FX input | ✅ | Mix IN select; new FX sets DEC and REL to 64 |  | 1 | pass (mm-mix-routing) |
 | Audio inputs 1-82 | INP A, INP B, INP AB | External audio | ✅ | Mix IN select |  | 1 | pass (mm-mix-routing) |
 | Audio inputs 1-82 | THRU machine as a start | THRU | ✅ | Machine picker |  | 1 | pass (mm-mix-routing) |
 | Neighbour routing 1-83 | NEIBOR input; chainable | Neighbour | ✅ | Mix IN = NEIBOR | Drawn as an arrow | 1 | pass (mm-mix-routing) |

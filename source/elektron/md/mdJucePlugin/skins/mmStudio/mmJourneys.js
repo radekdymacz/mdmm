@@ -979,6 +979,41 @@ const MmJourneys = (() => {
 		async tidy() { window.gm.recv([{ type: "midiHeld", notes: [] }]); kbKey("keyup", "a"); }
 	};
 
+	/* I-051: the Pattern page's piano-roll keys are lit while a key is held, by the mouse, the computer keyboard or a MIDI
+	   keyboard, as the Perform keyboard's, and dark when it is let go */
+	const rollKeyPx = (c, n) => { const G = laneGeom(c), dpr = devicePixelRatio || 1, y = (G.y(n) + G.rh / 2) * dpr, x = Math.max(1, G.kw / 2) * dpr; return Array.from(c.getContext("2d").getImageData(Math.round(x), Math.round(y), 1, 1).data).join(","); };
+	const seqKbLit = {
+		name: "mm-seq-keyboard-lit", proves: [],
+		steps: [
+			go("seq"), sel(0),
+			{ say: "scroll the roll so C-4 (MIDI 60) and the keys around it show; none is lit", act: (u, c) => { blur(); window.gm.recv([{ type: "midiHeld", notes: [] }]); S().rollLoT[0] = 50; redraw(); c.c = $1('#seq canvas.roll[data-big][data-t="0"]'); c.k = 60; c.dark = rollKeyPx(c.c, 60); },
+				screen: c => ok(rollLit(0).size === 0, "lit " + [...rollLit(0)]) },
+			{ say: "hold a roll key with the mouse: it is lit", act: (u, c) => { const G = laneGeom(c.c), r = c.c.getBoundingClientRect(), x = r.left + Math.max(1, G.kw / 2), y = r.top + G.y(c.k) + G.rh / 2;
+					c.c.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, composed: true, pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0, buttons: 1, clientX: x, clientY: y })); c.up = () => document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, composed: true, pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0, buttons: 0, clientX: x, clientY: y })); },
+				screen: c => { c.litPx = rollKeyPx(c.c, 60); return ok(rollLit(0).has(60) && c.litPx !== c.dark, "lit " + [...rollLit(0)] + ", pixel " + c.litPx + " vs " + c.dark); } },
+			{ say: "let go: no key is held and the key is no longer drawn lit (the pointer still hovers it, a fainter shade)", act: (u, c) => c.up(), screen: c => ok(rollLit(0).size === 0 && rollKeyPx(c.c, 60) !== c.litPx, "lit " + [...rollLit(0)]) },
+			{ say: "hold A on the computer keyboard: its roll key is lit while held", act: (u, c) => { blur(); c.a = KEYS_BASE + 12 * KB.oct; S().rollLoT[0] = clamp(c.a - 10, 0, 103); redraw(); c.dark2 = rollKeyPx(c.c, c.a); kbKey("keydown", "a"); },
+				screen: c => ok(rollLit(0).has(c.a) && rollKeyPx(c.c, c.a) !== c.dark2, "lit " + [...rollLit(0)]) },
+			{ say: "let go of A: dark", act: () => kbKey("keyup", "a"), screen: c => ok(rollLit(0).size === 0 && rollKeyPx(c.c, c.a) === c.dark2, "lit " + [...rollLit(0)]) },
+			{ say: "a MIDI keyboard holds E4 on a channel the machine plays (the plug-in's midiHeld): lit; let go: dark", act: async (u, c) => { const g = globalNow()?.channels || {}; c.ch = g.base; if (c.ch == null) throw new Error("the global plays no channel"); S().rollLoT[0] = 50; redraw(); c.dark3 = rollKeyPx(c.c, 64); window.gm.recv([{ type: "midiHeld", notes: [{ ch: c.ch, note: 64 }] }]); await sleep(100); c.lit3 = rollKeyPx(c.c, 64); window.gm.recv([{ type: "midiHeld", notes: [] }]); await sleep(100); },
+				screen: c => ok(c.lit3 !== c.dark3 && rollKeyPx(c.c, 64) === c.dark3 && rollLit(0).size === 0, "lit " + c.lit3 + " dark " + c.dark3 + " after " + rollKeyPx(c.c, 64)) }
+		],
+		async tidy() { window.gm.recv([{ type: "midiHeld", notes: [] }]); kbKey("keyup", "a"); }
+	};
+	/* I-052: double-click a track's LEVEL fader on Mix: it goes back to 100, the kit's default (as the Machinedrum Editor), one undo step */
+	const mixLevelReset = {
+		name: "mm-mix-level-reset", proves: [],
+		steps: [
+			go("mix"),
+			{ say: "drag track 2's LEVEL fader away from 100", act: async (u, c) => { c.l0 = wk().levels[1]; const d = c.l0 > 64 ? -1 : 1; await u.drag(strip(1, '.fader[data-g="lev"]'), [[0, d * 8], [0, d * 16], [0, d * 24], [0, d * 40]]); c.moved = S().tracks[1].lev; },
+				screen: c => ok(S().tracks[1].lev !== 100, "level " + S().tracks[1].lev), machine: () => ok(wk().levels[1] !== 100, "kit level " + wk().levels[1]), within: 8000 },
+			{ say: "double-click the fader: LEVEL 100 on the page and in the kit", act: async (u, c) => { c.h0 = histN(); u.dblclick(strip(1, '.fader[data-g="lev"]')); await sleep(300); },
+				screen: () => ok(S().tracks[1].lev === 100 && $1(strip(1, ".lread")).textContent === "100", "shows " + $1(strip(1, ".lread")).textContent), machine: () => ok(wk().levels[1] === 100, "kit level " + wk().levels[1]), within: 8000 },
+			{ ...undoKey, say: "one Cmd+Z: the dragged level is back (the reset was one step)", act: u => { blur(); u.key("z", { cmd: true }); }, screen: c => ok(S().tracks[1].lev === c.moved, "shows " + S().tracks[1].lev), machine: c => ok(wk().levels[1] === c.moved, "kit level " + wk().levels[1]), within: 8000 },
+			{ ...undoKey, say: "another Cmd+Z: the first level", act: u => { blur(); u.key("z", { cmd: true }); }, screen: c => ok(S().tracks[1].lev === c.l0, "shows " + S().tracks[1].lev), machine: c => ok(wk().levels[1] === c.l0, "kit level " + wk().levels[1]), within: 8000 }
+		]
+	};
+
 	/* I-022: a value typed: ⌘-click a value box, type, Enter (one edit, one undo step); a list box takes its names; past
 	   the end is refused and the field stays; Esc leaves it; Enter on the focused box opens it again; double-click is
 	   still the default */
@@ -3074,14 +3109,14 @@ const MmJourneys = (() => {
 				}
 				c.note = c.n + " keys"; },
 				screen: c => ok(!c.bad.length, c.bad.slice(0, 5).join(" | ")), machine: c => ok(c.n === 18, c.n + " of 18 keys"), within: 1000 },
-			{ say: "an FX machine picked on track 4 takes an input (NEIBOR, the track before) and has DEC and REL at 127 so the sound passes", act: async (u, c) => { c.m0 = wk().tracks[3].machineName; await setMachineOf(u, 3, "FX-CHORUS"); },
-				machine: () => ok(wk().tracks[3].input === 0 && wk().tracks[3].pages[1][2] === 127 && wk().tracks[3].pages[1][3] === 127, `input ${wk().tracks[3].input}, AMP DEC ${wk().tracks[3].pages[1][2]} REL ${wk().tracks[3].pages[1][3]}`), screen: () => ok($1("#inp3")?.value === "NEIBOR", "IN " + $1("#inp3")?.value), within: 8000 },
+			{ say: "an FX machine picked on track 4 takes an input (NEIBOR, the track before) and has AMP DEC and REL at 64 (B-166)", act: async (u, c) => { c.m0 = wk().tracks[3].machineName; await setMachineOf(u, 3, "FX-CHORUS"); },
+				machine: () => ok(wk().tracks[3].input === 0 && wk().tracks[3].pages[1][2] === 64 && wk().tracks[3].pages[1][3] === 64, `input ${wk().tracks[3].input}, AMP DEC ${wk().tracks[3].pages[1][2]} REL ${wk().tracks[3].pages[1][3]}`), screen: () => ok($1("#inp3")?.value === "NEIBOR", "IN " + $1("#inp3")?.value), within: 8000 },
 			{ say: "IN INP A, INP B, INP AB: the kit holds the input and the machine gets it in SysEx 0x5C", act: async (u, c) => { c.bad = []; for (const [i, nm] of [[1, "INP A"], [2, "INP B"], [3, "INP AB"]]) { const w0 = wireSeq; await choose(u, "inp3", nm); if (!await until(() => wk().tracks[3].input === i, 3000)) { c.bad.push(`${nm}: kit ${wk().tracks[3].input}`); continue; } if (Journey.pageTier()) await until(() => route5c(w0).length > 0, 2000); const r = route5c(w0).pop(); if (!Journey.noWire() && (!r || r.t !== 3 || r.inp !== i)) c.bad.push(`${nm}: SysEx ${JSON.stringify(r)}`); } },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
-			{ say: "a THRU machine on track 1 starts a chain: INP AB, DEC and REL 127; the next FX machine on track 2 on NEIBOR, the one after on NEIBOR too: the flow line names the neighbours (T1›T2, T2›T3)", act: async (u, c) => { await setMachineOf(u, 0, "FX-THRU"); await setMachineOf(u, 1, "FX-CHORUS"); await setMachineOf(u, 2, "FX-REVERB");
+			{ say: "a THRU machine on track 1 starts a chain: INP AB, DEC and REL 64; the next FX machine on track 2 on NEIBOR, the one after on NEIBOR too: the flow line names the neighbours (T1›T2, T2›T3)", act: async (u, c) => { await setMachineOf(u, 0, "FX-THRU"); await setMachineOf(u, 1, "FX-CHORUS"); await setMachineOf(u, 2, "FX-REVERB");
 					for (const t of [0, 1, 2]) if (!(wk().tracks[t].outputs & 1)) { u.click(`[data-bus="AB"][data-t="${t}"]`); await sleep(300); } for (const t of [3, 4, 5]) if (wk().tracks[t].outputs & 1) { u.click(`[data-bus="AB"][data-t="${t}"]`); await sleep(300); }
 					await sleep(300); c.flow = flowOf("AB"); },
-				machine: () => ok(wk().tracks[0].machineName === "FX-THRU" && wk().tracks[0].input === 3 && wk().tracks[0].pages[1][2] === 127 && wk().tracks[1].input === 0 && wk().tracks[2].input === 0, `inputs ${wk().tracks.slice(0, 3).map(x => x.input)}`),
+				machine: () => ok(wk().tracks[0].machineName === "FX-THRU" && wk().tracks[0].input === 3 && wk().tracks[0].pages[1][2] === 64 && wk().tracks[1].input === 0 && wk().tracks[2].input === 0, `inputs ${wk().tracks.slice(0, 3).map(x => x.input)}`),
 				screen: c => ok(/T1 FX-THRU/.test(c.flow) && /T1›T2 FX-CHORUS/.test(c.flow) && /T2›T3 FX-REVERB/.test(c.flow), "flow " + c.flow), within: 10000 },
 			{ say: "track 3 on IN BUS AB with OUT AB on: an insert, the flow line says so; OUT AB off: it takes a copy", act: async (u, c) => { await choose(u, "inp2", "BUS AB"); await until(() => wk().tracks[2].input === 4, 3000); await sleep(300); c.ins = flowOf("AB");
 					u.click('[data-bus="AB"][data-t="2"]'); await until(() => !(wk().tracks[2].outputs & 1), 3000); await sleep(300); c.snd = flowOf("AB"); Journey.snapshot("mm-mix-routing"); },
@@ -4354,7 +4389,7 @@ const MmJourneys = (() => {
 	};
 	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowMarks, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixHeads, mixSolo, soloSaved, shiftMutes, routing, mixMeters, panTrim, msOff, msViews, railLamps, railLampsFwd,
-		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, followPlayed, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, modeCycle, kitLoad, kitCopy, patGo, dialogEsc,
+		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, followPlayed, seqKbLit, mixLevelReset, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, modeCycle, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, laneDrawSlide, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
 		valueKeys, soundCopy, screenDrag, filterEnv, lfoLocksJ, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
