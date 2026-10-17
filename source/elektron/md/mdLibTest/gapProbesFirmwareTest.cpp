@@ -2818,6 +2818,7 @@ namespace
 		std::puts("== W13 MM: the parameter-lock slide (track 1 AMP VOL). Each case is played twice, with the locks and slides and without (the same trigs):");
 		std::puts("   the ratio of the two loudnesses, in 10 ms windows, is the gain the locks made; shown as the VOL that gain stands for (VOL 60 = the kit; the");
 		std::puts("   sine's loudness goes with VOL squared: VOL 20 -> 0.11, 90 -> 2.25 of VOL 60, measured by K20/K90). Four values a step; '.' where the reference is silent.");
+		std::puts("   Cases MV..MS (B-168): one lock on step 4 on another parameter, printed as 'loudness %/pitch %' of the unlocked run, one line a step.");
 		const std::vector<std::pair<int, int>> t4 = {{0, 0}, {4, 0}, {8, 0}, {12, 0}};
 		const std::vector<MmSlideCase> cases = {
 			{"K20  VOL 20 on every trig", t4, {{0, 20}, {4, 20}, {8, 20}, {12, 20}}, {}, {}},
