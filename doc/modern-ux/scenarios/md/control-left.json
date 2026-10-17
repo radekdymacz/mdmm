@@ -1,0 +1,113 @@
+{
+ "title": "CONTROL: items a project load left out",
+ "about": "A project whose mappings were not all valid: the toast counts what was left out once, CONTROL lists each reason under the matrix header.",
+ "boot": "stub",
+ "steps": [
+  {
+   "at": 300,
+   "send": [
+    {
+     "type": "learn",
+     "doc": {
+      "enabled": true,
+      "mappings": [
+       {
+        "index": 0,
+        "t": 0,
+        "i": 1,
+        "name": "DEC",
+        "cc": 21,
+        "ch": 0,
+        "mode": "Absolute",
+        "invert": false,
+        "overrides": [
+         {
+          "ch": 0,
+          "t": 0,
+          "i": 1
+         }
+        ]
+       },
+       {
+        "index": 1,
+        "t": 2,
+        "i": 0,
+        "name": "PTCH",
+        "cc": 22,
+        "ch": 255,
+        "mode": "Relative Signed",
+        "invert": true,
+        "overrides": [
+         {
+          "ch": 0,
+          "t": 0,
+          "i": 0
+         },
+         {
+          "ch": 1,
+          "t": 1,
+          "i": 0
+         },
+         {
+          "ch": 2,
+          "t": 2,
+          "i": 0
+         },
+         {
+          "ch": 3,
+          "t": 3,
+          "i": 0
+         }
+        ]
+       }
+      ],
+      "learning": null,
+      "limits": {
+       "tracks": 16,
+       "params": [
+        {
+         "i": 0,
+         "name": "PTCH"
+        },
+        {
+         "i": 1,
+         "name": "DEC"
+        },
+        {
+         "i": 2,
+         "name": "RAMP"
+        },
+        {
+         "i": 3,
+         "name": "RDEC"
+        },
+        {
+         "i": 4,
+         "name": "STRT"
+        },
+        {
+         "i": 5,
+         "name": "NOIS"
+        },
+        {
+         "i": 6,
+         "name": "HARM"
+        },
+        {
+         "i": 7,
+         "name": "CLIP"
+        }
+       ],
+       "max": 128
+      },
+      "left": [
+       "$.mappings[3]: track 17 is outside 1..16",
+       "$.mappings[5]: unknown mode \"Wobble\"",
+       "$.mappings[130]: past 128 mappings"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

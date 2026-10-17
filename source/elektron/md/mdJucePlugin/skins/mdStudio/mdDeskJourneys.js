@@ -3312,6 +3312,101 @@ const MdJourneys = (() => {
 		],
 		async tidy(u) { await closePops(u); u.click(tab("seq")); }
 	};
+	/* ---------- 0.8 (L4): MIDI Learn on the CONTROL page. The plug-in's learn documents are played to the page as the plug-in
+	   would send them (the page tier has no controller; the host's side is mdLearnFirmwareTest and the editor-tier md-control-learn) ---------- */
+	const learnSent = Journey.recent(80);	/* the learn commands the page sent, whole, newest last */
+	{ const send1 = Bridge.send; Bridge.send = (m, o) => { if (/^learn/.test(m.op)) learnSent.add(m); return send1(m, o); }; }
+	const LP = Array.from({ length: 25 }, (_, i) => ({ i, name: "P" + i }));
+	const lmap = (index, t, i, cc, ch, o = {}) => Object.assign({ index, t, i, name: "plug-in " + t + "/" + i, cc, ch, mode: "Absolute", invert: false, overrides: [] }, o);
+	const ldoc = (maps, o = {}) => ({ type: "learn", doc: Object.assign({ enabled: true, mappings: maps, learning: null, limits: { tracks: 16, params: LP, max: 128 } }, o) });
+	const learnOff = () => window.gm.recv([{ type: "learn", doc: { enabled: false, mappings: [], learning: null } }]);
+	const toastText = () => $1("#toast").classList.contains("on") ? $1("#toast").textContent : "";
+	const learnTidy = async u => { learnOff(); await sleep(150); S.ctl.leftSeen = ""; S.ctl.sel = null; S.ctl.selT = null; if (S.ws === "control") { S.ws = "seq"; render(); } };
+	const learnIn = async (u, c, ...msgs) => { window.gm.recv(msgs); await sleep(150); };
+	/* the whole learn: LEARN, a value, progress on CONTROL, the mapping and what it overrides, invert, remove, Esc */
+	const controlLearn = {
+		name: "md-control-learn-flow", proves: [],
+		steps: [
+			{ say: "the plug-in says MIDI mapping is on: the CONTROL tab and the LEARN key appear", act: (u, c) => learnIn(u, c, ldoc([])),
+				screen: () => ok(!$1(tab("control")).hidden && !$1("#learnkey").hidden, "tab hidden " + $1(tab("control")).hidden + ", key hidden " + $1("#learnkey").hidden) },
+			{ say: "click LEARN, the Kit tab, then a knob: learnStart goes with that track and parameter", act: async (u, c) => { c.n = learnSent.mark(); u.click("#learnkey"); u.click(tab("sound")); await sleep(300); const k = $1('#main .pc[data-g="syn"]'); c.n2 = k.dataset.n; c.t = S.sel; c.i = pidx(S.sel, c.n2, "syn"); u.click('#main .pc[data-g="syn"]'); },
+				screen: c => ok(pressed("#learnkey") && S.ctl.learnT && S.ctl.learnT.p === c.n2, "learn key " + $1("#learnkey").getAttribute("aria-pressed") + ", target " + JSON.stringify(S.ctl.learnT)),
+				machine: c => { const m = learnSent.since(c.n).find(x => x.op === "learnStart"); return ok(m && m.t === c.t && m.i === c.i, "sent " + JSON.stringify(learnSent.since(c.n))); } },
+			{ say: "the plug-in has seen no value yet: CONTROL says 0 of 2 and names the target by the page's name", act: async (u, c) => { window.gm.recv([ldoc([], { learning: { t: c.t, i: c.i, name: "plug-in name", got: 0, need: 2 } })]); await sleep(100); u.click(tab("control")); await sleep(300); },
+				screen: c => ok(/Turn a knob on your controller both ways \(0 of 2\)/.test($1("#linfo")?.textContent || "") && ($1("#linfo").textContent.includes(paramName(c.t, c.i))) && !$1("#linfo").textContent.includes("plug-in name"), $1("#linfo")?.textContent) },
+			{ say: "one value in: 1 of 2", act: (u, c) => learnIn(u, c, ldoc([], { learning: { t: c.t, i: c.i, name: "plug-in name", got: 1, need: 2 } })),
+				screen: () => ok(/\(1 of 2\)/.test($1("#linfo")?.textContent || ""), $1("#linfo")?.textContent), within: 3000 },
+			{ say: "the second value completes it on CC 21, channel 1, where the machine has its own target: the toast names both, CONTROL lists the mapping with the line that says what it overrides",
+				act: (u, c) => learnIn(u, c, ldoc([lmap(0, c.t, c.i, 21, 0, { overrides: [{ ch: 0, t: c.t, i: c.i }] })])),
+				screen: c => { const o = $1('[data-ovr="0"]')?.textContent || "", tt = toastText(); const nm = paramName(c.t, c.i);
+					return ok(o === `Overrides the machine's CC 21 on channel 1: T${c.t + 1} ${nm}` && /CC 21 on channel 1 now moves/.test(tt) && tt.includes("Overrides the machine's CC 21") && $1("#lcount")?.textContent === "1 of 128 mappings" && !$all(".lnk .lcdchip").some(x => x.textContent.includes("plug-in")), `ovr "${o}", toast "${tt}", count "${$1("#lcount")?.textContent}"`); }, within: 3000 },
+			{ say: "the inspector line names the project, not the plug-in's preset", screen: () => ok(/saved with the project/.test($1("#main .card:nth-child(2) header span")?.textContent || "") && !/preset/.test($1("#main").textContent), $1("#main .card:nth-child(2) header span")?.textContent) },
+			{ say: "click Inv on the mapping: learnInvert goes with its index", act: (u, c) => { c.n = learnSent.mark(); u.click('[data-linv="0"]'); }, machine: c => ok(learnSent.since(c.n).some(x => x.op === "learnInvert" && x.index === 0), JSON.stringify(learnSent.since(c.n))) },
+			{ say: "click × on the mapping: learnRemove goes with its index", act: (u, c) => { c.n = learnSent.mark(); u.click('[data-ldel="0"]'); }, machine: c => ok(learnSent.since(c.n).some(x => x.op === "learnRemove" && x.index === 0), JSON.stringify(learnSent.since(c.n))) },
+			{ say: "the plug-in drops it: the line and the mapping are gone", act: (u, c) => learnIn(u, c, ldoc([])), screen: () => ok(!$1("[data-ovr]") && $1("#lcount")?.textContent === "0 of 128 mappings", "count " + $1("#lcount")?.textContent) },
+			{ say: "press Escape with LEARN on: LEARN goes out and learnCancel is sent", act: (u, c) => { c.n = learnSent.mark(); u.key("Escape"); }, screen: () => ok(!pressed("#learnkey") && !S.ctl.learn, "aria-pressed " + $1("#learnkey").getAttribute("aria-pressed")),
+				machine: c => ok(learnSent.since(c.n).some(x => x.op === "learnCancel"), JSON.stringify(learnSent.since(c.n))) }
+		],
+		tidy: learnTidy
+	};
+	/* a mapping that is a knob row's: the any-channel override line says every channel it hides, the count, and a row for the CC */
+	const controlLearnOverrides = {
+		name: "md-control-learn-overrides", proves: [],
+		steps: [
+			{ say: "a mapping on any channel that hides the machine's CC 22 on four channels, one with nothing to hide, and one on channel 10", act: async (u, c) => { c.ov = [0, 1, 2, 3].map(t => ({ ch: t, t, i: 0 })); await learnIn(u, c, ldoc([lmap(0, 2, 0, 22, 255, { mode: "Relative Signed", invert: true, overrides: c.ov }), lmap(1, 1, 2, 74, 255), lmap(2, 4, 3, 30, 9)])); u.click(tab("control")); await sleep(300); u.click('.srch[data-src="255:22"]'); await sleep(200); },
+				screen: () => ok(/channel 1: T1 .*; channel 2: T2 .*; channel 3: T3 .*; channel 4: T4 /.test($1('[data-ovr="0"]')?.textContent || "") && /^Overrides the machine's CC 22 on /.test($1('[data-ovr="0"]').textContent), $1('[data-ovr="0"]')?.textContent) },
+			{ say: "select the row of CC 74 (hides nothing): no overrides line", act: u => u.click('.srch[data-src="255:74"]'), screen: () => ok($1('.lnk') && !$1("[data-ovr]"), "ovr " + $1("[data-ovr]")?.textContent) },
+			{ say: "select the row of CC 30 on channel 10: its mapping, no overrides line, the channel in the head", act: u => u.click('.srch[data-src="9:30"]'), screen: () => ok(/channel 10/.test($1("#main .card:nth-child(2) header span")?.textContent || "") && !$1("[data-ovr]") && $all(".lnk").length === 1, $1("#main .card:nth-child(2) header span")?.textContent) },
+			{ say: "a mapping with six or more overrides is cut with a count", act: async (u, c) => { await learnIn(u, c, ldoc([lmap(0, 0, 0, 21, 255, { overrides: Array.from({ length: 9 }, (_, k) => ({ ch: k % 4, t: k % 4, i: k })) })])); u.click('.srch[data-src="255:21"]'); },
+				screen: () => ok(/\+3 more$/.test($1('[data-ovr="0"]')?.textContent || ""), $1('[data-ovr="0"]')?.textContent), within: 3000 }
+		],
+		tidy: learnTidy
+	};
+	/* the HW MIDI engine: the host's MIDI in is the machine's own MIDI out */
+	const controlLearnPaused = {
+		name: "md-control-learn-paused", proves: [],
+		steps: [
+			{ say: "MIDI mapping is on and not paused: LEARN turns on", act: async (u, c) => { await learnIn(u, c, ldoc([])); u.click("#learnkey"); }, screen: () => ok(pressed("#learnkey"), "not on") },
+			{ say: "the plug-in pauses it (HW MIDI engine): LEARN goes out and the toast gives the reason", act: (u, c) => { c.why = "MIDI Learn is off with the HW MIDI engine: Choose the emulator to learn."; return learnIn(u, c, ldoc([], { paused: c.why })); },
+				screen: c => ok(!pressed("#learnkey") && toastText() === c.why, `key ${$1("#learnkey").getAttribute("aria-pressed")}, toast "${toastText()}"`) },
+			{ say: "CONTROL says it under the matrix header", act: async u => { u.click(tab("control")); await sleep(300); }, screen: c => ok($1("#lpaused")?.textContent === c.why, $1("#lpaused")?.textContent) },
+			{ say: "click LEARN: it stays off and the reason is said; nothing is sent", act: (u, c) => { c.n = learnSent.mark(); u.click("#learnkey"); }, screen: c => ok(!pressed("#learnkey") && toastText() === c.why, `key ${$1("#learnkey").getAttribute("aria-pressed")}`), machine: c => ok(!learnSent.since(c.n).length, JSON.stringify(learnSent.since(c.n))) },
+			{ say: "the engine is the emulator again: the line goes and LEARN turns on", act: async (u, c) => { await learnIn(u, c, ldoc([])); u.click("#learnkey"); }, screen: () => ok(!$1("#lpaused") && pressed("#learnkey"), "paused line " + !!$1("#lpaused")) }
+		],
+		async tidy(u) { if (S.ctl.learn) u.key("Escape"); await learnTidy(u); }
+	};
+	/* a project load that left items out: one toast with the count, the list on CONTROL, no second toast for the same list */
+	const controlLearnLeft = {
+		name: "md-control-learn-left", proves: [],
+		steps: [
+			{ say: "the document says three items were left out: one toast with the count, CONTROL lists each reason", act: async (u, c) => { c.left = ["$.mappings[3]: track 17 is outside 1..16", "$.mappings[5]: unknown mode \"Wobble\"", "$.mappings[130]: past 128 mappings"]; await learnIn(u, c, ldoc([], { left: c.left })); c.t1 = toastText(); u.click(tab("control")); await sleep(300); },
+				screen: c => ok(/^3 mappings left out of the project/.test(c.t1) && $all("#lleft span").map(x => x.textContent).join("|") === c.left.join("|"), `toast "${c.t1}", list ${$all("#lleft span").length}`) },
+			{ say: "the same document again (any change): no second toast", act: async (u, c) => { $1("#toast").classList.remove("on"); await learnIn(u, c, ldoc([lmap(0, 0, 1, 21, 0)], { left: c.left })); }, screen: () => ok(!toastText(), "toast " + toastText()) },
+			{ say: "one item: singular; none left: the list goes", act: async (u, c) => { await learnIn(u, c, ldoc([], { left: ["x"] })); c.t1 = toastText(); await learnIn(u, c, ldoc([])); }, screen: c => ok(/^1 mapping left out/.test(c.t1) && !$1("#lleft"), `toast "${c.t1}", list ${!!$1("#lleft")}`) }
+		],
+		tidy: learnTidy
+	};
+	/* the limit: 128 mappings, the count says so, Add is off, the 129th is not offered */
+	const controlLearnLimit = {
+		name: "md-control-learn-limit", proves: [],
+		steps: [
+			{ say: "127 mappings: the count, Add target on", act: async (u, c) => { c.maps = n => Array.from({ length: n }, (_, k) => lmap(k, k % 16, k % 8, 40 + (k % 80), k % 15)); await learnIn(u, c, ldoc(c.maps(127))); u.click(tab("control")); await sleep(400); },
+				screen: () => ok($1("#lcount")?.textContent === "127 of 128 mappings" && !$1("#caddl").disabled, `${$1("#lcount")?.textContent}, add disabled ${$1("#caddl")?.disabled}`) },
+			{ say: "128 mappings: the count is marked, Add target is off and says why", act: (u, c) => learnIn(u, c, ldoc(c.maps(128))), screen: () => ok($1("#lcount")?.textContent === "128 of 128 mappings" && $1("#lcount").classList.contains("hot") && $1("#caddl").disabled && /128 mappings at most/.test($1("#caddl").title), `${$1("#lcount")?.textContent} ${$1("#caddl")?.title}`) },
+			{ say: "a document with no limits.max still says 128", act: (u, c) => learnIn(u, c, ldoc(c.maps(2), { limits: { tracks: 16, params: LP } })), screen: () => ok($1("#lcount")?.textContent === "2 of 128 mappings", $1("#lcount")?.textContent) }
+		],
+		tidy: learnTidy
+	};
+	/* a knob row's CC: the stepper sends "knobs" and nothing else (learnSetCc is gone: the mappings follow in the same edit) */
+	const controlLearnKnob = {
+		name: "md-control-learn-knobcc", proves: [],
+		steps: [
+			{ say: "open CONTROL on Knob 8 (CC 28) and click the CC stepper up", act: async (u, c) => { await learnIn(u, c, ldoc([lmap(0, 0, 1, 21, 255)])); u.click(tab("control")); await sleep(300); u.click('.srch[data-src="255:28"]'); await sleep(100); c.n = opsSent.mark(); c.cc0 = knobCcs()[7]; u.click('[data-knobcc="1"]'); },
+				screen: c => ok(knobCcs()[7] === c.cc0 + 1 && $1('.srch[data-src="255:' + (c.cc0 + 1) + '"].sel'), "knob 8 on CC " + knobCcs()[7]),
+				machine: c => { const ops = opsSent.since(c.n); return ok(ops.includes("knobs") && !ops.includes("learnSetCc") && !ops.some(o => /^learn/.test(o)), "sent " + ops.join(",")); } }
+		],
+		async tidy(u, c) { if (c.cc0 != null && knobCcs()[7] !== c.cc0) { u.click(`.srch[data-src="255:${knobCcs()[7]}"]`); await sleep(100); u.click('[data-knobcc="-1"]'); await until(() => knobCcs()[7] === c.cc0, 3000); } await learnTidy(u); }
+	};
 	const all = [screensFit, ...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, kitStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, stepClickSelect, accentSlide, trigTypesJ, lockLane, laneKitDrag, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
 		genJourney("md-gen-mutate-undo", false, { proves: ["MD-X04", "MD-X05"] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: ["MD-X04"] }), genKeys, genModal, laneTools, gridFits,
@@ -3319,7 +3414,7 @@ const MdJourneys = (() => {
 		mixSolo, soloSaved, shiftMutes, allOff, fader, lev, outKey, masterFx,
 		songArrange, songChain, modeCycle, songPlayhead, songSlots, songKeys, shotsSongSlots, samplerSlots, samplerSetup, audition,
 		libDialog, kitCopy, kitRename, kitClear, patGo, patClear, dialogEsc,
-		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, noteLights, followPlayed, audioPanel, romCard, notePlay,
+		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, controlLearn, controlLearnOverrides, controlLearnPaused, controlLearnLeft, controlLearnLimit, controlLearnKnob, noteLights, followPlayed, audioPanel, romCard, notePlay,
 		lockRamp, pasteMany, mutScope, songInspector, songRowMarks, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
 		syxImportMute, globalReset, shotsGlobal, shotsSound, shotsReview, shots, shotsSong, shotsImport, editorMenuJ, memoryJ, shotsMenu, ...cpuJs, ...volJs,
 		dropSyxJ, dropSampleJ, ...viewJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, modalLock, songFactoryPlay, lockKeysFit, resetFactory, resetEmpty, syxRunningReach];
