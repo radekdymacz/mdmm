@@ -384,7 +384,7 @@ function setPos() {
 	const at = V.playing && S.step >= 0 ? S.step : S.paused && S.paused.step >= 0 ? S.paused.step : -1;
 	const p = $("#pos"); if (p) p.textContent = at >= 0 ? String(Math.floor(at / 16) + 1).padStart(2, "0") + "." + String(at % 16 + 1).padStart(2, "0") : "--.--";
 }
-function setPlate(v) { S.plate = v; document.documentElement.dataset.plate = v; try { localStorage.setItem("mddesk.plate", v); } catch (_) { } renderTop(); redraw(); }
+function setPlate(v) { S.plate = v; document.documentElement.dataset.plate = v; try { localStorage.setItem("mddesk.plate", v); } catch (_) { } toast(v === "mk1" ? "MKI: the silver plate, the red-orange LCD with black pixels." : "MKII: the black plate and the orange LCD."); renderTop(); redraw(); }
 (() => { let v = null; try { v = localStorage.getItem("mddesk.plate"); } catch (_) { } if (!v) v = matchMedia("(prefers-color-scheme: dark)").matches ? "mk2" : "mk1"; S.plate = v; document.documentElement.dataset.plate = v; })();
 
 /* the top bar's clicks (the router's, mdDeskRender.js CLICKS): true when the click was theirs */
