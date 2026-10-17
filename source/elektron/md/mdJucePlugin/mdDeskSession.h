@@ -116,7 +116,7 @@ namespace mdJucePlugin
 
 	// I-032 (0.8, WP9): the Mix page's output meters ({"type":"mixLevels","pairs":[{"on","clip","peak":[L,R],"rms":[L,R]} x3]},
 	// pairs A/B, C/D, E/F; dBFS to 0.1 dB, -96 for silence; the largest |sample| and the RMS since the last message), sent
-	// every g_mixLevelsMs only between the page's mixMeters on and off. Relaxed atomics (mdMixMeters.h), no lock.
+	// every g_mixLevelsMs only between the page's mixMeters on and off. Lock-free atomics (two windows, see mdMixMeters.h) (mdMixMeters.h), no lock.
 	elektronData::json::Value mixLevelsOf(AudioPluginAudioProcessor& _processor);
 	constexpr double g_mixLevelsMs = 40;
 
