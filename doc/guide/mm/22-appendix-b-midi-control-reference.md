@@ -86,7 +86,7 @@ Controllers 88 to 95, 104 to 111 and 112 to 119 carry the values of LFO 1, LFO 2
 The panic command, {key:panic} or **Panic** in the transport menu, lets every held note go. It sends controller 123 on the channel of each track. Controller 120, which the manual names for this, does nothing on OS 1.32B.
 
 1. Press {key:play-stop}. The machine plays.
-2. Click the small ▾ in the corner of the play key and click **Panic**. Every note goes off and the machine stops.
+2. Right-click the play key and click **Panic**. Every note goes off and the machine stops.
 
 ## NRPN PARAMETERS
 <!-- rows: MM-362 @2cabc7 -->

@@ -13,12 +13,16 @@
 
 #include "mdLearnTable.h"
 
+#include "deskCore/deskLearn.h"
+
 #include "synthLib/seqlock.h"
 
 #include <array>
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <vector>
 
 namespace synthLib
 {
@@ -32,6 +36,14 @@ namespace mdJucePlugin
 	// (inverted: 127..0). Relative Signed: 1 to 63 one step up, 65 to 127 one step down. Relative Offset: above 64 one
 	// step up, below 64 one step down. Inverted relative modes step the other way. Always inside [_min, _max].
 	int learnedValue(uint8_t _mode, bool _invert, uint8_t _value, int _current, int _min, int _max);
+
+	// The audio thread's table from the setup's mappings (message thread): each mapping's parameter through _parameter (a
+	// mapping whose parameter is null is left out), chains in the order of the list, at most LearnTable::MaxTargets.
+	// _byMapping (optional) gets the parameter of every mapping by its index in _mappings (null for one left out), for the
+	// host's notification.
+	LearnTable buildLearnTable(const std::vector<deskCore::LearnMapping>& _mappings,
+		const std::function<pluginLib::Parameter*(const deskCore::LearnRef&)>& _parameter, uint32_t _generation,
+		std::vector<pluginLib::Parameter*>* _byMapping = nullptr);
 
 	class LearnRouter
 	{
@@ -48,6 +60,7 @@ namespace mdJucePlugin
 			uint64_t captured = 0;			// CCs captured while learning
 			uint64_t capturedDropped = 0;	// captured CCs lost to a full ring
 			uint64_t notOnAudioThread = 0;	// CCs offered to translate from another thread (passed on untouched)
+			uint64_t physicalPassed = 0;	// CCs from a MIDI port (source Physical) that went on to the machine raw, never translated
 		};
 
 		explicit LearnRouter(Apply _apply);
@@ -81,11 +94,26 @@ namespace mdJucePlugin
 
 		Counts counts() const noexcept;
 
+		// Publishes the empty table and returns once no block that began before it can still be reading the old one: the
+		// controller's parameters may be freed after this. Waits at most _timeoutMs (the audio thread of a host that has
+		// stopped never ends a block; it will read the empty table at its next block start). True: settled.
+		bool publishEmptyAndSettle(unsigned _timeoutMs = 200) noexcept;
+		// The same for a new table: returns once no block that began before it can still be reading the old one, so the
+		// touched bits taken after this belong to the new table (a stale bit cannot name another parameter).
+		bool publishAndSettle(const LearnTable& _table, unsigned _timeoutMs = 20) noexcept;
+
+		// Any thread: a CC that came from a MIDI port (source Physical) passes to the machine raw, counted (the design:
+		// these editors open no such port; a project's port chunk could)
+		void countPhysicalPassed() noexcept { m_physicalPassed.fetch_add(1, std::memory_order_relaxed); }
+
 		// ---- audio thread only ----
 
 		// Refreshes the local copy when the seqlock's writes moved (on an overlapping write it keeps the copy it has and
 		// tries again next block). Also marks the calling thread as the audio thread.
 		void beginBlock() noexcept;
+		// The block is over: nothing in it reads the table any more (publishEmptyAndSettle waits for this)
+		void endBlock() noexcept;
+		uint64_t blocks() const noexcept { return m_blocks.load(std::memory_order_acquire); }
 		// True: consumed (a mapped CC, or a CC captured while learning); it must not reach the firmware.
 		bool translate(uint8_t _status, uint8_t _data1, uint8_t _data2) noexcept;
 		bool translate(const synthLib::SMidiEvent& _ev) noexcept;
@@ -107,6 +135,10 @@ namespace mdJucePlugin
 		LearnTable m_scratch;
 		uint64_t m_seenWrites = 0;
 
+		std::atomic<uint32_t> m_emptyGeneration{0};
+		std::atomic<uint64_t> m_blocks{0};		// blocks begun
+		std::atomic<bool> m_inBlock{false};		// between beginBlock and endBlock
+
 		std::atomic<size_t> m_audioThread{0};
 		std::atomic<bool> m_haveAudioThread{false};
 
@@ -121,5 +153,6 @@ namespace mdJucePlugin
 		std::atomic<uint64_t> m_captured{0};
 		std::atomic<uint64_t> m_capturedDropped{0};
 		std::atomic<uint64_t> m_notOnAudioThread{0};
+		std::atomic<uint64_t> m_physicalPassed{0};
 	};
 }

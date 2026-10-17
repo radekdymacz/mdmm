@@ -370,6 +370,11 @@ namespace pluginLib
 		sendValueChangedMessageToListeners(_value);
     }
 
+	void Parameter::notifyHostOfValue()
+	{
+		notifyHost(getValue());
+	}
+
     juce::ParameterID Parameter::genId(const Description& d, const int part, const int uniqueId)
 	{
 		juce::String s;

@@ -2078,6 +2078,45 @@ namespace
 		desk.onPageMessage(cmd(R"({"op":"knobs","ccs":[1,1,3,4,5,6,7,8],"id":3})"));
 		check(saved.size() == before && desk.setup().knobCcs[1] == 2, "invalid knob CCs change nothing");
 
+		// 0.8, MIDI Learn: the learned CCs are part of the setup: kept with the project, restored from it, and a knob row's
+		// new CC takes its any-channel mappings with it (one command)
+		{
+			deskCore::LearnMapping any, onCh;
+			any.ch = deskCore::g_learnAnyChannel; any.cc = 1; any.at = {0, -1, 3};
+			onCh.ch = 2; onCh.cc = 1; onCh.at = {1, -1, 4}; onCh.mode = deskCore::LearnMode::RelativeSigned; onCh.invert = true;
+			const auto n0 = saved.size();
+			desk.setMappings({any, onCh});
+			check(saved.size() == n0 + 1 && desk.mappings().size() == 2 && saved.back().find("mappings")->asArray().size() == 2,
+				"setMappings: kept with the project");
+			desk.setMappings({any, onCh});
+			check(saved.size() == n0 + 1, "the same list again saves nothing");
+			page.clear();
+			desk.onPageMessage(cmd(R"({"op":"knobs","ccs":[41,2,3,4,5,6,7,8],"id":20})"));
+			check(desk.mappings().size() == 2 && desk.mappings()[0].cc == 41 && desk.mappings()[0].ch == deskCore::g_learnAnyChannel
+				&& desk.mappings()[1].cc == 1 && desk.mappings()[1].ch == 2, "knobs: the any-channel mapping follows the knob row's CC, the channel-specific one stays");
+			check(saved.back().find("mappings")->asArray()[0].find("cc")->asNumber() == 41 && saved.back().find("knobCcs")->asArray()[0].asNumber() == 41,
+				"and both are saved in the same step");
+			const auto project = saved.back();
+			desk.loadSetup(deskSetupToJson({}));
+			check(desk.mappings().empty(), "a project without mappings: none");
+			check(desk.loadSetup(project).empty() && desk.mappings().size() == 2 && desk.mappings()[1].invert
+				&& desk.mappings()[1].mode == deskCore::LearnMode::RelativeSigned, "a project's mappings load");
+			desk.tick();
+			bool told = false;
+			for(const auto& m : page)
+				if(m.find("type")->asString() == "setup" && m.find("doc")->find("mappings") && m.find("doc")->find("mappings")->asArray().size() == 2)
+					told = true;
+			check(told, "and the setup document the page gets has them");
+			std::vector<std::string> bad;
+			const auto parsed = deskSetupFromJson(*elektronData::json::parse(R"({"schema":"md-desk/setup","version":1,"mappings":[
+				{"ch":0,"cc":5,"t":2,"i":7},{"ch":0,"cc":6,"t":16,"i":0},{"ch":0,"cc":7,"t":0,"i":25}]})"), bad);
+			check(parsed.mappings.size() == 1 && bad.size() == 2 && bad[0].find("$.mappings[1]") == 0 && bad[1].find("$.mappings[2]") == 0,
+				"a mapping outside the learn limits (track 16, parameter 25) is left out alone, with its path");
+			desk.loadSetup(deskSetupToJson({}));
+			check(deskCore::g_learnMaxMappings == 128 && mdDesk::g_mdSetupSpec.learn.tracks == 16 && mdDesk::g_mdSetupSpec.learn.pages == 0
+				&& mdDesk::g_mdSetupSpec.learn.params == 25, "the Machinedrum's learn limits: 16 tracks, no pages, 25 parameters (24 kit values and the level)");
+		}
+
 		// B-123: the page's solo and the mutes the person had before it are kept with the project
 		const auto last = [&page](const char* _type) -> const Value*
 		{

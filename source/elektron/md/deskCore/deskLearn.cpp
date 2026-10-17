@@ -133,6 +133,26 @@ namespace deskCore
 		return out;
 	}
 
+	std::vector<LearnMapping> moveKnobCcs(const std::vector<LearnMapping>& _list, const std::vector<uint8_t>& _from, const std::vector<uint8_t>& _to)
+	{
+		std::vector<LearnMapping> out;
+		out.reserve(_list.size());
+		for(const auto& m : _list)
+		{
+			auto moved = m;
+			if(m.ch == g_learnAnyChannel)
+				for(size_t i = 0; i < _from.size() && i < _to.size(); ++i)
+					if(_from[i] == m.cc && _to[i] != _from[i] && _to[i] <= 127)
+					{
+						moved.cc = _to[i];
+						break;
+					}
+			if(!hasKey(out, moved))
+				out.push_back(moved);
+		}
+		return out;
+	}
+
 	std::vector<LearnOverride> overridesOf(const LearnMapping& _m, const FirmwareChannels& _channels, const FirmwareCcMap& _map)
 	{
 		std::vector<LearnOverride> out;
