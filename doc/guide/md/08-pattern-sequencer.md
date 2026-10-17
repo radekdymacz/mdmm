@@ -412,6 +412,7 @@ A parameter lock gives one parameter its own value on one step. The step has to 
 3. Drag over the bars of the **Lock lane**. Each step with a trig takes the value where the pointer crosses it. Steps with no trig are hatched and take no lock.
 4. Hold [⇧] and drag to draw a ramp, a straight line from where you press to where you let go.
 5. To move one lock, scroll on its step. Four values a notch, or one with [⇧].
+6. To make a lock glide to the next trig, drag its dot sideways. See "Parameter lock slide".
 
 ![The lock lane](shot:md-lock-lane)
 
@@ -450,9 +451,19 @@ The trigs and the locks of the other values stay. Press the value first, or with
 NOTE: The machine removes the locks of the track it has selected, from the knob page that holds the value. The editor selects the track and shows that page before it holds the keys, so the first step or two after the press may keep their lock.
 
 ## PARAMETER LOCK SLIDE
-<!-- rows: MD-141 MD-142 @97d5ee -->
+<!-- rows: MD-141 MD-142 @c3aa80 -->
 
-A slide glides the value of a lock from the previous step to this one, instead of jumping.
+A slide makes a locked value glide instead of jump. Without a slide a lock changes the value exactly when its step plays. A step that slides takes its locks gradually to the next trig.
+
+The rule, as the machine keeps it:
+
+- A slide is a mark on a step, and only the parameters locked on that step glide. A parameter without a lock on that step stays as it is.
+- The glide runs in a straight line from the lock to the value on the next trig of the track, and it arrives exactly when that trig plays. The speed follows the tempo.
+- The value on the next trig is its lock of the parameter. If that trig has no lock of the parameter, the glide ends at the kit value.
+- A lock further on is not the target. A glide always ends on the next trig, whether or not that trig locks the parameter.
+- The mark belongs to the track, or to the whole pattern when **All tracks** is on. With **All tracks** the step slides on every track that has a trig there.
+
+To set a slide on the grid:
 
 1. Click a step with a trig, with [⇧] and [⌥] held. The step shows a slide mark.
 2. Do the same again to take it off.
@@ -460,5 +471,15 @@ A slide glides the value of a lock from the previous step to this one, instead o
 You can also click **Slide** in the bar under the grid. Then a click or a drag on steps with a trig paints slides. Press {key:trig-type} to paint trigs again.
 
 With **Slide** lit, choose **All tracks** or **This track**. With **All tracks** the slide goes on the step of every track, and the step legend says "(all)". With **This track** each track has its own slides.
+
+To draw a slide in the lock lane:
+
+1. Select the track and the parameter, as in "Lock a parameter".
+2. Press on the dot at the top of a lock bar and drag sideways to the right. A dashed ramp shows where the glide goes: to the next trig of the track, whatever further you drag. If that trig has a lock of the parameter the ramp ends at the top of its bar. If it has none the ramp ends on the kit line.
+3. Let go. The step slides, in one undo step.
+
+Hold [⇧] on a lock bar and drag sideways out of its column for a rubber band instead. A line follows the pointer and the next trig is marked as the target. Drop on that step and it slides. Drop anywhere else, press [Esc], or move left of the start, and nothing is set. Dragging up and down inside the column is the ramp of locks, as before.
+
+Click the line of a ramp to take the slide off. With **All tracks** that takes it off every track. Dragging up or down from the dot changes the lock, as before. A lock on a step without a trig is never played, so no ramp starts or ends there.
 
 To copy, paste or clear the slides of a track, tick **Slide** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (see "Track copy"). A selection copy also takes the slides with the steps.

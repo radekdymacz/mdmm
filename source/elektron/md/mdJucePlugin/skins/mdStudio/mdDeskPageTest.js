@@ -55,7 +55,7 @@ const src = FILES.map(f => fs.readFileSync(path.join(__dirname, f), "utf8").repl
 const P = new Function("scope", "with (scope) {\n" + src + `
 ;let renders = 0;
 render = () => { renders++; }; syncControls = () => { }; renderTop = () => { }; renderSub = () => { }; redraw = () => { }; refreshAudible = () => { };
-return { overridesText, learnName, progressText, onLearnDoc, learnPaused, learnMax, toggleLearn, kitHit, kitGrab, kitAt, laneAt, slideGrab, slideNext, bandLive, bandEsc, drawSlides, endLaneDraw, valueHTML, kitLabelHTML, laneFmt, grp, Gesture, Boot, hostTempoRefused, l2step, onTelemetry, pauseNow, playsText, songLcd, S, Docs, Overlay, Held, PREP, scheduleRender, clickSteps, secAction, selStart, stepMenu, stepMenuItems, Modifiers, selCut, selDuplicate, clearSel, setSel, endSelect, interacting, genEnsure, genSpec, setGenSpec, clickTrackKeys, userMute, soloWrites, muteSel, msSet, prepToggle, unmuteAll, Keys,
+return { overridesText, learnName, progressText, onLearnDoc, learnPaused, learnMax, toggleLearn, kitHit, kitGrab, kitAt, laneAt, slideGrab, slideNext, slideVal, bandLive, bandEsc, drawSlides, endLaneDraw, valueHTML, kitLabelHTML, laneFmt, grp, Gesture, Boot, hostTempoRefused, l2step, onTelemetry, pauseNow, playsText, songLcd, S, Docs, Overlay, Held, PREP, scheduleRender, clickSteps, secAction, selStart, stepMenu, stepMenuItems, Modifiers, selCut, selDuplicate, clearSel, setSel, endSelect, interacting, genEnsure, genSpec, setGenSpec, clickTrackKeys, userMute, soloWrites, muteSel, msSet, prepToggle, unmuteAll, Keys,
 	get V() { return V; }, setToast(f) { const was = toast; toast = f; return was; }, setV(v) { V = v; }, view, get renders() { return renders; }, get pending() { return pendingRender; } }; }`)(scope);
 
 /* the machine document: its mutes (machine.desk.mutes) as the machine has them */
@@ -765,9 +765,12 @@ return { Bridge, cmd, asked, errors, banners, S, Drop, get V() { return V; }, se
 	P.S.lane = "FLTF";
 	const FL = P.V.locks.get("0:FLTF");
 	check(!!FL && FL.get(4) === 100 && FL.get(6) === 90, "the test pattern: FLTF locks 0=20, 4=100, 6=90 (no trig), 8=60: " + (FL ? [...FL].join(" ") : "none"));
-	/* the rule: the next lock of this parameter on a step with a trig (the lock on step 6 has none) */
-	check(P.slideNext(0, "FLTF", 0) === 4 && P.slideNext(0, "FLTF", 4) === 8 && P.slideNext(0, "FLTF", 8) === null && P.slideNext(0, "FLTF", 5) === 8, "the next lock after 0 is 4, after 4 is 8 (never the lock on step 6, which has no trig), after 8 none");
-	check(P.slideNext(0, "VOL", 0) === null, "a parameter with no locks has no next lock");
+	/* the rule (measured on the firmware, gapProbesFirmwareTest w13slide): the glide ends on the track's next trig, whether that trig locks
+	   the parameter or not; a lock on a step without a trig (step 6) is never a target */
+	check(P.slideNext(0, "FLTF", 0) === 1 && P.slideNext(0, "FLTF", 1) === 4 && P.slideNext(0, "FLTF", 4) === 8 && P.slideNext(0, "FLTF", 8) === 12 && P.slideNext(0, "FLTF", 12) === null,
+		"the next trig after 0 is 1, after 4 is 8 (never step 6, which has no trig), after 12 none");
+	check(P.slideNext(0, "VOL", 4) === 8, "it is the track's next trig, not the parameter's next lock");
+	check(P.slideVal(0, "FLTF", 8) === 60 && P.slideVal(0, "FLTF", 12) === 64, "the value on a trig is its lock (60 on step 9) or the kit value (64) when it has none");
 
 	/* a press on a dot: a maybe-slide; a press off the dot, on the kit line, with Alt, with a right button is not */
 	sent.length = 0;
@@ -808,8 +811,11 @@ return { Bridge, cmd, asked, errors, banners, S, Drop, get V() { return V; }, se
 	check(P.V.tracks[0].slide.has(4) && !P.Held.now && P.Gesture.id === 0, "the page shows the slide at once and the gesture is over");
 	P.drawSlides();
 	check(/M90 \S+ L170 \S+ /.test(svg.innerHTML) && !/stroke-dasharray/.test(svg.innerHTML), "a set slide is a solid ramp");
-	/* the line is drawn only between locks on steps with a trig: a slide on step 8 has no later lock, none on step 6 */
-	P.drawSlides(); check((svg.innerHTML.match(/stroke-width="2"/g) || []).length === 1, "one ramp: the last lock (step 9) has no later lock to slide to");
+	P.drawSlides(); check((svg.innerHTML.match(/stroke-width="2"/g) || []).length === 1, "one ramp: only step 5 slides");
+	/* a slide on the lock of step 9: the next trig is step 13, which holds no lock of FLTF, so the ramp ends on the kit line there (64) */
+	P.Docs.patterns[5] = pattern(0, [4, 8]); P.Overlay.clear(); P.setV(P.view()); P.drawSlides();
+	{ const m = /M170 (\S+) L250 (\S+) /.exec(svg.innerHTML); check(!!m && Math.abs(+m[1] - (dotY(60) - 94)) < 1e-6 && Math.abs(+m[2] - (dotY(64) - 94)) < 1e-6, "its end is at the kit value's height (64), its start at the lock's (60): " + (m ? m[1] + " " + m[2] : "no ramp")); }
+	P.Docs.patterns[5] = pattern(0, [4]); P.Overlay.clear(); P.setV(P.view()); sent.length = 0;
 
 	/* a click on the ramp's line takes the slide off; a drag from it hands back to the lane */
 	sent.length = 0;
@@ -831,7 +837,7 @@ return { Bridge, cmd, asked, errors, banners, S, Drop, get V() { return V; }, se
 	P.laneAt(at(4, dotY(100) + 30 - 3, { shiftKey: true, clientX: 4 * 20 + 11 }));
 	check(P.Held.as("lane")?.band === "maybe", "inside its column, a few px of movement keep it a maybe");
 	P.laneAt(at(5, dotY(100) + 5, { shiftKey: true, clientX: 5 * 20 + 6 }));
-	check(P.Held.as("lane")?.band === "on" && P.Held.as("lane").nx === 8 && !!P.bandLive(), "out of the column to the right it is the band, its only target the next lock: step 9 (0-based 8)");
+	check(P.Held.as("lane")?.band === "on" && P.Held.as("lane").nx === 8 && !!P.bandLive(), "out of the column to the right it is the band, its only target the next trig: step 9 (0-based 8)");
 	P.drawSlides();
 	check(/r="9"/.test(svg.innerHTML) && /M90 \S+ L106 /.test(svg.innerHTML), "a line follows the pointer from the dot and a ring marks the target");
 	P.laneAt(at(8, dotY(60), { shiftKey: true, clientX: 8 * 20 + 8 }));
