@@ -19,7 +19,7 @@ function stepCls(i, s) {
 /* the step gestures, behind a small ? key at the right of the bar under the grid (a click: the list of keys) */
 function stepLegend() {
 	const row = (cls, what, how) => `<span>${cls != null ? `<i class="lg on ${cls}"></i>` : `<i class="lg none"></i>`}<b>${what}</b>${how}</span>`;
-	return `<span class="steplegend"><button class="glegkey" id="steplegend" aria-label="Step gestures" aria-describedby="steplegpop">?</button><span class="legend glegpop" id="steplegpop" role="tooltip">${row("", "Trig", "click")}${row("acc", "Accent", "shift-click" + (V.accAll ? " (all)" : ""))}${row("sl", "Slide", "alt-shift-click" + (V.slideAll ? " (all)" : ""))}${row("sw", "Swing", "choose Swing in the trig types, then click" + (V.swingAll ? " (all)" : ""))}${row("lk", "Has locks", "a lock on the step")}${row(null, "Select", "⌘-click a step, ⌘-drag steps, or drag in the step numbers; ⌘⇧-click extends; then ⌘C ⌘X ⌘V ⌘D, Delete, Esc. ⌘-drag the selection: a copy")}${row(null, "Menu", "right-click a step: trig, accent, slide, copy, paste, duplicate, clear, fill every 2nd / 4th")}<small>? the keyboard and every gesture</small></span></span>`;
+	return `<span class="steplegend"><button class="glegkey" id="steplegend" aria-label="Step gestures" aria-describedby="steplegpop">?</button><span class="legend glegpop" id="steplegpop" role="tooltip">${row("", "Trig", "click")}${row("acc", "Accent", "shift-click" + (V.accAll ? " (all)" : ""))}${row("sl", "Slide", "alt-shift-click" + (V.slideAll ? " (all)" : ""))}${row(null, "Slide in the lock lane", "drag a lock's dot sideways, or ⇧-drag out of a lock bar, to this parameter's next lock; click the ramp to remove it")}${row("sw", "Swing", "choose Swing in the trig types, then click" + (V.swingAll ? " (all)" : ""))}${row("lk", "Has locks", "a lock on the step")}${row(null, "Select", "⌘-click a step, ⌘-drag steps, or drag in the step numbers; ⌘⇧-click extends; then ⌘C ⌘X ⌘V ⌘D, Delete, Esc. ⌘-drag the selection: a copy")}${row(null, "Menu", "right-click a step: trig, accent, slide, copy, paste, duplicate, clear, fill every 2nd / 4th")}<small>? the keyboard and every gesture</small></span></span>`;
 }
 /* The trig types (wave 3, DESIGN-machine-menus.md §2): Trig · Accent · Swing · Slide in the bar under the grid say what a
    click on a step paints, as the machine's FUNCTION + B/F, C/G, D/H windows say what its TRIG keys do. The lit key is
@@ -60,7 +60,7 @@ function renderSeq() {
 	V.tracks.forEach((t, i) => { h += `<div class="r ${i === S.sel ? "sel" : ""} ${audible(i) ? "" : "off"}" data-row="${i}" style="grid-template-columns:${cols()};--c:${FAMC[t.fam]}">${steps().map(s => `<button class="${stepCls(i, s)}" data-t="${i}" data-s="${s}" aria-label="Track ${i + 1} step ${s + 1}" aria-pressed="${t.trigs[s]}"></button>`).join("")}</div>`; });
 	h += `</div></div><div class="genbar">${trigTypes()}${stepLegend()}${pageCtl()}</div><div class="lanewrap"><div class="lanetop"><span class="cap">Lock lane · ${S.sel + 1} ${V.tracks[S.sel].name} · <b id="lanename">${laneLabel(V.tracks[S.sel].m, S.lane, Cat)}</b> <span class="lanescale">${bipLane() ? "L 64 · centre · R 63" : "0–127"}</span></span><span class="lockbudget" id="lockbudget"></span>${V.mode === "CLASSIC" ? `<span class="warnline" title="Locks stay in the pattern but do nothing until you switch to EXTENDED.">CLASSIC: locks muted</span>` : ""}${laneToolsHtml()}</div>
 </div>
-  <div class="scroll" id="lanescroll"><div class="lane" id="lane" style="grid-template-columns:${cols()}"></div></div></div>`;
+  <div class="scroll" id="lanescroll"><div class="lanebox"><div class="lane" id="lane" style="grid-template-columns:${cols()}"></div><svg class="lanesvg" id="lanesvg" aria-hidden="true"></svg></div></div></div>`;
 	$("#main").innerHTML = h; renderLane(); syncScroll();
 }
 /* Mockup v57: bipolar lanes draw from the centre (64): up = right / boost / louder, down = left / cut.
@@ -87,6 +87,41 @@ function renderLane() {
 		const on = tr.trigs[s], v = m?.get(s);
 		return `<div class="lb ${on ? "" : "none"} ${s % 16 === 0 && s !== vis()[0] ? "gap" : ""} ${V.playing && s === S.step ? "ph" : ""} ${inSel(S.sel, s) ? "vsel" : ""}" data-s="${s}">${on ? `<div class="base" style="--bf:${(base / 127).toFixed(4)}"></div>${bipLane() ? `<div class="mid"></div>` : ""}${v != null ? barHTML(v) + valueHTML(v) : ""}${s === last ? kitLabelHTML(base) : ""}` : ""}</div>`;
 	}).join("");
+	requestAnimationFrame(drawSlides);
+}
+/* A slide in the lane (I-054): between the locks of the lane's parameter on steps with a trig, a ramp drawn on top of the bars:
+   a translucent fill down to the lane floor, a line from bar top to bar top with a light halo, the starting dot. A step that
+   slides, on this track (All tracks: the pattern's slide row, so every track with a trig there), glides to this parameter's
+   next lock. While a dot is dragged right the same ramp is dashed (the preview); while Shift is held on a lock bar and the
+   pointer is out of its column, a rubber band follows the cursor and a ring marks the only target. Drawn after the lane, in
+   an SVG over it that takes no pointer. */
+function drawSlides() {
+	const svg = $("#lanesvg"), lane = $("#lane"); if (!svg || !lane) return;
+	const t = S.sel, tr = V.tracks[t], lm = V.locks.get(lk(t, S.lane)); svg.innerHTML = ""; if (!lm) return;
+	const box = lane.getBoundingClientRect(), ink = cssv("--ink") || "#000", hl = cssv("--lcd") || "#fff", pv = Held.as("lane")?.pv;
+	const locked = [...lm.keys()].filter(x => tr.trigs[x]).sort((a, b) => a - b);
+	const pt = (el, v) => { const r = el.getBoundingClientRect(); return { x: r.left - box.left + r.width / 2, y: slideY(r, v) - box.top, floor: r.bottom - box.top - 3 }; };
+	let d = "";
+	locked.forEach(s => {
+		const prev = pv === s;
+		if (!tr.slide.has(s) && !prev) return;
+		const nx = locked.find(x => x > s); if (nx == null) return;
+		const a = lane.querySelector(`.lb[data-s="${s}"]`), b = lane.querySelector(`.lb[data-s="${nx}"]`); if (!a) return;
+		const A = pt(a, lm.get(s)), B = b ? pt(b, lm.get(nx)) : { x: box.width, y: slideY(a.getBoundingClientRect(), lm.get(nx)) - box.top };
+		const line = `M${A.x} ${A.y} L${B.x} ${B.y}`, fill = `${line} L${B.x} ${A.floor} L${A.x} ${A.floor} Z`;
+		d += `<path d="${fill}" fill="${hl}" fill-opacity=".45"/><path d="${fill}" fill="${ink}" fill-opacity=".18"/><path d="${line}" fill="none" stroke="${hl}" stroke-width="5" stroke-linecap="round"/><path d="${line}" fill="none" stroke="${ink}" stroke-width="2" stroke-linecap="round"${prev && !tr.slide.has(s) ? ' stroke-dasharray="6 4"' : ""}/><circle cx="${A.x}" cy="${A.y}" r="4" fill="${ink}" stroke="${hl}" stroke-width="1.5"/><circle cx="${B.x}" cy="${B.y}" r="3" fill="${ink}" stroke="${hl}" stroke-width="1.5"/>`;
+	});
+	const lv = bandLive();
+	if (lv) {	/* the rubber band: from the lock to the cursor, a ring on the only target */
+		const a = lane.querySelector(`.lb[data-s="${lv.s}"]`);
+		if (a) {
+			const A = pt(a, lm.get(lv.s)), xc = lv.cur.x - box.left, yc = lv.cur.y - box.top;
+			d += `<path d="M${A.x} ${A.y} L${xc} ${yc}" fill="none" stroke="${hl}" stroke-width="5" stroke-linecap="round"/><path d="M${A.x} ${A.y} L${xc} ${yc}" fill="none" stroke="${ink}" stroke-width="2" stroke-linecap="round"/><circle cx="${A.x}" cy="${A.y}" r="4" fill="${ink}" stroke="${hl}" stroke-width="1.5"/>`;
+			const b = lv.nx != null && lane.querySelector(`.lb[data-s="${lv.nx}"]`);
+			if (b) { const B = pt(b, lm.get(lv.nx)); d += `<circle cx="${B.x}" cy="${B.y}" r="9" fill="${hl}" fill-opacity=".6" stroke="${ink}" stroke-width="2"/><circle cx="${B.x}" cy="${B.y}" r="3" fill="${ink}"/>`; }
+		}
+	}
+	svg.setAttribute("width", box.width); svg.setAttribute("height", box.height); svg.innerHTML = d;
 }
 /* I-035: a lock's value as a number at its bar's end (shown on hover and on a selected step) and the kit value on the
    kit line at the lane's right end; both in the form the Kit page shows (a signed parameter: -64 to +63) */

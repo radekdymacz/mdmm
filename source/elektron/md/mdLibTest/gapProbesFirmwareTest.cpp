@@ -2383,6 +2383,122 @@ namespace
 		result("W12e MD extend", line);
 	}
 
+	// ---- W13 MD: the parameter-lock slide (MD-141) ---------------------------------------------------------------------
+	// Where does a locked value glide on a SLIDE step: to the next lock of that parameter, or to the next trig's value, and
+	// what when the next trig holds no lock of it? Track 1, one parameter, 16 steps; a main-RAM snapshot every 10 ms while
+	// the pattern plays; the bytes that ramp through values between the two locks in the first case are the live value.
+
+	struct SlideCase
+	{
+		const char* name;
+		uint64_t trigs;
+		std::vector<std::pair<int, int>> locks;		// step, value of the probed parameter
+		std::vector<std::pair<int, int>> other;		// step, value of a second parameter
+		bool slide;
+	};
+
+	void w13slide(const Bytes& _rom)
+	{
+		std::puts("== W13 MD: the parameter-lock slide");
+		constexpr size_t param = 2, param2 = 3;
+		const std::vector<SlideCase> cases = {
+			{"A  locks 0=0 8=127, trigs 0 4 8 12, slide@0", 0x1111, {{0, 0}, {8, 127}}, {}, true},
+			{"A0 same, no slide", 0x1111, {{0, 0}, {8, 127}}, {}, false},
+			{"B  locks 0=0 4=64 8=127, slide@0", 0x1111, {{0, 0}, {4, 64}, {8, 127}}, {}, true},
+			{"C  locks 0=0 8=127, trigs 0 8 only, slide@0", 0x101, {{0, 0}, {8, 127}}, {}, true},
+			{"D  lock 0=0 only, trigs 0 4 8 12, slide@0", 0x1111, {{0, 0}}, {}, true},
+			{"E  locks 0=0 8=127, other param locked at 4, slide@0", 0x1111, {{0, 0}, {8, 127}}, {{4, 100}}, true},
+		};
+		struct Snap { int step; Bytes ram; };
+		std::vector<std::vector<Snap>> all;
+		for(const auto& c : cases)
+		{
+			Rig r(_rom, false);
+			auto p = *ed::decodeMdPattern(r->request(ed::mdPatternRequest(0), ed::g_mdPatternDump));
+			p.position = 0;
+			p.length = 16;
+			p.trigs.fill(0);
+			p.trigs[0] = c.trigs;
+			p.lockMasks.fill(0);
+			for(auto& row : p.lockRows)
+				row.fill(ed::MdPattern::g_noLock);
+			for(const auto& [s, v] : c.locks)
+				p = *ed::withLock(p, 0, param, static_cast<size_t>(s), static_cast<uint8_t>(v));
+			for(const auto& [s, v] : c.other)
+				p = *ed::withLock(p, 0, param2, static_cast<size_t>(s), static_cast<uint8_t>(v));
+			p.lockedRows = static_cast<uint8_t>(ed::usedLockRows(p));
+			p.slidePattern = c.slide ? 1 : 0;
+			p.slideEditAll = 1;
+			p.trackSlide.fill(0);
+			p.accentPattern = p.swingPattern = 0;
+			r->send(ed::encodeMdPattern(p));
+			r.run(300);
+			r.loadPattern(0);
+			key(r, md::PanelControl::Play);
+			std::vector<Snap> snaps;
+			int last = -1, wraps = 0;
+			for(int i = 0; i < 400 && wraps < 2; ++i)
+			{
+				r.run(20);
+				const int st = r.step();
+				if(st < last)
+					++wraps;
+				last = st;
+				if(wraps == 1 && st <= 12)
+					snaps.push_back({st, r->snapshotRam()});
+			}
+			halt(r);
+			std::printf("  %s: %zu snapshots\n", c.name, snaps.size());
+			all.push_back(std::move(snaps));
+		}
+		// the live value: in the control (A0, no slide) a byte that holds one value over steps 1..7 and another, >= 100 away,
+		// over steps 9..12 (the lock on step 0, then the lock on step 8); then the same bytes in every case
+		std::vector<size_t> cand;
+		const auto& a0 = all[1];
+		if(!a0.empty())
+			for(size_t ad = 0; ad < a0[0].ram.size(); ++ad)
+			{
+				int lo = -1, hi = -1;
+				bool ok = true;
+				for(const auto& s : a0)
+				{
+					const int v = s.ram[ad];
+					if(s.step >= 1 && s.step <= 7)
+					{
+						if(lo < 0) lo = v; else if(lo != v) { ok = false; break; }
+					}
+					else if(s.step >= 9)
+					{
+						if(hi < 0) hi = v; else if(hi != v) { ok = false; break; }
+					}
+				}
+				if(ok && lo >= 0 && hi >= 0 && std::abs(hi - lo) >= 100)
+					cand.push_back(ad);
+			}
+		std::printf("  candidates (steady 1..7, steady 9..12, 100 apart) in the control: %zu\n", cand.size());
+		for(size_t k = 0; k < cand.size() && k < 4; ++k)
+		{
+			const auto ad = cand[k];
+			std::printf("  -- 0x%06zx\n", 0x200000 + ad);
+			for(size_t ci = 0; ci < cases.size(); ++ci)
+			{
+				std::string line;
+				int ls = -1;
+				for(const auto& s : all[ci])
+				{
+					if(s.step != ls)
+					{
+						line += " | s" + std::to_string(s.step) + ":";
+						ls = s.step;
+					}
+					line += " " + std::to_string(s.ram[ad]);
+				}
+				std::printf("    %s\n      %s\n", cases[ci].name, line.c_str());
+			}
+		}
+		result("W13 MD slide", "candidates " + std::to_string(cand.size()));
+	}
+
 	// ---- W12f MD: where the firmware counts a song row's repeats (MD-147) -------------------------------------------------
 	// Song 8: row 0 = A02 (8 steps) x4 (REPEATS 3), row 1 = A03 x3 (REPEATS 2), END. SONG mode, PLAY; main RAM snapshot in
 	// the middle of every pass (step 4); the bytes that count the passes of a row (up or down by one a pass, again for the
@@ -2638,6 +2754,8 @@ int main(const int _argc, char** _argv)
 			w12stop(mmRom, true);
 		if(!mdRom.empty() && only == "w12extend")
 			w12extend(mdRom);
+		if(!mdRom.empty() && only == "w13slide")
+			w13slide(mdRom);
 		if(!mdRom.empty() && only == "w12repeats")
 			w12repeats(mdRom);
 		if(!mmRom.empty() && only == "w12patkit")

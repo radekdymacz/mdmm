@@ -8,6 +8,8 @@
 /* ===== The lock lane: draw (Alt erases), Shift: a ramp ===== */
 function laneAt(e) {
 	const d = Held.as("lane"); if (!d) return;
+	/* a slide being drawn (a dot dragged sideways, a Shift rubber band, a press on a ramp): its own, until it hands the press back */
+	if (d.slide || d.cut || d.band) { if (slideAt(e)) return; }
 	/* a press near the kit line is "maybe": moved more than KIT_MOVE px up or down it is the kit drag, released without
 	   that move it was a click on the lane (endLaneDraw) */
 	if (d.kit === "maybe") { if (Math.abs(e.clientY - d.y0) <= KIT_MOVE) return; Held.with("lane", { kit: true }); $("#lane").classList.add("kitdrag"); kitAt(e); return; }
@@ -21,8 +23,118 @@ function laneAt(e) {
 	Held.with("lane", { touched: new Set(d.touched).add(s) }); renderTop();
 }
 function endLaneDraw() { let d = Held.as("lane"); if (!d) return;
+	if (slideEnd()) return;
+	d = Held.as("lane");
 	if (d.kit === "maybe") { d = Held.with("lane", { kit: false, erase: false, ramp: false, touched: new Set() }); laneAt(d.down); }
 	if (d.ramp) rampSend(); Held.end("lane"); Gesture.end(); $("#lane")?.classList.remove("kitdrag"); refreshRow(S.sel); renderLane(); }
+
+/* ===== A slide drawn in the lock lane (0.8, I-054; the Monomachine lane's, in this lane's terms). The machine's slide is a
+   flag on a step: on a step that slides, the parameters it locks glide to their next lock (manual p. 49; the rule is
+   measured, doc/guide/md/08-pattern-sequencer.md "Parameter lock slide"). Whether the flag belongs to one track or to the
+   whole pattern (EDIT ALL, All tracks) is the trig type's choice, and setMark (mdDeskSeq.js) writes it as the Slide key
+   and ⌥⇧-click do: one slide intent. So the lane draws it from a lock's dot sideways to the step that parameter glides to,
+   and the drag only ever targets that step. Three gestures, all in the one "lane" slot:
+   - slide: a press on the dot of a lock, dragged sideways: a dashed preview ramp, the flag set at the release;
+   - band: Shift on a lock bar, dragged out of its column: a rubber band to the cursor, set when it is dropped on the target
+     (Esc, a drop elsewhere or left of the start cancels); up and down inside the column stays the Shift ramp of locks;
+   - cut: a press on the line of a ramp: a click takes the flag off (every track's, with All tracks).
+   Up and down from the dot is the lane's own (the lock's value, or the kit line). ===== */
+const DOT_HIT = 8, LINE_HIT = 5, SLIDE_MOVE = 4;
+/* the next lock of the lane's parameter after step s, on a step with a trig (a lock on a step without one is never played) */
+function slideNext(t, pid, s) {
+	const tr = V.tracks[t], m = V.locks.get(lk(t, pid)); if (!m) return null;
+	return [...m.keys()].filter(x => x > s && tr.trigs[x]).sort((a, b) => a - b)[0] ?? null;
+}
+/* where a lock's bar ends in its key (the bars' scale: 3 px in from the bottom, a bipolar one from the centre) */
+function slideY(r, v) { return bipLane() ? r.bottom - r.height * (.5 + (v - 64) / (v >= 64 ? 63 : 64) * .5) : r.bottom - 3 - (r.height - 6) * (v / 127); }
+function slidePt(el, v) { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: slideY(r, v) }; }
+function segDist(p, a, b) { const dx = b.x - a.x, dy = b.y - a.y, l = dx * dx + dy * dy, k = l ? clamp(((p.x - a.x) * dx + (p.y - a.y) * dy) / l, 0, 1) : 0; return Math.hypot(p.x - a.x - k * dx, p.y - a.y - k * dy); }
+/* the key a press is on (the gap between two keys is the lane itself: the key whose column it is); Alt is erase, never a slide */
+function slideKey(e) {
+	const lane = $("#lane"); if (e.button !== 0 || e.altKey || !lane || !e.target.closest) return null;
+	let el = e.target.closest(".lb");
+	if (!el && e.target === lane) el = $$("#lane .lb").find(c => e.clientX < c.getBoundingClientRect().right);
+	return el && lane.contains(el) ? el : null;
+}
+const slideDown = e => ({ button: 0, clientX: e.clientX, clientY: e.clientY, target: e.target, pointerId: e.pointerId, altKey: false, shiftKey: !!e.shiftKey, preventDefault() { } });
+/* the lane's own press, replayed from where the slide gesture began (a click, a vertical drag): as if there were no slide */
+function slideHandBack(dn, e) {
+	if (!dn.shiftKey && kitHit(dn)) Held.begin("lane", { kit: "maybe", y0: dn.clientY, down: { clientX: dn.clientX, clientY: dn.clientY } });
+	else { Held.begin("lane", { erase: false, ramp: !!dn.shiftKey, touched: new Set() }); laneAt(dn); }
+	if (e) laneAt(e);
+}
+/* a press: the dot of a lock on a step with a trig, the line of a ramp, or Shift on a lock bar; true when the slide gesture took it */
+function slideGrab(e) {
+	const el = slideKey(e); if (!el) return false;
+	const t = S.sel, tr = V.tracks[t], s0 = +el.dataset.s, lm = V.locks.get(lk(t, S.lane)); if (!lm || pidx(t, S.lane) < 0) return false;
+	if (e.shiftKey) {	/* Shift on a lock bar: the slide's rubber band; on any other step Shift is the lane's ramp of locks */
+		if (!tr.trigs[s0] || lm.get(s0) == null) return false;
+		const r = el.getBoundingClientRect();
+		Held.begin("lane", { band: "maybe", s: s0, down: slideDown(e), x0: r.left, x1: r.right }); Gesture.begin(); grabPointer($("#lane"), e); e.preventDefault(); return true;
+	}
+	const p = { x: e.clientX, y: e.clientY }, v0 = lm.get(s0); let mode = null, s = s0;
+	if (tr.trigs[s0] && v0 != null) { const d = slidePt(el, v0); if (Math.hypot(p.x - d.x, p.y - d.y) <= DOT_HIT) mode = "slide"; }
+	if (!mode) for (const a of tr.slide) {
+		const nx = slideNext(t, S.lane, a), v = lm.get(a), ea = $(`#lane .lb[data-s="${a}"]`), eb = nx == null ? null : $(`#lane .lb[data-s="${nx}"]`);
+		if (!ea || !eb || v == null || !tr.trigs[a]) continue;
+		const pa = slidePt(ea, v);
+		if (segDist(p, pa, slidePt(eb, lm.get(nx))) <= LINE_HIT && !(a === s0 && tr.trigs[s0] && Math.hypot(p.x - pa.x, p.y - pa.y) <= DOT_HIT)) { mode = "cut"; s = a; break; }
+	}
+	if (!mode) return false;
+	Held.begin("lane", { [mode]: "maybe", s, down: slideDown(e) }); Gesture.begin(); grabPointer($("#lane"), e); e.preventDefault(); return true;
+}
+/* the rubber band being drawn (the pointer is out of its column, not cancelled), or null */
+function bandLive() { const d = Held.as("lane"); return d && d.band === "on" && !d.esc && d.cur && d.cur.x >= d.x0 ? d : null; }
+function bandEsc() { const d = Held.as("lane"); if (d && d.band === "on") { Held.with("lane", { esc: true }); drawSlides(); toast("Slide cancelled"); } }
+function bandAt(e) {
+	let d = Held.as("lane"); const t = S.sel;
+	if (d.band === "maybe") {
+		const dn = d.down;
+		if (e.clientX < d.x0 || e.clientX >= d.x1) d = Held.with("lane", { band: "on" });	/* out of the column sideways: the slide */
+		else { if (Math.abs(e.clientY - dn.clientY) <= SLIDE_MOVE) return true; slideHandBack(dn, e); return true; }	/* up and down inside it: the Shift ramp of locks */
+	}
+	const nx = slideNext(t, S.lane, d.s);
+	d = Held.with("lane", { cur: { x: e.clientX, y: e.clientY }, nx });
+	if (!d.told && e.clientX >= d.x0) { Held.with("lane", { told: 1 }); toast(nx == null ? "No later lock to slide to" : `Drop on step ${nx + 1}: this parameter's next lock`); }
+	drawSlides(); return true;
+}
+/* true when the event was the slide gesture's; false hands it back to the lane's own paint */
+function slideAt(e) {
+	let d = Held.as("lane"); const t = S.sel; if (!d) return false;
+	if (d.band) return bandAt(e);
+	if (d.cut === "maybe" || d.slide === "maybe") {
+		const dn = d.down, dx = e.clientX - dn.clientX, dy = e.clientY - dn.clientY;
+		if (Math.hypot(dx, dy) <= SLIDE_MOVE) return true;
+		if (d.cut === "maybe" || Math.abs(dy) > Math.abs(dx)) { slideHandBack(dn, e); return true; }	/* off the line, or up and down from the dot */
+		d = Held.with("lane", { slide: "on" });
+	}
+	if (d.slide !== "on") return false;
+	const nx = slideNext(t, S.lane, d.s), right = e.clientX > d.down.clientX + SLIDE_MOVE, was = d.pv, pv = right && nx != null ? d.s : null;
+	if (right && !d.told) { Held.with("lane", { told: 1 }); toast(nx == null ? "No later lock on this parameter to slide to" : `Slides to step ${nx + 1}, this parameter's next lock`); }
+	Held.with("lane", { pv });
+	if (was !== pv) drawSlides();
+	return true;
+}
+/* the release: true when the slide gesture ended it (a click on the dot, or a vertical drag, is the lane's: handed back, false) */
+function slideEnd() {
+	const d = Held.as("lane"); if (!d || !(d.slide || d.cut || d.band)) return false;
+	const t = S.sel, tr = V.tracks[t];
+	const done = () => { Held.end("lane"); Gesture.end(); $("#lane")?.classList.remove("kitdrag"); refreshRow(S.sel); renderLane(); return true; };
+	if (d.band === "maybe") { slideHandBack(d.down); return false; }
+	if (d.band) {
+		const live = bandLive(), nel = live && live.nx != null ? $(`#lane .lb[data-s="${live.nx}"]`) : null, nr = nel?.getBoundingClientRect(),
+			hit = !!nr && live.cur.x >= nr.left && live.cur.x < nr.right;
+		if (hit && !tr.slide.has(d.s)) setMark(TT_MARK.sld, t, d.s, true);
+		return done();
+	}
+	if (d.slide === "maybe") { slideHandBack(d.down); return false; }
+	if (d.cut === "maybe") {
+		if (tr.slide.has(d.s)) { setMark(TT_MARK.sld, t, d.s, false); toast(`Slide off on step ${d.s + 1}${V.slideAll ? " (every track: the pattern's slide row)" : ""}: its locked values jump again.`); }
+		return done();
+	}
+	if (d.pv != null && !tr.slide.has(d.s)) setMark(TT_MARK.sld, t, d.s, true);
+	return done();
+}
 
 /* ===== The lock lane's kit-value line (I-035): grab the line itself (a hit zone of KIT_HIT px each side of it) and
    drag: the kit value of the lane's parameter on the selected track changes, the edit the Kit page's knob makes
@@ -208,7 +320,8 @@ main.addEventListener("pointerdown", e => {
 	const c = e.target.closest("canvas.ed"); if (c) { const h = nearest(c, e); if (!h) return; Held.begin("editor", { c, k: h.k }); Gesture.begin(); grabPointer(c, e); e.preventDefault(); redraw(); return; }
 	const el = e.target.closest(".pc[data-g],.fader[data-g]"); if (el && ValueEdit.isOpenClick(e)) { e.preventDefault(); ValueEdit.open(el, ValueBox); return; }
 	if (el) { Held.begin("value", { el, x: e.clientX, y: e.clientY, v: getV(el), vert: el.classList.contains("fader") }); Gesture.begin(); grabPointer(el, e); el.classList.add("act"); e.preventDefault(); return; }
-	const lb = e.target.closest(".lb"); if (lb && kitGrab(e)) return;
+	const lb = e.target.closest(".lb"); if ((lb || e.target.id === "lane") && slideGrab(e)) return;
+	if (lb && kitGrab(e)) return;
 	if (lb) { Held.begin("lane", { erase: e.altKey, ramp: e.shiftKey && !e.altKey, touched: new Set() }); Gesture.begin(); grabPointer($("#lane"), e); laneAt(e); e.preventDefault(); }
 });
 main.addEventListener("pointermove", e => {
