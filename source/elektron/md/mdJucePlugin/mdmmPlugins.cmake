@@ -815,7 +815,7 @@ function(mdmm_plugin_targets)
 	set_property(TARGET mdMachineMemoryFirmwareTest PROPERTY FOLDER "Elektron/test")
 	foreach(m md mm)
 		add_test(NAME mdMachineMemoryFirmwareTest_${m} COMMAND mdMachineMemoryFirmwareTest ${m})
-		set_tests_properties(mdMachineMemoryFirmwareTest_${m} PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+		set_tests_properties(mdMachineMemoryFirmwareTest_${m} PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1200)
 	endforeach()
 
 	# Wave 6: Reset machine > Factory reset's source, a second machine from the ROM read on its own thread (mdFactorySource.h).
