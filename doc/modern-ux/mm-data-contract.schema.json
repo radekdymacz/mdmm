@@ -2760,7 +2760,7 @@
                 },
                 "paused": {
                   "type": "string",
-                  "description": "Why MIDI learn is paused (the HW MIDI engine: nothing is translated or captured); absent: it is not. LEARN says it and starts nothing."
+                  "description": "Why MIDI Learn is off right now (the HW MIDI engine: the host's MIDI in is the machine's own MIDI out); absent: not paused. The page says it and keeps LEARN off."
                 },
                 "left": {
                   "type": "array",

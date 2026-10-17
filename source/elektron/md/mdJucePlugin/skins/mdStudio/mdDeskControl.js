@@ -4,8 +4,48 @@
 
 /* ===== Control: the plug-in's MIDI Learn (jucePluginLib) as the backend ===== */
 function toggleLearn() {
+	const paused = learnPaused();
+	if (!S.ctl.learn && paused) { toast(paused); return; }	/* the HW MIDI engine: the host's MIDI in is the machine's own out */
+	if (!S.ctl.learn && Docs.learn && Docs.learn.mappings.length >= learnMax()) { toast(`The project holds ${learnMax()} mappings at most. Remove one to learn another.`); return; }
 	S.ctl.learn = !S.ctl.learn; S.ctl.learnT = null; document.body.classList.toggle("learn", S.ctl.learn); renderTop(); syncControls();
 	if (S.ctl.learn) toast("LEARN: click a value, then turn a knob on your MIDI controller."); else cmd("learnCancel");
+}
+/* ===== The learn document, in the page's words (DESIGN-learn-0.8.md, "Host to page") ===== */
+const LEARN_MAX = 128;	/* limits.max says it; the same number until the first document */
+function learnPaused() { return (Docs.learn && Docs.learn.paused) || ""; }
+function learnMax() { return (Docs.learn && Docs.learn.limits && Docs.learn.limits.max) || LEARN_MAX; }
+/* the plug-in's parameter name (learn.name, limits.params) to the page's display name for that track's machine */
+function learnName(t, i, name) { const tr = V.tracks[t]; return (tr && slots(tr.m, Cat)[i]) || name || "#" + (i + 1); }
+/* "Overrides the machine's CC 21 on channel 1: T1 DEC": what a mapping hides (mapping.overrides), per channel; "" when nothing */
+function overridesText(m) {
+	const ov = m.overrides || [];
+	if (!ov.length) return "";
+	const byCh = new Map();
+	for (const o of ov) { if (!byCh.has(o.ch)) byCh.set(o.ch, []); byCh.get(o.ch).push(o); }
+	const cap = 6; let shown = 0, text = [];
+	for (const [ch, list] of byCh) {
+		if (shown >= cap) break;
+		const take = list.slice(0, cap - shown); shown += take.length;
+		text.push(`channel ${ch + 1}: ${take.map(o => `T${o.t + 1} ${learnName(o.t, o.i, "")}`).join(", ")}${take.length < list.length ? ` +${list.length - take.length}` : ""}`);
+	}
+	const rest = ov.length - shown;
+	return `Overrides the machine's CC ${m.cc} on ${text.join("; ")}${rest > 0 ? `; +${rest} more` : ""}`;
+}
+function progressText(l) { return `Turn a knob on your controller both ways (${l.got} of ${l.need})`; }
+/* the learn document came (mdDeskRender.js): what the person is told once. A learn that finished names the CC, its channel,
+   the target and what it overrides; a project load that left items out says how many (the list is on the Control page) */
+function onLearnDoc(prev, next) {
+	const key = next.left && next.left.length ? next.left.join("\n") : "";
+	if (key && key !== S.ctl.leftSeen) toast(`${next.left.length} mapping${next.left.length === 1 ? "" : "s"} left out of the project: see the Control page.`);
+	S.ctl.leftSeen = key;
+	const was = prev && prev.mappings ? prev.mappings.length : 0;
+	if (prev && prev.learning && next.mappings.length > was) {
+		const m = next.mappings[next.mappings.length - 1], ov = overridesText(m);
+		S.ctl.sel = m.ch + ":" + m.cc; S.ctl.selT = null;	/* the Control page shows the new mapping's row */
+		toast(`CC ${m.cc} on ${m.ch === 255 ? "any channel" : "channel " + (m.ch + 1)} now moves T${m.t + 1} ${learnName(m.t, m.i, m.name)}.${ov ? " " + ov + "." : ""}`);
+	}
+	if (next.paused && S.ctl.learn) { S.ctl.learn = false; S.ctl.learnT = null; document.body.classList.remove("learn"); renderTop(); toast(next.paused); }	/* the engine changed under LEARN */
+	const lk = $("#learnkey"); if (lk) lk.title = next.learning ? progressText(next.learning) : "Learn a controller knob (L)";
 }
 /* App modulators: the page edits build a new Mods.doc (mdDeskMod.js) and it is sent whole; values
    and the CC rate come back. modInFlight is the id of a modSet not answered yet (the MM page's
@@ -66,9 +106,14 @@ function renderControl() {
 	const C = S.ctl;
 	if (C.sel == null || (C.sel.startsWith("app:") && !Mods.source(C.sel.slice(4))) || (!C.sel.startsWith("app:") && !rows.some(r => r.id === C.sel))) C.sel = rows[0].id;
 	const mapsOf = id => maps.filter(m => m.ch + ":" + m.cc === id);
+	const max = learnMax(), paused = learnPaused(), left = L.left || [];
+	const status = `<div class="lstat">
+  <span class="note ${maps.length >= max ? "hot" : ""}" id="lcount" title="The most mappings one project holds">${maps.length} of ${max} mappings</span>
+  ${paused ? `<span class="note paused" id="lpaused" role="status">${paused}</span>` : ""}
+  ${left.length ? `<div class="note leftout" id="lleft"><b>Left out when the project loaded (${left.length}):</b>${left.map(x => `<span>${x}</span>`).join("")}</div>` : ""}</div>`;
 	const mx = `<div class="mx"><span></span>${V.tracks.map((t, i) => `<span class="mxh" title="${t.name}"><b>${i + 1}</b><small>${t.m}</small></span>`).join("")}
   ${rows.map(src => { const ms = mapsOf(src.id); return `<button class="srch ${src.id === C.sel ? "sel" : ""} k-cc" data-src="${src.id}" style="--f:0%" title="${ms.length ? ms.length + " target" + (ms.length > 1 ? "s" : "") : "Not mapped: does nothing yet"}"><span class="sk">CC ${src.cc}</span><b>${src.label}</b><span class="sv mono">${ms.length ? ms.length : "–"}</span></button>
-   ${V.tracks.map((t, i) => { const ls = ms.filter(m => m.t === i); return `<button class="mxc ${ls.length ? "on" : ""} ${src.id === C.sel && C.selT === i ? "sel" : ""}" data-mxsrc="${src.id}" data-mxt="${i}" title="${ls.map(l => slots(t.m, Cat)[l.i] || l.name).join(", ") || "Map " + src.label + " to track " + (i + 1)}">${ls.slice(0, 2).map(l => `<i>${slots(t.m, Cat)[l.i] || l.name}</i>`).join("")}${ls.length > 2 ? `<i>+${ls.length - 2}</i>` : ""}</button>`; }).join("")}`; }).join("")}
+   ${V.tracks.map((t, i) => { const ls = ms.filter(m => m.t === i); return `<button class="mxc ${ls.length ? "on" : ""} ${src.id === C.sel && C.selT === i ? "sel" : ""}" data-mxsrc="${src.id}" data-mxt="${i}" title="${ls.map(l => learnName(i, l.i, l.name)).join(", ") || "Map " + src.label + " to track " + (i + 1)}">${ls.slice(0, 2).map(l => `<i>${learnName(i, l.i, l.name)}</i>`).join("")}${ls.length > 2 ? `<i>+${ls.length - 2}</i>` : ""}</button>`; }).join("")}`; }).join("")}
   ${Mods.doc.sources.map(modRow).join("")}</div>`;
 	const app = C.sel.startsWith("app:") ? Mods.source(C.sel.slice(4)) : null;
 	let insp;
@@ -76,17 +121,18 @@ function renderControl() {
 	else {
 		const row = rows.find(r => r.id === C.sel), selMaps = mapsOf(C.sel).filter(m => C.selT == null || m.t === C.selT);
 		const t = C.selT != null ? C.selT : C.addT;
-		insp = `<section class="card"><header><h3>${row.label} · CC ${row.cc}</h3><span>${row.ch === 255 ? "any channel" : "channel " + (row.ch + 1)} · from your MIDI controller · saved with the plug-in's MIDI Learn preset</span></header>
+		insp = `<section class="card"><header><h3>${row.label} · CC ${row.cc}</h3><span>${row.ch === 255 ? "any channel" : "channel " + (row.ch + 1)} · from your MIDI controller · saved with the project</span></header>
   ${row.knob >= 0 ? `<div class="irow"><span class="ilab">CC</span><span class="stepper"><button data-knobcc="-1" aria-label="Lower CC number">−</button><b class="mono">${row.cc}</b><button data-knobcc="1" aria-label="Higher CC number">+</button></span><span class="note">the CC your controller's knob ${row.knob + 1} sends; its targets follow</span></div>` : ""}
-  <div class="note">${L.learning ? `Learning <b>track ${L.learning.t + 1} ${slots(V.tracks[L.learning.t].m, Cat)[L.learning.i] || L.learning.name}</b>: turn a knob both ways.` : "Pick a target below, or press LEARN, click any value and turn a knob. The mapping moves the value through the plug-in's parameters, like host automation."}</div>
+  <div class="note" id="linfo">${L.learning ? `Learning <b>track ${L.learning.t + 1} ${learnName(L.learning.t, L.learning.i, L.learning.name)}</b>. ${progressText(L.learning)}.` : "Pick a target below, or press LEARN, click any value and turn a knob. The mapping moves the value through the plug-in's parameters, like host automation."}</div>
   <div class="lhead"><span class="cap">Targets</span>${C.selT != null ? `<button class="ptog on" data-selt="all"><i class="led"></i>Track ${C.selT + 1} only</button>` : `<span class="note">${selMaps.length} target${selMaps.length === 1 ? "" : "s"}</span>`}</div>
-  <div class="lnks">${selMaps.map(l => `<div class="lnk"><span class="lcdchip" title="${V.tracks[l.t].name}">T${l.t + 1} ${slots(V.tracks[l.t].m, Cat)[l.i] || l.name}</span><span class="note">${l.mode}</span><span></span>
-   <button class="ptog ${l.invert ? "on" : ""}" data-linv="${l.index}"><i class="led"></i>Inv</button><button class="iconkey" data-ldel="${l.index}" aria-label="Remove mapping" title="Remove">×</button></div>`).join("") || `<div class="note">Not mapped: this row does nothing yet.</div>`}</div>
+  <div class="lnks">${selMaps.map(l => `<div class="lnk"><span class="lcdchip" title="${V.tracks[l.t].name}">T${l.t + 1} ${learnName(l.t, l.i, l.name)}</span><span class="note">${l.mode}</span><span></span>
+   <button class="ptog ${l.invert ? "on" : ""}" data-linv="${l.index}"><i class="led"></i>Inv</button><button class="iconkey" data-ldel="${l.index}" aria-label="Remove mapping" title="Remove">×</button>
+   ${overridesText(l) ? `<span class="note ovr" data-ovr="${l.index}">${overridesText(l)}</span>` : ""}</div>`).join("") || `<div class="note">Not mapped: this row does nothing yet.</div>`}</div>
   <div class="irow addrow"><span class="ilab">Add</span><select id="ct">${V.tracks.map((x, i) => `<option value="${i}" ${i === t ? "selected" : ""}>Track ${i + 1} · ${x.m}</option>`).join("")}</select>
-   <select id="cp">${slots(V.tracks[t].m, Cat).map((p, i) => p ? `<option value="${i}">${p}</option>` : "").join("")}<option value="24">LEVEL</option></select><button class="cream" id="caddl">Add target</button></div>
+   <select id="cp">${slots(V.tracks[t].m, Cat).map((p, i) => p ? `<option value="${i}">${p}</option>` : "").join("")}<option value="24">LEVEL</option></select><button class="cream" id="caddl" ${maps.length >= max ? "disabled" : ""} title="${maps.length >= max ? "The project holds " + max + " mappings at most. Remove one first." : ""}">Add target</button></div>
   <div class="irow"><span class="ilab"></span><button data-addsrc="lfo">+ App LFO</button><button data-addsrc="random">+ Random</button></div></section>`;
 	}
-	$("#main").innerHTML = `<div class="ctlui"><section class="card"><header><h3>Mapping matrix</h3><span>rows = controller knobs, learned CCs and app modulators · columns = tracks</span></header>${mx}</section>${insp}</div>`;
+	$("#main").innerHTML = `<div class="ctlui"><section class="card"><header><h3>Mapping matrix</h3><span>rows = controller knobs, learned CCs and app modulators · columns = tracks</span></header>${status}${mx}</section>${insp}</div>`;
 	syncControls();
 }
 /* Values and the CC rate while the machine plays: in place, no re-render. */
