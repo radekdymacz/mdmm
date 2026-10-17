@@ -2,8 +2,6 @@
    right-click, the tempo field while its pop-up is open, and the TEMPO pop-up (doc/modern-ux/mockup-next/next.css). */
 .lcdt{position:relative}
 .lcdt .lt.paused{animation:blink .8s steps(2) infinite}
-.lcdt .ltmore{all:unset;cursor:pointer;position:absolute;right:1px;bottom:1px;width:11px;height:11px;display:flex;align-items:center;justify-content:center;font:9px/1 var(--mono,ui-monospace,monospace);color:var(--ink);opacity:.75;border-radius:2px}
-.lcdt .ltmore:hover,.lcdt .ltmore:focus-visible{opacity:1;background:color-mix(in srgb,var(--ink) 18%,transparent)}
 .lcdpanel .f.tempof{background:color-mix(in srgb,var(--ink) 12%,transparent);border-radius:2px}
 .tempopop{position:fixed;z-index:62;width:390px;box-sizing:border-box;display:grid;gap:10px;padding:12px 14px;background:var(--plate);color:var(--body,var(--print));border:2px solid var(--print);border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.35);font:13px var(--sans,system-ui,sans-serif)}
 .tempopop::before{content:"";position:absolute;top:-8px;left:var(--ax,40px);width:12px;height:12px;background:var(--plate);border-left:2px solid var(--print);border-top:2px solid var(--print);transform:rotate(45deg)}

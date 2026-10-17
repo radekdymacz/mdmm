@@ -2646,7 +2646,7 @@ const MmJourneys = (() => {
 				machine: c => ok(playing() && tele.steps.length >= 2 && (tele.steps[0] === c.held || tele.steps[0] === c.held + 1), `steps after ${c.held + 1}: ${tele.steps.map(s => s + 1).join(",")}`), within: 4000 },
 			{ say: "⇧Space: paused again; ⇧Space: it plays on", act: async u => { blur(); u.key(" ", { shift: true }); await until(paused, 2000); u.key(" ", { shift: true }); },
 				screen: () => ok(!paused() && S().playing, "paused " + paused()), machine: () => ok(playing(), "not playing"), within: 4000 },
-			{ say: "⇧-click ▶, then Stop from the ▾ menu: the pause ends, the position goes", act: async u => { u.click("#play", { shift: true }); await until(paused, 2000); u.click("#playmore"); await until(() => !!$1('#deskmenu [data-mid="play"]'), 2000); u.click('#deskmenu [data-mid="play"]'); },
+			{ say: "⇧-click ▶, then Stop from the right-click menu: the pause ends, the position goes", act: async u => { u.click("#play", { shift: true }); await until(paused, 2000); u.rightClick("#play"); await until(() => !!$1('#deskmenu [data-mid="play"]'), 2000); u.click('#deskmenu [data-mid="play"]'); },
 				screen: () => ok(!paused() && !S().playing && $1("#pos").textContent === "--.--", "POSITION " + $1("#pos").textContent), machine: () => ok(!playing(), "playing"), within: 3000 }
 		],
 		async tidy(u) { await stopAll(u); }
@@ -2655,7 +2655,7 @@ const MmJourneys = (() => {
 		name: "mm-top-panic", proves: ["MM-041", "MM-361"],
 		steps: [
 			{ say: "press PLAY", act: u => u.click("#play"), machine: () => ok(playing(), "not playing"), within: 6000 },
-			{ say: "click the ▾ in the ▶ key's corner: the transport menu, Panic in it", act: u => u.click("#playmore"),
+			{ say: "right-click ▶: the transport menu, Panic in it", act: u => u.rightClick("#play"),
 				screen: () => ok(!!$1('#deskmenu [data-mid="panic"]') && !$1('#deskmenu [data-mid="panic"]').disabled && !!$1('#deskmenu [data-mid="record"]'), "menu " + ($1("#deskmenu")?.textContent || "none")), within: 2000 },
 			{ say: "click Panic: every note off and STOP", act: u => u.click('#deskmenu [data-mid="panic"]'),
 				screen: () => ok(!$1('#deskmenu [data-mid="panic"]') && !S().playing, "playing " + S().playing), machine: () => ok(!playing() && results.some(r => r.op === "panic" && r.ok), "playing " + playing()), within: 3000 },

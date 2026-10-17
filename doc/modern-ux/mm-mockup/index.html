@@ -707,7 +707,7 @@ canvas.ed.smpwave{height:200px}
 .slotgrid .scell{height:32px}
 .slotgrid .scell b{font-size:12px}
 .slotgrid .scell small{font-size:9px}
-@media (max-width:1100px){.songui.lay2{grid-template-columns:minmax(0,1fr)!important}}
+@media (max-width:1239px){.songui.lay2{grid-template-columns:minmax(0,1fr)!important}}
 .songleft .irow .note{flex-basis:100%;padding-left:74px;font-size:12px}
 
 /* bipolar value bars (PAN, EQ gains, balances) */
@@ -2505,7 +2505,7 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
 .perf.map .kb{height:clamp(84px,14vh,150px)!important}
 /* Song, as the Machinedrum Editor's: the arrangement's 200 slots fill the page across and down (13 rows of 16
    share the height); the left column (patterns, selected row) scrolls on its own. One column below 1100 px. */
-@media (min-width:1101px){
+@media (min-width:1240px){
 #main>.songui.lay2{flex:1 1 auto;min-height:0;align-items:stretch}
 .songui.lay2>.songleft{min-height:0;overflow:auto;padding-right:6px}
 .songui.lay2>.card{min-height:0;grid-template-rows:auto auto minmax(0,1fr);padding:0 2px 2px 0}	/* room for the grid's bezel inside #main's clip */
@@ -2598,8 +2598,6 @@ header.top.tf4 .row2 .lcd2{gap:5px!important}
    right-click, the tempo field while its pop-up is open, and the TEMPO pop-up (doc/modern-ux/mockup-next/next.css). */
 .lcdt{position:relative}
 .lcdt .lt.paused{animation:blink .8s steps(2) infinite}
-.lcdt .ltmore{all:unset;cursor:pointer;position:absolute;right:1px;bottom:1px;width:11px;height:11px;display:flex;align-items:center;justify-content:center;font:9px/1 var(--mono,ui-monospace,monospace);color:var(--ink);opacity:.75;border-radius:2px}
-.lcdt .ltmore:hover,.lcdt .ltmore:focus-visible{opacity:1;background:color-mix(in srgb,var(--ink) 18%,transparent)}
 .lcdpanel .f.tempof{background:color-mix(in srgb,var(--ink) 12%,transparent);border-radius:2px}
 .tempopop{position:fixed;z-index:62;width:390px;box-sizing:border-box;display:grid;gap:10px;padding:12px 14px;background:var(--plate);color:var(--body,var(--print));border:2px solid var(--print);border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.35);font:13px var(--sans,system-ui,sans-serif)}
 .tempopop::before{content:"";position:absolute;top:-8px;left:var(--ax,40px);width:12px;height:12px;background:var(--plate);border-left:2px solid var(--print);border-top:2px solid var(--print);transform:rotate(45deg)}
@@ -2674,7 +2672,16 @@ header.top.tf4 .row2 .lcd2{gap:5px!important}
 /* The Song page's song slots (deskSongSlots.js) and the PATTERN · CHAIN · SONG keys of its one palette (0.6 wave 1,
    doc/modern-ux/DESIGN-machine-menus.md §2, Song). Both editors: the same classes, the page's own tokens. */
 .songui.withlib{grid-template-columns:366px minmax(340px,400px) minmax(0,1fr)!important}
-@media (max-width:1100px){.songui.withlib{grid-template-columns:minmax(0,1fr)!important}}
+@media (max-width:1239px){.songui.withlib{grid-template-columns:minmax(0,1fr)!important}}
+/* B-165: the page asks for 1240 px (.app min-width; the Machinedrum page's html and body 1280), the plug-in's zoom gives it 1440
+   or more, but a user zoom above 100 % leaves less. The Song page then takes the window's width (its columns stack below
+   1240 px, the song list shows all its rows) instead of running past the right edge. The class comes from the page's script
+   (renderers set html.songpage on the Song workspace: no :has, WebKit 15 has none, B-054). */
+html.songpage,html.songpage body,html.songpage .app{min-width:0!important}
+/* the three columns at 1240 to 1400 px: the middle one gives room to the arrangement and the slots' labels (A01, END) are one
+   size smaller, so a slot shows its whole label (B-165: 22 px cells cut it) */
+@media (min-width:1240px) and (max-width:1400px){.songui.withlib{grid-template-columns:366px minmax(290px,320px) minmax(0,1fr)!important}
+.slotgrid .scell{padding-left:1px;padding-right:1px}.slotgrid .scell b{font-size:10px}}
 .songlib{border-top:0!important;padding-top:0!important;display:grid;gap:10px;align-content:start;padding-right:16px!important;border-right:2px solid var(--print)}
 .songui.withlib>.songlib{align-self:start!important;align-content:start!important;grid-template-rows:none!important;height:auto!important;grid-row:1/-1}
 .songlib .sltop{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -2687,6 +2694,8 @@ header.top.tf4 .row2 .lcd2{gap:5px!important}
 .songlib .slacts button:disabled{opacity:.35;cursor:default}
 .songlib .danger:hover{background:var(--rec);color:#fff}
 .songlib .libgrid.songs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;max-height:calc(100vh - 330px);overflow:auto;align-content:start;padding:2px}
+/* stacked below 1240 px the page scrolls (#main): the list shows all its rows, no second scroll bar and no half row at its bottom */
+@media (max-width:1239px){.songlib .libgrid.songs{max-height:none;overflow:visible}}
 .songlib .ls{grid-template-columns:auto 1fr;column-gap:8px;align-items:center;padding:4px 7px}
 .songlib .ls .lsh{grid-row:1/3}
 .songlib .ls .lsl{grid-column:2;min-height:0}
@@ -2842,8 +2851,7 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
         <div class="lcdpanel"><div class="bootscr" id="bootscr" aria-hidden="true"><div class="bs1">MONOMACHINE <span id="bsmk">SFX-60 MKII</span></div><div class="bs2" id="bstxt">OS 1.32B · STARTING</div><div class="bsbar"><i id="bsbar"></i></div></div>
           <div class="f trf"><small class="engf"><select id="engsel" data-k="1" hidden><option value="emu">EMU OS 1.32B</option><option value="hw">HW MIDI</option><option value="audio">AUDIO/MIDI…</option><option value="global">GLOBAL…</option><option value="rom">LOAD ROM</option><option value="import">IMPORT SYSEX…</option><option value="export">EXPORT SYSEX…</option><option value="reset">RESET MACHINE…</option><option value="memoryKeep" hidden>KEEP MEMORY: ON</option><option value="followPlayed" hidden>FOLLOW PLAYED TRACK: OFF</option></select><button class="kselbtn lcdeng" type="button" data-for="engsel" aria-haspopup="listbox" aria-expanded="false" aria-label="Engine: emulator or hardware" title="Engine: run the emulator, or edit a real Monomachine over MIDI"><i class="led on" id="engled"></i><span>EMU OS 1.32B</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button></small><span class="lcdt">
             <button class="lt rec" id="rec" aria-pressed="false" aria-label="Record" title="Record: stopped = GRID RECORDING, playing = LIVE RECORDING. Alt+Space: live recording. ⇧-click (stopped): STEP RECORDING."><i class="led" id="recled"></i>●</button>
-            <button class="lt" id="play" aria-pressed="false" aria-label="Play" title="Play / stop (Space)"><i class="led" id="playled"></i><span id="playico">▶</span></button>
-            <button class="ltmore" id="playmore" type="button" aria-haspopup="menu" aria-label="Transport menu" title="Transport: Play, Pause, Live record, Panic (or right-click ▶)">▾</button>
+            <button class="lt" id="play" aria-pressed="false" aria-label="Play" title="Play / stop (Space) · right-click: Pause, Record, Panic"><i class="led" id="playled"></i><span id="playico">▶</span></button>
 </span></div>
           <div class="f"><small>Tempo <i class="led" id="tempoled" aria-hidden="true"></i></small><b id="bpm" role="slider" tabindex="0" aria-label="Tempo in bpm" title="Drag up or down. Tempo is global: patterns do not store it, song rows can.">120.0</b></div>
           <div class="f posf"><small>Position</small><b id="pos">--.--</b></div>
@@ -8980,7 +8988,6 @@ function panicNow(){if(NA.panic){toast(NA.panic);return}S.paused=null;
 const TRANSPORT_HOST={recordLabel:"Live record",stepRecord:()=>stepRecord(),play:()=>playButton(),stop:()=>stopNow(),pauseToggle:()=>pauseToggle(),record:()=>liveRecord(),panic:()=>panicNow()};
 function transportMenu(x,y){DeskTransport.openMenu(x,y,{playing:S.playing,paused:!!S.paused,rec:!!S.rec,step:stepOn(),can:{transport:!NA.transport,record:true,stepRecord:!NA.gridRecord,panic:!NA.panic},reasons:{panic:NA.panic,stepRecord:NA.gridRecord}},TRANSPORT_HOST)}
 document.addEventListener("contextmenu",e=>{if(!e.target.closest?.("#play"))return;e.preventDefault();e.stopImmediatePropagation();transportMenu(e.clientX,e.clientY)},true);
-document.addEventListener("click",e=>{const m=e.target.closest?.("#playmore");if(!m)return;e.preventDefault();e.stopImmediatePropagation();const r=m.getBoundingClientRect();transportMenu(r.left,r.bottom+2)},true);
 
 /* ===== the TEMPO pop-up and the nudge ===== */
 function nudgeTempo(pct){if(pct&&tempoLocked())return;
@@ -9054,7 +9061,7 @@ Keys.bind({id:"step-move",short:"Back / Rest",scope:"any",keys:["ArrowLeft","Arr
 Keys.bind({id:"step-clear",short:"Clear step",hidden:true,scope:"any",keys:["Delete","Backspace"],group:"Transport",does:"Step recording: clear the step under the cursor and move on",when:()=>stepOn()&&kbOn(),run:()=>stepKey("clear")});
 Keys.bind({id:"step-done",short:"Done",hidden:true,scope:"any",keys:["Escape"],group:"Transport",does:"Step recording: done",when:()=>stepOn()&&kbOn(),run:()=>stepDone()});
 Keys.bind({id:"song-play-from",short:"From here",scope:"song",keys:["Enter"],group:"Song",does:"Play the song from the selected row (▶ From here)",when:()=>kbOn()&&S.ws==="song"&&!document.activeElement?.closest?.(".songlib,[data-rowact]"),run:()=>playFromRow()});
-[["transport-menu","any","Top bar",["right-click ▶"],"","Transport","The transport menu: Play / Stop, Pause / Continue, Live record, Step record, Panic (also the ▾ in the key's corner)"],
+[["transport-menu","any","Top bar",["right-click ▶"],"","Transport","The transport menu: Play / Stop, Pause / Continue, Live record, Step record, Panic (right-click ▶; Shift+F10 or the menu key with ▶ focused)"],
  ["step-record","any","Top bar",["REC"],"shift","Transport","Click (stopped): step recording; again (or Esc): done"],
  ["pause-click","any","Top bar",["▶"],"shift","Transport","Click: pause; ▶ again goes on from the step"],
  ["tempo-click","any","Top bar",["tempo"],"","Transport","Click (no drag): the TEMPO window: − / +, TAP, nudge, change on release, INT / EXT"],
@@ -9483,7 +9490,7 @@ const FOCUS_KEYS=["g","n","t","i","l","gv"];
 function focusedValue(){const el=document.activeElement,d=el&&el.dataset;if(!d||(d.g==null&&d.gv==null)||!$("#main")?.contains(el))return null;return FOCUS_KEYS.filter(k=>d[k]!=null).map(k=>`[data-${k}="${d[k]}"]`).join("")}
 function render(){const f=focusedValue();renderPage();if(f){const el=document.querySelector("#main "+f);if(el&&document.activeElement!==el)el.focus({preventScroll:true})}}
 function renderPage(){closePicker();closeK();const sl=$("#seqscroll")?.scrollLeft||0;renderTop();{const m=(S.ws==="seq"||S.ws==="sound")&&S.side==="midi";if(!m&&S.sel>5)S.sel-=6;if(m&&S.sel<6)S.sel+=6}const full=["mix","perform","song","control"].includes(S.ws);
- $("#body").className="body "+(full?"full ":"")+"ws-"+S.ws;$("#rail").hidden=full;if(!full)renderRail();renderSub();
+ $("#body").className="body "+(full?"full ":"")+"ws-"+S.ws;document.documentElement.classList.toggle("songpage",S.ws==="song");$("#rail").hidden=full;if(!full)renderRail();renderSub();
  ({control:renderControl,seq:renderSeq,sound:renderSound,mix:renderMix,perform:renderPerform,song:renderSong})[S.ws]();
  const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));if(S.learn)document.body.classList.add("learn");movePH(false);polyFollows();mixMetersSync()}
 /* 0.6 wave 9 (B-064): POLY plays the machine's track in focus; the synth track the person selects here (rail, Assign's
@@ -9510,7 +9517,7 @@ addEventListener("resize",()=>{if(S.ws==="seq"){fitLane();drawSlides();alignLock
    its engine cannot do it says with disable(capability, reason). */
 const NA_SEL={
  midiMutes:[6,7,8,9,10,11].flatMap(t=>[`[data-mute="${t}"]`,`[data-solo="${t}"]`,`[data-gmute="${t}"]`]).join(","),
- transport:"#play,#playmore",playFrom:'[data-rowact="from"]',panic:'[data-mid="panic"]',poly:'[data-pmode="poly"]',multiTrig:'[data-set="mtmode"] button,[data-strk],[data-tim],#splitm',
+ transport:"#play",playFrom:'[data-rowact="from"]',panic:'[data-mid="panic"]',poly:'[data-pmode="poly"]',multiTrig:'[data-set="mtmode"] button,[data-strk],[data-tim],#splitm',
  multiMap:'.maprow [data-mhi],.maprow select,.maprow .kselbtn,.maprow .pc,[data-mdel],[data-madd],[data-band]',
  portamento:'[data-set="port"] button',gridRecord:"#rec",chains:'[data-chainpad],[data-chain]'};
 const NA_CARD={multiMap:".maprow"};	// a card that also says the reason in words
