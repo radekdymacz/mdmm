@@ -44,6 +44,8 @@ const ONLY = {
 	mm: { "note-pitch": "the piano roll: a selected note's pitch (I-036); the MD has no pitch", "note-octave": "the piano roll: a selected note's octave (I-036)",
 		"roll-select-note": "the piano roll: click a note to select it (I-036); the MD selects steps on Pattern",
 		"lane-slide": "the MM lock lane: drag a lock's dot sideways to slide to that parameter's next lock; the MD has no slides",
+		"lane-slide-band": "the MM lock lane: Shift-drag from a lock bar draws the slide as a rubber band to the next lock; the MD has no slides",
+		"lane-slide-cancel": "Esc while drawing that slide; the MD has no slides",
 		"roll-length": "the piano roll (I-010)", "roll-chord": "the piano roll", "roll-paint": "the piano roll",
 		"roll-erase": "the piano roll", "piano-black": "the MM's black keys (the MD's come with D6)", "lockstep-wheel": "the MM's lock lane steps", "learn-knob": "the MM's LEARN",
 		"tip-reclock": "the MM's live-recorded value locks the step that plays",

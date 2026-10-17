@@ -2163,6 +2163,30 @@
 			"area": "Lock lane"
 		},
 		{
+			"id": "lane-slide-band",
+			"scope": "seq",
+			"keys": [
+				"lock bar"
+			],
+			"mod": "shift",
+			"group": "Pattern",
+			"does": "Drag sideways out of a lock bar: a slide, a line to the cursor; drop on this parameter's next lock to set it (one undo step). Anywhere else, Esc or left of the start cancels. From a step without a lock the same drag is the ramp of locks",
+			"area": "Lock lane"
+		},
+		{
+			"id": "lane-slide-cancel",
+			"scope": "seq",
+			"keys": [
+				"Escape"
+			],
+			"mod": "",
+			"group": "Pattern",
+			"does": "While drawing a slide in the lock lane: cancel it",
+			"short": "Cancel",
+			"hidden": true,
+			"dispatched": true
+		},
+		{
 			"id": "lane-ramp",
 			"scope": "seq",
 			"keys": [
