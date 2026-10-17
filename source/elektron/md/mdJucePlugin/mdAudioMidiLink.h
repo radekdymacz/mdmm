@@ -66,6 +66,11 @@ namespace mdJucePlugin
 		void midiDevicesChanged();
 		// The saved audio device state with the remembered MIDI ports: the inputs the user has on (also those whose device
 		// is away) and the output, nothing else (public so a test can check the round trip).
+		// At quit: the standalone holder saves JUCE's own state last, after the link is gone. The link keeps its memory when it
+		// goes; the app calls this with its settings after the window closed, and the saved state is the user's again.
+		// False when there was no standalone link or no saved state.
+		static bool patchSavedSettings(juce::PropertySet& _settings);
+		static bool patchSettings(juce::PropertySet& _settings, const midiHotplug::Memory& _memory);
 		static void patchStateXml(juce::XmlElement& _xml, const std::vector<midiHotplug::Port>& _inputs, const midiHotplug::Port& _output);
 		// What the system offers (the hot-plug test replaces it with a fake list).
 		using PortList = std::function<std::vector<midiHotplug::Port>()>;

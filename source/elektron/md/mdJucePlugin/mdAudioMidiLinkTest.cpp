@@ -128,6 +128,34 @@ int main()
 			&& again->getStringAttribute("defaultMidiOutput") == "TM-1", "the state survives a write and a read");
 	}
 
+	// at quit: JUCE's last save is shaped like createStateXml (only the inputs that are open); the memory goes over it
+	{
+		juce::PropertySet settings;
+		check(!AudioMidiLink::patchSavedSettings(settings), "no remembered link, nothing to patch");
+		juce::XmlElement juceState("DEVICESETUP");
+		juceState.setAttribute("deviceType", "CoreAudio");
+		auto* c = juceState.createNewChildElement("MIDIINPUT");
+		c->setAttribute("name", "Switched off");
+		c->setAttribute("identifier", "off");
+		settings.setValue("audioSetup", &juceState);
+		check(!AudioMidiLink::patchSavedSettings(settings), "a link that never ran standalone leaves the settings alone");
+		midiHotplug::Memory memory;
+		memory.inputs = {{"k", "Keys"}};	// remembered while its device is unplugged: JUCE's save does not have it
+		memory.output = {"o1", "TM-1"};
+		check(AudioMidiLink::patchSettings(settings, memory), "the memory is put over JUCE's last save");
+		const auto saved = settings.getXmlValue("audioSetup");
+		check(saved && saved->getChildByName("MIDIINPUT") && saved->getChildByName("MIDIINPUT")->getStringAttribute("identifier") == "k"
+			&& saved->getChildWithTagNameIterator("MIDIINPUT").begin() != saved->getChildWithTagNameIterator("MIDIINPUT").end(),
+			"the unplugged input is in the saved state and the switched-off one is not");
+		int n = 0;
+		for(auto* x : saved->getChildWithTagNameIterator("MIDIINPUT"))
+			n += x->getStringAttribute("identifier") == "off" ? 100 : 1;
+		check(n == 1 && saved->getStringAttribute("defaultMidiOutputDevice") == "o1" && saved->getStringAttribute("deviceType") == "CoreAudio",
+			"one input, the output, the audio device kept");
+		juce::PropertySet empty;
+		check(!AudioMidiLink::patchSettings(empty, memory), "no saved state, nothing to patch");
+	}
+
 	std::printf("mdAudioMidiLinkTest: %s (%d failure(s))\n", g_failed ? "FAIL" : "PASS", g_failed);
 	return g_failed ? 1 : 0;
 }

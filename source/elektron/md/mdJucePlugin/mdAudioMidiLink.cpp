@@ -9,6 +9,7 @@
 #include "juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h"
 
 #include <cmath>
+#include <optional>
 #include <vector>
 
 namespace mdJucePlugin
@@ -86,9 +87,36 @@ namespace mdJucePlugin
 		logDevices();
 	}
 
+	namespace
+	{
+		std::optional<midiHotplug::Memory>& leftBehind()
+		{
+			static std::optional<midiHotplug::Memory> memory;
+			return memory;
+		}
+	}
+
+	bool AudioMidiLink::patchSavedSettings(juce::PropertySet& _settings)
+	{
+		const auto& memory = leftBehind();
+		return memory && patchSettings(_settings, *memory);
+	}
+
+	bool AudioMidiLink::patchSettings(juce::PropertySet& _settings, const midiHotplug::Memory& _memory)
+	{
+		auto xml = _settings.getXmlValue("audioSetup");
+		if(!xml)
+			return false;
+		patchStateXml(*xml, _memory.inputs, _memory.output);
+		_settings.setValue("audioSetup", xml.get());
+		return true;
+	}
+
 	AudioMidiLink::~AudioMidiLink()
 	{
 		m_midiConnection.reset();
+		if(holder())
+			leftBehind() = m_memory;
 		if(m_listening)
 			m_listening->removeChangeListener(this);
 	}
