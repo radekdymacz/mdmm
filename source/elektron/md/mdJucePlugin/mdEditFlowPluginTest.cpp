@@ -14,11 +14,18 @@
 // is a pass/fail line: "synth lock wait ...: PASS" or FAIL (exit 1) above EDITFLOW_LOCK_WAIT_MS (default 1, as the
 // local gate's soak). Each wait is blamed on the holder's site; a panel event or a device command (the desk's
 // sends, queued for the audio thread) dropped while editing fails it too.
+// EDITFLOW_LEARN=1 (0.8, MIDI Learn L6): four CC mappings (three added, one really learned from the stream) and learned
+// CCs arriving at audio rate (a few per block, then a burst of 64 per block) while the page edits and the transport
+// runs, and a fifth mapping learned at 64 CCs a block while the page edits. The same lock, dropped-panel-event and
+// dropped-command lines judge it; it fails too when any of the four mapped parameters changed value fewer than twice,
+// nothing was captured, or the fifth mapping was not learned.
 
 #include "mdPluginProcessor.h"
 #include "mdController.h"
 #include "mdDeskHost.h"
 #include "mdDeskSession.h"
+#include "mdStudioLink.h"
+#include "mmStudioLink.h"
 
 #include "mdLib/mddeskdevice.h"
 
@@ -102,6 +109,14 @@ namespace
 	};
 	Counts* g_c = nullptr;
 
+	// EDITFLOW_LEARN: the four mapped parameters, and how often each changed value (from any thread)
+	struct LearnWatch
+	{
+		std::atomic<pluginLib::Parameter*> param{nullptr};
+		std::atomic<int> changes{0};
+	};
+	std::array<LearnWatch, 4> g_learnWatch;
+
 	const char* originName(const int _o)
 	{
 		using O = pluginLib::Parameter::Origin;
@@ -149,6 +164,9 @@ namespace
 		juce::AudioProcessor* ap = nullptr;
 		HostListener host;
 		std::atomic<bool> run{true}, loopMidi{false};
+		// EDITFLOW_LEARN: learned CCs from a controller, on the audio thread's block: perBlock CCs of base .. base + count - 1
+		std::atomic<int> learnPerBlock{0}, learnBase{100}, learnCount{4};
+		std::atomic<int> learnMappings{-1};		// what the last learn document said
 		std::thread audio;
 		std::vector<baseLib::EventListener<pluginLib::Parameter*>> paramListeners;
 		std::unique_ptr<baseLib::EventListener<synthLib::SysexBuffer>> sysexListener;
@@ -179,6 +197,9 @@ namespace
 					paramListeners.emplace_back(p->onValueChanged, [](pluginLib::Parameter* _p)
 					{
 						if(g_c) ++g_c->paramByOrigin[static_cast<int>(_p->getChangeOrigin())];
+						for(auto& w : g_learnWatch)
+							if(w.param.load() == _p)
+								++w.changes;
 					});
 			auto& mdc = dynamic_cast<mdJucePlugin::Controller&>(controller);
 			sysexListener = std::make_unique<baseLib::EventListener<synthLib::SysexBuffer>>(mdc.evDeviceSysex, [](const synthLib::SysexBuffer& _m)
@@ -237,6 +258,14 @@ namespace
 					for(int i = 0; i < n && i < params.size(); ++i)
 						params[i]->setValue(params[i]->getValue());
 				}
+				if(const int perBlock = learnPerBlock.load())
+				{
+					static uint32_t counter = 0;
+					const int base = learnBase.load(), count = std::max(1, learnCount.load());
+					for(int k = 0; k < perBlock; ++k, ++counter)
+						midi.addEvent(juce::MidiMessage::controllerEvent(1, base + static_cast<int>(counter % static_cast<uint32_t>(count)),
+							static_cast<int>((counter * 37u + 5u) % 128u)), k);
+				}
 				buf.clear();
 				const auto t = Clock::now();
 				ap->processBlock(buf, midi);
@@ -279,6 +308,9 @@ namespace
 				++g_c->pubByType[type];
 			}
 			if(type == "reset") resetSeen = true;
+			if(type == "learn")
+				if(const auto* doc = _m.find("doc"); doc && doc->find("mappings"))
+					learnMappings = static_cast<int>(doc->find("mappings")->asArray().size());
 			if(type == "result" && _m.find("ok") && !_m.find("ok")->asBool() && errorsShown < 5)
 			{
 				++errorsShown;
@@ -504,6 +536,45 @@ namespace
 		return fails;
 	}
 
+	// EDITFLOW_LEARN: a parameter of the learn document as the page names it
+	std::string learnTarget(const Rig& _r, const int _t, const int _i)
+	{
+		return "\"t\":" + std::to_string(_t) + (_r.model == md::MachineModel::Monomachine ? ",\"pg\":0" : "") + ",\"i\":" + std::to_string(_i);
+	}
+
+	// Three mappings added (CC 100-102, channel 1) and one learned from the controller's stream (CC 103): true when all four are in
+	bool learnSetup(Rig& _r)
+	{
+		for(int n = 0; n < 3; ++n)
+			_r.pageText("{\"op\":\"learnAdd\",\"id\":" + std::to_string(900 + n) + ",\"cc\":" + std::to_string(100 + n) + ",\"ch\":0,"
+				+ learnTarget(_r, 1 + n, 3 + n) + "}");
+		pumpMessages(300);
+		_r.pageText("{\"op\":\"learnStart\",\"id\":910," + learnTarget(_r, 4, 6) + "}");
+		_r.learnBase = 103; _r.learnCount = 1; _r.learnPerBlock = 2;	// two values of one CC
+		const auto t0 = nowMs();
+		while(nowMs() - t0 < 10000 && _r.learnMappings.load() != 4)
+			pumpMessages(25);
+		_r.learnPerBlock = 0;
+		pumpMessages(200);
+		_r.learnBase = 100; _r.learnCount = 4;
+		if(_r.learnMappings.load() != 4)
+			return false;
+		// the four targets (mapping n is CC 100 + n): watched from here on
+		const bool mm = _r.model == md::MachineModel::Monomachine;
+		const int tracks[4] = {1, 2, 3, 4}, indexes[4] = {3, 4, 5, 6};
+		for(int n = 0; n < 4; ++n)
+		{
+			const std::string name = mm ? mdJucePlugin::MmStudioLink::parameterName(0, static_cast<uint8_t>(indexes[n]))
+				: mdJucePlugin::StudioLink::parameterName(static_cast<uint8_t>(indexes[n]));
+			auto* p = _r.processor->getController().getParameter(name, static_cast<uint8_t>(tracks[n]));
+			if(!p)
+				return false;
+			g_learnWatch[static_cast<size_t>(n)].changes = 0;
+			g_learnWatch[static_cast<size_t>(n)].param = p;
+		}
+		return true;
+	}
+
 	void scenario(Rig& _r, const char* _name, const int _changes, const double _spacingMs, const double _tailMs, const int _kind = 0)
 	{
 		Counts c;
@@ -558,6 +629,18 @@ int main(const int _argc, char** _argv)
 		auto& realtime = r.processor->getPlugin().getRealtimeInstrumentation();
 		realtime.setEnabled(true);
 		realtime.reset();
+		const bool learnOn = std::getenv("EDITFLOW_LEARN") != nullptr;
+		if(learnOn)
+		{
+			const bool ok = learnSetup(r);
+			std::printf("learn: %d mappings in the document: %s\n", r.learnMappings.load(), ok ? "PASS" : "FAIL");
+			if(!ok)
+				return 1;
+			realtime.reset();
+		}
+		const auto learnStart = r.processor->learnRouter().counts();
+		uint64_t learnCaptured = 0, learnCaptureDropped = 0;
+		bool learnLearned = false;
 		const auto panelDroppedStart = r.panelDropped();
 		const auto commandsDroppedStart = r.processor->getPlugin().getDroppedCommandCount();
 		if(const auto* rec = std::getenv("EDITFLOW_RECORD"))
@@ -607,6 +690,35 @@ int main(const int _argc, char** _argv)
 		r.host.readCount = 0;
 		pumpMessages(500);
 		scenario(r, "idle2", 0, 0, 3000);
+		if(learnOn)
+		{
+			// learned CCs at audio rate beside the edits, the lock lane and the running transport
+			r.learnPerBlock = 4;
+			scenario(r, "learn+drag", 120, 1000.0 / 60, 2000);
+			scenario(r, "learn+tweak", 60, 1000.0 / 60, 2000, 1);
+			scenario(r, "learn+lock", 240, 1000.0 / 60, 2000, 2);
+			r.learnPerBlock = 64;
+			scenario(r, "learnburst", 120, 1000.0 / 60, 2000);
+			r.learnPerBlock = 0;
+			pumpMessages(500);
+			// learning really captures under load: a fifth mapping learned from a controller at 64 CCs a block while the page edits
+			const auto beforeCapture = r.processor->learnRouter().counts();
+			r.pageText("{\"op\":\"learnStart\",\"id\":911," + learnTarget(r, 5, 7) + "}");
+			r.learnBase = 110; r.learnCount = 1; r.learnPerBlock = 64;
+			const auto tc = nowMs();
+			int n = 0;
+			while(nowMs() - tc < 10000 && r.learnMappings.load() != 5)
+			{
+				edit(r, n++);
+				pumpMessages(1000.0 / 60);
+			}
+			r.learnPerBlock = 0;
+			pumpMessages(300);
+			const auto afterCapture = r.processor->learnRouter().counts();
+			learnCaptured = afterCapture.captured - beforeCapture.captured;
+			learnCaptureDropped = afterCapture.capturedDropped - beforeCapture.capturedDropped;
+			learnLearned = r.learnMappings.load() == 5;
+		}
 		{
 			const auto snap = realtime.snapshot();
 			const char* const limitText = std::getenv("EDITFLOW_LOCK_WAIT_MS");
@@ -641,7 +753,26 @@ int main(const int _argc, char** _argv)
 			// and none of the commands the desk queued for the audio thread (DESIGN-audio-lock.md step 3)
 			const auto commandsDropped = r.processor->getPlugin().getDroppedCommandCount() - commandsDroppedStart;
 			std::printf("dropped device commands while editing: %llu: %s\n", static_cast<unsigned long long>(commandsDropped), commandsDropped ? "FAIL" : "PASS");
-			if(!pass || dropped || commandsDropped)
+			bool learnFail = false;
+			if(learnOn)
+			{
+				const auto c = r.processor->learnRouter().counts();
+				const auto applied = c.applied - learnStart.applied;
+				// every mapping applied at least once, and its parameter changed value (the watch counts value changes)
+				std::string each;
+				bool allMoved = true;
+				for(auto& w : g_learnWatch)
+				{
+					each += " " + std::to_string(w.changes.load());
+					allMoved = allMoved && w.changes.load() >= 2;
+				}
+				learnFail = applied == 0 || !allMoved || !learnLearned || learnCaptured == 0;
+				std::printf("learned CCs while editing: applied %llu, value changes per mapping:%s (each needs 2), learning under load: %s, "
+					"%llu captured (%llu dropped by a full ring, not a failure): %s\n",
+					static_cast<unsigned long long>(applied), each.c_str(), learnLearned ? "learned" : "NOT learned",
+					static_cast<unsigned long long>(learnCaptured), static_cast<unsigned long long>(learnCaptureDropped), learnFail ? "FAIL" : "PASS");
+			}
+			if(!pass || dropped || commandsDropped || learnFail)
 				return 1;
 		}
 		if(!r.lastDocJson.empty())

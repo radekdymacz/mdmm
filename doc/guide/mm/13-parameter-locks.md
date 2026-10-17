@@ -58,7 +58,7 @@ The locks of a step go with the step when you copy it. Right-click a note with a
 
 ### Slide
 
-A small ramp over a note marks a step that glides. Set it with **Slide** in the step menu. On a step with a slide, a locked value glides to the next lock instead of jumping. See "Slide" in chapter 15.
+A small ramp over a note marks a step that glides. Set it with **Slide** in the step menu. On a step with a slide, a locked value glides to the next lock instead of jumping. Shift-drag from a lock in the lane draws it; Shift-drag from an empty step draws a ramp of locks. See "Slide" in chapter 15.
 
 ## PARAMETER LOCKS IN LIVE RECORDING MODE
 <!-- rows: MM-207 MM-208 @e9e696 -->
