@@ -68,9 +68,8 @@ namespace
 		// "ready": everything the session publishes once a page attaches, "learn" among it.
 		session->onPageMessage(parseJson(R"({"op":"ready"})"));
 
-		// MIDI mapping is a switch (deskHost::midiMappingEnabled): off, the plug-in has no MIDI learn translator
-		// (no learn code on the MIDI threads), the learn document says so with no mappings, and a learn command
-		// is refused. On, this part of the test does not apply.
+		// MIDI mapping is a switch (deskHost::midiMappingEnabled): off, the learn document says so with no mappings and a learn
+		// command is refused. On (0.8), the commands run.
 		if(!deskHost::midiMappingEnabled)
 		{
 			if(_processor.getMidiLearnTranslator())
@@ -104,6 +103,36 @@ namespace
 				return false;
 			}
 			std::puts("  MIDI mapping off: no translator, the learn document says so, learn commands refused");
+		}
+		else
+		{
+			// MIDI mapping on (0.8): no pluginLib translator; the commands run, and the documents they publish (mappings with
+			// the firmware targets they override, a target that waits, the limits) are checked against the contract below
+			if(_processor.getMidiLearnTranslator())
+			{
+				std::puts("  FAIL: MIDI mapping on, but the plug-in made the pluginLib MIDI learn translator");
+				return false;
+			}
+			const auto before = published.size();
+			session->onPageMessage(parseJson(R"({"op":"learnAdd","id":90,"cc":21,"t":0,"i":0})"));
+			session->onPageMessage(parseJson(R"({"op":"learnAdd","id":91,"cc":22,"t":1,"i":3,"ch":2})"));
+			session->onPageMessage(parseJson(R"({"op":"learnStart","id":92,"t":2,"i":4})"));
+			session->onPageMessage(parseJson(R"({"op":"learnCancel","id":93})"));
+			session->onPageMessage(parseJson(R"({"op":"learnInvert","id":94,"index":0})"));
+			session->onPageMessage(parseJson(R"({"op":"learnRemove","id":95,"index":1})"));
+			int refusals = 0, results = 0;
+			for(size_t n = before; n < published.size(); ++n)
+				if(const auto* ok = published[n].find("ok"); ok && ok->isBool())
+				{
+					++results;
+					refusals += ok->asBool() ? 0 : 1;
+				}
+			if(results != 6 || refusals != 0)
+			{
+				std::printf("  FAIL: MIDI mapping on: %d of 6 learn commands answered, %d refused\n", results, refusals);
+				return false;
+			}
+			std::puts("  MIDI mapping on: no translator, the six learn commands run");
 		}
 
 		// AUDIO/MIDI is the editor window's, not the session's (mdPageEditor.h owns it); built the

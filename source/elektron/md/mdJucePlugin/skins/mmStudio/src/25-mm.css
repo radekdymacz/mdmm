@@ -248,7 +248,7 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
 .perf.map .kb{height:clamp(84px,14vh,150px)!important}
 /* Song, as the Machinedrum Editor's: the arrangement's 200 slots fill the page across and down (13 rows of 16
    share the height); the left column (patterns, selected row) scrolls on its own. One column below 1100 px. */
-@media (min-width:1101px){
+@media (min-width:1240px){
 #main>.songui.lay2{flex:1 1 auto;min-height:0;align-items:stretch}
 .songui.lay2>.songleft{min-height:0;overflow:auto;padding-right:6px}
 .songui.lay2>.card{min-height:0;grid-template-rows:auto auto minmax(0,1fr);padding:0 2px 2px 0}	/* room for the grid's bezel inside #main's clip */

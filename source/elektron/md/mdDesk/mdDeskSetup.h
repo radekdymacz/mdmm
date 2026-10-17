@@ -26,7 +26,8 @@ namespace mdDesk
 	// knob-row CCs and the solo, as the "md-desk/setup" document.
 	using deskCore::DeskSetup;
 	using deskCore::validateKnobCcs;
-	constexpr deskCore::SetupSpec g_mdSetupSpec{"md-desk/setup", g_mdModLimits, 16, true};
+	// The learn model: 16 tracks, no DATA pages, 25 parameters (the 24 kit values and the level: StudioLink's indices 0-24)
+	constexpr deskCore::SetupSpec g_mdSetupSpec{"md-desk/setup", g_mdModLimits, 16, true, false, {16, 0, 25}};
 
 	// A project's setup: what this version can use (deskCore::setupFromJson); errors carry JSON paths.
 	inline DeskSetup deskSetupFromJson(const elektronData::json::Value& _doc, std::vector<std::string>& _errors)

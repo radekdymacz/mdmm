@@ -245,6 +245,170 @@ namespace
 		check(setupFromJson(d, md, errors).mappings.empty(), "a newer major version is the default setup");
 	}
 
+	// What the Machinedrum Editor 0.7.0 reads of a project's setup: the code of mdmm-v0.7.0, copied (mdDesk/mdDeskSetup.cpp
+	// deskSetupFromJson, deskCore/deskMod.cpp modSetupFromJson, deskCore/deskSolo.h fromJson), trimmed only where a fixture has no
+	// such member (the members of a source or a link). It looks at the schema, the version and the members it knows; anything
+	// else is not read. Any error it finds makes the default setup in 0.7.0, so a document is readable when it has none.
+	struct Read070
+	{
+		bool ok = false;
+		std::vector<int> knobs;
+		size_t sources = 0;
+		std::vector<int> soloTracks;
+	};
+
+	// deskMod.cpp:47 (0.7.0), the top of modSetupFromJson; the sources and links of the fixtures are empty
+	bool modSetup070(const json::Value& _doc, const char* _schema, size_t& _sources, std::vector<std::string>& _errors)
+	{
+		const auto before = _errors.size();
+		const auto* schema = _doc.find("schema");
+		if(!schema || !schema->isString() || schema->asString() != _schema)
+			_errors.emplace_back(std::string("$.schema: expected ") + _schema);
+		const auto* version = _doc.find("version");
+		if(!version || !version->isNumber() || version->asNumber() != 1)
+			_errors.emplace_back("$.version: expected 1");
+		if(const auto* sources = _doc.find("sources"); sources && sources->isArray())
+			_sources = sources->asArray().size();
+		if(const auto* links = _doc.find("links"); links && links->isArray() && !links->asArray().empty())
+			_errors.emplace_back("(fixture) links are not part of this copy");
+		return _errors.size() == before;
+	}
+
+	// deskSolo.h (0.7.0) listFrom + fromJson
+	std::optional<std::vector<int>> soloTracks070(const json::Value& _solo, const int _count, std::vector<std::string>& _errors)
+	{
+		if(!_solo.isObject())
+		{
+			_errors.push_back("$.solo: expected an object");
+			return {};
+		}
+		const auto* t = _solo.find("tracks");
+		std::vector<int> out;
+		if(t && t->isArray())
+			for(const auto& v : t->asArray())
+			{
+				const int n = v.isNumber() ? static_cast<int>(v.asNumber()) : -1;
+				if(n < 0 || n >= _count)
+				{
+					_errors.push_back("$.solo.tracks: expected tracks 0 to " + std::to_string(_count - 1));
+					return {};
+				}
+				out.push_back(n);
+			}
+		return out;
+	}
+
+	Read070 read070Md(const json::Value& _doc)
+	{
+		Read070 r;
+		std::vector<std::string> errors;
+		const auto* schema = _doc.find("schema");
+		if(!schema || !schema->isString() || schema->asString() != "md-desk/setup")
+			errors.emplace_back("$.schema: expected md-desk/setup");
+		const auto* version = _doc.find("version");
+		if(!version || !version->isNumber() || version->asNumber() != 1)
+			errors.emplace_back("$.version: expected 1");
+		if(const auto* m = _doc.find("modulators"))
+			modSetup070(*m, "md-desk/modulators", r.sources, errors);
+		if(const auto* k = _doc.find("knobCcs"))
+		{
+			std::vector<int> ccs;
+			if(k->isArray())
+				for(const auto& v : k->asArray())
+					ccs.push_back(v.isNumber() ? static_cast<int>(v.asNumber()) : -1);
+			const auto bad = validateKnobCcs(ccs);
+			errors.insert(errors.end(), bad.begin(), bad.end());
+			r.knobs = ccs;
+		}
+		if(const auto* sl = _doc.find("solo"))
+			if(const auto solo = soloTracks070(*sl, 16, errors))
+				r.soloTracks = *solo;
+		r.ok = errors.empty();
+		return r;
+	}
+
+	// mmDesk::Desk::loadSetup (0.7.0): the bare modulators document and the solo beside it
+	Read070 read070Mm(const json::Value& _doc)
+	{
+		Read070 r;
+		std::vector<std::string> errors;
+		modSetup070(_doc, "mm-desk/modulators", r.sources, errors);
+		if(const auto* sl = _doc.find("solo"))
+			if(const auto solo = soloTracks070(*sl, 12, errors))
+				r.soloTracks = *solo;
+		r.ok = errors.empty();
+		return r;
+	}
+
+	// All knob rows at once, from the original list: a swap and a rotation keep every mapping
+	void knobRows()
+	{
+		const std::vector<LearnMapping> l{map(g_learnAnyChannel, 21, 0, 1), map(g_learnAnyChannel, 22, 1, 2), map(g_learnAnyChannel, 23, 2, 3), map(5, 21, 3, 4)};
+		auto r = moveKnobCcs(l, {21, 22}, {22, 21});
+		check(r.size() == 4 && r[0].cc == 22 && r[1].cc == 21 && r[2].cc == 23 && r[3].cc == 21 && r[3].ch == 5, "knob rows swapped: each mapping follows its own row, the channel-specific one stays");
+		r = moveKnobCcs(l, {21, 22, 23}, {22, 23, 21});
+		check(r.size() == 4 && r[0].cc == 22 && r[1].cc == 23 && r[2].cc == 21, "knob rows rotated: three mappings, none merged");
+		r = moveKnobCcs(l, {21}, {22});
+		check(r.size() == 4 && r[0].cc == 22 && r[1].cc == 22 && r[0].at != r[1].at, "one row moved onto a CC another row still has (other targets): both stay");
+		r = moveKnobCcs({map(g_learnAnyChannel, 21, 0, 1), map(g_learnAnyChannel, 22, 0, 1)}, {21}, {22});
+		check(r.size() == 1 && r[0].cc == 22, "and the same target on the same CC is one mapping");
+		check(moveKnobCcs(l, {21}, {21}) == l, "no change");
+		// the member stays once the project has had mappings
+		SetupSpec md;
+		md.learn = {16, 0, 25};
+		DeskSetup s;
+		check(setupToJson(s, md).find("mappings") == nullptr, "no mappings ever: no member");
+		s.mappingsKept = true;
+		std::vector<std::string> errors;
+		const auto doc = setupToJson(s, md);
+		check(doc.find("mappings") && doc.find("mappings")->asArray().empty() && setupHasMappings(doc) && setupFromJson(doc, md, errors).mappingsKept,
+			"a project that had mappings writes mappings: [] when the list is empty (an alpha MDLN is not imported again)");
+	}
+
+	// 0.8 compatibility (the 1.0 read promise: additions are new members, never a version bump): a setup written with
+	// mappings is read by the 0.7.0 reader without a complaint, and gives it exactly what it gave without them. The
+	// fixtures are the documents the new codec writes now.
+	void older()
+	{
+		SetupSpec md;
+		md.learn = {16, 0, 25};
+		SetupSpec mm;
+		mm.schema = "mm-desk/setup";
+		mm.tracks = 12;
+		mm.knobCcs = false;
+		mm.writesBare = true;
+		mm.learn = {6, 8, 8};
+		mm.modulators = ModLimits{"mm-desk/modulators", 5, 63};
+
+		DeskSetup s;
+		s.knobCcs = {30, 31, 32, 33, 34, 35, 36, 37};
+		s.solo.tracks = {2, 5};
+		s.mappings = {map(0, 21, 2, 5), map(g_learnAnyChannel, 22, 0, 24, LearnMode::RelativeSigned, true)};
+		auto doc = setupToJson(s, md);
+		const std::string fixtureMd = elektronData::json::write(doc);
+		check(fixtureMd.find("\"mappings\":[{\"ch\":0,\"cc\":21,\"t\":2,\"i\":5,\"mode\":\"absolute\",\"invert\":false},{\"ch\":255,\"cc\":22,\"t\":0,\"i\":24,\"mode\":\"relative-signed\",\"invert\":true}]") != std::string::npos,
+			"fixture: the Machinedrum's setup with mappings, as the codec writes it");
+		auto read = read070Md(parse(fixtureMd.c_str()));
+		DeskSetup plain = s;
+		plain.mappings.clear();
+		const auto without = read070Md(setupToJson(plain, md));
+		check(read.ok && without.ok && read.knobs == without.knobs && read.soloTracks == without.soloTracks && read.sources == without.sources
+			&& read.knobs == std::vector<int>{30, 31, 32, 33, 34, 35, 36, 37} && read.soloTracks == std::vector<int>{2, 5},
+			"0.7.0's reader takes a setup with mappings without error and reads what it read before (the unknown member is ignored)");
+
+		DeskSetup m;
+		m.solo.tracks = {1, 4};
+		m.mappings = {map(3, 60, 1, 4, LearnMode::Absolute, false, 1)};
+		const std::string fixtureMm = elektronData::json::write(setupToJson(m, mm));
+		check(fixtureMm.find("\"schema\":\"mm-desk/modulators\"") != std::string::npos && fixtureMm.find("\"mappings\":[{\"ch\":3,\"cc\":60,\"t\":1,\"pg\":1,\"i\":4,") != std::string::npos,
+			"fixture: the Monomachine's setup with mappings, in the 0.x shape");
+		const auto mmRead = read070Mm(parse(fixtureMm.c_str()));
+		check(mmRead.ok && mmRead.soloTracks == std::vector<int>{1, 4}, "0.7.0's Monomachine reader takes it too, solo intact");
+		// and this version reads the 0.7.0 documents (no mappings member): none
+		std::vector<std::string> errors;
+		check(setupFromJson(setupToJson(plain, md), md, errors).mappings.empty() && errors.empty(), "a setup without mappings (0.7.0 wrote these) reads as none");
+	}
+
 	void mdln()
 	{
 		const LearnModelLookup model = [](const std::string& _n) -> std::optional<LearnRef>
@@ -292,6 +456,8 @@ int main()
 	overrides();
 	codec();
 	mdln();
+	older();
+	knobRows();
 	std::printf("deskLearnTest: %s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
 	return g_failures ? 1 : 0;
 }

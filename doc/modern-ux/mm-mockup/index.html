@@ -707,7 +707,7 @@ canvas.ed.smpwave{height:200px}
 .slotgrid .scell{height:32px}
 .slotgrid .scell b{font-size:12px}
 .slotgrid .scell small{font-size:9px}
-@media (max-width:1100px){.songui.lay2{grid-template-columns:minmax(0,1fr)!important}}
+@media (max-width:1239px){.songui.lay2{grid-template-columns:minmax(0,1fr)!important}}
 .songleft .irow .note{flex-basis:100%;padding-left:74px;font-size:12px}
 
 /* bipolar value bars (PAN, EQ gains, balances) */
@@ -2505,7 +2505,7 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
 .perf.map .kb{height:clamp(84px,14vh,150px)!important}
 /* Song, as the Machinedrum Editor's: the arrangement's 200 slots fill the page across and down (13 rows of 16
    share the height); the left column (patterns, selected row) scrolls on its own. One column below 1100 px. */
-@media (min-width:1101px){
+@media (min-width:1240px){
 #main>.songui.lay2{flex:1 1 auto;min-height:0;align-items:stretch}
 .songui.lay2>.songleft{min-height:0;overflow:auto;padding-right:6px}
 .songui.lay2>.card{min-height:0;grid-template-rows:auto auto minmax(0,1fr);padding:0 2px 2px 0}	/* room for the grid's bezel inside #main's clip */
@@ -2598,8 +2598,6 @@ header.top.tf4 .row2 .lcd2{gap:5px!important}
    right-click, the tempo field while its pop-up is open, and the TEMPO pop-up (doc/modern-ux/mockup-next/next.css). */
 .lcdt{position:relative}
 .lcdt .lt.paused{animation:blink .8s steps(2) infinite}
-.lcdt .ltmore{all:unset;cursor:pointer;position:absolute;right:1px;bottom:1px;width:11px;height:11px;display:flex;align-items:center;justify-content:center;font:9px/1 var(--mono,ui-monospace,monospace);color:var(--ink);opacity:.75;border-radius:2px}
-.lcdt .ltmore:hover,.lcdt .ltmore:focus-visible{opacity:1;background:color-mix(in srgb,var(--ink) 18%,transparent)}
 .lcdpanel .f.tempof{background:color-mix(in srgb,var(--ink) 12%,transparent);border-radius:2px}
 .tempopop{position:fixed;z-index:62;width:390px;box-sizing:border-box;display:grid;gap:10px;padding:12px 14px;background:var(--plate);color:var(--body,var(--print));border:2px solid var(--print);border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.35);font:13px var(--sans,system-ui,sans-serif)}
 .tempopop::before{content:"";position:absolute;top:-8px;left:var(--ax,40px);width:12px;height:12px;background:var(--plate);border-left:2px solid var(--print);border-top:2px solid var(--print);transform:rotate(45deg)}
@@ -2674,7 +2672,16 @@ header.top.tf4 .row2 .lcd2{gap:5px!important}
 /* The Song page's song slots (deskSongSlots.js) and the PATTERN · CHAIN · SONG keys of its one palette (0.6 wave 1,
    doc/modern-ux/DESIGN-machine-menus.md §2, Song). Both editors: the same classes, the page's own tokens. */
 .songui.withlib{grid-template-columns:366px minmax(340px,400px) minmax(0,1fr)!important}
-@media (max-width:1100px){.songui.withlib{grid-template-columns:minmax(0,1fr)!important}}
+@media (max-width:1239px){.songui.withlib{grid-template-columns:minmax(0,1fr)!important}}
+/* B-165: the page asks for 1240 px (.app min-width; the Machinedrum page's html and body 1280), the plug-in's zoom gives it 1440
+   or more, but a user zoom above 100 % leaves less. The Song page then takes the window's width (its columns stack below
+   1240 px, the song list shows all its rows) instead of running past the right edge. The class comes from the page's script
+   (renderers set html.songpage on the Song workspace: no :has, WebKit 15 has none, B-054). */
+html.songpage,html.songpage body,html.songpage .app{min-width:0!important}
+/* the three columns at 1240 to 1400 px: the middle one gives room to the arrangement and the slots' labels (A01, END) are one
+   size smaller, so a slot shows its whole label (B-165: 22 px cells cut it) */
+@media (min-width:1240px) and (max-width:1400px){.songui.withlib{grid-template-columns:366px minmax(290px,320px) minmax(0,1fr)!important}
+.slotgrid .scell{padding-left:1px;padding-right:1px}.slotgrid .scell b{font-size:10px}}
 .songlib{border-top:0!important;padding-top:0!important;display:grid;gap:10px;align-content:start;padding-right:16px!important;border-right:2px solid var(--print)}
 .songui.withlib>.songlib{align-self:start!important;align-content:start!important;grid-template-rows:none!important;height:auto!important;grid-row:1/-1}
 .songlib .sltop{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -2687,6 +2694,8 @@ header.top.tf4 .row2 .lcd2{gap:5px!important}
 .songlib .slacts button:disabled{opacity:.35;cursor:default}
 .songlib .danger:hover{background:var(--rec);color:#fff}
 .songlib .libgrid.songs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;max-height:calc(100vh - 330px);overflow:auto;align-content:start;padding:2px}
+/* stacked below 1240 px the page scrolls (#main): the list shows all its rows, no second scroll bar and no half row at its bottom */
+@media (max-width:1239px){.songlib .libgrid.songs{max-height:none;overflow:visible}}
 .songlib .ls{grid-template-columns:auto 1fr;column-gap:8px;align-items:center;padding:4px 7px}
 .songlib .ls .lsh{grid-row:1/3}
 .songlib .ls .lsl{grid-column:2;min-height:0}
@@ -2842,8 +2851,7 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
         <div class="lcdpanel"><div class="bootscr" id="bootscr" aria-hidden="true"><div class="bs1">MONOMACHINE <span id="bsmk">SFX-60 MKII</span></div><div class="bs2" id="bstxt">OS 1.32B · STARTING</div><div class="bsbar"><i id="bsbar"></i></div></div>
           <div class="f trf"><small class="engf"><select id="engsel" data-k="1" hidden><option value="emu">EMU OS 1.32B</option><option value="hw">HW MIDI</option><option value="audio">AUDIO/MIDI…</option><option value="global">GLOBAL…</option><option value="rom">LOAD ROM</option><option value="import">IMPORT SYSEX…</option><option value="export">EXPORT SYSEX…</option><option value="reset">RESET MACHINE…</option><option value="memoryKeep" hidden>KEEP MEMORY: ON</option><option value="followPlayed" hidden>FOLLOW PLAYED TRACK: OFF</option></select><button class="kselbtn lcdeng" type="button" data-for="engsel" aria-haspopup="listbox" aria-expanded="false" aria-label="Engine: emulator or hardware" title="Engine: run the emulator, or edit a real Monomachine over MIDI"><i class="led on" id="engled"></i><span>EMU OS 1.32B</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button></small><span class="lcdt">
             <button class="lt rec" id="rec" aria-pressed="false" aria-label="Record" title="Record: stopped = GRID RECORDING, playing = LIVE RECORDING. Alt+Space: live recording. ⇧-click (stopped): STEP RECORDING."><i class="led" id="recled"></i>●</button>
-            <button class="lt" id="play" aria-pressed="false" aria-label="Play" title="Play / stop (Space)"><i class="led" id="playled"></i><span id="playico">▶</span></button>
-            <button class="ltmore" id="playmore" type="button" aria-haspopup="menu" aria-label="Transport menu" title="Transport: Play, Pause, Live record, Panic (or right-click ▶)">▾</button>
+            <button class="lt" id="play" aria-pressed="false" aria-label="Play" title="Play / stop (Space) · right-click: Pause, Record, Panic"><i class="led" id="playled"></i><span id="playico">▶</span></button>
 </span></div>
           <div class="f"><small>Tempo <i class="led" id="tempoled" aria-hidden="true"></i></small><b id="bpm" role="slider" tabindex="0" aria-label="Tempo in bpm" title="Drag up or down. Tempo is global: patterns do not store it, song rows can.">120.0</b></div>
           <div class="f posf"><small>Position</small><b id="pos">--.--</b></div>
@@ -6381,13 +6389,17 @@ function renderLane(){const lane=$("#lane");if(!lane)return;const t=S.sel,tr=trk
  const last=steps().filter(s=>{const q=tr.steps[s];return q&&!q.off}).pop();
  lane.innerHTML=`<div class="lbscale"><b>${fmt(m,mx)}</b><b>${fmt(m,0)}</b></div>`+steps().map(s=>{const st=tr.steps[s],on=st&&!st.off,v=lm?.get(s);
   const ghost=!on&&v!=null;/* a lock on a step without a trig: kept (a machine's backup holds them), the machine ignores it */
-  return`<div class="lb ${on||ghost?"":"none"} ${ghost?"ghost":""} ${on?"k-"+(isMidiT(t)?"full":stepKind(st)):""} ${gapC(s)} ${inSel(t,s)?"vsel":""} " data-s="${s}" title="${on?(v!=null?"Locked "+fmt(m,v):"Kit value "+fmt(m,base))+(isMidiT(t)?"":{full:" · all envelopes",part:" · some envelopes",trigless:" · trigless"}[stepKind(st)]||""):ghost?"Lock on a step without a trig: the machine ignores it ("+fmt(m,v)+"). Alt-click removes it.":"No trig here: add one (a trigless trig with alt-click keeps the envelopes quiet)"}">${on?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${v!=null?barHTML(v)+valueHTML(m,v,mx):""}${s===last?kitLabelHTML(m,base,mx):""}`:ghost?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${barHTML(v)}${valueHTML(m,v,mx)}`:""}</div>`}).join("");
+  return`<div class="lb ${on||ghost?"":"none"} ${ghost?"ghost":""} ${on?"k-"+(isMidiT(t)?"full":stepKind(st)):""} ${gapC(s)} ${inSel(t,s)?"vsel":""} " data-s="${s}" title="${on?(v!=null?"Locked "+fmt(m,v)+" · drag its dot sideways to slide to the next lock":"Kit value "+fmt(m,base))+(isMidiT(t)?"":{full:" · all envelopes",part:" · some envelopes",trigless:" · trigless"}[stepKind(st)]||""):ghost?"Lock on a step without a trig: the machine ignores it ("+fmt(m,v)+"). Alt-click removes it.":"No trig here: add one (a trigless trig with alt-click keeps the envelopes quiet)"}">${on?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${v!=null?barHTML(v)+valueHTML(m,v,mx):""}${s===last?kitLabelHTML(m,base,mx):""}`:ghost?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${barHTML(v)}${valueHTML(m,v,mx)}`:""}</div>`}).join("");
  requestAnimationFrame(drawSlides)}
 function drawSlides(){const svg=$("#lanesvg"),lane=$("#lane");if(!svg||!lane)return;const t=S.sel,tr=trk(t),lm=S.locks.get(lkKey(t,S.lane));svg.innerHTML="";if(!lm)return;
  const[pg,i]=S.lane.split("."),mx=maxOf(meta(t,pg,+i)),box=lane.getBoundingClientRect(),ink=cssv("--ink");let d="";const real=x=>{const q=tr.steps[x];return !!q&&!q.off},locked=[...lm.keys()].filter(real).sort((a,b)=>a-b);/* a slide runs between locks on steps with a trig: a lock on a step without one is never played, so no line starts or ends there */
- locked.forEach(s=>{if(!tr.slide.has(s))return;const nx=locked.find(x=>x>s);if(nx==null)return;const a=lane.querySelector(`.lb[data-s="${s}"]`),b=lane.querySelector(`.lb[data-s="${nx}"]`);if(!a)return;
+ locked.forEach(s=>{const pv=laneDraw?.pv===s;if(!tr.slide.has(s)&&!pv)return;const nx=locked.find(x=>x>s);if(nx==null)return;const a=lane.querySelector(`.lb[data-s="${s}"]`),b=lane.querySelector(`.lb[data-s="${nx}"]`);if(!a)return;
   const ra=a.getBoundingClientRect(),y=v=>ra.bottom-box.top-6-v/mx*(ra.height-14),xa=ra.left-box.left+ra.width/2;
-  const xb=b?b.getBoundingClientRect().left-box.left+b.getBoundingClientRect().width/2:box.width;const ya=y(lm.get(s)),yb=y(lm.get(nx)),hl=cssv("--lcd")||"#fff";/* drawn after the lane, so above the bars; a light halo under the ink line reads on a solid bar and on an empty step */const fl=ra.bottom-box.top-6;/* automation ramp: a translucent fill down to the lane floor, a solid line bar top to bar top, a light halo under it; drawn after the lane so it sits above the bars and reads on solid bars, empty and hatched steps. The slide mark itself is the roll's top mark row (rollTopMarks) */d+=`<path d="M${xa} ${ya} L${xb} ${yb} L${xb} ${fl} L${xa} ${fl} Z" fill="${hl}" fill-opacity=".45"/><path d="M${xa} ${ya} L${xb} ${yb} L${xb} ${fl} L${xa} ${fl} Z" fill="${ink}" fill-opacity=".18"/><path d="M${xa} ${ya} L${xb} ${yb}" fill="none" stroke="${hl}" stroke-width="5" stroke-linecap="round"/><path d="M${xa} ${ya} L${xb} ${yb}" fill="none" stroke="${ink}" stroke-width="2" stroke-linecap="round"/><circle cx="${xa}" cy="${ya}" r="4" fill="${ink}" stroke="${hl}" stroke-width="1.5"/><circle cx="${xb}" cy="${yb}" r="3" fill="${ink}" stroke="${hl}" stroke-width="1.5"/>`});
+  const xb=b?b.getBoundingClientRect().left-box.left+b.getBoundingClientRect().width/2:box.width;const ya=y(lm.get(s)),yb=y(lm.get(nx)),hl=cssv("--lcd")||"#fff";/* drawn after the lane, so above the bars; a light halo under the ink line reads on a solid bar and on an empty step */const fl=ra.bottom-box.top-6;/* automation ramp: a translucent fill down to the lane floor, a solid line bar top to bar top, a light halo under it; drawn after the lane so it sits above the bars and reads on solid bars, empty and hatched steps. The slide mark itself is the roll's top mark row (rollTopMarks) */d+=`<path d="M${xa} ${ya} L${xb} ${yb} L${xb} ${fl} L${xa} ${fl} Z" fill="${hl}" fill-opacity=".45"/><path d="M${xa} ${ya} L${xb} ${yb} L${xb} ${fl} L${xa} ${fl} Z" fill="${ink}" fill-opacity=".18"/><path d="M${xa} ${ya} L${xb} ${yb}" fill="none" stroke="${hl}" stroke-width="5" stroke-linecap="round"/><path d="M${xa} ${ya} L${xb} ${yb}" fill="none" stroke="${ink}" stroke-width="2" stroke-linecap="round"${pv&&!tr.slide.has(s)?' stroke-dasharray="6 4"':""}/><circle cx="${xa}" cy="${ya}" r="4" fill="${ink}" stroke="${hl}" stroke-width="1.5"/><circle cx="${xb}" cy="${yb}" r="3" fill="${ink}" stroke="${hl}" stroke-width="1.5"/>`});
+ const lv=bandLive();if(lv){/* the rubber band: from the lock to the cursor, a ring on the only target */const a=lane.querySelector(`.lb[data-s="${lv.s}"]`),ra=a&&a.getBoundingClientRect(),hl=cssv("--lcd")||"#fff";
+  if(ra){const y=v=>ra.bottom-box.top-6-v/mx*(ra.height-14),xa=ra.left-box.left+ra.width/2,ya=y(lm.get(lv.s)),xc=lv.cur.x-box.left,yc=lv.cur.y-box.top;
+   d+=`<path d="M${xa} ${ya} L${xc} ${yc}" fill="none" stroke="${hl}" stroke-width="5" stroke-linecap="round"/><path d="M${xa} ${ya} L${xc} ${yc}" fill="none" stroke="${ink}" stroke-width="2" stroke-linecap="round"/><circle cx="${xa}" cy="${ya}" r="4" fill="${ink}" stroke="${hl}" stroke-width="1.5"/>`;
+   const b=lv.nx!=null&&lane.querySelector(`.lb[data-s="${lv.nx}"]`);if(b){const rb=b.getBoundingClientRect(),xb=rb.left-box.left+rb.width/2,yb=y(lm.get(lv.nx));d+=`<circle cx="${xb}" cy="${yb}" r="9" fill="${hl}" fill-opacity=".6" stroke="${ink}" stroke-width="2"/><circle cx="${xb}" cy="${yb}" r="3" fill="${ink}"/>`}}}
  svg.setAttribute("width",box.width);svg.setAttribute("height",box.height);svg.innerHTML=d}
 function syncScroll(){const a=$("#seqscroll"),b=$("#lanescroll");if(!a||!b)return;a.onscroll=()=>{b.scrollLeft=a.scrollLeft};b.onscroll=()=>{a.scrollLeft=b.scrollLeft}}
 function refreshRow(t){redraw();return;const gate={},am=ampSteps(t);noteSpans(t).forEach(sp=>{for(let k=sp.s;k<sp.e;k++)gate[k]=(k===sp.s?(sp.e-sp.s>1?"gs":"g1"):k===sp.e-1?"ge":"gm")+(k-sp.s>=am?" gd":"")});$$(`.mst[data-t="${t}"]`).forEach(b=>{const s=+b.dataset.s,st=trk(t).steps[s];b.className=stepCls(t,s);b.setAttribute("aria-pressed",!!st);b.title=stepTitle(t,s,st);b.innerHTML=`<span class="nt">${stepText(t,s,st)}</span>${gate[s]?`<span class="gt ${gate[s]}"></span>`:""}`})}
@@ -6398,7 +6410,59 @@ function clickStep(t,s,e){const tr=trk(t),st=tr.steps[s];
  else{if(st&&!st.off){tr.steps[s]=null;clearStepLocks(t,s)}else tr.steps[s]=note(lastNote(t,s))}
  editStep(t,s);renderTop();if(t!==S.sel){S.sel=t;stepFocus();autoRange(t);render()}else rerenderSeq()}
 let laneDraw=null;
-function laneAt(e){const lane=$("#lane");if(!lane)return;if(laneDraw.kit==="maybe"){if(Math.abs(e.clientY-laneDraw.y0)<=KIT_MOVE)return;laneDraw.kit=true;$("#lane").classList.add("kitdrag");kitAt(e);return}if(laneDraw.kit){kitAt(e);return}if(laneDraw.ramp){rampAt(e);return}const el=document.elementFromPoint(e.clientX,e.clientY)?.closest(".lb");if(!el||!lane.contains(el))return;
+/* ---- a slide drawn in the lock lane. The machine's slide is a flag on a step (the slide track): every parameter locked on that
+   step glides to its own next lock, past trigs that do not lock it, and holds it there (manual, SLIDE). So the lane draws it
+   from a lock's dot sideways to the next trig that locks this parameter: the drag only ever targets that step, whatever
+   further the pointer goes. A press on the dot and a sideways drag sets the flag at the release (one undo step); a click on
+   the ramp's line takes it away; a vertical drag from the dot is the lane's own (the lock's value, or the kit line). ---- */
+const DOT_HIT=8,LINE_HIT=5,SLIDE_MOVE=4;
+function slideNext(t,pid,s){const tr=trk(t),lm=S.locks.get(lkKey(t,pid));if(!lm)return null;return[...lm.keys()].filter(x=>x>s&&tr.steps[x]&&!tr.steps[x].off).sort((a,b)=>a-b)[0]??null}
+function slidePt(el,v){const r=el.getBoundingClientRect(),{mx}=laneMeta();return{x:r.left+r.width/2,y:r.bottom-6-v/mx*(r.height-14)}}
+function segDist(p,a,b){const dx=b.x-a.x,dy=b.y-a.y,l=dx*dx+dy*dy,k=l?clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/l,0,1):0;return Math.hypot(p.x-a.x-k*dx,p.y-a.y-k*dy)}
+function slideKey(e){const lane=$("#lane");if(e.button!==0||e.altKey||!lane||!e.target.closest)return null;let el=e.target.closest(".lb");/* the gap between two keys is the lane itself: the key whose column it is */if(!el&&e.target===lane)el=$$("#lane .lb").find(c=>e.clientX<c.getBoundingClientRect().right);return el&&lane.contains(el)?el:null}
+function slideDown(e){return{button:0,clientX:e.clientX,clientY:e.clientY,target:e.target,pointerId:e.pointerId,altKey:false,shiftKey:!!e.shiftKey,preventDefault(){}}}
+/* the dot of a lock on a step with a trig, or the ramp line of a step that slides: which gesture a press begins */
+function slideGrab(e){const el=slideKey(e);if(!el)return false;const t=S.sel,tr=trk(t),s0=+el.dataset.s,lm=S.locks.get(lkKey(t,S.lane));if(!lm||pidArgs(S.lane).page<0)return false;
+ /* Shift on a lock bar (a trig and a lock on this parameter): the slide's rubber band; on any other step Shift is the lane's ramp of locks */
+ if(e.shiftKey){const q=tr.steps[s0];if(!q||q.off||lm.get(s0)==null)return false;const r=el.getBoundingClientRect();
+  laneDraw={band:"maybe",s:s0,down:slideDown(e),x0:r.left,x1:r.right,touched:false};$("#lane").setPointerCapture(e.pointerId);e.preventDefault();return true}
+ const p={x:e.clientX,y:e.clientY},st=tr.steps[s0],v0=lm.get(s0);let mode=null,s=s0;
+ if(st&&!st.off&&v0!=null){const d=slidePt(el,v0);if(Math.hypot(p.x-d.x,p.y-d.y)<=DOT_HIT)mode="slide"}
+ if(!mode)for(const a of tr.slide){const nx=slideNext(t,S.lane,a),v=lm.get(a),ea=$(`#lane .lb[data-s="${a}"]`),eb=nx==null?null:$(`#lane .lb[data-s="${nx}"]`);if(!ea||!eb||v==null)continue;
+  if(segDist(p,slidePt(ea,v),slidePt(eb,lm.get(nx)))<=LINE_HIT&&!(a===s0&&st&&!st.off&&Math.hypot(p.x-slidePt(ea,v).x,p.y-slidePt(ea,v).y)<=DOT_HIT)){mode="cut";s=a;break}}
+ if(!mode)return false;
+ laneDraw={[mode]:"maybe",s,down:slideDown(e),touched:false};$("#lane").setPointerCapture(e.pointerId);e.preventDefault();return true}
+/* the Shift rubber band being drawn (the pointer is out of its column, not cancelled), or null */
+function bandLive(){const d=laneDraw;return d&&d.band==="on"&&!d.esc&&d.cur&&d.cur.x>=d.x0?d:null}
+function bandEsc(){if(laneDraw?.band==="on"){laneDraw.esc=true;drawSlides();toast("Slide cancelled")}}
+function bandAt(e){const d=laneDraw,t=S.sel;
+ if(d.band==="maybe"){const dn=d.down;
+  if(e.clientX<d.x0||e.clientX>=d.x1)d.band="on";/* out of the column sideways: the slide */
+  else{if(Math.abs(e.clientY-dn.clientY)<=SLIDE_MOVE)return true;laneDraw={ramp:true,touched:false};laneAt(dn);laneAt(e);return true}}/* up and down inside it: the Shift ramp of locks */
+ const nx=slideNext(t,S.lane,d.s);d.cur={x:e.clientX,y:e.clientY};d.nx=nx;
+ if(!d.told&&e.clientX>=d.x0){d.told=1;toast(nx==null?"No later lock to slide to":`Drop on step ${nx+1}: this parameter's next lock`)}
+ drawSlides();return true}
+/* true when the event was the slide gesture's; false hands it back to the lane's own paint */
+function slideAt(e){const d=laneDraw,t=S.sel;if(d.band)return bandAt(e);
+ if(d.cut==="maybe"||d.slide==="maybe"){const dn=d.down,dx=e.clientX-dn.clientX,dy=e.clientY-dn.clientY;if(Math.hypot(dx,dy)<=SLIDE_MOVE)return true;
+  if(d.cut==="maybe"||Math.abs(dy)>Math.abs(dx)){/* moved off the line, or up and down from the dot: the lane's own gesture, as if there were no slide */
+   laneDraw={erase:false,touched:false};if(!kitGrab(dn))laneAt(dn);laneAt(e);return true}
+  d.slide="on"}
+ if(d.slide!=="on")return false;
+ const nx=slideNext(t,S.lane,d.s),right=e.clientX>d.down.clientX+SLIDE_MOVE,was=d.pv;d.pv=right&&nx!=null?d.s:null;
+ if(right&&!d.told){d.told=1;toast(nx==null?"No later lock on this parameter to slide to":`Slides to step ${nx+1}, this parameter's next lock`)}
+ if(was!==d.pv)drawSlides();return true}
+/* the release: true when the slide gesture took it (a plain click on the dot is the lane's click, replayed) */
+function slideEnd(){const d=laneDraw;if(!d||!(d.slide||d.cut||d.band))return false;const t=S.sel,tr=trk(t);$("#lane")?.classList.remove("kitdrag");
+ if(d.band==="maybe"){laneDraw={ramp:true,touched:false};laneAt(d.down);endLaneDraw();return true}
+ if(d.band){const live=bandLive(),nel=live&&live.nx!=null?$(`#lane .lb[data-s="${live.nx}"]`):null,nr=nel?.getBoundingClientRect(),hit=!!nr&&live.cur.x>=nr.left&&live.cur.x<nr.right;
+  laneDraw=null;if(hit&&!tr.slide.has(d.s)){tr.slide.add(d.s);edit("slide",{t,s:d.s,on:true});commit();renderTop()}
+  rerenderSeq();return true}
+ if(d.slide==="maybe"){laneDraw={erase:false,touched:false};if(!kitGrab(d.down))laneAt(d.down);endLaneDraw();return true}
+ if(d.cut==="maybe"){laneDraw=null;if(tr.slide.has(d.s)){tr.slide.delete(d.s);edit("slide",{t,s:d.s,on:false});toast(`Slide off on step ${d.s+1}: its locked values jump again.`)}commit();renderTop();rerenderSeq();return true}
+ const was=d.pv;laneDraw=null;if(was!=null&&!tr.slide.has(d.s)){tr.slide.add(d.s);edit("slide",{t,s:d.s,on:true})}
+ commit();renderTop();rerenderSeq();return true}
+function laneAt(e){const lane=$("#lane");if(!lane)return;if(laneDraw.slide||laneDraw.cut||laneDraw.band){if(slideAt(e))return}if(laneDraw.kit==="maybe"){if(Math.abs(e.clientY-laneDraw.y0)<=KIT_MOVE)return;laneDraw.kit=true;$("#lane").classList.add("kitdrag");kitAt(e);return}if(laneDraw.kit){kitAt(e);return}if(laneDraw.ramp){rampAt(e);return}const el=document.elementFromPoint(e.clientX,e.clientY)?.closest(".lb");if(!el||!lane.contains(el))return;
  const s=+el.dataset.s,t=S.sel,st=trk(t).steps[s];if(!st||st.off){if(!(laneDraw.erase&&S.locks.get(lkKey(t,S.lane))?.has(s)))return}const[pg,i]=S.lane.split("."),mx=maxOf(meta(t,pg,+i));const r=el.getBoundingClientRect();const v=clamp(Math.round((r.bottom-6-e.clientY)/(r.height-14)*mx),0,mx);
  if(laneDraw.erase){const m=S.locks.get(lkKey(t,S.lane));if(!m?.has(s))return;m.delete(s);if(!m.size)S.locks.delete(lkKey(t,S.lane));edit("lock",{t,...pidArgs(S.lane),s,v:null})}
  else{if(S.locks.get(lkKey(t,S.lane))?.get(s)===v)return;if(!setLock(t,S.lane,s,v))return;edit("lock",{t,...pidArgs(S.lane),s,v})}
@@ -6418,7 +6482,7 @@ function kitAt(e){const el=$("#lane .lb");if(!el)return;const t=S.sel,{m,mx}=lan
  /* in place: the page's renders wait for the drag */
  $$("#lane .base").forEach(b=>b.style.bottom=`calc(6px + ${IN}*${(v/mx).toFixed(4)})`);const k=$("#lane .kvl");if(k){k.textContent=fmt(m,v);k.style.bottom=kitLabelAt(v,mx);k.className=kitLabelCls(v,mx)}
  syncControls();redraw()}
-function endLaneDraw(){if(!laneDraw)return;if(laneDraw.kit==="maybe"){const dn=laneDraw.down;laneDraw={erase:false,touched:false};laneAt(dn)}const d=laneDraw;$("#lane")?.classList.remove("kitdrag");if(d.kit){laneDraw=null;rerenderSeq();return}if(d.ramp){rampSend();laneDraw=null;renderTop();rerenderSeq();return}laneDraw=null;if(d.touched)rerenderSeq()}
+function endLaneDraw(){if(!laneDraw)return;if(slideEnd())return;if(laneDraw.kit==="maybe"){const dn=laneDraw.down;laneDraw={erase:false,touched:false};laneAt(dn)}const d=laneDraw;$("#lane")?.classList.remove("kitdrag");if(d.kit){laneDraw=null;rerenderSeq();return}if(d.ramp){rampSend();laneDraw=null;renderTop();rerenderSeq();return}laneDraw=null;if(d.touched)rerenderSeq()}
 
 /* ===== the note lane: the selected track's trigs by pitch, same columns as the overview ===== */
 const ROWS=24;
@@ -6787,6 +6851,9 @@ Keys.bind({id:"rotate",scope:"seq",keys:["ArrowLeft","ArrowRight"],mod:"alt",gro
 Keys.bind({id:"unmute-all",scope:"any",keys:["0"],group:"All",does:"Unmute and unsolo every track",when:kbOn,run:()=>unmuteAll()});
 Keys.bind({id:"unmark-paste",scope:"seq",keys:["Escape"],group:"Pattern",does:"Unmark the tracks marked for paste",when:()=>seqKeys()&&S.marks.size>0,run:()=>{S.marks.clear();renderRail()}});
 Keys.bind({id:"lockstep-wheel",scope:"seq",area:"Lock lane",keys:["wheel on a lock step"],group:"Pattern",does:"Move its lock in the lane's parameter, 4 a notch (⇧: 1)"});
+Keys.bind({id:"lane-slide",scope:"seq",area:"Lock lane",keys:["lock's dot"],group:"Pattern",does:"Drag sideways: a slide to the next lock of this parameter, drawn as a ramp (the machine glides every parameter locked on the step; one undo step). Click the ramp's line: slide off. Up and down is the lock's value as before"});
+Keys.bind({id:"lane-slide-band",scope:"seq",area:"Lock lane",keys:["lock bar"],mod:"shift",group:"Pattern",does:"Drag sideways out of a lock bar: a slide, a line to the cursor; drop on this parameter's next lock to set it (one undo step). Anywhere else, Esc or left of the start cancels. From a step without a lock the same drag is the ramp of locks"});
+Keys.bind({id:"lane-slide-cancel",scope:"seq",area:"Lock lane",keys:["Escape"],group:"Pattern",does:"While drawing a slide in the lock lane: cancel it",when:()=>laneDraw?.band==="on",run:()=>bandEsc()});
 Keys.bind({id:"lane-ramp",scope:"seq",area:"Lock lane",keys:["lock lane"],mod:"shift",group:"Pattern",does:"Drag: a ramp, a straight line from the press to the release (one undo step)"});
 Keys.bind({id:"track-mark-paste",scope:"seq",area:"Tracks",keys:["track header"],mod:"shift",group:"Pattern",does:"Click: mark the track for paste; ⌘V then pastes into every marked track (one undo step)"});
 
@@ -8980,7 +9047,6 @@ function panicNow(){if(NA.panic){toast(NA.panic);return}S.paused=null;
 const TRANSPORT_HOST={recordLabel:"Live record",stepRecord:()=>stepRecord(),play:()=>playButton(),stop:()=>stopNow(),pauseToggle:()=>pauseToggle(),record:()=>liveRecord(),panic:()=>panicNow()};
 function transportMenu(x,y){DeskTransport.openMenu(x,y,{playing:S.playing,paused:!!S.paused,rec:!!S.rec,step:stepOn(),can:{transport:!NA.transport,record:true,stepRecord:!NA.gridRecord,panic:!NA.panic},reasons:{panic:NA.panic,stepRecord:NA.gridRecord}},TRANSPORT_HOST)}
 document.addEventListener("contextmenu",e=>{if(!e.target.closest?.("#play"))return;e.preventDefault();e.stopImmediatePropagation();transportMenu(e.clientX,e.clientY)},true);
-document.addEventListener("click",e=>{const m=e.target.closest?.("#playmore");if(!m)return;e.preventDefault();e.stopImmediatePropagation();const r=m.getBoundingClientRect();transportMenu(r.left,r.bottom+2)},true);
 
 /* ===== the TEMPO pop-up and the nudge ===== */
 function nudgeTempo(pct){if(pct&&tempoLocked())return;
@@ -9054,7 +9120,7 @@ Keys.bind({id:"step-move",short:"Back / Rest",scope:"any",keys:["ArrowLeft","Arr
 Keys.bind({id:"step-clear",short:"Clear step",hidden:true,scope:"any",keys:["Delete","Backspace"],group:"Transport",does:"Step recording: clear the step under the cursor and move on",when:()=>stepOn()&&kbOn(),run:()=>stepKey("clear")});
 Keys.bind({id:"step-done",short:"Done",hidden:true,scope:"any",keys:["Escape"],group:"Transport",does:"Step recording: done",when:()=>stepOn()&&kbOn(),run:()=>stepDone()});
 Keys.bind({id:"song-play-from",short:"From here",scope:"song",keys:["Enter"],group:"Song",does:"Play the song from the selected row (▶ From here)",when:()=>kbOn()&&S.ws==="song"&&!document.activeElement?.closest?.(".songlib,[data-rowact]"),run:()=>playFromRow()});
-[["transport-menu","any","Top bar",["right-click ▶"],"","Transport","The transport menu: Play / Stop, Pause / Continue, Live record, Step record, Panic (also the ▾ in the key's corner)"],
+[["transport-menu","any","Top bar",["right-click ▶"],"","Transport","The transport menu: Play / Stop, Pause / Continue, Live record, Step record, Panic (right-click ▶; Shift+F10 or the menu key with ▶ focused)"],
  ["step-record","any","Top bar",["REC"],"shift","Transport","Click (stopped): step recording; again (or Esc): done"],
  ["pause-click","any","Top bar",["▶"],"shift","Transport","Click: pause; ▶ again goes on from the step"],
  ["tempo-click","any","Top bar",["tempo"],"","Transport","Click (no drag): the TEMPO window: − / +, TAP, nudge, change on release, INT / EXT"],
@@ -9171,7 +9237,7 @@ main.addEventListener("pointerdown",e=>{
  const c=e.target.closest("canvas.ed");if(c){const hh=nearest(c,e);if(!hh)return;active={c,k:hh.k,all:e.altKey&&!isMidiT(S.sel)};if(active.all)allTip();c.setPointerCapture(e.pointerId);e.preventDefault();redraw();return}
  const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el&&ValueEdit.isOpenClick(e)){e.preventDefault();ValueEdit.open(el,ValueBox);return}
  if(el){const t=el.dataset.t!=null?+el.dataset.t:S.sel;drag={el,x:e.clientX,y:e.clientY,v:getV(el),vert:el.classList.contains("fader"),hz:el.classList.contains("hz")&&el.getBoundingClientRect().width,mx:maxOf(ref(el)[2]),all:e.altKey&&!isMidiT(t)&&PAGES.includes(el.dataset.g)};if(drag.all)allTip();el.setPointerCapture(e.pointerId);el.classList.add("act");e.preventDefault();return}
- const lb=e.target.closest(".lb");if(lb&&kitGrab(e))return
+ const lb=e.target.closest(".lb");if((lb||e.target.id==="lane")&&slideGrab(e))return;if(lb&&kitGrab(e))return
  if(lb){laneDraw=e.shiftKey&&!e.altKey?{ramp:true,touched:false}:{erase:e.altKey,touched:false};$("#lane").setPointerCapture(e.pointerId);laneAt(e);e.preventDefault();return}
  const ac=e.target.closest(".ac");if(ac){const k=+ac.dataset.ac,a=trk(S.sel).arp;if(k>=a.len){a.len=k+1;edit("arp",{t:S.sel,field:"length",v:a.len});renderArp();return}arpDrag={k,y:e.clientY,moved:false};$("#arptrack").setPointerCapture(e.pointerId);e.preventDefault();return}
  if(e.target.closest("#joy")){joyDrag=true;$("#joy").setPointerCapture(e.pointerId);joyAt(e);e.preventDefault();return}
@@ -9483,7 +9549,7 @@ const FOCUS_KEYS=["g","n","t","i","l","gv"];
 function focusedValue(){const el=document.activeElement,d=el&&el.dataset;if(!d||(d.g==null&&d.gv==null)||!$("#main")?.contains(el))return null;return FOCUS_KEYS.filter(k=>d[k]!=null).map(k=>`[data-${k}="${d[k]}"]`).join("")}
 function render(){const f=focusedValue();renderPage();if(f){const el=document.querySelector("#main "+f);if(el&&document.activeElement!==el)el.focus({preventScroll:true})}}
 function renderPage(){closePicker();closeK();const sl=$("#seqscroll")?.scrollLeft||0;renderTop();{const m=(S.ws==="seq"||S.ws==="sound")&&S.side==="midi";if(!m&&S.sel>5)S.sel-=6;if(m&&S.sel<6)S.sel+=6}const full=["mix","perform","song","control"].includes(S.ws);
- $("#body").className="body "+(full?"full ":"")+"ws-"+S.ws;$("#rail").hidden=full;if(!full)renderRail();renderSub();
+ $("#body").className="body "+(full?"full ":"")+"ws-"+S.ws;document.documentElement.classList.toggle("songpage",S.ws==="song");$("#rail").hidden=full;if(!full)renderRail();renderSub();
  ({control:renderControl,seq:renderSeq,sound:renderSound,mix:renderMix,perform:renderPerform,song:renderSong})[S.ws]();
  const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));if(S.learn)document.body.classList.add("learn");movePH(false);polyFollows();mixMetersSync()}
 /* 0.6 wave 9 (B-064): POLY plays the machine's track in focus; the synth track the person selects here (rail, Assign's
@@ -9510,7 +9576,7 @@ addEventListener("resize",()=>{if(S.ws==="seq"){fitLane();drawSlides();alignLock
    its engine cannot do it says with disable(capability, reason). */
 const NA_SEL={
  midiMutes:[6,7,8,9,10,11].flatMap(t=>[`[data-mute="${t}"]`,`[data-solo="${t}"]`,`[data-gmute="${t}"]`]).join(","),
- transport:"#play,#playmore",playFrom:'[data-rowact="from"]',panic:'[data-mid="panic"]',poly:'[data-pmode="poly"]',multiTrig:'[data-set="mtmode"] button,[data-strk],[data-tim],#splitm',
+ transport:"#play",playFrom:'[data-rowact="from"]',panic:'[data-mid="panic"]',poly:'[data-pmode="poly"]',multiTrig:'[data-set="mtmode"] button,[data-strk],[data-tim],#splitm',
  multiMap:'.maprow [data-mhi],.maprow select,.maprow .kselbtn,.maprow .pc,[data-mdel],[data-madd],[data-band]',
  portamento:'[data-set="port"] button',gridRecord:"#rec",chains:'[data-chainpad],[data-chain]'};
 const NA_CARD={multiMap:".maprow"};	// a card that also says the reason in words

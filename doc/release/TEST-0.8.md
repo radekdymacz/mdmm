@@ -43,7 +43,8 @@ The editor's log shows a `midi: in … out … dropped …` line every 10 second
 2. A short click near the line still sets a lock.
 3. MM, a lock on a step without a trig shows as a hollow dashed ghost bar and the step is hatched. Alt-click erases it. A lock of 0 keeps a 2 px mark. The panel says "n locked steps" and the LCD LOCKS tip says "n of 62 locked parameters" (B-164).
 4. MM, a slide between two locks draws a ramp, above the bars, only between real locks.
-5. On a real Monomachine: a p-locked LFO parameter (for example SPD or DPTH) on one step. Does it revert to the kit value after its step? The LFO preview assumes yes (I-042). Note the answer.
+5. MM, Shift-drag from a lock draws a slide: hold Shift on a lock bar and drag sideways out of its column. A line follows the pointer and the next lock of that parameter is marked. Drop on it: the step slides, in one undo step. Drop elsewhere or press Esc: nothing changes.
+6. On a real Monomachine: a p-locked LFO parameter (for example SPD or DPTH) on one step. Does it revert to the kit value after its step? The LFO preview assumes yes (I-042). Note the answer.
 
 ## Monomachine (both testers' items)
 
@@ -105,12 +106,20 @@ The editor's log shows a `midi: in … out … dropped …` line every 10 second
 
 ## MIDI Learn (both editors, VST3 in Live and standalone)
 
-TODO. MIDI Learn's CONTROL workspace is still being built (WP-L). Do not test Learn from this sheet yet. When the CONTROL page is in, Claude fills this section with the plan's four checks:
+Learn is on in both editors. Mappings are saved with the project only. Check:
 
-1. CONTROL: learn a knob from a controller CC; the knob follows the controller.
-2. Save the Live set, close, open: the mapping is still there.
-3. A CC that is also on the firmware CC map: the editor does what WP-L decided, with no double jumps.
-4. Learn while the transport plays: no drop-outs.
+1. CONTROL: learn a knob from a controller CC (turn it both ways, or press a button that sends 0 and 127); the knob follows the controller and the machine's sound follows the knob.
+2. Learn a CC, save the Live set (or the Reaper project), close, open: the mapping is still there and still moves the parameter.
+3. A CC that is also on the firmware CC map (Machinedrum CC 16 to 39 on channel 1): after the learn, only the learned parameter moves, the machine's own target of that CC does not (no double jump). Remove the mapping: the CC reaches the machine again.
+4. Learn while the transport plays: no drop-outs, the clock and notes keep reaching the machine.
+5. In Cubase or Reaper (VST3): learn a relative encoder and turn it; the value does not jump back (the VST3 echo check), and the DAW records the turns as automation in write mode, one gesture per turn.
+6. HW MIDI engine (the page's engine menu): Learn shows it is off with its reason; CCs from the host pass to the machine untouched. Back on the emulator: Learn works again.
+7. Close the editor window while it waits for a controller: it stops waiting.
+
+## Controls that moved or are new (both editors)
+
+1. Transport menu: right-click the ▶ key. The menu opens with Play or Stop, Pause or Continue, Record and Panic. The ▾ key beside ▶ is gone.
+2. MKII/MKI plate switch: it is in the engine menu. Choose it: the panel changes colour and the choice stays after save and reload.
 
 ## Items from the log to close
 

@@ -807,7 +807,7 @@
 			],
 			"mod": "",
 			"group": "Transport",
-			"does": "The transport menu: Play / Stop, Pause / Continue, Record, Panic (also the ▾ in the key's corner)",
+			"does": "The transport menu: Play / Stop, Pause / Continue, Record, Panic (right-click ▶; Shift+F10 or the menu key with ▶ focused)",
 			"area": "Top bar"
 		},
 		{
@@ -2152,6 +2152,41 @@
 			"area": "Lock lane"
 		},
 		{
+			"id": "lane-slide",
+			"scope": "seq",
+			"keys": [
+				"lock's dot"
+			],
+			"mod": "",
+			"group": "Pattern",
+			"does": "Drag sideways: a slide to the next lock of this parameter, drawn as a ramp (the machine glides every parameter locked on the step; one undo step). Click the ramp's line: slide off. Up and down is the lock's value as before",
+			"area": "Lock lane"
+		},
+		{
+			"id": "lane-slide-band",
+			"scope": "seq",
+			"keys": [
+				"lock bar"
+			],
+			"mod": "shift",
+			"group": "Pattern",
+			"does": "Drag sideways out of a lock bar: a slide, a line to the cursor; drop on this parameter's next lock to set it (one undo step). Anywhere else, Esc or left of the start cancels. From a step without a lock the same drag is the ramp of locks",
+			"area": "Lock lane"
+		},
+		{
+			"id": "lane-slide-cancel",
+			"scope": "seq",
+			"keys": [
+				"Escape"
+			],
+			"mod": "",
+			"group": "Pattern",
+			"does": "While drawing a slide in the lock lane: cancel it",
+			"short": "Cancel",
+			"hidden": true,
+			"dispatched": true
+		},
+		{
 			"id": "lane-ramp",
 			"scope": "seq",
 			"keys": [
@@ -2613,7 +2648,7 @@
 			],
 			"mod": "",
 			"group": "Transport",
-			"does": "The transport menu: Play / Stop, Pause / Continue, Live record, Step record, Panic (also the ▾ in the key's corner)",
+			"does": "The transport menu: Play / Stop, Pause / Continue, Live record, Step record, Panic (right-click ▶; Shift+F10 or the menu key with ▶ focused)",
 			"area": "Top bar"
 		},
 		{

@@ -239,12 +239,12 @@ On the machine a second press of [PLAY] pauses. In the editor:
 2. Click the play key, or press {key:pause} again. The machine goes on from the step it held.
 3. To end the pause instead, choose **Stop** in the transport menu. <POSITION> reads --.--.
 
-The transport menu has Play or Stop, Pause or Continue, Live record and Panic, each with its key. Right-click the play key to open it, or click the small ▾ in the key's corner.
+The transport menu has Play or Stop, Pause or Continue, Live record and Panic, each with its key. Right-click the play key to open it. With the play key focused, Shift+F10 or the menu key opens it too.
 
 On the machine a double press of [STOP] rewinds the pattern and silences the notes. In the editor this is **Panic**.
 
 1. Press the play key. The machine plays.
-2. Click the small ▾ in the corner of the play key. The transport menu opens with **Panic** in it.
+2. Right-click the play key. The transport menu opens with **Panic** in it.
 3. Click **Panic**. Every note goes off and the machine stops.
 
 Right-click the play key for the same menu, or press {key:panic}. The editor sends All Notes Off on the channel of each track and stops the machine. The notes fade out with their release.

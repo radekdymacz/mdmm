@@ -101,6 +101,16 @@ namespace pluginLib
 		// message thread for editor bindings and their listeners.
 		void flushRealtimeValueToUi();
 
+		// MIDI Learn (message thread): tells the host the value the audio thread set through setValue (a learned CC), so a DAW
+		// in write mode records the move. The caller opens and closes the change gesture (beginChangeGesture /
+		// endChangeGesture). Never calls setValue, so nothing goes to the machine again; the bounce of a VST3 adapter is
+		// suppressed as in notifyHost.
+		void notifyHostOfValue();
+
+		// Whether setValue takes the realtime host-automation path (atomics only, no juce::Value, no timer): what a
+		// parameter must do to be moved from the audio thread by a learned CC.
+		bool takesRealtimeHostValues() const { return shouldSendRepeatedHostValues(); }
+
 		void setRateLimitMilliseconds(uint32_t _ms);
 
 		void setLinkState(ParameterLinkType _type);

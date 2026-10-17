@@ -87,6 +87,11 @@ namespace deskCore
 	// own and stay). One that would become another mapping's duplicate is dropped (the row already drives it).
 	std::vector<LearnMapping> moveKnobCc(const std::vector<LearnMapping>& _list, uint8_t _from, uint8_t _to);
 
+	// All knob rows changed at once (their CCs _from[i] became _to[i]): each any-channel mapping follows the row whose old CC it
+	// has, decided from the original list in one pass, so a swap or a rotation of the rows does not merge their mappings.
+	// Duplicates that result are dropped (the first stays).
+	std::vector<LearnMapping> moveKnobCcs(const std::vector<LearnMapping>& _list, const std::vector<uint8_t>& _from, const std::vector<uint8_t>& _to);
+
 	// ---- the firmware's own CC map: what a mapping hides ----
 
 	// The machine's channels: the Global's base channel and how many channels from it carry the machine's CCs (the
