@@ -210,14 +210,18 @@ What can be dropped, macOS only for now: a ROM (`.bin`, `.zip`), a SysEx file (`
 - **In a DAW** the plug-in sends the host's transport and tempo to the firmware as MIDI clock (`synthLib::MidiClock`). Each model says what its active global must be to follow them (`hostFollowing`, pure), and the `followHost` machine command sets it without an undo step. The session sends that command every 2 s, in a DAW's plug-in only (`followsHost`).
 - **A new machine** gets a `hostFollowing` of its own, plus the command row. See [DESIGN-P7-sync.md](DESIGN-P7-sync.md).
 
-## MIDI mapping is hidden for now
+## MIDI mapping
 
-The editors ship without MIDI mapping (MIDI Learn and the CONTROL workspace) until the controller feature lands. All of the code stays; one switch hides it:
+MIDI Learn and the CONTROL workspace are on since 0.8. A knob or fader on a controller moves a sound value; the design is [midilearn/DESIGN-learn-0.8.md](../midilearn/DESIGN-learn-0.8.md), the user side [midilearn/midi_learn.md](../midilearn/midi_learn.md), the threads [midilearn/THREADING.md](../midilearn/THREADING.md).
 
-- **The switch:** `deskHost::midiMappingEnabled` in `deskHost/deskHost.h`: on since 0.8 (MIDI Learn is session-wired, DESIGN-learn-0.8.md); `-DMDMM_MIDI_MAPPING=0` hides it again. The text below describes the switch off.
-- **Off:** the learn commands are refused (`MidiLearnCommands::handle`); no table is built, so MIDI reaches the machine raw whatever a project brought; the learn document says `enabled: false` (no mappings, no limits), and the pages hide the CONTROL tab (MD and MM, workspace 6), the LEARN key and their shortcuts (`applyMapping` in `mdDeskApp.js`; `setMapping` in the MM mockup source `130-main.js`, called from `mmAdapter.js`). The pages are hidden by default and show mapping only when the document says `enabled: true`. Host automation, the machine's own CC map, Control All and HW MIDI are unchanged.
-- **Back on:** turn the switch on; nothing else. The app LFOs and Random sources live on the CONTROL tab, so they return with it.
-- **Checks:** `sync-*-skin.py` keep the pages' gate (`page_contract_check.py: check_mapping_gate`); `mdSessionFirmwareTest` checks the document and the refusals while the switch is off.
+- **The owner:** the mappings are a member of the editor's setup (`DeskSetup::mappings`, `deskCore/deskLearn.*`), saved in `MDSK` with the project. The pure learn functions (add, remove, invert, move a knob row's CC, the learn step, mode detection) have no JUCE in them. One codec, lenient (see below). No file is ever written.
+- **The realtime side:** a fixed-size `LearnTable` in a `synthLib::Seqlock`, read by the `LearnRouter` on the audio thread; learning is pulled (a bounded ring the session step drains), so there is no callback. The pluginLib translator stays off (`usesMidiLearn()` false).
+- **The rule:** a mapped (channel, CC) belongs to the mapping. It moves the value through the realtime host-automation path and never reaches the firmware; the learn document's `overrides` says which of the machine's CCs it hides. Only CCs are learned; a 0/127 button is an absolute value.
+- **The document and rows:** the learn document (`enabled`, `mappings`, `learning` with `got` and `need`, `limits` with `max`, `left`, `paused`) and the rows `learnStart`, `learnAdd`, `learnCancel`, `learnRemove`, `learnInvert` in `deskHost/deskHost.h`; `knobs` moves a knob row's mappings with it. `testMidiIn` is diagnostics only.
+- **The pages:** the Control tab, the LEARN key and Esc to leave are in both editors; the Monomachine's CC rows show the plug-in's mappings (the page-local knob links are gone). Pages show mapping only when the document says `enabled: true`.
+- **The switch:** `deskHost::midiMappingEnabled` (`deskHost/deskHost.h`), 1 by default. `-DMDMM_MIDI_MAPPING=0` hides it again: the learn commands are refused, no table is built (MIDI reaches the machine raw, whatever a project brought), the document says `enabled: false`, and the pages hide the tab, the LEARN key and their shortcuts. Host automation, the machine's CC map, Control All and HW MIDI are unchanged.
+- **HW MIDI engine:** Learn is off (the host's MIDI in is the machine's own out). The document says `paused` with the reason; nothing is translated or captured.
+- **Checks:** `deskLearnTest` (pure core and codec), `mdLearnRouterTest` and `mdLearnRouterStressTest` (also under ThreadSanitizer), `mdLearnFirmwareTest` (the firmware does not see a mapped CC; project save and load), `mdDeskSetupStateTest`, the page tests and scenarios `control-learning` and `control-mapped`, the journeys `md-control-learn-*` and `mm-control-learn-*`, and `EDITFLOW_LEARN` in `scripts/mdmm-rt-check.sh --lock`. `sync-*-skin.py` keep the pages' gate (`page_contract_check.py: check_mapping_gate`).
 
 ## What 1.0 promises to read
 
@@ -230,7 +234,7 @@ the previous project's or session's state.
   skips the chunks it does not know and the ones whose version is above its own (`baseLib::ChunkReader`); a writer that
   holds a project it did not make (`DeskHost`, no ROM) puts back only the chunks its own writers changed and keeps every
   other one byte for byte. Our chunks: `MIDI` (the device state), `MMEM` 2 (the machine memory's mark), `RAMF` 1, `MDSK`
-  1 (the editor's setup), `AUTO` 1 (the automation parameters), `MDLN` 2 (MIDI mapping), plus pluginLib's own.
+  1 (the editor's setup), `AUTO` 1 (the automation parameters), `MDLN` 2 (the alphas' MIDI mapping: read once as below, never written), plus pluginLib's own.
 - **The chunk version rule:** a chunk's version is raised only for an incompatible change (one an older reader would
   misread). Additions never raise it: they go inside the payload where the payload can carry them (`MDSK` is JSON, so a
   new member), or into a new chunk. A raised version means every older editor drops that chunk whole.
@@ -240,6 +244,14 @@ the previous project's or session's state.
   its default; another schema or a newer major is the default setup. What was left out is logged and shown on the page.
   The MM writes the 0.x shape so 0.7 reads 1.0 projects; it also reads an `mm-desk/setup` wrapper, reserved for when a
   new member needs it.
+- **MIDI mappings (`MDSK` member `mappings`, and the `MDLN` chunk):** `mappings` is a list of `{ch, cc, t, [pg,] i, mode, invert}`
+  (`ch` 0 to 15 or 255 for any channel; the target is a track and a value index of the learn model, never a plug-in
+  parameter name). It is a member, so no version bump; a missing member means none. The reader leaves out alone an item
+  with a bad `ch`, `cc`, `t` or `i`, a target outside the learn limits, an exact duplicate, and everything past 128, each
+  with its JSON path in the log and a count on the page; an unknown `mode` is `absolute`. The old chunk `MDLN` 2 (pluginLib
+  JSON, written by the alphas before 0.3.0) is **read once**, only when the setup has no `mappings` member: a mapping whose
+  parameter is in the learn model and whose part is a track becomes a setup mapping, the rest is logged. `MDLN` is never
+  written again; saving drops it. Mappings are saved with the project only, never in a file of the editor's.
 - **The machine memory file:** `machine-memory.bin` (`mdJucePlugin/mdMachineMemory.h`, DESIGN-machine-memory.md):
   version major.minor (2.0 is what 0.7 wrote), self-sized entries; an entry it cannot use (a kind, flags or size it
   does not know) is skipped and written back as it was, with the file's minor and reserved header bytes. Another major,
