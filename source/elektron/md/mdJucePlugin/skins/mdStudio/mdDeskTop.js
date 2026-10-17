@@ -117,7 +117,7 @@ function renderEngine() {
    CAP_INFO: capabilities the page shows no control for (they say how the machine is read). The
    sync script checks both lists against the contract's capability names. */
 const CAP_CONTROLS = {
-	transport: "#play,#rec,#playmore",
+	transport: "#play,#rec",
 	playFrom: '[data-rowact="from"]',
 	liveRecord: "#rec",
 	chains: "[data-chainpad]",

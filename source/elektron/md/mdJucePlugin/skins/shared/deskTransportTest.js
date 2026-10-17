@@ -47,7 +47,8 @@ check(/<script src="deskTransport.js"><\/script>/.test(mdHtml) && mdHtml.indexOf
 check(mmJs.includes("const DeskTransport") && mmJs.includes("function pauseToggle"), "the Monomachine page holds deskTransport.js and its own transport file (mmMockup.js)");
 const mdCss = fs.readFileSync(path.join(MD, "mdDesk.css"), "utf8"), mmCss = fs.readFileSync(path.join(MM, "mmStudio.css"), "utf8");
 check(mdCss.includes(".tempopop{") && mmCss.includes(".tempopop{") && mdCss.includes(".lcdt .lt.paused") && mmCss.includes(".lcdt .lt.paused"), "both stylesheets have the TEMPO pop-up and the paused key");
-check(/id="playmore"/.test(mdHtml) && fs.readFileSync(path.join(MM, "mmStudio.html"), "utf8").includes('id="playmore"'), "both pages have the ▾ that opens the transport menu without a right-click");
+check(!/playmore/.test(mdHtml) && !fs.readFileSync(path.join(MM, "mmStudio.html"), "utf8").includes("playmore"), "neither page has a ▾ key beside ▶: the transport menu opens by right-click on ▶ (Shift+F10 on the focused key)");
+check(/id="play"[^>]*right-click: Pause, Record, Panic/.test(mdHtml) && fs.readFileSync(path.join(MM, "mmStudio.html"), "utf8").includes("right-click: Pause, Record, Panic"), "▶'s tooltip tells where the transport menu is");
 /* the keys: the same ids, keys and modifiers on both editors */
 const keymap = JSON.parse(fs.readFileSync(path.join(ROOT, "doc", "modern-ux", "keymap.json"), "utf8"));
 for (const id of ["pause", "panic", "tempo-nudge", "song-play-from", "transport-menu", "tempo-click", "tempo-delayed", "pause-click"]) {
