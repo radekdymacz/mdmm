@@ -28,23 +28,29 @@ function endLaneDraw() { let d = Held.as("lane"); if (!d) return;
 	if (d.kit === "maybe") { d = Held.with("lane", { kit: false, erase: false, ramp: false, touched: new Set() }); laneAt(d.down); }
 	if (d.ramp) rampSend(); Held.end("lane"); Gesture.end(); $("#lane")?.classList.remove("kitdrag"); refreshRow(S.sel); renderLane(); }
 
-/* ===== A slide drawn in the lock lane (0.8, I-054; the Monomachine lane's, in this lane's terms). The machine's slide is a
-   flag on a step: on a step that slides, the parameters it locks glide to their next lock (manual p. 49; the rule is
-   measured, doc/guide/md/08-pattern-sequencer.md "Parameter lock slide"). Whether the flag belongs to one track or to the
-   whole pattern (EDIT ALL, All tracks) is the trig type's choice, and setMark (mdDeskSeq.js) writes it as the Slide key
-   and ⌥⇧-click do: one slide intent. So the lane draws it from a lock's dot sideways to the step that parameter glides to,
-   and the drag only ever targets that step. Three gestures, all in the one "lane" slot:
+/* ===== A slide drawn in the lock lane (0.8, I-054; the Monomachine lane's gestures, in the Machinedrum's rule). The machine's
+   slide is a flag on a step: a parameter locked on that step glides in a straight line to its value on the NEXT TRIG of the
+   track and arrives exactly when that trig plays (measured on the firmware, gapProbesFirmwareTest w13slide; the guide's
+   "Parameter lock slide"). The value on that trig is its lock of the parameter, or the kit value when it holds none: a lock
+   further on is not the target. So the lane draws the ramp from a lock's dot to the next trig's bar top, or to the kit line
+   there, and the drag only ever targets that trig. Whether the flag belongs to one track or to the whole pattern (EDIT ALL,
+   All tracks) is the trig type's choice, and setMark (mdDeskSeq.js) writes it as the Slide key and ⌥⇧-click do: one slide
+   intent. Three gestures, all in the one "lane" slot:
    - slide: a press on the dot of a lock, dragged sideways: a dashed preview ramp, the flag set at the release;
    - band: Shift on a lock bar, dragged out of its column: a rubber band to the cursor, set when it is dropped on the target
      (Esc, a drop elsewhere or left of the start cancels); up and down inside the column stays the Shift ramp of locks;
    - cut: a press on the line of a ramp: a click takes the flag off (every track's, with All tracks).
    Up and down from the dot is the lane's own (the lock's value, or the kit line). ===== */
 const DOT_HIT = 8, LINE_HIT = 5, SLIDE_MOVE = 4;
-/* the next lock of the lane's parameter after step s, on a step with a trig (a lock on a step without one is never played) */
+/* the next trig of the track after step s (a lock on a step without a trig is never played), where the glide ends; null at the
+   last trig */
 function slideNext(t, pid, s) {
-	const tr = V.tracks[t], m = V.locks.get(lk(t, pid)); if (!m) return null;
-	return [...m.keys()].filter(x => x > s && tr.trigs[x]).sort((a, b) => a - b)[0] ?? null;
+	const tr = V.tracks[t];
+	for (let x = s + 1; x < Math.min(V.len, tr.trigs.length); x++) if (tr.trigs[x]) return x;
+	return null;
 }
+/* the value the lane's parameter has on a trig: its lock, else the kit value */
+function slideVal(t, pid, x) { return V.locks.get(lk(t, pid))?.get(x) ?? grp(t, pid)[pid] ?? 0; }
 /* where a lock's bar ends in its key (the bars' scale: 3 px in from the bottom, a bipolar one from the centre) */
 function slideY(r, v) { return bipLane() ? r.bottom - r.height * (.5 + (v - 64) / (v >= 64 ? 63 : 64) * .5) : r.bottom - 3 - (r.height - 6) * (v / 127); }
 function slidePt(el, v) { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: slideY(r, v) }; }
@@ -78,7 +84,7 @@ function slideGrab(e) {
 		const nx = slideNext(t, S.lane, a), v = lm.get(a), ea = $(`#lane .lb[data-s="${a}"]`), eb = nx == null ? null : $(`#lane .lb[data-s="${nx}"]`);
 		if (!ea || !eb || v == null || !tr.trigs[a]) continue;
 		const pa = slidePt(ea, v);
-		if (segDist(p, pa, slidePt(eb, lm.get(nx))) <= LINE_HIT && !(a === s0 && tr.trigs[s0] && Math.hypot(p.x - pa.x, p.y - pa.y) <= DOT_HIT)) { mode = "cut"; s = a; break; }
+		if (segDist(p, pa, slidePt(eb, slideVal(t, S.lane, nx))) <= LINE_HIT && !(a === s0 && tr.trigs[s0] && Math.hypot(p.x - pa.x, p.y - pa.y) <= DOT_HIT)) { mode = "cut"; s = a; break; }
 	}
 	if (!mode) return false;
 	Held.begin("lane", { [mode]: "maybe", s, down: slideDown(e) }); Gesture.begin(); grabPointer($("#lane"), e); e.preventDefault(); return true;
@@ -95,7 +101,7 @@ function bandAt(e) {
 	}
 	const nx = slideNext(t, S.lane, d.s);
 	d = Held.with("lane", { cur: { x: e.clientX, y: e.clientY }, nx });
-	if (!d.told && e.clientX >= d.x0) { Held.with("lane", { told: 1 }); toast(nx == null ? "No later lock to slide to" : `Drop on step ${nx + 1}: this parameter's next lock`); }
+	if (!d.told && e.clientX >= d.x0) { Held.with("lane", { told: 1 }); toast(nx == null ? "No later trig to slide to" : `Drop on step ${nx + 1}: the next trig, where the glide ends`); }
 	drawSlides(); return true;
 }
 /* true when the event was the slide gesture's; false hands it back to the lane's own paint */
@@ -110,7 +116,7 @@ function slideAt(e) {
 	}
 	if (d.slide !== "on") return false;
 	const nx = slideNext(t, S.lane, d.s), right = e.clientX > d.down.clientX + SLIDE_MOVE, was = d.pv, pv = right && nx != null ? d.s : null;
-	if (right && !d.told) { Held.with("lane", { told: 1 }); toast(nx == null ? "No later lock on this parameter to slide to" : `Slides to step ${nx + 1}, this parameter's next lock`); }
+	if (right && !d.told) { Held.with("lane", { told: 1 }); toast(nx == null ? "No later trig to slide to" : `Slides to step ${nx + 1}: the glide ends on the next trig`); }
 	Held.with("lane", { pv });
 	if (was !== pv) drawSlides();
 	return true;
