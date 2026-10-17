@@ -61,7 +61,8 @@ function page() {
 	const src = FILES.map(f => fs.readFileSync(f, "utf8").replace(/^"use strict";/, "") + (/mmAdapter/.test(f) ? hold : "")).join("\n;\n")
 		+ "\n;__start();\nreturn { S: () => S, Overlay, MmView, docStore, storeDoc, MM_SEAM, Dlg, Banner, mockup: { " +
 			"mutApply, genLive, genEnd, setMachine, songAction, secAction, setSel, clearSel, selCut, selDuplicate, selTrigs, selMark, selMove, selGrow, stepMenuItems, Keys, HOST, " +
-			"rollAdd, rollLen, rollRemove, editSpan, setRollLen, selMoveTo, selClear, pitchSel, rollDelNote, noteSpans, vis } };";
+			"rollAdd, rollLen, rollRemove, editSpan, setRollLen, selMoveTo, selClear, pitchSel, rollDelNote, noteSpans, vis, " +
+			"ccRows, mapsOf, srcById, rowIdOf, learnedText, overrideLine, applyMaps, tgtLabel, learnBind, trk } };";
 	const out = new Function("scope", "with (scope) {\n" + src + "\n}")(scope);
 	const run = () => { for (let n = 0; timers.length && n < 10000; n++) timers.shift()(); };
 	run();
@@ -344,12 +345,12 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 	   restart sends no mod message to bring them back) */
 	{
 		const c = loaded(), C = c.S();
-		C.ctl.sources.push({ id: "cc99", kind: "cc", cc: 99, label: "Knob 99", val: 64 }, { id: "L7", kind: "lfo", label: "LFO 7", val: 64, SHAPE: 0, RATE: "1/4", DEPTH: 50 });
-		C.ctl.links.push({ src: "cc99", t: 0, pid: "SYN.1", min: 10, max: 90, curve: "exp", inv: true }, { src: "L7", t: 6, pid: "MID.0", min: 0, max: 127, curve: "lin", inv: false });
+		C.ctl.sources.push({ id: "L7", kind: "lfo", label: "LFO 7", val: 64, SHAPE: 0, RATE: "1/4", DEPTH: 50 });
+		C.ctl.links.push({ src: "L7", t: 0, pid: "SYN.1", min: 10, max: 90, curve: "exp", inv: true }, { src: "L7", t: 6, pid: "MID.0", min: 0, max: 127, curve: "lin", inv: false });
 		const before = JSON.stringify({ s: C.ctl.sources, l: C.ctl.links });
 		c.recv([{ type: "reset" }]);
 		const after = c.S().ctl;
-		check(JSON.stringify({ s: after.sources, l: after.links }) === before, "a reset keeps the Control workspace: the CC link (min, max, curve) and the track 7 target are there");
+		check(JSON.stringify({ s: after.sources, l: after.links }) === before, "a reset keeps the Control workspace: the app LFO's links (min, max, curve) and the track 7 target are there");
 	}
 	/* a modSet on its way when the engine changes is never answered: the new engine's setup is taken */
 	const q = loaded(), Q = q.S();
@@ -366,6 +367,62 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 	r.recv([{ type: "machine", doc: machine({ input: false }) }, { type: "machine", doc: machine({ input: true }) }]);
 	r.recv([{ type: "mod", doc: theirs, values: [64], ccPerSecond: 0 }]);
 	check(r.win.MMView.ctlSetup().sources.some(x => x.id === "R9"), "not ready -> ready: the plug-in's setup is taken");
+}
+
+/* ---- 0.8 MIDI Learn L5: the CC rows are the plug-in's mappings (the learn document); no links of the page's own ---- */
+{
+	const mp = (index, t, pg, i, cc, ch, o = {}) => Object.assign({ index, t, pg, i, name: "x", cc, ch, mode: "Absolute", invert: false, overrides: [] }, o);
+	const limits = { tracks: 6, max: 128, params: [...Array(7).keys()].flatMap(pg => [...Array(8).keys()].map(i => ({ pg, i, name: "p" }))).concat([{ pg: 7, i: 0, name: "Level" }]) };
+	const learnDoc = (mappings, o = {}) => Object.assign({ enabled: true, mappings, learning: null, limits }, o);
+	const p = loaded(), S = p.S(), M = p.mockup;
+	p.recv([{ type: "learn", doc: learnDoc([mp(0, 2, 2, 0, 21, 255), mp(1, 0, 2, 1, 21, 255), mp(2, 1, 7, 0, 22, 255, { invert: true }), mp(3, 0, 2, 1, 73, 1, { overrides: [{ ch: 1, t: 1, pg: 2, i: 1 }, { ch: 2, t: 2, pg: 2, i: 1 }] })]) }]);
+	const rows = M.ccRows();
+	check(rows.length === 9 && rows[8].id === "x1:73" && rows[8].label === "CC 73 ch 2" && rows[0].cc === 21 && rows.slice(0, 8).every(r => r.ch === 255), "the CC rows: the eight knob rows, then the CC learned on one channel");
+	check(M.mapsOf("cc21").length === 2 && M.mapsOf("cc22").length === 1 && M.mapsOf("x1:73").length === 1 && M.mapsOf("cc23").length === 0, "each row shows the mappings of its CC and channel");
+	check(S.ctl.links.length === 0, "the page keeps no links of its own for the CC rows");
+	check(M.tgtLabel(S.ctl.doc.mappings[2]) === "T2 LEVEL" && /^T3 FLT /.test(M.tgtLabel(S.ctl.doc.mappings[0])), "a target is named by the page: the level, and the track's FLT value (the document's name is the plug-in's)");
+	check(M.overrideLine(S.ctl.doc.mappings[3]).startsWith("Overrides the machine's CC 73 on channel 2: T2 FLT ") && M.overrideLine(S.ctl.doc.mappings[3]).includes("; on channel 3: T3 FLT "), "what a mapping hides, one line");
+	check(M.overrideLine(S.ctl.doc.mappings[0]) === "" && M.learnedText(S.ctl.doc.mappings[0]).startsWith("Learned CC 21 on any channel: T3 FLT ") && M.learnedText(S.ctl.doc.mappings[3]).includes("Overrides the machine's CC 73"), "the learned toast names the CC, the channel, the target and what it hides");
+	/* progress, completion, paused */
+	S.learn = true; S.learnT = { t: 2, pid: "FLT.0" };
+	const ms = S.ctl.doc.mappings;
+	p.recv([{ type: "learn", doc: learnDoc(ms, { learning: { t: 2, pg: 2, i: 0, name: "x", got: 1, need: 2 } }) }]);
+	check(S.ctl.doc.learning.got === 1 && S.learnT, "progress: 1 of 2, the value still waits");
+	p.recv([{ type: "learn", doc: learnDoc([...ms, mp(4, 2, 2, 0, 30, 255)]) }]);
+	check(S.learnT === null && S.ctl.doc.mappings.length === 5, "a learn completes: the value no longer waits");
+	S.learn = true; S.learnT = { t: 2, pid: "FLT.0" };
+	p.recv([{ type: "learn", doc: learnDoc(ms, { paused: "MIDI learn is off with the HW MIDI engine." }) }]);
+	check(S.learn === false && S.learnT === null && S.ctl.doc.paused, "paused (HW MIDI engine): LEARN is left");
+	p.recv([{ type: "learn", doc: learnDoc(ms, { left: ["$.mappings[3]: track 17 is outside 1..6"] }) }]);
+	check(S.ctl.left.includes("track 17"), "what a project load left out is kept for the page");
+	/* LEARN's digits: the knob row's own CC, whatever it is set to */
+	S.ctl.sources[2].cc = 40;
+	S.learn = true; S.learnT = { t: 1, pid: "SYN.3" }; p.sent.length = 0;
+	M.learnBind(3); p.run();
+	const add = lastOp(p, "learnAdd");
+	check(add && add.cc === 40 && add.t === 1 && add.pg === 0 && add.i === 3 && add.ch === undefined && p.sent.some(m => m.op === "learnCancel") && S.ctl.links.length === 0,
+		"digit 3 adds the knob row 3's CC (40, not 23) on any channel, and no link of the page's own: " + JSON.stringify(add));
+	S.ctl.sources[2].cc = 23;
+	/* Add target, Inv and x go to the plug-in by index; a channel-specific row adds on its channel */
+	p.sent.length = 0;
+	p.host.learnAdd({ cc: 73, ch: 1, t: 0, pg: 2, i: 4 }); p.host.learnAdd({ cc: 21, ch: 255, t: 0, pg: 7, i: 0 }); p.host.learnInvert(2); p.host.learnRemove(1); p.run();
+	check(p.sent.filter(m => m.op === "learnAdd").map(m => m.ch).join() === "1," && lastOp(p, "learnInvert").index === 2 && lastOp(p, "learnRemove").index === 1,
+		"Add target (on the row's channel, or any), Inv and x are the plug-in's learnAdd, learnInvert and learnRemove");
+	/* the on-screen knob row drives its mappings: absolute, Inv turns it round, a level goes as the level intent */
+	const T = M.trk;
+	M.srcById("cc21").val = 127; M.srcById("cc22").val = 127;
+	M.applyMaps("cc21"); M.applyMaps("cc22");
+	check(T(2).v.FLT[0] === 127 && T(1).lev === 0 && T(0).v.FLT[1] === 127, "knob row 1 at 127 moves its targets to the top; knob row 2 (Inv) takes the level to 0");
+	M.srcById("cc21").val = 0; M.applyMaps("cc21");
+	check(T(2).v.FLT[0] === 0, "and back to 0");
+	/* the old project case: a page-only knob link from no source is left out of the modulators, said in the log */
+	const q = loaded(), logged = [], log0 = console.log; console.log = (...a) => logged.push(a.join(" "));
+	const old = { schema: "mm-desk/modulators", version: 1, sources: [{ id: "L1", label: "LFO 1", kind: "lfo", shape: 0, rate: "1/4", depth: 100, smooth: 30 }],
+		links: [{ source: "cc21", track: 0, param: 17, min: 0, max: 127, curve: "lin", invert: false }, { source: "L1", track: 0, param: 17, min: 0, max: 127, curve: "lin", invert: false }] };
+	try { q.recv([{ type: "mod", doc: old, values: [64], ccPerSecond: 0 }]); } finally { console.log = log0; }
+	const setup = q.win.MMView.ctlSetup();
+	check(setup.links.length === 1 && setup.links[0].src === "L1" && q.S().ctl.links.every(l => l.src === "L1"), "an old project's knob link (a source the setup does not have) is left out; the LFO's link loads");
+	check(logged.some(l => /1 link\(s\) from no source left out/.test(l)), "and the log says so: " + logged.filter(l => /link/.test(l)).join(" | "));
 }
 
 /* ---- I-007, I-010 (0.5 slice 3): the piano roll's notes with their lengths, as the core's intents ---- */

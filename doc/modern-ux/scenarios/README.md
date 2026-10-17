@@ -70,6 +70,8 @@ Files starting with `_` are fixtures, not scenarios.
 | `midi-loop` | the standalone's AUDIO / MIDI panel (comma key) with the IAC Bus 1 virtual bus on as an input and as the output: the loop warning, External Input on NONE with the microphone note, the Monitor row counting | the same |
 | `midi-hardware` | the same panel with a hardware port (Elektron TM-1) as input and output: no loop warning, no input note | the same |
 | `engine-unavailable` | HW MIDI lost: lifecycle hwLost, capabilities with reasons, the engine menu | the same, and the page's own "no answer" dialog |
+| `control-learning` | (L4, the Machinedrum's own file) | MIDI Learn on, the Control workspace (key 6): a value waits, 1 of 2, 2 of 2, learned (CC 21 on channel 1: a row of its own), then paused by the HW MIDI engine |
+| `control-mapped` | (L4) | the Control workspace with the plug-in's mappings: knob rows with targets, one inverted, a level, a CC that hides the machine's own CC (one line), and what a project load left out |
 
 ## What the contract cannot say (so it is not here)
 

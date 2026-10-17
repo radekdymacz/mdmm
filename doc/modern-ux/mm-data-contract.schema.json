@@ -2758,6 +2758,10 @@
                     }
                   ]
                 },
+                "paused": {
+                  "type": "string",
+                  "description": "Why MIDI learn is paused (the HW MIDI engine: nothing is translated or captured); absent: it is not. LEARN says it and starts nothing."
+                },
                 "left": {
                   "type": "array",
                   "description": "What the last project load left out (the setup's mappings), one reason each; absent: nothing.",
