@@ -74,6 +74,7 @@ function applyPattern(p){const kc=S.patKit[p]!==S.kit;
 /* ===== Top bar ===== */
 function renderTop(){
  $$("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.ws===S.ws));
+ {const ck=$("#controlkey");if(ck){ck.setAttribute("aria-pressed",S.ws==="control");ck.classList.toggle("on",S.ws==="control");const l=ck.querySelector(".led");if(l)l.classList.toggle("on",S.ws==="control")}}
  const lkk=$("#learnkey");if(lkk){lkk.setAttribute("aria-pressed",S.learn);lkk.classList.toggle("on",!!S.learn)}
  {const o=document.querySelector('#engsel option[value="plate"]');if(o)o.textContent="PLATE: "+(S.plate==="mk1"?"MKI":"MKII")}
  const n=S.locks.size,m=$("#meter");$("#lockn").textContent=String(n).padStart(2,"0")+"/62";m.title=`${n} of 62 locked parameters (the machine's limit). A parameter with any lock counts once.`;m.className="f meter"+(n>=62?" full":n>=52?" warn":"");

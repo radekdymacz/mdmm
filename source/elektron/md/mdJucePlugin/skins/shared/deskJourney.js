@@ -848,13 +848,16 @@ const Journey = (() => {
 		for (const e of row.children) { const r = e.getBoundingClientRect(); if (r.width > 0 && r.right > panel.right + 0.5) cut.push(e.id || e.className); }
 		return cut;
 	};
+	/* a workspace's key: its tab, or for "control" the CONTROL key in Setup (lit while its page is open) */
+	const wsKey = w => w === "control" ? "#controlkey" : `#tabs [data-ws="${w}"]`;
+	const wsOn = w => w === "control" ? $q("#controlkey").getAttribute("aria-pressed") === "true" : $q(wsKey(w)).getAttribute("aria-selected") === "true";
 	const fitJourneys = (prefix, workspaces, opts = {}) => [{
 		name: `${prefix}-fit-workspaces`, proves: [],
 		steps: [{ say: "every workspace at every window size and text floor: the top bar's keys wholly in the window, every slot of the LCD's second row visible, the LCD one size",
 			act: async (hands, c) => {
 				const resize = typeof window.gmView === "function";
 				const views = resize ? (opts.views || fitViews) : [{ name: "this window", width: innerWidth, floor: 0 }];
-				c.report = []; c.boxes = {}; c.start = $q("#tabs [aria-selected=true]")?.dataset.ws || workspaces[0];
+				c.report = []; c.boxes = {}; c.start = $q("#tabs [aria-selected=true]")?.dataset.ws || (typeof S !== "undefined" && S.wsBeforeControl) || workspaces[0];
 				if (typeof CpuMeter !== "undefined" && !$q("#cpumeter")) CpuMeter.update({ type: "cpuLoad", state: "running", load: 0.35, worst: 0.55, realtime: 3.1, sampleRate: 48000, blockSize: 256 });
 				if (typeof DeskVolume !== "undefined" && !$q("#volf")) DeskVolume.update({ type: "outputLevel", peakL: 0.2, peakR: 0.2, clip: false, gainDb: 0 });
 				const keepHook = typeof TopFit !== "undefined" ? TopFit.onShow : null;
@@ -863,7 +866,7 @@ const Journey = (() => {
 					if (typeof TopFit !== "undefined") TopFit.onShow = () => raiseFloor(v.floor);
 					if (resize) { window.gmView(v.width, 924); await until(() => innerWidth === v.width, 3000); }
 					for (const w of workspaces) {
-						hands.click(`#tabs [data-ws="${w}"]`); await until(() => $q(`#tabs [data-ws="${w}"]`).getAttribute("aria-selected") === "true", 3000);
+						if (!wsOn(w)) hands.click(wsKey(w)); await until(() => wsOn(w), 3000);
 						await sleep(250); raiseFloor(v.floor); window.dispatchEvent(new Event("resize")); await sleep(250); raiseFloor(v.floor); await sleep(100);
 						const keys = topKeysOut(), over = groupsOverlap(), cut = lcdRow2Cut(), r = $q(".lcdpanel").getBoundingClientRect();
 						Bridge.log(`MEASURE fit ${prefix} ${v.name} ${w} width ${innerWidth} floor ${v.floor} fit ${typeof TopFit !== "undefined" ? JSON.stringify(TopFit.report()).replace(/"workspaces":\[[^\]]*\],?/, "") : "-"} classes ${$q("header.top")?.className} overflows ${typeof TopFit !== "undefined" && TopFit.overflows()} lcd ${r.width.toFixed(1)} x ${r.height.toFixed(1)} keys out [${keys.map(b => b.id || b.textContent.trim()).join(",")}] row2 cut [${cut.join("; ")}] overlap [${over.join("; ")}]`);

@@ -38,13 +38,13 @@ const SHAPES = ["Triangle", "Saw", "Square", "Linear decay", "Exp decay", "Rando
 const S = { ws: "seq", sel: 0, lane: "FLTF", page: 0, viewAll: true, follow: false, step: -1, soloSet: new Set(), userMutes: new Set(),
 	songSel: 0, bank: 0, songZoom: "fit", smpSlot: "RAM1", chopTrack: null, capture: {}, keepFx: true, plate: "mk1", tt: "trig" };
 S.ctl = { learn: false, learnT: null, sel: null, selT: null, addT: 1 };
-/* MIDI mapping (the CONTROL workspace and LEARN) is hidden until the plug-in's learn document says
-   "enabled" (mdmm::midiMappingEnabled, deskHost.h). Off: no tab, no LEARN key, the keys do nothing. */
+/* MIDI mapping (the CONTROL key in Setup and LEARN) is hidden until the plug-in's learn document says
+   "enabled" (mdmm::midiMappingEnabled, deskHost.h). Off: no CONTROL key, no LEARN key, the keys do nothing. */
 S.mapping = false;
 function applyMapping(on) {
 	S.mapping = !!on; document.body.classList.toggle("mapping", S.mapping);
-	const tab = document.querySelector('#tabs [data-ws="control"]'), key = document.getElementById("learnkey");
-	if (tab) tab.hidden = !on;
+	const ctl = document.getElementById("controlkey"), key = document.getElementById("learnkey");
+	if (ctl) ctl.hidden = !on;
 	if (key) key.hidden = !on;
 	if (!on) { S.ctl.learn = false; S.ctl.learnT = null; document.body.classList.remove("learn"); if (S.ws === "control") S.ws = "seq"; }
 }

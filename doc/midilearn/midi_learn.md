@@ -14,7 +14,7 @@ A knob or fader on a MIDI controller moves a sound value of your choice, on any 
 
 ## The LEARN gesture
 
-1. Open the CONTROL workspace (the Control tab, key 6).
+1. Open the CONTROL page (the CONTROL key in the Setup group, right of LEARN, or key 6; the key is lit while the page is open, click it again to leave).
 2. Press LEARN (the key in the top bar, or L). The page shows the learn mark on the values that can be learned.
 3. Click a value. The inspector line says "Turn a knob on your controller both ways (0 of 2)".
 4. Turn the knob up and down. The first CC fixes the channel and the CC number. The second, different value completes the mapping (1 of 2, then done).
