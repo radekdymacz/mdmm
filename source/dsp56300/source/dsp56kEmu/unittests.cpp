@@ -139,6 +139,7 @@ namespace dsp56k
 		subr();
 		tst();
 		nop();
+		repAtVolatileAddress();
 		ccrGroundTruth();
 		bitTestMemoryEaUpdate();
 		subr_leftAligned();
@@ -5795,6 +5796,32 @@ namespace dsp56k
 			verify(dsp.aluA().var == 0x00800000000000);
 			verify(ccr(dsp.getSR().var) == 0x20);		// E, V clear
 		});
+	}
+
+	void UnitTests::repAtVolatileAddress()
+	{
+		dsp.resetHW();
+		dsp.regs().r[0] = TReg24(0);
+
+		TWord pc = 0x200;
+		pc = emitToMemory("rep #<$1", pc);						// $200
+		pc = emitToMemory("move (r0)+", pc);					// $201, the repeated instruction
+		emitToMemory("rts", pc);								// $202
+
+		pc = 0x100;
+		pc = emitToMemory("jsr $200", pc);						// runs it once and leaves a block at $200
+		pc = emitToMemory("move #>$200,r6", pc);
+		pc = emitToMemory("move #>$0602a0,b", pc);				// rep #<$2
+		pc = emitToMemory("move b,p:(r6)", pc);					// writing over a block makes $200 volatile
+		pc = emitToMemory("jsr $200", pc);
+		const auto returnPC = pc;
+		emitToMemory("nop", pc);
+
+		dsp.setPC(0x100);
+		execUntil(returnPC);
+
+		verify(dsp.memory().get(MemArea_P, 0x200) == 0x0602a0);	// the rewrite really landed
+		verify(dsp.regs().r[0].var == 3);						// once, then twice - not three times
 	}
 
 }

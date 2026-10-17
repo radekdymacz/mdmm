@@ -75,6 +75,7 @@ namespace dsp56k
 
 		// host register pressure test
 		void parallelMoveXY();
+		void parallelAluMoveSameAccumulator();
 		void boundedDispatch();
 		void nopLoopFastForward();
 		void cmpmLegacy();
