@@ -98,22 +98,22 @@ lane("AMP.5", { 2: 0, 10: 0, 18: 0, 26: 0 });
 const vol = bars("AMP.5");
 check(vol.length === 4 && vol.every(b => !b.ghost) && /max\(2px,/.test(draw("AMP.5")), "VOL locked to 0: four bars with a 2 px minimum");
 
-/* 3. a slide runs between locks on steps with a trig: a lock on a step without one is never played, so no line starts or ends there */
+/* 3. a slide starts on a lock on a step with a trig and runs to the parameter's next lock, whether its step has a trig or not (measured, w13mmslide: K); no line starts on a lock without a trig */
 S.tracks[TRK].slide = new Set();
 const lines = () => { p.mockup.drawSlides(); return (svgEl.innerHTML.match(/stroke-width="2" /g) || []).length; };
 lane("AMP.0", { 2: 90, 10: 40, 11: 70, 18: 60 });	// 11 is a ghost
 S.lane = "AMP.0"; S.sel = TRK;
 S.tracks[TRK].slide = new Set([2]);
-check(lines() === 1, "slide on a real lock, next real lock after a ghost: one line (" + lines() + ")");
-check(/M25 \S+ L105 /.test(svgEl.innerHTML), "the line joins step 2 to step 10, over the ghost at 11");
+check(lines() === 1, "slide on a real lock: one line (" + lines() + ")");
+check(/M25 \S+ L105 /.test(svgEl.innerHTML), "the line joins step 2 to the next lock, step 10");
 S.tracks[TRK].slide = new Set([11]);
 check(lines() === 0, "slide on a ghost lock: no line");
 S.tracks[TRK].slide = new Set([10]);
-check(lines() === 1 && /M105 \S+ L185 /.test(svgEl.innerHTML), "slide on 10 skips the ghost at 11 and runs to step 18");
+check(lines() === 1 && /M105 \S+ L115 /.test(svgEl.innerHTML), "slide on 10 ends on the ghost lock at 11: the machine's next lock, trig or not");
 S.tracks[TRK].slide = new Set([2, 10]);
 check(lines() === 2, "two slides in a row: two lines");
-S.locks.get(TRK + "|AMP.0").delete(18); S.tracks[TRK].slide = new Set([10]);
-check(lines() === 0, "no real lock after the slide step: no line");
+S.locks.get(TRK + "|AMP.0").delete(18); S.locks.get(TRK + "|AMP.0").delete(11); S.tracks[TRK].slide = new Set([10]);
+check(lines() === 0, "no later lock after the slide step: no line");
 
 /* 4. Alt on a ghost key removes its lock (the machine's clear) */
 lane("AMP.2", { 3: 90, 11: 90 });
@@ -202,9 +202,9 @@ check(/of 62 locked parameters/.test(meterEl.title), "the lock meter's tooltip c
 	const fresh = (locks, slide = []) => { setHooks(); M.laneSet(null); S.sel = TRK; S.lane = "AMP.0"; S.lanePage = "AMP"; S.tracks[TRK].v.AMP[0] = 5; S.tracks[TRK].slide = new Set(slide); lane("AMP.0", locks); p.renderLane(); p.sent.length = 0; };
 	let commits = 0; const hc = M.HOST.commit; M.HOST.commit = () => { commits++; };
 
-	/* the target: the next trig that locks this parameter; step 4 has a trig and no lock, 3 has a ghost lock (no trig) */
+	/* the target: the parameter's next lock; step 4 has a trig and no lock, 3 has a ghost lock (no trig) */
 	fresh({ 2: 90, 3: 20, 10: 30 });
-	check(M.slideNext(TRK, "AMP.0", 2) === 10, "the slide of step 3 (index 2) goes to the next trig that locks the parameter (11), past the trig at 5 with no lock and the ghost lock at 4");
+	check(M.slideNext(TRK, "AMP.0", 2) === 3, "the slide of step 3 (index 2) goes to the parameter's next lock, the one on step 4 although it has no trig (measured, K)");
 	check(M.slideNext(TRK, "AMP.0", 10) == null, "a parameter with no later lock has no target");
 
 	/* a press on the dot (8 px) is a maybe-slide; elsewhere on the bar it is the lane's */
