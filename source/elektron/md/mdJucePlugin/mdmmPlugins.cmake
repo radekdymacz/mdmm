@@ -56,7 +56,7 @@ list(APPEND SOURCES
 	$<$<PLATFORM_ID:Darwin>:mdWebFileDrop.mm> mdWebFileDrop.h
 	$<$<PLATFORM_ID:Windows>:mdWebView2Page.cpp>
 	mdWebView2Page.h mdWebView2Window.h
-	mdAudioMidiLink.cpp mdAudioMidiLink.h mdMidiPortRefusal.h mdMachineMidiOut.h mdMidiLoop.h
+	mdAudioMidiLink.cpp mdAudioMidiLink.h mdMidiPortRefusal.h mdMachineMidiOut.h mdMidiLoop.h mdMidiHotplug.h
 	mdMicPermission.h $<IF:$<PLATFORM_ID:Darwin>,mdMicPermission.mm,mdMicPermissionOther.cpp>
 	mdUpdater.cpp mdUpdater.h
 
@@ -565,6 +565,22 @@ function(mdmm_plugin_targets)
 	add_test(NAME mdMidiLoopTest COMMAND mdMidiLoopTest)
 	set_tests_properties(mdMidiLoopTest PROPERTIES LABELS "UnitTest")
 	set_property(TARGET mdMidiLoopTest PROPERTY FOLDER "Elektron/test")
+
+	# 0.8 (I-053): the remembered MIDI inputs and output when a device is plugged in or out (mdMidiHotplug.h, pure; no ROM)
+	add_executable(mdMidiHotplugTest mdMidiHotplugTest.cpp mdMidiHotplug.h)
+	add_test(NAME mdMidiHotplugTest COMMAND mdMidiHotplugTest)
+	set_tests_properties(mdMidiHotplugTest PROPERTIES LABELS "UnitTest")
+	set_property(TARGET mdMidiHotplugTest PROPERTY FOLDER "Elektron/test")
+
+	# 0.8 (I-053): the link's hot-plug callback republishes the document and logs the plugs (fake port lists; no ROM)
+	add_executable(mdAudioMidiLinkTest mdAudioMidiLinkTest.cpp)
+	target_link_libraries(mdAudioMidiLinkTest PRIVATE
+		mdJucePlugin jucePluginEditorLib mdLib juce_plugin_modules juce::juce_opengl)
+	target_include_directories(mdAudioMidiLinkTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
+	target_compile_definitions(mdAudioMidiLinkTest PRIVATE JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
+	add_test(NAME mdAudioMidiLinkTest COMMAND mdAudioMidiLinkTest)
+	set_tests_properties(mdAudioMidiLinkTest PROPERTIES LABELS "UnitTest;AudioIo" TIMEOUT 120)
+	set_property(TARGET mdAudioMidiLinkTest PROPERTY FOLDER "Elektron/test")
 
 	# 0.8 (WP4, B-155): the built standalone apps' Info.plist carries the Bluetooth and the microphone usage keys
 	# (read with plutil; macOS only; skipped, 77, when the apps are not built)

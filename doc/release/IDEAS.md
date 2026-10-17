@@ -3,6 +3,13 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-053 · MIDI devices appear and go live, and a remembered input comes back
+
+- **From:** Radek, 2026-10-17 (0.8 test list, line 11: unplug and replug the keyboard).
+- **Idea:** the standalone's MIDI list updates when a device is plugged in or out, and an input that was on comes back on when its device returns.
+- **Status:** built for 0.8.0. The link listens with JUCE's `MidiDeviceListConnection` (message thread; nothing on the audio thread) and on a change publishes the `gm-audio/devices` document again, switches the vanished inputs off, switches the remembered inputs and the chosen output back on (matched by identifier, then by name, because an identifier can change on replug) and logs each plug and unplug. The logic is `mdMidiHotplug.h` (pure, over a `Devices` interface). What the user chose is the memory: an input switched off stays off (JUCE's own reopening from the state it loaded is undone at once, so an input may open and close for a moment on a plug), the output chosen in the panel, or none, is the one that returns, and two identical devices are two entries. A change from another source (the fallback settings dialog) is read back into the memory. An input that is back but did not open is tried again at the next device change. The saved audio device state is rewritten from the memory on every save, and once more at quit after the standalone holder's own last save (`windowClosed` in the app, `AudioMidiLink::patchSavedSettings`): the inputs on (also while their device is away) and the output, nothing JUCE kept from an older choice. Standalone only. Tests: mdMidiHotplugTest (matching, twins, output, a fake device set), mdAudioMidiLinkTest (the callback republishes and logs with a fake port list; the saved-state round trip). The real AudioDeviceManager is not driven in a test (JUCE cannot plug a device); Radek's hand test is TEST-0.8 line 11.
+- **Release-note line:** The MIDI list in the standalone updates when you plug a device in or out, and an input you had switched on comes back on when the device returns.
+
 ## I-050 · Machinedrum MKI: black text on the LCD, as the Monomachine has
 
 - **From:** a beta tester on Discord, 2026-10-17 (visual items on the plates).
