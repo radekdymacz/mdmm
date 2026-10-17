@@ -2,6 +2,7 @@
 #include "projectState.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <limits>
 
 #include "dummydevice.h"
@@ -299,6 +300,24 @@ namespace pluginLib
 			triggerAsyncUpdate();
 	}
 
+	bool Processor::captureMachineState(std::vector<uint8_t>& _state)
+	{
+		return getPlugin().getState(_state, synthLib::StateTypeGlobal);
+	}
+
+	void Processor::restoreMachineState(const std::vector<uint8_t>& _state)
+	{
+		getPlugin().setState(_state);
+		std::lock_guard lock(m_lastGoodMutex);
+		m_lastGoodMachineState = _state;
+	}
+
+	void Processor::clearLastGoodMachineState()
+	{
+		std::lock_guard lock(m_lastGoodMutex);
+		m_lastGoodMachineState.clear();
+	}
+
 	void Processor::saveCustomData(std::vector<uint8_t>& _targetBuffer)
 	{
 		baseLib::BinaryStream s;
@@ -331,16 +350,28 @@ namespace pluginLib
 	{
 		{
 			// never a header-only or empty machine chunk (a reload would read it as "nothing to restore" and the
-			// user's memory would be gone): a failed capture keeps the last good state, and says so
+			// user's memory would be gone): a failed capture keeps the last good state of THIS project (the one a load
+			// put in, or the last save's), and says so
 			std::vector<uint8_t> buffer;
-			if(getPlugin().getState(buffer, synthLib::StateTypeGlobal))
+			if(captureMachineState(buffer))
 			{
+				std::lock_guard lock(m_lastGoodMutex);
 				m_lastGoodMachineState = buffer;
 			}
 			else
 			{
-				buffer = m_lastGoodMachineState;
-				LOG("SAVE FAILED: the machine state could not be captured; " << (buffer.empty() ? "no earlier state to keep, the machine chunk is left out" : "the last good state is saved instead"));
+				{
+					std::lock_guard lock(m_lastGoodMutex);
+					buffer = m_lastGoodMachineState;
+				}
+				const char* const what = buffer.empty()
+					? "no earlier state to keep, the machine chunk is left out"
+					: "the last good state is saved instead";
+				// stderr is the boot/page log (and the log file of a debug host); not LOGF: its logger thread is never
+				// joined and ends a process that exits while it runs
+				const std::string text = std::string("SAVE FAILED: the machine state could not be captured; ") + what;
+				std::fprintf(stderr, "[plugin] %s\n", text.c_str());
+				juce::Logger::writeToLog(text);
 			}
 			if(!buffer.empty())
 			{
@@ -392,7 +423,7 @@ namespace pluginLib
 		{
 			std::vector<uint8_t> buffer;
 			_binaryStream.read(buffer);
-			getPlugin().setState(buffer);
+			restoreMachineState(buffer);
 		});
 
 		_cr.add("GAIN", 1, [this](baseLib::BinaryStream& _binaryStream, uint32_t _version)
@@ -614,6 +645,7 @@ namespace pluginLib
 			if(auto* dev = createDevice(_type))
 			{
 				getPlugin().setDevice(dev);
+				clearLastGoodMachineState();
 				(void)m_device.release();
 				m_device.reset(dev);
 				m_deviceType = _type;
@@ -988,6 +1020,8 @@ namespace pluginLib
 		if(_sizeInBytes < 1)
 			return;
 
+		clearLastGoodMachineState();	// another project: the last project's machine is never this one's
+
 		std::vector<uint8_t> state;
 		state.resize(_sizeInBytes);
 		memcpy(state.data(), _data, _sizeInBytes);
@@ -1013,7 +1047,7 @@ namespace pluginLib
 				if(version == 1)
 				{
 					ss.read(buffer);
-					getPlugin().setState(buffer);
+					restoreMachineState(buffer);
 				}
 
 				ss.read(buffer);
@@ -1031,7 +1065,7 @@ namespace pluginLib
 			}
 			else
 			{
-				getPlugin().setState(state);
+				restoreMachineState(state);
 			}
 		}
 		catch (std::range_error& e)
@@ -1123,6 +1157,7 @@ namespace pluginLib
 		{
 			synthLib::Device* device = createDevice();
 			getPlugin().setDevice(device);
+			clearLastGoodMachineState();
 			(void)m_device.release();
 			m_device.reset(device);
 			requestLatencyUpdate();

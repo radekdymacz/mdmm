@@ -282,6 +282,22 @@ namespace
 		bool audioPrepared = false;
 	};
 
+	// A processor whose machine-state capture can be made to fail (a save the lock never let through)
+	class FailingCaptureProcessor final : public mdJucePlugin::AudioPluginAudioProcessor
+	{
+	public:
+		FailingCaptureProcessor()
+			: AudioPluginAudioProcessor(md::MachineModel::Machinedrum, Harness::isolatedConfig())
+		{
+		}
+		std::atomic<bool> failCapture{false};
+	protected:
+		bool captureMachineState(std::vector<uint8_t>& _state) override
+		{
+			return !failCapture.load() && AudioPluginAudioProcessor::captureMachineState(_state);
+		}
+	};
+
 	void setHostState(Harness& _harness, const std::vector<uint8_t>& _state)
 	{
 		const auto hostState = processorState(_state);
@@ -842,6 +858,45 @@ int main()
 			require(oneMoment, "a save under constant writes was not the patch RAM of one moment");
 			std::cout << "  host save under constant patch RAM writes: " << saved.size() << " bytes, "
 				<< writes.load() << " writer holds, one moment (count " << static_cast<int>(first) << ")\n";
+		}
+
+		// A failed save keeps the loaded project's own machine, never an earlier project's (processor level)
+		{
+			FailingCaptureProcessor p;
+			juce::AudioProcessor& host = p;
+			host.prepareToPlay(48000.0, 128);
+			struct Release { juce::AudioProcessor& h; ~Release() { h.releaseResources(); } } release{host};
+			const auto load = [&](const std::vector<uint8_t>& _state)
+			{
+				const auto hostState = processorState(_state);
+				host.setStateInformation(hostState.data(), static_cast<int>(hostState.size()));
+			};
+			load(stateA);
+			p.failCapture = true;
+			require(serializedPluginState(p) == stateA,
+				"a failed save did not write the loaded state (project A)");
+			load(stateB);
+			require(serializedPluginState(p) == stateB,
+				"a failed save after loading project B did not write B's own state");
+			require(serializedPluginState(p) != stateA, "a failed save wrote the earlier project's machine");
+			p.clearLastGoodMachineState();
+			juce::MemoryBlock none;
+			host.getStateInformation(none);
+			baseLib::BinaryStream outer(std::vector<uint8_t>(static_cast<const uint8_t*>(none.getData()),
+				static_cast<const uint8_t*>(none.getData()) + none.getSize()));
+			outer.readString();
+			outer.read<uint32_t>();
+			std::vector<uint8_t> custom;
+			outer.read(custom);
+			baseLib::BinaryStream chunks(custom);
+			baseLib::ChunkReader reader(chunks);
+			bool sawMidi = false;
+			reader.add("MIDI", 1, [&](baseLib::BinaryStream&, uint32_t) { sawMidi = true; });
+			reader.tryRead();
+			require(!sawMidi, "a failed save with nothing earlier wrote a machine chunk");
+			p.failCapture = false;
+			require(!serializedPluginState(p).empty(), "a save after the failure was not written");
+			std::cout << "  failed save: A kept, B after B's load, nothing earlier = no chunk\n";
 		}
 
 		std::cout << "mdProjectStateRestoreTest: MD/MM PASS\n";
