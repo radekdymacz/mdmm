@@ -37,6 +37,10 @@ cmake --build "${build_dir}" --parallel 4 --target \
   mdMachineMidiOutTest \
   mdMidiLoopTest \
   mdProcessArchTest \
+  mdDeskSetupStateTest \
+  mdLearnRouterTest \
+  mdLearnRouterStressTest \
+  mdLearnRouterStressTestTsan \
   mdRosettaNoticeTest \
   mdDroppedFilesTest \
   mdWebFileDropTest \
@@ -77,6 +81,10 @@ for test_name in \
   mdMachineMidiOutTest \
   mdMidiLoopTest \
   mdProcessArchTest \
+  mdDeskSetupStateTest \
+  mdLearnRouterTest \
+  mdLearnRouterStressTest \
+  mdLearnRouterStressTestTsan \
   mdRosettaNoticeTest \
   mdDroppedFilesTest \
   mdWebFileDropTest \

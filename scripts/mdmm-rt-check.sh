@@ -14,7 +14,9 @@
 #                   Wall time, so run it on a quiet Mac; a few minutes a machine. It also fails when the
 #                   processor counted a dropped panel event (the desk's sends) or a dropped device command (the queue
 #                   the desk's sends go through, DESIGN-audio-lock.md step 3) while editing. Each wait is blamed
-#                   on the holder's site (file:line of the withDeviceLocked or plugin.cpp hold)
+#                   on the holder's site (file:line of the withDeviceLocked or plugin.cpp hold). The run has MIDI Learn on
+#                   (EDITFLOW_LEARN=1, 0.8 L6): four mappings, learned CCs at audio rate and then a burst of 64 a block beside
+#                   the edits and the transport; it fails too when the router applied nothing or dropped a captured CC
 #     --load N      N busy loops run beside the checks (a busy Mac on purpose, so the --lock result does not depend
 #                   on what else the Mac runs); the load average is printed before and after each result
 #     VAR=value     passed on: GEARMULATOR_MDMM_EDIT_RATE=0 measures without the stream (0.3.3), ACTIONS=a,b
@@ -89,11 +91,11 @@ if [ "$LOCK" = 1 ]; then
 			echo "lock $m: no ROM or no mdEditFlowPluginTest in $BUILD (cmake --build $BUILD --target mdEditFlowPluginTest)"; STATUS=1; continue
 		fi
 		before=$(loadavg)
-		env GEARMULATOR_DATA_ROOT="$OUT/data" "$@" "$FLOWBIN" "$m" "$rom" > "$OUT/$m-lock.txt" 2>&1 || STATUS=1
+		env GEARMULATOR_DATA_ROOT="$OUT/data" EDITFLOW_LEARN=1 "$@" "$FLOWBIN" "$m" "$rom" > "$OUT/$m-lock.txt" 2>&1 || STATUS=1
 		line=$(grep "^synth lock wait" "$OUT/$m-lock.txt")
 		[ -n "$line" ] || { line="synth lock wait: no result (see $OUT/$m-lock.txt): FAIL"; STATUS=1; }
 		echo "lock $m: $line (load average $before to $(loadavg), $LOAD busy loops)"
-		grep -E "^dropped panel events|^dropped device commands|^  lock (wait blamed|held at)" "$OUT/$m-lock.txt" | sed "s/^ */lock $m: /"
+		grep -E "^learn:|^learned CCs|^dropped panel events|^dropped device commands|^  lock (wait blamed|held at)" "$OUT/$m-lock.txt" | sed "s/^ */lock $m: /"
 	done
 fi
 stop_load

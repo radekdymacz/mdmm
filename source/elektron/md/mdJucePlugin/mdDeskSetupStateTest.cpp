@@ -222,6 +222,7 @@ namespace
 			} gestures;
 			auto* gp = a.getController().getParameter(name, 0);
 			gp->addListener(&gestures);
+			session->step();	// the rebuilds above timed out (this test never ends its block): the step that drops their bits
 			router.beginBlock();
 			router.translate(0xb0, static_cast<uint8_t>(ccAny), 10);
 			session->step();
@@ -242,6 +243,31 @@ namespace
 			say(*session, R"({"op":"learnInvert","id":71,"index":0})");
 			gp->removeListener(&gestures);
 			check(gestures.begins == gestures.ends, "every gesture opened was closed");
+
+			// a rebuild whose settle timed out (the block below stays open on purpose: the audio thread of a host that has
+			// stopped): the old block sets a bit for mapping 0 after the rebuild took them, and that bit names another
+			// parameter in the new table; the next step discards it (L2 review, Low). A later move is told as usual.
+			{
+				say(*session, R"({"op":"learnAdd","id":80,"cc":31,)" + target2 + "}");
+				auto* gp2 = a.getController().getParameter(mm ? mdJucePlugin::MmStudioLink::parameterName(1, 2) : mdJucePlugin::StudioLink::parameterName(2), 1);
+				Gestures stale;
+				gp2->addListener(&stale);
+				router.beginBlock();		// the old table: mapping 0 = ccAny -> gp, mapping 1 = CC 31 -> gp2; this block never ends
+				say(*session, R"({"op":"learnRemove","id":81,"index":0})");	// gp2 is mapping 0 now; the settle times out
+				router.translate(0xb0, static_cast<uint8_t>(ccAny), 55);		// the old block, after the rebuild: bit 0
+				session->step();
+				check(stale.begins == 0 && stale.values == 0, "settle timeout: the stale bit names no parameter of the new table (the next step discards it)");
+				router.beginBlock();
+				check(router.translate(0xb0, 31, 66) && gp2->getUnnormalizedValue() == 66, "and the new table works");
+				session->step();
+				check(stale.begins == 1, "and a move after that is told to the host as usual");
+				gp2->removeListener(&stale);
+				say(*session, R"({"op":"learnAdd","id":82,"cc":)" + std::to_string(ccAny) + "," + target + "}");
+				say(*session, R"({"op":"learnRemove","id":83,"index":0})");		// back to one mapping: ccAny -> gp
+				say(*session, R"({"op":"learnInvert","id":84,"index":0})");		// as it was: inverted
+				router.beginBlock();
+				check(mappingsOf(page)->size() == 1 && router.table().count == 1, "and the one mapping is back");
+			}
 
 			// HW MIDI engine: the host's MIDI in is the machine's own MIDI out: nothing is translated or captured, the document says why
 			const auto asOk = [&](const char* _id)
