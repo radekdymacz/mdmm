@@ -164,7 +164,7 @@ On the machine a second press of [PLAY] pauses. In the editor you pause with [â‡
 2. Click the Play key, or press {key:pause} again. The machine goes on from the step it held.
 3. To end the pause instead, choose **Stop** in the transport menu. <POSITION> reads --.--.
 
-The transport menu has Play or Stop, Pause or Continue, Record and Panic, each with its key. Right-click the Play key to open it, or click the small â–¾ in the key's corner.
+The transport menu has Play or Stop, Pause or Continue, Record and Panic, each with its key. Right-click the Play key to open it. With the Play key focused, Shift+F10 or the menu key opens it too.
 
 On the machine a double press of [STOP] silences every voice. In the editor this is **Panic**: press {key:panic}, or choose **Panic** in the transport menu. The editor presses the machine's [STOP] twice, and the machine stops.
 
