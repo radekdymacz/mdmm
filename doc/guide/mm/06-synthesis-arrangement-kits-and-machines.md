@@ -21,11 +21,13 @@ The machines come in families:
 Every track also has the same track effects after its machine: an amp with an envelope and distortion, a filter with its own envelope, an equaliser, sample rate reduction and a tempo synchronised delay. Chapter 7 describes them.
 
 ## KITS
-<!-- rows: MM-093 @159555 -->
+<!-- rows: MM-093 @18a756 -->
 
 A kit holds the machine of each track and all seven DATA pages of each track, with the LFOs. It also holds the MIDI pages of the six MIDI tracks, the routing and input of each track, the trig settings, the multi envelope and the name.
 
 The editor edits the kit the machine plays. It does not write a value to a stored kit slot until you save.
+
+The **‹** and **›** keys beside the kit name in the LCD load the kit before or after. When the kit has unsaved edits the machine asks first.
 
 ## LINK KITS AND PATTERNS
 <!-- rows: MM-094 MM-095 @c6cd58 -->

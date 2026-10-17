@@ -111,7 +111,7 @@ The first note you play starts the pattern. Later notes only transpose it, so th
 **SEQ START** and **SEQ TRNSP** show a **Timing** stepper. Click **−** or **+** to choose DIRECT, 1/16, 2/16, 4/16, 8/16, 16/16 or 32/16. With DIRECT the note acts at once. With another value it acts at the next division of that length, and the page says so when you play.
 
 ## MULTI ENV
-<!-- rows: MM-160 MM-161 @ec5f0e -->
+<!-- rows: MM-160 MM-161 @3ef47d -->
 
 The **Multi envelope** card holds an ADSR that acts on top of every track's own envelope. Notes on the multi trig channel set it going. What it shapes depends on the multi trig mode of the kit. The title of the card names the mode, and the line under the boxes says what the envelope does in it.
 

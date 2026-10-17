@@ -69,7 +69,7 @@ The patterns of the factory memory are there too, A01 to H16.
 Patterns that hold notes, spread over all 128, play the same way one after the other.
 
 ## GEN ROLLS A RHYTHM
-<!-- rows: MM-X04 @32aa1d -->
+<!-- rows: MM-X04 @0baf4f -->
 
 The machine has no such function: you set the hits by hand. The **GEN** bar on **Pattern** rolls a rhythm for the selected track from a few settings. It writes ordinary trigs, so you can edit the result as any other.
 
@@ -97,7 +97,7 @@ The machine has no such function. **MUTATE** nudges the sound of the selected tr
 NOTE: A roll on **Kit** with {key:randomise-track} is always taken from the sound as it was before the trials, so repeated rolls do not wander off.
 
 ## CLEAR
-<!-- rows: MM-X25 @715aac -->
+<!-- rows: MM-X25 @88e02a -->
 
 When you play with a sound, **Clear** puts the selected track back as the kit's slot stores it. On a synth track it restores the machine, the seven pages, the level, the outputs and input, the assign rows, the key tracking, portamento and legato switches and the track the notes are forwarded to. On a MIDI track it restores the MIDI page. The other tracks, the multi envelope, MULTI TRIG and the kit name stay as they are. The kit library's **Reload** loads the whole kit again. **Clear** does one track.
 
@@ -198,7 +198,7 @@ Drop a SysEx file on the window of the editor, and the import window opens with 
 2. To leave it, click **Cancel**. The window closes and nothing is sent.
 
 ## SYSEX IMPORT WITH A PREVIEW
-<!-- rows: MM-X13 @de434b -->
+<!-- rows: MM-X13 @3fc927 -->
 
 The machine takes a SysEx dump without showing you what is in it. The editor lets you look inside the file before it sends anything.
 
@@ -207,7 +207,7 @@ The machine takes a SysEx dump without showing you what is in it. The editor let
 3. Tick the kinds you want, and choose where each one goes with the **Place** row.
 4. Click **Import**, or **Verify only** to compare without writing. A report says what happened to each slot.
 
-The full procedure is in "FILE" in chapter 19.
+The tick **Read back and compare** beside **Verify only** decides whether the import reads the slots back after it sends them. The full procedure is in "FILE" in chapter 19.
 
 ## NOTES FROM A MIDI KEYBOARD LIGHT THE TRACK
 <!-- rows: MM-X14 @4d05b2 -->
@@ -343,7 +343,7 @@ The kit library and the song slots work with the same keys: load, copy, paste, r
 6. Click **Clear**. The editor asks first. Answer it, and the slot is empty. {key:undo} brings the song back.
 
 ## PIANO ROLL
-<!-- rows: MM-X23 @610cab -->
+<!-- rows: MM-X23 @0670f4 -->
 
 The roll on **Pattern** draws notes with a length and moves them. There is no mode to switch: it always draws. It writes the same step data as the machine's own entry.
 
@@ -356,8 +356,9 @@ The roll on **Pattern** draws notes with a length and moves them. There is no mo
 5. Drag the end of a note over more steps to make it longer. It then lasts up to the next note.
 6. To paint, press an empty cell and drag sideways. Every step you cross gets a note at that pitch. Hold [⌥] and drag over them to erase them. Each paint or erase is one undo step.
 7. Drag the body of a note four steps right. It moves, with its NOTE OFF. Drag it up or down to change its pitch.
-8. Hold [⌘] and drag over steps to select them, then press {key:delete} to remove what is selected.
-9. Press {key:undo} for each step you took.
+8. Click a note to select it. It stays selected. Press {key:delete}, or double-click the note, to remove it. The editor writes no NOTE OFF for the removed note, so the note before it runs on.
+9. Hold [⌘] and drag over steps to select them, then press {key:delete} to remove what is selected.
+10. Press {key:undo} for each step you took.
 
 On **Transpose**, click a key of its keyboard to set the transpose of the track. On a MIDI track the length is a number of ticks: a 1/16 note is 6, and three steps are 18.
 

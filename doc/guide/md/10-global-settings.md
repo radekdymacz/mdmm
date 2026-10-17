@@ -219,6 +219,8 @@ The machine takes SysEx at any time. In the editor you open the file first and c
 6. Read the line at the foot. It says how many slots on the machine are overwritten.
 7. Click **Import**. The button says how many items it sends.
 
+The tick **Read back and compare**, beside **Verify only**, is on at first and stays as you set it. With it on, the import reads every slot back after **Send** and compares it with the file. With it off, the import ends after **Send**. The report then says how many items were sent and that they were not read back.
+
 While the import runs, the panel shows three steps: **Read the slots**, **Send** and **Read back**, and a bar for each kind. Click **Stop** to cancel or **Hide** to put the panel away. The import goes on: **IMPORT SYSEX…** in the engine menu shows the panel again, with its report when it is done. While it runs, [ESC] and a click beside the panel leave it open. The panel keeps one size from the preview to the report.
 
 At the end the panel gives a report, slot by slot:
@@ -229,6 +231,7 @@ At the end the panel gives a report, slot by slot:
 | ≈ | converted |
 | ✕ | ignored |
 | ≠ | different from the file |
+| → | sent, not read back |
 | ~ | not comparable |
 | ? | no answer, or not known |
 
@@ -257,7 +260,7 @@ With SPEC the machine writes the items from a slot you choose. In the editor eac
 An item that would land past the last slot of the machine is not sent. **Original place** puts every item back where it came from.
 
 ## SYSEX VERIFY
-<!-- rows: MD-184 @e5b552 -->
+<!-- rows: MD-184 @6059a3 -->
 
 VERIFY compares a file with the machine and writes nothing.
 
@@ -275,7 +278,7 @@ The report marks each slot:
 
 The line at the foot says how many slots are the same. Nothing was written to the machine.
 
-An import reads every item back as well. Its report lists the items that differ from the file, marked ≠.
+An import reads every item back as well, unless you have turned off **Read back and compare**. Its report lists the items that differ from the file, marked ≠.
 
 ## SYNC
 <!-- rows: MD-185 MD-186 MD-187 MD-188 @100c38 -->

@@ -73,7 +73,7 @@ In a DAW a new plug-in follows the host's tempo and transport. The <TEMPO> field
 To make the machine follow the MIDI clock of another device, set **Tempo in** to EXT in the GLOBAL panel. See "SYNC" in chapter 10.
 
 ## PATTERN SELECTION
-<!-- rows: MD-094 MD-095 MD-096 MD-097 @ed9d9a -->
+<!-- rows: MD-094 MD-095 MD-096 MD-097 @24f4d7 -->
 
 The pattern chooser shows all 128 patterns as eight banks of 16 slots. Each slot gives the pattern's name, its length in steps and, in EXTENDED, its kit. A slot with no pattern reads EMPTY.
 
@@ -401,7 +401,7 @@ Tick **Swing** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾**
 NOTE: With **All tracks** the swing row is the pattern's, so a paste or a clear of **Swing** changes it for every track.
 
 ## PARAMETER LOCKS
-<!-- rows: MD-134 MD-135 MD-136 MD-137 MD-138 @e6574a -->
+<!-- rows: MD-134 MD-135 MD-136 MD-137 MD-138 @b31609 -->
 
 A parameter lock gives one parameter its own value on one step. The step has to hold a trig. A pattern holds 64 locked parameters. A track and a parameter with any lock count once.
 
