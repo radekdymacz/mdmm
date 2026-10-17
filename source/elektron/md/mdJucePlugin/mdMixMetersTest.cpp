@@ -160,12 +160,16 @@ int main()
 		check(near(toDb(l.rms[5]), -9.0, 0.1), "and the window of 200 blocks reads right");
 	}
 
-	// the message thread reads while the audio thread writes: a window is never louder than the signal, and the sum
-	// of the windows' energy is the energy written
+	// the message thread reads while the audio thread writes. The signal is a constant 0.5 on A and 0.25 on B, so every
+	// window that has frames reads peak 0.5 / 0.25 and RMS 0.5 / 0.25 exactly: an RMS from one window's energy and
+	// another's frame count (torn) would read otherwise; and the frames of all windows add up to the frames written
+	// (no block lost or counted twice)
 	{
 		Meter m;
 		Outputs outs{};
-		outs[0] = loud.data();
+		std::vector<float> dcA(g_frames, 0.5f), dcB(g_frames, 0.25f);
+		outs[0] = dcA.data();
+		outs[1] = dcB.data();
 		constexpr int blocks = 4000;
 		std::atomic<bool> go{false}, done{false};
 		std::thread writer([&]
@@ -180,18 +184,23 @@ int main()
 		go = true;
 		bool sane = true;
 		int reads = 0;
+		uint64_t frames = 0;
+		const auto accept = [&](const Levels& _l)
+		{
+			frames += _l.frames;
+			if(_l.frames == 0)
+				return _l.peak[0] == 0.0f && _l.rms[0] == 0.0f && _l.peak[1] == 0.0f && _l.rms[1] == 0.0f;
+			return _l.peak[0] == 0.5f && _l.rms[0] == 0.5f && _l.peak[1] == 0.25f && _l.rms[1] == 0.25f;
+		};
 		while(!done.load())
 		{
-			const auto l = m.take();
 			++reads;
-			if(l.peak[0] > 0.5001f || l.rms[0] > 0.5001f || l.rms[0] < 0.0f)
-				sane = false;
+			sane = accept(m.take()) && sane;
 		}
 		writer.join();
-		const auto last = m.take();
-		if(last.peak[0] > 0.5001f)
-			sane = false;
+		sane = accept(m.take()) && sane;
 		check(sane && reads > 0, "a reader on another thread never sees a level the signal did not have (" + std::to_string(reads) + " reads)");
+		check(frames == static_cast<uint64_t>(blocks) * g_frames, "and no block is lost or counted twice (" + std::to_string(frames) + " frames)");
 	}
 
 	std::printf(g_failures ? "FAILED: %d\n" : "all passed\n", g_failures);
