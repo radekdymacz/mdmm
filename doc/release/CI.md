@@ -68,12 +68,19 @@ tests (`mdPageBridgeTest`, `mdMachineMidiOutTest`, ...) are registered.
 ## Firmware tests on CI
 
 **Status (2026-10-18, resumed).** The pipeline, artifact fixes and SysEx fixture setup are on `codex/continue-0.8.0`,
-being validated on `release/0.0.0-ci-test`. Local actionlint, archive extraction and package-gating checks pass. The first
-trial passed stage 0; it was replaced before the expensive stages to include the missing SysEx inputs.
-Run 39127283546 (`dc770ec97`) passed stages 0–2; firmware shard 1 passed MIDI Learn but failed
-`mdSessionNoRomManageFirmwareTest_md` because `kit.working` was still `unknown` after first boot. Other firmware jobs
-are still running. This run predates the refreshed PGO profile and private SysEx downloads; the final release must test
-the newer head.
+being validated on `release/0.0.0-ci-test`. All further validation runs on GitHub Actions, including focused debugging;
+the earlier local-check exception was withdrawn by Radek. See [DEV-CYCLE.md](DEV-CYCLE.md).
+Run 39127283546 (`dc770ec97`) finished red after passing stages 0–2. Firmware shard 1 passed MIDI Learn but failed
+`mdSessionNoRomManageFirmwareTest_md` after first boot; shard 2 failed the two SysEx pick tests using the programmed
+corpus; shard 3 failed the Monomachine memory test's project-global save. Shard 4 passed. Firmware E2E had eight MD
+failures and seven MM failures. Packages were correctly held back. This run predates the refreshed PGO profile and
+private SysEx downloads; the final release must test the newer head.
+
+The next batch waits for final boot readiness and actual readback in the failing journeys, gives import and factory
+reset their boot/readback time, draws the 2 px lane marker without a zoom-rounded border, and adds failure diagnostics
+to the MM project-global memory check. These changes still need CI validation. Remaining investigation includes the
+MM memory-save failure and the native WebKit layout failures (GEN height, Sound fallback alignment, kit names, song
+marks/labels and GLOBAL centring). Keep the existing assertions and the release gate intact.
 PGO training on main passed in run 39126917819: the downloaded profile parses, its hash matches, and all four recorded
 emulator source trees match this branch. It is included with its metadata.
 

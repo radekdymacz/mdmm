@@ -1,12 +1,12 @@
 # The development and test cycle
 
-> **2026-10-18 (Radek): develop locally, test on CI.** Local runs only the change's own quick check; tests, gates and packages run on GitHub CI. Firmware jobs obtain ROMs through the repository's OIDC-protected Worker. `mdmm-ci.yml` orders checks, page/core, editors, firmware and packages; a release needs that pipeline green on its commit. The current rule is in CLAUDE.md, "Development lifecycle", and [CI.md](CI.md); the older local-gate rules below are history.
+> **2026-10-18 (Radek, reaffirmed): edit locally; all validation runs on GitHub Actions.** No local tests, quick checks, page/layout probes, test builds or release builds unless Radek explicitly requests a local run. This supersedes the focused-check and firmware-debugging exceptions in earlier guidance. Firmware jobs obtain ROMs and SysEx backups through the repository's OIDC-protected Worker. `mdmm-ci.yml` orders checks, page/core, editors, firmware and packages; a release needs that pipeline green on its commit. The current rule is in CLAUDE.md, "Development lifecycle", and [CI.md](CI.md); the local commands below are historical reference.
 
 Since 2026-10-11 (after 0.5.1). The proposal of that day, Radek's three decisions on it, and what was built. The current
 rule (2026-10-13, after 0.6) is in the section below; the short form is in [CLAUDE.md](../../CLAUDE.md) ("Development lifecycle"); CI in [CI.md](CI.md); the local gate in
 [LOCAL-GATE.md](LOCAL-GATE.md).
 
-## The current rule (2026-10-13, after 0.6)
+## Historical rule (2026-10-13, after 0.6; superseded above)
 
 Radek's decision in [PLAN-0.6.md](PLAN-0.6.md) is the authority. The tiers below are the menu, not a routine.
 

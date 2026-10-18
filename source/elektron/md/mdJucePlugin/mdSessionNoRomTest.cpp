@@ -525,11 +525,13 @@ int main(const int _argc, char** const _argv)
 				check(factoryCache.existsAsFile(), "the factory cache is kept, so the next start has no preparation");
 			}
 		}
-		// Nothing was edited: after a first boot the playing kit matches its stored slot. Give the
-		// session time to read both (it asks the machine once it is up), then it must say "clean".
+		// The preparation machine can briefly report a clean kit before it is replaced. Wait for the
+		// final machine to finish booting and read both kits before checking that they stay clean.
 		std::string working;
-		for(int i = 0; i < 400 && (working = kitWorkingOf(published)) != "clean"; ++i)
+		for(int i = 0; i < 1200
+			&& (lifecycleOf(published) != "ready" || kitWorkingOf(published) != "clean"); ++i)
 			pump(100);
+		check(lifecycleOf(published) == "ready", "the final machine finishes booting before its kit is checked");
 		pump(15000);
 		working = kitWorkingOf(published);
 		{
