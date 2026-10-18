@@ -7,7 +7,12 @@ interface Env {
 	readonly ROMS: R2Bucket;
 }
 
-const KEYS: Readonly<Record<string, string>> = { md: "md.bin", mm: "mm.bin" };
+const KEYS: Readonly<Record<string, string>> = {
+	"/rom/md": "md.bin",
+	"/rom/mm": "mm.bin",
+	"/sysex/md": "sysex/md.syx",
+	"/sysex/mm": "sysex/mm.syx",
+};
 
 // Module-scope on purpose: the JWKS is cached for the life of the isolate (jose refetches on an unknown kid, rate-limited).
 const jwks = createRemoteJWKSet(new URL(`${ISSUER}/.well-known/jwks`), { cooldownDuration: 30_000, cacheMaxAge: 600_000 });
@@ -16,11 +21,11 @@ const deny = (): Response => new Response(null, { status: 403, headers: { "Cache
 
 const app = new Hono<{ Bindings: Env }>();
 
-app.get("/rom/:model", async (c) => {
+app.on("GET", ["/rom/:model", "/sysex/:model"], async (c) => {
 	const header = c.req.header("Authorization") ?? "";
 	const match = /^Bearer ([A-Za-z0-9._-]+)$/.exec(header);
-	const model = c.req.param("model");
-	const key = Object.hasOwn(KEYS, model) ? KEYS[model] : undefined;
+	const path = c.req.path;
+	const key = Object.hasOwn(KEYS, path) ? KEYS[path] : undefined;
 	if (!match || !match[1] || !key) return deny();
 
 	const verdict = await verifyGithubToken(match[1], jwks, Math.floor(Date.now() / 1000));
