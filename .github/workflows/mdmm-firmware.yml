@@ -9,8 +9,15 @@ name: MD/MM firmware tests
 # Never add pull_request or pull_request_target here: a pull request's code would run next to the ROMs. The Worker
 # refuses those tokens too, so a mistake here fails closed.
 #
-#   firmware  every ctest test labelled FirmwareTest (not Slow/Soak) on an arm64 tree without ThinLTO
-#   e2e       the firmware E2E, scripts/mdmm-e2e.sh both: every journey of both editors on the real firmware
+#   changes     which files the push changed: decides whether anything below runs (main: source, scripts, cmake, ci, tests,
+#               this file; release/**: everything but docs)
+#   build-tests the arm64 ctest tree without ThinLTO, built once, no ROM on this runner (or taken from the caller's stage 2)
+#   build-e2e   the diagnostics build of the two standalone editors for the journeys, built once, no ROM
+#   firmware    four shards of every ctest test labelled FirmwareTest (not Slow/Soak); each only tests the built tree
+#   e2e         the firmware E2E, one job per machine (md, mm), each on the built editors
+#
+# Also a building block: `workflow_call` from mdmm-ci.yml (doc/release/CI-LAYOUT.md, stage 3). The ROM Worker reads the
+# job_workflow_ref claim, which is this file, and the event of the caller (push, workflow_dispatch), so it works the same.
 
 on:
   push:
@@ -18,10 +25,16 @@ on:
   workflow_dispatch:
     inputs:
       what:
-        description: "Which job: both, firmware or e2e"
+        description: "Which jobs: both, firmware or e2e"
         default: both
       e2e_args:
-        description: "Arguments of scripts/mdmm-e2e.sh after --no-build (default: both --jobs 1); e.g. 'md --jobs 1 --select md-keys-space-play'"
+        description: "Arguments of scripts/mdmm-e2e.sh after the machine and --no-build (default: --jobs 1); e.g. '--jobs 1 --select md-keys-space-play'"
+        default: ""
+  workflow_call:
+    inputs:
+      build_tree_artifact:
+        description: "Artifact (a build-tree.tar.gz holding build/) of a prebuilt macOS ctest tree to test; empty: build it here"
+        type: string
         default: ""
   schedule:
     - cron: "30 2 * * *"   # after the nightly full suite (02:00 UTC); main only (schedules run on the default branch)
@@ -30,28 +43,58 @@ permissions:
   contents: read
   id-token: write
 
+# main: a newer push replaces the run; release/**: queue (a run of 80 minutes is not killed). A dispatch or a nightly
+# never cancels a push run, and the other way round. Under workflow_call the caller's group applies.
 concurrency:
   group: mdmm-firmware-${{ github.ref }}-${{ github.event_name }}
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  cancel-in-progress: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/heads/release/') }}
+
+env:
+  CCACHE_BASEDIR: ${{ github.workspace }}
+  CCACHE_COMPILERCHECK: "%compiler% -v"
+  CCACHE_SLOPPINESS: "include_file_mtime,include_file_ctime,time_macros,pch_defines"
+  CCACHE_MAXSIZE: 2G
+  CCACHE_COMPRESS: "true"
 
 jobs:
-  firmware:
-    name: Firmware tests (ctest ${{ matrix.shard }}/4, macOS arm64)
-    if: github.event_name != 'workflow_dispatch' || inputs.what != 'e2e'
+  changes:
+    name: What changed
+    runs-on: ubuntu-24.04
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: decide
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          run=true
+          if [ "${EVENT}" = push ] && [ -n "${BEFORE}" ] && ! [[ "${BEFORE}" =~ ^0+$ ]] && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            files="$(git diff --name-only "${BEFORE}" "${GITHUB_SHA}")"
+            if [[ "${REF}" == refs/heads/release/* ]]; then
+              # everything but documentation and the site
+              rest="$(printf '%s\n' "${files}" | grep -v -E '^(doc/|site/)|\.md$' || true)"
+              [ -n "${rest}" ] || run=false
+            else
+              rest="$(printf '%s\n' "${files}" | grep -E '^(source/|scripts/|ci/|CMakeLists\.txt$|base\.cmake$|.*\.cmake$|\.github/workflows/mdmm-firmware\.yml$)' || true)"
+              [ -n "${rest}" ] || run=false
+            fi
+          fi
+          echo "run=${run}" >> "${GITHUB_OUTPUT}"
+          echo "firmware workflow runs: ${run}"
+
+  build-tests:
+    name: Build the test tree (macOS arm64)
+    needs: changes
+    if: needs.changes.outputs.run == 'true' && (github.event_name != 'workflow_dispatch' || inputs.what != 'e2e') && inputs.build_tree_artifact == ''
     runs-on: macos-15
-    environment: rom
-    timeout-minutes: 150
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4]
-    env:
-      CCACHE_BASEDIR: ${{ github.workspace }}
-      CCACHE_COMPILERCHECK: "%compiler% -v"
-      CCACHE_SLOPPINESS: "include_file_mtime,include_file_ctime,time_macros,pch_defines"
-      CCACHE_MAXSIZE: 2G
-      CCACHE_COMPRESS: "true"
-      MDMM_ROM_URL: ${{ vars.MDMM_ROM_URL }}
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -72,7 +115,7 @@ jobs:
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ runner.temp }}/ccache
-          key: ccache-v1-macos15-arm64-tests-fw-${{ github.ref_name }}-${{ github.run_id }}-${{ matrix.shard }}
+          key: ccache-v1-macos15-arm64-tests-fw-${{ github.ref_name }}-${{ github.run_id }}
           restore-keys: |
             ccache-v1-macos15-arm64-tests-fw-${{ github.ref_name }}-
             ccache-v1-macos15-arm64-tests-${{ github.ref_name }}-
@@ -95,6 +138,60 @@ jobs:
           home="${RUNNER_TEMP}/test-home"
           mkdir -p "${home}/Documents"
           HOME="${home}" GEARMULATOR_DATA_ROOT="${home}/Documents/" cmake --build build --parallel 4
+
+      # The tree without its object files: the shards only run ctest in it (same path on every runner, so the absolute
+      # paths inside it hold). No ROM is anywhere near this job.
+      - name: Pack the tree
+        run: |
+          set -euo pipefail
+          tar --exclude='*.o' --exclude='*.a' --exclude='.ninja_*' --exclude='*.pch' --exclude='*.gch' -czf "${RUNNER_TEMP}/build-tree.tar.gz" build
+          ls -lh "${RUNNER_TEMP}/build-tree.tar.gz"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: fw-test-tree
+          path: ${{ runner.temp }}/build-tree.tar.gz
+          retention-days: 2
+
+      - name: Save the compiler cache
+        if: always()
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/ccache
+          key: ccache-v1-macos15-arm64-tests-fw-${{ github.ref_name }}-${{ github.run_id }}
+
+  firmware:
+    name: Firmware tests (ctest ${{ matrix.shard }}/4, macOS arm64)
+    needs: [changes, build-tests]
+    if: always() && needs.changes.outputs.run == 'true' && (needs.build-tests.result == 'success' || (needs.build-tests.result == 'skipped' && inputs.build_tree_artifact != '')) && (github.event_name != 'workflow_dispatch' || inputs.what != 'e2e')
+    runs-on: macos-15
+    environment: rom
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    env:
+      MDMM_ROM_URL: ${{ vars.MDMM_ROM_URL }}
+    steps:
+      # the sources: the tests read goldens and scripts from the checkout; the objects are not needed
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 1
+          submodules: recursive
+          persist-credentials: false
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ inputs.build_tree_artifact != '' && inputs.build_tree_artifact || 'fw-test-tree' }}
+          path: ${{ runner.temp }}/tree
+
+      - name: Unpack the tree
+        run: |
+          set -euo pipefail
+          tar -xzf "${RUNNER_TEMP}"/tree/build-tree.tar.gz
+          mkdir -p "${RUNNER_TEMP}/test-home/Documents"
+          ctest --test-dir build -N | tail -n 2
 
       - name: Fetch the ROMs
         run: scripts/ci-fetch-roms.sh "${RUNNER_TEMP}/roms"
@@ -141,27 +238,12 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: Save the compiler cache
-        if: always()
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: ${{ runner.temp }}/ccache
-          key: ccache-v1-macos15-arm64-tests-fw-${{ github.ref_name }}-${{ github.run_id }}-${{ matrix.shard }}
-
-  e2e:
-    name: Firmware E2E (both editors, macOS)
-    if: github.event_name != 'workflow_dispatch' || inputs.what != 'firmware'
+  build-e2e:
+    name: Build the editors (diagnostics, macOS)
+    needs: changes
+    if: needs.changes.outputs.run == 'true' && (github.event_name != 'workflow_dispatch' || inputs.what != 'firmware')
     runs-on: macos-15
-    environment: rom
-    timeout-minutes: 180
-    env:
-      CCACHE_BASEDIR: ${{ github.workspace }}
-      CCACHE_COMPILERCHECK: "%compiler% -v"
-      CCACHE_SLOPPINESS: "include_file_mtime,include_file_ctime,time_macros,pch_defines"
-      CCACHE_MAXSIZE: 2G
-      CCACHE_COMPRESS: "true"
-      MDMM_ROM_URL: ${{ vars.MDMM_ROM_URL }}
-      MDMM_E2E_OUT: ${{ github.workspace }}/temp/e2e-out
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -186,14 +268,61 @@ jobs:
             ccache-v1-macos15-e2e-${{ github.ref_name }}-
             ccache-v1-macos15-e2e-main-
 
-      # The dev tree (diagnostics on: the journeys need it), the two standalones only; mdmm-e2e.sh would build them
-      # too, but a build error should fail here, before the ROMs are on the disk.
+      # The dev tree (diagnostics on: the journeys need it), the two standalones only.
       - name: Build the editors
         run: |
           set -euo pipefail
           home="${RUNNER_TEMP}/build-home"
           mkdir -p "${home}/Documents"
           HOME="${home}" ./scripts/mdmm-dev.sh build mdJucePlugin_Standalone mmJucePlugin_Standalone
+
+      - name: Pack the tree
+        run: |
+          set -euo pipefail
+          tar --exclude='*.o' --exclude='*.a' --exclude='.ninja_*' --exclude='*.pch' --exclude='*.gch' -czf "${RUNNER_TEMP}/editors-tree.tar.gz" temp/dev
+          ls -lh "${RUNNER_TEMP}/editors-tree.tar.gz"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: fw-editors-tree
+          path: ${{ runner.temp }}/editors-tree.tar.gz
+          retention-days: 2
+
+      - name: Save the compiler cache
+        if: always()
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/ccache
+          key: ccache-v1-macos15-e2e-${{ github.ref_name }}-${{ github.run_id }}
+
+  e2e:
+    name: Firmware E2E (${{ matrix.machine }} editor, macOS)
+    needs: [changes, build-e2e]
+    if: needs.changes.outputs.run == 'true' && (github.event_name != 'workflow_dispatch' || inputs.what != 'firmware')
+    runs-on: macos-15
+    environment: rom
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        machine: [md, mm]
+    env:
+      MDMM_ROM_URL: ${{ vars.MDMM_ROM_URL }}
+      MDMM_E2E_OUT: ${{ github.workspace }}/temp/e2e-out
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 1
+          submodules: recursive
+          persist-credentials: false
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: fw-editors-tree
+          path: ${{ runner.temp }}/tree
+
+      - name: Unpack the editors
+        run: tar -xzf "${RUNNER_TEMP}"/tree/editors-tree.tar.gz
 
       - name: Fetch the ROMs
         run: scripts/ci-fetch-roms.sh "${RUNNER_TEMP}/roms"
@@ -217,7 +346,7 @@ jobs:
           E2E_ARGS: ${{ github.event_name == 'workflow_dispatch' && inputs.e2e_args || '' }}
         run: |
           # shellcheck disable=SC2086
-          ./scripts/mdmm-e2e.sh ${E2E_ARGS:-both --jobs 1} --no-build
+          ./scripts/mdmm-e2e.sh ${{ matrix.machine }} ${E2E_ARGS:---jobs 1} --no-build
 
       - name: Delete the ROMs (before anything is uploaded)
         if: always()
@@ -242,14 +371,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: e2e-report
+          name: e2e-report-${{ matrix.machine }}
           path: ${{ runner.temp }}/e2e-report
           if-no-files-found: ignore
           retention-days: 14
-
-      - name: Save the compiler cache
-        if: always()
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: ${{ runner.temp }}/ccache
-          key: ccache-v1-macos15-e2e-${{ github.ref_name }}-${{ github.run_id }}
