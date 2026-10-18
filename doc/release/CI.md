@@ -40,13 +40,15 @@ tests (`mdPageBridgeTest`, `mdMachineMidiOutTest`, ...) are registered.
 ## Firmware tests on CI
 
 `mdmm-firmware.yml` runs the tests that need the Elektron ROMs, so nobody runs them on a Mac. Triggers: push to `main`
-and `release/**`, Run workflow, nightly 02:30 UTC. Never a pull request. Two macOS jobs, both in the GitHub environment
-`rom`:
+and `release/**`, Run workflow, nightly 02:30 UTC. Never a pull request. The ROM jobs run in the GitHub environment
+`rom`; main cancels an older run, `release/**` queues:
 
 | Job | Runs |
 |---|---|
-| `firmware` | every ctest test labelled `FirmwareTest` except `Slow` and `Soak`, on an arm64 tree without ThinLTO. A skipped test fails the job (a skip would mean "no ROM"). |
-| `e2e` | `scripts/mdmm-e2e.sh both --no-build --jobs 2`, the firmware E2E of both editors. On failure the report (logs, pictures, no ROM) is the artifact `e2e-report`. |
+| `changes` | decides from the push's files whether anything runs: on `main` only source, scripts, CMake, `ci/` or this workflow; on `release/**` everything but `doc/`, `site/` and `*.md`. Dispatch, nightly and `workflow_call` always run. |
+| `build-tests`, `build-e2e` | build once, without ROMs: the ctest tree (arm64, no ThinLTO) and the diagnostics build of the two standalones; each uploaded as an artifact (`fw-test-tree`, `fw-editors-tree`, 2 days). `workflow_call` can pass `build_tree_artifact` (a `build-tree.tar.gz` holding `build/`) to skip `build-tests`. |
+| `firmware` | four shards, each downloads the tree and only runs: every ctest test labelled `FirmwareTest` except `Slow` and `Soak`, on an arm64 tree without ThinLTO. A skipped test fails the job (a skip would mean "no ROM"). |
+| `e2e` | one job per machine (`md`, `mm`): `scripts/mdmm-e2e.sh <machine> --jobs 1 --no-build` on the built editors. The report (logs, pictures, no ROM) is the artifact `e2e-report-md` / `-mm`. |
 
 How the ROMs arrive: `scripts/ci-fetch-roms.sh` asks GitHub for an OIDC token (audience `mdmm-rom`) and sends it to the
 Worker `ci/rom-worker` ([README](../../ci/rom-worker/README.md)), which streams `md.bin` / `mm.bin` from the private R2
