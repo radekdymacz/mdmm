@@ -120,6 +120,33 @@ namespace
 		check(r.state() == mmDesk::RecvSession::State::Failed, "a screen that never comes fails after three tries");
 		check(mmDesk::RecvSession::enterMacro().size() == 36, "the macro is 36 keys with GLOBAL 1 active (GLOBAL counts as one)");
 		{
+			// A loaded CI runner advances much less emulator time than wall time. The entry macro must
+			// finish before any retry keys, and a pause must not consume the parked idle time either.
+			mmDesk::RecvSession slow;
+			auto tel = screen(mmDesk::Screen::Main);
+			tel.machineMs = 1000;
+			slow.want({0xf0, 1, 0xf7}, 51);
+			check(slow.tick(0, tel).keys == mmDesk::RecvSession::enterMacro(), "slow machine: entry starts");
+			tel.screen = mmDesk::Screen::Global;
+			bool untouched = true;
+			for(int i = 1; i <= 70; ++i)
+			{
+				tel.machineMs = 1000 + 10 * i;
+				const auto next = slow.tick(1000 * i, tel);
+				untouched = untouched && next.keys.empty() && next.sends.empty() && next.gaveUp.empty();
+			}
+			check(untouched && slow.state() == mmDesk::RecvSession::State::Entering,
+				"70 seconds of wall time, 700 ms of machine time: no retry over the unfinished macro");
+			tel = screen(mmDesk::Screen::GlobalEdit);
+			tel.machineMs = 1800;
+			slow.tick(80000, tel);
+			tel.machineMs = 1810;
+			check(slow.tick(81000, tel).sends.size() == 1, "the slow machine reached RECV: the dump goes out");
+			check(slow.tick(681000, tel).keys.empty() && slow.parked(), "paused for ten minutes: still parked");
+			tel.machineMs = 5000;
+			check(slow.tick(682000, tel).keys == mmDesk::RecvSession::exitKeys(), "three machine seconds idle: leave RECV");
+		}
+		{
 			// B-067: on the SLOT screen the cursor goes to the active global before ENTER (ENTER on another slot makes
 			// it active): GLOBAL 7 is two to the right of slot 1, one row down
 			const auto k = mmDesk::RecvSession::enterMacro(6);

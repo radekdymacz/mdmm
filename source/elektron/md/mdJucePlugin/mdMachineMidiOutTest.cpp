@@ -930,6 +930,8 @@ namespace
 		std::puts("5. Tempo INT and EXT");
 		op(globalOp("tempoIn", false));
 		const bool intSet = until([&] { return !processor->getPlugin().hostClock(); }, 180000);
+		if(!intSet || debug)
+			describeClock();
 		check(intSet, "Tempo in INT: the plug-in stops sending the host's clock to the firmware");
 		hostPlay(90, 0.0);
 		watch(3000);

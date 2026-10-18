@@ -124,7 +124,13 @@ Full run 39144796389 was cancelled while queued so an already failing candidate 
 Run 39147192591 passed checks, core tests and all 34 page unit tests; page journeys finished 339 passed, one failed,
 three skipped. The song-command journey saw the inserted loop in the document before the inspector rendered its
 JUMP button. It now waits for the row selection and that control together before clicking. The focused MM diagnostic
-run 39147100397 and queued native lane run 39147227476 are still outstanding.
+run 39147100397 failed both tests. Its memory diagnostics show the global still pending, RECV failed and zero dumps
+received: the edit never reached the firmware, so the persistence assertion had nothing to save. The transport
+failure moved to the INT transition; EXT and later notes passed. RECV was adding wall time whenever a block advanced,
+even when the emulator ran far slower than real time, letting retry/EXIT keys interrupt the unfinished entry macro.
+It now uses elapsed emulated UC cycles supplied through telemetry; a regression covers slow processing and pause.
+Clock diagnostics also cover the INT transition. This change still needs CI validation. Native lane run 39147227476
+and page-only run 39151278723 are running.
 Keep the existing assertions and the release gate intact.
 PGO training on main passed in run 39126917819: the downloaded profile parses, its hash matches, and all four recorded
 emulator source trees match this branch. It is included with its metadata.

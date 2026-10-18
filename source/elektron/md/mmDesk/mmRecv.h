@@ -20,8 +20,9 @@ namespace mmDesk
 	// times; then (or once the oldest dump waited maxWaitMs, telemetry or not) the session
 	// gives up what it holds and says whose it was (Out::gaveUp), so the caller can fail
 	// those pushes and the panel is left alone. Its times are the machine's: they move only
-	// while the emulator runs (Telemetry::blocks moves), so a host that stops processing
-	// (a DAW at rest) fails nothing that would go out on resume. Pure: feed it the time and
+	// with Telemetry::machineMs, so a slow runner gets the same time to press its keys and a host that stops
+	// processing fails nothing that would go out on resume. Without that clock, blocks gate the caller's time.
+	// Pure: feed it the time and
 	// the telemetry, it returns the keys to press and the dumps to send.
 	class RecvSession
 	{
@@ -96,6 +97,7 @@ namespace mmDesk
 		int m_failures = 0;			// failed tries since the screen last came
 		double m_clock = 0;			// machine time: moves with the caller's clock only while the emulator runs
 		double m_lastNowMs = -1;
+		double m_lastMachineMs = -1;
 		uint64_t m_lastBlocks = 0;
 		double m_keysDone = 0;	// the keys pressed last are through by then
 		uint32_t m_recvBase = 0;	// the machine's RECV count (messages and errors) when the session parked
