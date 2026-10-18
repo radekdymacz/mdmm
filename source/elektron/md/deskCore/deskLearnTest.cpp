@@ -452,7 +452,7 @@ namespace
 	void globals()
 	{
 		const LearnLimits md{16, 0, 25, 35};
-		const LearnLimits mm{6, 8, 8, 9};
+		const LearnLimits mm{6, 8, 8, 40};
 		LearnMapping g;
 		g.ch = 2;
 		g.cc = 70;
@@ -460,7 +460,7 @@ namespace
 		g.mode = LearnMode::RelativeOffset;
 		check(g.at.isGlobal() && inLimits(g.at, md) && !inLimits(LearnRef::global(35), md) && !inLimits(LearnRef::global(-1), md)
 			&& inLimits(g.at, LearnLimits{16, 0, 25, 40}) && !inLimits(g.at, LearnLimits{16, 0, 25}), "a global target is inside the limits that name it, by id");
-		check(inLimits(LearnRef::global(8), mm) && !inLimits(LearnRef::global(9), mm), "the Monomachine's global ids are bounded the same way");
+		check(inLimits(LearnRef::global(39), mm) && !inLimits(LearnRef::global(40), mm), "the Monomachine's global ids are bounded the same way");
 
 		auto r = addMapping({}, g);
 		check(r.ok() && r.list.size() == 1, "add: a global mapping");
