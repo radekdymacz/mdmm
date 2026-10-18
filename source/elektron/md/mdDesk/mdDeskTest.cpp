@@ -5,6 +5,7 @@
 // mdLibTest/mdDeskFirmwareTest.cpp (manual, needs the ROM).
 
 #include "mdDesk.h"
+#include "elektronData/mdNames.h"
 #include "mdDeskLibrary.h"
 #include "mdDeskKeys.h"
 #include "mdDeskMachine.h"
@@ -3151,6 +3152,87 @@ namespace
 		check(ok() && heldParams.size() == 7 && notes.back()[2] == 0, "noteOff after saveKit: the note off, nothing held any more");
 	}
 
+	// B-169: MIDI Learn's global targets reach the desk as the page's own commands (masterFx, swing, ...), folded per target,
+	// one undo step for a turn of a knob.
+	void testLearnGlobals()
+	{
+		check(Desk::learnGlobals().size() == static_cast<size_t>(g_mdLearnGlobals), "the learn globals are as many as the setup spec says");
+		check(Desk::learnGlobals()[0].name == "RHYTHM ECHO TIME" && Desk::learnGlobals()[31].name == "DYNAMIX MIX"
+			&& Desk::learnGlobals()[32].name == "TEMPO" && Desk::learnGlobals()[34].name == "ACCENT", "their names are the page's");
+		auto kit = *ed::decodeMdKit(load("programmed_kit_0.syx"));
+		auto pattern = *ed::decodeMdPattern(load("programmed_pattern_1.syx"));
+		pattern.kit = kit.position;
+		std::vector<std::vector<uint8_t>> wire;
+		double now = 0;
+		Desk::Port port;
+		port.device.sendSysex = [&](const std::vector<uint8_t>& _b) { wire.push_back(_b); };
+		port.device.sendKitParam = [&](uint8_t, uint8_t, uint8_t) {};
+		port.device.pressKey = [&](const std::string&) { return true; };
+		port.device.turnKnob = [&](uint8_t, int) { return true; };
+		port.toPage = [&](const Value& _m) { g_published.push_back(_m); };
+		port.device.nowMs = [&] { return now; };
+		const auto status = [](const ed::MdStatus _p, const uint8_t _v)
+		{
+			return std::vector<uint8_t>{0xf0, 0x00, 0x20, 0x3c, 0x02, 0x00, 0x72, static_cast<uint8_t>(_p), _v, 0xf7};
+		};
+		const auto imageOf = [](const ed::MdKit& _k)
+		{
+			const auto img = ed::mdWorkingKitImage(_k);
+			std::vector<uint8_t> r{_k.position, 0};
+			r.insert(r.end(), img.begin(), img.end());
+			return r;
+		};
+		Desk desk(port);
+		desk.onPageMessage(cmd(R"({"op":"ready"})"));
+		desk.onDeviceSysex(status(ed::MdStatus::Pattern, pattern.position));
+		desk.onDeviceSysex(status(ed::MdStatus::Kit, kit.position));
+		desk.onDeviceSysex(ed::encodeMdPattern(pattern));
+		desk.onDeviceSysex(ed::encodeMdKit(kit));
+		desk.onWorkingKitMemory(imageOf(kit));
+		Telemetry t;
+		t.valid = true;
+		t.bootAnimation = 0;
+		t.knobPage = 0;
+		t.panelPending = 0;
+		desk.onTelemetry(t);
+		desk.tick();
+		const auto echo = [&](const size_t _i)
+		{
+			for(size_t f = 0; f < ed::g_mdMasterFx.size(); ++f)
+				if(std::string(ed::g_mdMasterFx[f]) == "rhythmEcho")
+					return static_cast<int>(desk.documents().working->kit.masterFx[f][_i]);
+			return -1;
+		};
+		const auto absolute = static_cast<uint8_t>(deskCore::LearnMode::Absolute);
+		const auto signedMode = static_cast<uint8_t>(deskCore::LearnMode::RelativeSigned);
+		const auto steps = desk.coreState().history().size();
+		wire.clear();
+		// absolute: the CC's 0-127 is the value; two events in one turn, the last one stands, one command
+		desk.applyLearnGlobals({{1, absolute, false, 10}, {1, absolute, false, 99}});
+		check(echo(1) == 99, "a learned CC moves a master effect through the page's own masterFx command");
+		now += 50;
+		const auto before = echo(1);
+		desk.applyLearnGlobals({{1, signedMode, false, 1}, {1, signedMode, false, 1}, {1, signedMode, false, 1}});
+		check(echo(1) == before + 3, "a relative knob turned fast adds up");
+		now += 50;
+		desk.applyLearnGlobals({{1, signedMode, true, 1}});
+		check(echo(1) == before + 2, "an inverted relative knob steps the other way");
+		check(desk.coreState().history().size() == steps + 1, "a turn of a knob is one undo step");
+		now += 1000;
+		desk.applyLearnGlobals({{1, absolute, false, 0}});
+		check(echo(1) == 0 && desk.coreState().history().size() == steps + 2, "after a pause the next turn is its own step");
+		check(std::any_of(wire.begin(), wire.end(), [](const std::vector<uint8_t>& _m) { return _m.size() > 8 && _m[6] == 0x5d && _m[7] == 1; }),
+			"the machine heard the live master-effect command (0x5d)");
+		// the pattern's swing and accent: 50-80 % and 0-15
+		desk.applyLearnGlobals({{33, absolute, false, 127}, {34, absolute, false, 127}});
+		const auto* p = desk.documents().patterns.empty() ? nullptr : &desk.documents().patterns.begin()->second;
+		check(p && ed::swingPercent(p->swingAmount) == 80 && ed::accentDisplay(p->accentAmount) == 15, "swing and accent amount follow the CC over their ranges");
+		// an id past the list, and a machine that takes no input, do nothing
+		const auto stepsNow = desk.coreState().history().size();
+		desk.applyLearnGlobals({{200, absolute, false, 5}});
+		check(desk.coreState().history().size() == stepsNow, "an unknown global is ignored");
+	}
+
 	void checkContract(const bool _write)
 	{
 		namespace contract = deskCore::contract;
@@ -3561,6 +3643,7 @@ int main(const int _argc, char** _argv)
 	testModulators();
 	testKeyMapping();
 	testNotes();
+	testLearnGlobals();
 	testFakeAdapter();
 	testIntentCases();
 	checkContract(false);

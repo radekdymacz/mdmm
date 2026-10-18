@@ -589,6 +589,11 @@ namespace mdJucePlugin
 			h.parameter = [this](const MidiLearnCommands::Ref& _at) { return learnParameter(_at); };
 			h.baseChannel = [this] { return m_engine ? m_engine->baseChannel() : 0; };
 			h.pausedReason = [this] { return learnPausedReason(processor()); };
+			h.applyGlobals = [this](const std::vector<deskCore::LearnGlobalEvent>& _events)
+			{
+				if(m_desk)
+					m_desk->applyLearnGlobals(_events);
+			};
 			h.firmwareCcMap = [this](const int _offset, const int _cc) { return firmwareCc(_offset, _cc); };
 			h.nowMs = [] { return sessionNowMs(); };
 			return h;

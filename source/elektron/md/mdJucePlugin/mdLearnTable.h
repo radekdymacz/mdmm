@@ -22,7 +22,8 @@ namespace mdJucePlugin
 {
 	struct LearnTarget					// one mapping, resolved
 	{
-		pluginLib::Parameter* param = nullptr;
+		pluginLib::Parameter* param = nullptr;	// null for a global target
+		int16_t global = -1;			// the model's global id (B-169): the value goes to the message thread, not to a parameter
 		uint8_t mode = 0;				// deskCore::LearnMode: Absolute, RelativeSigned, RelativeOffset
 		uint8_t invert = 0;
 		uint8_t next = 0xff;			// the next target of the same (channel, CC); 0xff ends the chain

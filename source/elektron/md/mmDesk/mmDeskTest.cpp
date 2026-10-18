@@ -385,6 +385,21 @@ namespace
 		std::printf("\n");
 		check(d.pattern(3).has_value(), "the current pattern loaded first");
 
+		// B-169: MIDI Learn's global targets are the page's own commands (swing here; the multi envelope, tune and tempo
+		// have the same path)
+		{
+			check(mmDesk::Desk::learnGlobals().size() == static_cast<size_t>(mmDesk::g_mmLearnGlobals)
+				&& mmDesk::Desk::learnGlobals()[0].name == "TEMPO" && mmDesk::Desk::learnGlobals()[7].name == "SWING",
+				"the learn globals are as many as the setup spec says, named as the page");
+			const auto absolute = static_cast<uint8_t>(deskCore::LearnMode::Absolute);
+			d.applyLearnGlobals({{7, absolute, false, 127}});
+			check(d.pattern(3) && d.pattern(3)->swingAmount == 30, "a learned CC sets the pattern's swing through the swing command (80 %)");
+			d.applyLearnGlobals({{7, absolute, false, 0}});
+			check(d.pattern(3) && d.pattern(3)->swingAmount == 0, "and back to 50 %");
+			d.applyLearnGlobals({{99, absolute, false, 5}});
+			run(2000);
+		}
+
 		// Edit pattern 3: add a trig. It goes out on SYSEX RECV and is confirmed.
 		auto p = *d.pattern(3);
 		p.pitch[0] = p.amp[0] = p.filter[0] = p.lfo[0] = 1;

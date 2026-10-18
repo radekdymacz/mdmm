@@ -2,6 +2,7 @@
 
 #include "deskCore.h"
 #include "deskLcd.h"
+#include "deskLearn.h"
 
 #include <functional>
 #include <memory>
@@ -141,7 +142,44 @@ namespace deskCore
 		// A page has been up: the machine is polled and read from then on.
 		bool pageSeen() const { return m_core.pageSeen(); }
 
+		// MIDI Learn's global targets (B-169): CCs for values of the page that belong to no track. They are applied the way
+		// the page applies an edit: as the model's command through onPageMessage, so the machine, the page and undo agree.
+		// A model lists its targets (learnGlobalSpecs, the id is the index), says where each stands now and which command
+		// moves it; this folds a run of events into one command per target. Nothing while the machine takes no input.
+		void applyLearnGlobals(const std::vector<LearnGlobalEvent>& _events)
+		{
+			const auto& specs = learnGlobalSpecs();
+			if(_events.empty() || specs.empty() || !isInputReady())
+				return;
+			const Value state = m_machine->state(m_core.view());
+			const auto changes = foldGlobalEvents(_events, specs, [&](const int _id) { return learnGlobalValue(_id, state); });
+			for(const auto& [id, value] : changes)
+			{
+				Value message = learnGlobalMessage(id, value, state);
+				if(!message.isObject())
+					continue;
+				message.set("g", static_cast<double>(m_learnGestures.at(m_nowMs())));
+				onPageMessage(message);
+			}
+		}
+
 	protected:
+		virtual const std::vector<LearnGlobalSpec>& learnGlobalSpecs() const
+		{
+			static const std::vector<LearnGlobalSpec> none;
+			return none;
+		}
+		// Where target _id stands now (the model's documents and _state, the machine's state); nullopt: not known yet
+		virtual std::optional<int> learnGlobalValue(int /*_id*/, const Value& /*_state*/) const { return std::nullopt; }
+		// The command that sets target _id to _value, as the page would send it (without its gesture)
+		virtual Value learnGlobalMessage(int /*_id*/, int /*_value*/, const Value& /*_state*/) const { return Value(); }
+		// The number _state[_a][_b] (e.g. pattern.current), -1 when it is not there
+		static int stateInt(const Value& _state, const char* _a, const char* _b)
+		{
+			const auto* a = _state.find(_a);
+			const auto* b = a && a->isObject() ? a->find(_b) : nullptr;
+			return b && b->isNumber() ? static_cast<int>(b->asNumber()) : -1;
+		}
 		virtual void onSetup(const Value& _message) { m_core.result(_message, {"no setup here"}, {}); }
 		// The page (re)attached: after the core's own publishing, what the model adds.
 		virtual void onReadyExtra() {}
@@ -176,5 +214,6 @@ namespace deskCore
 		std::function<void(const Bytes&)> m_sysexTap;
 		Core<Model> m_core;
 		std::unique_ptr<Adapter> m_machine;
+		LearnGestures m_learnGestures;
 	};
 }

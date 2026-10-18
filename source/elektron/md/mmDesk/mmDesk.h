@@ -64,6 +64,11 @@ namespace mmDesk
 		const std::vector<deskCore::LearnMapping>& mappings() const { return m_mappings; }
 		void setMappings(std::vector<deskCore::LearnMapping> _mappings);
 
+		// MIDI Learn's global targets (B-169), by id (append-only: a saved project names them): the tempo (0), the
+		// active global's MASTER TUNE (1), the five MULTI ENV values ATK DEC SUS REL PORT (2-6) and the playing pattern's
+		// SWING (7). The tracks' DATA pages (FX included) and levels are the track targets.
+		static const std::vector<deskCore::LearnGlobalSpec>& learnGlobals();
+
 		bool isReady() const { return isInputReady(); }
 		// The adapter's status line (Machine::status), read for tests and diagnostics.
 		std::string recvState() const { const auto s = status(); const auto* v = s.find("recv"); return v && v->isString() ? v->asString() : std::string(); }
@@ -86,6 +91,11 @@ namespace mmDesk
 
 		// The Owner::Setup ops the desk has a function for (checked against the table).
 		static std::vector<std::string> setupOps();
+
+	protected:
+		const std::vector<deskCore::LearnGlobalSpec>& learnGlobalSpecs() const override { return learnGlobals(); }
+		std::optional<int> learnGlobalValue(int _id, const Value& _state) const override;
+		Value learnGlobalMessage(int _id, int _value, const Value& _state) const override;
 
 	private:
 		void onSetup(const Value& _message) override;
@@ -113,5 +123,7 @@ namespace mmDesk
 	// mm-desk/modulators with "solo" beside it) so 0.7 reads 1.0 projects; mm-desk/setup is read too, and written once a
 	// member needs the wrapper.
 	// The learn model: 6 synth tracks, 8 pages (the 7 DATA pages and the level), 8 values a page.
-	constexpr deskCore::SetupSpec g_mmSetupSpec{"mm-desk/setup", g_mmModLimits, 12, false, true, {6, 8, 8}};
+	// plus the global targets (B-169): the tempo, the master tune, the multi envelope, the pattern's swing (Desk::learnGlobals)
+	constexpr int g_mmLearnGlobals = 8;
+	constexpr deskCore::SetupSpec g_mmSetupSpec{"mm-desk/setup", g_mmModLimits, 12, false, true, {6, 8, 8, g_mmLearnGlobals}};
 }

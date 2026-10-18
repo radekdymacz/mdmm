@@ -13,9 +13,6 @@ namespace mdJucePlugin
 {
 	namespace
 	{
-		constexpr auto g_relativeSigned = static_cast<uint8_t>(deskCore::LearnMode::RelativeSigned);
-		constexpr auto g_relativeOffset = static_cast<uint8_t>(deskCore::LearnMode::RelativeOffset);
-
 		size_t threadKey() noexcept
 		{
 			return std::hash<std::thread::id>{}(std::this_thread::get_id());
@@ -24,30 +21,12 @@ namespace mdJucePlugin
 
 	int learnedValue(const uint8_t _mode, const bool _invert, const uint8_t _value, const int _current, const int _min, const int _max)
 	{
-		const int lo = std::min(_min, _max);
-		const int hi = std::max(_min, _max);
-		const int v = std::min<int>(_value, 127);
-
-		int step = 0;
-		if(_mode == g_relativeSigned)
-			step = v >= 1 && v <= 63 ? 1 : v >= 65 ? -1 : 0;
-		else if(_mode == g_relativeOffset)
-			step = v > 64 ? 1 : v < 64 ? -1 : 0;
-		else
-		{
-			const int a = _invert ? 127 - v : v;
-			// rounded to the nearest step of the range
-			return lo + static_cast<int>((static_cast<int64_t>(a) * (hi - lo) * 2 + 127) / 254);
-		}
-
-		if(_invert)
-			step = -step;
-		return std::clamp(_current + step, lo, hi);
+		return deskCore::learnedValue(_mode, _invert, _value, _current, _min, _max);
 	}
 
 	LearnTable buildLearnTable(const std::vector<deskCore::LearnMapping>& _mappings,
 		const std::function<pluginLib::Parameter*(const deskCore::LearnRef&)>& _parameter, const uint32_t _generation,
-		std::vector<pluginLib::Parameter*>* _byMapping)
+		std::vector<pluginLib::Parameter*>* _byMapping, const int _globals)
 	{
 		LearnTable table;
 		table.generation = _generation;
@@ -56,11 +35,15 @@ namespace mdJucePlugin
 		for(size_t n = 0; n < _mappings.size() && n < LearnTable::MaxTargets; ++n)
 		{
 			const auto& m = _mappings[n];
-			auto* param = _parameter ? _parameter(m.at) : nullptr;
-			if(!param)
+			const bool global = m.at.isGlobal();
+			if(global && (m.at.i < 0 || m.at.i >= _globals || m.at.i > 255))
+				continue;
+			auto* param = global || !_parameter ? nullptr : _parameter(m.at);
+			if(!param && !global)
 				continue;
 			LearnTarget target;
 			target.param = param;
+			target.global = global ? static_cast<int16_t>(m.at.i) : int16_t{-1};
 			target.mode = static_cast<uint8_t>(m.mode);
 			target.invert = m.invert ? 1 : 0;
 			target.mapping = static_cast<uint8_t>(n);
@@ -98,6 +81,8 @@ namespace mdJucePlugin
 		c.applied = m_applied.load(std::memory_order_relaxed);
 		c.captured = m_captured.load(std::memory_order_relaxed);
 		c.capturedDropped = m_capturedDropped.load(std::memory_order_relaxed);
+		c.globalQueued = m_globalQueued.load(std::memory_order_relaxed);
+		c.globalDropped = m_globalDropped.load(std::memory_order_relaxed);
 		c.notOnAudioThread = m_notOnAudioThread.load(std::memory_order_relaxed);
 		c.physicalPassed = m_physicalPassed.load(std::memory_order_relaxed);
 		return c;
@@ -191,7 +176,9 @@ namespace mdJucePlugin
 		{
 			found = true;
 			const auto& target = m_table.targets[_head];
-			if(target.param && m_apply(*target.param, target, _value))
+			if(target.global >= 0)
+				queueGlobal(target, _value);
+			else if(target.param && m_apply(*target.param, target, _value))
 			{
 				m_applied.fetch_add(1, std::memory_order_relaxed);
 				if(target.mapping < 128)
@@ -200,6 +187,22 @@ namespace mdJucePlugin
 			_head = target.next;
 		}
 		return found;
+	}
+
+	void LearnRouter::queueGlobal(const LearnTarget& _target, const uint8_t _value) noexcept
+	{
+		const auto write = m_globalWrite.load(std::memory_order_relaxed);
+		const auto read = m_globalRead.load(std::memory_order_acquire);
+		if(write - read >= GlobalCapacity)
+		{
+			m_globalDropped.fetch_add(1, std::memory_order_relaxed);
+			return;
+		}
+		const auto record = static_cast<uint32_t>(_target.global & 0xff) | static_cast<uint32_t>(_target.mode) << 8
+			| static_cast<uint32_t>(_target.invert ? 1 : 0) << 16 | static_cast<uint32_t>(_value & 0x7f) << 24;
+		m_globalRing[write & (GlobalCapacity - 1)].store(record, std::memory_order_relaxed);
+		m_globalWrite.store(write + 1, std::memory_order_release);
+		m_globalQueued.fetch_add(1, std::memory_order_relaxed);
 	}
 
 	void LearnRouter::capture(const uint8_t _status, const uint8_t _cc, const uint8_t _value) noexcept

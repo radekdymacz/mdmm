@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <utility>
 #include <string>
 #include <vector>
 
@@ -165,6 +166,58 @@ namespace deskCore
 	std::vector<LearnMapping> mappingsFromJson(const elektronData::json::Value& _list, const LearnLimits& _limits,
 		std::vector<std::string>& _errors, const std::string& _path = "$.mappings");
 	elektronData::json::Value mappingsToJson(const std::vector<LearnMapping>& _list, bool _pages);
+
+	// ---- global targets: values of the page that belong to no track (B-169) ----
+
+	// One global target of a model (the id is its index in the model's list): its page name, its group (the card it sits
+	// on) and the range the learned value moves in (the command's own range).
+	struct LearnGlobalSpec
+	{
+		std::string name;
+		std::string group;
+		int min = 0, max = 127;
+	};
+
+	// A CC the audio thread met for a global target, as it crossed to the message thread (one record in the router's ring).
+	struct LearnGlobalEvent
+	{
+		uint8_t id = 0;
+		uint8_t mode = 0;		// LearnMode
+		bool invert = false;
+		uint8_t value = 0;		// the CC's 0-127
+	};
+
+	// The next value of a parameter in [_min, _max] that is at _current, for the CC value _value of a mapping with the
+	// mode (a LearnMode) and _invert. Absolute: the CC's 0..127 spread over the range (inverted: 127..0). Relative Signed:
+	// 1 to 63 one step up, 65 to 127 one step down. Relative Offset: above 64 one step up, below 64 one step down.
+	// Inverted relative modes step the other way. Always inside [_min, _max].
+	int learnedValue(uint8_t _mode, bool _invert, uint8_t _value, int _current, int _min, int _max);
+
+	// A run of events (oldest first) as the one value each target ends at, in the order the targets were first met:
+	// _current(id) is where a target stands now (nullopt: its value is not known yet, its events are dropped). Each event
+	// moves the running value of its target, so a relative knob turned fast adds up and an absolute one lands on its last
+	// value. A target whose final value equals where it stands is left out.
+	std::vector<std::pair<int, int>> foldGlobalEvents(const std::vector<LearnGlobalEvent>& _events, const std::vector<LearnGlobalSpec>& _specs,
+		const std::function<std::optional<int>(int _id)>& _current);
+
+	// One undo step for a turn of a knob: every learned edit within _quietMs of the one before shares a gesture id (the
+	// core merges steps of one gesture), the next after a pause starts another. Ids are far above the page's own.
+	class LearnGestures
+	{
+	public:
+		uint64_t at(const double _nowMs, const double _quietMs = 400)
+		{
+			if(m_count == 0 || _nowMs - m_lastMs > _quietMs)
+				++m_count;
+			m_lastMs = _nowMs;
+			return g_base + m_count;
+		}
+
+	private:
+		static constexpr uint64_t g_base = uint64_t{1} << 40;
+		uint64_t m_count = 0;
+		double m_lastMs = 0;
+	};
 
 	// ---- alpha projects: the "MDLN" chunk's preset (pluginLib JSON) ----
 

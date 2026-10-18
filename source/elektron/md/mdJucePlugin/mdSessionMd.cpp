@@ -168,6 +168,7 @@ namespace mdJucePlugin
 			m.tracks = 16;
 			m.limits = mdDesk::g_mdSetupSpec.learn;
 			m.span = 4;		// the Machinedrum's CCs: four channels from the base channel
+			m.globals = mdDesk::Desk::learnGlobals();	// B-169: the master effects, the tempo, the pattern's swing and accent
 			for(uint8_t i = 0; i <= deskWire::md::g_levelIndex; ++i)
 				if(const std::string name = StudioLink::parameterName(i); !name.empty())
 					m.params.push_back({{-1, -1, i}, name});

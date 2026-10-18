@@ -231,6 +231,60 @@ namespace deskCore
 		return s;
 	}
 
+	int learnedValue(const uint8_t _mode, const bool _invert, const uint8_t _value, const int _current, const int _min, const int _max)
+	{
+		const int lo = std::min(_min, _max);
+		const int hi = std::max(_min, _max);
+		const int v = std::min<int>(_value, 127);
+
+		int step = 0;
+		if(_mode == static_cast<uint8_t>(LearnMode::RelativeSigned))
+			step = v >= 1 && v <= 63 ? 1 : v >= 65 ? -1 : 0;
+		else if(_mode == static_cast<uint8_t>(LearnMode::RelativeOffset))
+			step = v > 64 ? 1 : v < 64 ? -1 : 0;
+		else
+		{
+			const int a = _invert ? 127 - v : v;
+			// rounded to the nearest step of the range
+			return lo + static_cast<int>((static_cast<int64_t>(a) * (hi - lo) * 2 + 127) / 254);
+		}
+
+		if(_invert)
+			step = -step;
+		return std::clamp(_current + step, lo, hi);
+	}
+
+	std::vector<std::pair<int, int>> foldGlobalEvents(const std::vector<LearnGlobalEvent>& _events, const std::vector<LearnGlobalSpec>& _specs,
+		const std::function<std::optional<int>(int)>& _current)
+	{
+		struct Run
+		{
+			int id, start, now;
+		};
+		std::vector<Run> runs;
+		for(const auto& e : _events)
+		{
+			if(e.id >= _specs.size())
+				continue;
+			auto it = std::find_if(runs.begin(), runs.end(), [&](const Run& _r) { return _r.id == e.id; });
+			if(it == runs.end())
+			{
+				const auto at = _current ? _current(e.id) : std::nullopt;
+				if(!at)
+					continue;
+				runs.push_back({e.id, *at, *at});
+				it = runs.end() - 1;
+			}
+			const auto& spec = _specs[e.id];
+			it->now = learnedValue(e.mode, e.invert, e.value, it->now, spec.min, spec.max);
+		}
+		std::vector<std::pair<int, int>> out;
+		for(const auto& r : runs)
+			if(r.now != r.start)
+				out.emplace_back(r.id, r.now);
+		return out;
+	}
+
 	std::vector<LearnMapping> mappingsFromJson(const json::Value& _list, const LearnLimits& _limits, std::vector<std::string>& _errors,
 		const std::string& _path)
 	{

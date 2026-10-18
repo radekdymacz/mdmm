@@ -282,6 +282,58 @@ namespace
 		check(allocationProbe::allocations == 0, "beginBlock and translate allocate nothing (mapped, unmapped, learning, a full ring)");
 	}
 
+	// B-169: a CC for a global target is consumed and handed to the message thread (no parameter, no lock, no allocation)
+	void globals()
+	{
+		std::printf("globals\n");
+		pluginLib::Parameter a;
+		LearnRouter router(&apply);
+		// the builder: a global mapping needs no parameter, an id the model does not have is left out
+		std::vector<deskCore::LearnMapping> list;
+		deskCore::LearnMapping m;
+		m.ch = 2;
+		m.cc = 70;
+		m.at = deskCore::LearnRef::global(3);
+		m.mode = LearnMode::RelativeSigned;
+		m.invert = true;
+		list.push_back(m);
+		m.cc = 71;
+		m.at = deskCore::LearnRef::global(40);
+		list.push_back(m);
+		m.cc = 72;
+		m.at = {1, -1, 5};
+		list.push_back(m);
+		std::vector<pluginLib::Parameter*> by;
+		const auto table = buildLearnTable(list, [&](const deskCore::LearnRef&) { return &a; }, 1, &by, 8);
+		check(table.count == 2 && table.targets[0].global == 3 && table.targets[0].param == nullptr && table.targets[1].global == -1 && table.targets[1].param == &a,
+			"the table holds the global (by id, no parameter) and the track target, not the id past the model's count");
+		check(by.size() == 3 && by[0] == nullptr && by[1] == nullptr && by[2] == &a, "the host's notification list names parameters only");
+
+		router.publish(table);
+		router.beginBlock();
+		allocationProbe::allocations = 0;
+		allocationProbe::enabled = true;
+		const bool consumed = router.translate(0xb2, 70, 127);
+		allocationProbe::enabled = false;
+		check(consumed && allocationProbe::allocations == 0, "a mapped CC of a global target is consumed, no allocation");
+		check(!router.translate(0xb3, 70, 127), "on another channel it is not");
+		router.translate(0xb2, 70, 1);
+		std::vector<deskCore::LearnGlobalEvent> events;
+		router.drainGlobals([&](const deskCore::LearnGlobalEvent& _e) { events.push_back(_e); });
+		check(events.size() == 2 && events[0].id == 3 && events[0].value == 127 && events[0].invert && events[0].mode == static_cast<uint8_t>(LearnMode::RelativeSigned)
+			&& events[1].value == 1, "the message thread gets the events in order with id, mode, inversion and value");
+		events.clear();
+		router.drainGlobals([&](const deskCore::LearnGlobalEvent& _e) { events.push_back(_e); });
+		check(events.empty() && router.counts().globalQueued == 2 && router.counts().globalDropped == 0, "drained once; counted");
+		check(router.takeTouched()[0] == 0, "a global moves no parameter, so no touched bit");
+
+		// a full ring drops and counts, never blocks
+		for(size_t i = 0; i < LearnRouter::GlobalCapacity + 10; ++i)
+			router.translate(0xb2, 70, 1);
+		check(router.counts().globalDropped == 10, "a full ring drops the newest and counts it");
+		router.drainGlobals([](const deskCore::LearnGlobalEvent&) {});
+	}
+
 	// L2: the table from the setup's mappings; the empty table and the block boundary before parameters are freed; the
 	// port CCs counted
 	void sessionSide()
@@ -348,6 +400,7 @@ int main()
 	learning();
 	threads();
 	noAllocation();
+	globals();
 	sessionSide();
 	if(g_failures)
 	{

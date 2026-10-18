@@ -2,6 +2,11 @@
 
 #include "mdDeskMachine.h"
 
+#include "elektronData/mdNames.h"
+#include "elektronData/mdValidate.h"
+
+#include <array>
+#include <cmath>
 #include <map>
 
 namespace mdDesk
@@ -523,5 +528,110 @@ namespace mdDesk
 	{
 		machine().setProbe(_probe);
 		flush();
+	}
+}
+
+namespace mdDesk
+{
+	// ---- MIDI Learn's global targets (B-169) ----
+
+	namespace
+	{
+		namespace ed = elektronData;
+		using Value = elektronData::json::Value;
+
+		struct FxCard
+		{
+			const char* group;
+			const char* fx;		// the kit's name for it (g_mdMasterFx)
+			std::array<const char*, 8> knobs;	// the page's names, in the order of the stored values
+		};
+		constexpr std::array<FxCard, 4> g_fxCards{{
+			{"RHYTHM ECHO", "rhythmEcho", {"TIME", "MOD", "MFRQ", "FB", "FILTF", "FILTW", "MONO", "LEV"}},
+			{"GATE BOX", "gateBox", {"DVOL", "PRED", "DEC", "DAMP", "HP", "LP", "GATE", "LEV"}},
+			{"MASTER EQ", "eq", {"LF", "LG", "HF", "HG", "PF", "PG", "PQ", "GAIN"}},
+			{"DYNAMIX", "dynamix", {"ATCK", "REL", "TRHD", "RTIO", "KNEE", "HP", "OUTG", "MIX"}}}};
+		constexpr int g_fxTargets = 32, g_tempoTarget = 32, g_swingTarget = 33, g_accentTarget = 34;
+	}
+
+	const std::vector<deskCore::LearnGlobalSpec>& Desk::learnGlobals()
+	{
+		static const std::vector<deskCore::LearnGlobalSpec> list = []
+		{
+			std::vector<deskCore::LearnGlobalSpec> v;
+			for(const auto& card : g_fxCards)
+				for(const auto* knob : card.knobs)
+					v.push_back({std::string(card.group) + " " + knob, card.group, 0, 127});
+			v.push_back({"TEMPO", "TEMPO", 30, 300});
+			v.push_back({"SWING", "PATTERN", 50, 80});
+			v.push_back({"ACCENT", "PATTERN", 0, 15});
+			return v;
+		}();
+		return list;
+	}
+
+	std::optional<int> Desk::learnGlobalValue(const int _id, const Value& _state) const
+	{
+		const int kit = stateInt(_state, "kit", "current");
+		if(_id >= 0 && _id < g_fxTargets)
+		{
+			if(kit < 0 || kit > 255)
+				return std::nullopt;
+			const auto* k = documents().workingKitOf(static_cast<uint8_t>(kit));
+			if(!k)
+			{
+				const auto it = documents().kits.find(static_cast<uint8_t>(kit));
+				if(it == documents().kits.end())
+					return std::nullopt;
+				k = &it->second;
+			}
+			const auto& name = g_fxCards[static_cast<size_t>(_id / 8)].fx;
+			for(size_t f = 0; f < ed::g_mdMasterFx.size(); ++f)
+				if(std::string(ed::g_mdMasterFx[f]) == name)
+					return k->masterFx[f][static_cast<size_t>(_id % 8)];
+			return std::nullopt;
+		}
+		if(_id == g_tempoTarget)
+		{
+			if(!documents().global)
+				return std::nullopt;
+			return static_cast<int>(std::lround(documents().global->tempo / 24.0));
+		}
+		const int pattern = stateInt(_state, "pattern", "current");
+		const auto it = pattern >= 0 && pattern <= 255 ? documents().patterns.find(static_cast<uint8_t>(pattern)) : documents().patterns.end();
+		if(it == documents().patterns.end())
+			return std::nullopt;
+		if(_id == g_swingTarget)
+			return ed::swingPercent(it->second.swingAmount);
+		if(_id == g_accentTarget)
+			return ed::accentDisplay(it->second.accentAmount);
+		return std::nullopt;
+	}
+
+	Value Desk::learnGlobalMessage(const int _id, const int _value, const Value& _state) const
+	{
+		Value m = Value::object();
+		if(_id >= 0 && _id < g_fxTargets)
+		{
+			m.set("op", "masterFx");
+			m.set("k", stateInt(_state, "kit", "current"));
+			m.set("fx", g_fxCards[static_cast<size_t>(_id / 8)].fx);
+			m.set("i", _id % 8);
+			m.set("v", _value);
+		}
+		else if(_id == g_tempoTarget)
+		{
+			m.set("op", "tempo");
+			m.set("bpm", _value);
+		}
+		else if(_id == g_swingTarget || _id == g_accentTarget)
+		{
+			m.set("op", _id == g_swingTarget ? "swing" : "accentAmount");
+			m.set("p", stateInt(_state, "pattern", "current"));
+			m.set("v", _value);
+		}
+		else
+			return Value();
+		return m;
 	}
 }

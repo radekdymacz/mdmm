@@ -91,6 +91,11 @@ namespace mdDesk
 		const std::vector<deskCore::LearnMapping>& mappings() const { return m_setup.mappings; }
 		void setMappings(std::vector<deskCore::LearnMapping> _mappings);
 
+		// MIDI Learn's global targets (B-169), by id (append-only: a saved project names them): the four master effects
+		// (RHYTHM ECHO 0-7, GATE BOX 8-15, MASTER EQ 16-23, DYNAMIX 24-31, in the page's knob order), the tempo (32) and
+		// the playing pattern's SWING (33) and ACCENT amount (34). Applied by deskCore::Desk::applyLearnGlobals.
+		static const std::vector<deskCore::LearnGlobalSpec>& learnGlobals();
+
 		bool isBusy() const { return machine().busy(); }
 		// The default adapter's protocol facts (MdMachine), for tests and diagnostics; empty, false
 		// and -1 for another adapter. Not part of MdAdapter: an engine with its own protocol has none.
@@ -100,6 +105,11 @@ namespace mdDesk
 
 		// The Owner::Setup ops the desk has a function for (checked against the table).
 		static std::vector<std::string> setupOps();
+
+	protected:
+		const std::vector<deskCore::LearnGlobalSpec>& learnGlobalSpecs() const override { return learnGlobals(); }
+		std::optional<int> learnGlobalValue(int _id, const Value& _state) const override;
+		Value learnGlobalMessage(int _id, int _value, const Value& _state) const override;
 
 	private:
 		static const std::map<std::string, void (Desk::*)(const Value&)>& setups();

@@ -2,6 +2,9 @@
 
 #include "mmDeskMachine.h"
 
+#include <array>
+#include <cmath>
+
 namespace mmDesk
 {
 	namespace ed = elektronData;
@@ -197,4 +200,97 @@ namespace mmDesk
 		return it == g.end() ? std::nullopt : std::optional<ed::MmGlobal>(it->second);
 	}
 
+}
+
+namespace mmDesk
+{
+	// ---- MIDI Learn's global targets (B-169) ----
+
+	namespace
+	{
+		using Value = elektronData::json::Value;
+		constexpr int g_tempoTarget = 0, g_tuneTarget = 1, g_menvFirst = 2, g_menvCount = 5, g_swingTarget = 7;
+		constexpr std::array<const char*, g_menvCount> g_menvNames{"ATK", "DEC", "SUS", "REL", "PORT"};
+	}
+
+	const std::vector<deskCore::LearnGlobalSpec>& Desk::learnGlobals()
+	{
+		static const std::vector<deskCore::LearnGlobalSpec> list = []
+		{
+			std::vector<deskCore::LearnGlobalSpec> v;
+			v.push_back({"TEMPO", "TEMPO", 30, 300});
+			v.push_back({"MASTER TUNE", "GLOBAL", 4000, 4999});
+			for(const auto* n : g_menvNames)
+				v.push_back({std::string("MULTI ENV ") + n, "MULTI ENV", 0, 127});
+			v.push_back({"SWING", "PATTERN", 50, 80});
+			return v;
+		}();
+		return list;
+	}
+
+	std::optional<int> Desk::learnGlobalValue(const int _id, const Value& _state) const
+	{
+		if(_id == g_tempoTarget)
+		{
+			const auto* t = _state.find("tempo");
+			return t && t->isNumber() ? std::optional<int>(static_cast<int>(std::lround(t->asNumber()))) : std::nullopt;
+		}
+		if(_id == g_tuneTarget)
+		{
+			const int slot = stateInt(_state, "global", "current");
+			const auto it = slot >= 0 && slot <= 255 ? documents().globals.find(static_cast<uint8_t>(slot)) : documents().globals.end();
+			return it == documents().globals.end() ? std::nullopt : std::optional<int>(it->second.masterTune);
+		}
+		if(_id >= g_menvFirst && _id < g_menvFirst + g_menvCount)
+		{
+			const int kit = stateInt(_state, "kit", "current");
+			const auto* k = kit >= 0 ? documents().workingKitOf(kit) : nullptr;
+			if(!k)
+			{
+				const auto it = kit >= 0 && kit <= 255 ? documents().kits.find(static_cast<uint8_t>(kit)) : documents().kits.end();
+				if(it == documents().kits.end())
+					return std::nullopt;
+				k = &it->second;
+			}
+			return k->tracks[0].multiEnv[static_cast<size_t>(_id - g_menvFirst)];
+		}
+		if(_id == g_swingTarget)
+		{
+			const int pattern = stateInt(_state, "pattern", "current");
+			const auto it = pattern >= 0 && pattern <= 255 ? documents().patterns.find(static_cast<uint8_t>(pattern)) : documents().patterns.end();
+			return it == documents().patterns.end() ? std::nullopt : std::optional<int>(50 + it->second.swingAmount);
+		}
+		return std::nullopt;
+	}
+
+	Value Desk::learnGlobalMessage(const int _id, const int _value, const Value& _state) const
+	{
+		Value m = Value::object();
+		if(_id == g_tempoTarget)
+		{
+			m.set("op", "tempo");
+			m.set("bpm", _value);
+		}
+		else if(_id == g_tuneTarget)
+		{
+			m.set("op", "masterTune");
+			m.set("v", _value);
+		}
+		else if(_id >= g_menvFirst && _id < g_menvFirst + g_menvCount)
+		{
+			m.set("op", "multiEnv");
+			m.set("k", stateInt(_state, "kit", "current"));
+			m.set("i", _id - g_menvFirst);
+			m.set("v", _value);
+		}
+		else if(_id == g_swingTarget)
+		{
+			m.set("op", "swing");
+			m.set("p", stateInt(_state, "pattern", "current"));
+			m.set("v", _value);
+		}
+		else
+			return Value();
+		return m;
+	}
 }
