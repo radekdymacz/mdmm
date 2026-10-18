@@ -449,7 +449,15 @@ int main(const int _argc, char** _argv)
 		check(again.until([&] { return again.machineGlobal().has_value(); }, 30000), "the machine's working kit shows the global value");
 		const auto before = again.machineGlobal();
 		const int vG = before && *before == 99 ? 20 : 99;
-		check(land2([&] { again.cc(0, ccG, vG); }, [&] { const auto v = again.machineGlobal(); return v && *v == vG; }),
+		// the desk applies a learned CC as a kit edit that reaches the machine through its write queue: a loaded CI runner needs far
+		// longer than 2.5 s (a resend of the same value finds the desk already there and changes nothing), so wait on one CC
+		bool landedG = false;
+		for(int attempt = 0; attempt < 3 && !landedG; ++attempt)
+		{
+			again.cc(0, ccG, vG);
+			landedG = again.until([&] { const auto v = again.machineGlobal(); return v && *v == vG; }, 30000);
+		}
+		check(landedG,
 			g_mm ? "a learned CC moves the multi envelope's ATK in the machine, through the page's own multiEnv command"
 				: "a learned CC moves the rhythm echo's MOD in the machine, through the page's own masterFx command");
 	}
