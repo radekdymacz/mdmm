@@ -33,6 +33,8 @@ namespace deskCore
 
 	bool inLimits(const LearnRef& _at, const LearnLimits& _limits)
 	{
+		if(_at.isGlobal())
+			return _at.pg == -1 && _at.i >= 0 && _at.i < _limits.globals;
 		if(_at.t < 0 || _at.t >= _limits.tracks || _at.i < 0 || _at.i >= _limits.params)
 			return false;
 		if(_limits.pages > 0)
@@ -267,27 +269,39 @@ namespace deskCore
 				continue;
 			}
 			m.cc = static_cast<uint8_t>(v);
-			if(!isWhole(it.find("t"), 0, 1 << 20, v))
+			if(const auto* g = it.find("g"))
 			{
-				_errors.push_back(p + ".t: expected a track; left out");
-				continue;
-			}
-			m.at.t = v;
-			if(_limits.pages > 0)
-			{
-				if(!isWhole(it.find("pg"), 0, 1 << 20, v))
+				if(!isWhole(g, 0, 1 << 20, v))
 				{
-					_errors.push_back(p + ".pg: expected a page; left out");
+					_errors.push_back(p + ".g: expected a global target; left out");
 					continue;
 				}
-				m.at.pg = v;
+				m.at = LearnRef::global(v);
 			}
-			if(!isWhole(it.find("i"), 0, 1 << 20, v))
+			else
 			{
-				_errors.push_back(p + ".i: expected a parameter index; left out");
-				continue;
+				if(!isWhole(it.find("t"), 0, 1 << 20, v))
+				{
+					_errors.push_back(p + ".t: expected a track; left out");
+					continue;
+				}
+				m.at.t = v;
+				if(_limits.pages > 0)
+				{
+					if(!isWhole(it.find("pg"), 0, 1 << 20, v))
+					{
+						_errors.push_back(p + ".pg: expected a page; left out");
+						continue;
+					}
+					m.at.pg = v;
+				}
+				if(!isWhole(it.find("i"), 0, 1 << 20, v))
+				{
+					_errors.push_back(p + ".i: expected a parameter index; left out");
+					continue;
+				}
+				m.at.i = v;
 			}
-			m.at.i = v;
 			if(!inLimits(m.at, _limits))
 			{
 				_errors.push_back(p + ": target is outside the model's learn limits; left out");
@@ -326,10 +340,15 @@ namespace deskCore
 			json::Value o = json::Value::object();
 			o.set("ch", static_cast<int>(m.ch));
 			o.set("cc", static_cast<int>(m.cc));
-			o.set("t", m.at.t);
-			if(_pages)
-				o.set("pg", m.at.pg);
-			o.set("i", m.at.i);
+			if(m.at.isGlobal())
+				o.set("g", m.at.i);
+			else
+			{
+				o.set("t", m.at.t);
+				if(_pages)
+					o.set("pg", m.at.pg);
+				o.set("i", m.at.i);
+			}
 			o.set("mode", learnModeName(m.mode));
 			o.set("invert", m.invert);
 			a.push(std::move(o));

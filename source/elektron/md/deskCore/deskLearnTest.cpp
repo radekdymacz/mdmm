@@ -447,10 +447,77 @@ namespace
 		const auto m = importMdln(parse(R"({"version":1,"mappings":[{"type":"ControlChange","channel":0,"part":4,"controller":74,"paramName":"FltFreq"}]})"), mmModel, mmLimits());
 		check(m.mappings.size() == 1 && m.mappings[0].at == LearnRef{4, 1, 3}, "MDLN: a model with pages gives the page");
 	}
+
+	// B-169: a mapping can drive a global target ({"g": id}); a project saved by a 0.8 beta (track mappings only) still loads.
+	void globals()
+	{
+		const LearnLimits md{16, 0, 25, 35};
+		const LearnLimits mm{6, 8, 8, 9};
+		LearnMapping g;
+		g.ch = 2;
+		g.cc = 70;
+		g.at = LearnRef::global(33);
+		g.mode = LearnMode::RelativeOffset;
+		check(g.at.isGlobal() && inLimits(g.at, md) && !inLimits(LearnRef::global(35), md) && !inLimits(LearnRef::global(-1), md)
+			&& inLimits(g.at, LearnLimits{16, 0, 25, 40}) && !inLimits(g.at, LearnLimits{16, 0, 25}), "a global target is inside the limits that name it, by id");
+		check(inLimits(LearnRef::global(8), mm) && !inLimits(LearnRef::global(9), mm), "the Monomachine's global ids are bounded the same way");
+
+		auto r = addMapping({}, g);
+		check(r.ok() && r.list.size() == 1, "add: a global mapping");
+		r = addMapping(r.list, g);
+		check(!r.ok() && r.refusal == "already mapped", "add: the same CC to the same global is one mapping");
+		auto other = g;
+		other.at = LearnRef::global(34);
+		r = addMapping(r.list, other);
+		check(r.ok() && r.list.size() == 2, "add: a second global on the same CC is its second target");
+
+		const auto doc = mappingsToJson(r.list, false);
+		const std::string text = json::write(doc);
+		check(text.find("{\"ch\":2,\"cc\":70,\"g\":33,\"mode\":\"relative-offset\",\"invert\":false}") != std::string::npos
+			&& text.find("\"t\":255") == std::string::npos, "a global writes {ch, cc, g, mode, invert}, no track");
+		std::vector<std::string> errors;
+		auto back = mappingsFromJson(parse(text.c_str()), md, errors);
+		check(errors.empty() && back == r.list, "a global mapping round-trips");
+		const auto backMm = mappingsToJson(r.list, true);
+		check(json::write(backMm).find("\"pg\"") == std::string::npos, "the Monomachine's writer leaves pg out of a global as well");
+		errors.clear();
+		back = mappingsFromJson(backMm, mm, errors);
+		check(errors.empty() && back == r.list, "a global mapping round-trips in the Monomachine's shape too");
+
+		errors.clear();
+		const auto bad = mappingsFromJson(parse(R"([{"ch":0,"cc":1,"g":35},{"ch":0,"cc":2,"g":-1},{"ch":0,"cc":3,"g":"x"},{"ch":0,"cc":4,"g":3}])"), md, errors);
+		check(bad.size() == 1 && bad[0].cc == 4 && bad[0].at.isGlobal() && errors.size() == 3, "a global past the model's list, a negative or a non-number is left out alone");
+
+		// a 0.8 beta's project: track mappings only, the same list with the global-aware limits
+		errors.clear();
+		const auto beta = mappingsFromJson(parse(R"([{"ch":0,"cc":21,"t":2,"i":5,"mode":"absolute","invert":false},{"ch":255,"cc":22,"t":0,"i":24,"mode":"relative-signed","invert":true}])"), md, errors);
+		check(errors.empty() && beta.size() == 2 && !beta[0].at.isGlobal() && beta[0].at == LearnRef{2, -1, 5} && beta[1].invert && beta[1].mode == LearnMode::RelativeSigned,
+			"a 0.8 beta's track-only mappings load unchanged");
+		errors.clear();
+		const auto betaMm = mappingsFromJson(parse(R"([{"ch":3,"cc":60,"t":1,"pg":1,"i":4,"mode":"absolute","invert":false}])"), mm, errors);
+		check(errors.empty() && betaMm.size() == 1 && betaMm[0].at == LearnRef{1, 1, 4}, "a 0.8 beta's Monomachine mappings load unchanged");
+
+		// a newer project's global read by a model without globals (an older build): left out, the rest kept
+		errors.clear();
+		const auto old = mappingsFromJson(parse(R"([{"ch":0,"cc":1,"g":3},{"ch":0,"cc":2,"t":1,"i":1}])"), LearnLimits{16, 0, 25}, errors);
+		check(old.size() == 1 && old[0].cc == 2 && errors.size() == 1, "a model without globals leaves a global mapping out and keeps the track ones");
+
+		// the setup document carries them
+		SetupSpec spec;
+		spec.learn = md;
+		DeskSetup s;
+		s.knobCcs = {30, 31, 32, 33, 34, 35, 36, 37};
+		s.mappings = {g, map(0, 21, 2, 5)};
+		errors.clear();
+		const auto s2 = setupFromJson(setupToJson(s, spec), spec, errors);
+		check(errors.empty() && s2.mappings == s.mappings, "the setup keeps global mappings with the project");
+	}
+
 }
 
 int main()
 {
+	globals();
 	edits();
 	learning();
 	overrides();

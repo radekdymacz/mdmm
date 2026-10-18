@@ -26,10 +26,19 @@ namespace deskCore
 	constexpr size_t g_learnMaxMappings = 128;
 	constexpr uint8_t g_learnAnyChannel = 255;
 
+	// A mapping can also drive a global target (B-169): a value of the page that belongs to no track (the Machinedrum's
+	// master effects, the tempo, ...). It is written as t = g_learnGlobalTrack, pg = -1 and i = the model's global id; in
+	// the setup as {"g": id} instead of t, pg and i. The model's list of globals (names, ranges) is the session's; ids
+	// are append-only so a saved project keeps meaning the same parameter.
+	constexpr int g_learnGlobalTrack = 255;
+
 	// The target: track t, for a model with DATA pages the page pg (else -1), the parameter index i of the learn model.
 	struct LearnRef
 	{
 		int t = -1, pg = -1, i = -1;
+
+		bool isGlobal() const { return t == g_learnGlobalTrack; }
+		static LearnRef global(const int _id) { return {g_learnGlobalTrack, -1, _id}; }
 
 		bool operator==(const LearnRef& _o) const { return t == _o.t && pg == _o.pg && i == _o.i; }
 		bool operator!=(const LearnRef& _o) const { return !(*this == _o); }
@@ -56,6 +65,7 @@ namespace deskCore
 		int tracks = 16;
 		int pages = 0;
 		int params = 24;
+		int globals = 0;	// the model's global targets (ids 0..globals-1), none for 0
 	};
 
 	bool inLimits(const LearnRef& _at, const LearnLimits& _limits);
@@ -148,7 +158,7 @@ namespace deskCore
 
 	// ---- the setup member ----
 
-	// "mappings": a list of {ch, cc, t, [pg,] i, mode, invert}. Lenient (FOUNDATION, "What 1.0 promises to read"): an
+	// "mappings": a list of {ch, cc, t, [pg,] i, mode, invert} (a global target: {ch, cc, g, mode, invert}). Lenient (FOUNDATION, "What 1.0 promises to read"): an
 	// unknown member is ignored, an unknown mode is absolute, an item with a bad or missing ch, cc, t or i (pg for a
 	// model with pages), or a target outside the limits, or one that repeats an earlier (ch, cc, target), is left out
 	// alone, items past 128 are left out. Errors carry the JSON path (_path is the member's, "$.mappings").
