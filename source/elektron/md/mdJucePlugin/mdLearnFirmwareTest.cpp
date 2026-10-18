@@ -11,6 +11,8 @@
 //   5. project round trip: the project is saved (getStateInformation) with the learned mapping, a new processor loads it
 //      (setStateInformation), starts the firmware again, and the mapping is in the document, its CC still moves the
 //      parameter and the machine, and the firmware's own target of that CC still does not move
+//   6. B-169, a value that belongs to no track: a learned CC drives the Machinedrum's RHYTHM ECHO MOD (global 1) / the
+//      Monomachine's MULTI ENV ATK (global 2) through the page's own edit path, and the machine's working kit shows it
 //   GEARMULATOR_MD_FIRMWARE_BIN=<ROM> mdLearnFirmwareTest md
 //   GEARMULATOR_MM_FIRMWARE_BIN=<ROM> mdLearnFirmwareTest mm
 // Exits 77 without the ROM. The config is isolated (EphemeralConfig).
@@ -26,6 +28,7 @@
 
 #include "elektronData/json.h"
 #include "elektronData/mdKit.h"
+#include "elektronData/mdNames.h"
 #include "elektronData/mdWorkingKit.h"
 #include "elektronData/mmKit.h"
 
@@ -201,6 +204,44 @@ namespace
 			const std::vector<uint8_t> raw(region.begin() + 5, region.begin() + 5 + elektronData::MmKit::g_rawSize);
 			const auto kit = elektronData::mmKitFromRaw(raw, static_cast<uint8_t>(region[0] & 127));
 			return kit ? std::optional<int>(kit->tracks[static_cast<size_t>(_at.t)].pages[static_cast<size_t>(_at.pg)][static_cast<size_t>(_at.i)]) : std::nullopt;
+		}
+
+		// The value the machine's working kit holds for the global target tested here: the Machinedrum's RHYTHM ECHO MOD (master
+		// effect "rhythmEcho", value 1), the Monomachine's MULTI ENV ATK (track 1, value 0)
+		std::optional<int> machineGlobal()
+		{
+			std::vector<uint8_t> region;
+			uint32_t sequence = 0;
+			const bool read = processor->getPlugin().withDeviceLocked([&](synthLib::Device* _d)
+			{
+				auto* d = dynamic_cast<md::DeskDevice*>(_d);
+				if(!d)
+					return false;
+				if(g_mm)
+				{
+					const auto t = d->getMmTelemetry();
+					return t && t->readWorkingKit(region, sequence);
+				}
+				const auto t = d->getSequencerTelemetry();
+				return t && t->readWorkingKit(region, sequence);
+			});
+			if(!read)
+				return std::nullopt;
+			if(!g_mm)
+			{
+				const auto kit = elektronData::mdWorkingKitFromMemory(region);
+				if(!kit)
+					return std::nullopt;
+				for(size_t f = 0; f < elektronData::g_mdMasterFx.size(); ++f)
+					if(std::string(elektronData::g_mdMasterFx[f]) == "rhythmEcho")
+						return static_cast<int>(kit->masterFx[f][1]);
+				return std::nullopt;
+			}
+			if(region.size() < 5 + elektronData::MmKit::g_rawSize)
+				return std::nullopt;
+			const std::vector<uint8_t> raw(region.begin() + 5, region.begin() + 5 + elektronData::MmKit::g_rawSize);
+			const auto kit = elektronData::mmKitFromRaw(raw, static_cast<uint8_t>(region[0] & 127));
+			return kit ? std::optional<int>(kit->tracks[0].multiEnv[0]) : std::nullopt;
 		}
 
 		pluginLib::Parameter* parameter(const Target& _at)
@@ -392,6 +433,26 @@ int main(const int _argc, char** _argv)
 	pump(1000);
 	const auto fwBNow = again.machine(fwB);
 	check(fwBLoaded && fwBNow && *fwBLoaded == *fwBNow, "the firmware's own target of that CC did not move (the mapping owns it again)");
+
+	// 6. B-169: a global target. CC 70 is on no firmware map (the MD's run 16-39, 40-63, 72-95, 96-119; the MM's 48-63, 72-95, 104-119)
+	{
+		const int ccG = 70, global = g_mm ? 2 : 1;
+		again.say(R"({"op":"learnAdd","id":20,"cc":)" + std::to_string(ccG) + R"(,"ch":0,"g":)" + std::to_string(global) + "}");
+		again.session()->step();
+		const auto* gd = again.learnDoc();
+		bool inDoc = false;
+		if(gd && gd->find("mappings"))
+			for(const auto& m : gd->find("mappings")->asArray())
+				if(const auto* g = m.find("g"); g && g->isNumber() && static_cast<int>(g->asNumber()) == global && m.find("t") == nullptr)
+					inDoc = true;
+		check(inDoc, "learnAdd {g}: the global mapping is in the document, with no track");
+		check(again.until([&] { return again.machineGlobal().has_value(); }, 30000), "the machine's working kit shows the global value");
+		const auto before = again.machineGlobal();
+		const int vG = before && *before == 99 ? 20 : 99;
+		check(land2([&] { again.cc(0, ccG, vG); }, [&] { const auto v = again.machineGlobal(); return v && *v == vG; }),
+			g_mm ? "a learned CC moves the multi envelope's ATK in the machine, through the page's own multiEnv command"
+				: "a learned CC moves the rhythm echo's MOD in the machine, through the page's own masterFx command");
+	}
 
 	std::printf("mdLearnFirmwareTest %s: %s\n", g_mm ? "mm" : "md", g_failures ? "FAIL" : "PASS");
 	return g_failures ? 1 : 0;
