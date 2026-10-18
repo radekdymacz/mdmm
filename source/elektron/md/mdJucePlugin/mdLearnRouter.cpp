@@ -36,7 +36,7 @@ namespace mdJucePlugin
 		{
 			const auto& m = _mappings[n];
 			const bool global = m.at.isGlobal();
-			if(global && (m.at.i < 0 || m.at.i >= _globals || m.at.i > 0xffff))
+			if(global && (m.at.i < 0 || m.at.i >= _globals || m.at.i > 0x7fff))
 				continue;
 			auto* param = global || !_parameter ? nullptr : _parameter(m.at);
 			if(!param && !global)
