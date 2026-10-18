@@ -329,3 +329,5 @@ target_link_libraries(mdDamagedFlashFirmwareTest PRIVATE mdLib)
 add_test(NAME mdDamagedFlashFirmwareTest COMMAND mdDamagedFlashFirmwareTest)
 set_tests_properties(mdDamagedFlashFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 set_property(TARGET mdDamagedFlashFirmwareTest PROPERTY FOLDER "Elektron")
+
+mdmm_scale_firmware_test_timeouts()

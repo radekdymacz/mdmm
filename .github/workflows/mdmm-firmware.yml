@@ -16,6 +16,13 @@ on:
   push:
     branches: [main, "release/**"]
   workflow_dispatch:
+    inputs:
+      what:
+        description: "Which job: both, firmware or e2e"
+        default: both
+      e2e_args:
+        description: "Arguments of scripts/mdmm-e2e.sh after --no-build (default: both --jobs 1); e.g. 'md --jobs 1 --select md-keys-space-play'"
+        default: ""
   schedule:
     - cron: "30 2 * * *"   # after the nightly full suite (02:00 UTC); main only (schedules run on the default branch)
 
@@ -24,15 +31,20 @@ permissions:
   id-token: write
 
 concurrency:
-  group: mdmm-firmware-${{ github.ref }}
+  group: mdmm-firmware-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
   firmware:
-    name: Firmware tests (ctest, macOS arm64)
+    name: Firmware tests (ctest ${{ matrix.shard }}/4, macOS arm64)
+    if: github.event_name != 'workflow_dispatch' || inputs.what != 'e2e'
     runs-on: macos-15
     environment: rom
-    timeout-minutes: 120
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     env:
       CCACHE_BASEDIR: ${{ github.workspace }}
       CCACHE_COMPILERCHECK: "%compiler% -v"
@@ -60,7 +72,7 @@ jobs:
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ runner.temp }}/ccache
-          key: ccache-v1-macos15-arm64-tests-fw-${{ github.ref_name }}-${{ github.run_id }}
+          key: ccache-v1-macos15-arm64-tests-fw-${{ github.ref_name }}-${{ github.run_id }}-${{ matrix.shard }}
           restore-keys: |
             ccache-v1-macos15-arm64-tests-fw-${{ github.ref_name }}-
             ccache-v1-macos15-arm64-tests-${{ github.ref_name }}-
@@ -74,7 +86,7 @@ jobs:
             -DCMAKE_OBJC_COMPILER_LAUNCHER=ccache -DCMAKE_OBJCXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DXCODE_VERSION=16 \
             -DGEARMULATOR_MDMM_APPLE_THINLTO=OFF -DGEARMULATOR_MDMM_APPLE_PGO_MODE=none \
-            -DBUILD_TESTING=ON -Dgearmulator_BUILD_JUCEPLUGIN=ON -Dgearmulator_BUILD_JUCEPLUGIN_VST3=ON \
+            -DBUILD_TESTING=ON -DMDMM_FW_TIMEOUT_SCALE=3 -Dgearmulator_BUILD_JUCEPLUGIN=ON -Dgearmulator_BUILD_JUCEPLUGIN_VST3=ON \
             -Dgearmulator_BUILD_JUCEPLUGIN_AU=ON -Dgearmulator_BUILD_JUCEPLUGIN_Standalone=ON
 
       - name: Build
@@ -87,17 +99,22 @@ jobs:
       - name: Fetch the ROMs
         run: scripts/ci-fetch-roms.sh "${RUNNER_TEMP}/roms"
 
+      # A quarter of the tests per runner (ctest -I shard,,4), one at a time: the emulation needs about a core each and
+      # the runner has three. mdSysexLifecycleTest is left out: it needs the Monomachine factory patch RAM
+      # (mm-factory-live3-be.bin), which exists on no machine we have (doc/release/LOCAL-GATE.md); the local gate leaves it out too.
       - name: Run the firmware tests
         env:
           GEARMULATOR_REQUIRE_FIRMWARE_TESTS: "1"
           MD_AUTOMATION_REQUIRE_FIRMWARE: "1"
+          MDMM_LOCK_HOLD_BUDGET_MS: "10"
         run: |
           set -euo pipefail
           home="${RUNNER_TEMP}/test-home"
           log="${RUNNER_TEMP}/firmware-ctest.log"
           set +e
           HOME="${home}" GEARMULATOR_DATA_ROOT="${home}/Documents/" ctest --test-dir build -L FirmwareTest -LE 'Slow|Soak' \
-            -j2 --output-on-failure --no-tests=error 2>&1 | tee "${log}"
+            -E '^mdSysexLifecycleTest$' -I "${{ matrix.shard }},,4" \
+            -j1 --output-on-failure --no-tests=error 2>&1 | tee "${log}"
           status=${PIPESTATUS[0]}
           set -e
           # A skip (exit 77) means "no ROM here": on this workflow that is a hole, not a pass.
@@ -117,7 +134,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: firmware-ctest-log
+          name: firmware-ctest-log-${{ matrix.shard }}
           path: |
             ${{ runner.temp }}/firmware-ctest.log
             build/Testing/Temporary/LastTest.log
@@ -129,10 +146,11 @@ jobs:
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ runner.temp }}/ccache
-          key: ccache-v1-macos15-arm64-tests-fw-${{ github.ref_name }}-${{ github.run_id }}
+          key: ccache-v1-macos15-arm64-tests-fw-${{ github.ref_name }}-${{ github.run_id }}-${{ matrix.shard }}
 
   e2e:
     name: Firmware E2E (both editors, macOS)
+    if: github.event_name != 'workflow_dispatch' || inputs.what != 'firmware'
     runs-on: macos-15
     environment: rom
     timeout-minutes: 180
@@ -180,8 +198,26 @@ jobs:
       - name: Fetch the ROMs
         run: scripts/ci-fetch-roms.sh "${RUNNER_TEMP}/roms"
 
+      # What the runner is: cores, displays, audio devices, the session. Kept in the report for the next failure.
+      - name: Describe the runner
+        run: |
+          mkdir -p "${MDMM_E2E_OUT}"
+          {
+            sw_vers; sysctl -n hw.ncpu hw.memsize machdep.cpu.brand_string; whoami; launchctl managername || true
+            system_profiler SPAudioDataType SPDisplaysDataType 2>&1 | head -n 80
+            pgrep -l WindowServer || echo "no WindowServer"
+          } > "${MDMM_E2E_OUT}/runner.txt" 2>&1 || true
+          cat "${MDMM_E2E_OUT}/runner.txt"
+
+      - name: Install Pillow (the report's pictures)
+        run: python3 -m pip install --break-system-packages pillow
+
       - name: Run the firmware E2E
-        run: ./scripts/mdmm-e2e.sh both --no-build --jobs 2
+        env:
+          E2E_ARGS: ${{ github.event_name == 'workflow_dispatch' && inputs.e2e_args || '' }}
+        run: |
+          # shellcheck disable=SC2086
+          ./scripts/mdmm-e2e.sh ${E2E_ARGS:-both --jobs 1} --no-build
 
       - name: Delete the ROMs (before anything is uploaded)
         if: always()
@@ -197,7 +233,7 @@ jobs:
           rm -rf "${stage}"; mkdir -p "${stage}"
           if [ -d "${MDMM_E2E_OUT}" ]; then
             (cd "${MDMM_E2E_OUT}" && find . -type f ! -type l -size -4M \
-              \( -name '*.log' -o -name '*.txt' -o -name '*.json' -o -name '*.html' -o -name '*.png' -o -name '*.webp' \) \
+              \( -name '*.log' -o -name '*.txt' -o -name '*.json' -o -name '*.jsonl' -o -name '*.out' -o -name '*.html' -o -name '*.png' -o -name '*.webp' \) \
               -print0 | cpio -pdm0 "${stage}" 2>&1 | tail -n 3)
           fi
           du -sh "${stage}"

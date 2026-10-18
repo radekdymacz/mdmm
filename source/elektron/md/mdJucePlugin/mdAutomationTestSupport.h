@@ -9,6 +9,8 @@
 
 #include "juce_events/juce_events.h"
 
+#include "synthLib/romLoader.h"
+
 #include <cstdlib>
 #include <cstdint>
 #include <iostream>
@@ -38,6 +40,18 @@ namespace mdAutomationTest
 	{
 		const auto* const value = std::getenv("MD_AUTOMATION_REQUIRE_FIRMWARE");
 		return value != nullptr && std::string(value) == "1";
+	}
+
+	// The ROMs the way the other firmware tests take them: the folder of GEARMULATOR_MD_FIRMWARE_BIN and
+	// GEARMULATOR_MM_FIRMWARE_BIN joins the places the loader looks in (a CI runner has no ROM next to the program).
+	inline void addRomSearchPathsFromEnvironment()
+	{
+		for(const auto* const name : {"GEARMULATOR_MD_FIRMWARE_BIN", "GEARMULATOR_MM_FIRMWARE_BIN"})
+		{
+			const auto* const value = std::getenv(name);
+			if(value != nullptr && *value != 0)
+				synthLib::RomLoader::addSearchPath(juce::File(value).getParentDirectory().getFullPathName().toStdString());
+		}
 	}
 
 	inline bool allowMissingFirmware(const char* const _suite,
@@ -77,7 +91,7 @@ namespace mdAutomationTest
 	{
 	public:
 		explicit Harness(const md::MachineModel _model)
-			: model(_model)
+			: model((addRomSearchPathsFromEnvironment(), _model))
 			, processor(_model,
 				mdJucePlugin::AudioPluginAudioProcessor::EphemeralConfig{})
 			, audioProcessor(static_cast<juce::AudioProcessor&>(processor))

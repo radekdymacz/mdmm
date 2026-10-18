@@ -285,3 +285,6 @@ if(BUILD_TESTING)
 		TIMEOUT 600)
 	set_property(TARGET mdProjectStateRestoreTest PROPERTY FOLDER "Elektron/test")
 endif()
+
+# after mdmm_plugin_targets (mdmmPlugins.cmake), which makes most of the firmware tests in a deferred call
+cmake_language(DEFER CALL mdmm_scale_firmware_test_timeouts)

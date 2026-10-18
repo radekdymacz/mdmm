@@ -140,7 +140,10 @@ namespace
 			char text[200];
 			std::snprintf(text, sizeof(text), "the work under the device lock off the audio thread under 1 ms a hold (worst %.3f ms, %s; wall time %.3f ms at most)",
 				worstCpu, worstSite.c_str(), worstWall);
-			check(worstCpu < 1.0, text);
+			// 1 ms on a Mac of our own; MDMM_LOCK_HOLD_BUDGET_MS widens it on a shared CI VM (doc/release/CI.md)
+			const auto* const budgetText = std::getenv("MDMM_LOCK_HOLD_BUDGET_MS");
+			const double budget = budgetText && *budgetText ? std::max(1.0, std::atof(budgetText)) : 1.0;
+			check(worstCpu < budget, text);
 		}
 
 	public:

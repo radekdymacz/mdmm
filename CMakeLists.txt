@@ -33,6 +33,25 @@ project(gearmulator VERSION 2.2.9)
 include(base.cmake)
 include(CTest)
 
+# The firmware tests' own time limits are set for a fast Mac. A slower machine (a GitHub runner, doc/release/CI.md,
+# "Firmware tests on CI") configures -DMDMM_FW_TIMEOUT_SCALE=3: every FirmwareTest of a directory that calls
+# mdmm_scale_firmware_test_timeouts() at its end (deferred where the tests are made in a deferred call) gets that many times its limit. Only the limit moves; no test is skipped.
+set(MDMM_FW_TIMEOUT_SCALE 1 CACHE STRING "Multiplier for the time limits of the FirmwareTest tests")
+function(mdmm_scale_firmware_test_timeouts)
+	if(MDMM_FW_TIMEOUT_SCALE EQUAL 1)
+		return()
+	endif()
+	get_property(_tests DIRECTORY PROPERTY TESTS)
+	foreach(_t IN LISTS _tests)
+		get_test_property(${_t} LABELS _labels)
+		get_test_property(${_t} TIMEOUT _limit)
+			if(_labels MATCHES "FirmwareTest" AND _limit)
+			math(EXPR _limit "${_limit} * ${MDMM_FW_TIMEOUT_SCALE}")
+			set_tests_properties(${_t} PROPERTIES TIMEOUT ${_limit})
+		endif()
+	endforeach()
+endfunction()
+
 option(${PROJECT_NAME}_BUILD_JUCEPLUGIN "Build Juce plugin" on)
 
 # ----------------- CPack basic parameters

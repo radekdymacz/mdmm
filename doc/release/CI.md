@@ -66,6 +66,28 @@ Revoke or rotate: delete the objects (`npx wrangler r2 object delete mdmm-ci-rom
 or delete the Worker (`npx wrangler delete --name mdmm-rom`), or remove the `MDMM_ROM_URL` variable; any one stops the
 workflow. A new ROM version: upload under the same keys and update the two hashes in `build_mdmm.sh`.
 
+### First runs: what failed and why (2026-10-18)
+
+Run 39108554055 (first run, `-j2`, one 3-core runner per job) failed in these groups:
+
+- **Fixtures, not ROMs.** `mdAutomationFirmwareTest`, `mdProgramChangeFirmwareTest`, `mdAutomationRobustnessTest` and
+  `mdAutomationSoakTest` build a plug-in processor and found no ROM: the loader looks next to the program and in the
+  working folder, and only the other firmware tests add the folder of `GEARMULATOR_MD_FIRMWARE_BIN`. The harness
+  (`mdAutomationTestSupport.h`) now adds the folders of both variables. `mdSysexLifecycleTest` needs the Monomachine factory
+  patch RAM (`nvram/mm-factory-live3-be.bin`), a file that is on no machine we have (LOCAL-GATE.md says the same); it is left
+  out of the CI run by name, as the local gate leaves it out.
+- **Slow runner, loaded.** `mdMachineMemoryFirmwareTest_*` and `mdTransportFirmwareTest_mm` timed out or failed their
+  "work under the device lock under 1 ms" check at 1.1 to 7 ms: two emulations at once on three shared cores. Now: the
+  tests run in four shards, one test at a time per runner (`ctest -I n,,4 -j1`); `-DMDMM_FW_TIMEOUT_SCALE=3` triples the
+  time limit of every FirmwareTest (`mdmm_scale_firmware_test_timeouts` in CMakeLists.txt; only limits move, nothing is
+  skipped); `MDMM_LOCK_HOLD_BUDGET_MS=10` widens the lock-hold check (1 ms on a Mac of our own, unchanged by default).
+- **`mdMachineMidiOutFirmwareTest_mm`** counted exactly 50 clocks and needed more than 50 in a fixed 3 s of a machine that
+  plays slower than real time; the test now waits (up to 30 s) until the clocks are enough.
+- **E2E.** Both machines passed the journeys that need no running machine and failed nearly all that need one (PLAY ends
+  "not playing", edits do not reach the machine, "song S30 is not loaded yet"), and the report step lacked Pillow.
+  Pillow is installed; the runner is described in `runner.txt` of the report and the editors' `app.out` files are kept.
+  Run the E2E by hand for a part: Run workflow, `what` = `e2e`, `e2e_args` = e.g. `md --jobs 1 --select md-keys-space-play`.
+
 ## Workflow hardening
 
 Every action is pinned by full commit SHA with its tag in a comment (update both together; check the SHA with
