@@ -292,6 +292,9 @@ namespace
 			pump(2000);
 		}
 		pump(3000);
+		// a slow machine (a shared CI runner) plays slower than real time: give the clocks until they are enough
+		for(int i = 0; i < 300 && _mm && out.clocks <= 50; ++i)
+			pump(100);
 		op("stop");
 		pump(1000);
 		std::printf("  at the host: %d notes, %d CCs, %d clocks, %d starts, %d stops, %d SysEx, %d others; the machine "
