@@ -1,0 +1,53 @@
+Machinedrum Editor and Monomachine Editor for macOS
+================================================
+
+Needs macOS 12 or later (Intel and Apple silicon).
+This alpha is ad-hoc signed and is not notarized by Apple. macOS may quarantine
+the applications, VST3 plug-ins, and Audio Units when you download them.
+
+Installation
+------------
+
+1. Fully extract the downloaded ZIP archive.
+2. Double-click macsetup_Gearmulator-Elektron.command in the extracted folder.
+   Terminal will open, prepare both products, and print "Done" when successful.
+3. Copy the VST3 plug-ins you want to use to:
+
+       ~/Library/Audio/Plug-Ins/VST3
+
+   Create that folder if it does not already exist.
+4. Copy the Audio Units you want to use to:
+
+       ~/Library/Audio/Plug-Ins/Components
+
+   Create that folder if it does not already exist.
+5. Optionally copy the standalone applications to /Applications or another
+   location of your choice.
+6. Restart your DAW or ask it to rescan plug-ins.
+
+Run the setup command again whenever you install an updated download. The
+command only clears extended attributes from the Machinedrum Editor and
+Monomachine Editor bundles in the extracted folder; it does not copy or delete
+plug-ins.
+
+Side by side with the original Gearmulator plug-ins: since 0.5.1 the editors
+have their own plug-in identity (Future Native Audio), so the original
+Gearmulator MD and Gearmulator MM plug-ins can stay installed
+next to them; each opens as itself. A DAW project saved with 0.5.0 or earlier
+does not find the editor under its old identity: insert the editor again once
+in that project.
+
+Upgrading from 0.3.1 or earlier: the editors were called Gearmulator MD and
+Gearmulator MM then. Those old copies no longer get in the editors' way
+(they have the old plug-in codes); delete them if you do not use them. The
+installer packages (.pkg) remove the ones they can tell are the editor's.
+
+Firmware is not included. If no supported firmware image is found, the
+application or plug-in shows a start-up card asking for it. Click the card and
+choose a firmware image that you are entitled to use in the file chooser; the
+editor checks it and copies it into its ROM folder. You can also copy the image
+into that folder yourself and click Check again.
+
+Do NOT discuss firmware or ROMs in Discord.
+Do not request or share files or download links, or ask for help obtaining
+or installing firmware.

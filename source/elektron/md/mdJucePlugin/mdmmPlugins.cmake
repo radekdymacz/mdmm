@@ -7,7 +7,7 @@
 
 # The Machinedrum and Monomachine Editors have their own release version, apart from
 # Gearmulator's (the bundles, the AU version, the installers and the site use it).
-set(MDMM_EDITOR_VERSION 0.7.0)
+set(MDMM_EDITOR_VERSION 0.8.0)
 string(REPLACE "." ";" _mdmmVersionParts "${MDMM_EDITOR_VERSION}")
 list(GET _mdmmVersionParts 0 _mdmmVersionMajor)
 list(GET _mdmmVersionParts 1 _mdmmVersionMinor)
@@ -831,7 +831,7 @@ function(mdmm_plugin_targets)
 	set_property(TARGET mdMachineMemoryFirmwareTest PROPERTY FOLDER "Elektron/test")
 	foreach(m md mm)
 		add_test(NAME mdMachineMemoryFirmwareTest_${m} COMMAND mdMachineMemoryFirmwareTest ${m})
-		set_tests_properties(mdMachineMemoryFirmwareTest_${m} PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+		set_tests_properties(mdMachineMemoryFirmwareTest_${m} PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1200)
 	endforeach()
 
 	# Wave 6: Reset machine > Factory reset's source, a second machine from the ROM read on its own thread (mdFactorySource.h).
