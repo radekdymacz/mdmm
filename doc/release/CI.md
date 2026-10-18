@@ -124,6 +124,9 @@ Run 39108554055 (first run, `-j2`, one 3-core runner per job) failed in these gr
 - **E2E after sharding.** Run 39121106409 had no runnable editor on either E2E runner: the archive contained `temp/dev`,
   while JUCE copies the apps to `bin/plugins/Release/Standalone`. The archive now carries the apps; unpacking checks
   both executables before fetching ROMs or starting the journeys. The pipeline's shared tree carries these bundles too.
+- **SysEx pick fixtures.** Shard 2 of run 39121366982 skipped `mdSyxPickFirmwareTest` and `mmSyxPickFirmwareTest` because
+  `MD_SYX` and `MM_SYX` were unset. CI now supplies backups assembled from the committed SysEx corpus, the same fixtures
+  used for E2E imports. Both tests must run and pass; the no-skips check remains in place.
 
 ## Workflow hardening
 

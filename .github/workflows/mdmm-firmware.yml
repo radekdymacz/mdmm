@@ -240,6 +240,20 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/test-home/Documents"
           ctest --test-dir build -N | tail -n 2
 
+      # These import-and-pick regressions need a SysEx backup as well as a ROM. Use the same committed corpus as
+      # the E2E imports; no personal backup is uploaded and a missing fixture still fails the run.
+      - name: Prepare the SysEx import fixtures
+        run: |
+          set -euo pipefail
+          fixtures="${RUNNER_TEMP}/syx-fixtures"
+          mkdir -p "${fixtures}"
+          cat source/elektron/md/elektronData/testdata/programmed_*.syx > "${fixtures}/md.syx"
+          cat source/elektron/md/elektronData/testdata/mm/programmed-*.syx > "${fixtures}/mm.syx"
+          test -s "${fixtures}/md.syx"
+          test -s "${fixtures}/mm.syx"
+          echo "MD_SYX=${fixtures}/md.syx" >> "${GITHUB_ENV}"
+          echo "MM_SYX=${fixtures}/mm.syx" >> "${GITHUB_ENV}"
+
       - name: Fetch the ROMs
         run: scripts/ci-fetch-roms.sh "${RUNNER_TEMP}/roms"
 
