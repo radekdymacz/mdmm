@@ -4,13 +4,13 @@
  "profile": {
   "file": "mdmm-macos.proftext",
   "format": "llvm text (front-end instrumentation), sparse",
-  "sha256": "519f11e33692b97489adacc18e6525d20ccd64c831a549406c264fc1ba8aef42",
-  "functions": 9333
+  "sha256": "716c6bf14bb592536a56db406985ee8db6160373251179a2012d9fc0484e8445",
+  "functions": 3984
  },
  "trained": {
-  "commit": "6bb35ab81076413d975a472de9b5af740ff8e60b",
+  "commit": "acc9133e83a62ad01e9e40d609781707b6d2e38f",
   "architecture": "arm64",
-  "compiler": "Apple clang version 17.0.0 (clang-1700.6.3.2)",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.3.34.2)",
   "workload": [
    "mdmmPerfGateTest md 8 --scenario md-busy --outputs all (stopped, then playing)",
    "mdmmPerfGateTest md 8 --scenario md-factory --outputs all (stopped, then playing)",
@@ -25,7 +25,7 @@
   }
  },
  "sources": {
-  "source/elektron/md/mdLib": "b291f422be863a2256aa80822b4fba888580a4fe",
+  "source/elektron/md/mdLib": "4489a4156cfdeefdcc4c9d023d8eec359552b921",
   "source/mc68k": "d7cca29d9fab6bd891788cbf9e847623eca7d5c2",
   "source/dsp56300/source/dsp56kEmu": "cadf9d95184a3ad6f8a8ee69d71af1d56f732c33",
   "source/dsp56300/source/dsp56kBase": "d5f790429f81de469fbeb4110c6df3a9365bd14a"
