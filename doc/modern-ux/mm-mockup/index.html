@@ -1284,6 +1284,10 @@ table.mmap tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 .lcdbig.recv{letter-spacing:.06em}
 body.learn .pc[data-g]{outline:1px dashed var(--print2);outline-offset:1px;cursor:pointer}
 body.learn .pc.mapped{outline:2px solid var(--led)}
+/* B-169: LEARN on the values that belong to no track: the multi envelope (.pc above), the top bar's tempo and swing, the global page's master tune */
+body.learn #bpm,body.learn .l2.ed[data-l2="swing"],body.learn [data-lg]{outline:1px dashed var(--print2);outline-offset:1px;cursor:pointer}
+body.learn .f.mapped,body.learn .l2.mapped,body.learn [data-lg].mapped{outline:2px solid var(--led)}
+body.learn .f.learnt,body.learn .l2.learnt,body.learn [data-lg].learnt,body.learn .pc.learnt{outline:2px solid var(--cream);box-shadow:0 0 0 4px var(--led)}
 .pc.mapped:not(.lk) span::before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--lcd);margin-right:4px;vertical-align:1px}
 .rowst{height:40px;display:grid;align-content:center;gap:3px;padding-left:6px;font:600 10px var(--sans);letter-spacing:.1em;color:var(--print2)}
 .rowst span{display:flex;gap:4px;align-items:center;white-space:nowrap}
@@ -1470,7 +1474,7 @@ body.engwait #main,body.engwait #rail{pointer-events:none;opacity:.6;transition:
 .kb .b{height:80px}
 .perf3 canvas.ed{height:104px!important}
 /* ===== Control: 12 track columns ===== */
-.mx{grid-template-columns:150px repeat(12,minmax(0,1fr))!important}
+.mx{grid-template-columns:150px repeat(12,minmax(0,1fr)) minmax(48px,1.4fr)!important}
 /* the RECV / SEND flag floats in the Pattern field (no reserved width) */
 .lcdpanel .patf{position:relative}
 .kb{height:clamp(130px,calc(100vh - 620px),250px)!important}
@@ -6173,7 +6177,7 @@ function renderTop(){
  let m=rk.querySelector(".stepm");if(st&&!m)rk.insertAdjacentHTML("beforeend",'<span class="stepm">STEP</span>');else if(!st&&m)m.remove();if(S.ws==="seq"&&$("#seqscroll"))stepDraw()}
  renderPst();syncLockBudget()}
 /* line 2: fixed-width slots (as in the MD Editor v46), so values never push into COPY / CLR / PASTE */
-function L2(k,lab,val,title,ed,w=8,id=""){return`<span class="l2 ${ed?"ed":""}" style="width:${w}ch" ${k?`data-l2="${k}"`:""} ${title?`title="${title}"`:""}><small>${lab}</small><b ${id?`id="${id}"`:""}>${val}</b></span>`}
+function L2(k,lab,val,title,ed,w=8,id=""){return`<span class="l2 ${ed?"ed":""}${ed?l2Mark(k):""}" style="width:${w}ch" ${k?`data-l2="${k}"`:""} ${title?`title="${title}"`:""}><small>${lab}</small><b ${id?`id="${id}"`:""}>${val}</b></span>`}
 function renderSub(){const t=S.sel,tr=trk(t);let h="";
  if(S.ws==="seq")h=L2("side","SEQ",S.side==="midi"?"MIDI":"SYNTH","SYNTH or MIDI: which six tracks the rail and the roll show. Click to switch.",1,9)+L2("len","LEN",S.len,"Pattern length 2-64 steps, shared by all tracks. Click = next page (16, 32, 48, 64, then 16 again), shift-click = back, scroll = one step.",1,6)+L2("dbl","","×2",`Double the pattern: ${S.len} to ${S.len*2} steps, the new half a copy of every track's steps and locks. One undo step.`,1,3)+L2("mult","SPD",S.mult,"Tempo multiplier: 1X, 2X, 3/4X, 3/2X. Click to step.",1,7)+L2("swing","SWG",S.swingAmt+"%","Swing 50-80 %, one amount per pattern. Drag or scroll.",1,7);
  else if(S.ws==="sound")h=L2("","TRK",tLabel(t),"",0,6)+L2("","",isMidiT(t)?"MIDI CH"+String(tr.ch).padStart(2,"0"):tr.m,isMidiT(t)?"LFOs are shared with T"+(t-5):machName(tr.m),0,11);
@@ -6239,6 +6243,7 @@ function syncControls(){
   if(PAGES.includes(g)||g==="MID"){const pid=g+"."+n;el.classList.toggle("lk",S.locks.has(lkKey(t,pid)));const mb=modBy(t,g,+n);let md=el.querySelector(".mod");
    if(mb.length){if(!md){md=document.createElement("i");md.className="mod";el.appendChild(md)}md.textContent="~"+mb.join("");el.title=`Modulated by LFO ${mb.join(" + ")}`}else if(md)md.remove();
    const mp=S.ctl.links.some(l=>l.t===t&&l.pid===pid)||LD().mappings.some(m=>m.t===t&&m.pg!==LEVELPG&&PAGES[m.pg]===g&&m.i===+n);el.classList.toggle("mapped",mp)}});
+ markGlobalAll();
  $$("#main [data-show]").forEach(el=>{const t=+el.dataset.show;el.textContent=trk(t).lev});
  if(typeof syncDock==="function")syncDock();
  if(typeof syncRevert==="function")syncRevert()}
@@ -8215,6 +8220,20 @@ S.ctl={sel:"cc21",selT:null,sent:0,addT:0,phase:0,
 const NOLEARN={enabled:false,mappings:[],learning:null};
 const LD=()=>S.ctl.doc||NOLEARN;
 const LEVELPG=7;
+/* B-169: the values that belong to no track (the learn document's limits.globals: g, name, group, min, max): TEMPO, MASTER TUNE, the
+   five MULTI ENV values and the pattern's SWING. A mapping to one has g and no t, pg or i. The ids are the plug-in's order. */
+const learnGlobals=()=>LD().limits?.globals||[];
+const globalName=g=>{const x=learnGlobals().find(q=>q.g===g);return x?x.name:"#"+g};
+const MENV_N=["ATK","DEC","SUS","REL","PORT"];
+function globalIdOf(el){if(!el)return-1;if(el.dataset.g==="menv"){const k=MENV_N.indexOf(el.dataset.n);return k>=0?2+k:-1}if(el.id==="bpm")return 0;if(el.dataset.l2==="swing")return 7;
+ if(el.classList.contains("stepper")&&el.querySelector('[data-ga="tune"]'))return 1;return-1}
+const globalMaps=g=>LD().mappings.filter(m=>m.g===g);
+/* a global value's element: .mapped while a CC drives it, .learnt while LEARN waits for a knob for it */
+function markGlobal(el,gid){if(!el)return;const g=gid!=null?gid:globalIdOf(el),mp=g>=0?globalMaps(g):[];
+ el.classList.toggle("mapped",mp.length>0);el.classList.toggle("learnt",g>=0&&!!S.learnT&&S.learnT.g===g);
+ if(mp.length&&el.classList.contains("pc"))el.title="Mapped: "+mp.map(m=>"CC "+m.cc).join(", ")}
+const inColumn=(m,c)=>c==null||(c==="g"?m.g!=null:m.t===c);
+const l2Mark=k=>{const g=k==="swing"?7:-1;return g<0?"":(globalMaps(g).length?" mapped":"")+(S.learnT&&S.learnT.g===g?" learnt":"")};
 const knobRows=()=>S.ctl.sources.filter(x=>x.kind==="cc");
 /* a CC row: a knob row (any channel, the knob's CC) or "x<ch>:<cc>" for any other learned (channel, CC) */
 const rowIdOf=m=>{if(m.ch===255){const k=knobRows().find(x=>x.cc===m.cc);if(k)return k.id}return"x"+m.ch+":"+m.cc};
@@ -8225,8 +8244,8 @@ function ccRows(){const rows=knobRows().map(x=>({id:x.id,ch:255,cc:x.cc,label:x.
 const mapsOf=id=>LD().mappings.filter(m=>rowIdOf(m)===id);
 /* the learn document's names are the plug-in's parameter names; the page shows its own (the machine's SYN names) */
 const tgtPid=x=>PAGES[x.pg]+"."+x.i;
-const tgtName=x=>x.pg===LEVELPG?"LEVEL":(pname(x.t,tgtPid(x))||x.name||PAGES[x.pg]+" "+x.i);
-const tgtLabel=x=>tLabel(x.t)+" "+(x.pg===LEVELPG?"LEVEL":PAGES[x.pg]+" "+tgtName(x));
+const tgtName=x=>x.g!=null?globalName(x.g):x.pg===LEVELPG?"LEVEL":(pname(x.t,tgtPid(x))||x.name||PAGES[x.pg]+" "+x.i);
+const tgtLabel=x=>x.g!=null?globalName(x.g):tLabel(x.t)+" "+(x.pg===LEVELPG?"LEVEL":PAGES[x.pg]+" "+tgtName(x));
 const chWords=ch=>ch===255?"any channel":"channel "+(ch+1);
 /* what a mapping hides: the machine's own targets of that (channel, CC), one line */
 function overrideLine(m){const o=m.overrides||[];if(!o.length)return"";const it=o.slice(0,4).map(x=>`on channel ${x.ch+1}: ${tgtLabel(x)}`);
@@ -8242,7 +8261,7 @@ function ccOf(t,pid){const[pg,i]=pid.split(".");if(pg==="MID")return"NRPN "+(0x3
 function applySrc(src){S.ctl.links.filter(l=>l.src===src.id).forEach(l=>{if(!pname(l.t,l.pid))return;let x=src.val/127;if(l.inv)x=1-x;x=curveF(l.curve,x);const[pg,i]=l.pid.split(".");const m=meta(l.t,pg,+i);trk(l.t).v[pg][+i]=clamp(Math.round((l.min+(l.max-l.min)*x)/127*maxOf(m)),0,maxOf(m));S.ctl.sent++})}
 /* the on-screen knob row drives the plug-in's mappings of its CC (absolute: its value over 0-127, Inv turns it round) */
 function applyMaps(id){const row=srcById(id);let n=0;
- for(const m of mapsOf(id)){let x=row.val/127;if(m.invert)x=1-x;
+ for(const m of mapsOf(id)){if(m.g!=null)continue;let x=row.val/127;if(m.invert)x=1-x;
   if(m.pg===LEVELPG){const v=clamp(Math.round(x*127));if(trk(m.t).lev!==v){trk(m.t).lev=v;edit("level",{t:m.t,v})}n++;continue}
   const pid=tgtPid(m);if(!pname(m.t,pid))continue;const[pg,i]=pid.split("."),mt=meta(m.t,pg,+i);trk(m.t).v[pg][+i]=clamp(Math.round(x*maxOf(mt)),0,maxOf(mt));n++}
  S.ctl.sent+=n}
@@ -8258,14 +8277,14 @@ function ctlSetup(){const app=S.ctl.sources.filter(x=>x.kind!=="cc");return JSON
 function ctlChanged(){tx();if(HOST.modulators)HOST.modulators(ctlSetup())}
 /* The browser mockup has no plug-in: the same edits on its own learn document. A host answers with the document. */
 function localLearn(op,a){const d=S.ctl.doc||(S.ctl.doc={enabled:true,mappings:[],learning:null}),ms=d.mappings;
- if(op==="add"){if(ms.some(m=>m.cc===a.cc&&m.ch===a.ch&&m.t===a.t&&m.pg===a.pg&&m.i===a.i)){toast("Already mapped.");return}
-  ms.push({index:ms.length,t:a.t,pg:a.pg,i:a.i,name:"",cc:a.cc,ch:a.ch,mode:"Absolute",invert:false,overrides:[]})}
+ if(op==="add"){if(ms.some(m=>m.cc===a.cc&&m.ch===a.ch&&m.g===a.g&&m.t===a.t&&m.pg===a.pg&&m.i===a.i)){toast("Already mapped.");return}
+  ms.push(a.g!=null?{index:ms.length,g:a.g,name:globalName(a.g),cc:a.cc,ch:a.ch,mode:"Absolute",invert:false,overrides:[]}:{index:ms.length,t:a.t,pg:a.pg,i:a.i,name:"",cc:a.cc,ch:a.ch,mode:"Absolute",invert:false,overrides:[]})}
  else if(op==="remove")ms.splice(a.index,1);else if(op==="invert")ms[a.index].invert=!ms[a.index].invert;
  ms.forEach((m,n)=>m.index=n);if(S.ws==="control")render();else syncControls()}
 const pidRef=pid=>pid==="LVL.0"?{pg:LEVELPG,i:0}:{pg:PAGES.indexOf(pid.split(".")[0]),i:+pid.split(".")[1]};
 /* LEARN's digit k: the value clicked gets knob row k's CC (the row's own CC, as set) on any channel */
 function learnBind(k){const lt=S.learnT,row=knobRows()[k-1];if(!lt||!row)return;
- if(HOST.learnBind)HOST.learnBind(lt,row.cc);else{localLearn("add",{t:lt.t,...pidRef(lt.pid),cc:row.cc,ch:255});toast(`Knob ${k} (CC ${row.cc}) → ${tLabel(lt.t)} ${pidLabel(lt.t,lt.pid)}.`)}
+ if(HOST.learnBind)HOST.learnBind(lt,row.cc);else if(lt.g!=null){localLearn("add",{g:lt.g,cc:row.cc,ch:255});toast(`Knob ${k} (CC ${row.cc}) → ${globalName(lt.g)}.`)}else{localLearn("add",{t:lt.t,...pidRef(lt.pid),cc:row.cc,ch:255});toast(`Knob ${k} (CC ${row.cc}) → ${tLabel(lt.t)} ${pidLabel(lt.t,lt.pid)}.`)}
  S.learnT=null;S.ctl.sel=row.id;S.ctl.selT=null;syncControls();if(S.ws==="control")render()}
 /* the host's learn document: progress, the result of a learn, paused, what a load left out */
 function setLearn(doc){const prev=S.ctl.doc;S.ctl.doc=doc;const ms=doc.mappings||[];
@@ -8273,6 +8292,7 @@ function setLearn(doc){const prev=S.ctl.doc;S.ctl.doc=doc;const ms=doc.mappings|
  else if(doc.learning&&(!prev||!prev.learning||doc.learning.got>prev.learning.got)&&doc.learning.got>0)toast(`Turn the knob both ways (${doc.learning.got} of ${doc.learning.need}).`);
  if(doc.paused&&S.learn){S.learn=false;S.learnT=null;document.body.classList.remove("learn");renderTop();toast("LEARN is paused: "+doc.paused)}
  const lf=(doc.left||[]).join("\n");if(lf&&lf!==S.ctl.left)toast(`${doc.left.length} saved mapping${doc.left.length===1?"":"s"} could not be loaded (see the log).`);S.ctl.left=lf;
+ if(typeof GP!=="undefined"&&GP.open&&typeof drawGlobal==="function")drawGlobal();
  if(S.ws==="control")render();else syncControls()}
 const ALLT=[0,1,2,3,4,5,6,7,8,9,10,11];
 function targetOpts(t){return pagesOf(t).flatMap(pg=>pnames(t,pg).map((n,i)=>n?opt(pg+"."+i,pg+" "+n,""):"")).join("")}
@@ -8284,26 +8304,27 @@ function renderControl(){const C=S.ctl,rows=ccRows();
  if(!isCc&&!C.sources.some(x=>x.id===C.sel&&x.kind!=="cc"))C.sel=rows[0].id;
  const selRow=rows.find(r=>r.id===C.sel),sel=selRow?{...selRow,kind:"cc"}:srcById(C.sel);
  const cs=rows.map(r=>({...r,kind:"cc",val:srcById(r.id).val})),srcs=[...cs,...C.sources.filter(x=>x.kind!=="cc")];
- const mx=`<div class="mx"><span></span>${ALLT.map(i=>`<span class="mxh" title="${trk(i).name}"><b>${tLabel(i)}</b><small>${i<6?shortM(trk(i).m):"CH"+String(trk(i).ch).padStart(2,"0")}</small></span>`).join("")}
+ const mx=`<div class="mx"><span></span>${ALLT.map(i=>`<span class="mxh" title="${trk(i).name}"><b>${tLabel(i)}</b><small>${i<6?shortM(trk(i).m):"CH"+String(trk(i).ch).padStart(2,"0")}</small></span>`).join("")}<span class="mxh" title="Values that belong to no track: the tempo, the master tune, the multi envelope, the pattern's swing"><b>FX</b><small>GLOBAL</small></span>
   ${srcs.map(sr=>{const cc=sr.kind==="cc",ms=cc?mapsOf(sr.id):[];return`<button class="srch ${sr.id===C.sel?"sel":""} k-${sr.kind}" data-src="${sr.id}" style="--f:${sr.val/127*100}%"${HOST.notes?` title="${cc?HOST.notes.ccSource:HOST.notes.appSource}"`:""}><span class="sk">${cc?"CC "+sr.cc:"APP"}</span><b>${sr.label}</b><span class="sv mono">${sr.val}</span></button>
-   ${ALLT.map(i=>{const sl=sr.id===C.sel&&C.selT===i?"sel":"";
-    if(cc){const ls=ms.filter(m=>m.t===i);return`<button class="mxc ${ls.length?"on":""} ${sl}" data-mxsrc="${sr.id}" data-mxt="${i}" title="${ls.map(tgtLabel).join(", ")||"no mapping"}">${ls.slice(0,2).map(m=>`<i>${tgtName(m)}</i>`).join("")}${ls.length>2?`<i>+${ls.length-2}</i>`:""}</button>`}
+   ${[...ALLT,"g"].map(i=>{const sl=sr.id===C.sel&&C.selT===i?"sel":"";
+    if(i==="g"&&!cc)return"<span></span>";
+    if(cc){const ls=ms.filter(m=>inColumn(m,i));return`<button class="mxc ${ls.length?"on":""} ${sl}" data-mxsrc="${sr.id}" data-mxt="${i}" title="${ls.map(tgtLabel).join(", ")||"no mapping"}">${ls.slice(0,2).map(m=>`<i>${tgtName(m)}</i>`).join("")}${ls.length>2?`<i>+${ls.length-2}</i>`:""}</button>`}
     const ls=C.links.filter(l=>l.src===sr.id&&l.t===i);return`<button class="mxc ${ls.length?"on":""} ${sl}" data-mxsrc="${sr.id}" data-mxt="${i}" title="${ls.map(l=>pidLabel(i,l.pid)).join(", ")||"no link"}">${ls.slice(0,2).map(l=>`<i>${pname(i,l.pid)}</i>`).join("")}${ls.length>2?`<i>+${ls.length-2}</i>`:""}</button>`}).join("")}`}).join("")}</div>`;
  let insp;
  if(sel.kind==="cc"){
-  const D=LD(),all=sel.id?mapsOf(sel.id):[],ms=all.filter(m=>C.selT==null||m.t===C.selT),full=D.mappings.length>=limitMax(),addT=clampT(C.addT),lt=D.learning;
+  const D=LD(),all=sel.id?mapsOf(sel.id):[],ms=all.filter(m=>inColumn(m,C.selT)),full=D.mappings.length>=limitMax(),addT=clampT(C.addT),lt=D.learning,addG=!!C.addG||C.selT==="g";
   const status=D.paused?`<div class="note" data-learnnote="paused">LEARN is paused: ${D.paused}</div>`
    :lt?`<div class="note" data-learnnote="learning">Learning <b>${tgtLabel(lt)}</b>: turn a knob on your controller both ways (${lt.got} of ${lt.need}).</div>`
    :`<div class="note" data-learnnote="hint">Pick a target below, or press LEARN, click any value and turn a knob on your controller (or press 1-8 for a knob row).</div>`;
   const left=D.left&&D.left.length?`<div class="note" data-learnnote="left">Left out when the project loaded (${D.left.length}): ${D.left.slice(0,3).join("; ")}${D.left.length>3?`; +${D.left.length-3} more`:""}</div>`:"";
   insp=`<section class="card"><header><h3>${sel.label}</h3><span>CC ${sel.cc} · ${chWords(sel.ch)} · saved with the project</span></header>
   ${status}${left}
-  <div class="lhead"><span class="cap">Targets</span>${C.selT!=null?`<button class="ptog on" data-selt="all"><i class="led"></i>${tLabel(C.selT)} only</button>`:`<span class="note">${ms.length} target${ms.length===1?"":"s"} · ${D.mappings.length} of ${limitMax()} mappings</span>`}</div>
+  <div class="lhead"><span class="cap">Targets</span>${C.selT!=null?`<button class="ptog on" data-selt="all"><i class="led"></i>${C.selT==="g"?"Global values":tLabel(C.selT)} only</button>`:`<span class="note">${ms.length} target${ms.length===1?"":"s"} · ${D.mappings.length} of ${limitMax()} mappings</span>`}</div>
   <div class="lnks">${ms.map(m=>`<div class="lnk"><span class="lcdchip" title="${tgtLabel(m)}">${tgtLabel(m)}</span><span class="note" style="grid-column:span 2">${m.mode==="RelativeSigned"?"Relative (signed)":m.mode==="RelativeOffset"?"Relative (offset)":"Absolute"}</span><span></span>
    <button class="ptog ${m.invert?"on":""}" data-minv="${m.index}"><i class="led"></i>Inv</button><button class="iconkey" data-mdel="${m.index}" aria-label="Remove mapping" title="Remove">×</button></div>${m.overrides&&m.overrides.length?`<div class="note" style="font-size:12px" data-ovr="${m.index}">${overrideLine(m)}</div>`:""}`).join("")||`<div class="note">Not mapped: this row does nothing yet.</div>`}</div>
   ${full?`<div class="note" data-learnnote="full">${limitMax()} mappings at most: remove one to add another.</div>`:""}
-  <div class="irow addrow"><span class="ilab">Add</span><select id="lt" aria-label="Target track">${ALLT.filter(i=>i<learnTracks()).map(i=>opt(i,tLabel(i)+" · "+trk(i).m,addT)).join("")}</select>
-   <select id="lp" aria-label="Target value">${learnOpts(addT)}</select><button class="cream" id="laddl"${full?" disabled":""}>Add target</button></div>
+  <div class="irow addrow"><span class="ilab">Add</span><select id="lt" aria-label="Target track">${ALLT.filter(i=>i<learnTracks()).map(i=>opt(i,tLabel(i)+" · "+trk(i).m,addG?-1:addT)).join("")}${opt("g","Global values (tempo, tune, multi env, swing)",addG?"g":-1)}</select>
+   <select id="lp" aria-label="Target value">${addG?learnGlobals().map(x=>opt(x.g,x.name,"")).join(""):learnOpts(addT)}</select><button class="cream" id="laddl"${full?" disabled":""}>Add target</button></div>
   <div class="irow"><span class="ilab"></span><button data-addsrc="lfo">+ App LFO</button><button data-addsrc="rnd">+ Random</button></div></section>`;
  }else{
  const links=C.links.map((l,li)=>({l,li})).filter(o=>o.l.src===sel.id&&(C.selT==null||o.l.t===C.selT));
@@ -8333,7 +8354,7 @@ document.addEventListener("pointermove",e=>{if(!knobDrag)return;if(e.buttons===0
 document.addEventListener("pointerup",()=>{if(knobDrag){const k=knobDrag;knobDrag=null;if(k.moved)k.h.dataset.moved="1"}},true);
 document.addEventListener("click",e=>{if(S.ws!=="control")return;const C=S.ctl;
  const sh=e.target.closest(".srch");if(sh){if(sh.dataset.moved){sh.dataset.moved="";return}C.sel=sh.dataset.src;C.selT=null;render();return}
- const mc=e.target.closest(".mxc");if(mc){C.sel=mc.dataset.mxsrc;C.selT=+mc.dataset.mxt;C.addT=C.selT;render();return}
+ const mc=e.target.closest(".mxc");if(mc){C.sel=mc.dataset.mxsrc;C.addG=mc.dataset.mxt==="g";C.selT=C.addG?"g":+mc.dataset.mxt;if(!C.addG)C.addT=C.selT;render();return}
  if(e.target.closest("[data-selt]")){C.selT=null;render();return}
  const ss=e.target.closest("[data-srcshape]");if(ss){srcById(C.sel).SHAPE=+ss.dataset.srcshape;ctlChanged();render();return}
  const sr=e.target.closest(".seg[data-set=srcrate] button");if(sr){srcById(C.sel).RATE=sr.dataset.v;ctlChanged();render();return}
@@ -8344,10 +8365,17 @@ document.addEventListener("click",e=>{if(S.ws!=="control")return;const C=S.ctl;
  const mi=e.target.closest("[data-minv]");if(mi){if(HOST.learnInvert)HOST.learnInvert(+mi.dataset.minv);else localLearn("invert",{index:+mi.dataset.minv});return}
  const md=e.target.closest("[data-mdel]");if(md){if(HOST.learnRemove)HOST.learnRemove(+md.dataset.mdel);else localLearn("remove",{index:+md.dataset.mdel});return}
  if(e.target.closest("#laddl")){const pid=$("#lp").value,t=C.addT,row=ccRows().find(r=>r.id===C.sel);
-  if(row){if(!pid)return;const a={cc:row.cc,t,...pidRef(pid),ch:row.ch};if(HOST.learnAdd)HOST.learnAdd(a);else localLearn("add",a);return}
+  if(row){if(!pid)return;const a=$("#lt").value==="g"?{cc:row.cc,g:+pid,ch:row.ch}:{cc:row.cc,t,...pidRef(pid),ch:row.ch};if(HOST.learnAdd)HOST.learnAdd(a);else localLearn("add",a);return}
   if(C.links.some(l=>l.src===C.sel&&l.t===t&&l.pid===pid)){toast("Already a target.");return}C.links.push({src:C.sel,t,pid,min:0,max:127,curve:"lin",inv:false});ctlChanged();render();return}
  const as=e.target.closest("[data-addsrc]");if(as){const k=as.dataset.addsrc,n=C.sources.filter(x=>x.kind===k).length;const id=k+"X"+Date.now();C.sources.push(k==="lfo"?{id,kind:"lfo",label:"LFO "+"ABCDEFGH"[n],val:64,SHAPE:2,RATE:"1",DEPTH:80}:{id,kind:"rnd",label:"Random "+"ABCDEFGH"[n],val:64,RATE:"1/8",SMOOTH:0,_t:64});C.sel=id;ctlChanged();render();return}});
-document.addEventListener("change",e=>{if(e.target.id==="lt"){S.ctl.addT=+e.target.value;render()}});
+document.addEventListener("change",e=>{if(e.target.id==="lt"){if(e.target.value==="g"){S.ctl.addG=true;if(S.ctl.selT!=null)S.ctl.selT="g"}else{S.ctl.addG=false;S.ctl.addT=+e.target.value;if(S.ctl.selT!=null)S.ctl.selT=S.ctl.addT}render()}});
+/* LEARN on the values that belong to no track (the top bar's tempo and swing, the multi envelope's knobs, the global page's master tune) */
+document.addEventListener("pointerdown",e=>{if(!S.learn)return;const el=e.target.closest(GLOBAL_LEARN_SEL),g=globalIdOf(el);if(g<0)return;
+ e.preventDefault();e.stopPropagation();
+ if(LD().limits&&!learnGlobals().some(q=>q.g===g)){toast("This value cannot be learned.");return}
+ S.learnT={g};markGlobalAll();toast(`Target: ${globalName(g)}. Now turn a knob on your controller, or press 1-8 for a knob row.`);if(HOST.learnTarget)HOST.learnTarget({...S.learnT})},true);
+const GLOBAL_LEARN_SEL='.pc[data-g="menv"], #bpm, .l2.ed[data-l2="swing"], .stepper';
+function markGlobalAll(){$$('.pc[data-g="menv"]').forEach(el=>markGlobal(el));markGlobal($("#bpm")&&$("#bpm").closest(".f"),0);$$("[data-l2='swing']").forEach(el=>markGlobal(el));$$("#globpop .stepper").forEach(el=>markGlobal(el))}
 "use strict";
 /* The GLOBAL page both editors share (B-051, F3; the Machinedrum Editor's v61 panel, P5, made shared; 0.6 wave 5 made it
    a page under the header, review 1 (Radek, 2026-10-12, B-091) a modal again: a dialog of the modal layer over a dimmed
@@ -8475,7 +8503,7 @@ function mmGlobalCards(G){const{tog,step,row}=GlobalUi;
   <section class="card"><header><h3>Routing</h3><span>the six tracks to the outputs</span></header>
    ${row("Mode",`<span class="seg" title="${MM_GTIP.routing}">${ROUTES.map(r=>`<button data-ga="routing" data-r="${r}" aria-pressed="${S.routing===r}">${r.replace("+"," + ")}</button>`).join("")}</span>`)}</section>
   <section class="card"><header><h3>Audio</h3><span>the machine's outputs</span></header>
-   ${row("Master tune",step("tune",G.tune==null?"--":(G.tune/10).toFixed(1)+" Hz",MM_GTIP.tune))}</section>
+   ${row("Master tune",step("tune",G.tune==null?"--":(G.tune/10).toFixed(1)+" Hz",MM_GTIP.tune).replace('class="stepper"','class="stepper'+(globalMaps(1).length?" mapped":"")+(S.learnT&&S.learnT.g===1?" learnt":"")+'" data-lg="1"'))}</section>
   <section class="card"><header><h3>Control out 1</h3><span>notes to the tracks, MIDI out or both</span></header>
    ${OUT1.map(([k,label,what])=>row(label,`<span class="seg" title="${MM_GTIP.out1} (here: ${what})">${["INT","OUT","INT+OUT"].map((n,v)=>`<button data-ga="out1" data-k="${k}" data-v="${v}" aria-pressed="${G[k]===v}">${n}</button>`).join("")}</span>`)).join("")}
    ${gOutWarn(G)?`<p class="gwarn">${gOutWarn(G)}</p>`:""}</section>`}

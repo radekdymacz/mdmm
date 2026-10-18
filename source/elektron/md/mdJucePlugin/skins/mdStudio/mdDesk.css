@@ -2364,3 +2364,9 @@ html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[dat
 #caddl:disabled{opacity:.4;cursor:not-allowed}
 /* 0.8 (L4): .skey's own display beats [hidden] (the same weight, later): a hidden LEARN key took its room. The plate switch lives in the engine menu (PLATE: MKI / MKII), so the six tabs and the LEARN key fit beside the rest of the top bar */
 .skey[hidden],.tabs button[hidden]{display:none!important}
+/* B-169: LEARN on the values that belong to no track: the master effects, and the top bar's tempo, swing and accent. The Control
+   matrix has one more column for them (FX). */
+body.learn .pc[data-g="mfx"],body.learn #bpm,body.learn .l2.ed[data-l2="swing"],body.learn .l2.ed[data-l2="accAmt"]{outline:1px dashed var(--print2);outline-offset:1px;cursor:pointer}
+body.learn .pc[data-g="mfx"].mapped,body.learn .f.mapped,body.learn .l2.mapped{outline:2px solid var(--led)}
+body.learn .pc[data-g="mfx"].learnt,body.learn .f.learnt,body.learn .l2.learnt{outline:2px solid var(--cream);box-shadow:0 0 0 4px var(--led)}
+.mx{grid-template-columns:170px repeat(16,minmax(0,1fr)) minmax(56px,1.5fr)}

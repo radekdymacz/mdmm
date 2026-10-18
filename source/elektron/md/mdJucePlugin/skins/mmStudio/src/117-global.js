@@ -57,7 +57,7 @@ function mmGlobalCards(G){const{tog,step,row}=GlobalUi;
   <section class="card"><header><h3>Routing</h3><span>the six tracks to the outputs</span></header>
    ${row("Mode",`<span class="seg" title="${MM_GTIP.routing}">${ROUTES.map(r=>`<button data-ga="routing" data-r="${r}" aria-pressed="${S.routing===r}">${r.replace("+"," + ")}</button>`).join("")}</span>`)}</section>
   <section class="card"><header><h3>Audio</h3><span>the machine's outputs</span></header>
-   ${row("Master tune",step("tune",G.tune==null?"--":(G.tune/10).toFixed(1)+" Hz",MM_GTIP.tune))}</section>
+   ${row("Master tune",step("tune",G.tune==null?"--":(G.tune/10).toFixed(1)+" Hz",MM_GTIP.tune).replace('class="stepper"','class="stepper'+(globalMaps(1).length?" mapped":"")+(S.learnT&&S.learnT.g===1?" learnt":"")+'" data-lg="1"'))}</section>
   <section class="card"><header><h3>Control out 1</h3><span>notes to the tracks, MIDI out or both</span></header>
    ${OUT1.map(([k,label,what])=>row(label,`<span class="seg" title="${MM_GTIP.out1} (here: ${what})">${["INT","OUT","INT+OUT"].map((n,v)=>`<button data-ga="out1" data-k="${k}" data-v="${v}" aria-pressed="${G[k]===v}">${n}</button>`).join("")}</span>`)).join("")}
    ${gOutWarn(G)?`<p class="gwarn">${gOutWarn(G)}</p>`:""}</section>`}

@@ -278,6 +278,10 @@ table.mmap tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 .lcdbig.recv{letter-spacing:.06em}
 body.learn .pc[data-g]{outline:1px dashed var(--print2);outline-offset:1px;cursor:pointer}
 body.learn .pc.mapped{outline:2px solid var(--led)}
+/* B-169: LEARN on the values that belong to no track: the multi envelope (.pc above), the top bar's tempo and swing, the global page's master tune */
+body.learn #bpm,body.learn .l2.ed[data-l2="swing"],body.learn [data-lg]{outline:1px dashed var(--print2);outline-offset:1px;cursor:pointer}
+body.learn .f.mapped,body.learn .l2.mapped,body.learn [data-lg].mapped{outline:2px solid var(--led)}
+body.learn .f.learnt,body.learn .l2.learnt,body.learn [data-lg].learnt,body.learn .pc.learnt{outline:2px solid var(--cream);box-shadow:0 0 0 4px var(--led)}
 .pc.mapped:not(.lk) span::before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--lcd);margin-right:4px;vertical-align:1px}
 .rowst{height:40px;display:grid;align-content:center;gap:3px;padding-left:6px;font:600 10px var(--sans);letter-spacing:.1em;color:var(--print2)}
 .rowst span{display:flex;gap:4px;align-items:center;white-space:nowrap}
@@ -464,7 +468,7 @@ body.engwait #main,body.engwait #rail{pointer-events:none;opacity:.6;transition:
 .kb .b{height:80px}
 .perf3 canvas.ed{height:104px!important}
 /* ===== Control: 12 track columns ===== */
-.mx{grid-template-columns:150px repeat(12,minmax(0,1fr))!important}
+.mx{grid-template-columns:150px repeat(12,minmax(0,1fr)) minmax(48px,1.4fr)!important}
 /* the RECV / SEND flag floats in the Pattern field (no reserved width) */
 .lcdpanel .patf{position:relative}
 .kb{height:clamp(130px,calc(100vh - 620px),250px)!important}

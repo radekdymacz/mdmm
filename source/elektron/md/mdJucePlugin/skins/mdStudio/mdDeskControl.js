@@ -23,6 +23,23 @@ function learnPaused() { return (Docs.learn && Docs.learn.paused) || ""; }
 function learnMax() { return (Docs.learn && Docs.learn.limits && Docs.learn.limits.max) || LEARN_MAX; }
 /* the plug-in's parameter name (learn.name, limits.params) to the page's display name for that track's machine */
 function learnName(t, i, name) { const tr = V.tracks[t]; return (tr && slots(tr.m, Cat)[i]) || name || "#" + (i + 1); }
+/* B-169: the values of the page that belong to no track (the learn document's limits.globals: g, name, group, min, max): the master
+   effects (RHYTHM ECHO, GATE BOX, MASTER EQ, DYNAMIX), the tempo, the pattern's swing and accent. A mapping to one has g, no t. */
+function learnGlobals() { return (Docs.learn && Docs.learn.limits && Docs.learn.limits.globals) || []; }
+function globalName(g) { const x = learnGlobals().find(q => q.g === g); return x ? x.name : "#" + g; }
+const GLOBAL_LEARN_SEL = '.pc[data-g="mfx"], #bpm, .l2.ed[data-l2="swing"], .l2.ed[data-l2="accAmt"]';
+/* the global id of a page element (the plug-in's order: the four master effects in the page's knob order, then TEMPO, SWING, ACCENT); -1: none */
+function globalIdOf(el) {
+	if (!el) return -1;
+	if (el.dataset.g === "mfx") { const f = MFX_IDS.indexOf(el.dataset.f), k = f >= 0 ? MFXD[el.dataset.f].k.indexOf(el.dataset.n) : -1; return f >= 0 && k >= 0 ? f * 8 + k : -1; }
+	if (el.id === "bpm") return 32;
+	return el.dataset.l2 === "swing" ? 33 : el.dataset.l2 === "accAmt" ? 34 : -1;
+}
+const globalMaps = g => ((Docs.learn && Docs.learn.mappings) || []).filter(m => m.g === g);
+/* what a mapping or the learning target drives, in words: "T3 DEC" or "RHYTHM ECHO TIME" */
+function targetWords(x) { return x.g != null ? globalName(x.g) : `T${x.t + 1} ${learnName(x.t, x.i, x.name)}`; }
+/* a mapping is in the Control page's selected column (a track, "g" for the global column, null for all) */
+const inColumn = (m, c) => c == null || (c === "g" ? m.g != null : m.t === c);
 /* "Overrides the machine's CC 21 on channel 1: T1 DEC": what a mapping hides (mapping.overrides), per channel; "" when nothing */
 function overridesText(m) {
 	const ov = m.overrides || [];
@@ -49,7 +66,7 @@ function onLearnDoc(prev, next) {
 	if (prev && prev.learning && next.mappings.length > was) {
 		const m = next.mappings[next.mappings.length - 1], ov = overridesText(m);
 		S.ctl.sel = m.ch + ":" + m.cc; S.ctl.selT = null;	/* the Control page shows the new mapping's row */
-		toast(`CC ${m.cc} on ${m.ch === 255 ? "any channel" : "channel " + (m.ch + 1)} now moves T${m.t + 1} ${learnName(m.t, m.i, m.name)}.${ov ? " " + ov + "." : ""}`);
+		toast(`CC ${m.cc} on ${m.ch === 255 ? "any channel" : "channel " + (m.ch + 1)} now moves ${targetWords(m)}.${ov ? " " + ov + "." : ""}`);
 	}
 	if (next.paused && S.ctl.learn) { S.ctl.learn = false; S.ctl.learnT = null; document.body.classList.remove("learn"); renderTop(); toast(next.paused); }	/* the engine changed under LEARN */
 	const lk = $("#learnkey"); if (lk) lk.title = next.learning ? progressText(next.learning) : "Learn a controller knob (L)";
@@ -63,7 +80,7 @@ function paramName(t, i) { return slots(V.tracks[t].m, Cat)[i] || "#" + (i + 1);
 function modRow(sr) {
 	const C = S.ctl, id = "app:" + sr.id;
 	return `<button class="srch k-${sr.kind === "lfo" ? "lfo" : "rnd"} ${id === C.sel ? "sel" : ""}" data-src="${id}" style="--f:${Mods.valueOf(sr.id) / 127 * 100}%" title="App only: runs in the editor on the machine's steps and sends CCs"><span class="sk">APP</span><b>${sr.label}</b><span class="sv mono">${Mods.valueOf(sr.id)}</span></button>
-	 ${V.tracks.map((t, i) => { const ls = Mods.linksOf(sr.id).filter(o => o.l.track === i); return `<button class="mxc ${ls.length ? "on" : ""} ${id === C.sel && C.selT === i ? "sel" : ""}" data-mxsrc="${id}" data-mxt="${i}" title="${ls.map(o => paramName(i, o.l.param)).join(", ") || "no link"}">${ls.slice(0, 2).map(o => `<i>${paramName(i, o.l.param)}</i>`).join("")}${ls.length > 2 ? `<i>+${ls.length - 2}</i>` : ""}</button>`; }).join("")}`;
+	 ${V.tracks.map((t, i) => { const ls = Mods.linksOf(sr.id).filter(o => o.l.track === i); return `<button class="mxc ${ls.length ? "on" : ""} ${id === C.sel && C.selT === i ? "sel" : ""}" data-mxsrc="${id}" data-mxt="${i}" title="${ls.map(o => paramName(i, o.l.param)).join(", ") || "no link"}">${ls.slice(0, 2).map(o => `<i>${paramName(i, o.l.param)}</i>`).join("")}${ls.length > 2 ? `<i>+${ls.length - 2}</i>` : ""}</button>`; }).join("")}<span></span>`;
 }
 function modInspector(sr) {
 	const C = S.ctl, links = Mods.linksOf(sr.id).filter(o => C.selT == null || o.l.track === C.selT);
@@ -74,7 +91,7 @@ function modInspector(sr) {
 	return `<section class="card"><header><h3>${sr.label}</h3><span><b class="apponly">App only</b> · not in the kit · <span title="${Mods.runs === "plug-in" ? "Run by the plug-in: they keep moving with the editor closed, saved with the project" : "Run by the editor while it is open"}">${Mods.runs === "plug-in" ? "runs with the editor closed" : "runs while the editor is open"}</span> · <span class="mono" id="ccrate" title="CCs the app modulators sent in the last second; the budget is ${Mods.limit}">${Mods.cc}/s of ${Mods.limit}</span></span></header>
 	 <div class="note">Runs in the editor and moves with the machine's own steps while it plays, sent as CCs like host automation (at most ${Mods.limit} a second). A real Machinedrum does not play it, a lock wins on its step, and live recording does not record it. The setup is not saved with the project yet.</div>
 	 ${params}
-	 <div class="lhead"><span class="cap">Targets</span>${C.selT != null ? `<button class="ptog on" data-selt="all"><i class="led"></i>Track ${C.selT + 1} only</button>` : `<span class="note">${links.length} target${links.length === 1 ? "" : "s"}</span>`}</div>
+	 <div class="lhead"><span class="cap">Targets</span>${C.selT != null ? `<button class="ptog on" data-selt="all"><i class="led"></i>${C.selT === "g" ? "Global values" : "Track " + (C.selT + 1)} only</button>` : `<span class="note">${links.length} target${links.length === 1 ? "" : "s"}</span>`}</div>
 	 <div class="lnks">${links.map(({ l, li }) => `<div class="lnk"><span class="lcdchip" title="${V.tracks[l.track].name}">T${l.track + 1} ${paramName(l.track, l.param)}</span>
 	  <div class="pc" role="slider" tabindex="0" aria-label="Min" data-g="link" data-n="min" data-li="${li}"><span>MIN</span><b></b></div><div class="pc" role="slider" tabindex="0" aria-label="Max" data-g="link" data-n="max" data-li="${li}"><span>MAX</span><b></b></div>
 	  <span class="seg" data-set="lcurve" data-li="${li}">${["lin", "exp", "log"].map(c => `<button data-v="${c}" aria-pressed="${l.curve === c}">${c.toUpperCase()}</button>`).join("")}</span>
@@ -118,25 +135,25 @@ function renderControl() {
   <span class="note ${maps.length >= max ? "hot" : ""}" id="lcount" title="The most mappings one project holds">${maps.length} of ${max} mappings</span>
   ${paused ? `<span class="note paused" id="lpaused" role="status">${paused}</span>` : ""}
   ${left.length ? `<div class="note leftout" id="lleft"><b>Left out when the project loaded (${left.length}):</b>${left.map(x => `<span>${x}</span>`).join("")}</div>` : ""}</div>`;
-	const mx = `<div class="mx"><span></span>${V.tracks.map((t, i) => `<span class="mxh" title="${t.name}"><b>${i + 1}</b><small>${t.m}</small></span>`).join("")}
+	const mx = `<div class="mx"><span></span>${V.tracks.map((t, i) => `<span class="mxh" title="${t.name}"><b>${i + 1}</b><small>${t.m}</small></span>`).join("")}<span class="mxh" title="Values that belong to no track: the master effects, the tempo, the pattern's swing and accent"><b>FX</b><small>GLOBAL</small></span>
   ${rows.map(src => { const ms = mapsOf(src.id); return `<button class="srch ${src.id === C.sel ? "sel" : ""} k-cc" data-src="${src.id}" style="--f:0%" title="${ms.length ? ms.length + " target" + (ms.length > 1 ? "s" : "") : "Not mapped: does nothing yet"}"><span class="sk">CC ${src.cc}</span><b>${src.label}</b><span class="sv mono">${ms.length ? ms.length : "–"}</span></button>
-   ${V.tracks.map((t, i) => { const ls = ms.filter(m => m.t === i); return `<button class="mxc ${ls.length ? "on" : ""} ${src.id === C.sel && C.selT === i ? "sel" : ""}" data-mxsrc="${src.id}" data-mxt="${i}" title="${ls.map(l => learnName(i, l.i, l.name)).join(", ") || "Map " + src.label + " to track " + (i + 1)}">${ls.slice(0, 2).map(l => `<i>${learnName(i, l.i, l.name)}</i>`).join("")}${ls.length > 2 ? `<i>+${ls.length - 2}</i>` : ""}</button>`; }).join("")}`; }).join("")}
+   ${[...V.tracks.map((t, i) => i), "g"].map(i => { const ls = ms.filter(m => inColumn(m, i)), nm = l => l.g != null ? globalName(l.g) : learnName(i, l.i, l.name), label = i === "g" ? "global values" : "track " + (i + 1); return `<button class="mxc ${ls.length ? "on" : ""} ${src.id === C.sel && C.selT === i ? "sel" : ""}" data-mxsrc="${src.id}" data-mxt="${i}" title="${ls.map(nm).join(", ") || "Map " + src.label + " to " + label}">${ls.slice(0, 2).map(l => `<i>${nm(l)}</i>`).join("")}${ls.length > 2 ? `<i>+${ls.length - 2}</i>` : ""}</button>`; }).join("")}`; }).join("")}
   ${Mods.doc.sources.map(modRow).join("")}</div>`;
 	const app = C.sel.startsWith("app:") ? Mods.source(C.sel.slice(4)) : null;
 	let insp;
 	if (app) insp = modInspector(app);
 	else {
-		const row = rows.find(r => r.id === C.sel), selMaps = mapsOf(C.sel).filter(m => C.selT == null || m.t === C.selT);
-		const t = C.selT != null ? C.selT : C.addT;
+		const row = rows.find(r => r.id === C.sel), selMaps = mapsOf(C.sel).filter(m => inColumn(m, C.selT));
+		const addG = C.addG || C.selT === "g", t = C.selT != null && C.selT !== "g" ? C.selT : C.addT;
 		insp = `<section class="card"><header><h3>${row.label} · CC ${row.cc}</h3><span>${row.ch === 255 ? "any channel" : "channel " + (row.ch + 1)} · from your MIDI controller · saved with the project</span></header>
   ${row.knob >= 0 ? `<div class="irow"><span class="ilab">CC</span><span class="stepper"><button data-knobcc="-1" aria-label="Lower CC number">−</button><b class="mono">${row.cc}</b><button data-knobcc="1" aria-label="Higher CC number">+</button></span><span class="note">the CC your controller's knob ${row.knob + 1} sends; its targets follow</span></div>` : ""}
-  <div class="note" id="linfo">${L.learning ? `Learning <b>track ${L.learning.t + 1} ${learnName(L.learning.t, L.learning.i, L.learning.name)}</b>. ${progressText(L.learning)}.` : "Pick a target below, or press LEARN, click any value and turn a knob. The mapping moves the value through the plug-in's parameters, like host automation."}</div>
+  <div class="note" id="linfo">${L.learning ? `Learning <b>${L.learning.g != null ? "" : "track "}${L.learning.g != null ? globalName(L.learning.g) : (L.learning.t + 1) + " " + learnName(L.learning.t, L.learning.i, L.learning.name)}</b>. ${progressText(L.learning)}.` : "Pick a target below, or press LEARN, click any value and turn a knob. The mapping moves the value through the plug-in's parameters, like host automation."}</div>
   <div class="lhead"><span class="cap">Targets</span>${C.selT != null ? `<button class="ptog on" data-selt="all"><i class="led"></i>Track ${C.selT + 1} only</button>` : `<span class="note">${selMaps.length} target${selMaps.length === 1 ? "" : "s"}</span>`}</div>
-  <div class="lnks">${selMaps.map(l => `<div class="lnk"><span class="lcdchip" title="${V.tracks[l.t].name}">T${l.t + 1} ${learnName(l.t, l.i, l.name)}</span><span class="note">${l.mode}</span><span></span>
+  <div class="lnks">${selMaps.map(l => `<div class="lnk"><span class="lcdchip" title="${l.g != null ? "Global value" : V.tracks[l.t].name}">${targetWords(l)}</span><span class="note">${l.mode}</span><span></span>
    <button class="ptog ${l.invert ? "on" : ""}" data-linv="${l.index}"><i class="led"></i>Inv</button><button class="iconkey" data-ldel="${l.index}" aria-label="Remove mapping" title="Remove">×</button>
    ${overridesText(l) ? `<span class="note ovr" data-ovr="${l.index}">${overridesText(l)}</span>` : ""}</div>`).join("") || `<div class="note">Not mapped: this row does nothing yet.</div>`}</div>
-  <div class="irow addrow"><span class="ilab">Add</span><select id="ct">${V.tracks.map((x, i) => `<option value="${i}" ${i === t ? "selected" : ""}>Track ${i + 1} · ${x.m}</option>`).join("")}</select>
-   <select id="cp">${slots(V.tracks[t].m, Cat).map((p, i) => p ? `<option value="${i}">${p}</option>` : "").join("")}<option value="24">LEVEL</option></select><button class="cream" id="caddl" ${maps.length >= max ? "disabled" : ""} title="${maps.length >= max ? "The project holds " + max + " mappings at most. Remove one first." : ""}">Add target</button></div>
+  <div class="irow addrow"><span class="ilab">Add</span><select id="ct">${V.tracks.map((x, i) => `<option value="${i}" ${!addG && i === t ? "selected" : ""}>Track ${i + 1} · ${x.m}</option>`).join("")}<option value="g" ${addG ? "selected" : ""}>Global values (FX, tempo, pattern)</option></select>
+   <select id="cp">${addG ? learnGlobals().map(x => `<option value="${x.g}">${x.name}</option>`).join("") : slots(V.tracks[t].m, Cat).map((p, i) => p ? `<option value="${i}">${p}</option>` : "").join("") + `<option value="24">LEVEL</option>`}</select><button class="cream" id="caddl" ${maps.length >= max ? "disabled" : ""} title="${maps.length >= max ? "The project holds " + max + " mappings at most. Remove one first." : ""}">Add target</button></div>
   <div class="irow"><span class="ilab"></span><button data-addsrc="lfo">+ App LFO</button><button data-addsrc="random">+ Random</button></div></section>`;
 	}
 	$("#main").innerHTML = `<div class="ctlui"><section class="card"><header><h3>Mapping matrix</h3><span>rows = controller knobs, learned CCs and app modulators · columns = tracks</span></header>${status}${mx}</section>${insp}</div>`;
@@ -149,6 +166,14 @@ function syncMods() {
 }
 document.addEventListener("pointerdown", e => {
 	if (!S.ctl.learn) return;
+	const gel = e.target.closest(GLOBAL_LEARN_SEL);
+	if (gel) {
+		e.stopPropagation(); e.preventDefault();
+		const g = globalIdOf(gel), lim = Docs.learn && Docs.learn.limits;
+		if (g < 0 || (lim && !learnGlobals().some(q => q.g === g))) { toast("This value cannot be learned."); return; }
+		S.ctl.learnT = { g }; syncControls(); cmd("learnStart", { g }); toast(`Target: ${globalName(g)}. Now turn a knob on your controller.`);
+		return;
+	}
 	const el = e.target.closest(".pc[data-g],.fader[data-g]");
 	if (el && ["syn", "fx", "rt", "lfo"].includes(el.dataset.g)) {
 		e.stopPropagation(); e.preventDefault();
@@ -167,8 +192,8 @@ function clickControl(e) {
 	if (S.ws !== "control") return false;
 	const C = S.ctl;
 	const shh = e.target.closest(".srch.k-cc"); if (shh) { C.sel = shh.dataset.src; C.selT = null; render(); return true; }
-	const mc = e.target.closest(".mxc[data-mxsrc]"); if (mc) { C.sel = mc.dataset.mxsrc; C.selT = C.addT = +mc.dataset.mxt; render(); return true; }
-	if (e.target.closest("#caddl")) { const [ch, cc] = C.sel.split(":").map(Number); cmd("learnAdd", Object.assign({ cc, t: +$("#ct").value, i: +$("#cp").value }, ch === 255 ? {} : { ch })); return true; }	/* no ch: any channel */
+	const mc = e.target.closest(".mxc[data-mxsrc]"); if (mc) { C.sel = mc.dataset.mxsrc; C.addG = mc.dataset.mxt === "g"; C.selT = C.addG ? "g" : (C.addT = +mc.dataset.mxt); render(); return true; }
+	if (e.target.closest("#caddl")) { const [ch, cc] = C.sel.split(":").map(Number); cmd("learnAdd", Object.assign({ cc }, $("#ct").value === "g" ? { g: +$("#cp").value } : { t: +$("#ct").value, i: +$("#cp").value }, ch === 255 ? {} : { ch })); return true; }	/* no ch: any channel */
 	const kc = e.target.closest("[data-knobcc]"); if (kc) {
 		const [, cc] = C.sel.split(":").map(Number), ccs = knobCcs(), k = ccs.indexOf(cc), to = clamp(cc + +kc.dataset.knobcc, 0, 127);
 		if (k < 0 || ccs.includes(to)) { toast("Another knob row already uses CC " + to + "."); return true; }
@@ -189,5 +214,6 @@ function clickControl(e) {
 /* the inspector's track pickers */
 document.addEventListener("change", e => {
 	const id = e.target.id; if (id !== "mt" && id !== "ct") return;
-	S.ctl.addT = +e.target.value; if (id === "ct" && S.ctl.selT != null) S.ctl.selT = +e.target.value; render();
+	if (id === "ct" && e.target.value === "g") { S.ctl.addG = true; if (S.ctl.selT != null) S.ctl.selT = "g"; render(); return; }
+	S.ctl.addG = false; S.ctl.addT = +e.target.value; if (id === "ct" && S.ctl.selT != null) S.ctl.selT = +e.target.value; render();
 });
