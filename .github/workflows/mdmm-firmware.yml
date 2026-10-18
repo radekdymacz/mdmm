@@ -240,22 +240,9 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/test-home/Documents"
           ctest --test-dir build -N | tail -n 2
 
-      # These import-and-pick regressions need a SysEx backup as well as a ROM. Use the same committed corpus as
-      # the E2E imports; no personal backup is uploaded and a missing fixture still fails the run.
-      - name: Prepare the SysEx import fixtures
-        run: |
-          set -euo pipefail
-          fixtures="${RUNNER_TEMP}/syx-fixtures"
-          mkdir -p "${fixtures}"
-          cat source/elektron/md/elektronData/testdata/programmed_*.syx > "${fixtures}/md.syx"
-          cat source/elektron/md/elektronData/testdata/mm/programmed-*.syx > "${fixtures}/mm.syx"
-          test -s "${fixtures}/md.syx"
-          test -s "${fixtures}/mm.syx"
-          echo "MD_SYX=${fixtures}/md.syx" >> "${GITHUB_ENV}"
-          echo "MM_SYX=${fixtures}/mm.syx" >> "${GITHUB_ENV}"
-
-      - name: Fetch the ROMs
-        run: scripts/ci-fetch-roms.sh "${RUNNER_TEMP}/roms"
+      # Real import backups use the same private storage, OIDC restrictions, hash checks and cleanup as the ROMs.
+      - name: Fetch the ROMs and SysEx backups
+        run: scripts/ci-fetch-roms.sh "${RUNNER_TEMP}/roms" --sysex
 
       # A quarter of the tests per runner (ctest -I shard,,4), one at a time: the emulation needs about a core each and
       # the runner has three. mdSysexLifecycleTest is left out: it needs the Monomachine factory patch RAM
@@ -283,7 +270,7 @@ jobs:
           fi
           exit "${status}"
 
-      - name: Delete the ROMs (before anything is uploaded)
+      - name: Delete the ROMs and SysEx backups (before anything is uploaded)
         if: always()
         run: rm -rf "${RUNNER_TEMP}/roms"
 

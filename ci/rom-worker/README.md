@@ -1,10 +1,11 @@
 # mdmm-rom: the ROM Worker
 
-Hands the two Elektron firmware images to the firmware workflow (`.github/workflows/mdmm-firmware.yml`) and to nobody
-else. The images live in a private R2 bucket (`mdmm-ci-roms`: `md.bin`, `mm.bin`). There is no long-lived secret: the
+Hands the two Elektron firmware images and the owner's two SysEx test backups to the firmware workflow
+(`.github/workflows/mdmm-firmware.yml`) and to nobody else. The files live in a private R2 bucket (`mdmm-ci-roms`):
+`md.bin`, `mm.bin`, `sysex/md.syx`, `sysex/mm.syx`. There is no long-lived secret: the
 caller proves who it is with the run's GitHub OIDC token.
 
-`GET /rom/md` or `GET /rom/mm` with `Authorization: Bearer <OIDC token, audience mdmm-rom>`. Anything wrong: 403, empty
+`GET /rom/md`, `/rom/mm`, `/sysex/md` or `/sysex/mm` with `Authorization: Bearer <OIDC token, audience mdmm-rom>`. Anything wrong: 403, empty
 body. The token is checked against GitHub's JWKS (RS256 only), then:
 
 | Claim | Must be |
@@ -20,9 +21,26 @@ body. The token is checked against GitHub's JWKS (RS256 only), then:
 
 The log has the decision and the repository, ref and event, never the token.
 
+## SysEx backups
+
+The two private backups were uploaded on 2026-10-18 and downloaded again to verify their hashes. CI fetches them with
+`scripts/ci-fetch-roms.sh "${RUNNER_TEMP}/roms" --sysex`, which pins their sizes and SHA-256 and exports `MD_SYX` / `MM_SYX`.
+The firmware ctest jobs use these full backups for import-and-pick regressions. The E2E journeys keep their small,
+programmed corpus because those scenarios expect its particular contents. Cleanup deletes private backups alongside
+the ROMs before reports are uploaded. Never add either backup to Git, a cache or an artifact.
+
+To replace a backup, upload the owner's selected file to `mdmm-ci-roms/sysex/md.syx` (or `mm.syx`) using
+`npx wrangler r2 object put <bucket/key> --remote --file <local-file>`, then update its size/hash in `ci-fetch-roms.sh`.
+Only the four paths listed above are downloadable; there is no listing or upload endpoint.
+
+These SysEx files are not the 1 MiB `mm-factory-live3-be.bin` snapshot. That separate factory-memory fixture is still
+missing, so sharing the backups does not yet enable `mdSysexLifecycleTest`.
+
 ## One-time setup (Radek)
 
-Steps 1, 2 and the environment of step 4 are done (2026-10-18: bucket `mdmm-ci-roms`, both objects verified by sha256, environment `rom` limited to `main` and `release/*`). Open: deploy (3) and the variable `MDMM_ROM_URL`. Kept as documentation:
+Setup is complete (2026-10-18): bucket `mdmm-ci-roms`, hashes verified, Worker deployed at
+`https://mdmm-rom.nativekloud.workers.dev`, environment `rom` limited to `main` and `release/*`, and `MDMM_ROM_URL` set.
+Kept as documentation:
 
 1. Create the bucket:
    ```sh

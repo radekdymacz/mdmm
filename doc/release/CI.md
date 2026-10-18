@@ -69,7 +69,11 @@ tests (`mdPageBridgeTest`, `mdMachineMidiOutTest`, ...) are registered.
 
 **Status (2026-10-18, resumed).** The pipeline, artifact fixes and SysEx fixture setup are on `codex/continue-0.8.0`,
 being validated on `release/0.0.0-ci-test`. Local actionlint, archive extraction and package-gating checks pass. The first
-trial passed stage 0; it was replaced before the expensive stages to include the missing SysEx inputs and new PGO profile.
+trial passed stage 0; it was replaced before the expensive stages to include the missing SysEx inputs.
+Run 39127283546 (`dc770ec97`) passed stages 0–2; firmware shard 1 passed MIDI Learn but failed
+`mdSessionNoRomManageFirmwareTest_md` because `kit.working` was still `unknown` after first boot. Other firmware jobs
+are still running. This run predates the refreshed PGO profile and private SysEx downloads; the final release must test
+the newer head.
 PGO training on main passed in run 39126917819: the downloaded profile parses, its hash matches, and all four recorded
 emulator source trees match this branch. It is included with its metadata.
 
@@ -96,6 +100,11 @@ bucket `mdmm-ci-roms`. The script checks size and SHA-256 against the constants 
 the files in the runner's temp folder and exports `GEARMULATOR_MD_FIRMWARE_BIN` / `GEARMULATOR_MM_FIRMWARE_BIN`. They
 are never printed, cached or uploaded, and an `if: always()` step deletes them. The Worker URL is the environment
 variable `MDMM_ROM_URL` of `rom` (not a secret). No long-lived secret exists anywhere.
+
+With `--sysex`, the same script also downloads the owner's two full backups from `/sysex/md` and `/sysex/mm`, pins
+their size and SHA-256, and exports `MD_SYX` / `MM_SYX`. Radek approved using the same private storage as the ROMs on
+2026-10-18. The files are in that same temporary folder and deleted by the same cleanup step. They never enter Git,
+caches or artifacts. The Worker uses exactly the same token rules for both types of file.
 
 Trust rules (the Worker answers 403, no detail, to anything else): repository `radekdymacz/mdmm` and its numeric id;
 `ref` is `main` or `release/*`; event is `push`, `workflow_dispatch` or `schedule`; environment `rom`; the workflow is
@@ -133,8 +142,10 @@ Run 39108554055 (first run, `-j2`, one 3-core runner per job) failed in these gr
   while JUCE copies the apps to `bin/plugins/Release/Standalone`. The archive now carries the apps; unpacking checks
   both executables before fetching ROMs or starting the journeys. The pipeline's shared tree carries these bundles too.
 - **SysEx pick fixtures.** Shard 2 of run 39121366982 skipped `mdSyxPickFirmwareTest` and `mmSyxPickFirmwareTest` because
-  `MD_SYX` and `MM_SYX` were unset. CI now supplies backups assembled from the committed SysEx corpus, the same fixtures
-  used for E2E imports. Both tests must run and pass; the no-skips check remains in place.
+  `MD_SYX` and `MM_SYX` were unset. The first pipeline trial supplied the committed corpus; the next head uses the full
+  private backups from R2, as requested by Radek. E2E imports retain their programmed corpus. Both pick tests must run
+  and pass; the no-skips check remains in place. The missing Monomachine factory-memory snapshot is a different file,
+  so `mdSysexLifecycleTest` remains excluded until it is available.
 
 ## Workflow hardening
 
