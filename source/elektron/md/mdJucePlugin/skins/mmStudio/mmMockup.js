@@ -3293,7 +3293,7 @@ function renderTop(){
  let m=rk.querySelector(".stepm");if(st&&!m)rk.insertAdjacentHTML("beforeend",'<span class="stepm">STEP</span>');else if(!st&&m)m.remove();if(S.ws==="seq"&&$("#seqscroll"))stepDraw()}
  renderPst();syncLockBudget()}
 /* line 2: fixed-width slots (as in the MD Editor v46), so values never push into COPY / CLR / PASTE */
-function L2(k,lab,val,title,ed,w=8,id=""){return`<span class="l2 ${ed?"ed":""}${ed?l2Mark(k):""}" style="width:${w}ch" ${k?`data-l2="${k}"`:""} ${title?`title="${title}"`:""}><small>${lab}</small><b ${id?`id="${id}"`:""}>${val}</b></span>`}
+function L2(k,lab,val,title,ed,w=8,id=""){return`<span class="l2 ${ed?"ed":""}${ed?l2Mark(k):""}" style="width:${w}ch" ${k?`data-l2="${k}"`:""}${ed&&k==="ptrn"?lgAttr("PATTERN TRANSPOSE"):""} ${title?`title="${title}"`:""}><small>${lab}</small><b ${id?`id="${id}"`:""}>${val}</b></span>`}
 function renderSub(){const t=S.sel,tr=trk(t);let h="";
  if(S.ws==="seq")h=L2("side","SEQ",S.side==="midi"?"MIDI":"SYNTH","SYNTH or MIDI: which six tracks the rail and the roll show. Click to switch.",1,9)+L2("len","LEN",S.len,"Pattern length 2-64 steps, shared by all tracks. Click = next page (16, 32, 48, 64, then 16 again), shift-click = back, scroll = one step.",1,6)+L2("dbl","","×2",`Double the pattern: ${S.len} to ${S.len*2} steps, the new half a copy of every track's steps and locks. One undo step.`,1,3)+L2("mult","SPD",S.mult,"Tempo multiplier: 1X, 2X, 3/4X, 3/2X. Click to step.",1,7)+L2("swing","SWG",S.swingAmt+"%","Swing 50-80 %, one amount per pattern. Drag or scroll.",1,7);
  else if(S.ws==="sound")h=L2("","TRK",tLabel(t),"",0,6)+L2("","",isMidiT(t)?"MIDI CH"+String(tr.ch).padStart(2,"0"):tr.m,isMidiT(t)?"LFOs are shared with T"+(t-5):machName(tr.m),0,11);
@@ -3346,7 +3346,7 @@ function setV(el,v){const[o,n,m,t,g]=ref(el);v=clamp(Math.round(v),g==="arp"&&n=
 /* a step of a value box (wheel, arrows): d values, or on a list the machine shows (B-149) d entries */
 function stepV(el,d){const m=ref(el)[2],v=getV(el);setV(el,m.tab?tabStep(m.tab,v,d):v+d)}
 function pc(g,n,{t,label,cls="",extra=""}={}){if(n==null)return`<div class="pc empty" aria-hidden="true"></div>`;
- return`<div class="pc ${cls}" role="slider" tabindex="0" data-g="${g}" data-n="${n}"${t!=null?` data-t="${t}"`:""} ${extra} aria-label="${label||n}"><span>${label||n}</span><b></b></div>`}
+ return`<div class="pc ${cls}" role="slider" tabindex="0" data-g="${g}" data-n="${n}"${t!=null?` data-t="${t}"`:""}${lgAttr(lgFor(g,n,t))} ${extra} aria-label="${label||n}"><span>${label||n}</span><b></b></div>`}
 function page8(t,pg){const names=pnames(t,pg);return Array.from({length:8},(_,i)=>names[i]?pc(pg,i,{t,label:names[i]}):pc(0,null)).join("")}
 function modBy(t,pg,i){const out=[];if(isMidiT(t))return out;const tr=trk(t);["LF1","LF2","LF3"].forEach((l,k)=>{const v=tr.v[l];if(v[7]>0&&LPAGES[v[0]]===pg&&v[1]===i)out.push(k+1)});return out}
 function syncControls(){
@@ -4584,7 +4584,7 @@ function arpTicks(t,span){const tr=trk(t),a=tr.arp;if(!a.MODE||!a.SPD)return[];i
 /* only the arp's length is drawn (as the grid fits the pattern's length), one step after it is a "+" that adds a step */
 const arpCols=a=>`repeat(${a.len},minmax(0,1fr))`;
 function arpCells(a){const n=a.len,cells=Array.from({length:n},(_,k)=>{const o=a.ofs[k],on=a.rhy[k],f=(Math.abs(o)/24).toFixed(4);
- return`<div class="ac ${on?"":"mute"}" data-ac="${k}" title="Step ${k+1}: ${on?"plays, offset "+(o>0?"+":"")+o:"muted"}. Click = mute, drag = offset.">`+`<span class="z"></span><i class="${o>=0?"up":"dn"}" style="${o>=0?`bottom:50%;height:max(2px,calc((50% - 8px)*${f}))`:`top:50%;height:calc((50% - 8px)*${f})`}"></i><b>${o?(o>0?"+":"")+o:k+1}</b></div>`});
+ return`<div class="ac ${on?"":"mute"}" data-ac="${k}"${lgAttr(`${tLabel(S.sel)} ARP STEP ${k+1}`)} title="Step ${k+1}: ${on?"plays, offset "+(o>0?"+":"")+o:"muted"}. Click = mute, drag = offset.">`+`<span class="z"></span><i class="${o>=0?"up":"dn"}" style="${o>=0?`bottom:50%;height:max(2px,calc((50% - 8px)*${f}))`:`top:50%;height:calc((50% - 8px)*${f})`}"></i><b>${o?(o>0?"+":"")+o:k+1}</b></div>`});
  return cells.join("")}
 /* The dock's tabs share one layout, the lock lane's: the rail's LOCK PARAMETER keys area holds the panel's
    choices as keys (a group label over each row, the lock-parameter key style), the dock body holds one row of
@@ -4595,15 +4595,15 @@ const dkGroup=(label,keys,n,attrs="")=>`<div class="dkg"><span class="dkl">${lab
 const dkAttr=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 const dkPlain=h=>h.replace(/<b>([^<]*)<\/b>/g,"$1:").replace(/<[^>]+>/g,"");
 function dockKeys(t,d){const tr=trk(t),midi=isMidiT(t);
- if(d==="arp"){const a=tr.arp;return dkGroup("Mode",ARPM.map((m,i)=>dkk(`data-v="${i}"`,a.MODE===i,m)).join(""),4,`data-set="arpmode"`)
-  +dkGroup("Play",ARPP.map((m,i)=>dkk(`data-v="${i}"`,a.PLAY===i,m)).join(""),5,`data-set="arpplay"`)
-  +dkGroup("Trig",midi?`<span class="dkna" title="MIDI arpeggiators have no envelope switches">none on MIDI</span>`:["amp","flt","lfo"].map(k=>dkk(`data-arptrig="${k}"`,a[k],k.toUpperCase(),`The arpeggiator's notes retrigger the ${k.toUpperCase()} envelope`)).join(""),3)}
- if(d==="trn"){const sc=tr.tr.SCALE;return dkGroup("Scale",SCALES.map((m,i)=>dkk(`data-v="${i}"`,sc===i,m)).join(""),4,`data-set="scale"`)
-  +`<div class="dkg"><span class="dkl">Key</span><span class="dkna" title="${sc>1?"Click a key on the keyboard to set the root":"KEY only matters for MAJ and MIN"}">${sc>1?KEYS[tr.tr.KEY]+" · click the keyboard":"only for MAJ and MIN"}</span></div>`}
+ if(d==="arp"){const a=tr.arp;return dkGroup("Mode",ARPM.map((m,i)=>dkk(`data-v="${i}"`,a.MODE===i,m)).join(""),4,`data-set="arpmode"${lgAttr(`${tLabel(t)} ARP MODE`)}`)
+  +dkGroup("Play",ARPP.map((m,i)=>dkk(`data-v="${i}"`,a.PLAY===i,m)).join(""),5,`data-set="arpplay"${lgAttr(`${tLabel(t)} ARP PLAY`)}`)
+  +dkGroup("Trig",midi?`<span class="dkna" title="MIDI arpeggiators have no envelope switches">none on MIDI</span>`:["amp","flt","lfo"].map(k=>dkk(`data-arptrig="${k}"`,a[k],k.toUpperCase(),`The arpeggiator's notes retrigger the ${k.toUpperCase()} envelope`)).join(""),3,midi?"":lgAttr(`${tLabel(t)} ARP TRIGS`))}
+ if(d==="trn"){const sc=tr.tr.SCALE;return dkGroup("Scale",SCALES.map((m,i)=>dkk(`data-v="${i}"`,sc===i,m)).join(""),4,`data-set="scale"${lgAttr(`${tLabel(t)} SCALE`)}`)
+  +`<div class="dkg"${lgAttr(`${tLabel(t)} KEY`)}><span class="dkl">Key</span><span class="dkna" title="${sc>1?"Click a key on the keyboard to set the root":"KEY only matters for MAJ and MIN"}">${sc>1?KEYS[tr.tr.KEY]+" · click the keyboard":"only for MAJ and MIN"}</span></div>`}
  if(d==="trig"){const tp=tr.trigpos??"";return dkGroup("Trig position",[dkk(`data-v=""`,tp==="","—","No forwarding")].concat([0,1,2,3,4,5].filter(k=>k!==t).map(k=>dkk(`data-v="${k}"`,tp===k,"T"+(k+1),"Also play "+tLabel(k)+" "+S.tracks[k].m))).join(""),6,`data-set="trigpos"`)
   +dkGroup("Port",["ALWAYS","LEGATO"].map((m,i)=>dkk(`data-v="${i}"`,tr.port===i,m,i?"ONLY LEGATO: glide only between overlapping notes":"Glide on every note")).join(""),2,`data-set="port"`)
   +dkGroup("Legato",["amp","flt","lfo"].map(k=>dkk(`data-leg="${k}"`,tr.leg[k],k.toUpperCase(),`On: the ${k.toUpperCase()} envelope still fires when notes overlap`)).join(""),3)}
- return dkGroup("Channel",Array.from({length:16},(_,k)=>dkk(`data-v="${k+1}"`,tr.ch===k+1,k+1,"MIDI channel "+(k+1))).join(""),8,`data-set="mch"`)
+ return dkGroup("Channel",Array.from({length:16},(_,k)=>dkk(`data-v="${k+1}"`,tr.ch===k+1,k+1,"MIDI channel "+(k+1))).join(""),8,`data-set="mch"${lgAttr(`${tLabel(t)} CHANNEL`)}`)
   +`<div class="dkg"><span class="dkl">LFOs</span><span class="dkna">shared with T${t-5} ${S.tracks[t-6].m}</span></div>`}
 /* the header: a readout and one help line */
 function dockRead(t,d){const tr=trk(t);
@@ -5288,12 +5288,12 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
  const mtCtl=S.mode==="multi"?`<span class="seg" data-set="mtmode">${MTM.map((m,i)=>`<button data-v="${i}" aria-pressed="${S.multi.mode===i}">${m}</button>`).join("")}</span>
    ${S.multi.mode===1?`<span class="stepper"><span class="ilab">Upper from</span><button data-strk="-1">−</button><b class="mono">T${S.multi.splitTrack}</b><button data-strk="1">+</button></span>`:""}
    ${S.multi.mode>=2?`<span class="stepper"><span class="ilab">Timing</span><button data-tim="-1">−</button><b class="mono">${TIMS[S.multi.timing]}</b><button data-tim="1">+</button></span>`:""}`:"";
- const asRow=(r,k)=>`<div class="asrow"><b>${k+1}</b><select id="asp${k}" aria-label="Assign ${k+1} page">${[...PAGES,"PTCH"].map(p=>opt(LPAGES.indexOf(p),p,r.pg)).join("")}</select><select id="asd${k}" aria-label="Assign ${k+1} destination">${destNames(t,r.pg).map((d,i)=>opt(i,d,r.d)).join("")}</select>${pc("asg",k,{t,label:"ADD"})}</div>`;
+ const asRow=(r,k)=>`<div class="asrow"><b>${k+1}</b><span class="lgw"${lgAttr(`T${t+1} ASSIGN ${ASN[S.asTab]} ${k+1} PAGE`)}><select id="asp${k}" aria-label="Assign ${k+1} page">${[...PAGES,"PTCH"].map(p=>opt(LPAGES.indexOf(p),p,r.pg)).join("")}</select></span><span class="lgw"${lgAttr(`T${t+1} ASSIGN ${ASN[S.asTab]} ${k+1} DEST`)}><select id="asd${k}" aria-label="Assign ${k+1} destination">${destNames(t,r.pg).map((d,i)=>opt(i,d,r.d)).join("")}</select></span>${pc("asg",k,{t,label:"ADD"})}</div>`;
  const joy=S.asTab.startsWith("JOY");
  const selTrack=`<span class="seg trksel" data-set="astrk">${[0,1,2,3,4,5].map(k=>{const p=S.mode==="poly";return`<button data-v="${k}" aria-pressed="${k===t}"${p?` class="${k===t?"polyt":"polyoff"}" title="${k===t?`T${k+1} plays POLY: six voices`:`Silent in POLY. Click: T${k+1} plays POLY instead`}"`:""}><b>T${k+1}</b><small>${shortM(S.tracks[k].m)}</small>${p&&k===t?`<em class="x6">×6</em>`:""}</button>`}).join("")}</span>`;
  const tabsH=`<span class="seg" data-set="astab">${Object.keys(A.tabs).map(k=>`<button data-v="${k}" aria-pressed="${S.asTab===k}">${k}</button>`).join("")}</span>`;
- const extrasH=`${S.asTab==="JOY RL"?`<button class="lkey" data-mirr="1" aria-pressed="${A.mirr}" title="Left = −right"><i class="led"></i>MIRR (left = −right)</button>`:""}
-    ${S.asTab==="KEY"?`<span class="keyrow"><button class="lkey" data-ktrk="hpf" aria-pressed="${A.hpf}"><i class="led"></i>HPF tracks keys</button><button class="lkey" data-ktrk="lpf" aria-pressed="${A.lpf}"><i class="led"></i>LPF tracks keys</button></span>`:""}`;
+ const extrasH=`${S.asTab==="JOY RL"?`<button class="lkey" data-mirr="1"${lgAttr(`T${t+1} ASSIGN MIRROR`)} aria-pressed="${A.mirr}" title="Left = −right"><i class="led"></i>MIRR (left = −right)</button>`:""}
+    ${S.asTab==="KEY"?`<span class="keyrow"><button class="lkey" data-ktrk="hpf"${lgAttr(`T${t+1} ASSIGN HPF`)} aria-pressed="${A.hpf}"><i class="led"></i>HPF tracks keys</button><button class="lkey" data-ktrk="lpf"${lgAttr(`T${t+1} ASSIGN LPF`)} aria-pressed="${A.lpf}"><i class="led"></i>LPF tracks keys</button></span>`:""}`;
  const hintH=`<div class="hint onel" title="${ASG_SAY[S.asTab]} ADD −64…+63.">${ASG_SAY[S.asTab]} ADD −64…+63.</div>`;
  const padH=`${joy?`<div class="joy" id="joy" title="Drag the stick. It springs back."><span class="cross"></span><span class="cross2"></span><small class="jl">L</small><small class="jr">R</small><small class="ju">U</small><small class="jd">D</small><span class="knobj" id="knobj" style="left:${50+S.joy.x*42}%;top:${50-S.joy.y*42}%"></span></div>`
      :`<div class="joy padinfo"><b>${S.asTab}</b><span>${ASG_SAY[S.asTab]}</span></div>`}`;
@@ -5365,15 +5365,29 @@ const LEVELPG=7;
 const learnGlobals=()=>LD().limits?.globals||[];
 const globalName=g=>{const x=learnGlobals().find(q=>q.g===g);return x?x.name:"#"+g};
 const MENV_N=["ATK","DEC","SUS","REL","PORT"];
-function globalIdOf(el){if(!el)return-1;if(el.dataset.g==="menv"){const k=MENV_N.indexOf(el.dataset.n);return k>=0?2+k:-1}if(el.id==="bpm")return 0;if(el.dataset.l2==="swing")return 7;
+function globalIdOf(el){if(!el)return-1;if(el.dataset.lgn)return globalByName(el.dataset.lgn);if(el.dataset.g==="menv"){const k=MENV_N.indexOf(el.dataset.n);return k>=0?2+k:-1}if(el.id==="bpm")return 0;if(el.dataset.l2==="swing")return 7;
  if(el.classList.contains("stepper")&&el.querySelector('[data-ga="tune"]'))return 1;return-1}
+/* part 2 (B-169): the page's own controls name their target: data-lgn="T1 ARP MODE" is the document's global of that name (limits.globals).
+   The names are the plug-in's (mmDesk.cpp defs): "<T1..T6|M1..M6> ARP|TRANSPOSE|KEY|SCALE|MIDI|CC1 NUMBER|CHANNEL ...", "T1 ASSIGN VEL 1 ADD",
+   "PATTERN TRANSPOSE". A list of choices (a mode, a page) is learned over its entries, the CC spread across them. */
+const ARPF={SPD:"SPEED",RNGE:"RANGE",OJMP:"OJMP",len:"LENGTH"},ASN={"JOY RL":"JOY R","JOY U":"JOY U","JOY D":"JOY D",VEL:"VEL",KEY:"KEY"};
+function lgFor(g,n,t){const x=t!=null?+t:S.sel;
+ switch(g){case"arp":return ARPF[n]?`${tLabel(x)} ARP ${ARPF[n]}`:"";case"trn":return`${tLabel(x)} TRANSPOSE`;case"ptrn":return"PATTERN TRANSPOSE";case"key":return`${tLabel(x)} KEY`;
+  case"asg":return`T${asgT()+1} ASSIGN ${ASN[S.asTab]} ${+n+1} ADD`;case"cc":return`${tLabel(x)} CC${+n+1} NUMBER`;case"MID":return x>=6?`${tLabel(x)} MIDI ${FIXED.MID[n]}`:""}
+ return""}
+const lgAttr=name=>name?` data-lgn="${name}"`:"";
+let LG={list:null,map:new Map()};
+function globalByName(n){const list=learnGlobals();if(LG.list!==list)LG={list,map:new Map(list.map(x=>[x.name,x.g]))};return LG.map.has(n)?LG.map.get(n):-1}
+/* the Add row's global values, one group per card (the tempo, a track's ARP, ASSIGN ...) */
+function globalOptions(){const groups=[],at={};learnGlobals().forEach(x=>{if(!(x.group in at)){at[x.group]=[];groups.push(x.group)}at[x.group].push(opt(x.g,x.name,""))});
+ return groups.map(g=>groups.length>1&&at[g].length>1?`<optgroup label="${g}">${at[g].join("")}</optgroup>`:at[g].join("")).join("")}
 const globalMaps=g=>LD().mappings.filter(m=>m.g===g);
 /* a global value's element: .mapped while a CC drives it, .learnt while LEARN waits for a knob for it */
 function markGlobal(el,gid){if(!el)return;const g=gid!=null?gid:globalIdOf(el),mp=g>=0?globalMaps(g):[];
  el.classList.toggle("mapped",mp.length>0);el.classList.toggle("learnt",g>=0&&!!S.learnT&&S.learnT.g===g);
- if(mp.length&&el.classList.contains("pc"))el.title="Mapped: "+mp.map(m=>"CC "+m.cc).join(", ")}
+ if(mp.length&&el.classList.contains("pc"))el.title="Mapped: "+mp.map(m=>"CC "+m.cc).join(", ");if(mp.length)el.dataset.mapped="CC "+mp.map(m=>m.cc).join(", ");else delete el.dataset.mapped}
 const inColumn=(m,c)=>c==null||(c==="g"?m.g!=null:m.t===c);
-const l2Mark=k=>{const g=k==="swing"?7:-1;return g<0?"":(globalMaps(g).length?" mapped":"")+(S.learnT&&S.learnT.g===g?" learnt":"")};
+const l2Mark=k=>{const g=k==="swing"?7:k==="ptrn"?globalByName("PATTERN TRANSPOSE"):-1;return g<0?"":(globalMaps(g).length?" mapped":"")+(S.learnT&&S.learnT.g===g?" learnt":"")};
 const knobRows=()=>S.ctl.sources.filter(x=>x.kind==="cc");
 /* a CC row: a knob row (any channel, the knob's CC) or "x<ch>:<cc>" for any other learned (channel, CC) */
 const rowIdOf=m=>{if(m.ch===255){const k=knobRows().find(x=>x.cc===m.cc);if(k)return k.id}return"x"+m.ch+":"+m.cc};
@@ -5463,8 +5477,8 @@ function renderControl(){const C=S.ctl,rows=ccRows();
   <div class="lnks">${ms.map(m=>`<div class="lnk"><span class="lcdchip" title="${tgtLabel(m)}">${tgtLabel(m)}</span><span class="note" style="grid-column:span 2">${m.mode==="RelativeSigned"?"Relative (signed)":m.mode==="RelativeOffset"?"Relative (offset)":"Absolute"}</span><span></span>
    <button class="ptog ${m.invert?"on":""}" data-minv="${m.index}"><i class="led"></i>Inv</button><button class="iconkey" data-mdel="${m.index}" aria-label="Remove mapping" title="Remove">×</button></div>${m.overrides&&m.overrides.length?`<div class="note" style="font-size:12px" data-ovr="${m.index}">${overrideLine(m)}</div>`:""}`).join("")||`<div class="note">Not mapped: this row does nothing yet.</div>`}</div>
   ${full?`<div class="note" data-learnnote="full">${limitMax()} mappings at most: remove one to add another.</div>`:""}
-  <div class="irow addrow"><span class="ilab">Add</span><select id="lt" aria-label="Target track">${ALLT.filter(i=>i<learnTracks()).map(i=>opt(i,tLabel(i)+" · "+trk(i).m,addG?-1:addT)).join("")}${opt("g","Global values (tempo, tune, multi env, swing)",addG?"g":-1)}</select>
-   <select id="lp" aria-label="Target value">${addG?learnGlobals().map(x=>opt(x.g,x.name,"")).join(""):learnOpts(addT)}</select><button class="cream" id="laddl"${full?" disabled":""}>Add target</button></div>
+  <div class="irow addrow"><span class="ilab">Add</span><select id="lt" aria-label="Target track">${ALLT.filter(i=>i<learnTracks()).map(i=>opt(i,tLabel(i)+" · "+trk(i).m,addG?-1:addT)).join("")}${opt("g","Global values (tempo, tune, transpose, arp, assign, MIDI tracks)",addG?"g":-1)}</select>
+   <select id="lp" aria-label="Target value">${addG?globalOptions():learnOpts(addT)}</select><button class="cream" id="laddl"${full?" disabled":""}>Add target</button></div>
   <div class="irow"><span class="ilab"></span><button data-addsrc="lfo">+ App LFO</button><button data-addsrc="rnd">+ Random</button></div></section>`;
  }else{
  const links=C.links.map((l,li)=>({l,li})).filter(o=>o.l.src===sel.id&&(C.selT==null||o.l.t===C.selT));
@@ -5510,12 +5524,14 @@ document.addEventListener("click",e=>{if(S.ws!=="control")return;const C=S.ctl;
  const as=e.target.closest("[data-addsrc]");if(as){const k=as.dataset.addsrc,n=C.sources.filter(x=>x.kind===k).length;const id=k+"X"+Date.now();C.sources.push(k==="lfo"?{id,kind:"lfo",label:"LFO "+"ABCDEFGH"[n],val:64,SHAPE:2,RATE:"1",DEPTH:80}:{id,kind:"rnd",label:"Random "+"ABCDEFGH"[n],val:64,RATE:"1/8",SMOOTH:0,_t:64});C.sel=id;ctlChanged();render();return}});
 document.addEventListener("change",e=>{if(e.target.id==="lt"){if(e.target.value==="g"){S.ctl.addG=true;if(S.ctl.selT!=null)S.ctl.selT="g"}else{S.ctl.addG=false;S.ctl.addT=+e.target.value;if(S.ctl.selT!=null)S.ctl.selT=S.ctl.addT}render()}});
 /* LEARN on the values that belong to no track (the top bar's tempo and swing, the multi envelope's knobs, the global page's master tune) */
-document.addEventListener("pointerdown",e=>{if(!S.learn)return;const el=e.target.closest(GLOBAL_LEARN_SEL),g=globalIdOf(el);if(g<0)return;
+document.addEventListener("pointerdown",e=>{if(!S.learn)return;const el=e.target.closest(GLOBAL_LEARN_SEL),g=globalIdOf(el);if(g<0){if(el&&el.dataset.lgn){e.preventDefault();e.stopPropagation();toast("This value cannot be learned.")}return}
  e.preventDefault();e.stopPropagation();
  if(LD().limits&&!learnGlobals().some(q=>q.g===g)){toast("This value cannot be learned.");return}
  S.learnT={g};markGlobalAll();toast(`Target: ${globalName(g)}. Now turn a knob on your controller, or press 1-8 for a knob row.`);if(HOST.learnTarget)HOST.learnTarget({...S.learnT})},true);
-const GLOBAL_LEARN_SEL='.pc[data-g="menv"], #bpm, .l2.ed[data-l2="swing"], .stepper';
-function markGlobalAll(){$$('.pc[data-g="menv"]').forEach(el=>markGlobal(el));markGlobal($("#bpm")&&$("#bpm").closest(".f"),0);$$("[data-l2='swing']").forEach(el=>markGlobal(el));$$("#globpop .stepper").forEach(el=>markGlobal(el))}
+const GLOBAL_LEARN_SEL='[data-lgn], .pc[data-g="menv"], #bpm, .l2.ed[data-l2="swing"], .stepper';
+/* LEARN is on: a click on a choice of the page picks the learn target and changes nothing */
+document.addEventListener("click",e=>{if(S.learn&&e.target.closest("[data-lgn]")){e.stopPropagation();e.preventDefault()}},true);
+function markGlobalAll(){$$('.pc[data-g="menv"]').forEach(el=>markGlobal(el));markGlobal($("#bpm")&&$("#bpm").closest(".f"),0);$$("[data-l2='swing']").forEach(el=>markGlobal(el));$$("#globpop .stepper").forEach(el=>markGlobal(el));$$("#main [data-lgn], .l2[data-lgn]").forEach(el=>markGlobal(el))}
 
 /* ---- shared/deskGlobal.js ---- */
 "use strict";
