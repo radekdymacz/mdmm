@@ -116,6 +116,7 @@ Learn is on in both editors. Mappings are saved with the project only. Check:
 5. In Cubase or Reaper (VST3): learn a relative encoder and turn it; the value does not jump back (the VST3 echo check), and the DAW records the turns as automation in write mode, one gesture per turn.
 6. HW MIDI engine (the page's engine menu): Learn shows it is off with its reason; CCs from the host pass to the machine untouched. Back on the emulator: Learn works again.
 7. Close the editor window while it waits for a controller: it stops waiting.
+8. B-169, values that belong to no track: LEARN a master effect value on the Mix page (Machinedrum: Rhythm Echo TIME), the tempo at the top and the SWG value; on the Monomachine the multi envelope ATK on the Perform tab, the tempo and the master tune on the Global page. Turn the controller knob: the value moves on the page and on the machine, Undo takes a whole turn back, the Control matrix shows the mapping in the FX column. Save, reopen: it is still there.
 
 ## Third tester round (0.8.0)
 

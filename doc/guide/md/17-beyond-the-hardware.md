@@ -252,6 +252,14 @@ The machine has no such function. A knob or fader on a MIDI controller can move 
 
 A button is learned the same way: press it and release it. It sends its highest value when pressed and its lowest when released. **Inv** turns that round. Notes are not learned. The notes that play each track are set in "MAP EDITOR" in chapter 10.
 
+### Values that belong to no track
+
+Every value the page lets you edit can be learned. That includes the four master effects on the Mix page (**Rhythm Echo**, **Gate Box**, **Master EQ** and **Dynamix**, eight values each), the **tempo** and, in the Pattern tab, the **SWG** and **ACC** values of the playing pattern. Click one in LEARN, as you would a sound value. On the Control page they have a column of their own, **FX**, at the right of the matrix. To add one without learning, choose **Global values** in the first list under **Add**, then the value in the second.
+
+A learned CC moves the value as a click on the page does: the machine, the page and **Undo** agree. A turn of a knob is one undo step. The CC spreads over the value's own range, so a knob covers 30 to 300 on the tempo, 50 to 80 on the swing and 0 to 15 on the accent. A relative knob steps by one.
+
+You cannot learn the LFO settings of a track, and names and choices such as a machine, a mute group or an output. A track's sound values are learned as before.
+
 ### Add a mapping without learning
 
 Select a row of the matrix. Under **Add** choose a track and a parameter, then click **Add target**. The same row can move several targets. A knob row listens on any channel. A CC learned from a controller listens on the channel it came on, and its row says which. The stepper on a knob row changes the CC that knob sends. Its targets follow in the same edit.

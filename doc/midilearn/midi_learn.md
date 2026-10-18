@@ -9,7 +9,7 @@ Since 0.8 the two editors have their own MIDI Learn. It is not the upstream plug
 A knob or fader on a MIDI controller moves a sound value of your choice, on any track. You pick the value, turn the knob, and the mapping exists. The machine's own control change map stays for everything you did not map.
 
 - Only control changes (CC) are learned. Notes are not: they stay the machine's (the Machinedrum key map in GLOBAL > Map, the Monomachine track channels).
-- A mapping is one (channel, CC) to one value of one track. One CC can move several values.
+- A mapping is one (channel, CC) to one value of one track, or to one value that belongs to no track (below). One CC can move several values.
 - It moves the value the way host automation does, so the knob on the page, the machine's sound and a DAW in write mode all follow.
 
 ## The LEARN gesture
@@ -27,10 +27,25 @@ Closing the editor window, leaving LEARN or changing the engine stops the waitin
 
 ## The CONTROL page
 
-- The matrix lists the eight knob rows, every learned CC and the app modulators against the tracks. Both editors show the plug-in's mappings, not page-local links (the Monomachine's old min, max and curve links of the knob rows are gone). The app LFO and Random rows keep their min, max and curve.
+- The matrix lists the eight knob rows, every learned CC and the app modulators against the tracks and, in one more column (FX), against the values that belong to no track. Both editors show the plug-in's mappings, not page-local links (the Monomachine's old min, max and curve links of the knob rows are gone). The app LFO and Random rows keep their min, max and curve.
 - The inspector of a CC row lists its targets with the mode, Inv and a remove key. Add (a track and a value, then Add target) is the same as learning, without a controller.
 - Dragging a knob row on the Monomachine page moves its targets.
 - LEARN's digits 1 to 8 give the clicked value the CC of that knob row, as set in the setup (`knobCcs`). Changing a knob row's CC moves the mappings of the row with it, in one edit and one undo step.
+
+## Values that belong to no track (B-169)
+
+Every value the page lets you edit can be learned, not only the track values. Click it in LEARN, or choose "Global values" in the Add row of the CONTROL page.
+
+| Editor | Learnable values that belong to no track (the id is what the project stores) |
+|---|---|
+| Machinedrum | RHYTHM ECHO (TIME, MOD, MFRQ, FB, FILTF, FILTW, MONO, LEV) 0-7, GATE BOX (DVOL, PRED, DEC, DAMP, HP, LP, GATE, LEV) 8-15, MASTER EQ (LF, LG, HF, HG, PF, PG, PQ, GAIN) 16-23, DYNAMIX (ATCK, REL, TRHD, RTIO, KNEE, HP, OUTG, MIX) 24-31, TEMPO 32 (30 to 300 BPM), SWING 33 (the playing pattern's, 50 to 80 %), ACCENT 34 (the pattern's amount, 0 to 15) |
+| Monomachine | TEMPO 0, MASTER TUNE 1 (400.0 to 499.9 Hz in tenths), MULTI ENV ATK DEC SUS REL PORT 2-6, SWING 7 (the playing pattern's, 50 to 80 %) |
+
+The Monomachine's FX are per track: they are the EFX page of each synth track, already track values. What is not learnable: the LFO settings of the Machinedrum, the Monomachine's MIDI tracks, ARP, ASSIGN and the transpose (set per track or per pattern in menus the machine reads as discrete choices), and anything that is a name, a choice or a structure rather than a number.
+
+How they move: the audio thread does not touch the machine. It hands the CC (id, mode, Inv, value) over a bounded ring to the message thread, and the session's step applies it as the page applies an edit: the desk's own command (`masterFx`, `tempo`, `swing`, `accentAmount`, `masterTune`, `multiEnv`), so the machine, the page, the undo history and the project agree. A run of CCs in one step is folded into one command per value (a relative knob turned fast adds up, an absolute one lands on its last value). A turn of a knob is one undo step (the same gesture until 0.4 s pass without a CC). The tempo, swing and accent follow the command's own range, so the 0 to 127 of an absolute CC is spread over 30 to 300, 50 to 80 or 0 to 15.
+
+A project keeps them as `{"ch", "cc", "g": id, "mode", "invert"}` in the same `mappings` member. A project from a 0.8 beta (track mappings only) reads as before; a build that does not know a global leaves that item out alone.
 
 ## A mapped CC beats the machine's own CC
 
@@ -54,7 +69,7 @@ Inv turns a mapping round. Values only 0 and 127 are always Absolute (a button).
 
 - 128 mappings at most. LEARN refuses the 129th and says so.
 - CC only, 16 channels or any channel.
-- Targets: the sound values the learn model lists for each track (the Monomachine's DATA page values and level). Values that cannot take the realtime path are not offered. MIDI page values stay unlearnable.
+- Targets: the sound values the learn model lists for each track (the Monomachine's DATA page values and level) and the values that belong to no track (above). Values that cannot take the realtime path are not offered. MIDI page values stay unlearnable.
 - No MIDI feedback to the controller (no motor faders or LED rings) and no mapping presets.
 - In a DAW's Read mode, host automation and the controller fight over the value, as with any plug-in.
 
