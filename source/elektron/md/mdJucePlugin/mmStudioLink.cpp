@@ -210,7 +210,8 @@ namespace mdJucePlugin
 	mmDesk::Telemetry MmStudioLink::readTelemetry()
 	{
 		// the handles again only when the facts name another device (DESIGN-audio-lock.md step 2)
-		const auto device = m_processor.machineFacts().deviceId;
+		const auto facts = m_processor.machineFacts();
+		const auto device = facts.deviceId;
 		if(!m_handlesKnown || device != m_handlesDevice)
 		{
 			m_handlesKnown = true;
@@ -230,6 +231,7 @@ namespace mdJucePlugin
 		mmDesk::Telemetry t;
 		if(!m_telemetry)
 			return t;
+		t.machineMs = static_cast<double>(facts.cycles) * 1000.0 / md::g_ucClockHz;
 		t.blocks = m_telemetry->blocks.load(std::memory_order_acquire);
 		t.step = m_telemetry->step.load(std::memory_order_relaxed);
 		const int running = m_telemetry->running.load(std::memory_order_relaxed);

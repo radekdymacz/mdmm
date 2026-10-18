@@ -80,10 +80,15 @@ namespace mmDesk
 	RecvSession::Out RecvSession::tick(const double _nowMs, const Telemetry& _t)
 	{
 		Out out;
-		// The machine's time: it stands still while the emulator does (its block count does not move).
-		const bool runs = _t.blocks == 0 || _t.blocks != m_lastBlocks;
-		if(runs && m_lastNowMs >= 0 && _nowMs > m_lastNowMs)
+		// Panel keys run in emulator time. Counting wall time whenever a block moved made a slow runner
+		// time out the entry macro before its keys were through, then queue EXIT over the unfinished macro.
+		const bool machineClock = _t.machineMs >= 0;
+		const bool runs = machineClock ? _t.machineMs != m_lastMachineMs : _t.blocks == 0 || _t.blocks != m_lastBlocks;
+		if(machineClock && m_lastMachineMs >= 0 && _t.machineMs > m_lastMachineMs)
+			m_clock += _t.machineMs - m_lastMachineMs;
+		else if(!machineClock && runs && m_lastNowMs >= 0 && _nowMs > m_lastNowMs)
 			m_clock += _nowMs - m_lastNowMs;
+		m_lastMachineMs = _t.machineMs;
 		m_lastNowMs = _nowMs;
 		m_lastBlocks = _t.blocks;
 		if(!runs)
