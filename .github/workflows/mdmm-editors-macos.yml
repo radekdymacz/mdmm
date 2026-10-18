@@ -21,6 +21,11 @@ name: MD/MM Editors macOS
 
 on:
   workflow_call:
+    inputs:
+      build_tree:
+        description: Keep the tests job's build tree for the firmware stage (artifact macos-build-tree)
+        type: boolean
+        default: false
   workflow_dispatch:
 
 permissions:
@@ -123,7 +128,7 @@ jobs:
           name: macos-mdmm-universal
           path: artifacts/macos-mdmm/Gearmulator-Elektron-macOS-*.zip
           if-no-files-found: error
-          retention-days: 14
+          retention-days: ${{ startsWith(github.ref, 'refs/heads/release/') && 30 || 14 }}
 
   tests:
     name: macOS unit and plug-in tests (arm64, no ThinLTO, ccache)
@@ -166,7 +171,7 @@ jobs:
             -DCMAKE_OBJC_COMPILER_LAUNCHER=ccache -DCMAKE_OBJCXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DXCODE_VERSION=16 \
             -DGEARMULATOR_MDMM_APPLE_THINLTO=OFF -DGEARMULATOR_MDMM_APPLE_PGO_MODE=none \
-            -DBUILD_TESTING=ON -Dgearmulator_BUILD_JUCEPLUGIN=ON -Dgearmulator_BUILD_JUCEPLUGIN_VST3=ON \
+            -DBUILD_TESTING=ON -DMDMM_FW_TIMEOUT_SCALE=3 -Dgearmulator_BUILD_JUCEPLUGIN=ON -Dgearmulator_BUILD_JUCEPLUGIN_VST3=ON \
             -Dgearmulator_BUILD_JUCEPLUGIN_AU=ON -Dgearmulator_BUILD_JUCEPLUGIN_Standalone=ON
 
       - name: Build and run the tests
@@ -179,6 +184,26 @@ jobs:
           home="${RUNNER_TEMP}/test-home"
           mkdir -p "${home}/Documents"
           HOME="${home}" GEARMULATOR_DATA_ROOT="${home}/Documents/" ./scripts/macos/mdmm_unit_tests.sh build
+
+      # The firmware stage (mdmm-ci.yml stage 3) runs on this very tree: it builds the rest of the firmware test
+      # programs on top of it and does not configure or compile again. Same workspace path on the next runner, so
+      # the absolute paths in the CMake cache stay true. One day is enough: it is a hand-over inside one run.
+      - name: Pack the build tree for the firmware stage
+        if: ${{ inputs.build_tree }}
+        run: |
+          set -euo pipefail
+          tar -cf - build | gzip -1 > "${RUNNER_TEMP}/macos-build-tree.tar.gz"
+          ls -l "${RUNNER_TEMP}/macos-build-tree.tar.gz"
+
+      - name: Upload the build tree
+        if: ${{ inputs.build_tree }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: macos-build-tree
+          path: ${{ runner.temp }}/macos-build-tree.tar.gz
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
 
       - name: Compiler cache statistics
         if: always()
@@ -255,7 +280,7 @@ jobs:
           name: macos-vst3host
           path: ${{ runner.temp }}/out/mdmmVst3EditorHost-macOS.zip
           if-no-files-found: error
-          retention-days: 14
+          retention-days: ${{ startsWith(github.ref, 'refs/heads/release/') && 30 || 14 }}
 
   smoke:
     name: Start the standalones, VST3s and AUs (${{ matrix.os }})

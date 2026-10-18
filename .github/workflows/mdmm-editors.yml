@@ -5,15 +5,20 @@ name: MD/MM Editors
 #   mdmm-editors-macos.yml    universal package (macos-15) -> start test + auval + pluginval on macos-14 and -15
 #   mdmm-editors-windows.yml  x64 package (LTCG only for a release) -> start test + pluginval; unit tests in parallel (no /GL)
 #   mdmm-editors-linux.yml    x64 archives (22.04, unit tests) -> start test + pluginval on 22.04 and 24.04
-# The packages stay as this run's artifacts (macos-mdmm-universal, windows-mdmm, linux-mdmm, 14 days). A tag's
-# release (mdmm-editors-release.yml) takes them from the successful run of the tag's commit instead of building
-# again, and calls this workflow only when there is none.
+# Stage 2 of mdmm-ci.yml (doc/release/CI.md) calls this workflow for every push to main and release/**; the only
+# push trigger left here is for the windows and linux feature branches. The packages stay as the artifacts of that
+# run (macos-mdmm-universal, windows-mdmm, linux-mdmm; 30 days on a release branch, else 14). A tag's release
+# (mdmm-editors-release.yml) takes them from the green mdmm-ci run of the tag's commit instead of building again.
 
 on:
   workflow_call:
     inputs:
       ltcg:
         description: Windows with whole-program optimisation (/GL, /LTCG), for a release
+        type: boolean
+        default: false
+      build_tree:
+        description: Keep the macOS test tree for the firmware stage (artifact macos-build-tree)
         type: boolean
         default: false
   workflow_dispatch:
@@ -24,11 +29,8 @@ on:
         default: false
   push:
     branches:
-      - "release/md-mm-*"
-      - "release/0.*"
       - "feat/windows-*"
       - "feat/linux-*"
-      - "ci/**"
     paths:
       - ".github/workflows/mdmm-editors.yml"
       - ".github/workflows/mdmm-editors-macos.yml"
@@ -75,6 +77,8 @@ concurrency:
 jobs:
   macos:
     uses: ./.github/workflows/mdmm-editors-macos.yml
+    with:
+      build_tree: ${{ inputs.build_tree || false }}
 
   windows:
     uses: ./.github/workflows/mdmm-editors-windows.yml

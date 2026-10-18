@@ -124,7 +124,7 @@ jobs:
           name: linux-mdmm
           path: artifacts/linux-mdmm/*.tar.gz
           if-no-files-found: error
-          retention-days: 14
+          retention-days: ${{ startsWith(github.ref, 'refs/heads/release/') && 30 || 14 }}
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

@@ -1,13 +1,16 @@
 name: MD/MM Editors release installers
 
 # This fork's own release job (doc/modern-ux/UPSTREAM.md): upstream's elektron-prerelease.yml and
-# elektron-macos.yml stay as they are. On an mdmm-v* tag this takes the packages that mdmm-editors.yml built and
-# tested for the tag's commit (the push of that commit ran it: the fixture-free universal macOS bundles, the
-# Windows zip, the Linux archives, with their start tests and pluginval), so nothing is built twice: `locate` finds
-# that run (waiting for it while it runs), and only when there is none (the commit's push did not touch the editors,
-# its artifacts expired after 14 days, or it failed) `build` calls mdmm-editors.yml here. It then packages the two
-# macOS installers and attaches them to the release, and one "not-tested" archive per machine and platform for
-# Windows and Linux to the same release while it is a draft (doc/release/LINUX.md).
+# elektron-macos.yml stay as they are. It builds nothing for a release: on an mdmm-v* tag, `locate` finds the
+# mdmm-ci.yml run of the tag's commit (doc/release/CI.md: stages 0 to 4, one run per SHA) and takes the packages that
+# run built and tested (the fixture-free universal macOS bundles, the Windows zip with LTCG, the Linux archives, with
+# their start tests and pluginval). It REFUSES a commit without a fully green mdmm-ci run (firmware stage included);
+# only a hand run on the tag with `allow_unverified` goes round that, and then builds here when there is no run.
+# It then packages the two macOS installers and attaches them to the release, and one "not-tested" archive per
+# machine and platform for Windows and Linux to the same release while it is a draft (doc/release/LINUX.md).
+#
+# Stage 4 of mdmm-ci.yml calls this workflow as a dry run (workflow_call, reuse_current_run) on every release-branch
+# push, so the installers are made and tested before the tag, from the same packages the tag reuses.
 #
 # The in-app updates' ed25519 signatures are not made here: publishing the release runs
 # mdmm-site-release.yml, which signs the assets as published (a hand-uploaded asset wins over this job's,
@@ -27,29 +30,43 @@ on:
   push:
     tags:
       - "mdmm-v*"
-  # No dry run on every release-branch push any more (doc/release/CI.md): run this by hand with dry_run to rehearse.
+  # Stage 4 of mdmm-ci.yml: the dry run on the packages of that same run.
+  workflow_call:
+    inputs:
+      dry_run:
+        description: Make and test the installers, attach nothing to any release
+        type: boolean
+        default: true
+      reuse_current_run:
+        description: The packages are artifacts of the calling run (mdmm-ci.yml stage 2), not of an earlier one
+        type: boolean
+        default: false
+  # By hand: dry_run to rehearse on a branch (uses the newest green run of the branch head, else builds here).
   workflow_dispatch:
     inputs:
       dry_run:
         description: Build and test everything, attach nothing to any release
         type: boolean
         default: true
+      allow_unverified:
+        description: EMERGENCY ONLY, on a tag. Publish although no green mdmm-ci run (firmware included) exists for the commit
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
-# One dry run per commit; a newer push to the branch does not cancel one that is already testing installers.
+# One run per ref; a newer push to the branch does not cancel one that is already testing installers.
 concurrency:
-  group: mdmm-release-${{ github.event.workflow_run.head_sha || github.ref }}-${{ github.event_name }}
+  group: mdmm-release-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: false
 
 jobs:
-  # The run of mdmm-editors.yml that built and tested this commit: the newest successful one whose packages have not
-  # expired. One still running is waited for. None: `build` below makes one in this run.
+  # The run that built and tested this commit: the newest fully green mdmm-ci.yml run whose packages have not expired
+  # (on a branch dry run by hand also a green mdmm-editors.yml run). One still running is waited for. None: on a tag
+  # this FAILS (no green mdmm-ci run, firmware included, no release); a hand run on a branch builds in `build` below.
   locate:
-    name: Find the tested build of this commit
-    # From CI (workflow_run): only a successful push run.
-    if: ${{ github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push') }}
+    name: Find the green CI run of this commit
     runs-on: ubuntu-latest
     timeout-minutes: 150
     permissions:
@@ -61,18 +78,34 @@ jobs:
       - id: find
         env:
           GH_TOKEN: ${{ github.token }}
-          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          SHA: ${{ github.sha }}
+          REUSE_CURRENT: ${{ inputs.reuse_current_run && 'true' || 'false' }}
+          ALLOW_UNVERIFIED: ${{ inputs.allow_unverified && 'true' || 'false' }}
         run: |
           set -euo pipefail
+          # Stage 4 of mdmm-ci.yml: the packages are in the calling run (this run id, for a called workflow).
+          if [[ "${REUSE_CURRENT}" == "true" ]]; then
+            echo "run_id=${GITHUB_RUN_ID}" >> "${GITHUB_OUTPUT}"
+            echo "Using the packages of this very run (mdmm-ci.yml stage 2)"
+            exit 0
+          fi
           wanted="macos-mdmm-universal macos-vst3host windows-mdmm linux-mdmm"
+          is_tag=false
           # A tag's release ships the whole-program-optimised Windows files (a push's build is not): that
-          # flavour's marker artifact is required, else this run builds them (below).
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then wanted="${wanted} windows-mdmm-ltcg"; fi
+          # flavour's marker artifact is required, else this run builds them (below). A release branch's
+          # mdmm-ci run builds that flavour.
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then is_tag=true; wanted="${wanted} windows-mdmm-ltcg"; fi
+          workflows="mdmm-ci.yml"
+          if [[ "${is_tag}" != true || "${ALLOW_UNVERIFIED}" == "true" ]]; then workflows="mdmm-ci.yml mdmm-editors.yml"; fi
           deadline=$(( $(date +%s) + 140 * 60 ))
           while :; do
-            runs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/mdmm-editors.yml/runs?head_sha=${SHA}&per_page=50" \
-              --jq '.workflow_runs | sort_by(.created_at) | reverse | .[] | "\(.id) \(.status) \(.conclusion) \(.event) \(.html_url)"')"
-            echo "${runs:-no run of mdmm-editors.yml for ${SHA}}"
+            runs=""
+            for wf in ${workflows}; do
+              r="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${wf}/runs?head_sha=${SHA}&per_page=50" \
+                --jq '.workflow_runs | sort_by(.created_at) | reverse | .[] | "\(.id) \(.status) \(.conclusion) \(.event) \(.html_url)"')"
+              runs+="${r:+${r}$'\n'}"
+            done
+            echo "${runs:-no run of ${workflows} for ${SHA}}"
             found=""
             while read -r id status conclusion _event url; do
               [[ -n "${id}" && "${status}" == completed && "${conclusion}" == success ]] || continue
@@ -89,7 +122,11 @@ jobs:
               sleep 60
               continue
             fi
-            echo "::notice title=Building here::No successful mdmm-editors.yml run with packages for ${SHA}: this run builds and tests them"
+            if [[ "${is_tag}" == true && "${ALLOW_UNVERIFIED}" != "true" ]]; then
+              echo "::error title=No green CI for this commit::No fully green mdmm-ci.yml run with unexpired packages exists for ${SHA}. The tag must be on the release-branch head whose mdmm-ci run (stages 0 to 4, firmware included) is green. Nothing is published. Emergency only: re-run this workflow by hand on the tag with allow_unverified."
+              exit 1
+            fi
+            echo "::notice title=Building here::No green run with packages for ${SHA}: this run builds and tests them"
             break
           done
           echo "run_id=${found}" >> "${GITHUB_OUTPUT}"
@@ -99,8 +136,8 @@ jobs:
     if: needs.locate.outputs.run_id == ''
     uses: ./.github/workflows/mdmm-editors.yml
     with:
-      # A tag's release gets LTCG Windows files; a dry run on a branch tries the push flavour.
-      ltcg: ${{ startsWith(github.ref, 'refs/tags/') }}
+      # A tag's release and a release branch get the LTCG Windows files (what ships).
+      ltcg: ${{ startsWith(github.ref, 'refs/tags/') || startsWith(github.ref, 'refs/heads/release/') }}
 
   # The website links to releases/latest/download/<name>, so these file names
   # are fixed: Machinedrum-Editor-macOS.pkg, Monomachine-Editor-macOS.pkg, and
@@ -131,7 +168,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 1
           submodules: false
 
@@ -310,7 +347,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 1
           submodules: false
 
@@ -403,7 +440,7 @@ jobs:
   macos-publish:
     name: Attach the macOS installers to the draft release
     needs: [macos-installers, macos-tests]
-    if: ${{ !cancelled() && needs.macos-installers.result == 'success' && needs.macos-tests.result == 'success' && github.event_name != 'workflow_run' && !inputs.dry_run && startsWith(github.ref, 'refs/tags/mdmm-v') }}
+    if: ${{ !cancelled() && needs.macos-installers.result == 'success' && needs.macos-tests.result == 'success' && !inputs.dry_run && startsWith(github.ref, 'refs/tags/mdmm-v') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -416,7 +453,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 1
           submodules: false
 
@@ -537,7 +574,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 1
           submodules: false
 
@@ -583,7 +620,7 @@ jobs:
   other-platforms:
     name: Windows and Linux archives (not tested by a person) on the draft release
     needs: [macos-publish, package-other]
-    if: ${{ !cancelled() && needs.macos-publish.result == 'success' && needs.package-other.result == 'success' && github.event_name != 'workflow_run' && !inputs.dry_run && startsWith(github.ref, 'refs/tags/mdmm-v') }}
+    if: ${{ !cancelled() && needs.macos-publish.result == 'success' && needs.package-other.result == 'success' && !inputs.dry_run && startsWith(github.ref, 'refs/tags/mdmm-v') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -646,7 +683,7 @@ jobs:
   checksums:
     name: SHA256SUMS on the draft release
     needs: [other-platforms]
-    if: ${{ !cancelled() && needs.other-platforms.result == 'success' && github.event_name != 'workflow_run' && !inputs.dry_run && startsWith(github.ref, 'refs/tags/mdmm-v') }}
+    if: ${{ !cancelled() && needs.other-platforms.result == 'success' && !inputs.dry_run && startsWith(github.ref, 'refs/tags/mdmm-v') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
