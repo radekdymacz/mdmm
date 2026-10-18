@@ -115,8 +115,12 @@ Full run 39137700253's last shard passed both private SysEx pick tests and MIDI 
 when switching from internal back to external clock. Its later notes/playback failures followed that failed switch.
 The same transport test passed in the preceding full run. The memory and transport tests now print the command
 results and global/receive state on failure; memory also prints the differing byte values, to distinguish delivery
-from persistence without weakening either assertion. Focused run 39145772797 has passed the MM lane journey; MD is
-still running. Full run 39144796389 was cancelled while queued so an already failing candidate is not rebuilt.
+from persistence without weakening either assertion. Focused run 39145772797 passed the MM lane journey and MD lane
+tools/slide drawing. MD kit-line clicking now passes; its drag check recorded the undo baseline before the previous
+undo's history arrived (1 before, 1 after). The journey now requires both the removed lock and the restored history
+count before the next drag. Run 39147100397 diagnoses the two MM firmware failures. Full runs 39145760796 and
+39147093453 were cancelled while focused debugging continues, avoiding redundant editor and firmware builds.
+Full run 39144796389 was cancelled while queued so an already failing candidate is not rebuilt.
 Keep the existing assertions and the release gate intact.
 PGO training on main passed in run 39126917819: the downloaded profile parses, its hash matches, and all four recorded
 emulator source trees match this branch. It is included with its metadata.
