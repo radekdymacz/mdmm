@@ -89,7 +89,7 @@ function renderTop(){
  let m=rk.querySelector(".stepm");if(st&&!m)rk.insertAdjacentHTML("beforeend",'<span class="stepm">STEP</span>');else if(!st&&m)m.remove();if(S.ws==="seq"&&$("#seqscroll"))stepDraw()}
  renderPst();syncLockBudget()}
 /* line 2: fixed-width slots (as in the MD Editor v46), so values never push into COPY / CLR / PASTE */
-function L2(k,lab,val,title,ed,w=8,id=""){return`<span class="l2 ${ed?"ed":""}" style="width:${w}ch" ${k?`data-l2="${k}"`:""} ${title?`title="${title}"`:""}><small>${lab}</small><b ${id?`id="${id}"`:""}>${val}</b></span>`}
+function L2(k,lab,val,title,ed,w=8,id=""){return`<span class="l2 ${ed?"ed":""}${ed?l2Mark(k):""}" style="width:${w}ch" ${k?`data-l2="${k}"`:""} ${title?`title="${title}"`:""}><small>${lab}</small><b ${id?`id="${id}"`:""}>${val}</b></span>`}
 function renderSub(){const t=S.sel,tr=trk(t);let h="";
  if(S.ws==="seq")h=L2("side","SEQ",S.side==="midi"?"MIDI":"SYNTH","SYNTH or MIDI: which six tracks the rail and the roll show. Click to switch.",1,9)+L2("len","LEN",S.len,"Pattern length 2-64 steps, shared by all tracks. Click = next page (16, 32, 48, 64, then 16 again), shift-click = back, scroll = one step.",1,6)+L2("dbl","","×2",`Double the pattern: ${S.len} to ${S.len*2} steps, the new half a copy of every track's steps and locks. One undo step.`,1,3)+L2("mult","SPD",S.mult,"Tempo multiplier: 1X, 2X, 3/4X, 3/2X. Click to step.",1,7)+L2("swing","SWG",S.swingAmt+"%","Swing 50-80 %, one amount per pattern. Drag or scroll.",1,7);
  else if(S.ws==="sound")h=L2("","TRK",tLabel(t),"",0,6)+L2("","",isMidiT(t)?"MIDI CH"+String(tr.ch).padStart(2,"0"):tr.m,isMidiT(t)?"LFOs are shared with T"+(t-5):machName(tr.m),0,11);
@@ -155,6 +155,7 @@ function syncControls(){
   if(PAGES.includes(g)||g==="MID"){const pid=g+"."+n;el.classList.toggle("lk",S.locks.has(lkKey(t,pid)));const mb=modBy(t,g,+n);let md=el.querySelector(".mod");
    if(mb.length){if(!md){md=document.createElement("i");md.className="mod";el.appendChild(md)}md.textContent="~"+mb.join("");el.title=`Modulated by LFO ${mb.join(" + ")}`}else if(md)md.remove();
    const mp=S.ctl.links.some(l=>l.t===t&&l.pid===pid)||LD().mappings.some(m=>m.t===t&&m.pg!==LEVELPG&&PAGES[m.pg]===g&&m.i===+n);el.classList.toggle("mapped",mp)}});
+ markGlobalAll();
  $$("#main [data-show]").forEach(el=>{const t=+el.dataset.show;el.textContent=trk(t).lev});
  if(typeof syncDock==="function")syncDock();
  if(typeof syncRevert==="function")syncRevert()}

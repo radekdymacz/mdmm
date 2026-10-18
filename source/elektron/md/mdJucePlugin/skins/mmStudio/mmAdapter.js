@@ -358,10 +358,11 @@
 	/* ---------------- LEARN: the plug-in's MIDI learn (persistent, per plug-in) ---------------- */
 	/* a value the plug-in's learn takes: one of the learn document's limits */
 	function learnable(lt) {
+		if (lt.g != null) { const G = learn && learn.limits && learn.limits.globals; return !!G && G.some(q => q.g === lt.g); }	/* B-169: a value that belongs to no track */
 		const L = learn && learn.limits, [pg, i] = lt.pid.split("."), p = PAGES.indexOf(pg);
 		return !!L && lt.t < L.tracks && L.params.some(q => q.pg === p && q.i === +i);
 	}
-	const learnRef = lt => { const [pg, i] = lt.pid.split("."); return { t: lt.t, pg: PAGES.indexOf(pg), i: +i }; };
+	const learnRef = lt => { if (lt.g != null) return { g: lt.g }; const [pg, i] = lt.pid.split("."); return { t: lt.t, pg: PAGES.indexOf(pg), i: +i }; };
 	const notLearnable = "The plug-in's MIDI learn cannot map this value (MIDI page values are NRPN on the machine).";
 	let leftLogged = "";
 	function onLearn(doc) {
@@ -571,7 +572,7 @@
 			send(Object.assign({ op: "learnAdd", cc }, learnRef(lt)), { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } });
 		},
 		/* the CC rows' Add target (a: cc, ch (255: any), t, pg, i), Inv and x: the plug-in's mappings */
-		learnAdd(a) { send(Object.assign({ op: "learnAdd", cc: a.cc, t: a.t, pg: a.pg, i: a.i }, a.ch === 255 ? {} : { ch: a.ch }), { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); },
+		learnAdd(a) { send(Object.assign({ op: "learnAdd", cc: a.cc }, a.g != null ? { g: a.g } : { t: a.t, pg: a.pg, i: a.i }, a.ch === 255 ? {} : { ch: a.ch }), { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); },
 		learnInvert(index) { send({ op: "learnInvert", index }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); },
 		learnRemove(index) { send({ op: "learnRemove", index }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); },
 		/* the Control workspace's LFO and Random sources and their links: the plug-in runs them */

@@ -267,6 +267,15 @@ function setV(el, v) {
 	else sendControl(el, v);
 	syncControls(); redraw();
 }
+/* a global value's element: .mapped while a CC drives it, .learnt while LEARN waits for a knob for it (the title says which CC) */
+function markGlobal(el, gid) {
+	if (!el) return;
+	const g = gid != null ? gid : globalIdOf(el), mp = g >= 0 ? globalMaps(g) : [];
+	el.classList.toggle("mapped", mp.length > 0);
+	el.classList.toggle("learnt", g >= 0 && !!S.ctl.learnT && S.ctl.learnT.g === g);
+	if (mp.length) el.dataset.mapped = "CC " + mp.map(m => m.cc).join(", "); else delete el.dataset.mapped;
+	if (mp.length && el.classList.contains("pc")) el.title = "Mapped: " + mp.map(m => "CC " + m.cc).join(", ");
+}
 /* ===== Controls: sync in place, never rebuild while dragging ===== */
 function syncControls() {
 	$$("#main [data-g]").forEach(el => {
@@ -285,6 +294,10 @@ function syncControls() {
 		/* a lock on LFOS, LFOD or LFOM shows on the LFO section's SPD, DEPTH, SHMIX (the same kit parameters) */
 		if (el.classList.contains("pc") && !["mfx", "src", "link", "lev"].includes(el.dataset.g)) el.classList.toggle("lk", V.locks.has(lk(el.dataset.t != null ? +el.dataset.t : S.sel, el.dataset.g === "lfo" ? lfoRtName(el.dataset.n, el.dataset.t != null ? +el.dataset.t : S.sel) : el.dataset.n)));
 	});
+	/* B-169: the values that belong to no track (the master effects, and the top bar's tempo, swing and accent) show their mapping and the LEARN target the same way */
+	$$("#main .pc[data-g='mfx']").forEach(el => markGlobal(el));
+	markGlobal($("#bpm")?.closest(".f"), 32);
+	$$("[data-l2='swing'],[data-l2='accAmt']").forEach(el => markGlobal(el));
 	$$("#main [data-show]").forEach(el => el.textContent = V.tracks[+el.dataset.show].rt.VOL ?? "—");
 	syncRevert();
 }
