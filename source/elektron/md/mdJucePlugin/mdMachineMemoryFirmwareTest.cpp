@@ -441,6 +441,35 @@ namespace
 			return {};
 		}
 
+		void describePage()
+		{
+			bool machine = false, global = false;
+			int results = 0;
+			for(auto it = m_pageIn.rbegin(); it != m_pageIn.rend(); ++it)
+			{
+				const auto message = elektronData::json::parse(*it);
+				if(!message)
+					continue;
+				const auto* type = message->find("type");
+				const auto* kind = message->find("kind");
+				if(type && type->isString() && type->asString() == "result" && results++ < 4)
+					std::printf("  page result: %s\n", it->c_str());
+				if(!global && kind && kind->isString() && kind->asString() == "global")
+				{
+					global = true;
+					std::printf("  page global: %s\n", it->c_str());
+				}
+				if(!machine && type && type->isString() && type->asString() == "machine")
+				{
+					machine = true;
+					if(const auto* doc = message->find("doc"))
+						for(const auto* field : {"lifecycle", "global", "recv", "loading", "status", "pending"})
+							if(const auto* value = doc->find(field))
+								std::printf("  page %s: %s\n", field, elektronData::json::write(*value).c_str());
+				}
+			}
+		}
+
 		Bytes projectState()
 		{
 			juce::MemoryBlock block;
@@ -1267,6 +1296,14 @@ int main(const int _argc, char** _argv)
 			}, 15000), md ? "the standalone's tempo change is saved with its global" : "the standalone's sync change is saved with its global");
 		}
 		const auto before = fileStore().at({Kind::Global, 0}).bytes;
+		const auto describeGlobal = [&](Session& _session, const Bytes& _file)
+		{
+			const auto live = mdJucePlugin::machineMemory::slotBytes(*g, _session.patch());
+			for(size_t i = 0; i < live.size(); ++i)
+				if(live[i] != _file[i])
+					std::printf("  global byte %03zx: file %02x, machine %02x\n", i, _file[i], live[i]);
+			_session.describePage();
+		};
 		auto hostKept = [&](const Bytes& _after)
 		{
 			bool kept = true;
@@ -1283,7 +1320,10 @@ int main(const int _argc, char** _argv)
 		pump(3000);
 		check(fileStore().at({Kind::Global, 0}).bytes == before, "the host's tempo and sync are not saved");
 		daw.page(md ? R"({"op":"globalSet","field":"baseChannel","v":2})" : R"({"op":"globalMidi","base":2})");
-		check(until([&] { return fileStore().at({Kind::Global, 0}).bytes != before; }, 15000), "another global change is");
+		const bool globalSaved = until([&] { return fileStore().at({Kind::Global, 0}).bytes != before; }, 15000);
+		if(!globalSaved)
+			describeGlobal(daw, before);
+		check(globalSaved, "another global change is");
 		check(hostKept(fileStore().at({Kind::Global, 0}).bytes), "with the other instance's newer tempo and sync, not this one's");
 		// a DAW project opens (a new base, the project's tempo): the same
 		daw.processor->setMachineMemoryFollowsHostForTest(true);
@@ -1296,6 +1336,7 @@ int main(const int _argc, char** _argv)
 		const bool projectSaved = until([&] { return fileStore().at({Kind::Global, 0}).bytes != beforeProject; }, 15000);
 		if(!projectSaved)
 		{
+			describeGlobal(daw, beforeProject);
 			const auto live = mdJucePlugin::machineMemory::slotBytes(*g, daw.patch());
 			std::printf("  project global: file -> machine:%s; result %s; looks %llu, writes %llu\n",
 				Session::diff(beforeProject, live).c_str(), daw.lastPageResult().c_str(),
