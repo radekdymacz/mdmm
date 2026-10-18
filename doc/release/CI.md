@@ -39,6 +39,10 @@ tests (`mdPageBridgeTest`, `mdMachineMidiOutTest`, ...) are registered.
 
 ## Firmware tests on CI
 
+**Status (2026-10-18, end of session).** Works: ROM fetch; the build-once-and-shard layout (`changes`, `build-tests`, `build-e2e`, four ctest shards, E2E per machine, `train_pgo` dispatch input, `workflow_call`); a targeted MD E2E run (4 journeys, `--jobs 1`) was green; ctest shards 4/4 green and 1/4 red only on `mdLearnFirmwareTest_md` step 6 (B-169 global learn: "a learned CC moves the rhythm echo's MOD", a new test of the B-169 work, probably not CI); shards 2 and 3 were still running.
+Red or open: no full green run of all jobs yet (a full E2E of both machines at `--jobs 1` has not finished once: every push to main by another session cancelled the run, so start it with Run workflow, whose group is its own); `mdSysexLifecycleTest` is left out (its Monomachine patch fixture exists nowhere); the PGO training job was never run.
+Next: dispatch the workflow on main (`gh workflow run mdmm-firmware.yml --ref main`), read the failed logs once, fix the B-169 step 6 failure (or confirm it with the B-169 owner), then dispatch with `train_pgo` and commit the `pgo-profile` artifact.
+
 `mdmm-firmware.yml` runs the tests that need the Elektron ROMs, so nobody runs them on a Mac. Triggers: push to `main`
 and `release/**`, Run workflow, nightly 02:30 UTC. Never a pull request. The ROM jobs run in the GitHub environment
 `rom`; main cancels an older run, `release/**` queues:
