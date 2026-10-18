@@ -67,9 +67,17 @@ tests (`mdPageBridgeTest`, `mdMachineMidiOutTest`, ...) are registered.
 
 ## Firmware tests on CI
 
-**Status (2026-10-18, end of session).** Works: ROM fetch; the build-once-and-shard layout (`changes`, `build-tests`, `build-e2e`, four ctest shards, E2E per machine, `train_pgo` dispatch input, `workflow_call`); a targeted MD E2E run (4 journeys, `--jobs 1`) was green; ctest shards 4/4 green and 1/4 red only on `mdLearnFirmwareTest_md` step 6 (B-169 global learn: "a learned CC moves the rhythm echo's MOD", a new test of the B-169 work, probably not CI); shards 2 and 3 were still running.
-Red or open: no full green run of all jobs yet (a full E2E of both machines at `--jobs 1` has not finished once: every push to main by another session cancelled the run, so start it with Run workflow, whose group is its own); `mdSysexLifecycleTest` is left out (its Monomachine patch fixture exists nowhere); the PGO training job was never run.
-Next: dispatch the workflow on main (`gh workflow run mdmm-firmware.yml --ref main`), read the failed logs once, fix the B-169 step 6 failure (or confirm it with the B-169 owner), then dispatch with `train_pgo` and commit the `pgo-profile` artifact.
+**Status (2026-10-18, resumed).** The pipeline, artifact fixes and SysEx fixture setup are on `codex/continue-0.8.0`,
+being validated on `release/0.0.0-ci-test`. Local actionlint, archive extraction and package-gating checks pass. The first
+trial passed stage 0; it was replaced before the expensive stages to include the missing SysEx inputs and new PGO profile.
+PGO training on main passed in run 39126917819: the downloaded profile parses, its hash matches, and all four recorded
+emulator source trees match this branch. It is included with its metadata.
+
+No full green firmware run yet. Older runs failed B-169's final global-learn checks on both machines (the longer waits
+in `81335ff2e` still need CI confirmation), skipped the SysEx pick tests without backups, and had no apps in the E2E archive.
+The latter two are fixed in this branch (details below). `mdSysexLifecycleTest` retains its existing exclusion because its
+Monomachine factory-memory fixture is unavailable. Next: get the complete pipeline green, then merge the tested changes
+into main and `release/0.8.0` before tagging.
 
 `mdmm-firmware.yml` runs the tests that need the Elektron ROMs. It is stage 3 of `mdmm-ci.yml`, and can also run by hand
 or at 02:30 UTC nightly. Its separate push trigger is removed so each push runs firmware once. Never a pull request.
