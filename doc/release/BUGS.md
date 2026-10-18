@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-169 · Both: MIDI Learn cannot map the global FX parameters (and maybe other non-track parameters)
+
+- **From:** Radek, 2026-10-18 (0.8.0 hand test): "global FX params should be MIDI mappable and learnable, all parameters should be mappable".
+- **Found:** the Machinedrum learn model is 16 tracks x 25 parameters (the 24 kit values and the level, `mdDeskSetup.h:29`); the kit FX (RHYTHM ECHO, GATE BOX, MASTER EQ, DYNAMIX, 32 parameters) are not in it. The Monomachine model (`SetupSpec::learn` in `mmDesk.h`) is per track too; its FX and other non-track parameters need the same check.
+- **Should:** every parameter on the page can be learned and mapped (FX, and any other global page parameter), saved with the project like the track mappings (doc/midilearn/DESIGN-learn-0.8.md).
+- **Status:** open. Radek decides whether it goes into 0.8.0 (the tag already waits for the firmware CI).
+
 ## B-168 · Monomachine: the page says a lock on a step with no trig is ignored, the machine plays it (fixed in 0.8.0)
 
 - **From:** Claude Code, 2026-10-17, firmware probe `w13mmslide` (case M, `gapProbesFirmwareTest.cpp`).
