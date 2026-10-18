@@ -955,7 +955,8 @@ const MdJourneys = (() => {
 				machine: c => { const keep = soloKeep(), want = [...Array(16).keys()].filter(i => i !== c.b && !keep.has(i)); return ok(want.every(i => mutes().includes(i)) && !mutes().includes(c.b), "machine mutes " + mutes()); }, within: 8000 },
 			{ say: "the machine starts over (the page drops its solo) and the page is made again: the solo comes back", act: async (u, c) => {
 				window.gm.recv([{ type: "reset" }]); await until(() => !S.soloSet.size, 2000); c.dropped = !S.soloSet.size; Bridge.ready(); await until(() => S.soloSet.has(c.b), 6000); await settledMutes(); },
-				screen: c => ok(c.dropped && S.soloSet.has(c.b) && S.soloSet.size === 1 && pressed(`.strip[data-sel="${c.b}"] .ms.s`) && pressed(`.strip[data-sel="${c.m}"] .ms.m`), `solo ${[...S.soloSet]}, dropped ${c.dropped}`),
+				/* Restored solo state can arrive before the start-up card has finished fading out. The next click needs the page uncovered. */
+				screen: c => ok(c.dropped && $1("#bootcard").hidden && S.soloSet.has(c.b) && S.soloSet.size === 1 && pressed(`.strip[data-sel="${c.b}"] .ms.s`) && pressed(`.strip[data-sel="${c.m}"] .ms.m`), `solo ${[...S.soloSet]}, dropped ${c.dropped}, startup card hidden ${$1("#bootcard").hidden}`),
 				machine: c => { const keep = soloKeep(), want = [...Array(16).keys()].filter(i => i !== c.b && !keep.has(i)); return ok(want.every(i => mutes().includes(i)) && !mutes().includes(c.b), "machine mutes " + mutes()); }, within: 10000 },
 			{ say: "click S again: the solo ends and the mute you had stays", act: async (u, c) => { u.click(`.strip[data-sel="${c.b}"] .ms.s`); await settledMutes(); },
 				screen: c => ok(!S.soloSet.size && pressed(`.strip[data-sel="${c.m}"] .ms.m`) && !pressed(`.strip[data-sel="${c.b}"] .ms.m`), `solo ${[...S.soloSet]}`),
