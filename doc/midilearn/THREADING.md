@@ -124,7 +124,7 @@ above, then set `MDMM_MIDI_MAPPING` to 1. `usesMidiLearn()` follows the switch, 
 
 A mapping can name a global target (`LearnTarget::global >= 0`, no `param`): the master effects, the tempo, the pattern's
 swing and so on. The audio thread does nothing to the machine for them. `LearnRouter::translate` consumes the CC (so it
-never reaches the firmware) and `queueGlobal` pushes one 32-bit record (id, mode, Inv, value) into `m_globalRing`, a
+never reaches the firmware) and `queueGlobal` pushes one 32-bit record (16-bit id, mode, Inv, value; the Monomachine has 591 targets) into `m_globalRing`, a
 single-producer single-consumer ring of 1024 records: a relaxed store of the record, then a release store of the write
 index; a full ring drops the newest record and counts it, never blocks. No lock, no allocation, no pointer. The message
 thread drains it in the session step (`MidiLearnCommands::takeGlobals`) and `deskCore::Desk::applyLearnGlobals` folds the

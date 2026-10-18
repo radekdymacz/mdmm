@@ -38,14 +38,16 @@ Every value the page lets you edit can be learned, not only the track values. Cl
 
 | Editor | Learnable values that belong to no track (the id is what the project stores) |
 |---|---|
-| Machinedrum | RHYTHM ECHO (TIME, MOD, MFRQ, FB, FILTF, FILTW, MONO, LEV) 0-7, GATE BOX (DVOL, PRED, DEC, DAMP, HP, LP, GATE, LEV) 8-15, MASTER EQ (LF, LG, HF, HG, PF, PG, PQ, GAIN) 16-23, DYNAMIX (ATCK, REL, TRHD, RTIO, KNEE, HP, OUTG, MIX) 24-31, TEMPO 32 (30 to 300 BPM), SWING 33 (the playing pattern's, 50 to 80 %), ACCENT 34 (the pattern's amount, 0 to 15) |
-| Monomachine | TEMPO 0, MASTER TUNE 1 (400.0 to 499.9 Hz in tenths), MULTI ENV ATK DEC SUS REL PORT 2-6, SWING 7 (the playing pattern's, 50 to 80 %) |
+| Machinedrum | RHYTHM ECHO (TIME, MOD, MFRQ, FB, FILTF, FILTW, MONO, LEV) 0-7, GATE BOX (DVOL, PRED, DEC, DAMP, HP, LP, GATE, LEV) 8-15, MASTER EQ (LF, LG, HF, HG, PF, PG, PQ, GAIN) 16-23, DYNAMIX (ATCK, REL, TRHD, RTIO, KNEE, HP, OUTG, MIX) 24-31, TEMPO 32 (30 to 300 BPM), SWING 33 (the playing pattern's, 50 to 80 %), ACCENT 34 (the pattern's amount, 0 to 15); part 2: the LFO page of every track, 35 + 5 t + field (TRCK 0-15, PARAM 0-23, SHP1 0-5, SHP2 0-5, UPDTE 0-2), 115 in all |
+| Monomachine | TEMPO 0, MASTER TUNE 1 (400.0 to 499.9 Hz in tenths), MULTI ENV ATK DEC SUS REL PORT 2-6, SWING 7 (the playing pattern's, 50 to 80 %); part 2: PATTERN TRANSPOSE 8 (-64 to 63), per track T1-T6 then M1-M6 the TRANSPOSE (-64 to 63), SCALE (0-3) and KEY (0-11), the ARP of each track (PLAY 0-4, OJMP 0-15, MODE 0-3, RANGE 0-8, SPEED 0-127, TRIGS 0-7 on a synth track, LENGTH 1-16 and the 16 STEP values, the top of the range being a muted step), ASSIGN of each synth track (the five sources JOY R, JOY U, JOY D, VEL, KEY, two rows each, PAGE 0-8, DEST 0-7, ADD -64 to 63; MIRROR, HPF, LPF), and the six MIDI tracks (the eight values of the MIDI page, the four CC numbers 0-128 where 128 is AFT, the channel 0-15), 591 in all |
 
-The Monomachine's FX are per track: they are the EFX page of each synth track, already track values. What is not learnable: the LFO settings of the Machinedrum, the Monomachine's MIDI tracks, ARP, ASSIGN and the transpose (set per track or per pattern in menus the machine reads as discrete choices), and anything that is a name, a choice or a structure rather than a number.
+The ids are append-only: the list is built in a fixed order in `mdDesk.cpp` and `mmDesk.cpp` (the names are the page's: `T3 ARP MODE`, `T1 ASSIGN VEL 2 ADD`, `M2 MIDI VEL`), and a saved project names a target by its id. The Monomachine's FX are per track: they are the EFX page of each synth track, already track values.
+
+A choice (an LFO shape, an arpeggiator mode, an ASSIGN page or destination, the scale) is learned like a number: the target's range is its list, so the CC spreads over the entries (an absolute knob picks the entry its position falls on, a relative one steps through the list). Names (a kit name, a pattern name) are not learnable, and nothing that is a structure rather than a value (a machine, a mute group, an output, a step's note).
 
 How they move: the audio thread does not touch the machine. It hands the CC (id, mode, Inv, value) over a bounded ring to the message thread, and the session's step applies it as the page applies an edit: the desk's own command (`masterFx`, `tempo`, `swing`, `accentAmount`, `masterTune`, `multiEnv`), so the machine, the page, the undo history and the project agree. A run of CCs in one step is folded into one command per value (a relative knob turned fast adds up, an absolute one lands on its last value). A turn of a knob is one undo step (the same gesture until 0.4 s pass without a CC). The tempo, swing and accent follow the command's own range, so the 0 to 127 of an absolute CC is spread over 30 to 300, 50 to 80 or 0 to 15.
 
-A project keeps them as `{"ch", "cc", "g": id, "mode", "invert"}` in the same `mappings` member. A project from a 0.8 beta (track mappings only) reads as before; a build that does not know a global leaves that item out alone.
+A project keeps them as `{"ch", "cc", "g": id, "mode", "invert"}` in the same `mappings` member. A project from a 0.8 beta (track mappings only) or from the first B-169 build (ids below 35 and 8) reads as before; a build that does not know a global leaves that item out alone. A record in the ring holds a 16-bit id (591 targets do not fit in 8 bits).
 
 ## A mapped CC beats the machine's own CC
 
@@ -69,7 +71,7 @@ Inv turns a mapping round. Values only 0 and 127 are always Absolute (a button).
 
 - 128 mappings at most. LEARN refuses the 129th and says so.
 - CC only, 16 channels or any channel.
-- Targets: the sound values the learn model lists for each track (the Monomachine's DATA page values and level) and the values that belong to no track (above). Values that cannot take the realtime path are not offered. MIDI page values stay unlearnable.
+- Targets: the sound values the learn model lists for each track (the Monomachine's DATA page values and level) and the values that belong to no track (above). Values that cannot take the realtime path are not offered. The Monomachine's MIDI-track values are global targets (above), not track targets.
 - No MIDI feedback to the controller (no motor faders or LED rings) and no mapping presets.
 - In a DAW's Read mode, host automation and the controller fight over the value, as with any plug-in.
 
