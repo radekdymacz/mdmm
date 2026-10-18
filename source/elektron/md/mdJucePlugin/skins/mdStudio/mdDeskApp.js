@@ -298,6 +298,7 @@ function syncControls() {
 	$$("#main .pc[data-g='mfx']").forEach(el => markGlobal(el));
 	markGlobal($("#bpm")?.closest(".f"), 32);
 	$$("[data-l2='swing'],[data-l2='accAmt']").forEach(el => markGlobal(el));
+	$$("#main [data-lgf]").forEach(el => markGlobal(el));
 	$$("#main [data-show]").forEach(el => el.textContent = V.tracks[+el.dataset.show].rt.VOL ?? "—");
 	syncRevert();
 }
