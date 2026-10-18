@@ -1293,7 +1293,16 @@ int main(const int _argc, char** _argv)
 		const auto beforeProject = fileStore().at({Kind::Global, 0}).bytes;
 		check(daw.deskReady(), "its editor has read the machine again");
 		check(daw.pageOk(md ? R"({"op":"globalSet","field":"baseChannel","v":3})" : R"({"op":"globalMidi","base":3})"), "a global change: " + daw.lastPageResult());
-		check(until([&] { return fileStore().at({Kind::Global, 0}).bytes != beforeProject; }, 15000), "a global change in the project is saved");
+		const bool projectSaved = until([&] { return fileStore().at({Kind::Global, 0}).bytes != beforeProject; }, 15000);
+		if(!projectSaved)
+		{
+			const auto live = mdJucePlugin::machineMemory::slotBytes(*g, daw.patch());
+			std::printf("  project global: file -> machine:%s; result %s; looks %llu, writes %llu\n",
+				Session::diff(beforeProject, live).c_str(), daw.lastPageResult().c_str(),
+				static_cast<unsigned long long>(daw.processor->machineMemoryCost().looks),
+				static_cast<unsigned long long>(daw.processor->machineMemoryCost().writes));
+		}
+		check(projectSaved, "a global change in the project is saved");
 		check(hostKept(fileStore().at({Kind::Global, 0}).bytes), "with the file's tempo and sync, not the project's");
 	}
 	{

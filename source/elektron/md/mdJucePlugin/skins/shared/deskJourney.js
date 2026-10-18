@@ -517,7 +517,8 @@ const Journey = (() => {
 				{ say: "again, and Start from factory memory: the saved memory is gone", act: async hands => {
 					await hands.pick("engsel", "reset"); await until(() => !!dlgKey("Start from factory memory…"), 2000); hands.click(dlgKey("Start from factory memory…"));
 					await until(() => !!dlgKey("Start from factory memory"), 2000); hands.click(dlgKey("Start from factory memory")); },
-					screen: () => ok(!dlgOn() && saved() === "0", "saved " + saved()) }
+					/* The file is removed after the replacement machine has booted and its memory has been read. */
+					screen: () => ok(!dlgOn() && saved() === "0", "saved " + saved()), within: 120000 }
 			],
 			tidy: async hands => { if (dlgOn() && dlgKey("Cancel")) hands.click(dlgKey("Cancel")); if (keepSays() === "KEEP MEMORY: OFF") await hands.pick("engsel", "memoryKeep"); }
 		};

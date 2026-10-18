@@ -755,7 +755,7 @@ const MdJourneys = (() => {
 			{ say: "click Ramp up: the machine holds a lock on every step with a trig, rising", act: u => u.click(".xlane [data-xs=up]"), screen: () => ok($all("#lane .xghost").length === 0, "ghosts stay"),
 				machine: c => { const m = new Map(locksOf(c.t, c.i)), v = c.s.map(s => m.get(s)); return ok(idle() && v.length >= 3 && v.every((x, i) => x != null && (!i || x > v[i - 1])), "locks in the machine: " + v); }, within: 8000 },
 			{ say: "click Undo once: the machine's lane is as it was (the shape was one step)", act: async u => { await until(idle, 3000); await sleep(300); u.click("#undo"); }, machine: c => ok(idle() && JSON.stringify(locksOf(c.t, c.i)) === c.m0, "locks " + JSON.stringify(locksOf(c.t, c.i))), within: 9000 },
-			{ say: "click Flat five times: the machine holds 50, 75, 100, 25 and 0 % (the lock value 0 is a lock)", act: async (u, c) => { c.vals = []; for (let i = 0; i < 5; i++) { u.click(".xlane [data-xs=flat]"); await until(idle, 4000); await sleep(300); const m = new Map(locksOf(c.t, c.i)); c.vals.push(c.s.map(s => m.get(s)).join("/")); } },
+			{ say: "click Flat five times: the machine holds 50, 75, 100, 25 and 0 % (the lock value 0 is a lock)", act: async (u, c) => { c.vals = []; for (const want of [64, 95, 127, 32, 0]) { u.click(".xlane [data-xs=flat]"); await until(() => { const m = new Map(locksOf(c.t, c.i)); return idle() && c.s.every(s => m.get(s) === want); }, 8000); const m = new Map(locksOf(c.t, c.i)); c.vals.push(c.s.map(s => m.get(s)).join("/")); } },
 				screen: () => ok(true), machine: c => ok(c.vals.join(" ") === [64, 95, 127, 32, 0].map(v => c.s.map(() => v).join("/")).join(" "), c.vals.join(" ")), within: 4000 },
 			{ say: "the Flat icon at 0 % differs from the one at 25 %, and the lane still shows the locks", screen: c => ok($1(".xlane [data-xs=flat] path:not([opacity])") && $all("#lane .lb:not(.none) i").length >= c.s.length, "no bars: " + $all("#lane .lb:not(.none) i").length) },
 			{ say: "click Inv: the machine holds 127; then Undo seven times: the lane is as at the start", act: async (u, c) => { u.click(".xlane [data-xt=invert]"); await until(idle, 4000); await sleep(300); const m = new Map(locksOf(c.t, c.i)); c.inv = c.s.map(s => m.get(s)).join("/"); for (let i = 0; i < 7; i++) { u.click("#undo"); await until(idle, 4000); await sleep(300); } },
@@ -1295,7 +1295,7 @@ const MdJourneys = (() => {
 		steps: [
 			{ say: "open GLOBAL: ROUTING fits the dialog", act: u => u.pick("engsel", "global"), screen: () => { const p = $1("#globpop").getBoundingClientRect(), keys = $all('#globpop [data-ga="route"]'); return ok(keys.length === 16 && keys.every(k => { const r = k.getBoundingClientRect(); return r.left >= p.left - 1 && r.right <= p.right + 1 && r.bottom <= p.bottom + 1; }), keys.length + " route keys"); } },
 			{ say: "click track 1's output", act: (u, c) => { c.o0 = Docs.global.routing[0]; u.click('#globpop [data-ga="route"][data-t="0"]'); }, machine: c => ok(Docs.global.routing[0] !== c.o0, "routing " + Docs.global.routing[0]), within: 6000 },
-			{ say: "click it until it is back", act: async (u, c) => { for (let k = 0; k < 8 && Docs.global.routing[0] !== c.o0; k++) { u.click('#globpop [data-ga="route"][data-t="0"]'); await sleep(800); } }, machine: c => ok(Docs.global.routing[0] === c.o0, "routing " + Docs.global.routing[0]) },
+			{ say: "click it until it is back", act: async (u, c) => { for (let k = 0; k < 8 && Docs.global.routing[0] !== c.o0; k++) { const before = Docs.global.routing[0]; u.click('#globpop [data-ga="route"][data-t="0"]'); await until(() => Docs.global.routing[0] !== before && idle(), 6000); } }, machine: c => ok(Docs.global.routing[0] === c.o0, "routing " + Docs.global.routing[0]) },
 			esc
 		]
 	};
@@ -2944,7 +2944,7 @@ const MdJourneys = (() => {
 				c.with = V.tracks.map((t, i) => t.trigs.slice(0, V.len).some(Boolean) && audible(i) ? i : -1).filter(i => i >= 0); c.cnt = Object.keys(DeskTrig.count).filter(k => DeskTrig.count[k] !== (c.c0[k] || 0)).map(Number); },
 				screen: c => ok(c.fl.size > 0 && [...c.fl].every(i => c.with.includes(i)) && c.cnt.every(i => c.with.includes(i)), `drawn ${[...c.fl]}; counted ${c.cnt}; tracks with trigs ${c.with}`) },
 			{ say: "press STOP: every square is out", act: async u => { if (V.playing) u.click("#play"); await until(() => !V.playing, 5000); await sleep(500); }, screen: () => ok($all(".trigsq").every(e => e.getAnimations().length === 0), "a square still flashes") },
-			{ say: "mute a track that has trigs", act: (u, c) => { c.t = c.with[0]; u.click(`.strip[data-sel="${c.t}"] [data-mute]`); }, screen: c => ok(!audible(c.t), "still audible") },
+			{ say: "mute a track that has trigs", act: (u, c) => { c.t = c.with[0]; u.click(`.strip[data-sel="${c.t}"] [data-mute]`); }, screen: c => ok(!audible(c.t), "still audible"), machine: c => ok(mutes().includes(c.t) && idle(), "the machine has not confirmed the mute"), within: 8000 },
 			{ say: "play 2 s again: the muted track's square never flashes", act: async (u, c) => { c.c1 = { ...DeskTrig.count }; if (!V.playing) u.click("#play"); await until(() => V.playing, 5000); await sleep(2000); if (V.playing) u.click("#play"); await until(() => !V.playing, 5000); },
 				screen: c => ok((DeskTrig.count[c.t] || 0) === (c.c1[c.t] || 0) && Object.keys(DeskTrig.count).some(k => DeskTrig.count[k] !== (c.c1[k] || 0) || c.with.length < 2), "track " + c.t + " counted " + ((DeskTrig.count[c.t] || 0) - (c.c1[c.t] || 0))), within: 8000 }
 		],
@@ -3457,7 +3457,8 @@ const MdJourneys = (() => {
 		name: "md-control-learn-globals", proves: [],
 		steps: [
 			{ say: "LEARN on, the Mix tab: a master effect's value is outlined and a click sends learnStart with its global id", act: async (u, c) => { await learnIn(u, c, gdoc([])); c.n = learnSent.mark(); u.click("#learnkey"); u.click(tab("mix")); await sleep(300);
-				c.el = $1('#main .pc[data-g="mfx"][data-f="gate"][data-n="DEC"]'); u.click('#main .pc[data-g="mfx"][data-f="gate"][data-n="DEC"]'); },
+				c.el = $1('#main .pc[data-g="mfx"][data-f="gate"][data-n="DEC"]'); u.click('#main .pc[data-g="mfx"][data-f="gate"][data-n="DEC"]');
+				if (!Journey.pageTier() && !await until(() => Docs.learn?.learning?.g === 10, 6000)) throw new Error("the plug-in did not acknowledge the global learn target"); },
 				screen: () => ok(S.ctl.learnT && S.ctl.learnT.g === 10, "target " + JSON.stringify(S.ctl.learnT)),
 				machine: c => { const m = learnSent.since(c.n).find(x => x.op === "learnStart"); return ok(m && m.g === 10 && m.t == null, "sent " + JSON.stringify(learnSent.since(c.n))); } },
 			{ say: "the plug-in has seen one value: CONTROL names the target GATE BOX DEC", act: async (u, c) => { window.gm.recv([gdoc([], { learning: { g: 10, name: "x", got: 1, need: 2 } })]); await sleep(100); u.click(tab("control")); await sleep(300); },
