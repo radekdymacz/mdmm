@@ -3134,7 +3134,7 @@ _ZN5mc68k5Mc68kD2Ev
 
 _ZN5mc68k9memoryOps4readIN2md15MicrocontrollerEhLb0EEET0_RT_j
 # Func Hash:
-8697365550860543299
+11240862023359646594
 # Num Counters:
 8
 # Counter Values:
@@ -3149,7 +3149,7 @@ _ZN5mc68k9memoryOps4readIN2md15MicrocontrollerEhLb0EEET0_RT_j
 
 _ZN5mc68k9memoryOps4readIN2md15MicrocontrollerEjLb0EEET0_RT_j
 # Func Hash:
-3172637998521652437
+13957772306495697102
 # Num Counters:
 10
 # Counter Values:
@@ -3166,7 +3166,7 @@ _ZN5mc68k9memoryOps4readIN2md15MicrocontrollerEjLb0EEET0_RT_j
 
 _ZN5mc68k9memoryOps4readIN2md15MicrocontrollerEjLb1EEET0_RT_j
 # Func Hash:
-3172637998521652437
+13957772306495697102
 # Num Counters:
 10
 # Counter Values:
@@ -3183,7 +3183,7 @@ _ZN5mc68k9memoryOps4readIN2md15MicrocontrollerEjLb1EEET0_RT_j
 
 _ZN5mc68k9memoryOps4readIN2md15MicrocontrollerEtLb0EEET0_RT_j
 # Func Hash:
-14595439021133551210
+4607690271820718230
 # Num Counters:
 9
 # Counter Values:
@@ -3199,7 +3199,7 @@ _ZN5mc68k9memoryOps4readIN2md15MicrocontrollerEtLb0EEET0_RT_j
 
 _ZN5mc68k9memoryOps4readIN2md15MicrocontrollerEtLb1EEET0_RT_j
 # Func Hash:
-14595439021133551210
+4607690271820718230
 # Num Counters:
 9
 # Counter Values:
@@ -3226,7 +3226,7 @@ _ZN5mc68k9memoryOps5read8IN2md15MicrocontrollerELb0EEEhRT_j
 
 _ZN5mc68k9memoryOps5writeIN2md15MicrocontrollerEhEEvRT_jT0_
 # Func Hash:
-175973585
+2749585
 # Num Counters:
 2
 # Counter Values:
@@ -3235,7 +3235,7 @@ _ZN5mc68k9memoryOps5writeIN2md15MicrocontrollerEhEEvRT_jT0_
 
 _ZN5mc68k9memoryOps5writeIN2md15MicrocontrollerEjEEvRT_jT0_
 # Func Hash:
-1651880226799162694
+14926253111999402073
 # Num Counters:
 5
 # Counter Values:
@@ -3247,7 +3247,7 @@ _ZN5mc68k9memoryOps5writeIN2md15MicrocontrollerEjEEvRT_jT0_
 
 _ZN5mc68k9memoryOps5writeIN2md15MicrocontrollerEtEEvRT_jT0_
 # Func Hash:
-188950191142417489
+2952346736600145
 # Num Counters:
 3
 # Counter Values:
@@ -3279,7 +3279,7 @@ _ZN5mc68k9memoryOps6read16IN2md15MicrocontrollerELb1EEEtRT_j
 
 _ZN5mc68k9memoryOps6read32IN2md15MicrocontrollerELb0EEEjRT_j
 # Func Hash:
-2895231320142929
+45237989377105
 # Num Counters:
 3
 # Counter Values:
@@ -3289,7 +3289,7 @@ _ZN5mc68k9memoryOps6read32IN2md15MicrocontrollerELb0EEEjRT_j
 
 _ZN5mc68k9memoryOps6read32IN2md15MicrocontrollerELb1EEEjRT_j
 # Func Hash:
-2894621534131409
+706694710353
 # Num Counters:
 3
 # Counter Values:
@@ -3383,7 +3383,7 @@ _ZN6asmjit9_abi_1_1016OperandSignature10fromOpTypeENS0_11OperandTypeE
 # Num Counters:
 1
 # Counter Values:
-596867
+596108
 
 _ZN6asmjit9_abi_1_1016OperandSignature12fromRegGroupENS0_8RegGroupE
 # Func Hash:
@@ -3391,7 +3391,7 @@ _ZN6asmjit9_abi_1_1016OperandSignature12fromRegGroupENS0_8RegGroupE
 # Num Counters:
 1
 # Counter Values:
-178613
+177391
 
 _ZN6asmjit9_abi_1_1016OperandSignature13fromPredicateEj
 # Func Hash:
@@ -3399,7 +3399,7 @@ _ZN6asmjit9_abi_1_1016OperandSignature13fromPredicateEj
 # Num Counters:
 1
 # Counter Values:
-344582
+343826
 
 _ZN6asmjit9_abi_1_1016OperandSignature15fromMemBaseTypeENS0_7RegTypeE
 # Func Hash:
@@ -3407,7 +3407,7 @@ _ZN6asmjit9_abi_1_1016OperandSignature15fromMemBaseTypeENS0_7RegTypeE
 # Num Counters:
 1
 # Counter Values:
-159701
+159698
 
 _ZN6asmjit9_abi_1_1016OperandSignature16fromMemIndexTypeENS0_7RegTypeE
 # Func Hash:
@@ -3423,7 +3423,7 @@ _ZN6asmjit9_abi_1_1016OperandSignature5resetEv
 # Num Counters:
 1
 # Counter Values:
-2116385
+2112312
 
 _ZN6asmjit9_abi_1_1016OperandSignature8setFieldILj4278190080ELj24EEEvj
 # Func Hash:
@@ -3431,7 +3431,7 @@ _ZN6asmjit9_abi_1_1016OperandSignature8setFieldILj4278190080ELj24EEEvj
 # Num Counters:
 1
 # Counter Values:
-149407
+149404
 
 _ZN6asmjit9_abi_1_1016OperandSignature8setFieldILj507904ELj14EEEvj
 # Func Hash:
@@ -3479,7 +3479,7 @@ _ZN6asmjit9_abi_1_103ImmC2ERKNS0_3arm5ShiftE
 # Num Counters:
 1
 # Counter Values:
-14736
+14688
 
 _ZN6asmjit9_abi_1_103ImmC2IN6dsp56k11InstructionEvEERKT_j
 # Func Hash:
@@ -3511,7 +3511,7 @@ _ZN6asmjit9_abi_1_103ImmC2IN6dsp56k6CCRBitEvEERKT_j
 # Num Counters:
 1
 # Counter Values:
-21745
+21637
 
 _ZN6asmjit9_abi_1_103ImmC2IN6dsp56k6SRMaskEvEERKT_j
 # Func Hash:
@@ -3535,7 +3535,7 @@ _ZN6asmjit9_abi_1_103ImmC2INS0_3arm8CondCodeEvEERKT_j
 # Num Counters:
 1
 # Counter Values:
-29183
+29159
 
 _ZN6asmjit9_abi_1_103ImmC2IPKvvEERKT_j
 # Func Hash:
@@ -3543,7 +3543,7 @@ _ZN6asmjit9_abi_1_103ImmC2IPKvvEERKT_j
 # Num Counters:
 1
 # Counter Values:
-19179
+2605
 
 _ZN6asmjit9_abi_1_103ImmC2IPKyvEERKT_j
 # Func Hash:
@@ -3559,7 +3559,7 @@ _ZN6asmjit9_abi_1_103ImmC2IivEERKT_j
 # Num Counters:
 1
 # Counter Values:
-163396
+167141
 
 _ZN6asmjit9_abi_1_103ImmC2IjvEERKT_j
 # Func Hash:
@@ -3567,7 +3567,7 @@ _ZN6asmjit9_abi_1_103ImmC2IjvEERKT_j
 # Num Counters:
 1
 # Counter Values:
-72569
+68245
 
 _ZN6asmjit9_abi_1_103ImmC2ImvEERKT_j
 # Func Hash:
@@ -3583,7 +3583,7 @@ _ZN6asmjit9_abi_1_103ImmC2IxvEERKT_j
 # Num Counters:
 1
 # Counter Values:
-4740
+21314
 
 _ZN6asmjit9_abi_1_103ImmC2IyvEERKT_j
 # Func Hash:
@@ -3591,7 +3591,7 @@ _ZN6asmjit9_abi_1_103ImmC2IyvEERKT_j
 # Num Counters:
 1
 # Counter Values:
-5776
+5779
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE1bENS0_3arm8CondCodeERKNS0_5LabelE
 # Func Hash:
@@ -3623,7 +3623,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3addERKNS0_3arm2GpES8_S
 # Num Counters:
 1
 # Counter Values:
-9564
+26093
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3addERKNS0_3arm2GpES8_S8_RKNS0_3ImmE
 # Func Hash:
@@ -3655,7 +3655,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3bfiERKNS0_3arm2GpES8_R
 # Num Counters:
 1
 # Counter Values:
-22575
+22491
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3bicERKNS0_3arm2GpES8_S8_
 # Func Hash:
@@ -3687,7 +3687,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3cmpERKNS0_3arm2GpERKNS
 # Num Counters:
 1
 # Counter Values:
-6218
+6173
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3cmpERKNS0_3arm2GpES8_
 # Func Hash:
@@ -3695,7 +3695,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3cmpERKNS0_3arm2GpES8_
 # Num Counters:
 1
 # Counter Values:
-19465
+19441
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3eonERKNS0_3arm2GpES8_S8_RKNS0_3ImmE
 # Func Hash:
@@ -3711,7 +3711,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3eorERKNS0_3arm2GpES8_S
 # Num Counters:
 1
 # Counter Values:
-258
+282
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3eorERKNS0_3arm2GpES8_S8_RKNS0_3ImmE
 # Func Hash:
@@ -3719,7 +3719,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3eorERKNS0_3arm2GpES8_S
 # Num Counters:
 1
 # Counter Values:
-957
+933
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3ldrERKNS0_3arm2GpERKNS5_3MemE
 # Func Hash:
@@ -3743,7 +3743,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3lslERKNS0_3arm2GpES8_R
 # Num Counters:
 1
 # Counter Values:
-10126
+9892
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3lslERKNS0_3arm2GpES8_S8_
 # Func Hash:
@@ -3759,7 +3759,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3lsrERKNS0_3arm2GpES8_R
 # Num Counters:
 1
 # Counter Values:
-5677
+5629
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3lsrERKNS0_3arm2GpES8_S8_
 # Func Hash:
@@ -3775,7 +3775,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3movERKNS0_3arm2GpERKNS
 # Num Counters:
 1
 # Counter Values:
-70364
+70340
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3movERKNS0_3arm2GpES8_
 # Func Hash:
@@ -3783,7 +3783,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3movERKNS0_3arm2GpES8_
 # Num Counters:
 1
 # Counter Values:
-44895
+39549
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3mvnERKNS0_3arm2GpES8_
 # Func Hash:
@@ -3831,7 +3831,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3orrERKNS0_3arm2GpES8_S
 # Num Counters:
 1
 # Counter Values:
-8500
+8476
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3retERKNS0_3arm2GpE
 # Func Hash:
@@ -3847,7 +3847,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3strERKNS0_3arm2GpERKNS
 # Num Counters:
 1
 # Counter Values:
-74001
+73998
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3strERKNS0_3arm3VecERKNS5_3MemE
 # Func Hash:
@@ -3903,7 +3903,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE4addsERKNS0_3arm2GpES8_
 # Num Counters:
 1
 # Counter Values:
-1458
+1503
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE4addsERKNS0_3arm2GpES8_S8_RKNS0_3ImmE
 # Func Hash:
@@ -3919,7 +3919,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE4and_ERKNS0_3arm2GpES8_
 # Num Counters:
 1
 # Counter Values:
-44115
+44142
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE4and_ERKNS0_3arm2GpES8_S8_
 # Func Hash:
@@ -3967,7 +3967,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE4csetERKNS0_3arm2GpERKN
 # Num Counters:
 1
 # Counter Values:
-15017
+14993
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE4fmovERKNS0_3arm2GpERKNS5_3VecE
 # Func Hash:
@@ -3975,7 +3975,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE4fmovERKNS0_3arm2GpERKN
 # Num Counters:
 1
 # Counter Values:
-5835
+5572
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE4fmovERKNS0_3arm3VecERKNS5_2GpE
 # Func Hash:
@@ -3983,7 +3983,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE4fmovERKNS0_3arm3VecERK
 # Num Counters:
 1
 # Counter Values:
-14609
+14257
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE4ldrbERKNS0_3arm2GpERKNS5_3MemE
 # Func Hash:
@@ -4047,7 +4047,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE4tbnzERKNS0_3arm2GpERKN
 # Num Counters:
 1
 # Counter Values:
-1236
+1212
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE4ubfxERKNS0_3arm2GpES8_RKNS0_3ImmESB_
 # Func Hash:
@@ -4055,7 +4055,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE4ubfxERKNS0_3arm2GpES8_
 # Num Counters:
 1
 # Counter Values:
-16012
+15928
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE5csincERKNS0_3arm2GpES8_S8_RKNS0_3ImmE
 # Func Hash:
@@ -4095,7 +4095,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE8_emitterEv
 # Num Counters:
 1
 # Counter Values:
-611182
+621204
 
 _ZN6asmjit9_abi_1_103arm2GpC2ERKNS0_16OperandSignatureEj
 # Func Hash:
@@ -4103,7 +4103,7 @@ _ZN6asmjit9_abi_1_103arm2GpC2ERKNS0_16OperandSignatureEj
 # Num Counters:
 1
 # Counter Values:
-1812807
+1842346
 
 _ZN6asmjit9_abi_1_103arm2GpC2ERKS2_
 # Func Hash:
@@ -4111,7 +4111,7 @@ _ZN6asmjit9_abi_1_103arm2GpC2ERKS2_
 # Num Counters:
 1
 # Counter Values:
-863580
+853701
 
 _ZN6asmjit9_abi_1_103arm2GpC2Ev
 # Func Hash:
@@ -4119,7 +4119,7 @@ _ZN6asmjit9_abi_1_103arm2GpC2Ev
 # Num Counters:
 1
 # Counter Values:
-1364350
+1369393
 
 _ZN6asmjit9_abi_1_103arm3GpWC2Ej
 # Func Hash:
@@ -4127,7 +4127,7 @@ _ZN6asmjit9_abi_1_103arm3GpWC2Ej
 # Num Counters:
 1
 # Counter Values:
-530585
+455523
 
 _ZN6asmjit9_abi_1_103arm3GpWC2Ev
 # Func Hash:
@@ -4143,7 +4143,7 @@ _ZN6asmjit9_abi_1_103arm3GpXC2ERKS2_
 # Num Counters:
 1
 # Counter Values:
-238604
+238499
 
 _ZN6asmjit9_abi_1_103arm3GpXC2Ej
 # Func Hash:
@@ -4151,7 +4151,7 @@ _ZN6asmjit9_abi_1_103arm3GpXC2Ej
 # Num Counters:
 1
 # Counter Values:
-1125628
+1230250
 
 _ZN6asmjit9_abi_1_103arm3GpXC2Ev
 # Func Hash:
@@ -4159,7 +4159,7 @@ _ZN6asmjit9_abi_1_103arm3GpXC2Ev
 # Num Counters:
 1
 # Counter Values:
-131733
+131712
 
 _ZN6asmjit9_abi_1_103arm3Mem8setIndexERKNS0_7BaseRegEj
 # Func Hash:
@@ -4191,7 +4191,7 @@ _ZN6asmjit9_abi_1_103arm3MemC2ERKNS0_7BaseRegEiNS0_16OperandSignatureE
 # Num Counters:
 1
 # Counter Values:
-153684
+153681
 
 _ZN6asmjit9_abi_1_103arm3MemC2ERKS2_
 # Func Hash:
@@ -4239,7 +4239,7 @@ _ZN6asmjit9_abi_1_103arm3RegC2ERKNS0_16OperandSignatureEj
 # Num Counters:
 1
 # Counter Values:
-3832203
+3879600
 
 _ZN6asmjit9_abi_1_103arm3RegC2ERKS2_
 # Func Hash:
@@ -4247,7 +4247,7 @@ _ZN6asmjit9_abi_1_103arm3RegC2ERKS2_
 # Num Counters:
 1
 # Counter Values:
-2204588
+2193391
 
 _ZN6asmjit9_abi_1_103arm3RegC2Ev
 # Func Hash:
@@ -4255,7 +4255,7 @@ _ZN6asmjit9_abi_1_103arm3RegC2Ev
 # Num Counters:
 1
 # Counter Values:
-458790
+458823
 
 _ZN6asmjit9_abi_1_103arm3VecC2ERKNS0_16OperandSignatureEj
 # Func Hash:
@@ -4263,7 +4263,7 @@ _ZN6asmjit9_abi_1_103arm3VecC2ERKNS0_16OperandSignatureEj
 # Num Counters:
 1
 # Counter Values:
-654998
+667813
 
 _ZN6asmjit9_abi_1_103arm3VecC2ERKS2_
 # Func Hash:
@@ -4271,7 +4271,7 @@ _ZN6asmjit9_abi_1_103arm3VecC2ERKS2_
 # Num Counters:
 1
 # Counter Values:
-1020072
+1019250
 
 _ZN6asmjit9_abi_1_103arm4VecDC2Ej
 # Func Hash:
@@ -4279,7 +4279,7 @@ _ZN6asmjit9_abi_1_103arm4VecDC2Ej
 # Num Counters:
 1
 # Counter Values:
-19682
+19067
 
 _ZN6asmjit9_abi_1_103arm4VecSC2Ej
 # Func Hash:
@@ -4295,7 +4295,7 @@ _ZN6asmjit9_abi_1_103arm4VecVC2ERKS2_
 # Num Counters:
 1
 # Counter Values:
-1020072
+1019250
 
 _ZN6asmjit9_abi_1_103arm4VecVC2Ev
 # Func Hash:
@@ -4303,7 +4303,7 @@ _ZN6asmjit9_abi_1_103arm4VecVC2Ev
 # Num Counters:
 1
 # Counter Values:
-634476
+647906
 
 _ZN6asmjit9_abi_1_103arm5ShiftC2ENS1_7ShiftOpEj
 # Func Hash:
@@ -4311,7 +4311,7 @@ _ZN6asmjit9_abi_1_103arm5ShiftC2ENS1_7ShiftOpEj
 # Num Counters:
 1
 # Counter Values:
-20705
+20657
 
 _ZN6asmjit9_abi_1_105LabelC2ERKS1_
 # Func Hash:
@@ -4343,7 +4343,7 @@ _ZN6asmjit9_abi_1_107BaseMem7setSizeEj
 # Num Counters:
 1
 # Counter Values:
-149407
+149404
 
 _ZN6asmjit9_abi_1_107BaseMem8setIndexERKNS0_7BaseRegE
 # Func Hash:
@@ -4367,7 +4367,7 @@ _ZN6asmjit9_abi_1_107BaseMem9setOffsetEx
 # Num Counters:
 1
 # Counter Values:
-118012
+118009
 
 _ZN6asmjit9_abi_1_107BaseMemC2ERKNS0_16OperandSignatureEjji
 # Func Hash:
@@ -4375,7 +4375,7 @@ _ZN6asmjit9_abi_1_107BaseMemC2ERKNS0_16OperandSignatureEjji
 # Num Counters:
 1
 # Counter Values:
-159653
+159650
 
 _ZN6asmjit9_abi_1_107BaseMemC2ERKS1_
 # Func Hash:
@@ -4407,7 +4407,7 @@ _ZN6asmjit9_abi_1_107BaseRegC2ERKNS0_16OperandSignatureEj
 # Num Counters:
 1
 # Counter Values:
-4290993
+4338423
 
 _ZN6asmjit9_abi_1_107BaseRegC2ERKS1_
 # Func Hash:
@@ -4415,7 +4415,7 @@ _ZN6asmjit9_abi_1_107BaseRegC2ERKS1_
 # Num Counters:
 1
 # Counter Values:
-2204588
+2193391
 
 _ZN6asmjit9_abi_1_107OperandC2ENS0_7Globals5Init_ERKNS0_16OperandSignatureEjjj
 # Func Hash:
@@ -4423,7 +4423,7 @@ _ZN6asmjit9_abi_1_107OperandC2ENS0_7Globals5Init_ERKNS0_16OperandSignatureEjjj
 # Num Counters:
 1
 # Counter Values:
-4887270
+4933941
 
 _ZN6asmjit9_abi_1_107Section6bufferEv
 # Func Hash:
@@ -4447,7 +4447,7 @@ _ZN6asmjit9_abi_1_108Operand_2asINS0_3arm3GpXEEERT_v
 # Num Counters:
 1
 # Counter Values:
-10107
+10086
 
 _ZN6asmjit9_abi_1_108Operand_5resetEv
 # Func Hash:
@@ -4455,7 +4455,7 @@ _ZN6asmjit9_abi_1_108Operand_5resetEv
 # Num Counters:
 1
 # Counter Values:
-2116385
+2112312
 
 _ZN6asmjit9_abi_1_108Operand_8copyFromERKS1_
 # Func Hash:
@@ -4480,8 +4480,8 @@ _ZN6dsp56k10DSPRegTemp7releaseEv
 # Num Counters:
 2
 # Counter Values:
-167281
-162120
+167377
+162216
 
 _ZN6dsp56k10DSPRegTempC2ERNS_8JitBlockEb
 # Func Hash:
@@ -4489,7 +4489,7 @@ _ZN6dsp56k10DSPRegTempC2ERNS_8JitBlockEb
 # Num Counters:
 2
 # Counter Values:
-167281
+167377
 0
 
 _ZN6dsp56k10DSPRegTempD2Ev
@@ -4498,7 +4498,7 @@ _ZN6dsp56k10DSPRegTempD2Ev
 # Num Counters:
 1
 # Counter Values:
-167281
+167377
 
 _ZN6dsp56k10DSPRegTempaSEOS0_
 # Func Hash:
@@ -4506,7 +4506,7 @@ _ZN6dsp56k10DSPRegTempaSEOS0_
 # Num Counters:
 1
 # Counter Values:
-21829
+21877
 
 _ZN6dsp56k10DmaChannel12execTransferEv
 # Func Hash:
@@ -4819,7 +4819,7 @@ _ZN6dsp56k10JitEmitter3movERKN6asmjit9_abi_1_103arm3MemERKNS3_2GpE
 # Num Counters:
 1
 # Counter Values:
-54673
+54670
 
 _ZN6dsp56k10JitEmitter3negERKN6asmjit9_abi_1_103arm2GpE
 # Func Hash:
@@ -4867,7 +4867,7 @@ _ZN6dsp56k10JitEmitter3salERKN6asmjit9_abi_1_103arm2GpERKNS2_3ImmE
 # Num Counters:
 1
 # Counter Values:
-444
+210
 
 _ZN6dsp56k10JitEmitter3sarERKN6asmjit9_abi_1_103arm2GpERKNS2_3ImmE
 # Func Hash:
@@ -4899,7 +4899,7 @@ _ZN6dsp56k10JitEmitter3shrERKN6asmjit9_abi_1_103arm2GpERKNS2_3ImmE
 # Num Counters:
 1
 # Counter Values:
-1914
+1890
 
 _ZN6dsp56k10JitEmitter3subERKN6asmjit9_abi_1_103arm2GpERKNS2_3ImmE
 # Func Hash:
@@ -4963,7 +4963,7 @@ _ZN6dsp56k10JitEmitter4lea_ERKN6asmjit9_abi_1_103arm3GpXES6_i
 # Num Counters:
 4
 # Counter Values:
-5302
+21876
 72
 2455
 0
@@ -4998,7 +4998,7 @@ _ZN6dsp56k10JitEmitter4movqERKN6asmjit9_abi_1_103arm2GpERKNS3_4VecVE
 # Num Counters:
 1
 # Counter Values:
-5418
+5155
 
 _ZN6dsp56k10JitEmitter4movqERKN6asmjit9_abi_1_103arm3MemERKNS3_4VecVE
 # Func Hash:
@@ -5014,7 +5014,7 @@ _ZN6dsp56k10JitEmitter4movqERKN6asmjit9_abi_1_103arm4VecVERKNS3_2GpE
 # Num Counters:
 1
 # Counter Values:
-14186
+13834
 
 _ZN6dsp56k10JitEmitter4movqERKN6asmjit9_abi_1_103arm4VecVERKNS3_3MemE
 # Func Hash:
@@ -5031,6 +5031,14 @@ _ZN6dsp56k10JitEmitter4pushERKN6asmjit9_abi_1_103arm2GpE
 1
 # Counter Values:
 5084
+
+_ZN6dsp56k10JitEmitter4xor_ERKN6asmjit9_abi_1_103arm2GpES6_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+24
 
 _ZN6dsp56k10JitEmitter5test_ERKN6asmjit9_abi_1_103arm2GpE
 # Func Hash:
@@ -5071,7 +5079,7 @@ _ZN6dsp56k10JitRegpool3getEPNS_12JitScopedRegEb
 # Num Counters:
 5
 # Counter Values:
-101396
+101381
 0
 0
 0
@@ -5083,7 +5091,7 @@ _ZN6dsp56k10JitRegpool3putEPNS_12JitScopedRegEb
 # Num Counters:
 2
 # Counter Values:
-101396
+101381
 0
 
 _ZN6dsp56k10JitRegpool5resetESt16initializer_listIN6asmjit9_abi_1_103arm3RegEE
@@ -5174,7 +5182,7 @@ _ZN6dsp56k10RegScratch7acquireEv
 # Num Counters:
 2
 # Counter Values:
-59361
+59313
 0
 
 _ZN6dsp56k10RegScratch7releaseEv
@@ -5183,8 +5191,8 @@ _ZN6dsp56k10RegScratch7releaseEv
 # Num Counters:
 2
 # Counter Values:
-233761
-174400
+233809
+174496
 
 _ZN6dsp56k10RegScratchC2ERNS_8JitBlockEb
 # Func Hash:
@@ -5192,8 +5200,8 @@ _ZN6dsp56k10RegScratchC2ERNS_8JitBlockEb
 # Num Counters:
 2
 # Counter Values:
-233761
-59361
+233809
+59313
 
 _ZN6dsp56k10RegScratchD2Ev
 # Func Hash:
@@ -5201,7 +5209,7 @@ _ZN6dsp56k10RegScratchD2Ev
 # Num Counters:
 1
 # Counter Values:
-233761
+233809
 
 _ZN6dsp56k10RegScratchaSEOS0_
 # Func Hash:
@@ -5209,7 +5217,7 @@ _ZN6dsp56k10RegScratchaSEOS0_
 # Num Counters:
 2
 # Counter Values:
-21829
+21877
 0
 
 _ZN6dsp56k10RingBufferIN8synthLib10SMidiEventELm16384ELb1ELb1EE10initBufferERNSt3__15arrayIS2_Lm16384EEE
@@ -6129,9 +6137,9 @@ _ZN6dsp56k12AsmJitLogger4_logEPKcm
 # Num Counters:
 5
 # Counter Values:
-2604
+552
 0
-2604
+552
 0
 0
 
@@ -6271,7 +6279,7 @@ _ZN6dsp56k12JitScopedReg7acquireEv
 # Num Counters:
 2
 # Counter Values:
-101396
+101381
 0
 
 _ZN6dsp56k12JitScopedReg7releaseEv
@@ -6280,8 +6288,8 @@ _ZN6dsp56k12JitScopedReg7releaseEv
 # Num Counters:
 2
 # Counter Values:
-256899
-155503
+256980
+155599
 
 _ZN6dsp56k12JitScopedRegC2EOS0_
 # Func Hash:
@@ -6297,8 +6305,8 @@ _ZN6dsp56k12JitScopedRegC2ERNS_8JitBlockERNS_10JitRegpoolEbb
 # Num Counters:
 2
 # Counter Values:
-226111
-50045
+226144
+49982
 
 _ZN6dsp56k12JitScopedRegD2Ev
 # Func Hash:
@@ -6306,7 +6314,7 @@ _ZN6dsp56k12JitScopedRegD2Ev
 # Num Counters:
 1
 # Counter Values:
-226156
+226189
 
 _ZN6dsp56k12JitScopedRegaSEOS0_
 # Func Hash:
@@ -6314,7 +6322,7 @@ _ZN6dsp56k12JitScopedRegaSEOS0_
 # Num Counters:
 1
 # Counter Values:
-21829
+21877
 
 _ZN6dsp56k12MemoryBufferC2Ejjj
 # Func Hash:
@@ -6866,9 +6874,9 @@ _ZN6dsp56k13JitDspRegPool10releaseAllEv
 7155
 443610
 214650
-143529
+149526
 198540
-71121
+65124
 
 _ZN6dsp56k13JitDspRegPool10setRepModeEb
 # Func Hash:
@@ -6884,7 +6892,7 @@ _ZN6dsp56k13JitDspRegPool10setSpilledENS_7PoolRegE
 # Num Counters:
 1
 # Counter Values:
-5381
+5110
 
 _ZN6dsp56k13JitDspRegPool10setWrittenENS_7PoolRegE
 # Func Hash:
@@ -6892,7 +6900,7 @@ _ZN6dsp56k13JitDspRegPool10setWrittenENS_7PoolRegE
 # Num Counters:
 1
 # Counter Values:
-105449
+102190
 
 _ZN6dsp56k13JitDspRegPool11clearLoadedENS_7PoolRegE
 # Func Hash:
@@ -6900,7 +6908,7 @@ _ZN6dsp56k13JitDspRegPool11clearLoadedENS_7PoolRegE
 # Num Counters:
 1
 # Counter Values:
-535656
+555523
 
 _ZN6dsp56k13JitDspRegPool11clearLockedENS_7PoolRegE
 # Func Hash:
@@ -6908,7 +6916,7 @@ _ZN6dsp56k13JitDspRegPool11clearLockedENS_7PoolRegE
 # Num Counters:
 1
 # Counter Values:
-80980
+78482
 
 _ZN6dsp56k13JitDspRegPool11releaseTempENS_7PoolRegE
 # Func Hash:
@@ -6932,7 +6940,7 @@ _ZN6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE3getERS5_NS_7
 # Num Counters:
 1
 # Counter Values:
-8373
+2469
 
 _ZN6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE4pushINS_7PoolRegEEEvRNSt3__16vectorIT_NS9_9allocatorISB_EEEERKSB_b
 # Func Hash:
@@ -6940,7 +6948,7 @@ _ZN6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE4pushINS_7Poo
 # Num Counters:
 2
 # Counter Values:
-58243
+54867
 159
 
 _ZN6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE4pushIS5_EEvRNSt3__16vectorIT_NS8_9allocatorISA_EEEERKSA_b
@@ -6949,7 +6957,7 @@ _ZN6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE4pushIS5_EEvR
 # Num Counters:
 2
 # Counter Values:
-58243
+54867
 0
 
 _ZN6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE5clearEv
@@ -6967,9 +6975,9 @@ _ZN6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE6removeINS_7P
 # Num Counters:
 3
 # Counter Values:
-170042
-920692
-170042
+167116
+902705
+167116
 
 _ZN6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE7acquireERS5_NS_7PoolRegEb
 # Func Hash:
@@ -6977,9 +6985,9 @@ _ZN6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE7acquireERS5_
 # Num Counters:
 4
 # Counter Values:
-170459
-112216
-111799
+167533
+112666
+112249
 0
 
 _ZN6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE7releaseERS5_NS_7PoolRegEb
@@ -6988,8 +6996,8 @@ _ZN6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE7releaseERS5_
 # Num Counters:
 2
 # Counter Values:
-541037
-482794
+560633
+505766
 
 _ZN6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEEC2Ev
 # Func Hash:
@@ -7013,7 +7021,7 @@ _ZN6dsp56k13JitDspRegPool12RegisterListINS0_8SpillRegEE3getERS2_NS_7PoolRegE
 # Num Counters:
 1
 # Counter Values:
-462
+390
 
 _ZN6dsp56k13JitDspRegPool12RegisterListINS0_8SpillRegEE4pushINS_7PoolRegEEEvRNSt3__16vectorIT_NS6_9allocatorIS8_EEEERKS8_b
 # Func Hash:
@@ -7021,7 +7029,7 @@ _ZN6dsp56k13JitDspRegPool12RegisterListINS0_8SpillRegEE4pushINS_7PoolRegEEEvRNSt
 # Num Counters:
 2
 # Counter Values:
-5381
+5110
 0
 
 _ZN6dsp56k13JitDspRegPool12RegisterListINS0_8SpillRegEE4pushIS2_EEvRNSt3__16vectorIT_NS5_9allocatorIS7_EEEERKS7_b
@@ -7030,7 +7038,7 @@ _ZN6dsp56k13JitDspRegPool12RegisterListINS0_8SpillRegEE4pushIS2_EEvRNSt3__16vect
 # Num Counters:
 2
 # Counter Values:
-5381
+5110
 0
 
 _ZN6dsp56k13JitDspRegPool12RegisterListINS0_8SpillRegEE5clearEv
@@ -7048,9 +7056,9 @@ _ZN6dsp56k13JitDspRegPool12RegisterListINS0_8SpillRegEE6removeINS_7PoolRegEEEvRN
 # Num Counters:
 3
 # Counter Values:
-5381
-14417
-5381
+5110
+13151
+5110
 
 _ZN6dsp56k13JitDspRegPool12RegisterListINS0_8SpillRegEE7acquireERS2_NS_7PoolRegEb
 # Func Hash:
@@ -7058,7 +7066,7 @@ _ZN6dsp56k13JitDspRegPool12RegisterListINS0_8SpillRegEE7acquireERS2_NS_7PoolRegE
 # Num Counters:
 4
 # Counter Values:
-5381
+5110
 0
 0
 0
@@ -7069,8 +7077,8 @@ _ZN6dsp56k13JitDspRegPool12RegisterListINS0_8SpillRegEE7releaseERS2_NS_7PoolRegE
 # Num Counters:
 2
 # Counter Values:
-541037
-535656
+560633
+555523
 
 _ZN6dsp56k13JitDspRegPool12RegisterListINS0_8SpillRegEEC2Ev
 # Func Hash:
@@ -7086,7 +7094,7 @@ _ZN6dsp56k13JitDspRegPool12clearSpilledENS_7PoolRegE
 # Num Counters:
 1
 # Counter Values:
-5381
+5110
 
 _ZN6dsp56k13JitDspRegPool12clearWrittenENS_7PoolRegE
 # Func Hash:
@@ -7094,7 +7102,7 @@ _ZN6dsp56k13JitDspRegPool12clearWrittenENS_7PoolRegE
 # Num Counters:
 1
 # Counter Values:
-44421
+41288
 
 _ZN6dsp56k13JitDspRegPool14releaseByFlagsENS_11DspRegFlagsE
 # Func Hash:
@@ -7203,7 +7211,7 @@ _ZN6dsp56k13JitDspRegPool14toRegisterMaskENS_7PoolRegEb
 0
 0
 
-_ZN6dsp56k13JitDspRegPool15setIsParallelOpEb
+_ZN6dsp56k13JitDspRegPool15setIsParallelOpEbNS_12RegisterMaskE
 # Func Hash:
 0
 # Num Counters:
@@ -7218,8 +7226,8 @@ _ZN6dsp56k13JitDspRegPool16parallelOpEpilogENS_7PoolRegES1_
 3
 # Counter Values:
 8712
-4343
-365
+7473
+9
 
 _ZN6dsp56k13JitDspRegPool16parallelOpEpilogEv
 # Func Hash:
@@ -7235,9 +7243,9 @@ _ZN6dsp56k13JitDspRegPool16releaseNonLockedEv
 # Num Counters:
 3
 # Counter Values:
-1348
-83576
-82516
+1725
+106950
+105513
 
 _ZN6dsp56k13JitDspRegPool3getENS_7PoolRegEbb
 # Func Hash:
@@ -7245,7 +7253,7 @@ _ZN6dsp56k13JitDspRegPool3getENS_7PoolRegEbb
 # Num Counters:
 1
 # Counter Values:
-169388
+166441
 
 _ZN6dsp56k13JitDspRegPool3getERKN6asmjit9_abi_1_103arm2GpENS_7PoolRegEbb
 # Func Hash:
@@ -7253,30 +7261,30 @@ _ZN6dsp56k13JitDspRegPool3getERKN6asmjit9_abi_1_103arm2GpENS_7PoolRegEbb
 # Num Counters:
 26
 # Counter Values:
-170459
-101445
-36894
-36894
-2573
+167533
+100960
+34504
+34504
+2967
 0
-2057
+2355
 0
-112216
+112666
 0
-381
-381
-381
-381
-381
+390
+390
+390
+390
+390
 0
 0
-5381
+5110
 0
-1666
+1420
 0
-1506
-160
-31542
+1243
+177
+31186
 0
 0
 
@@ -7286,8 +7294,8 @@ _ZN6dsp56k13JitDspRegPool4loadERKN6asmjit9_abi_1_103arm2GpENS_7PoolRegE
 # Num Counters:
 56
 # Counter Values:
-31542
-31542
+31186
+31186
 1215
 936
 496
@@ -7328,9 +7336,9 @@ _ZN6dsp56k13JitDspRegPool4loadERKN6asmjit9_abi_1_103arm2GpENS_7PoolRegE
 154
 9
 122
-2014
+1847
 0
-1854
+1665
 0
 36
 1040
@@ -7371,7 +7379,7 @@ _ZN6dsp56k13JitDspRegPool4lockENS_7PoolRegE
 # Num Counters:
 2
 # Counter Values:
-80980
+78482
 0
 
 _ZN6dsp56k13JitDspRegPool4moveENS_7PoolRegES1_
@@ -7380,10 +7388,10 @@ _ZN6dsp56k13JitDspRegPool4moveENS_7PoolRegES1_
 # Num Counters:
 7
 # Counter Values:
-4004
-4004
-3923
-81
+1230
+1230
+1230
+0
 0
 0
 0
@@ -7394,8 +7402,8 @@ _ZN6dsp56k13JitDspRegPool4moveERKN6asmjit9_abi_1_103arm2GpENS_7PoolRegE
 # Num Counters:
 3
 # Counter Values:
-365
-365
+9
+9
 0
 
 _ZN6dsp56k13JitDspRegPool4readERKN6asmjit9_abi_1_103arm2GpENS_7PoolRegE
@@ -7404,8 +7412,8 @@ _ZN6dsp56k13JitDspRegPool4readERKN6asmjit9_abi_1_103arm2GpENS_7PoolRegE
 # Num Counters:
 2
 # Counter Values:
-1071
-1071
+1092
+1092
 
 _ZN6dsp56k13JitDspRegPool5clearEv
 # Func Hash:
@@ -7443,7 +7451,7 @@ _ZN6dsp56k13JitDspRegPool5writeENS_7PoolRegERKNS_8DspValueE
 # Num Counters:
 2
 # Counter Values:
-8234
+8282
 316
 
 _ZN6dsp56k13JitDspRegPool6getXY0ERKN6asmjit9_abi_1_103arm3GpWEj
@@ -7484,7 +7492,7 @@ _ZN6dsp56k13JitDspRegPool6unlockENS_7PoolRegE
 # Num Counters:
 2
 # Counter Values:
-80980
+78482
 0
 
 _ZN6dsp56k13JitDspRegPool6unlockERKNSt3__16vectorINS_7PoolRegENS1_9allocatorIS3_EEEE
@@ -7502,7 +7510,7 @@ _ZN6dsp56k13JitDspRegPool7discardENS_7PoolRegE
 # Num Counters:
 1
 # Counter Values:
-4369
+1239
 
 _ZN6dsp56k13JitDspRegPool7flagSetERNS_11DspRegFlagsENS_7PoolRegE
 # Func Hash:
@@ -7510,7 +7518,7 @@ _ZN6dsp56k13JitDspRegPool7flagSetERNS_11DspRegFlagsENS_7PoolRegE
 # Num Counters:
 1
 # Counter Values:
-223352
+216968
 
 _ZN6dsp56k13JitDspRegPool7getPairEb
 # Func Hash:
@@ -7527,17 +7535,17 @@ _ZN6dsp56k13JitDspRegPool7releaseENS_7PoolRegE
 # Num Counters:
 11
 # Counter Values:
-535656
+555523
 0
 0
-52862
-34103
+49757
+34119
 0
-3715
-2361
+3690
+2342
 0
-2361
-1354
+2342
+1348
 
 _ZN6dsp56k13JitDspRegPool7setUsedERKN6asmjit9_abi_1_103arm4VecVE
 # Func Hash:
@@ -7545,8 +7553,8 @@ _ZN6dsp56k13JitDspRegPool7setUsedERKN6asmjit9_abi_1_103arm4VecVE
 # Num Counters:
 2
 # Counter Values:
-1506
-1317
+1243
+1063
 
 _ZN6dsp56k13JitDspRegPool8SpillReg5resetEv
 # Func Hash:
@@ -7554,7 +7562,7 @@ _ZN6dsp56k13JitDspRegPool8SpillReg5resetEv
 # Num Counters:
 1
 # Counter Values:
-890369
+890098
 
 _ZN6dsp56k13JitDspRegPool8flagTestERKNS_11DspRegFlagsENS_7PoolRegE
 # Func Hash:
@@ -7562,7 +7570,7 @@ _ZN6dsp56k13JitDspRegPool8flagTestERKNS_11DspRegFlagsENS_7PoolRegE
 # Num Counters:
 1
 # Counter Values:
-786930
+824634
 
 _ZN6dsp56k13JitDspRegPool8getBlockEv
 # Func Hash:
@@ -7578,7 +7586,7 @@ _ZN6dsp56k13JitDspRegPool9SpillMove5resetEv
 # Num Counters:
 1
 # Counter Values:
-6887
+6353
 
 _ZN6dsp56k13JitDspRegPool9flagClearERNS_11DspRegFlagsENS_7PoolRegE
 # Func Hash:
@@ -7586,7 +7594,7 @@ _ZN6dsp56k13JitDspRegPool9flagClearERNS_11DspRegFlagsENS_7PoolRegE
 # Num Counters:
 1
 # Counter Values:
-666438
+680403
 
 _ZN6dsp56k13JitDspRegPool9makeSpaceENS_7PoolRegE
 # Func Hash:
@@ -7594,14 +7602,14 @@ _ZN6dsp56k13JitDspRegPool9makeSpaceENS_7PoolRegE
 # Num Counters:
 9
 # Counter Values:
-5381
+5110
 0
 0
 0
 0
 0
-6645
-1264
+6148
+1038
 0
 
 _ZN6dsp56k13JitDspRegPool9setLoadedENS_7PoolRegE
@@ -7610,7 +7618,7 @@ _ZN6dsp56k13JitDspRegPool9setLoadedENS_7PoolRegE
 # Num Counters:
 1
 # Counter Values:
-31542
+31186
 
 _ZN6dsp56k13JitDspRegPool9setLockedENS_7PoolRegE
 # Func Hash:
@@ -7618,7 +7626,7 @@ _ZN6dsp56k13JitDspRegPool9setLockedENS_7PoolRegE
 # Num Counters:
 1
 # Counter Values:
-80980
+78482
 
 _ZN6dsp56k13JitDspRegPool9spillMoveENS_7PoolRegERKN6asmjit9_abi_1_103arm2GpERKNS0_8SpillRegE
 # Func Hash:
@@ -7626,7 +7634,7 @@ _ZN6dsp56k13JitDspRegPool9spillMoveENS_7PoolRegERKN6asmjit9_abi_1_103arm2GpERKNS
 # Num Counters:
 1
 # Counter Values:
-1506
+1243
 
 _ZN6dsp56k13JitDspRegPool9spillMoveENS_7PoolRegERKNS0_8SpillRegERKN6asmjit9_abi_1_103arm2GpE
 # Func Hash:
@@ -7634,7 +7642,7 @@ _ZN6dsp56k13JitDspRegPool9spillMoveENS_7PoolRegERKNS0_8SpillRegERKN6asmjit9_abi_
 # Num Counters:
 1
 # Counter Values:
-5462
+5110
 
 _ZN6dsp56k13JitDspRegPoolC2ERNS_8JitBlockE
 # Func Hash:
@@ -7659,6 +7667,15 @@ _ZN6dsp56k13JitTrampoline12generateCodeEv
 1
 # Counter Values:
 12
+
+_ZN6dsp56k13JitTrampoline14initCodeHolderERN6asmjit9_abi_1_1010CodeHolderE
+# Func Hash:
+42129
+# Num Counters:
+2
+# Counter Values:
+24
+0
 
 _ZN6dsp56k13JitTrampoline19generateExecOneFuncEv
 # Func Hash:
@@ -9446,7 +9463,7 @@ _ZN6dsp56k13getFieldValueILNS_11InstructionE29ELNS_5FieldE6EEEjj
 # Num Counters:
 1
 # Counter Values:
-60
+36
 
 _ZN6dsp56k13getFieldValueILNS_11InstructionE2ELNS_5FieldE33EEEjj
 # Func Hash:
@@ -9630,7 +9647,7 @@ _ZN6dsp56k13getFieldValueILNS_11InstructionE56ELNS_5FieldE6EEEjj
 # Num Counters:
 1
 # Counter Values:
-54
+30
 
 _ZN6dsp56k13getFieldValueILNS_11InstructionE58ELNS_5FieldE2EEEjj
 # Func Hash:
@@ -9951,8 +9968,8 @@ _ZN6dsp56k14JitStackHelper11pushAllUsedEPN6asmjit9_abi_1_108BaseNodeE
 12
 # Counter Values:
 7119
-69307
-69295
+68606
+68594
 12
 1141
 0
@@ -9969,8 +9986,8 @@ _ZN6dsp56k14JitStackHelper13isNonVolatileERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 3
 # Counter Values:
-69092
-807009
+68897
+804669
 2455
 
 _ZN6dsp56k14JitStackHelper13isNonVolatileERKN6asmjit9_abi_1_103arm4VecVE
@@ -9979,8 +9996,8 @@ _ZN6dsp56k14JitStackHelper13isNonVolatileERKN6asmjit9_abi_1_103arm4VecVE
 # Num Counters:
 3
 # Counter Values:
-7472
-59716
+6966
+55668
 12
 
 _ZN6dsp56k14JitStackHelper15registerFuncArgEj
@@ -9997,7 +10014,7 @@ _ZN6dsp56k14JitStackHelper17blockMustPreserveERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-63732
+63537
 
 _ZN6dsp56k14JitStackHelper17blockMustPreserveERKN6asmjit9_abi_1_103arm3RegE
 # Func Hash:
@@ -10005,9 +10022,9 @@ _ZN6dsp56k14JitStackHelper17blockMustPreserveERKN6asmjit9_abi_1_103arm3RegE
 # Num Counters:
 3
 # Counter Values:
-69307
-61862
-7445
+68606
+61667
+6939
 
 _ZN6dsp56k14JitStackHelper17blockMustPreserveERKN6asmjit9_abi_1_103arm4VecVE
 # Func Hash:
@@ -10015,7 +10032,7 @@ _ZN6dsp56k14JitStackHelper17blockMustPreserveERKN6asmjit9_abi_1_103arm4VecVE
 # Num Counters:
 1
 # Counter Values:
-7445
+6939
 
 _ZN6dsp56k14JitStackHelper17unregisterFuncArgEj
 # Func Hash:
@@ -10093,8 +10110,8 @@ _ZN6dsp56k14JitStackHelper7setUsedERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 2
 # Counter Values:
-159216
-97354
+155825
+94158
 
 _ZN6dsp56k14JitStackHelper7setUsedERKN6asmjit9_abi_1_103arm3RegE
 # Func Hash:
@@ -10102,8 +10119,8 @@ _ZN6dsp56k14JitStackHelper7setUsedERKN6asmjit9_abi_1_103arm3RegE
 # Num Counters:
 3
 # Counter Values:
-101396
-100973
+101381
+100958
 423
 
 _ZN6dsp56k14JitStackHelper7setUsedERKN6asmjit9_abi_1_103arm4VecVE
@@ -10112,8 +10129,8 @@ _ZN6dsp56k14JitStackHelper7setUsedERKN6asmjit9_abi_1_103arm4VecVE
 # Num Counters:
 2
 # Counter Values:
-19990
-11746
+19367
+11394
 
 _ZN6dsp56k14JitStackHelper8pushSizeERKN6asmjit9_abi_1_103arm3RegE
 # Func Hash:
@@ -10139,9 +10156,9 @@ _ZN6dsp56k14JitStackHelper9setUnusedERKN6asmjit9_abi_1_103arm3RegE
 # Num Counters:
 3
 # Counter Values:
-143529
-1352432
-799
+149526
+1411751
+1034
 
 _ZN6dsp56k14JitStackHelperC2ERNS_8JitBlockE
 # Func Hash:
@@ -12077,7 +12094,7 @@ _ZN6dsp56k22SpscSemaphoreWithCount4waitEv
 
 _ZN6dsp56k22SpscSemaphoreWithCount6notifyEv
 # Func Hash:
-2733201
+2749585
 # Num Counters:
 2
 # Counter Values:
@@ -16329,7 +16346,7 @@ _ZN6dsp56k3DSP4regsEv
 # Num Counters:
 1
 # Counter Values:
-122792478
+122792116
 
 _ZN6dsp56k3DSP5setPCERKNS_7RegTypeIiLj24EEE
 # Func Hash:
@@ -16366,7 +16383,7 @@ _ZN6dsp56k3DSP6getJitEv
 # Num Counters:
 1
 # Counter Values:
-1572936
+1572960
 
 _ZN6dsp56k3DSP6memoryEv
 # Func Hash:
@@ -16832,7 +16849,7 @@ _ZN6dsp56k3anyENS_12RegisterMaskES0_
 # Num Counters:
 1
 # Counter Values:
-34309
+43071
 
 _ZN6dsp56k3r32ERKNS_8DspValueE
 # Func Hash:
@@ -16848,7 +16865,7 @@ _ZN6dsp56k3r32ERNS_8DspValueE
 # Num Counters:
 1
 # Counter Values:
-28121
+28217
 
 _ZN6dsp56k3r64ERKNS_8DspValueE
 # Func Hash:
@@ -16864,7 +16881,7 @@ _ZN6dsp56k3r64ERNS_8DspValueE
 # Num Counters:
 1
 # Counter Values:
-66657
+66447
 
 _ZN6dsp56k4Essi15setFineLinkModeEb
 # Func Hash:
@@ -17155,7 +17172,7 @@ _ZN6dsp56k5Audio11setCallbackERKNSt3__18functionIFvPS0_EEE
 # Num Counters:
 2
 # Counter Values:
-6
+30
 6
 
 _ZN6dsp56k5Audio11writeTXimplERKNS0_5FrameINSt3__15arrayIjLm6EEEEE
@@ -17586,7 +17603,7 @@ _ZN6dsp56k5RegGPC2ERNS_8JitBlockEbb
 # Num Counters:
 1
 # Counter Values:
-225688
+225721
 
 _ZN6dsp56k5RegGPaSEOS0_
 # Func Hash:
@@ -17594,23 +17611,24 @@ _ZN6dsp56k5RegGPaSEOS0_
 # Num Counters:
 1
 # Counter Values:
-21829
+21877
 
 _ZN6dsp56k6AluRef3getEv
 # Func Hash:
-3071702080807741229
+3259447808756076493
 # Num Counters:
-9
+10
 # Counter Values:
-36941
-26834
-4312
-4324
-4312
-3146
-4312
-3146
-3146
+36797
+26711
+1221
+1221
+1221
+708
+1221
+708
+708
+708
 
 _ZN6dsp56k6AluRefC2ERNS_8JitBlockEjbb
 # Func Hash:
@@ -17618,7 +17636,7 @@ _ZN6dsp56k6AluRefC2ERNS_8JitBlockEjbb
 # Num Counters:
 1
 # Counter Values:
-10107
+10086
 
 _ZN6dsp56k6AluRefD2Ev
 # Func Hash:
@@ -17626,11 +17644,11 @@ _ZN6dsp56k6AluRefD2Ev
 # Num Counters:
 5
 # Counter Values:
-10107
-4312
-4324
-4312
-5582
+10086
+1221
+1221
+1221
+8652
 
 _ZN6dsp56k6AluRefcvN6asmjit9_abi_1_103arm3GpXEEv
 # Func Hash:
@@ -17638,7 +17656,7 @@ _ZN6dsp56k6AluRefcvN6asmjit9_abi_1_103arm3GpXEEv
 # Num Counters:
 1
 # Counter Values:
-34991
+34847
 
 _ZN6dsp56k6AluReg7releaseEv
 # Func Hash:
@@ -17654,8 +17672,8 @@ _ZN6dsp56k6AluRegC2ERNS_8JitBlockEjbb
 # Num Counters:
 2
 # Counter Values:
-795
-795
+816
+816
 
 _ZN6dsp56k6AluRegD2Ev
 # Func Hash:
@@ -17663,7 +17681,7 @@ _ZN6dsp56k6AluRegD2Ev
 # Num Counters:
 2
 # Counter Values:
-795
+816
 45
 
 _ZN6dsp56k6AluRegcvN6asmjit9_abi_1_103arm3GpXEEv
@@ -17672,7 +17690,7 @@ _ZN6dsp56k6AluRegcvN6asmjit9_abi_1_103arm3GpXEEv
 # Num Counters:
 1
 # Counter Values:
-2607
+2646
 
 _ZN6dsp56k6DSPReg5writeEv
 # Func Hash:
@@ -17688,7 +17706,7 @@ _ZN6dsp56k6DSPReg7acquireEv
 # Num Counters:
 2
 # Counter Values:
-61213
+61165
 59029
 
 _ZN6dsp56k6DSPReg7releaseEv
@@ -17697,7 +17715,7 @@ _ZN6dsp56k6DSPReg7releaseEv
 # Num Counters:
 2
 # Counter Values:
-61213
+61165
 59029
 
 _ZN6dsp56k6DSPRegC2ERNS_8JitBlockENS_7PoolRegEbbb
@@ -17706,8 +17724,8 @@ _ZN6dsp56k6DSPRegC2ERNS_8JitBlockENS_7PoolRegEbbb
 # Num Counters:
 2
 # Counter Values:
-173004
-61213
+173100
+61165
 
 _ZN6dsp56k6DSPRegD2Ev
 # Func Hash:
@@ -17715,8 +17733,8 @@ _ZN6dsp56k6DSPRegD2Ev
 # Num Counters:
 2
 # Counter Values:
-173004
-44028
+173100
+43980
 
 _ZN6dsp56k6DSPRegaSEOS0_
 # Func Hash:
@@ -17724,7 +17742,7 @@ _ZN6dsp56k6DSPRegaSEOS0_
 # Num Counters:
 13
 # Counter Values:
-21829
+21877
 427
 427
 427
@@ -17753,7 +17771,7 @@ _ZN6dsp56k6JitOps10ccr_updateENS_6CCRBitEN6asmjit9_abi_1_103arm8CondCodeE
 # Num Counters:
 1
 # Counter Values:
-14960
+14936
 
 _ZN6dsp56k6JitOps10ccr_updateERKN6asmjit9_abi_1_103arm2GpENS_6CCRBitEb
 # Func Hash:
@@ -17761,10 +17779,10 @@ _ZN6dsp56k6JitOps10ccr_updateERKN6asmjit9_abi_1_103arm2GpENS_6CCRBitEb
 # Num Counters:
 4
 # Counter Values:
-22930
-18069
-17175
-5755
+22822
+17961
+17091
+5731
 
 _ZN6dsp56k6JitOps10getOpWordBERNS_8DspValueE
 # Func Hash:
@@ -17972,9 +17990,9 @@ _ZN6dsp56k6JitOps11bitmod_ppqqILNS_11InstructionE54EEEvjMS0_FvRKNS_8DspValueEjE
 
 _ZN6dsp56k6JitOps11decode_ccccEj
 # Func Hash:
-12267193681925940800
+4597585726236965754
 # Num Counters:
-19
+20
 # Counter Values:
 1198
 0
@@ -17990,6 +18008,7 @@ _ZN6dsp56k6JitOps11decode_ccccEj
 9
 114
 117
+0
 0
 0
 162
@@ -18230,8 +18249,8 @@ _ZN6dsp56k6JitOps12ccr_s_updateERKN6asmjit9_abi_1_103arm3GpXE
 # Num Counters:
 4
 # Counter Values:
-894
-894
+870
+870
 36
 0
 
@@ -18260,8 +18279,8 @@ _ZN6dsp56k6JitOps12copyBitToCCRERKN6asmjit9_abi_1_103arm2GpEjNS_6CCRBitE
 # Num Counters:
 2
 # Counter Values:
-7970
-4328
+7886
+4274
 
 _ZN6dsp56k6JitOps12emitOpEpilogEv
 # Func Hash:
@@ -18533,7 +18552,7 @@ _ZN6dsp56k6JitOps14CcrBatchUpdateC1ERS0_NS_7CCRMaskES3_
 # Num Counters:
 1
 # Counter Values:
-2531
+1947
 
 _ZN6dsp56k6JitOps14CcrBatchUpdateC1ERS0_NS_7CCRMaskES3_S3_
 # Func Hash:
@@ -18565,7 +18584,7 @@ _ZN6dsp56k6JitOps14ccr_clearDirtyENS_7CCRMaskE
 # Num Counters:
 1
 # Counter Values:
-26580
+26472
 
 _ZN6dsp56k6JitOps14checkConditionEjRKNSt3__18functionIFvvEEES6_bbb
 # Func Hash:
@@ -18769,7 +18788,7 @@ _ZN6dsp56k6JitOps14decode_ff_readERNS_8DspValueEj
 57
 0
 
-_ZN6dsp56k6JitOps14decode_qq_readERNS_8DspValueEjb
+_ZN6dsp56k6JitOps14decode_qq_readERNS_8DspValueEjbj
 # Func Hash:
 6521436965304414137
 # Num Counters:
@@ -18832,7 +18851,7 @@ _ZN6dsp56k6JitOps14updateDirtyCCRERKN6asmjit9_abi_1_103arm3GpXENS_7CCRMaskE
 # Counter Values:
 3912
 802
-2665
+2641
 2814
 2644
 2644
@@ -18843,8 +18862,8 @@ _ZN6dsp56k6JitOps14updateDirtyCCREv
 # Num Counters:
 2
 # Counter Values:
-2134
-1501
+2182
+1549
 
 _ZN6dsp56k6JitOps15braIfBitTestMemILNS_11InstructionE35ELNS_7BraModeE0ELNS_16ExpectedBitValueE0EEEvj
 # Func Hash:
@@ -19098,13 +19117,14 @@ _ZN6dsp56k6JitOps16jumpIfBitTestMemILNS_11InstructionE131ELNS_8JumpModeE1ELNS_16
 # Counter Values:
 44
 
-_ZN6dsp56k6JitOps16signextend24to64ERNS_10JitEmitterERKN6asmjit9_abi_1_103arm3GpXES8_
+_ZN6dsp56k6JitOps16signextend24to64ERNS_10JitEmitterERKN6asmjit9_abi_1_103arm3GpXES8_j
 # Func Hash:
-0
+42129
 # Num Counters:
-1
+2
 # Counter Values:
 8205
+0
 
 _ZN6dsp56k6JitOps17ccr_l_update_by_vEv
 # Func Hash:
@@ -19128,7 +19148,7 @@ _ZN6dsp56k6JitOps17ccr_n_update_by55ERKN6asmjit9_abi_1_103arm3GpXE
 # Num Counters:
 1
 # Counter Values:
-2838
+2814
 
 _ZN6dsp56k6JitOps17ccr_update_ifLessENS_6CCRBitE
 # Func Hash:
@@ -19249,8 +19269,8 @@ _ZN6dsp56k6JitOps18decode_dddddd_readERNS_8DspValueEj
 # Num Counters:
 54
 # Counter Values:
-9255
-9255
+9303
+9303
 0
 0
 0
@@ -19295,7 +19315,7 @@ _ZN6dsp56k6JitOps18decode_dddddd_readERNS_8DspValueEj
 0
 0
 0
-0
+48
 0
 0
 0
@@ -19344,8 +19364,8 @@ _ZN6dsp56k6JitOps19decode_dddddd_writeEjRKNS_8DspValueEb
 # Num Counters:
 54
 # Counter Values:
-5377
-5377
+5425
+5425
 0
 0
 0
@@ -19390,7 +19410,7 @@ _ZN6dsp56k6JitOps19decode_dddddd_writeEjRKNS_8DspValueEb
 0
 0
 0
-0
+48
 0
 0
 0
@@ -19410,14 +19430,6 @@ _ZN6dsp56k6JitOps19jumpIfBitTestDDDDDDILNS_11InstructionE112ELNS_8JumpModeE0ELNS
 _ZN6dsp56k6JitOps19jumpIfBitTestDDDDDDILNS_11InstructionE126ELNS_8JumpModeE0ELNS_16ExpectedBitValueE1EEEvj
 # Func Hash:
 31
-# Num Counters:
-1
-# Counter Values:
-24
-
-_ZN6dsp56k6JitOps20ccr_update_ifGreaterENS_6CCRBitE
-# Func Hash:
-0
 # Num Counters:
 1
 # Counter Values:
@@ -19760,7 +19772,7 @@ _ZN6dsp56k6JitOps5getSRERNS_8DspValueE
 # Num Counters:
 1
 # Counter Values:
-1686
+1734
 
 _ZN6dsp56k6JitOps5popPCEv
 # Func Hash:
@@ -19776,7 +19788,7 @@ _ZN6dsp56k6JitOps5setSRERKNS_8DspValueE
 # Num Counters:
 1
 # Counter Values:
-340
+388
 
 _ZN6dsp56k6JitOps6do_endERKNS_5RegGPE
 # Func Hash:
@@ -19981,28 +19993,31 @@ _ZN6dsp56k6JitOps7alu_andEjRNS_8DspValueE
 # Counter Values:
 165
 
-_ZN6dsp56k6JitOps7alu_aslEjjPKNS_5RegGPEj
+_ZN6dsp56k6JitOps7alu_aslEjjPKNS_5RegGPEjb
 # Func Hash:
-360343269626643122
+6613571057071443663
 # Num Counters:
-6
+7
 # Counter Values:
 618
 30
 618
 51
+588
 51
 618
 
-_ZN6dsp56k6JitOps7alu_asrEjjPKNS_5RegGPEj
+_ZN6dsp56k6JitOps7alu_asrEjjPKNS_5RegGPEjb
 # Func Hash:
-8771923381658833
+2131118981536888971
 # Num Counters:
-3
+5
 # Counter Values:
 584
 48
+554
 39
+554
 
 _ZN6dsp56k6JitOps7alu_cmpEjRKN6asmjit9_abi_1_103arm3GpXEb
 # Func Hash:
@@ -20033,13 +20048,14 @@ _ZN6dsp56k6JitOps7alu_lsrEjRKNS_8DspValueE
 30
 30
 
-_ZN6dsp56k6JitOps7alu_mpyEjRNS_8DspValueES2_bbbbb
+_ZN6dsp56k6JitOps7alu_mpyEjRNS_8DspValueES2_bbbbbj
 # Func Hash:
-1154028884519937557
+12258874378575248407
 # Num Counters:
-14
+15
 # Counter Values:
 4236
+174
 617
 81
 174
@@ -20099,7 +20115,7 @@ _ZN6dsp56k6JitOps7alu_subEjh
 
 _ZN6dsp56k6JitOps7braIfCCILNS_11InstructionE17ELNS_7BraModeE0EEEvjRNS_8DspValueE
 # Func Hash:
-2952337203991761
+46130268812369
 # Num Counters:
 3
 # Counter Values:
@@ -20109,7 +20125,7 @@ _ZN6dsp56k6JitOps7braIfCCILNS_11InstructionE17ELNS_7BraModeE0EEEvjRNS_8DspValueE
 
 _ZN6dsp56k6JitOps7braIfCCILNS_11InstructionE18ELNS_7BraModeE0EEEvjRNS_8DspValueE
 # Func Hash:
-2952337203991761
+46130268812369
 # Num Counters:
 3
 # Counter Values:
@@ -20157,11 +20173,10 @@ _ZN6dsp56k6JitOps7op_AndiEj
 
 _ZN6dsp56k6JitOps7op_DmacEj
 # Func Hash:
-512400604572984465
+1954653185169
 # Num Counters:
-3
+2
 # Counter Values:
-210
 210
 6
 
@@ -20360,27 +20375,29 @@ _ZN6dsp56k6JitOps8alu_bsetERKNS_8DspValueEj
 
 _ZN6dsp56k6JitOps8bitmod_DILNS_11InstructionE29EEEvjMS0_FvRKNS_8DspValueEjE
 # Func Hash:
-7734991408994677596
+2100925748460502249
 # Num Counters:
-6
+7
 # Counter Values:
 30
 0
 30
 30
+24
 6
 6
 
 _ZN6dsp56k6JitOps8bitmod_DILNS_11InstructionE56EEEvjMS0_FvRKNS_8DspValueEjE
 # Func Hash:
-7734991408994677596
+2100925748460502249
 # Num Counters:
-6
+7
 # Counter Values:
 27
 0
 27
 27
+24
 3
 3
 
@@ -20404,7 +20421,7 @@ _ZN6dsp56k6JitOps8braOrBsrILNS_7BraModeE1EEEvRNS_8DspValueE
 
 _ZN6dsp56k6JitOps8jumpIfCCILNS_11InstructionE106ELNS_8JumpModeE0EEEvjRNS_8DspValueE
 # Func Hash:
-2952337203991761
+46130268812369
 # Num Counters:
 3
 # Counter Values:
@@ -20414,7 +20431,7 @@ _ZN6dsp56k6JitOps8jumpIfCCILNS_11InstructionE106ELNS_8JumpModeE0EEEvjRNS_8DspVal
 
 _ZN6dsp56k6JitOps8jumpIfCCILNS_11InstructionE107ELNS_8JumpModeE0EEEvjRNS_8DspValueE
 # Func Hash:
-2952337203991761
+46130268812369
 # Num Counters:
 3
 # Counter Values:
@@ -20827,19 +20844,21 @@ _ZN6dsp56k6JitOps9op_MovexyEj
 
 _ZN6dsp56k6JitOps9op_Mpy_suILNS_11InstructionE147ELb1EEEvj
 # Func Hash:
-26
+858
 # Num Counters:
-1
+2
 # Counter Values:
 174
+0
 
 _ZN6dsp56k6JitOps9op_Mpy_suILNS_11InstructionE189ELb0EEEvj
 # Func Hash:
-26
+858
 # Num Counters:
-1
+2
 # Counter Values:
 279
+18
 
 _ZN6dsp56k6JitOps9op_PflushEj
 # Func Hash:
@@ -20905,10 +20924,10 @@ _ZN6dsp56k6Jitmem13pointerOffsetEPKvS2_
 # Num Counters:
 4
 # Counter Values:
-159375
-33148
-159375
-126227
+159372
+0
+159372
+159372
 
 _ZN6dsp56k6Jitmem15makeRelativePtrEPKvS2_RKN6asmjit9_abi_1_103arm3GpXEm
 # Func Hash:
@@ -20916,24 +20935,24 @@ _ZN6dsp56k6Jitmem15makeRelativePtrEPKvS2_RKN6asmjit9_abi_1_103arm3GpXEm
 # Num Counters:
 18
 # Counter Values:
-142910
+142907
 5411
-16574
-92424
-120676
-92424
-28252
+0
+92421
+127852
+92421
+35431
 25588
-25126
+32305
 3126
 3126
-5784
+12963
 3126
 22462
 22462
 22462
 22462
-2913
+19487
 
 _ZN6dsp56k6Jitmem18assignFuncArgsImplESt16initializer_listIN6asmjit9_abi_1_103arm2GpEES6_PKvPFvS8_jS5_S5_E
 # Func Hash:
@@ -20963,7 +20982,7 @@ _ZN6dsp56k6Jitmem7makePtrERKN6asmjit9_abi_1_103arm3GpXEj
 # Num Counters:
 1
 # Counter Values:
-143438
+143435
 
 _ZN6dsp56k6Jitmem9MemoryRef5resetEv
 # Func Hash:
@@ -21097,13 +21116,18 @@ _ZN6dsp56k6RegXMMC2ERNS_8JitBlockEbb
 
 _ZN6dsp56k6Timers4execEv
 # Func Hash:
-18212012873767984815
+12862823017323096230
 # Num Counters:
-4
+9
 # Counter Values:
 925174097
 909328744
-15845353
+47536059
+0
+0
+0
+47536059
+0
 3
 
 _ZN6dsp56k6Timers6setDSPEPKNS_3DSPE
@@ -21192,7 +21216,7 @@ _ZN6dsp56k6getBitILNS_11InstructionE29EEEjj
 # Num Counters:
 1
 # Counter Values:
-60
+36
 
 _ZN6dsp56k6getBitILNS_11InstructionE35EEEjj
 # Func Hash:
@@ -21232,7 +21256,7 @@ _ZN6dsp56k6getBitILNS_11InstructionE56EEEjj
 # Num Counters:
 1
 # Counter Values:
-54
+30
 
 _ZN6dsp56k6getBitILNS_11InstructionE64EEEjj
 # Func Hash:
@@ -22327,7 +22351,7 @@ _ZN6dsp56k7RegTypeIiLj24EEC2IjEERKT_
 # Num Counters:
 1
 # Counter Values:
-174
+348
 
 _ZN6dsp56k7RegTypeIiLj24EEaSEOS1_
 # Func Hash:
@@ -22491,7 +22515,7 @@ _ZN6dsp56k8BitfieldIjNS_4Essi12RegSSISRbitsELm8EE3setES2_
 # Num Counters:
 1
 # Counter Values:
-1068188053
+1068188005
 
 _ZN6dsp56k8BitfieldIjNS_4Essi12RegSSISRbitsELm8EE4maskES2_
 # Func Hash:
@@ -22499,7 +22523,7 @@ _ZN6dsp56k8BitfieldIjNS_4Essi12RegSSISRbitsELm8EE4maskES2_
 # Num Counters:
 1
 # Counter Values:
-2350886243
+2350886195
 
 _ZN6dsp56k8BitfieldIjNS_4Essi12RegSSISRbitsELm8EE5clearES2_
 # Func Hash:
@@ -22531,7 +22555,7 @@ _ZN6dsp56k8BitfieldIjNS_5Timer8TcsrBitsELm22EE4maskES2_
 # Num Counters:
 1
 # Counter Values:
-47536059
+142608177
 
 _ZN6dsp56k8BitfieldIjNS_5Timer8TcsrBitsELm22EEC2Ej
 # Func Hash:
@@ -22547,7 +22571,7 @@ _ZN6dsp56k8DspValue11acquireTempEv
 # Num Counters:
 4
 # Counter Values:
-55784
+55832
 0
 5161
 0
@@ -22558,7 +22582,7 @@ _ZN6dsp56k8DspValue11getBitCountENS0_4TypeE
 # Num Counters:
 16
 # Counter Values:
-68064
+68160
 0
 1646
 0
@@ -22567,12 +22591,12 @@ _ZN6dsp56k8DspValue11getBitCountENS0_4TypeE
 0
 0
 21501
-25917
+25965
 0
 11247
 0
 0
-7753
+7801
 0
 
 _ZN6dsp56k8DspValue11getBitCountENS_7PoolRegE
@@ -22581,7 +22605,7 @@ _ZN6dsp56k8DspValue11getBitCountENS_7PoolRegE
 # Num Counters:
 9
 # Counter Values:
-118898
+118850
 0
 10606
 9335
@@ -22589,7 +22613,7 @@ _ZN6dsp56k8DspValue11getBitCountENS_7PoolRegE
 0
 0
 0
-98957
+98909
 
 _ZN6dsp56k8DspValue11releaseTempEv
 # Func Hash:
@@ -22597,7 +22621,7 @@ _ZN6dsp56k8DspValue11releaseTempEv
 # Num Counters:
 5
 # Counter Values:
-37105
+37153
 8896
 0
 0
@@ -22651,11 +22675,11 @@ _ZN6dsp56k8DspValue24getDspRegTypeFromBitSizeEj
 # Num Counters:
 6
 # Counter Values:
-55490
+55442
 0
 9948
 0
-45542
+45494
 0
 
 _ZN6dsp56k8DspValue3getEv
@@ -22664,8 +22688,16 @@ _ZN6dsp56k8DspValue3getEv
 # Num Counters:
 2
 # Counter Values:
-137407
+137293
 213
+
+_ZN6dsp56k8DspValue3immEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+174
 
 _ZN6dsp56k8DspValue3setERKiNS0_4TypeE
 # Func Hash:
@@ -22689,7 +22721,7 @@ _ZN6dsp56k8DspValue3setERKxNS0_4TypeE
 # Num Counters:
 1
 # Counter Values:
-5377
+5425
 
 _ZN6dsp56k8DspValue4tempENS0_4TypeE
 # Func Hash:
@@ -22697,10 +22729,10 @@ _ZN6dsp56k8DspValue4tempENS0_4TypeE
 # Num Counters:
 5
 # Counter Values:
-48974
+49022
 0
-48974
-47418
+49022
+47466
 1556
 
 _ZN6dsp56k8DspValue5writeEv
@@ -22735,7 +22767,7 @@ _ZN6dsp56k8DspValue7releaseEv
 # Num Counters:
 2
 # Counter Values:
-37105
+37153
 10038
 
 _ZN6dsp56k8DspValue9immToTempEv
@@ -22777,7 +22809,7 @@ _ZN6dsp56k8DspValueC1ERNS_8JitBlockExNS0_4TypeE
 # Num Counters:
 1
 # Counter Values:
-5377
+5425
 
 _ZN6dsp56k8DspValueC2EONS_5RegGPENS0_4TypeE
 # Func Hash:
@@ -22802,8 +22834,8 @@ _ZN6dsp56k8DspValueC2ERNS_8JitBlockENS_7PoolRegEbb
 # Num Counters:
 2
 # Counter Values:
-55490
-45542
+55442
+45494
 
 _ZN6dsp56k8DspValueC2ERNS_8JitBlockEbbb
 # Func Hash:
@@ -22811,7 +22843,7 @@ _ZN6dsp56k8DspValueC2ERNS_8JitBlockEbbb
 # Num Counters:
 1
 # Counter Values:
-102177
+102321
 
 _ZN6dsp56k8DspValueaSEOS0_
 # Func Hash:
@@ -22819,7 +22851,7 @@ _ZN6dsp56k8DspValueaSEOS0_
 # Num Counters:
 1
 # Counter Values:
-21829
+21877
 
 _ZN6dsp56k8EssiPort10setControlEj
 # Func Hash:
@@ -22843,7 +22875,7 @@ _ZN6dsp56k8JitBlock10dspRegPoolEv
 # Num Counters:
 1
 # Counter Values:
-592591
+593321
 
 _ZN6dsp56k8JitBlock11lockScratchEv
 # Func Hash:
@@ -22851,7 +22883,7 @@ _ZN6dsp56k8JitBlock11lockScratchEv
 # Num Counters:
 1
 # Counter Values:
-59361
+59313
 
 _ZN6dsp56k8JitBlock13unlockScratchEv
 # Func Hash:
@@ -22859,7 +22891,7 @@ _ZN6dsp56k8JitBlock13unlockScratchEv
 # Num Counters:
 1
 # Counter Values:
-59361
+59313
 
 _ZN6dsp56k8JitBlock14increaseUint64ERKN6asmjit9_abi_1_107OperandERKy
 # Func Hash:
@@ -22944,7 +22976,7 @@ _ZN6dsp56k8JitBlock3dspEv
 # Num Counters:
 1
 # Counter Values:
-432943
+432581
 
 _ZN6dsp56k8JitBlock3memEv
 # Func Hash:
@@ -22952,7 +22984,7 @@ _ZN6dsp56k8JitBlock3memEv
 # Num Counters:
 1
 # Counter Values:
-121565
+121562
 
 _ZN6dsp56k8JitBlock4asm_Ev
 # Func Hash:
@@ -22960,7 +22992,7 @@ _ZN6dsp56k8JitBlock4asm_Ev
 # Num Counters:
 1
 # Counter Values:
-328351
+321546
 
 _ZN6dsp56k8JitBlock4emitERNS_19JitBlockRuntimeDataEPNS_13JitBlockChainEjRKNS_10PagedArrayINS_13JitCacheEntryELm1024EEERKNSt3__13setIjNSA_4lessIjEENSA_9allocatorIjEEEERKNSA_3mapIjjSD_NSE_INSA_4pairIKjjEEEEEESI_b
 # Func Hash:
@@ -23089,7 +23121,7 @@ _ZN6dsp56k8JitBlock4regsEv
 # Num Counters:
 1
 # Counter Values:
-83760
+83781
 
 _ZN6dsp56k8JitBlock5resetEONS_9JitConfigE
 # Func Hash:
@@ -23105,7 +23137,7 @@ _ZN6dsp56k8JitBlock5stackEv
 # Num Counters:
 1
 # Counter Values:
-371625
+373608
 
 _ZN6dsp56k8JitBlock6gpPoolEv
 # Func Hash:
@@ -23113,7 +23145,7 @@ _ZN6dsp56k8JitBlock6gpPoolEv
 # Num Counters:
 1
 # Counter Values:
-235508
+235541
 
 _ZN6dsp56k8JitBlock7getInfoERNS_12JitBlockInfoERKNS_3DSPEjRKNS_9JitConfigERKNS_10PagedArrayINS_13JitCacheEntryELm1024EEERKNSt3__13setIjNSE_4lessIjEENSE_9allocatorIjEEEERKNSE_3mapIjjSH_NSI_INSE_4pairIKjjEEEEEESM_
 # Func Hash:
@@ -23815,7 +23847,7 @@ _ZN6dsp56k9ShiftTemp7releaseEv
 # Num Counters:
 1
 # Counter Values:
-167281
+167377
 
 _ZN6dsp56k9ShiftTempC2ERNS_8JitBlockEb
 # Func Hash:
@@ -23823,7 +23855,7 @@ _ZN6dsp56k9ShiftTempC2ERNS_8JitBlockEb
 # Num Counters:
 2
 # Counter Values:
-167281
+167377
 0
 
 _ZN6dsp56k9ShiftTempD2Ev
@@ -23832,7 +23864,7 @@ _ZN6dsp56k9ShiftTempD2Ev
 # Num Counters:
 1
 # Counter Values:
-167281
+167377
 
 _ZN6dsp56k9ShiftTempaSEOS0_
 # Func Hash:
@@ -23840,7 +23872,7 @@ _ZN6dsp56k9ShiftTempaSEOS0_
 # Num Counters:
 1
 # Counter Values:
-21829
+21877
 
 _ZN6dsp56k9SkipLabelC2ERNS_10JitEmitterE
 # Func Hash:
@@ -24216,7 +24248,7 @@ _ZN6dsp56kanENS_12RegisterMaskES0_
 # Num Counters:
 1
 # Counter Values:
-334844
+343606
 
 _ZN6dsp56koRERNS_12RegisterMaskES0_
 # Func Hash:
@@ -24232,7 +24264,18 @@ _ZN6dsp56korENS_12RegisterMaskES0_
 # Num Counters:
 1
 # Counter Values:
-177194
+181550
+
+_ZN7Logging13LoggerStopperD2Ev
+# Func Hash:
+2679953
+# Num Counters:
+4
+# Counter Values:
+6
+0
+0
+0
 
 _ZN7Logging14g_logToConsoleERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEE
 # Func Hash:
@@ -24240,7 +24283,7 @@ _ZN7Logging14g_logToConsoleERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9a
 # Num Counters:
 1
 # Counter Values:
-2700
+648
 
 _ZN7Logging16buildOutfilenameEv
 # Func Hash:
@@ -24256,7 +24299,7 @@ _ZN7Logging21g_defaultLogToConsoleERKNSt3__112basic_stringIcNS0_11char_traitsIcE
 # Num Counters:
 1
 # Counter Values:
-2700
+648
 
 _ZN8synthLib10SMidiEventC1EOS0_
 # Func Hash:
@@ -25009,7 +25052,7 @@ _ZNK6asmjit9_abi_1_1011BaseBuilder6cursorEv
 # Num Counters:
 1
 # Counter Values:
-32305
+31601
 
 _ZNK6asmjit9_abi_1_1011BaseBuilder8lastNodeEv
 # Func Hash:
@@ -25017,7 +25060,7 @@ _ZNK6asmjit9_abi_1_1011BaseBuilder8lastNodeEv
 # Num Counters:
 1
 # Counter Values:
-16599
+16580
 
 _ZNK6asmjit9_abi_1_1011BaseEmitter15encodingOptionsEv
 # Func Hash:
@@ -25049,7 +25092,7 @@ _ZNK6asmjit9_abi_1_1016OperandSignature11memBaseTypeEv
 # Num Counters:
 1
 # Counter Values:
-118084
+118081
 
 _ZNK6asmjit9_abi_1_1016OperandSignature4bitsEv
 # Func Hash:
@@ -25073,7 +25116,7 @@ _ZNK6asmjit9_abi_1_1016OperandSignature6subsetEj
 # Num Counters:
 1
 # Counter Values:
-178661
+177439
 
 _ZNK6asmjit9_abi_1_1016OperandSignature7regTypeEv
 # Func Hash:
@@ -25081,7 +25124,7 @@ _ZNK6asmjit9_abi_1_1016OperandSignature7regTypeEv
 # Num Counters:
 1
 # Counter Values:
-182321
+182318
 
 _ZNK6asmjit9_abi_1_1016OperandSignature8getFieldILj248ELj3EEEjv
 # Func Hash:
@@ -25089,7 +25132,7 @@ _ZNK6asmjit9_abi_1_1016OperandSignature8getFieldILj248ELj3EEEjv
 # Num Counters:
 1
 # Counter Values:
-300405
+300399
 
 _ZNK6asmjit9_abi_1_1016OperandSignature8getFieldILj7ELj0EEEjv
 # Func Hash:
@@ -25113,7 +25156,7 @@ _ZNK6asmjit9_abi_1_1016OperandSignatureeqERKS1_
 # Num Counters:
 1
 # Counter Values:
-12397772
+12301106
 
 _ZNK6asmjit9_abi_1_1016OperandSignatureeqEj
 # Func Hash:
@@ -25129,7 +25172,7 @@ _ZNK6asmjit9_abi_1_1016OperandSignatureneEj
 # Num Counters:
 1
 # Counter Values:
-1884369
+1905241
 
 _ZNK6asmjit9_abi_1_1016OperandSignatureorERKS1_
 # Func Hash:
@@ -25137,7 +25180,7 @@ _ZNK6asmjit9_abi_1_1016OperandSignatureorERKS1_
 # Num Counters:
 1
 # Counter Values:
-681795
+681033
 
 _ZNK6asmjit9_abi_1_103Imm5valueEv
 # Func Hash:
@@ -25153,7 +25196,7 @@ _ZNK6asmjit9_abi_1_103arm2Gp1wEv
 # Num Counters:
 1
 # Counter Values:
-530585
+455523
 
 _ZNK6asmjit9_abi_1_103arm2Gp1xEv
 # Func Hash:
@@ -25161,7 +25204,7 @@ _ZNK6asmjit9_abi_1_103arm2Gp1xEv
 # Num Counters:
 1
 # Counter Values:
-1125628
+1230250
 
 _ZNK6asmjit9_abi_1_103arm3Reg5isGpWEv
 # Func Hash:
@@ -25177,7 +25220,7 @@ _ZNK6asmjit9_abi_1_103arm3Vec1dEv
 # Num Counters:
 1
 # Counter Values:
-19682
+19067
 
 _ZNK6asmjit9_abi_1_103arm3Vec1sEv
 # Func Hash:
@@ -25193,7 +25236,7 @@ _ZNK6asmjit9_abi_1_103arm5Shift2opEv
 # Num Counters:
 1
 # Counter Values:
-20705
+20657
 
 _ZNK6asmjit9_abi_1_103arm5Shift5valueEv
 # Func Hash:
@@ -25201,7 +25244,7 @@ _ZNK6asmjit9_abi_1_103arm5Shift5valueEv
 # Num Counters:
 1
 # Counter Values:
-35441
+35345
 
 _ZNK6asmjit9_abi_1_105Label7isValidEv
 # Func Hash:
@@ -25233,7 +25276,7 @@ _ZNK6asmjit9_abi_1_107BaseMem13isOffset64BitEv
 # Num Counters:
 1
 # Counter Values:
-118036
+118033
 
 _ZNK6asmjit9_abi_1_107BaseMem6baseIdEv
 # Func Hash:
@@ -25266,7 +25309,7 @@ _ZNK6asmjit9_abi_1_107BaseMem8baseTypeEv
 # Num Counters:
 1
 # Counter Values:
-118084
+118081
 
 _ZNK6asmjit9_abi_1_107BaseReg13baseSignatureEv
 # Func Hash:
@@ -25282,7 +25325,7 @@ _ZNK6asmjit9_abi_1_107BaseReg4isGpEv
 # Num Counters:
 1
 # Counter Values:
-170703
+169987
 
 _ZNK6asmjit9_abi_1_107BaseReg4typeEv
 # Func Hash:
@@ -25290,7 +25333,7 @@ _ZNK6asmjit9_abi_1_107BaseReg4typeEv
 # Num Counters:
 1
 # Counter Values:
-182321
+182318
 
 _ZNK6asmjit9_abi_1_107BaseReg5isVecEv
 # Func Hash:
@@ -25298,7 +25341,7 @@ _ZNK6asmjit9_abi_1_107BaseReg5isVecEv
 # Num Counters:
 1
 # Counter Values:
-7910
+7404
 
 _ZNK6asmjit9_abi_1_107BaseReg7isGroupENS0_8RegGroupE
 # Func Hash:
@@ -25306,7 +25349,7 @@ _ZNK6asmjit9_abi_1_107BaseReg7isGroupENS0_8RegGroupE
 # Num Counters:
 1
 # Counter Values:
-178613
+177391
 
 _ZNK6asmjit9_abi_1_107BaseReg7isValidEv
 # Func Hash:
@@ -25314,7 +25357,7 @@ _ZNK6asmjit9_abi_1_107BaseReg7isValidEv
 # Num Counters:
 1
 # Counter Values:
-1860555
+1881427
 
 _ZNK6asmjit9_abi_1_107Support5ArrayINS0_16OperandSignatureELm32EEixINS0_7RegTypeEEERKS3_RKT_
 # Func Hash:
@@ -25338,7 +25381,7 @@ _ZNK6asmjit9_abi_1_108Operand_2asINS0_3arm2GpEEERKT_v
 # Num Counters:
 1
 # Counter Values:
-172661
+172451
 
 _ZNK6asmjit9_abi_1_108Operand_2asINS0_3arm3GpXEEERKT_v
 # Func Hash:
@@ -25346,7 +25389,7 @@ _ZNK6asmjit9_abi_1_108Operand_2asINS0_3arm3GpXEEERKT_v
 # Num Counters:
 1
 # Counter Values:
-203930
+203825
 
 _ZNK6asmjit9_abi_1_108Operand_2asINS0_3arm4VecVEEERKT_v
 # Func Hash:
@@ -25354,7 +25397,7 @@ _ZNK6asmjit9_abi_1_108Operand_2asINS0_3arm4VecVEEERKT_v
 # Num Counters:
 1
 # Counter Values:
-8732
+8226
 
 _ZNK6asmjit9_abi_1_108Operand_2idEv
 # Func Hash:
@@ -25362,7 +25405,7 @@ _ZNK6asmjit9_abi_1_108Operand_2idEv
 # Num Counters:
 1
 # Counter Values:
-1859056
+1887998
 
 _ZNK6asmjit9_abi_1_108Operand_5isImmEv
 # Func Hash:
@@ -25378,7 +25421,7 @@ _ZNK6asmjit9_abi_1_108Operand_6equalsERKS1_
 # Num Counters:
 1
 # Counter Values:
-12219159
+12123715
 
 _ZNK6asmjit9_abi_1_108Operand_6opTypeEv
 # Func Hash:
@@ -25394,7 +25437,7 @@ _ZNK6asmjit9_abi_1_108Operand_eqERKS1_
 # Num Counters:
 1
 # Counter Values:
-1669767
+1581071
 
 _ZNK6asmjit9_abi_1_108Operand_neERKS1_
 # Func Hash:
@@ -25402,7 +25445,7 @@ _ZNK6asmjit9_abi_1_108Operand_neERKS1_
 # Num Counters:
 1
 # Counter Values:
-6742
+6811
 
 _ZNK6dsp56k10DSPRegTemp3getEv
 # Func Hash:
@@ -25418,7 +25461,7 @@ _ZNK6dsp56k10DSPRegTemp8acquiredEv
 # Num Counters:
 1
 # Counter Values:
-214708
+214852
 
 _ZNK6dsp56k10DmaChannel11getPriorityEv
 # Func Hash:
@@ -25596,7 +25639,7 @@ _ZNK6dsp56k10JitDspMode3getEv
 # Num Counters:
 1
 # Counter Values:
-59380914
+59380926
 
 _ZNK6dsp56k10JitDspMode5getSREv
 # Func Hash:
@@ -25604,7 +25647,7 @@ _ZNK6dsp56k10JitDspMode5getSREv
 # Num Counters:
 1
 # Counter Values:
-27640
+27592
 
 _ZNK6dsp56k10JitDspMode6testSRENS_5SRBitE
 # Func Hash:
@@ -25612,7 +25655,7 @@ _ZNK6dsp56k10JitDspMode6testSRENS_5SRBitE
 # Num Counters:
 1
 # Counter Values:
-27640
+27592
 
 _ZNK6dsp56k10JitDspModeeqERKS0_
 # Func Hash:
@@ -25678,7 +25721,7 @@ _ZNK6dsp56k10JitDspRegs4poolEv
 # Num Counters:
 1
 # Counter Values:
-56939
+56798
 
 _ZNK6dsp56k10JitDspRegs4setMEjRKNS_8DspValueE
 # Func Hash:
@@ -25764,7 +25807,7 @@ _ZNK6dsp56k10JitDspRegs5getSRENS0_10AccessTypeE
 # Num Counters:
 1
 # Counter Values:
-40555
+40423
 
 _ZNK6dsp56k10JitDspRegs5getSRERNS_8DspValueE
 # Func Hash:
@@ -25772,7 +25815,7 @@ _ZNK6dsp56k10JitDspRegs5getSRERNS_8DspValueE
 # Num Counters:
 1
 # Counter Values:
-1686
+1734
 
 _ZNK6dsp56k10JitDspRegs5getSSERKN6asmjit9_abi_1_103arm3GpXE
 # Func Hash:
@@ -25812,7 +25855,7 @@ _ZNK6dsp56k10JitDspRegs5setSRERKNS_8DspValueE
 # Num Counters:
 1
 # Counter Values:
-340
+388
 
 _ZNK6dsp56k10JitDspRegs6clrALUEj
 # Func Hash:
@@ -25821,10 +25864,10 @@ _ZNK6dsp56k10JitDspRegs6clrALUEj
 5
 # Counter Values:
 276
-57
-57
-57
-57
+18
+18
+18
+18
 
 _ZNK6dsp56k10JitDspRegs6getALUERKN6asmjit9_abi_1_103arm2GpEj
 # Func Hash:
@@ -25832,7 +25875,7 @@ _ZNK6dsp56k10JitDspRegs6getALUERKN6asmjit9_abi_1_103arm2GpEj
 # Num Counters:
 1
 # Counter Values:
-987
+1008
 
 _ZNK6dsp56k10JitDspRegs6getALUEj
 # Func Hash:
@@ -25864,8 +25907,8 @@ _ZNK6dsp56k10JitDspRegs6mask56ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 2
 # Counter Values:
-2244
-2244
+2247
+2247
 
 _ZNK6dsp56k10JitDspRegs6setALUEjRKNS_8DspValueEb
 # Func Hash:
@@ -25960,8 +26003,8 @@ _ZNK6dsp56k10RegScratch3getEv
 # Num Counters:
 2
 # Counter Values:
-138547
-138547
+138451
+138451
 
 _ZNK6dsp56k10RegScratch7isValidEv
 # Func Hash:
@@ -25977,7 +26020,7 @@ _ZNK6dsp56k10RegScratchcvN6asmjit9_abi_1_103arm3GpXEEv
 # Num Counters:
 1
 # Counter Values:
-138304
+138208
 
 _ZNK6dsp56k10RingBufferIN8synthLib10SMidiEventELm16384ELb1ELb1EE11loadReadAcqEv
 # Func Hash:
@@ -26021,7 +26064,7 @@ _ZNK6dsp56k10RingBufferIN8synthLib10SMidiEventELm16384ELb1ELb1EE5emptyEv
 
 _ZNK6dsp56k10RingBufferIN8synthLib10SMidiEventELm16384ELb1ELb1EE5syncsEv
 # Func Hash:
-11045807313
+172590737
 # Num Counters:
 2
 # Counter Values:
@@ -26086,7 +26129,7 @@ _ZNK6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm4EEEEELm32768ELb1ELb0EE
 
 _ZNK6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm4EEEEELm32768ELb1ELb0EE5syncsEv
 # Func Hash:
-11045807313
+172590737
 # Num Counters:
 2
 # Counter Values:
@@ -26145,7 +26188,7 @@ _ZNK6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm6EEEEELm32768ELb1ELb0EE
 
 _ZNK6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm6EEEEELm32768ELb1ELb0EE5syncsEv
 # Func Hash:
-11045807313
+172590737
 # Num Counters:
 2
 # Counter Values:
@@ -26283,7 +26326,7 @@ _ZNK6dsp56k10RingBufferIjLm1024ELb1ELb1EE5emptyEv
 
 _ZNK6dsp56k10RingBufferIjLm1024ELb1ELb1EE5syncsEv
 # Func Hash:
-11045807313
+172590737
 # Num Counters:
 2
 # Counter Values:
@@ -26348,7 +26391,7 @@ _ZNK6dsp56k10RingBufferIjLm32ELb1ELb1EE5emptyEv
 
 _ZNK6dsp56k10RingBufferIjLm32ELb1ELb1EE5syncsEv
 # Func Hash:
-11045807313
+172590737
 # Num Counters:
 2
 # Counter Values:
@@ -26433,7 +26476,7 @@ _ZNK6dsp56k10RingBufferIjLm8192ELb1ELb1EE5emptyEv
 
 _ZNK6dsp56k10RingBufferIjLm8192ELb1ELb1EE5syncsEv
 # Func Hash:
-11045807313
+172590737
 # Num Counters:
 2
 # Counter Values:
@@ -26593,7 +26636,7 @@ _ZNK6dsp56k12JitScopedReg3getEv
 # Num Counters:
 1
 # Counter Values:
-300458
+300338
 
 _ZNK6dsp56k12JitScopedReg5blockEv
 # Func Hash:
@@ -26609,7 +26652,7 @@ _ZNK6dsp56k12JitScopedReg6isWeakEv
 # Num Counters:
 1
 # Counter Values:
-101396
+101381
 
 _ZNK6dsp56k12JitScopedReg7isValidEv
 # Func Hash:
@@ -26617,7 +26660,7 @@ _ZNK6dsp56k12JitScopedReg7isValidEv
 # Num Counters:
 1
 # Counter Values:
-80918
+81014
 
 _ZNK6dsp56k12MemoryBuffer4ptrPEv
 # Func Hash:
@@ -27193,7 +27236,7 @@ _ZNK6dsp56k13JitBlockChain7getModeEv
 # Num Counters:
 1
 # Counter Values:
-117188567
+117188543
 
 _ZNK6dsp56k13JitBlockChain8getBlockEj
 # Func Hash:
@@ -27239,7 +27282,7 @@ _ZNK6dsp56k13JitDspRegPool10makeDspPtrEPKvm
 # Num Counters:
 1
 # Counter Values:
-123525
+123522
 
 _ZNK6dsp56k13JitDspRegPool10makeDspPtrIhLj5EEEN6asmjit9_abi_1_103arm3MemERKNS_7RegTypeIT_XT0_EEE
 # Func Hash:
@@ -27271,7 +27314,7 @@ _ZNK6dsp56k13JitDspRegPool10makeDspPtrIxLj56EEEN6asmjit9_abi_1_103arm3MemERKNS_7
 # Num Counters:
 1
 # Counter Values:
-8412
+8409
 
 _ZNK6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE4usedEv
 # Func Hash:
@@ -27279,7 +27322,7 @@ _ZNK6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE4usedEv
 # Num Counters:
 1
 # Counter Values:
-12026
+11258
 
 _ZNK6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE6isFullEv
 # Func Hash:
@@ -27287,7 +27330,7 @@ _ZNK6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE6isFullEv
 # Num Counters:
 1
 # Counter Values:
-116486
+109734
 
 _ZNK6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE6isUsedENS_7PoolRegE
 # Func Hash:
@@ -27295,7 +27338,7 @@ _ZNK6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE6isUsedENS_7
 # Num Counters:
 1
 # Counter Values:
-186166
+180446
 
 _ZNK6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE6isUsedERKS5_
 # Func Hash:
@@ -27313,7 +27356,7 @@ _ZNK6dsp56k13JitDspRegPool12RegisterListINS0_8SpillRegEE6isFullEv
 # Num Counters:
 1
 # Counter Values:
-10762
+10220
 
 _ZNK6dsp56k13JitDspRegPool12RegisterListINS0_8SpillRegEE6isUsedENS_7PoolRegE
 # Func Hash:
@@ -27321,7 +27364,7 @@ _ZNK6dsp56k13JitDspRegPool12RegisterListINS0_8SpillRegEE6isUsedENS_7PoolRegE
 # Num Counters:
 1
 # Counter Values:
-11404
+11659
 
 _ZNK6dsp56k13JitDspRegPool12RegisterListINS0_8SpillRegEE6isUsedERKS2_
 # Func Hash:
@@ -27339,23 +27382,15 @@ _ZNK6dsp56k13JitDspRegPool12canMakeSpaceENS_7PoolRegES1_
 # Num Counters:
 9
 # Counter Values:
-6645
+6148
 0
 0
-5381
-437
-231
-258
-597
-1264
-
-_ZNK6dsp56k13JitDspRegPool12isParallelOpEv
-# Func Hash:
-24
-# Num Counters:
-1
-# Counter Values:
-20856
+5110
+393
+209
+215
+477
+1038
 
 _ZNK6dsp56k13JitDspRegPool13getLoadedRegsEv
 # Func Hash:
@@ -27388,6 +27423,17 @@ _ZNK6dsp56k13JitDspRegPool14hasWrittenRegsEv
 1
 # Counter Values:
 12
+
+_ZNK6dsp56k13JitDspRegPool16aluNeedsWriteRegEj
+# Func Hash:
+99213
+# Num Counters:
+4
+# Counter Values:
+20814
+8762
+2478
+4080
 
 _ZNK6dsp56k13JitDspRegPool3movILm1EEEvRKN6asmjit9_abi_1_103arm2GpERKNS4_3MemE
 # Func Hash:
@@ -27435,7 +27481,7 @@ _ZNK6dsp56k13JitDspRegPool3movILm8EEEvRKN6asmjit9_abi_1_103arm3MemERKNS4_2GpE
 # Num Counters:
 1
 # Counter Values:
-9012
+9009
 
 _ZNK6dsp56k13JitDspRegPool4readENS_7PoolRegE
 # Func Hash:
@@ -27451,8 +27497,8 @@ _ZNK6dsp56k13JitDspRegPool5storeENS_7PoolRegERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 56
 # Counter Values:
-36464
-36464
+36461
+36461
 1744
 1355
 803
@@ -27493,7 +27539,7 @@ _ZNK6dsp56k13JitDspRegPool5storeENS_7PoolRegERKN6asmjit9_abi_1_103arm2GpE
 96
 42
 75
-2615
+2612
 0
 2294
 0
@@ -27514,9 +27560,9 @@ _ZNK6dsp56k13JitDspRegPool7isInUseENS_7PoolRegE
 # Num Counters:
 3
 # Counter Values:
-15707
-11404
-11323
+12913
+11659
+11659
 
 _ZNK6dsp56k13JitDspRegPool7isInUseERKN6asmjit9_abi_1_103arm2GpE
 # Func Hash:
@@ -27552,7 +27598,7 @@ _ZNK6dsp56k13JitDspRegPool8SpillReg7isValidEv
 # Num Counters:
 1
 # Counter Values:
-558284
+577792
 
 _ZNK6dsp56k13JitDspRegPool8isLockedENS_7PoolRegE
 # Func Hash:
@@ -27560,7 +27606,7 @@ _ZNK6dsp56k13JitDspRegPool8isLockedENS_7PoolRegE
 # Num Counters:
 1
 # Counter Values:
-713571
+754634
 
 _ZNK6dsp56k13JitDspRegPool9SpillMove7isValidEv
 # Func Hash:
@@ -27568,7 +27614,7 @@ _ZNK6dsp56k13JitDspRegPool9SpillMove7isValidEv
 # Num Counters:
 1
 # Counter Values:
-3875
+3867
 
 _ZNK6dsp56k13JitDspRegPool9isWrittenENS_7PoolRegE
 # Func Hash:
@@ -27576,7 +27622,7 @@ _ZNK6dsp56k13JitDspRegPool9isWrittenENS_7PoolRegE
 # Num Counters:
 1
 # Counter Values:
-73359
+70000
 
 _ZNK6dsp56k13JitDspRegPool9movDspRegERKN6asmjit9_abi_1_103arm2GpERKj
 # Func Hash:
@@ -27692,7 +27738,7 @@ _ZNK6dsp56k13JitDspRegPool9movDspRegIxLj56EEEvRKNS_7RegTypeIT_XT0_EEERKN6asmjit9
 # Num Counters:
 5
 # Counter Values:
-4909
+4906
 0
 0
 0
@@ -27704,7 +27750,7 @@ _ZNK6dsp56k13JitDspRegPool9spillMoveERKNS0_8SpillRegERKN6asmjit9_abi_1_103arm2Gp
 # Num Counters:
 1
 # Counter Values:
-5462
+5110
 
 _ZNK6dsp56k13JitTrampoline15execUntilCyclesEPNS_3DSPEy
 # Func Hash:
@@ -27767,9 +27813,9 @@ _ZNK6dsp56k14JitStackHelper6isUsedERKN6asmjit9_abi_1_103arm3RegE
 # Num Counters:
 3
 # Counter Values:
-181661
-1245316
-109127
+177647
+1185568
+105579
 
 _ZNK6dsp56k14JitStackHelper9PushedRegltERKS1_
 # Func Hash:
@@ -28574,7 +28620,7 @@ _ZNK6dsp56k3Jit11DspModeHashclERKNS_10JitDspModeE
 # Num Counters:
 1
 # Counter Values:
-59380914
+59380926
 
 _ZNK6dsp56k3Jit11getLoopEndsEv
 # Func Hash:
@@ -28624,7 +28670,7 @@ _ZNK6dsp56k3Jit9getConfigEv
 # Num Counters:
 1
 # Counter Values:
-200830
+200854
 
 _ZNK6dsp56k4Essi10dmaTriggerEj
 # Func Hash:
@@ -28946,7 +28992,7 @@ _ZNK6dsp56k5RegGP3getEv
 # Num Counters:
 1
 # Counter Values:
-198222
+198117
 
 _ZNK6dsp56k5RegGPcvRKN6asmjit9_abi_1_103arm3GpXEEv
 # Func Hash:
@@ -28954,7 +29000,7 @@ _ZNK6dsp56k5RegGPcvRKN6asmjit9_abi_1_103arm3GpXEEv
 # Num Counters:
 1
 # Counter Values:
-131481
+131169
 
 _ZNK6dsp56k6AluReg3getEv
 # Func Hash:
@@ -28962,7 +29008,7 @@ _ZNK6dsp56k6AluReg3getEv
 # Num Counters:
 1
 # Counter Values:
-2607
+2694
 
 _ZNK6dsp56k6DSPReg3getEv
 # Func Hash:
@@ -28970,7 +29016,7 @@ _ZNK6dsp56k6DSPReg3getEv
 # Num Counters:
 1
 # Counter Values:
-67100
+67052
 
 _ZNK6dsp56k6DSPReg3r32Ev
 # Func Hash:
@@ -28978,7 +29024,7 @@ _ZNK6dsp56k6DSPReg3r32Ev
 # Num Counters:
 1
 # Counter Values:
-45542
+45494
 
 _ZNK6dsp56k6DSPReg3r64Ev
 # Func Hash:
@@ -29002,7 +29048,7 @@ _ZNK6dsp56k6DSPReg6dspRegEv
 # Num Counters:
 1
 # Counter Values:
-32723
+32771
 
 _ZNK6dsp56k6DSPReg8acquiredEv
 # Func Hash:
@@ -29010,7 +29056,7 @@ _ZNK6dsp56k6DSPReg8acquiredEv
 # Num Counters:
 1
 # Counter Values:
-261097
+261289
 
 _ZNK6dsp56k6DSPRegcvN6asmjit9_abi_1_103arm2GpEEv
 # Func Hash:
@@ -29050,7 +29096,7 @@ _ZNK6dsp56k6JitOps13aluExtendTo64ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 2
 # Counter Values:
-617
+641
 0
 
 _ZNK6dsp56k6JitOps13getALU2signedERNS_8DspValueEj
@@ -29126,7 +29172,7 @@ _ZNK6dsp56k6JitOps15aluClearLowByteERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-617
+641
 
 _ZNK6dsp56k6JitOps15decode_qqq_readERNS_8DspValueEj
 # Func Hash:
@@ -29195,10 +29241,10 @@ _ZNK6dsp56k6JitOps16aluRestoreFrom64ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 2
 # Counter Values:
-617
-617
+641
+641
 
-_ZNK6dsp56k6JitOps16decode_QQQQ_readERNS_8DspValueEbS2_bj
+_ZNK6dsp56k6JitOps16decode_QQQQ_readERNS_8DspValueEbS2_bjj
 # Func Hash:
 12267193681925940800
 # Num Counters:
@@ -29240,7 +29286,7 @@ _ZNK6dsp56k6JitOps16signextend24to64ERKN6asmjit9_abi_1_103arm3GpXE
 # Counter Values:
 84
 
-_ZNK6dsp56k6JitOps16signextend24to64ERKN6asmjit9_abi_1_103arm3GpXES6_
+_ZNK6dsp56k6JitOps16signextend24to64ERKN6asmjit9_abi_1_103arm3GpXES6_j
 # Func Hash:
 0
 # Num Counters:
@@ -29307,7 +29353,7 @@ _ZNK6dsp56k6JitOps17decode_dddddd_refEjbb
 # Num Counters:
 62
 # Counter Values:
-12037
+11941
 0
 0
 0
@@ -29361,7 +29407,7 @@ _ZNK6dsp56k6JitOps17decode_dddddd_refEjbb
 0
 0
 0
-96
+0
 0
 0
 0
@@ -29581,7 +29627,7 @@ _ZNK6dsp56k6JitOps5getMRERKN6asmjit9_abi_1_103arm3GpXE
 # Counter Values:
 33
 
-_ZNK6dsp56k6JitOps5getX0ERNS_8DspValueEb
+_ZNK6dsp56k6JitOps5getX0ERNS_8DspValueEbj
 # Func Hash:
 24
 # Num Counters:
@@ -29589,7 +29635,7 @@ _ZNK6dsp56k6JitOps5getX0ERNS_8DspValueEb
 # Counter Values:
 2850
 
-_ZNK6dsp56k6JitOps5getX1ERNS_8DspValueEb
+_ZNK6dsp56k6JitOps5getX1ERNS_8DspValueEbj
 # Func Hash:
 24
 # Num Counters:
@@ -29597,7 +29643,7 @@ _ZNK6dsp56k6JitOps5getX1ERNS_8DspValueEb
 # Counter Values:
 1698
 
-_ZNK6dsp56k6JitOps5getY0ERNS_8DspValueEb
+_ZNK6dsp56k6JitOps5getY0ERNS_8DspValueEbj
 # Func Hash:
 24
 # Num Counters:
@@ -29605,7 +29651,7 @@ _ZNK6dsp56k6JitOps5getY0ERNS_8DspValueEb
 # Counter Values:
 2507
 
-_ZNK6dsp56k6JitOps5getY1ERNS_8DspValueEb
+_ZNK6dsp56k6JitOps5getY1ERNS_8DspValueEbj
 # Func Hash:
 24
 # Num Counters:
@@ -29656,27 +29702,29 @@ _ZNK6dsp56k6JitOps6getSSLERNS_8DspValueE
 316
 0
 
-_ZNK6dsp56k6JitOps6getXY0ERNS_8DspValueEjb
+_ZNK6dsp56k6JitOps6getXY0ERNS_8DspValueEjbj
 # Func Hash:
-187542823470965969
+14166381213553779346
 # Num Counters:
-4
+5
 # Counter Values:
 7620
 7564
 2862
 4904
+0
 
-_ZNK6dsp56k6JitOps6getXY1ERNS_8DspValueEjb
+_ZNK6dsp56k6JitOps6getXY1ERNS_8DspValueEjbj
 # Func Hash:
-187542823470965969
+14166381213553779346
 # Num Counters:
-4
+5
 # Counter Values:
 4503
 4365
 2104
 3217
+0
 
 _ZNK6dsp56k6JitOps7XY0to56ERKN6asmjit9_abi_1_103arm3GpXEi
 # Func Hash:
@@ -29951,7 +29999,7 @@ _ZNK6dsp56k6Jitmem11makeBasePtrERKN6asmjit9_abi_1_103arm3GpXEPKvm
 # Num Counters:
 1
 # Counter Values:
-16712
+138
 
 _ZNK6dsp56k6Jitmem11writePeriphENS_8EMemAreaERKjRKNS_8DspValueE
 # Func Hash:
@@ -30268,7 +30316,7 @@ _ZNK6dsp56k6Jitmem20copyHostAddressToRegERNS_8DspValueENS_8EMemAreaEjRKNS0_9Memo
 2775
 2775
 0
-0
+16574
 
 _ZNK6dsp56k6Jitmem3movEPjRKj
 # Func Hash:
@@ -30467,14 +30515,14 @@ _ZNK6dsp56k6Jitmem3movILm8EEEvRKN6asmjit9_abi_1_103arm3MemERKNS4_2GpE
 # Num Counters:
 10
 # Counter Values:
-9868
+9865
 0
 0
 0
 0
-9868
+9865
 0
-9868
+9865
 0
 0
 
@@ -30615,12 +30663,13 @@ _ZNK6dsp56k6Timers10setSymbolsERNS_12DisassemblerE
 
 _ZNK6dsp56k6Timers9execTimerERNS_5TimerEjj
 # Func Hash:
-4631619805634572369
+13683144291371798661
 # Num Counters:
-12
+13
 # Counter Values:
 47536059
 47536059
+0
 0
 0
 0
@@ -30677,7 +30726,7 @@ _ZNK6dsp56k7RegTypeIiLj24EE10signextendIxEET_v
 # Num Counters:
 1
 # Counter Values:
-354
+528
 
 _ZNK6dsp56k7RegTypeIiLj24EE6toWordEv
 # Func Hash:
@@ -30733,7 +30782,7 @@ _ZNK6dsp56k8BitfieldIjNS_5Timer8TcsrBitsELm22EE4testES2_
 # Num Counters:
 1
 # Counter Values:
-47536059
+142608177
 
 _ZNK6dsp56k8DspValue10isRegValidEv
 # Func Hash:
@@ -30741,7 +30790,7 @@ _ZNK6dsp56k8DspValue10isRegValidEv
 # Num Counters:
 1
 # Counter Values:
-214589
+214427
 
 _ZNK6dsp56k8DspValue11convertTo56ERKN6asmjit9_abi_1_103arm2GpES6_
 # Func Hash:
@@ -30770,7 +30819,7 @@ _ZNK6dsp56k8DspValue11getBitCountEv
 # Num Counters:
 1
 # Counter Values:
-51473
+51521
 
 _ZNK6dsp56k8DspValue11isImmediateEv
 # Func Hash:
@@ -30778,13 +30827,13 @@ _ZNK6dsp56k8DspValue11isImmediateEv
 # Num Counters:
 7
 # Counter Values:
-47339
+51623
 0
 0
 0
-17407
+17581
 2376
-27556
+31666
 
 _ZNK6dsp56k8DspValue14isTempAcquiredEv
 # Func Hash:
@@ -30792,7 +30841,7 @@ _ZNK6dsp56k8DspValue14isTempAcquiredEv
 # Num Counters:
 4
 # Counter Values:
-48974
+49022
 5161
 0
 0
@@ -30803,7 +30852,7 @@ _ZNK6dsp56k8DspValue3getEv
 # Num Counters:
 1
 # Counter Values:
-61716
+61812
 
 _ZNK6dsp56k8DspValue3immEv
 # Func Hash:
@@ -30811,7 +30860,7 @@ _ZNK6dsp56k8DspValue3immEv
 # Num Counters:
 1
 # Counter Values:
-6709
+6757
 
 _ZNK6dsp56k8DspValue4tempEv
 # Func Hash:
@@ -30819,7 +30868,7 @@ _ZNK6dsp56k8DspValue4tempEv
 # Num Counters:
 4
 # Counter Values:
-55829
+55877
 5161
 0
 0
@@ -30830,7 +30879,7 @@ _ZNK6dsp56k8DspValue5imm24Ev
 # Num Counters:
 1
 # Counter Values:
-6730
+6904
 
 _ZNK6dsp56k8DspValue6copyToERKN6asmjit9_abi_1_103arm2GpEj
 # Func Hash:
@@ -30838,12 +30887,12 @@ _ZNK6dsp56k8DspValue6copyToERKN6asmjit9_abi_1_103arm2GpEj
 # Num Counters:
 6
 # Counter Values:
-7936
+7984
 6212
 685
 5527
-1724
-1679
+1772
+1727
 
 _ZNK6dsp56k8DspValue6isTempEv
 # Func Hash:
@@ -30865,7 +30914,7 @@ _ZNK6dsp56k8DspValue6isTypeENS0_4TypeE
 # Num Counters:
 1
 # Counter Values:
-29256
+29208
 
 _ZNK6dsp56k8DspValue7isImm24Ev
 # Func Hash:
@@ -30895,8 +30944,8 @@ _ZNK6dsp56k8DspValue8isDspRegENS_7PoolRegE
 # Num Counters:
 3
 # Counter Values:
-10941
-8927
+10989
+8975
 1680
 
 _ZNK6dsp56k8DspValue9getDspRegEv
@@ -31022,8 +31071,8 @@ _ZNK6dsp56k8JitBlock7getModeEv
 # Num Counters:
 2
 # Counter Values:
-31570
-31570
+31546
+31546
 
 _ZNK6dsp56k8JitBlock9getConfigEv
 # Func Hash:
@@ -31107,7 +31156,7 @@ _ZNK6dsp56k9ShiftTemp7isValidEv
 # Num Counters:
 1
 # Counter Values:
-37105
+37153
 
 _ZNK6dsp56k9SkipLabel3getEv
 # Func Hash:
@@ -31335,7 +31384,7 @@ _ZZN6dsp56k6JitOps16jumpIfBitTestMemILNS_11InstructionE124ELNS_8JumpModeE0ELNS_1
 
 _ZZN6dsp56k6JitOps16jumpIfBitTestMemILNS_11InstructionE124ELNS_8JumpModeE0ELNS_16ExpectedBitValueE1EEEvjENKUlvE_clEv
 # Func Hash:
-175973585
+2749585
 # Num Counters:
 2
 # Counter Values:
@@ -31503,7 +31552,7 @@ _ZZN6dsp56k6JitOps7op_IfccILb1EEEvjENKUlT_E_clIN6asmjit9_abi_1_105LabelEEEDaS2_
 
 _ZZN6dsp56k6JitOps7op_IfccILb1EEEvjENKUlvE_clEv
 # Func Hash:
-706694681809
+11042104401
 # Num Counters:
 3
 # Counter Values:
@@ -31535,7 +31584,7 @@ _ZZZN6dsp56k6JitOps7op_IfccILb1EEEvjENKUlvE_clEvENKUlvE_clEv
 # Counter Values:
 387
 
-audio.cpp:_ZZN6dsp56k5AudioC1EbENK3$_2clERyRKNS0_5FrameINSt3__15arrayIjLm6EEEEE
+audio.cpp:_ZZN6dsp56k5AudioC1EbENK3$_1clERyRKNS0_5FrameINSt3__15arrayIjLm6EEEEE
 # Func Hash:
 0
 # Num Counters:
@@ -32224,7 +32273,7 @@ jitdspregpool.cpp:_ZN6dsp56kL3r64ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-8039
+7445
 
 jitdspregpool.cpp:_ZZN6dsp56k13JitDspRegPool4loadERKN6asmjit9_abi_1_103arm2GpENS_7PoolRegEENK3$_0clES7_S7_RKNS_7RegTypeIxLj56EEE
 # Func Hash:
@@ -32232,10 +32281,10 @@ jitdspregpool.cpp:_ZZN6dsp56k13JitDspRegPool4loadERKN6asmjit9_abi_1_103arm2GpENS
 # Num Counters:
 5
 # Counter Values:
-3868
-365
-3712
-365
+3512
+9
+3356
+9
 0
 
 jitdspregpoolregpair.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At0IxEEjT_
@@ -32278,8 +32327,8 @@ jitdspregs.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At0IxEEjT_
 # Num Counters:
 2
 # Counter Values:
-30956
-30956
+30959
+30959
 
 jitdspregs.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IxEEjT_
 # Func Hash:
@@ -32287,7 +32336,7 @@ jitdspregs.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IxEEjT_
 # Num Counters:
 2
 # Counter Values:
-30956
+30959
 0
 
 jitdspregs.cpp:_ZN6dsp56kL18makeDspValueAguRegERNS_8JitBlockENS_7PoolRegEjbb
@@ -32312,7 +32361,7 @@ jitdspregs.cpp:_ZN6dsp56kL3r64ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-8241
+8247
 
 jitdspvalue.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At0IxEEjT_
 # Func Hash:
@@ -32338,7 +32387,7 @@ jitdspvalue.cpp:_ZN6dsp56kL3r32ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-123800
+123992
 
 jitdspvalue.cpp:_ZN6dsp56kL3r64ERKN6asmjit9_abi_1_103arm2GpE
 # Func Hash:
@@ -32370,8 +32419,8 @@ jitemitter.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At0IxEEjT_
 # Num Counters:
 2
 # Counter Values:
-30568
-30568
+47142
+47142
 
 jitemitter.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IxEEjT_
 # Func Hash:
@@ -32379,7 +32428,7 @@ jitemitter.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IxEEjT_
 # Num Counters:
 2
 # Counter Values:
-30568
+47142
 0
 
 jitemitter.cpp:_ZN6dsp56kL3r32ERKN6asmjit9_abi_1_103arm2GpE
@@ -32396,7 +32445,7 @@ jitemitter.cpp:_ZN6dsp56kL3r64ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-22496
+38455
 
 jitemitter.cpp:_ZZN6dsp56k10JitEmitter4lea_ERKN6asmjit9_abi_1_103arm3GpXES6_iENK3$_0clEi
 # Func Hash:
@@ -32404,14 +32453,14 @@ jitemitter.cpp:_ZZN6dsp56k10JitEmitter4lea_ERKN6asmjit9_abi_1_103arm3GpXES6_iENK
 # Num Counters:
 9
 # Counter Values:
-10532
+43680
 2527
-5302
+21876
 2527
 0
 0
 0
-2775
+19349
 0
 
 jithelper.cpp:_ZN6dsp56kL3r32ERKN6asmjit9_abi_1_103arm2GpE
@@ -32420,7 +32469,7 @@ jithelper.cpp:_ZN6dsp56kL3r32ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-47459
+47555
 
 jithelper.cpp:_ZN6dsp56kL3r64ERKN6asmjit9_abi_1_103arm2GpE
 # Func Hash:
@@ -32428,7 +32477,7 @@ jithelper.cpp:_ZN6dsp56kL3r64ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-78536
+78326
 
 jithelper.cpp:_ZZN6dsp56k2IfC1ERNS_8JitBlockERNS_19JitBlockRuntimeDataERKNSt3__18functionIFvN6asmjit9_abi_1_105LabelEEEERKNS6_IFvvEEESH_bbbENK3$_0clEv
 # Func Hash:
@@ -32453,7 +32502,7 @@ jitmem.cpp:_ZN6asmjit9_abi_1_103armL3ptrERKNS1_2GpEi
 # Num Counters:
 1
 # Counter Values:
-143438
+143435
 
 jitmem.cpp:_ZN6asmjit9_abi_1_107SupportL10isPowerOf2IjEEbT_
 # Func Hash:
@@ -32471,8 +32520,8 @@ jitmem.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At0IxEEjT_
 # Num Counters:
 2
 # Counter Values:
-34118
-34118
+17544
+17544
 
 jitmem.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IxEEjT_
 # Func Hash:
@@ -32480,7 +32529,7 @@ jitmem.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IxEEjT_
 # Num Counters:
 2
 # Counter Values:
-34118
+17544
 0
 
 jitmem.cpp:_ZN6asmjit9_abi_1_107SupportL13ptr_cast_implIPvPFjPN6dsp56k3DSPEjjNS4_11InstructionEEEET_T0_
@@ -32505,7 +32554,7 @@ jitmem.cpp:_ZN6asmjit9_abi_1_107SupportL15bitMaskFromBoolIjbEET_T0_
 # Num Counters:
 1
 # Counter Values:
-118012
+118009
 
 jitmem.cpp:_ZN6asmjit9_abi_1_10L11func_as_ptrIPFjPN6dsp56k3DSPEjjNS2_11InstructionEEEEPvT_
 # Func Hash:
@@ -32545,7 +32594,7 @@ jitmem.cpp:_ZN6dsp56kL3r64ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-33588
+50159
 
 jitmem.cpp:_ZZN6dsp56k6Jitmem14assignFuncArgsIRZNKS0_11writePeriphENS_8EMemAreaERKjRKNS_8DspValueEE3$_0EEvSt16initializer_listIN6asmjit9_abi_1_103arm2GpEESF_OT_ENKUlPKvjSE_SE_E_clESJ_jSE_SE_
 # Func Hash:
@@ -32771,8 +32820,8 @@ jitops_alu.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At0IxEEjT_
 # Num Counters:
 2
 # Counter Values:
-3945
-3945
+3663
+3663
 
 jitops_alu.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IjEEjT_
 # Func Hash:
@@ -32789,7 +32838,7 @@ jitops_alu.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IxEEjT_
 # Num Counters:
 2
 # Counter Values:
-3945
+3663
 0
 
 jitops_alu.cpp:_ZN6dsp56kL13getFieldValueENS_11InstructionENS_5FieldEj
@@ -32806,7 +32855,7 @@ jitops_alu.cpp:_ZN6dsp56kL13getFieldValueERKNS_9FieldInfoEj
 # Num Counters:
 1
 # Counter Values:
-12062
+12014
 
 jitops_alu.cpp:_ZN6dsp56kL3r32ERKN6asmjit9_abi_1_103arm2GpE
 # Func Hash:
@@ -32830,7 +32879,7 @@ jitops_alu.cpp:_ZN6dsp56kL7convertERNS_7RegTypeIiLj24EEEj
 # Num Counters:
 1
 # Counter Values:
-354
+528
 
 jitops_alu.cpp:_ZN6dsp56kL7convertERNS_7RegTypeIxLj56EEERKNS0_IiLj24EEE
 # Func Hash:
@@ -33032,7 +33081,7 @@ jitops_ccr_aarch64.cpp:_ZN6asmjit9_abi_1_103armL3lslEj
 # Num Counters:
 1
 # Counter Values:
-5755
+5731
 
 jitops_ccr_aarch64.cpp:_ZN6asmjit9_abi_1_103armL3lsrEj
 # Func Hash:
@@ -33040,7 +33089,7 @@ jitops_ccr_aarch64.cpp:_ZN6asmjit9_abi_1_103armL3lsrEj
 # Num Counters:
 1
 # Counter Values:
-3538
+3514
 
 jitops_ccr_aarch64.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At0IjEEjT_
 # Func Hash:
@@ -33048,8 +33097,8 @@ jitops_ccr_aarch64.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At0IjEEjT_
 # Num Counters:
 2
 # Counter Values:
-9293
-9293
+9245
+9245
 
 jitops_ccr_aarch64.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At0IxEEjT_
 # Func Hash:
@@ -33057,8 +33106,8 @@ jitops_ccr_aarch64.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At0IxEEjT_
 # Num Counters:
 2
 # Counter Values:
-83790
-83790
+83382
+83382
 
 jitops_ccr_aarch64.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IjEEjT_
 # Func Hash:
@@ -33066,7 +33115,7 @@ jitops_ccr_aarch64.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IjEEjT_
 # Num Counters:
 2
 # Counter Values:
-9293
+9245
 0
 
 jitops_ccr_aarch64.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IxEEjT_
@@ -33075,7 +33124,7 @@ jitops_ccr_aarch64.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IxEEjT_
 # Num Counters:
 2
 # Counter Values:
-83790
+83382
 0
 
 jitops_ccr_aarch64.cpp:_ZN6dsp56kL3r32ERKN6asmjit9_abi_1_103arm2GpE
@@ -33084,7 +33133,7 @@ jitops_ccr_aarch64.cpp:_ZN6dsp56kL3r32ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-13944
+13836
 
 jitops_ccr_aarch64.cpp:_ZN6dsp56kL3r64ERKN6asmjit9_abi_1_103arm2GpE
 # Func Hash:
@@ -33092,7 +33141,7 @@ jitops_ccr_aarch64.cpp:_ZN6dsp56kL3r64ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-12572
+12512
 
 jitops_ccr_aarch64.cpp:_ZZN6dsp56k6JitOps12ccr_e_updateERKN6asmjit9_abi_1_103arm3GpXEENK3$_0clEv
 # Func Hash:
@@ -33169,7 +33218,7 @@ jitops_decode.cpp:_ZZNK6dsp56k6JitOps17decode_dddddd_refEjbbENK3$_0clENS_7PoolRe
 # Num Counters:
 1
 # Counter Values:
-11710
+11614
 
 jitops_decode.cpp:_ZZNK6dsp56k6JitOps17decode_dddddd_refEjbbENK3$_1clENS_7PoolRegE
 # Func Hash:
@@ -33180,24 +33229,6 @@ jitops_decode.cpp:_ZZNK6dsp56k6JitOps17decode_dddddd_refEjbbENK3$_1clENS_7PoolRe
 2163
 0
 2163
-0
-
-jitops_decode_aarch64.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At0IxEEjT_
-# Func Hash:
-1549
-# Num Counters:
-2
-# Counter Values:
-45
-45
-
-jitops_decode_aarch64.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IxEEjT_
-# Func Hash:
-1549
-# Num Counters:
-2
-# Counter Values:
-45
 0
 
 jitops_decode_aarch64.cpp:_ZN6dsp56kL3r32ERKN6asmjit9_abi_1_103arm2GpE
@@ -33222,8 +33253,8 @@ jitops_helper.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At0IxEEjT_
 # Num Counters:
 2
 # Counter Values:
-21259
-21259
+21283
+21283
 
 jitops_helper.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IxEEjT_
 # Func Hash:
@@ -33231,7 +33262,7 @@ jitops_helper.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IxEEjT_
 # Num Counters:
 2
 # Counter Values:
-21259
+21283
 0
 
 jitops_helper.cpp:_ZN6asmjit9_abi_1_107SupportL13ptr_cast_implIPvPFvPN6dsp56k3DSPEEEET_T0_
@@ -33280,7 +33311,7 @@ jitops_helper.cpp:_ZN6dsp56kL3r64ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-16903
+16951
 
 jitops_helper_aarch64.cpp:_ZN6asmjit9_abi_1_103armL3lslEj
 # Func Hash:
@@ -33332,7 +33363,7 @@ jitops_helper_aarch64.cpp:_ZN6dsp56kL3r32ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-80946
+5704
 
 jitops_helper_aarch64.cpp:_ZN6dsp56kL3r64ERKN6asmjit9_abi_1_103arm2GpE
 # Func Hash:
@@ -33340,7 +33371,7 @@ jitops_helper_aarch64.cpp:_ZN6dsp56kL3r64ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-12321
+87563
 
 jitops_helper_aarch64.cpp:_ZNK6dsp56k10JitDspRegs8modifySSIZNKS_6JitOps9setSSHSSLERKNS_8DspValueES5_E3$_0EEvOT_bb
 # Func Hash:
@@ -33506,8 +33537,8 @@ jitregtracker.cpp:_ZZN6dsp56k6AluRef3getEvENK3$_0clENS_7PoolRegE
 # Num Counters:
 2
 # Counter Values:
-8941
-8728
+9573
+9360
 
 jitstackhelper.cpp:_ZN6asmjit9_abi_1_103armL3ptrERKNS1_2GpEi
 # Func Hash:
@@ -33541,7 +33572,7 @@ jitstackhelper.cpp:_ZN6dsp56kL3r64ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-856233
+853893
 
 jitstackhelper.cpp:_ZZN6dsp56k14JitStackHelper11pushAllUsedEPN6asmjit9_abi_1_108BaseNodeEENK3$_0clERKNS2_3arm3RegE
 # Func Hash:
@@ -37579,27 +37610,14 @@ mdhardware.cpp:_ZZN2md8HardwareC1ERKNSt3__16vectorIhNS1_9allocatorIhEEEERKNS1_12
 # Counter Values:
 2971852
 
-mdhardware.cpp:_ZZN2md8HardwareC1ERKNSt3__16vectorIhNS1_9allocatorIhEEEERKNS1_12basic_stringIcNS1_11char_traitsIcEENS3_IcEEEENS_12MachineModelES7_NS1_10shared_ptrINS_19FrontPanelPublisherEEES7_S7_RKNS_18FlashSectorOverlayES7_ENK3$_2clERyRKN6dsp56k5Audio5FrameINS1_5arrayIjLm6EEEEE
+mdhardware.cpp:_ZZN2md8HardwareC1ERKNSt3__16vectorIhNS1_9allocatorIhEEEERKNS1_12basic_stringIcNS1_11char_traitsIcEENS3_IcEEEENS_12MachineModelES7_NS1_10shared_ptrINS_19FrontPanelPublisherEEES7_S7_RKNS_18FlashSectorOverlayES7_ENK3$_2clERKN6dsp56k5Audio5FrameINS1_5arrayIjLm6EEEEERNSP_INSQ_IjLm4EEEEE
 # Func Hash:
-2841459914465734485
+18129
 # Num Counters:
-15
+2
 # Counter Values:
-173543581
-463837
-83622558
-463837
-248572
-430530
-215265
-463837
-430530
-0
-0
-0
-33307
-0
-0
+184520212
+184520212
 
 mdhardware.cpp:_ZZN2md8HardwareC1ERKNSt3__16vectorIhNS1_9allocatorIhEEEERKNS1_12basic_stringIcNS1_11char_traitsIcEENS3_IcEEEENS_12MachineModelES7_NS1_10shared_ptrINS_19FrontPanelPublisherEEES7_S7_RKNS_18FlashSectorOverlayES7_ENK3$_3clERN6dsp56k4EssiEj
 # Func Hash:
@@ -37625,7 +37643,29 @@ mdhardware.cpp:_ZZN2md8HardwareC1ERKNSt3__16vectorIhNS1_9allocatorIhEEEERKNS1_12
 # Counter Values:
 12
 
-mdhardware.cpp:_ZZN2md8HardwareC1ERKNSt3__16vectorIhNS1_9allocatorIhEEEERKNS1_12basic_stringIcNS1_11char_traitsIcEENS3_IcEEEENS_12MachineModelES7_NS1_10shared_ptrINS_19FrontPanelPublisherEEES7_S7_RKNS_18FlashSectorOverlayES7_ENK3$_6clEPN6dsp56k5AudioE
+mdhardware.cpp:_ZZN2md8HardwareC1ERKNSt3__16vectorIhNS1_9allocatorIhEEEERKNS1_12basic_stringIcNS1_11char_traitsIcEENS3_IcEEEENS_12MachineModelES7_NS1_10shared_ptrINS_19FrontPanelPublisherEEES7_S7_RKNS_18FlashSectorOverlayES7_ENK3$_6clERyRKN6dsp56k5Audio5FrameINS1_5arrayIjLm6EEEEE
+# Func Hash:
+2841459914465734485
+# Num Counters:
+15
+# Counter Values:
+173543581
+463837
+83622558
+463837
+248572
+430530
+215265
+463837
+430530
+0
+0
+0
+33307
+0
+0
+
+mdhardware.cpp:_ZZN2md8HardwareC1ERKNSt3__16vectorIhNS1_9allocatorIhEEEERKNS1_12basic_stringIcNS1_11char_traitsIcEENS3_IcEEEENS_12MachineModelES7_NS1_10shared_ptrINS_19FrontPanelPublisherEEES7_S7_RKNS_18FlashSectorOverlayES7_ENK3$_7clEPN6dsp56k5AudioE
 # Func Hash:
 0
 # Num Counters:
@@ -37633,7 +37673,7 @@ mdhardware.cpp:_ZZN2md8HardwareC1ERKNSt3__16vectorIhNS1_9allocatorIhEEEERKNS1_12
 # Counter Values:
 9087884
 
-mdhardware.cpp:_ZZN2md8HardwareC1ERKNSt3__16vectorIhNS1_9allocatorIhEEEERKNS1_12basic_stringIcNS1_11char_traitsIcEENS3_IcEEEENS_12MachineModelES7_NS1_10shared_ptrINS_19FrontPanelPublisherEEES7_S7_RKNS_18FlashSectorOverlayES7_ENK3$_8clEv
+mdhardware.cpp:_ZZN2md8HardwareC1ERKNSt3__16vectorIhNS1_9allocatorIhEEEERKNS1_12basic_stringIcNS1_11char_traitsIcEENS3_IcEEEENS_12MachineModelES7_NS1_10shared_ptrINS_19FrontPanelPublisherEEES7_S7_RKNS_18FlashSectorOverlayES7_ENK3$_9clEv
 # Func Hash:
 6612645217372819549
 # Num Counters:
@@ -37655,15 +37695,6 @@ mdhardware.cpp:_ZZN2md8HardwareC1ERKNSt3__16vectorIhNS1_9allocatorIhEEEERKNS1_12
 215265
 0
 4406427
-
-mdhardware.cpp:_ZZN2md8HardwareC1ERKNSt3__16vectorIhNS1_9allocatorIhEEEERKNS1_12basic_stringIcNS1_11char_traitsIcEENS3_IcEEEENS_12MachineModelES7_NS1_10shared_ptrINS_19FrontPanelPublisherEEES7_S7_RKNS_18FlashSectorOverlayES7_ENK3$_9clERKN6dsp56k5Audio5FrameINS1_5arrayIjLm6EEEEERNSP_INSQ_IjLm4EEEEE
-# Func Hash:
-18129
-# Num Counters:
-2
-# Counter Values:
-184520212
-184520212
 
 mdhardware.cpp:_ZZZN2md8HardwareC1ERKNSt3__16vectorIhNS1_9allocatorIhEEEERKNS1_12basic_stringIcNS1_11char_traitsIcEENS3_IcEEEENS_12MachineModelES7_NS1_10shared_ptrINS_19FrontPanelPublisherEEES7_S7_RKNS_18FlashSectorOverlayES7_ENK3$_3clERN6dsp56k4EssiEjENKUlRyRKNSN_5Audio5FrameINS1_5arrayIjLm6EEEEEE_clESQ_SX_
 # Func Hash:
