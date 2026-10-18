@@ -121,6 +121,10 @@ undo's history arrived (1 before, 1 after). The journey now requires both the re
 count before the next drag. Run 39147100397 diagnoses the two MM firmware failures. Full runs 39145760796 and
 39147093453 were cancelled while focused debugging continues, avoiding redundant editor and firmware builds.
 Full run 39144796389 was cancelled while queued so an already failing candidate is not rebuilt.
+Run 39147192591 passed checks, core tests and all 34 page unit tests; page journeys finished 339 passed, one failed,
+three skipped. The song-command journey saw the inserted loop in the document before the inspector rendered its
+JUMP button. It now waits for the row selection and that control together before clicking. The focused MM diagnostic
+run 39147100397 and queued native lane run 39147227476 are still outstanding.
 Keep the existing assertions and the release gate intact.
 PGO training on main passed in run 39126917819: the downloaded profile parses, its hash matches, and all four recorded
 emulator source trees match this branch. It is included with its metadata.
