@@ -66,7 +66,9 @@ namespace mmDesk
 
 		// MIDI Learn's global targets (B-169), by id (append-only: a saved project names them): the tempo (0), the
 		// active global's MASTER TUNE (1), the five MULTI ENV values ATK DEC SUS REL PORT (2-6) and the playing pattern's
-		// SWING (7). The tracks' DATA pages (FX included) and levels are the track targets.
+		// SWING (7); part 2: the pattern's TRANSPOSE (8), the 12 tracks' TRANSPOSE SCALE KEY, ARPEGGIATOR (every value and step),
+		// ASSIGN (the five sources' rows, MIRROR HPF LPF) and the six MIDI tracks (the MIDI page, CC numbers, channel); the full
+		// list is in mmDesk.cpp. The tracks' DATA pages (FX included) and levels are the track targets.
 		static const std::vector<deskCore::LearnGlobalSpec>& learnGlobals();
 
 		bool isReady() const { return isInputReady(); }
@@ -124,6 +126,6 @@ namespace mmDesk
 	// member needs the wrapper.
 	// The learn model: 6 synth tracks, 8 pages (the 7 DATA pages and the level), 8 values a page.
 	// plus the global targets (B-169): the tempo, the master tune, the multi envelope, the pattern's swing (Desk::learnGlobals)
-	constexpr int g_mmLearnGlobals = 8;
+	constexpr int g_mmLearnGlobals = 591;	// mmDeskTest checks it against Desk::learnGlobals()
 	constexpr deskCore::SetupSpec g_mmSetupSpec{"mm-desk/setup", g_mmModLimits, 12, false, true, {6, 8, 8, g_mmLearnGlobals}};
 }

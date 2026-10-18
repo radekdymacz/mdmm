@@ -552,6 +552,11 @@ namespace mdDesk
 			{"MASTER EQ", "eq", {"LF", "LG", "HF", "HG", "PF", "PG", "PQ", "GAIN"}},
 			{"DYNAMIX", "dynamix", {"ATCK", "REL", "TRHD", "RTIO", "KNEE", "HP", "OUTG", "MIX"}}}};
 		constexpr int g_fxTargets = 32, g_tempoTarget = 32, g_swingTarget = 33, g_accentTarget = 34;
+		// 35.. the LFO page of every track (B-169 part 2): track t's five settings (TRCK PARAM SHP1 SHP2 UPDTE, the lfo command's
+		// fields in order) are 35 + 5 t + field; SPD, DEPTH and SHMIX are kit parameters of the routing page and were learnable
+		// per track already. A choice (a shape, UPDTE, the target) is learned by spreading the CC over its entries.
+		constexpr int g_lfoFirst = 35, g_lfoFields = 5;
+		static_assert(g_lfoFirst + 16 * g_lfoFields == g_mdLearnGlobals);
 	}
 
 	const std::vector<deskCore::LearnGlobalSpec>& Desk::learnGlobals()
@@ -565,6 +570,12 @@ namespace mdDesk
 			v.push_back({"TEMPO", "TEMPO", 30, 300});
 			v.push_back({"SWING", "PATTERN", 50, 80});
 			v.push_back({"ACCENT", "PATTERN", 0, 15});
+			for(size_t t = 0; t < 16; ++t)
+				for(size_t f = 0; f < g_lfoFields; ++f)
+				{
+					static constexpr std::array<const char*, g_lfoFields> label{"TRCK", "PARAM", "SHP1", "SHP2", "UPDTE"};
+					v.push_back({"T" + std::to_string(t + 1) + " LFO " + label[f], "LFO T" + std::to_string(t + 1), 0, ed::g_mdLfoFieldMax[f]});
+				}
 			return v;
 		}();
 		return list;
@@ -590,6 +601,22 @@ namespace mdDesk
 				if(std::string(ed::g_mdMasterFx[f]) == name)
 					return k->masterFx[f][static_cast<size_t>(_id % 8)];
 			return std::nullopt;
+		}
+		if(_id >= g_lfoFirst && _id < g_lfoFirst + 16 * g_lfoFields)
+		{
+			if(kit < 0 || kit > 255)
+				return std::nullopt;
+			const auto* k = documents().workingKitOf(static_cast<uint8_t>(kit));
+			if(!k)
+			{
+				const auto it = documents().kits.find(static_cast<uint8_t>(kit));
+				if(it == documents().kits.end())
+					return std::nullopt;
+				k = &it->second;
+			}
+			const auto& l = k->lfos[static_cast<size_t>((_id - g_lfoFirst) / g_lfoFields)];
+			const std::array<int, g_lfoFields> fields{l.track, l.param, l.shape1, l.shape2, l.update};
+			return fields[static_cast<size_t>((_id - g_lfoFirst) % g_lfoFields)];
 		}
 		if(_id == g_tempoTarget)
 		{
@@ -617,6 +644,14 @@ namespace mdDesk
 			m.set("k", stateInt(_state, "kit", "current"));
 			m.set("fx", g_fxCards[static_cast<size_t>(_id / 8)].fx);
 			m.set("i", _id % 8);
+			m.set("v", _value);
+		}
+		else if(_id >= g_lfoFirst && _id < g_lfoFirst + 16 * g_lfoFields)
+		{
+			m.set("op", "lfo");
+			m.set("k", stateInt(_state, "kit", "current"));
+			m.set("t", (_id - g_lfoFirst) / g_lfoFields);
+			m.set("field", ed::g_mdLfoFields[static_cast<size_t>((_id - g_lfoFirst) % g_lfoFields)]);
 			m.set("v", _value);
 		}
 		else if(_id == g_tempoTarget)

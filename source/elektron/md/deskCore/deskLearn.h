@@ -181,7 +181,7 @@ namespace deskCore
 	// A CC the audio thread met for a global target, as it crossed to the message thread (one record in the router's ring).
 	struct LearnGlobalEvent
 	{
-		uint8_t id = 0;
+		uint16_t id = 0;		// the model's global id (a record of the router's ring holds 16 bits of it)
 		uint8_t mode = 0;		// LearnMode
 		bool invert = false;
 		uint8_t value = 0;		// the CC's 0-127

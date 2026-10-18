@@ -28,7 +28,7 @@ namespace mdDesk
 	using deskCore::validateKnobCcs;
 	// The learn model: 16 tracks, no DATA pages, 25 parameters (the 24 kit values and the level: StudioLink's indices 0-24)
 	// plus the global targets (B-169): the master effects, the tempo, the pattern's swing and accent (Desk::learnGlobals)
-	constexpr int g_mdLearnGlobals = 35;
+	constexpr int g_mdLearnGlobals = 35 + 16 * 5;
 	constexpr deskCore::SetupSpec g_mdSetupSpec{"md-desk/setup", g_mdModLimits, 16, true, false, {16, 0, 25, g_mdLearnGlobals}};
 
 	// A project's setup: what this version can use (deskCore::setupFromJson); errors carry JSON paths.

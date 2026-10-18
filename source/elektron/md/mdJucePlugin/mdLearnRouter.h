@@ -104,10 +104,10 @@ namespace mdJucePlugin
 			{
 				const auto r = m_globalRing[read & (GlobalCapacity - 1)].load(std::memory_order_relaxed);
 				deskCore::LearnGlobalEvent e;
-				e.id = static_cast<uint8_t>(r & 0xff);
-				e.mode = static_cast<uint8_t>((r >> 8) & 0xff);
-				e.invert = ((r >> 16) & 1) != 0;
-				e.value = static_cast<uint8_t>((r >> 24) & 0x7f);
+				e.id = static_cast<uint16_t>(r & 0xffff);
+				e.mode = static_cast<uint8_t>((r >> 16) & 0xf);
+				e.invert = ((r >> 20) & 1) != 0;
+				e.value = static_cast<uint8_t>((r >> 21) & 0x7f);
 				_f(e);
 				++read;
 			}

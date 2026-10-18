@@ -332,6 +332,29 @@ namespace
 			router.translate(0xb2, 70, 1);
 		check(router.counts().globalDropped == 10, "a full ring drops the newest and counts it");
 		router.drainGlobals([](const deskCore::LearnGlobalEvent&) {});
+
+		// part 2: ids above 255 (the Monomachine's list has 591) cross the ring whole
+		{
+			LearnRouter big(&apply);
+			std::vector<deskCore::LearnMapping> bl;
+			deskCore::LearnMapping x;
+			x.cc = 10;
+			x.at = deskCore::LearnRef::global(590);
+			x.mode = LearnMode::RelativeOffset;
+			bl.push_back(x);
+			x.cc = 11;
+			x.at = deskCore::LearnRef::global(300);
+			x.invert = true;
+			bl.push_back(x);
+			big.publish(buildLearnTable(bl, [&](const deskCore::LearnRef&) { return &a; }, 1, nullptr, 591));
+			big.beginBlock();
+			big.translate(0xb0, 10, 100);
+			big.translate(0xb0, 11, 5);
+			std::vector<deskCore::LearnGlobalEvent> ev;
+			big.drainGlobals([&](const deskCore::LearnGlobalEvent& _e) { ev.push_back(_e); });
+			check(ev.size() == 2 && ev[0].id == 590 && ev[0].value == 100 && ev[0].mode == static_cast<uint8_t>(LearnMode::RelativeOffset) && !ev[0].invert
+				&& ev[1].id == 300 && ev[1].value == 5 && ev[1].invert, "a global id above 255 crosses the ring with its mode, inversion and value");
+		}
 	}
 
 	// L2: the table from the setup's mappings; the empty table and the block boundary before parameters are freed; the
