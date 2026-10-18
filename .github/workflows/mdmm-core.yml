@@ -31,45 +31,18 @@ on:
       - "source/pluginTester/**"
       - "source/synthLib/**"
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - "release/md-mm-*"
-      - "release/0.*"
-    paths:
-      - ".github/workflows/mdmm-core.yml"
-      - "scripts/mdmm-ci-unit-targets.py"
-      - ".gitmodules"
-      - "CMakeLists.txt"
-      - "base.cmake"
-      - "xcodeversion.cmake"
-      - "source/CMakeLists.txt"
-      - "source/*.cmake"
-      - "source/3rdparty/**"
-      - "source/JUCE"
-      - "source/baseLib/**"
-      - "source/dsp56300"
-      - "source/dsp56300/**"
-      - "source/elektron/CMakeLists.txt"
-      - "source/elektron/md/**"
-      - "source/hardwareLib/**"
-      - "source/jucePluginData/**"
-      - "source/jucePluginEditorLib/**"
-      - "source/jucePluginLib/**"
-      - "source/juceRmlPlugin/**"
-      - "source/juceRmlUi/**"
-      - "source/juceUiLib/**"
-      - "source/libresample/**"
-      - "source/mc68k"
-      - "source/mc68k/**"
-      - "source/pluginTester/**"
-      - "source/synthLib/**"
+  workflow_call:
+    inputs:
+      modes:
+        description: 'JSON list of build modes: release, transport-diagnostics, asan-ubsan'
+        type: string
+        default: '["release"]'
 
 permissions:
   contents: read
 
 concurrency:
-  group: mdmm-core-${{ github.workflow }}-${{ github.ref }}
+  group: mdmm-core-${{ github.workflow }}-${{ github.ref }}-${{ inputs.modes }}
   cancel-in-progress: true
 
 jobs:
@@ -84,9 +57,9 @@ jobs:
       fail-fast: false
       matrix:
         # Exercise the JUCE-without-shipping-formats configuration before merge.
-        # main gets the one light build (unit tests, no memory checker), in the background: nobody waits for it.
-        # Release branches, pull requests and hand runs get all three (doc/release/CI.md).
-        mode: ${{ fromJSON(github.event_name == 'push' && github.ref == 'refs/heads/main' && '["release"]' || '["release", "transport-diagnostics", "asan-ubsan"]') }}
+        # mdmm-ci.yml passes the modes: stage 1 the one light build (unit tests, no memory checker), and on release
+        # branches stage 2 the other two. Pull requests and hand runs get all three (doc/release/CI.md).
+        mode: ${{ fromJSON(inputs.modes || '["release", "transport-diagnostics", "asan-ubsan"]') }}
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0

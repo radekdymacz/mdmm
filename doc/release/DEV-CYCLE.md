@@ -1,6 +1,6 @@
 # The development and test cycle
 
-> **2026-10-18 (Radek): develop locally, test on CI.** Local runs only the change's own quick check; tests, gates and packages run on GitHub CI (packages from the release workflow's dry run). Firmware tests stay local because ROMs never go to CI. The rule is in CLAUDE.md, "Development lifecycle"; where this page says otherwise, CLAUDE.md wins.
+> **2026-10-18 (Radek): develop locally, test on CI.** Local runs only the change's own quick check; tests, gates and packages run on GitHub CI. Firmware jobs obtain ROMs through the repository's OIDC-protected Worker. `mdmm-ci.yml` orders checks, page/core, editors, firmware and packages; a release needs that pipeline green on its commit. The current rule is in CLAUDE.md, "Development lifecycle", and [CI.md](CI.md); the older local-gate rules below are history.
 
 Since 2026-10-11 (after 0.5.1). The proposal of that day, Radek's three decisions on it, and what was built. The current
 rule (2026-10-13, after 0.6) is in the section below; the short form is in [CLAUDE.md](../../CLAUDE.md) ("Development lifecycle"); CI in [CI.md](CI.md); the local gate in

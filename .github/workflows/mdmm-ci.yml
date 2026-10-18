@@ -1,0 +1,167 @@
+name: MD/MM CI
+
+# The one pipeline of a push (doc/release/CI.md, "The pipeline"): cheap stages first, a red stage stops everything
+# after it. One run = one commit = one answer; on release/** that run green IS "release ready", and the tag's release
+# workflow (mdmm-editors-release.yml) refuses a commit without it.
+#
+#   0 checks    seconds: generated files in step, the page contract, actionlint (no C++ build, no browser)
+#   1 page+core the page suite (headless Chrome) and the core unit tests, in parallel
+#   2 editors   macOS, Windows, Linux build + tests in parallel (release/**: also the core sanitizer and transport
+#               diagnostics builds); macOS keeps its build tree for stage 3
+#   3 firmware  the tests that need the ROMs, on stage 2's macOS build (main and release/** only: the ROM Worker)
+#   4 packages  the release dry run on stage 2's packages: installers, installed-package tests (release/** only,
+#               or a hand run with `packages`)
+#
+# The stages are reusable workflows: mdmm-page.yml, mdmm-core.yml, mdmm-editors.yml, mdmm-firmware.yml,
+# mdmm-editors-release.yml. A docs-only push (markdown, site/, marketing/, doc/release, doc/guide) runs stage 0 only.
+# A hand run (Run workflow) works on any branch: stages 0 to 2, and 4 with `packages`; stage 3 only on main and release/**.
+
+on:
+  push:
+    branches:
+      - main
+      - "release/**"
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: Also run stage 4, the release dry run (needs a release-branch-like build; Windows with LTCG)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# main and feature branches: a newer push cancels the older run. Release branches queue (nothing is cancelled half
+# way through the expensive stages; a newer push waits for the running one).
+concurrency:
+  group: mdmm-ci-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/heads/release/') }}
+
+jobs:
+  # Stage 0: seconds. No submodules, no compiler, no browser.
+  checks:
+    name: "0 Checks (generated files, contract, actionlint)"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      code: ${{ steps.changes.outputs.code }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 1
+          submodules: false
+          persist-credentials: false
+
+      # Docs-only pushes to main stop after this stage. Release branches and hand runs always run everything.
+      - name: What changed
+        id: changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          code=true
+          if [[ "${GITHUB_EVENT_NAME}" == push && "${GITHUB_REF}" == refs/heads/main && "${BEFORE}" != 0000000000000000000000000000000000000000 ]]; then
+            if files="$(gh api "repos/${GITHUB_REPOSITORY}/compare/${BEFORE}...${GITHUB_SHA}" --paginate --jq '.files[].filename' 2>/dev/null)" && [[ -n "${files}" ]]; then
+              code=false
+              while IFS= read -r f; do
+                case "${f}" in
+                  *.md|site/*|marketing/*|doc/release/*|doc/guide/*) ;;
+                  *) code=true; echo "code change: ${f}"; break ;;
+                esac
+              done <<< "${files}"
+            fi
+          fi
+          echo "code=${code}" >> "${GITHUB_OUTPUT}"
+          if [[ "${code}" == false ]]; then echo "::notice title=Docs only::stage 0 only, no code changed"; fi
+
+      - name: Generated files are in step
+        run: |
+          set -euo pipefail
+          python3 doc/modern-ux/sync-mdstudio-skin.py --check
+          python3 doc/modern-ux/sync-mmstudio-skin.py --check
+          node scripts/keymap-export.js --check
+          node scripts/mdmm-guide.mjs --check
+          node scripts/mdmm-features-check.mjs --no-write > /dev/null
+
+      - name: Check-selection map and E2E verdict self-tests
+        run: |
+          set -euo pipefail
+          python3 scripts/mdmm-check.py --check-map
+          node scripts/mdmm-e2e-selftest.mjs
+
+      # Pinned release, SHA-256 checked. shellcheck is on the runner image; SC2016 is an info about a literal $ORIGIN.
+      - name: actionlint
+        env:
+          ACTIONLINT_VERSION: "1.7.12"
+          ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          curl -fsSL "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" -o "${tmp}/a.tgz"
+          echo "${ACTIONLINT_SHA256}  ${tmp}/a.tgz" | sha256sum -c -
+          tar -C "${tmp}" -xzf "${tmp}/a.tgz" actionlint
+          "${tmp}/actionlint" -ignore 'SC2016' -color
+
+  # Stage 1: in parallel, both on Linux.
+  page:
+    name: 1 Page suite
+    needs: checks
+    if: ${{ needs.checks.outputs.code == 'true' }}
+    uses: ./.github/workflows/mdmm-page.yml
+
+  core:
+    name: 1 Core unit tests
+    needs: checks
+    if: ${{ needs.checks.outputs.code == 'true' }}
+    uses: ./.github/workflows/mdmm-core.yml
+    with:
+      modes: '["release"]'
+
+  # Stage 2: the three systems in parallel. Windows builds the flavour that ships (LTCG) on release branches (the
+  # called workflow reads the ref). macOS keeps its build tree for the firmware stage.
+  editors:
+    name: 2 Editors
+    needs: [page, core]
+    uses: ./.github/workflows/mdmm-editors.yml
+    with:
+      ltcg: ${{ startsWith(github.ref, 'refs/heads/release/') || (inputs.packages == true) }}
+      build_tree: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') }}
+
+  # Stage 2, release branches only: the sanitizer and transport-diagnostics builds of the core.
+  core-deep:
+    name: 2 Core sanitizers and transport diagnostics
+    needs: [page, core]
+    if: ${{ startsWith(github.ref, 'refs/heads/release/') }}
+    uses: ./.github/workflows/mdmm-core.yml
+    with:
+      modes: '["transport-diagnostics", "asan-ubsan"]'
+
+  # Stage 3: the test tree already contains the firmware tests and diagnostics editors. The only jobs with ROM
+  # access live in mdmm-firmware.yml; the caller grants the OIDC permission without giving it to the build jobs.
+  firmware:
+    name: 3 Firmware
+    needs: [editors, core-deep]
+    if: ${{ !cancelled() && needs.editors.result == 'success' && (needs.core-deep.result == 'success' || needs.core-deep.result == 'skipped') && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')) }}
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/mdmm-firmware.yml
+    with:
+      build_tree_artifact: macos-build-tree
+
+  # Stage 4: the release dry run on this run's own packages. The caller grants contents: write only because the
+  # called workflow's publish jobs ask for it; they run on a tag only, never here.
+  packages:
+    name: 4 Release dry run (installers)
+    needs: [editors, core-deep, firmware]
+    if: ${{ !cancelled() && needs.editors.result == 'success' && (needs.core-deep.result == 'success' || needs.core-deep.result == 'skipped') && (needs.firmware.result == 'success' || (needs.firmware.result == 'skipped' && github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/heads/release/'))) && (startsWith(github.ref, 'refs/heads/release/') || inputs.packages == true) }}
+    permissions:
+      contents: write
+      actions: read
+    uses: ./.github/workflows/mdmm-editors-release.yml
+    with:
+      dry_run: true
+      reuse_current_run: true
