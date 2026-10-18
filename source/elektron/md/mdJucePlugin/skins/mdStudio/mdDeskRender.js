@@ -23,7 +23,7 @@ function menuOpen() { return !$("#machpop")?.hidden || !$("#kpop")?.hidden; }
 /* a gesture that holds the page (a drag, a paint, a dragged pad): documents re-derive the view, the page renders
    once it ends (pendingRender) */
 const HOLDS = new Set(["value", "editor", "lane", "l2", "chop", "song", "paint", "mutePaint", "select"]);
-function interacting() { const h = Held.now; return !!(h && HOLDS.has(h.kind)) || menuOpen(); }
+function interacting() { const h = Held.now; return !!(h && HOLDS.has(h.kind)) || menuOpen() || SongSlots.busy(); }
 /* the one flush: a render held while a gesture ran is made when it ends, whichever gesture it was (a timer, so
    the gesture's own end handler draws its row first; still held by a menu, it waits for the menu's close) */
 Held.onEnd(() => { if (pendingRender) scheduleRender(); });
@@ -47,7 +47,7 @@ Bridge.onMessage(m => {
 		   plays, "kit" the stored slots */
 		const slot = storeDoc(Docs, m); if (slot == null) break;
 		/* Background loads of other patterns only matter to the song palette. */
-		const relevant = (m.kind === "pattern" && (slot === currentPatternSlot() || S.ws === "song")) || ((m.kind === "kit" || m.kind === "workingKit") && slot === currentKitSlot()) || m.kind === "global" || (m.kind === "song" && slot === currentSongSlot());
+		const relevant = (m.kind === "pattern" && (slot === currentPatternSlot() || S.ws === "song")) || ((m.kind === "kit" || m.kind === "workingKit") && slot === currentKitSlot()) || m.kind === "global" || (m.kind === "song" && (slot === currentSongSlot() || S.ws === "song"));
 		if (relevant) scheduleRender();
 		break;
 	}
@@ -156,7 +156,6 @@ function clickSeg(e) {
 	if (k === "upd") { sendLfo(S.sel, "UPDTE", v); sg.parentElement.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b === sg)); redraw(); }
 	else if (k === "srcrate" && S.ws === "control") { const id = S.ctl.sel.slice(4); if (Mods.source(id)) { Mods.setSource(id, { rate: v }); sendMods(); render(); } }
 	else if (k === "lcurve" && S.ws === "control") { const li = +sg.parentElement.dataset.li; if (Mods.doc.links[li]) { Mods.setLink(li, { curve: v }); sendMods(); render(); } }
-	else if (k === "songpick" && S.ws === "song") { S.songPick = v; render(); }
 	else if (k === "loopkind" && S.ws === "song") { const r = { ...V.song[S.songSel], type: v }; if (v === "halt") r.to = S.songSel; if (v === "loop") { r.count = r.count || 2; r.to = Math.min(r.to ?? 0, Math.max(0, S.songSel - 1)); } if (v === "jump") r.to = Math.max(r.to ?? 0, S.songSel + 1); rowSet(S.songSel, r); render(); }
 	return true;
 }

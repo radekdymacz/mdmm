@@ -238,6 +238,8 @@ namespace mdDesk
 		deskCore::Outcome cmdChainClear(const Value&, const Documents&);
 		deskCore::Outcome cmdGlobalSlot(const Value&, const Documents&);
 		deskCore::Outcome cmdSelectSong(const Value&, const Documents&);
+		deskCore::Outcome cmdSaveSong(const Value&, const Documents&);
+		deskCore::Outcome askSaveSong(const Value&, const Documents&);
 		deskCore::Outcome cmdReloadSong(const Value&, const Documents&);
 		deskCore::Outcome cmdSampleName(const Value&, const Documents&);
 		deskCore::Outcome cmdSampleCancel(const Value&, const Documents&);
