@@ -1,6 +1,6 @@
 #!/bin/bash
-# Train the committed MD/MM profile (lever L6, doc/modern-ux/RESEARCH-emulation-cpu.md "L6 measured"): on this Mac,
-# with your ROMs, never in CI. Builds mdmmPerfGateTest instrumented (the release configuration: Release, ThinLTO,
+# Train the committed MD/MM profile (lever L6, doc/modern-ux/RESEARCH-emulation-cpu.md "L6 measured"): on a Mac with your ROMs,
+# or in the firmware workflow (mdmm-firmware.yml, train_pgo), the only place CI has the ROMs. Builds mdmmPerfGateTest instrumented (the release configuration: Release, ThinLTO,
 # the DSP libraries, this Mac's architecture), runs every scenario of both machines (stopped, then playing, speed-ups
 # as shipped), merges the counts, writes them as LLVM's text profile and records what they were trained on:
 #
