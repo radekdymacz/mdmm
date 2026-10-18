@@ -119,3 +119,16 @@ One owner per piece of state; the realtime threads read immutable values and pos
 
 Land the redesign in `jucePluginLib` (upstream code: keep the change narrow and offer it upstream), add the tests
 above, then set `MDMM_MIDI_MAPPING` to 1. `usesMidiLearn()` follows the switch, so nothing else changes.
+
+#### Addendum (0.8.0, B-169): targets that are not parameters
+
+A mapping can name a global target (`LearnTarget::global >= 0`, no `param`): the master effects, the tempo, the pattern's
+swing and so on. The audio thread does nothing to the machine for them. `LearnRouter::translate` consumes the CC (so it
+never reaches the firmware) and `queueGlobal` pushes one 32-bit record (id, mode, Inv, value) into `m_globalRing`, a
+single-producer single-consumer ring of 1024 records: a relaxed store of the record, then a release store of the write
+index; a full ring drops the newest record and counts it, never blocks. No lock, no allocation, no pointer. The message
+thread drains it in the session step (`MidiLearnCommands::takeGlobals`) and `deskCore::Desk::applyLearnGlobals` folds the
+run (`foldGlobalEvents`) and applies one command per value through `onPageMessage`, the path a page edit takes, so the
+desk's documents, the page, the undo history and the machine stay consistent. The audio thread never reads a desk
+document, and the message thread never reads the table the audio thread owns. The table, its Seqlock publication and
+`publishAndSettle` are unchanged; a global target needs no parameter, so no controller object can outlive its table.
