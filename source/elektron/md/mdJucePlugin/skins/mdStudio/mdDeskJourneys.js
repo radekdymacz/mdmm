@@ -323,8 +323,8 @@ const MdJourneys = (() => {
 			{ say: "click exactly on the line: it is a click on the lane, the step is locked at the kit value", act: async (u, c) => { c.l0 = locksOf(c.t, c.i).length; c.k0 = grp(c.t, c.p)[c.p] ?? 0; c.ul = V.undoCount;
 					const key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), b = $1(key + " .base").getBoundingClientRect(); u.click(key, {}, 0.5, (b.top + b.height / 2 - r.top) / r.height); },
 				machine: c => ok(locksOf(c.t, c.i).some(([x, v]) => x === c.s && v === c.k0) && (grp(c.t, c.p)[c.p] ?? 0) === c.k0, `locks ${JSON.stringify(locksOf(c.t, c.i))}, kit value ${c.k0}`), within: 8000 },
-			{ ...undoKey, say: "press Cmd+Z: the lock is gone", machine: c => ok(locksOf(c.t, c.i).length === c.l0, "locks " + JSON.stringify(locksOf(c.t, c.i))), within: 8000 },
-			{ say: "drag the line itself: the kit value follows the pointer, no lock is drawn", act: async (u, c) => { c.l0 = locksOf(c.t, c.i).length; c.u0 = V.undoCount; c.k0 = grp(c.t, c.p)[c.p] ?? 0;
+			{ ...undoKey, say: "press Cmd+Z: the lock is gone", machine: c => ok(locksOf(c.t, c.i).length === c.l0 && V.undoCount === c.ul, `locks ${JSON.stringify(locksOf(c.t, c.i))}, undo steps ${V.undoCount} (expected ${c.ul})`), within: 8000 },
+			{ say: "drag the line itself: the kit value follows the pointer, no lock is drawn", act: async (u, c) => { await settled(); c.l0 = locksOf(c.t, c.i).length; c.u0 = V.undoCount; c.k0 = grp(c.t, c.p)[c.p] ?? 0;
 					const key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), b = $1(key + " .base").getBoundingClientRect(), y = b.top + b.height / 2, dy = y - r.top < r.height / 2 ? 30 : -30;
 					await u.drag(key, [[0, dy / 2], [0, dy]], {}, { fy: (y - r.top) / r.height, click: false }); },
 				screen: c => { const v = grp(c.t, c.p)[c.p], k = $1("#lane .kvl"); return ok(v !== c.k0 && !!k && k.textContent === laneFmt(v), `kit ${c.k0} -> ${v}, number ${k?.textContent}`); },
