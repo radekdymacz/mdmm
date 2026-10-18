@@ -321,7 +321,7 @@ const MdJourneys = (() => {
 			{ say: "the kit line is 2 px and its number is on the lane", screen: c => { const b = $1(`#lane .lb[data-s="${c.s}"] .base`), v = grp(c.t, c.p)[c.p] ?? 0, k = $1("#lane .kvl");
 					return ok(Math.abs(b.getBoundingClientRect().height - 2) < 0.02 && !!k && k.textContent === laneFmt(v), `line ${b.getBoundingClientRect().height} px, number ${k?.textContent} for ${v}`); } },
 			{ say: "click exactly on the line: it is a click on the lane, the step is locked at the kit value", act: async (u, c) => { c.l0 = locksOf(c.t, c.i).length; c.k0 = grp(c.t, c.p)[c.p] ?? 0; c.ul = V.undoCount;
-					const key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), y = r.bottom - 3 - (r.height - 6) * c.k0 / 127; u.click(key, {}, 0.5, (y - r.top) / r.height); },
+					const key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), b = $1(key + " .base").getBoundingClientRect(); u.click(key, {}, 0.5, (b.top + b.height / 2 - r.top) / r.height); },
 				machine: c => ok(locksOf(c.t, c.i).some(([x, v]) => x === c.s && v === c.k0) && (grp(c.t, c.p)[c.p] ?? 0) === c.k0, `locks ${JSON.stringify(locksOf(c.t, c.i))}, kit value ${c.k0}`), within: 8000 },
 			{ ...undoKey, say: "press Cmd+Z: the lock is gone", machine: c => ok(locksOf(c.t, c.i).length === c.l0, "locks " + JSON.stringify(locksOf(c.t, c.i))), within: 8000 },
 			{ say: "drag the line itself: the kit value follows the pointer, no lock is drawn", act: async (u, c) => { c.l0 = locksOf(c.t, c.i).length; c.u0 = V.undoCount; c.k0 = grp(c.t, c.p)[c.p] ?? 0;
@@ -332,7 +332,7 @@ const MdJourneys = (() => {
 			{ say: "the whole drag was one undo step", machine: c => ok(V.undoCount === c.u0 + 1, `undo steps ${c.u0} -> ${V.undoCount}`), within: 4000 },
 			{ ...undoKey, say: "press Cmd+Z: the kit value is back", machine: c => ok((grp(c.t, c.p)[c.p] ?? 0) === c.k0 && V.undoCount === c.u0, `kit ${grp(c.t, c.p)[c.p]} (was ${c.k0}), undo steps ${V.undoCount}`), within: 8000 }
 		],
-		async tidy(u, c) { if (c.u0 != null && V.undoCount > c.u0) await undoUntil(u, () => V.undoCount <= c.u0); }
+		async tidy(u, c) { if (c.ul != null && V.undoCount > c.ul) await undoUntil(u, () => V.undoCount <= c.ul); await settled(); }
 	};
 	/* 0.8 (I-054): a slide is drawn in the lock lane, as in the Monomachine Editor. The machine's slide is a flag on a step (this track's, or with
 	   All tracks the pattern's row); the parameters it locks glide to their next lock. The dot at the top of a lock bar dragged sideways sets it
@@ -749,7 +749,7 @@ const MdJourneys = (() => {
 		name: "md-lane-tools", proves: [],
 		steps: [
 			go("seq"),
-			{ say: "pick a track with trigs and the first lane", act: async (u, c) => { const shown = steps(), onShown = t => trigsOf(t).filter(s => shown.includes(s)); c.t = [...Array(16).keys()].find(t => onShown(t).length >= 3 && soundTracks().includes(t)); u.click(rail(c.t)); await sleep(200); c.ln = S.lane; c.i = pidx(c.t, c.ln); c.s = onShown(c.t); c.m0 = JSON.stringify(locksOf(c.t, c.i)); c.u0 = V.undoCount; },
+			{ say: "pick a track with trigs and the first lane", act: async (u, c) => { await settled(); const shown = steps(), onShown = t => trigsOf(t).filter(s => shown.includes(s)); c.t = [...Array(16).keys()].find(t => onShown(t).length >= 3 && soundTracks().includes(t)); u.click(rail(c.t)); await settled(); c.ln = S.lane; c.i = pidx(c.t, c.ln); c.s = onShown(c.t); c.m0 = JSON.stringify(locksOf(c.t, c.i)); c.u0 = V.undoCount; },
 				screen: c => ok(S.sel === c.t && !!$1(".lanetop .xlane [data-xs=up]"), "no lane toolbox on the title row") },
 			{ say: "hover Ramp up: the lane shows it faint, nothing is written", act: async (u, c) => { await u.glide(".xlane [data-xs=up]"); $1(".xlane [data-xs=up]").dispatchEvent(new PointerEvent("pointerover", { bubbles: true })); await sleep(100); }, screen: c => ok($all("#lane .xghost").length >= 3 && JSON.stringify([...(V.locks.get(lk(c.t, c.ln)) || [])]) === c.m0 || $all("#lane .xghost").length >= 3, `${$all("#lane .xghost").length} ghosts`), machine: c => ok(JSON.stringify(locksOf(c.t, c.i)) === c.m0, "the machine has locks written") },
 			{ say: "click Ramp up: the machine holds a lock on every step with a trig, rising", act: u => u.click(".xlane [data-xs=up]"), screen: () => ok($all("#lane .xghost").length === 0, "ghosts stay"),
