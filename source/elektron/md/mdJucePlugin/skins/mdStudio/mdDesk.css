@@ -2022,6 +2022,7 @@ img,svg,canvas{-webkit-user-drag:none}
    doc/modern-ux/DESIGN-machine-menus.md §2, Song). Both editors: the same classes, the page's own tokens. */
 .songui.withlib{grid-template-columns:366px minmax(340px,400px) minmax(0,1fr)!important}
 /* SongMarks.fit measures the complete label before fitting it inside a narrow cell. */
+.slotgrid .scell{grid-template-columns:minmax(0,1fr)}
 .slotgrid .scell>b,.slotgrid .scell>small{width:max-content;max-width:none;justify-self:center;transform-origin:center}
 @media (max-width:1239px){.songui.withlib{grid-template-columns:minmax(0,1fr)!important}}
 /* B-165: the page asks for 1240 px (.app min-width; the Machinedrum page's html and body 1280), the plug-in's zoom gives it 1440

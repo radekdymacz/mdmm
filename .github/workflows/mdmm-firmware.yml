@@ -27,6 +27,9 @@ on:
       e2e_args:
         description: "Arguments of scripts/mdmm-e2e.sh after the machine and --no-build (default: --jobs 1); e.g. '--jobs 1 --select md-keys-space-play'"
         default: ""
+      firmware_test:
+        description: "Optional CTest name regex for a focused debugging run; empty runs all four shards"
+        default: ""
       train_pgo:
         description: "Only retrain the macOS PGO profile (scripts/macos/train_mdmm_pgo.sh) and keep it as the artifact pgo-profile"
         type: boolean
@@ -217,7 +220,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.firmware_test != '' && '[1]' || '[1,2,3,4]') }}
     env:
       MDMM_ROM_URL: ${{ vars.MDMM_ROM_URL }}
     steps:
@@ -252,13 +255,16 @@ jobs:
           GEARMULATOR_REQUIRE_FIRMWARE_TESTS: "1"
           MD_AUTOMATION_REQUIRE_FIRMWARE: "1"
           MDMM_LOCK_HOLD_BUDGET_MS: "10"
+          FIRMWARE_TEST: ${{ github.event_name == 'workflow_dispatch' && inputs.firmware_test || '' }}
         run: |
           set -euo pipefail
           home="${RUNNER_TEMP}/test-home"
           log="${RUNNER_TEMP}/firmware-ctest.log"
+          selection=(-I "${{ matrix.shard }},,4")
+          if [ -n "${FIRMWARE_TEST}" ]; then selection=(-R "${FIRMWARE_TEST}"); fi
           set +e
           HOME="${home}" GEARMULATOR_DATA_ROOT="${home}/Documents/" ctest --test-dir build -L FirmwareTest -LE 'Slow|Soak' \
-            -E '^mdSysexLifecycleTest$' -I "${{ matrix.shard }},,4" \
+            -E '^mdSysexLifecycleTest$' "${selection[@]}" \
             -j1 --output-on-failure --no-tests=error 2>&1 | tee "${log}"
           status=${PIPESTATUS[0]}
           set -e
@@ -420,7 +426,7 @@ jobs:
               -print0 | cpio -pdm0 "${stage}" 2>&1 | tail -n 3)
             # DOM snapshots make page.log larger than the small-report limit. Keep that named text log compressed
             # so a failing native layout or firmware journey can be diagnosed without running it locally.
-            (cd "${MDMM_E2E_OUT}" && find . -type f ! -type l -name page.log -size +3M -size -100M -print0 | \
+            (cd "${MDMM_E2E_OUT}" && find . -type f ! -type l -name page.log -size +3M -print0 | \
               while IFS= read -r -d '' log; do
                 mkdir -p "${stage}/$(dirname "${log}")"
                 gzip -c "${log}" > "${stage}/${log}.gz"
