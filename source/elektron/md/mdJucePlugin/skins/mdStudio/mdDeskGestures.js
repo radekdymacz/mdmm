@@ -6,7 +6,7 @@
    paint. */
 
 /* ===== The lock lane: draw (Alt erases), Shift: a ramp ===== */
-function laneAt(e) {
+function laneAt(e, exactValue) {
 	const d = Held.as("lane"); if (!d) return;
 	/* a slide being drawn (a dot dragged sideways, a Shift rubber band, a press on a ramp): its own, until it hands the press back */
 	if (d.slide || d.cut || d.band) { if (slideAt(e)) return; }
@@ -16,7 +16,7 @@ function laneAt(e) {
 	if (d.kit) { kitAt(e); return; }
 	if (d.ramp) { rampAt(e); return; }
 	const lane = $("#lane"); if (!lane) return; const el = document.elementFromPoint(e.clientX, e.clientY)?.closest(".lb"); if (!el || !lane.contains(el)) return;
-	const s = +el.dataset.s, t = S.sel; if (!V.tracks[t].trigs[s]) return; const r = el.getBoundingClientRect(); const v = clamp(Math.round((r.bottom - 3 - e.clientY) / (r.height - 6) * 127));
+	const s = +el.dataset.s, t = S.sel; if (!V.tracks[t].trigs[s]) return; const r = el.getBoundingClientRect(); const v = exactValue ?? clamp(Math.round((r.bottom - 3 - e.clientY) / (r.height - 6) * 127));
 	if (d.erase) eraseLock(t, S.lane, s); else if (!setLock(t, S.lane, s, v)) return;
 	/* One shape for render and drag (mockup's barHTML): a bipolar bar redraws while it is dragged. */
 	el.querySelector("i")?.remove(); if (!d.erase) el.insertAdjacentHTML("beforeend", barHTML(v));
@@ -25,7 +25,9 @@ function laneAt(e) {
 function endLaneDraw() { let d = Held.as("lane"); if (!d) return;
 	if (slideEnd()) return;
 	d = Held.as("lane");
-	if (d.kit === "maybe") { d = Held.with("lane", { kit: false, erase: false, ramp: false, touched: new Set() }); laneAt(d.down); }
+	/* A click on the kit line locks its exact value. Converting the pointer's rounded pixel position back to
+	   0..127 can land one value away at reduced zoom; a drag still follows the pointer normally. */
+	if (d.kit === "maybe") { d = Held.with("lane", { kit: false, erase: false, ramp: false, touched: new Set() }); laneAt(d.down, grp(S.sel, S.lane)[S.lane] ?? 0); }
 	if (d.ramp) rampSend(); Held.end("lane"); Gesture.end(); $("#lane")?.classList.remove("kitdrag"); refreshRow(S.sel); renderLane(); }
 
 /* ===== A slide drawn in the lock lane (0.8, I-054; the Monomachine lane's gestures, in the Machinedrum's rule). The machine's

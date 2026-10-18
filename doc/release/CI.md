@@ -105,6 +105,12 @@ remain connected. Large page logs are retained regardless of their uncompressed 
 For focused CI debugging, a manual `mdmm-firmware.yml` run accepts `firmware_test` (CTest name regex; one job) and
 `e2e_args` (for example `--jobs 1 --select journey-md-sound-knob-steps,mm-song-row-marks`). Empty selections run the full
 suites. These manual runs do not satisfy the release gate: the complete `mdmm-ci.yml` must pass on the release SHA.
+
+Focused run 39144813733 (`d69aea9ba`) passed all three MM journeys, MD knob stepping and song repeats, and every MD
+MIDI Learn fixture journey (12/14 MD journeys passed). It exposed an MD kit-line click rounding 31 to 32 and a lane
+preview cleared by late readback after cleanup. The next fix snaps a plain kit-line click to its exact displayed value,
+clicks the rendered line in the journey, and waits for cleanup/track readback before testing the preview. The memory
+test is still running. Full run 39144796389 was cancelled while queued so an already failing candidate is not rebuilt.
 Keep the existing assertions and the release gate intact.
 PGO training on main passed in run 39126917819: the downloaded profile parses, its hash matches, and all four recorded
 emulator source trees match this branch. It is included with its metadata.
