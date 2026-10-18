@@ -92,6 +92,12 @@ function(mdmm_add_lib_tests _dir)
 	set_tests_properties(mdSequencerStateTest PROPERTIES LABELS "UnitTest")
 	set_property(TARGET mdSequencerStateTest PROPERTY FOLDER "Elektron/test")
 
+	# Manual-gap probes P1-P6 (SPP + Continue, MM CONTROL OUT 1, MD trig in A/B, MM DigiPRO, MD stop twice and panic,
+	# the factory baseline): doc/modern-ux/PROBES-manual-gaps.md. Manual: needs both user-supplied ROMs.
+	add_executable(gapProbesFirmwareTest ${_dir}/gapProbesFirmwareTest.cpp ${_dir}/mdFirmwareSession.h ${_dir}/sysexPanelDriver.h)
+	target_link_libraries(gapProbesFirmwareTest PRIVATE mdLib elektronData)
+	set_property(TARGET gapProbesFirmwareTest PROPERTY FOLDER "Elektron/test")
+
 	# MM-P0 Monomachine Editor discovery probes (SYSEX RECV gate, dumps, playhead,
 	# CC live edits) against MM OS 1.32B firmware. Manual: needs a user-supplied ROM.
 	add_executable(mmEditorProbeFirmwareTest ${_dir}/mmEditorProbeFirmwareTest.cpp ${_dir}/mdFirmwareSession.h ${_dir}/sysexPanelDriver.h)
