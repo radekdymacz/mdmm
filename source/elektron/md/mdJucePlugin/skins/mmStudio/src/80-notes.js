@@ -33,7 +33,7 @@ function arpTicks(t,span){const tr=trk(t),a=tr.arp;if(!a.MODE||!a.SPD)return[];i
 /* only the arp's length is drawn (as the grid fits the pattern's length), one step after it is a "+" that adds a step */
 const arpCols=a=>`repeat(${a.len},minmax(0,1fr))`;
 function arpCells(a){const n=a.len,cells=Array.from({length:n},(_,k)=>{const o=a.ofs[k],on=a.rhy[k],f=(Math.abs(o)/24).toFixed(4);
- return`<div class="ac ${on?"":"mute"}" data-ac="${k}" title="Step ${k+1}: ${on?"plays, offset "+(o>0?"+":"")+o:"muted"}. Click = mute, drag = offset.">`+`<span class="z"></span><i class="${o>=0?"up":"dn"}" style="${o>=0?`bottom:50%;height:max(2px,calc((50% - 8px)*${f}))`:`top:50%;height:calc((50% - 8px)*${f})`}"></i><b>${o?(o>0?"+":"")+o:k+1}</b></div>`});
+ return`<div class="ac ${on?"":"mute"}" data-ac="${k}"${lgAttr(`${tLabel(S.sel)} ARP STEP ${k+1}`)} title="Step ${k+1}: ${on?"plays, offset "+(o>0?"+":"")+o:"muted"}. Click = mute, drag = offset.">`+`<span class="z"></span><i class="${o>=0?"up":"dn"}" style="${o>=0?`bottom:50%;height:max(2px,calc((50% - 8px)*${f}))`:`top:50%;height:calc((50% - 8px)*${f})`}"></i><b>${o?(o>0?"+":"")+o:k+1}</b></div>`});
  return cells.join("")}
 /* The dock's tabs share one layout, the lock lane's: the rail's LOCK PARAMETER keys area holds the panel's
    choices as keys (a group label over each row, the lock-parameter key style), the dock body holds one row of
@@ -44,15 +44,15 @@ const dkGroup=(label,keys,n,attrs="")=>`<div class="dkg"><span class="dkl">${lab
 const dkAttr=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 const dkPlain=h=>h.replace(/<b>([^<]*)<\/b>/g,"$1:").replace(/<[^>]+>/g,"");
 function dockKeys(t,d){const tr=trk(t),midi=isMidiT(t);
- if(d==="arp"){const a=tr.arp;return dkGroup("Mode",ARPM.map((m,i)=>dkk(`data-v="${i}"`,a.MODE===i,m)).join(""),4,`data-set="arpmode"`)
-  +dkGroup("Play",ARPP.map((m,i)=>dkk(`data-v="${i}"`,a.PLAY===i,m)).join(""),5,`data-set="arpplay"`)
-  +dkGroup("Trig",midi?`<span class="dkna" title="MIDI arpeggiators have no envelope switches">none on MIDI</span>`:["amp","flt","lfo"].map(k=>dkk(`data-arptrig="${k}"`,a[k],k.toUpperCase(),`The arpeggiator's notes retrigger the ${k.toUpperCase()} envelope`)).join(""),3)}
- if(d==="trn"){const sc=tr.tr.SCALE;return dkGroup("Scale",SCALES.map((m,i)=>dkk(`data-v="${i}"`,sc===i,m)).join(""),4,`data-set="scale"`)
-  +`<div class="dkg"><span class="dkl">Key</span><span class="dkna" title="${sc>1?"Click a key on the keyboard to set the root":"KEY only matters for MAJ and MIN"}">${sc>1?KEYS[tr.tr.KEY]+" · click the keyboard":"only for MAJ and MIN"}</span></div>`}
+ if(d==="arp"){const a=tr.arp;return dkGroup("Mode",ARPM.map((m,i)=>dkk(`data-v="${i}"`,a.MODE===i,m)).join(""),4,`data-set="arpmode"${lgAttr(`${tLabel(t)} ARP MODE`)}`)
+  +dkGroup("Play",ARPP.map((m,i)=>dkk(`data-v="${i}"`,a.PLAY===i,m)).join(""),5,`data-set="arpplay"${lgAttr(`${tLabel(t)} ARP PLAY`)}`)
+  +dkGroup("Trig",midi?`<span class="dkna" title="MIDI arpeggiators have no envelope switches">none on MIDI</span>`:["amp","flt","lfo"].map(k=>dkk(`data-arptrig="${k}"`,a[k],k.toUpperCase(),`The arpeggiator's notes retrigger the ${k.toUpperCase()} envelope`)).join(""),3,midi?"":lgAttr(`${tLabel(t)} ARP TRIGS`))}
+ if(d==="trn"){const sc=tr.tr.SCALE;return dkGroup("Scale",SCALES.map((m,i)=>dkk(`data-v="${i}"`,sc===i,m)).join(""),4,`data-set="scale"${lgAttr(`${tLabel(t)} SCALE`)}`)
+  +`<div class="dkg"${lgAttr(`${tLabel(t)} KEY`)}><span class="dkl">Key</span><span class="dkna" title="${sc>1?"Click a key on the keyboard to set the root":"KEY only matters for MAJ and MIN"}">${sc>1?KEYS[tr.tr.KEY]+" · click the keyboard":"only for MAJ and MIN"}</span></div>`}
  if(d==="trig"){const tp=tr.trigpos??"";return dkGroup("Trig position",[dkk(`data-v=""`,tp==="","—","No forwarding")].concat([0,1,2,3,4,5].filter(k=>k!==t).map(k=>dkk(`data-v="${k}"`,tp===k,"T"+(k+1),"Also play "+tLabel(k)+" "+S.tracks[k].m))).join(""),6,`data-set="trigpos"`)
   +dkGroup("Port",["ALWAYS","LEGATO"].map((m,i)=>dkk(`data-v="${i}"`,tr.port===i,m,i?"ONLY LEGATO: glide only between overlapping notes":"Glide on every note")).join(""),2,`data-set="port"`)
   +dkGroup("Legato",["amp","flt","lfo"].map(k=>dkk(`data-leg="${k}"`,tr.leg[k],k.toUpperCase(),`On: the ${k.toUpperCase()} envelope still fires when notes overlap`)).join(""),3)}
- return dkGroup("Channel",Array.from({length:16},(_,k)=>dkk(`data-v="${k+1}"`,tr.ch===k+1,k+1,"MIDI channel "+(k+1))).join(""),8,`data-set="mch"`)
+ return dkGroup("Channel",Array.from({length:16},(_,k)=>dkk(`data-v="${k+1}"`,tr.ch===k+1,k+1,"MIDI channel "+(k+1))).join(""),8,`data-set="mch"${lgAttr(`${tLabel(t)} CHANNEL`)}`)
   +`<div class="dkg"><span class="dkl">LFOs</span><span class="dkna">shared with T${t-5} ${S.tracks[t-6].m}</span></div>`}
 /* the header: a readout and one help line */
 function dockRead(t,d){const tr=trk(t);

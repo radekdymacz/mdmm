@@ -410,6 +410,10 @@ namespace
 			};
 			const auto pick = [&](const std::string& _name, const uint8_t _cc) { d.applyLearnGlobals({{idOf(_name), absolute, false, _cc}}); run(200); };
 			check(list.size() == static_cast<size_t>(mmDesk::g_mmLearnGlobals), "the table has the count the setup spec says");
+			for(const char* name : {"M3 CC4 NUMBER", "M1 CHANNEL", "T6 KEY", "M6 TRANSPOSE", "T1 ARP RANGE", "T1 ARP OJMP", "T1 ARP PLAY", "T1 ARP TRIGS", "M1 ARP STEP 16",
+				"T2 ASSIGN JOY U 2 DEST", "T2 ASSIGN KEY 1 PAGE", "T1 ASSIGN MIRROR", "T1 ASSIGN LPF", "M1 MIDI PCHG", "M6 MIDI CC4", "T6 ASSIGN VEL 2 ADD"})
+				check(std::any_of(list.begin(), list.end(), [&](const deskCore::LearnGlobalSpec& _s) { return _s.name == name; }), (std::string("the page's name ") + name + " is a learn global").c_str());
+			check(std::none_of(list.begin(), list.end(), [](const deskCore::LearnGlobalSpec& _s) { return _s.name == "M1 ARP TRIGS"; }), "a MIDI arpeggiator has no TRIGS");
 			pick("PATTERN TRANSPOSE", 127);
 			check(d.pattern(3)->patternTranspose == 63, "a learned CC moves the pattern transpose over -64..63");
 			pick("T1 SCALE", 127);

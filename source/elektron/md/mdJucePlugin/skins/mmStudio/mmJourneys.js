@@ -4407,6 +4407,27 @@ const MmJourneys = (() => {
 			],
 			tidy: learnTidy
 		},
+		/* B-169 part 2: LEARN on the pattern's and the tracks' transpose, the arpeggiator and ASSIGN: a click picks the target by the control's name and changes nothing */
+		globals2: {
+			name: "mm-control-learn-globals2", proves: [],
+			steps: [
+				{ say: "LEARN on, the Pattern tab, the Arp dock: a click on the arpeggiator's mode keys, its SPD value and a step sends learnStart with each one's global and changes nothing",
+					act: async u => { window.mmG2 = ["T1 ARP MODE", "T1 ARP SPEED", "T1 ARP STEP 1", "T1 TRANSPOSE", "T1 SCALE", "PATTERN TRANSPOSE", "T1 ASSIGN VEL 1 ADD", "T1 ASSIGN VEL 1 PAGE", "T1 ASSIGN HPF", "M1 MIDI LEN", "T1 ARP TRIGS"].map((name, g) => ({ g, name, group: "x", min: 0, max: 127 }));
+						window.mmG2Doc = (maps, o = {}) => lDoc(maps, Object.assign({ limits: Object.assign(lLimits(), { globals: window.mmG2 }) }, o));
+						await learnOn(u, [], { limits: Object.assign(lLimits(), { globals: window.mmG2 }) }); u.click("#learnkey"); await sleep(150); u.click(tab("seq")); await sleep(300);
+						S().sel = 0; u.click('[data-dock="arp"]'); await sleep(300); window.mmArp0 = JSON.stringify(S().tracks[0].arp); learnSent.length = 0;
+						u.click('[data-set="arpmode"] button[data-v="2"]'); await sleep(100); u.click('#main .pc[data-g="arp"][data-n="SPD"]'); await sleep(100); u.click('#main .ac[data-ac="0"]'); await sleep(100); },
+					screen: () => { const g = learnSent.filter(m => m.op === "learnStart").map(m => m.g).join(); return ok(g === "0,1,2" && JSON.stringify(S().tracks[0].arp) === window.mmArp0, "sent " + g + ", arp unchanged " + (JSON.stringify(S().tracks[0].arp) === window.mmArp0)); } },
+				{ say: "the Transpose dock: the track's TRACK value, the SCALE keys and the pattern's PAT value are targets too", act: async u => { u.click('[data-dock="trn"]'); await sleep(300); learnSent.length = 0;
+					u.click('#main .pc[data-g="trn"]'); await sleep(100); u.click('[data-set="scale"] button[data-v="2"]'); await sleep(100); u.click('#main .pc[data-g="ptrn"]'); await sleep(100); },
+					screen: () => ok(learnSent.filter(m => m.op === "learnStart").map(m => m.g).join() === "3,4,5", JSON.stringify(learnSent)) },
+				{ say: "a MIDI track's MIDI page value and a name the document does not list: the first is named M1 MIDI LEN, the second says it cannot be learned", act: async u => { learnSent.length = 0; window.mmNames = [lgFor("MID", 0, 6), lgFor("MID", 0, 0), lgFor("arp", "SPD", 7), lgFor("asg", 1, 0)]; },
+					screen: () => ok(window.mmNames[0] === "M1 MIDI LEN" && window.mmNames[1] === "" && window.mmNames[2] === "M2 ARP SPEED" && /^T1 ASSIGN [A-Z ]+ 2 ADD$/.test(window.mmNames[3]), JSON.stringify(window.mmNames)) },
+				{ say: "a mapping on the arpeggiator's SPD arrives: it is marked as mapped with its CC and the mode keys are not", act: async u => { u.click("#learnkey"); lSend(window.mmG2Doc([{ index: 0, g: 1, name: "T1 ARP SPEED", cc: 74, ch: 255, mode: "Absolute", invert: false, overrides: [] }])); await sleep(200); u.click("#learnkey"); u.click('[data-dock="arp"]'); await sleep(300); },
+					screen: () => ok($1('#main .pc[data-g="arp"][data-n="SPD"]')?.classList.contains("mapped") && !$1('[data-set="arpmode"]')?.classList.contains("mapped"), "mapped " + $all("#main .mapped").length) }
+			],
+			tidy: learnTidy
+		},
 	};
 	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowMarks, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixHeads, mixSolo, soloSaved, shiftMutes, routing, mixMeters, panTrim, msOff, msViews, railLamps, railLampsFwd,

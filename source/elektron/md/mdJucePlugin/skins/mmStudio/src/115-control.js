@@ -18,15 +18,29 @@ const LEVELPG=7;
 const learnGlobals=()=>LD().limits?.globals||[];
 const globalName=g=>{const x=learnGlobals().find(q=>q.g===g);return x?x.name:"#"+g};
 const MENV_N=["ATK","DEC","SUS","REL","PORT"];
-function globalIdOf(el){if(!el)return-1;if(el.dataset.g==="menv"){const k=MENV_N.indexOf(el.dataset.n);return k>=0?2+k:-1}if(el.id==="bpm")return 0;if(el.dataset.l2==="swing")return 7;
+function globalIdOf(el){if(!el)return-1;if(el.dataset.lgn)return globalByName(el.dataset.lgn);if(el.dataset.g==="menv"){const k=MENV_N.indexOf(el.dataset.n);return k>=0?2+k:-1}if(el.id==="bpm")return 0;if(el.dataset.l2==="swing")return 7;
  if(el.classList.contains("stepper")&&el.querySelector('[data-ga="tune"]'))return 1;return-1}
+/* part 2 (B-169): the page's own controls name their target: data-lgn="T1 ARP MODE" is the document's global of that name (limits.globals).
+   The names are the plug-in's (mmDesk.cpp defs): "<T1..T6|M1..M6> ARP|TRANSPOSE|KEY|SCALE|MIDI|CC1 NUMBER|CHANNEL ...", "T1 ASSIGN VEL 1 ADD",
+   "PATTERN TRANSPOSE". A list of choices (a mode, a page) is learned over its entries, the CC spread across them. */
+const ARPF={SPD:"SPEED",RNGE:"RANGE",OJMP:"OJMP",len:"LENGTH"},ASN={"JOY RL":"JOY R","JOY U":"JOY U","JOY D":"JOY D",VEL:"VEL",KEY:"KEY"};
+function lgFor(g,n,t){const x=t!=null?+t:S.sel;
+ switch(g){case"arp":return ARPF[n]?`${tLabel(x)} ARP ${ARPF[n]}`:"";case"trn":return`${tLabel(x)} TRANSPOSE`;case"ptrn":return"PATTERN TRANSPOSE";case"key":return`${tLabel(x)} KEY`;
+  case"asg":return`T${asgT()+1} ASSIGN ${ASN[S.asTab]} ${+n+1} ADD`;case"cc":return`${tLabel(x)} CC${+n+1} NUMBER`;case"MID":return x>=6?`${tLabel(x)} MIDI ${FIXED.MID[n]}`:""}
+ return""}
+const lgAttr=name=>name?` data-lgn="${name}"`:"";
+let LG={list:null,map:new Map()};
+function globalByName(n){const list=learnGlobals();if(LG.list!==list)LG={list,map:new Map(list.map(x=>[x.name,x.g]))};return LG.map.has(n)?LG.map.get(n):-1}
+/* the Add row's global values, one group per card (the tempo, a track's ARP, ASSIGN ...) */
+function globalOptions(){const groups=[],at={};learnGlobals().forEach(x=>{if(!(x.group in at)){at[x.group]=[];groups.push(x.group)}at[x.group].push(opt(x.g,x.name,""))});
+ return groups.map(g=>groups.length>1&&at[g].length>1?`<optgroup label="${g}">${at[g].join("")}</optgroup>`:at[g].join("")).join("")}
 const globalMaps=g=>LD().mappings.filter(m=>m.g===g);
 /* a global value's element: .mapped while a CC drives it, .learnt while LEARN waits for a knob for it */
 function markGlobal(el,gid){if(!el)return;const g=gid!=null?gid:globalIdOf(el),mp=g>=0?globalMaps(g):[];
  el.classList.toggle("mapped",mp.length>0);el.classList.toggle("learnt",g>=0&&!!S.learnT&&S.learnT.g===g);
- if(mp.length&&el.classList.contains("pc"))el.title="Mapped: "+mp.map(m=>"CC "+m.cc).join(", ")}
+ if(mp.length&&el.classList.contains("pc"))el.title="Mapped: "+mp.map(m=>"CC "+m.cc).join(", ");if(mp.length)el.dataset.mapped="CC "+mp.map(m=>m.cc).join(", ");else delete el.dataset.mapped}
 const inColumn=(m,c)=>c==null||(c==="g"?m.g!=null:m.t===c);
-const l2Mark=k=>{const g=k==="swing"?7:-1;return g<0?"":(globalMaps(g).length?" mapped":"")+(S.learnT&&S.learnT.g===g?" learnt":"")};
+const l2Mark=k=>{const g=k==="swing"?7:k==="ptrn"?globalByName("PATTERN TRANSPOSE"):-1;return g<0?"":(globalMaps(g).length?" mapped":"")+(S.learnT&&S.learnT.g===g?" learnt":"")};
 const knobRows=()=>S.ctl.sources.filter(x=>x.kind==="cc");
 /* a CC row: a knob row (any channel, the knob's CC) or "x<ch>:<cc>" for any other learned (channel, CC) */
 const rowIdOf=m=>{if(m.ch===255){const k=knobRows().find(x=>x.cc===m.cc);if(k)return k.id}return"x"+m.ch+":"+m.cc};
@@ -116,8 +130,8 @@ function renderControl(){const C=S.ctl,rows=ccRows();
   <div class="lnks">${ms.map(m=>`<div class="lnk"><span class="lcdchip" title="${tgtLabel(m)}">${tgtLabel(m)}</span><span class="note" style="grid-column:span 2">${m.mode==="RelativeSigned"?"Relative (signed)":m.mode==="RelativeOffset"?"Relative (offset)":"Absolute"}</span><span></span>
    <button class="ptog ${m.invert?"on":""}" data-minv="${m.index}"><i class="led"></i>Inv</button><button class="iconkey" data-mdel="${m.index}" aria-label="Remove mapping" title="Remove">×</button></div>${m.overrides&&m.overrides.length?`<div class="note" style="font-size:12px" data-ovr="${m.index}">${overrideLine(m)}</div>`:""}`).join("")||`<div class="note">Not mapped: this row does nothing yet.</div>`}</div>
   ${full?`<div class="note" data-learnnote="full">${limitMax()} mappings at most: remove one to add another.</div>`:""}
-  <div class="irow addrow"><span class="ilab">Add</span><select id="lt" aria-label="Target track">${ALLT.filter(i=>i<learnTracks()).map(i=>opt(i,tLabel(i)+" · "+trk(i).m,addG?-1:addT)).join("")}${opt("g","Global values (tempo, tune, multi env, swing)",addG?"g":-1)}</select>
-   <select id="lp" aria-label="Target value">${addG?learnGlobals().map(x=>opt(x.g,x.name,"")).join(""):learnOpts(addT)}</select><button class="cream" id="laddl"${full?" disabled":""}>Add target</button></div>
+  <div class="irow addrow"><span class="ilab">Add</span><select id="lt" aria-label="Target track">${ALLT.filter(i=>i<learnTracks()).map(i=>opt(i,tLabel(i)+" · "+trk(i).m,addG?-1:addT)).join("")}${opt("g","Global values (tempo, tune, transpose, arp, assign, MIDI tracks)",addG?"g":-1)}</select>
+   <select id="lp" aria-label="Target value">${addG?globalOptions():learnOpts(addT)}</select><button class="cream" id="laddl"${full?" disabled":""}>Add target</button></div>
   <div class="irow"><span class="ilab"></span><button data-addsrc="lfo">+ App LFO</button><button data-addsrc="rnd">+ Random</button></div></section>`;
  }else{
  const links=C.links.map((l,li)=>({l,li})).filter(o=>o.l.src===sel.id&&(C.selT==null||o.l.t===C.selT));
@@ -163,9 +177,11 @@ document.addEventListener("click",e=>{if(S.ws!=="control")return;const C=S.ctl;
  const as=e.target.closest("[data-addsrc]");if(as){const k=as.dataset.addsrc,n=C.sources.filter(x=>x.kind===k).length;const id=k+"X"+Date.now();C.sources.push(k==="lfo"?{id,kind:"lfo",label:"LFO "+"ABCDEFGH"[n],val:64,SHAPE:2,RATE:"1",DEPTH:80}:{id,kind:"rnd",label:"Random "+"ABCDEFGH"[n],val:64,RATE:"1/8",SMOOTH:0,_t:64});C.sel=id;ctlChanged();render();return}});
 document.addEventListener("change",e=>{if(e.target.id==="lt"){if(e.target.value==="g"){S.ctl.addG=true;if(S.ctl.selT!=null)S.ctl.selT="g"}else{S.ctl.addG=false;S.ctl.addT=+e.target.value;if(S.ctl.selT!=null)S.ctl.selT=S.ctl.addT}render()}});
 /* LEARN on the values that belong to no track (the top bar's tempo and swing, the multi envelope's knobs, the global page's master tune) */
-document.addEventListener("pointerdown",e=>{if(!S.learn)return;const el=e.target.closest(GLOBAL_LEARN_SEL),g=globalIdOf(el);if(g<0)return;
+document.addEventListener("pointerdown",e=>{if(!S.learn)return;const el=e.target.closest(GLOBAL_LEARN_SEL),g=globalIdOf(el);if(g<0){if(el&&el.dataset.lgn){e.preventDefault();e.stopPropagation();toast("This value cannot be learned.")}return}
  e.preventDefault();e.stopPropagation();
  if(LD().limits&&!learnGlobals().some(q=>q.g===g)){toast("This value cannot be learned.");return}
  S.learnT={g};markGlobalAll();toast(`Target: ${globalName(g)}. Now turn a knob on your controller, or press 1-8 for a knob row.`);if(HOST.learnTarget)HOST.learnTarget({...S.learnT})},true);
-const GLOBAL_LEARN_SEL='.pc[data-g="menv"], #bpm, .l2.ed[data-l2="swing"], .stepper';
-function markGlobalAll(){$$('.pc[data-g="menv"]').forEach(el=>markGlobal(el));markGlobal($("#bpm")&&$("#bpm").closest(".f"),0);$$("[data-l2='swing']").forEach(el=>markGlobal(el));$$("#globpop .stepper").forEach(el=>markGlobal(el))}
+const GLOBAL_LEARN_SEL='[data-lgn], .pc[data-g="menv"], #bpm, .l2.ed[data-l2="swing"], .stepper';
+/* LEARN is on: a click on a choice of the page picks the learn target and changes nothing */
+document.addEventListener("click",e=>{if(S.learn&&e.target.closest("[data-lgn]")){e.stopPropagation();e.preventDefault()}},true);
+function markGlobalAll(){$$('.pc[data-g="menv"]').forEach(el=>markGlobal(el));markGlobal($("#bpm")&&$("#bpm").closest(".f"),0);$$("[data-l2='swing']").forEach(el=>markGlobal(el));$$("#globpop .stepper").forEach(el=>markGlobal(el));$$("#main [data-lgn], .l2[data-lgn]").forEach(el=>markGlobal(el))}
