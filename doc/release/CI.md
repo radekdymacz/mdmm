@@ -13,21 +13,50 @@ Rule of 2026-10-13 (Radek, after 0.6); the short form is in [CLAUDE.md](../../CL
    page file) to under 2 minutes (the page journeys of that area, no ROM). `--branch` is for when asked or before a big
    merge.
 3. A change across the firmware boundary gets one focused firmware test while it is developed.
-4. Merge to main. CI runs two ROM-free jobs in parallel: the light core job and the page suite. Nothing else runs on a push to main.
-5. Before a tag, locally: the full firmware E2E (`scripts/mdmm-e2e.sh`, nonzero on failure) and the gate stages of
-   `scripts/mdmm-full-gate.sh --plan`. Radek tests by hand before the tag.
+4. Merge to main. CI (`mdmm-ci.yml`, below) runs the whole pipeline on the push, cheapest stage first.
+5. Before a tag: the `MD/MM CI` run of the release-branch head is green (stages 0 to 4, firmware included). Radek tests by hand before the tag.
 
-## What CI runs
+## The pipeline: `mdmm-ci.yml` (fail fast, cheap first)
+
+Rule of 2026-10-18 (Radek). One orchestrator workflow, `MD/MM CI`, runs on every push to `main` and `release/**` and by
+hand (Run workflow) on any branch. Its stages are reusable workflows (`workflow_call`); each stage `needs` the one before,
+so a red stage stops everything after it and nothing expensive starts on a commit that fails a cheap check. One run is one
+commit and one answer: **on a release branch, that run green is "release ready"**, and the tag's release workflow refuses a
+commit that has no green run.
+
+| Stage | Job | Runs | Where | Gate |
+|---|---|---|---|---|
+| 0 | Checks | generated files in step (`sync-mdstudio-skin.py --check`, `sync-mmstudio-skin.py --check`, `keymap-export.js --check`, `mdmm-guide.mjs --check`, `mdmm-features-check.mjs`), the check-selection map and E2E verdict self-tests, actionlint (pinned, SHA-256 checked). No submodules, no compiler, no browser: seconds | ubuntu | every push |
+| 1 | Page suite, Core unit tests | `mdmm-page.yml` (node page tests and the page-tier journeys, headless Chrome) and `mdmm-core.yml` (every ROM-free unit test, light build), in parallel | ubuntu | needs 0; skipped for a docs-only push |
+| 2 | Editors, Core sanitizers | `mdmm-editors.yml`: macOS, Windows, Linux build + unit/plug-in tests + start tests + pluginval, in parallel. Windows builds LTCG on `release/**`. macOS keeps its test build tree as the artifact `macos-build-tree` (main and `release/**`). On `release/**` also `mdmm-core.yml` with asan-ubsan and transport-diagnostics | 3 OS | needs 1 |
+| 3 | Firmware | `mdmm-firmware.yml`: the ROM tests and the firmware E2E, on stage 2's macOS build tree (see "Firmware tests on CI") | macOS, `rom` environment | needs 2; `main` and `release/**` only (the ROM Worker) |
+| 4 | Packages | `mdmm-editors-release.yml` as a dry run on stage 2's packages (`reuse_current_run`): the two macOS installers, their install tests and auval, the per-machine Windows and Linux archives. Attaches nothing | macOS, 3 OS | needs 3; `release/**`, or a hand run with `packages` |
+
+Docs-only pushes to `main` (only `*.md`, `site/`, `marketing/`, `doc/release/`, `doc/guide/`) run stage 0 only. Release
+branches and hand runs always run everything. Concurrency: a newer push to `main` or a feature branch cancels the older run; on
+`release/**` runs queue and nothing is cancelled half way. A hand run on another branch does stages 0 to 2 (and 4 with
+`packages`); stage 3 needs `main` or `release/**`.
 
 | Event | Runs |
 |---|---|
-| Push to `main` | Two light jobs in the background, side by side: the automation core (Linux, unit tests, no memory checker) and the page suite (below). Nobody waits for them. |
-| Push to `release/0.*` | The full suite once: Editors on macOS, Windows (LTCG, what ships) and Linux, each with its tests in a job of their own beside the package (macOS: an arm64 tree without ThinLTO; the package job links only the plug-ins with ThinLTO), core with ASan/UBSan and the transport diagnostics, shared controller. A newer push cancels the older run. (The audio I/O workflow is folded into the Editors' test jobs.) |
-| Tag `mdmm-v*` on the tested release-branch commit | Finds that branch run and reuses its packages: makes the installers, tests them, attaches them. No second build. |
-| Nightly, 02:00 UTC (04:00 Polish summer time) | The full suite on main, only if main changed in the last 24 hours (`mdmm-nightly.yml`), Windows with LTCG so main's sccache holds what a release branch builds. Nobody waits; a red run is there in the morning. The local gate is not scheduled: it runs by hand ([LOCAL-GATE.md](LOCAL-GATE.md)). |
-| By hand | Every workflow has Run workflow; the release installers have a dry run. |
+| Push to `main` | `mdmm-ci.yml` stages 0 to 3 (4 never). A docs-only push: stage 0. |
+| Push to `release/**` | `mdmm-ci.yml` stages 0 to 4, with the sanitizer builds and LTCG Windows. Green = release ready. |
+| Tag `mdmm-v*` on the green release head | `mdmm-editors-release.yml`: `locate` finds the green `mdmm-ci.yml` run of that commit and takes its packages (macOS universal, Windows LTCG, Linux); it **fails loudly when there is none** (nothing is published, nothing is built). It makes the installers again from them, tests them, attaches them. |
+| Run workflow on any branch | `mdmm-ci.yml` (stages 0 to 2, 4 with `packages`). `mdmm-core.yml`, `mdmm-page.yml`, `mdmm-editors.yml`, `mdmm-firmware.yml` and `mdmm-editors-release.yml` can still be run by hand alone. |
+| Pull request | `mdmm-core.yml` and `mdmm-page.yml` by their path filters (never firmware). |
+| Push to `feat/windows-*`, `feat/linux-*` | `mdmm-editors.yml` alone (path filter), for platform-only work. |
+| Nightly, 02:00 UTC (04:00 Polish summer time) | The Editors (LTCG) and the core on main, only if main changed in the last 24 hours (`mdmm-nightly.yml`; its LTCG objects warm main's sccache for release branches); firmware at 02:30. Nobody waits; a red run is there in the morning. |
 
-Off: upstream's Elektron workflows (disabled in Actions), the per-push installer dry run.
+Reading a run: `gh run view <id>` shows the stage jobs in order (`0 Checks`, `1 ...`, `2 ...`, `3 ...`, `4 ...`); the first red one is
+the whole story, the later ones are "skipped". Re-run failed jobs re-runs only that stage and what depends on it.
+
+Packages of a release branch are kept 30 days (14 elsewhere), so a hand test can outlast the run. The tag reuses them; after
+30 days the tag finds nothing and fails (push a new head, or `allow_unverified`).
+
+Emergency override: run `mdmm-editors-release.yml` by hand on the tag with `dry_run` off and `allow_unverified` on. It then also
+accepts a green `mdmm-editors.yml` run, or builds in the workflow. Default off; use only when CI itself is broken.
+
+Off: upstream's Elektron workflows (disabled in Actions), the per-push installer dry run of the old layout.
 
 ## Core job: every ROM-free unit test
 
@@ -97,8 +126,8 @@ Every action is pinned by full commit SHA with its tag in a comment (update both
 
 ## Page suite (ROM-free, Linux)
 
-`mdmm-page.yml` runs on every push to `main` and `release/0.*`, and on pull requests that touch the page, the desk
-code, the scripts or the schemas. It is a job of its own, beside the core job. It builds only `deskStubHost` (the
+`mdmm-page.yml` is stage 1 of `mdmm-ci.yml` (beside the core job), and runs on its own on pull requests that touch the page, the desk
+code, the scripts or the schemas. It builds only `deskStubHost` (the
 editors' real core with a fake machine) and `mmDataCorpusTest`, never an editor or a plug-in; CMake is configured with
 the JUCE plug-in on, with every format off, only so that it registers the node page tests. ccache keeps the build
 (one archive per branch, falling back to main's). Then it runs, in this order:
@@ -126,21 +155,29 @@ Nothing else is left out. Take a name off the list when the page has room for th
 
 ## Release: once per batch
 
+Flow: develop locally, all tests on CI. merge main into `release/0.x.y` -> push -> `MD/MM CI` green on the release head
+(stages 0 to 4: page, core, editors, sanitizers, firmware, release dry run) -> Radek's hand test of the dry run's installers
+-> tag `mdmm-v0.x.y` -> the release workflow attaches -> publish.
+
 1. Cut `release/0.x.y` from main. Bump `MDMM_EDITOR_VERSION`, write `doc/release/v0.x.y.md`, point the README at it.
    If the emulation changed since the PGO profile was trained (the build says "stale", below), retrain it on the
    branch first: `scripts/macos/train_mdmm_pgo.sh`, then commit the two files it writes.
-2. Push the branch. The full CI runs once.
-3. The firmware workflow (`mdmm-firmware.yml`) is green on the release head (it runs on every push to `release/**`; re-run it by hand after a fix). Older local route, only for a broken CI: the local gate and the firmware E2E (`scripts/mdmm-e2e.sh`): `scripts/mdmm-full-gate.sh --plan` names the last green full gate on main and prints the gate command
-   for the stages the diff since touches (`MDMM_GATE_ONLY=...`); run it. Without a green full gate in the branch's
-   history, the full `scripts/mdmm-local-gate.sh`.
-4. A failure: fix it, push, and re-run only the failed stage (`MDMM_GATE_ONLY=<stage>`; in Actions, Re-run failed jobs).
-5. Tag the branch head (`git tag -a mdmm-v0.x.y -m "Machinedrum Editor + Monomachine Editor 0.x.y"`) and push the tag.
-   The tag must be on the commit CI tested, or it builds again.
-6. Merge the branch into main and push main (the site workflow reads the notes from main).
-7. Publish the release when the tag run has attached the files. The run's last job (`checksums`) attaches `SHA256SUMS`
+2. Push the branch. `MD/MM CI` runs once, cheapest stage first; a red stage stops the rest. Fix it, push (the run queues
+   behind the one in progress), or re-run only the failed jobs. **Release ready = that run green on the head you want to tag**
+   (its check on the commit; nothing else to look at). Windows in it is the LTCG flavour that ships; its stage 4
+   is the dry run, so the installers to hand-test are the artifacts `macos-mdmm-installers-UNSIGNED` (30 days) of the same run
+   (`gh run download <id> -n macos-mdmm-installers-UNSIGNED`).
+3. Radek tests by hand.
+4. Tag the green head (`git tag -a mdmm-v0.x.y -m "Machinedrum Editor + Monomachine Editor 0.x.y"`) and push the tag.
+   `locate` of the release workflow looks for the green `MD/MM CI` run of the tag's commit, with unexpired packages (it
+   waits for one still running). **Without it the workflow fails and publishes nothing**: no fallback build. Tag a commit
+   other than the tested head and it fails the same way. Emergency (CI itself broken): run the workflow by hand on the
+   tag with `allow_unverified` (default off); then local gates are the evidence (`scripts/mdmm-full-gate.sh --plan`).
+5. Merge the branch into main and push main (the site workflow reads the notes from main).
+6. Publish the release when the tag run has attached the files. The run's last job (`checksums`) attaches `SHA256SUMS`
    (the SHA-256 of every file on the draft, hand-uploaded ones included); re-run the tag's workflow after attaching
    anything by hand, so the list is current. A published release is never changed by it.
-8. Deploy the site at once (`cd site && CLOUDFLARE_ACCOUNT_ID=331224f43e4f448483cad2f1185ea965 npx --yes wrangler@4.149.0 deploy`;
+7. Deploy the site at once (`cd site && CLOUDFLARE_ACCOUNT_ID=331224f43e4f448483cad2f1185ea965 npx --yes wrangler@4.149.0 deploy`;
    Radek runs it until CI has the Cloudflare secrets). The Discord announcement waits up to an hour for the release
    page to be live, so its link preview has the image.
 
