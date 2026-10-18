@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist>
+  <dict>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Machinedrum Editor uses audio input to process external instruments.</string>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>Machinedrum Editor connects to Bluetooth MIDI devices (keyboards, controllers).</string>
+    <key>CFBundleExecutable</key>
+    <string>Machinedrum Editor</string>
+    <key>CFBundleIconFile</key>
+    <string>Icon.icns</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.nativekloud.machinedrum-editor</string>
+    <key>CFBundleName</key>
+    <string>Machinedrum Editor</string>
+    <key>CFBundleDisplayName</key>
+    <string>Machinedrum Editor</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.8.0</string>
+    <key>CFBundleVersion</key>
+    <string>0.8.0</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright (C) The Usual Suspects (Gearmulator), joelanders and NativeKloud Consulting Radoslaw Dymacz. GNU GPL v3.</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+  </dict>
+</plist>

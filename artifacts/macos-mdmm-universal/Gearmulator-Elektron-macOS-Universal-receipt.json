@@ -1,0 +1,131 @@
+{
+  "schema": "gearmulator-elektron-macos-build-v2",
+  "created_utc": "2026-10-17T17:04:53.136839+00:00",
+  "configuration": "Release",
+  "architecture": "arm64 x86_64",
+  "signing": "ad-hoc",
+  "notarized": false,
+  "source_commit": "c7b7deea9f1fccd8de644e7a8f01c25060f0cfec",
+  "dsp56300_commit": "94af6a6ca4fc4ee5ffb94ebec528c30171e7fb49",
+  "mc68k_commit": "d7cca29d9fab6bd891788cbf9e847623eca7d5c2",
+  "juce_commit": "b7681fbaea69db418a0de955128b23391068ec8e",
+  "source_tree_clean": true,
+  "firmware_included": false,
+  "tests_run": false,
+  "firmware_tests_required": false,
+  "release_approved": false,
+  "release_acceptance": {
+    "status": "partial",
+    "per_slice": {
+      "arm64": {
+        "output_only_core_microgate": "not_run",
+        "output_only_paced_tail": "not_run"
+      },
+      "x86_64": {
+        "output_only_core_microgate": "not_run",
+        "output_only_paced_tail": "not_run"
+      }
+    },
+    "output_only_core_microgate_all_slices_measured": false,
+    "remaining_local_checks": [
+      "output-only core capacity on every packaged architecture",
+      "input-enabled VST3 audio function and callback timing",
+      "standalone output-only first launch and sustained audio",
+      "standalone input opt-in with sustained audio",
+      "standalone renderer selection and idle UI CPU"
+    ]
+  },
+  "automated_output_only_core_microgate_passed_for_measured_slice": false,
+  "automated_output_only_core_microgate_all_slices_measured": false,
+  "optimization": {
+    "compiler": {
+      "id": "AppleClang",
+      "version": "21.0.0.21000334"
+    },
+    "deployment_target": "10.13",
+    "products_build_local": true,
+    "slices": {
+      "arm64": {
+        "thinlto": true,
+        "dsp_optimization": true,
+        "pgo_mode": "committed",
+        "profile_sha256": "716c6bf14bb592536a56db406985ee8db6160373251179a2012d9fc0484e8445",
+        "pgo_stale": []
+      },
+      "x86_64": {
+        "thinlto": true,
+        "dsp_optimization": true,
+        "pgo_mode": "committed",
+        "profile_sha256": "716c6bf14bb592536a56db406985ee8db6160373251179a2012d9fc0484e8445",
+        "pgo_stale": []
+      }
+    }
+  },
+  "pgo_profile_provenance": null,
+  "core_capacity_check": null,
+  "packaged_firmware_smoke": {
+    "required": false,
+    "fixture_format": "external complete 8 MiB .bin",
+    "fixture_sha256": {
+      "md": "68542e30917b9918ccaee2b2237df62c8a00479938680b85aca93ce4fbca44c8",
+      "mm": "369849175602e20a9dd2b6e0ad8ac404b76f82718b14afbf1cbc01b7acabec7e"
+    },
+    "audio_callback_blocks": 16,
+    "scope": "exact extracted VST3 load, device initialization, and callback execution"
+  },
+  "archive": {
+    "name": "Gearmulator-Elektron-macOS-Universal.zip",
+    "bytes": 86328450,
+    "sha256": "65ce9872a301a6c5221a91aa8def65a416ace59071d6d97dac2098d63d63d94b"
+  },
+  "artifacts": [
+    {
+      "name": "Machinedrum Editor.app",
+      "module": "Machinedrum Editor",
+      "bytes": 39827264,
+      "sha256": "c245a4ad7dd25d962ee39a79c35b3c5d0e1eb6c5ab0ec1392ef0ea07370e8fba"
+    },
+    {
+      "name": "Monomachine Editor.app",
+      "module": "Monomachine Editor",
+      "bytes": 40101408,
+      "sha256": "ea88bbfd5ea47f7342a3bf8f3304af5b6ffee9cebcaa80be1d27c6a3140747fe"
+    },
+    {
+      "name": "Machinedrum Editor.vst3",
+      "module": "Machinedrum Editor",
+      "bytes": 39458688,
+      "sha256": "9ed54de865d294b29e9c208d2985adb9098222890490207a6a35d2fef07615f8"
+    },
+    {
+      "name": "Monomachine Editor.vst3",
+      "module": "Monomachine Editor",
+      "bytes": 39749184,
+      "sha256": "2338a1d29ee19ecd0fdda4e058ee09bd0f8bdd6187bd7c00d028ee64fa7e4251"
+    },
+    {
+      "name": "Machinedrum Editor.component",
+      "module": "Machinedrum Editor",
+      "bytes": 39314304,
+      "sha256": "da186957e0bfc816462adc0d5ce38d6d3d8b0a51fa5bd3c31c090a3eba7e487d"
+    },
+    {
+      "name": "Monomachine Editor.component",
+      "module": "Monomachine Editor",
+      "bytes": 39588448,
+      "sha256": "d1aa2b02b32c82c366d6bad73aa238dae32a0aa6ee79338b2f06aee92cd383f8"
+    }
+  ],
+  "package_files": [
+    {
+      "name": "macsetup_Gearmulator-Elektron.command",
+      "bytes": 1208,
+      "sha256": "4f082a3d62bfa4d7d46305ecd66b31455ca2682fa06e6c94c616aefe6578fd84"
+    },
+    {
+      "name": "INSTALL-macOS.txt",
+      "bytes": 2389,
+      "sha256": "fcc786a3226607bc6989d13d2acb469f05b6dd7bad4486a1d91c5431ce47494e"
+    }
+  ]
+}
