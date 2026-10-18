@@ -65,7 +65,7 @@ function renderSound() {
 	if (!syn.length) syn.push({ key: "syn", title: "Synthesis", g: "syn", knobs: [], n: 0, w: 8, body: `<p class="sgabout">${about(tr.m, Cat) || "This machine has no synthesis knobs."}</p>` });
 	else if (!syn.some(x => x.plot)) syn.about = about(tr.m, Cat);
 	const lfoTip = "SPD DEPTH SHMIX are LFOS LFOD LFOM on the Machinedrum's ROUTING page; the shapes, the target and UPDTE are its LFO page";
-	const shapeRow = sl => `<div class="kv"><span class="mono">${sl}</span><div class="shapes">${SHAPES.map((n, i) => `<button data-slot="${sl}" data-shape="${i}" aria-pressed="${l[sl] === i}" title="${n}${sl === "SHP2" ? ", inverted" : ""}" aria-label="${sl} ${n}">${shapeIcon(i, sl === "SHP2")}</button>`).join("")}</div></div>`;
+	const shapeRow = sl => `<div class="kv" data-lgf="${sl}"><span class="mono">${sl}</span><div class="shapes">${SHAPES.map((n, i) => `<button data-slot="${sl}" data-shape="${i}" aria-pressed="${l[sl] === i}" title="${n}${sl === "SHP2" ? ", inverted" : ""}" aria-label="${sl} ${n}">${shapeIcon(i, sl === "SHP2")}</button>`).join("")}</div></div>`;
 	const lfo = [
 		{ key: "lshape", title: `LFO ${t + 1} shape`, g: "lfo", knobs: ["SHMIX"], w: 5, tagTip: lfoTip,
 			/* 0.6 wave 4: Copy LFO, Paste LFO, Clear LFO (mdDeskWhat.js) */
@@ -74,9 +74,9 @@ function renderSound() {
 			body: `<div class="sgline lfoshape">${shapeRow("SHP1")}${shapeRow("SHP2")}${pc("lfo", "SHMIX", { color: SND_COL.lfo })}</div>` },
 		{ key: "lmotion", title: "LFO motion", g: "lfo", knobs: ["SPD", "DEPTH"], w: 3.4, tagTip: lfoTip,
 			plot: sndPlot(`<canvas class="ed" data-ed="lmotion" aria-label="The LFO across one bar. Drag the dot for SPD and DEPTH."></canvas>`, SND_TIP.lmotion),
-			body: `<div class="sgline">${pc("lfo", "SPD", { color: SND_COL.lfo })}${clipGap("lfo", "SPD", "DEPTH")}${pc("lfo", "DEPTH", { color: SND_COL.lfo })}<span class="seg" data-set="upd" title="UPDTE: FREE runs on, TRIG restarts it on every trig, HOLD keeps the value a trig takes">${["FREE", "TRIG", "HOLD"].map(u => `<button data-v="${u}" aria-pressed="${l.UPDTE === u}">${u}</button>`).join("")}</span></div>` },
+			body: `<div class="sgline">${pc("lfo", "SPD", { color: SND_COL.lfo })}${clipGap("lfo", "SPD", "DEPTH")}${pc("lfo", "DEPTH", { color: SND_COL.lfo })}<span class="seg" data-set="upd" data-lgf="UPDTE" title="UPDTE: FREE runs on, TRIG restarts it on every trig, HOLD keeps the value a trig takes">${["FREE", "TRIG", "HOLD"].map(u => `<button data-v="${u}" aria-pressed="${l.UPDTE === u}">${u}</button>`).join("")}</span></div>` },
 		{ key: "ltarget", title: "LFO target", g: "lfo", knobs: [], w: 2, tagTip: lfoTip,
-			body: `<div class="sgsel" title="The parameter this LFO moves: a track, then one of its parameters"><select id="lfoT">${V.tracks.map((x, i) => `<option value="${i}" ${i === l.TRCK ? "selected" : ""}>T${i + 1} ${x.name}</option>`).join("")}</select><select id="lfoP">${params(l.TRCK).map(p => `<option ${p === l.PARAM ? "selected" : ""}>${p}</option>`).join("")}</select></div>` },
+			body: `<div class="sgsel" title="The parameter this LFO moves: a track, then one of its parameters"><span class="lgw" data-lgf="TRCK"><select id="lfoT">${V.tracks.map((x, i) => `<option value="${i}" ${i === l.TRCK ? "selected" : ""}>T${i + 1} ${x.name}</option>`).join("")}</select></span><span class="lgw" data-lgf="PARAM"><select id="lfoP">${params(l.TRCK).map(p => `<option ${p === l.PARAM ? "selected" : ""}>${p}</option>`).join("")}</select></span></div>` },
 		{ key: "rel", title: "Relations", g: "kit", knobs: [], w: 2, tagTip: "Kit relations: EDIT KIT → RELATE",
 			body: `<div class="sgsel pair"><label title="Mute group: this track's trig mutes the chosen track, as open and closed hihats.">Mute${relSel("mg", "muteGroup", "mutes")}</label>
 			<label title="Trig group: this track's trig also trigs the chosen track. Trig relations do not chain.">Trig${relSel("tg", "trigGroup", "trigs")}</label></div>` }];

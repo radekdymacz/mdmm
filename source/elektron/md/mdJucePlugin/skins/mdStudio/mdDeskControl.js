@@ -27,15 +27,29 @@ function learnName(t, i, name) { const tr = V.tracks[t]; return (tr && slots(tr.
    effects (RHYTHM ECHO, GATE BOX, MASTER EQ, DYNAMIX), the tempo, the pattern's swing and accent. A mapping to one has g, no t. */
 function learnGlobals() { return (Docs.learn && Docs.learn.limits && Docs.learn.limits.globals) || []; }
 function globalName(g) { const x = learnGlobals().find(q => q.g === g); return x ? x.name : "#" + g; }
-const GLOBAL_LEARN_SEL = '.pc[data-g="mfx"], #bpm, .l2.ed[data-l2="swing"], .l2.ed[data-l2="accAmt"]';
+/* part 2: the LFO page of the selected track (data-lgf = TRCK PARAM SHP1 SHP2 UPDTE; the target is "T<track> LFO <field>" in the document) */
+const GLOBAL_LEARN_SEL = '.pc[data-g="mfx"], #bpm, .l2.ed[data-l2="swing"], .l2.ed[data-l2="accAmt"], [data-lgf]';
+let GLOBAL_BY_NAME = { list: null, map: new Map() };
+function globalByName(n) {
+	const list = learnGlobals();
+	if (GLOBAL_BY_NAME.list !== list) GLOBAL_BY_NAME = { list, map: new Map(list.map(x => [x.name, x.g])) };
+	return GLOBAL_BY_NAME.map.has(n) ? GLOBAL_BY_NAME.map.get(n) : -1;
+}
 /* the global id of a page element (the plug-in's order: the four master effects in the page's knob order, then TEMPO, SWING, ACCENT); -1: none */
 function globalIdOf(el) {
 	if (!el) return -1;
+	if (el.dataset.lgf) return globalByName(`T${S.sel + 1} LFO ${el.dataset.lgf}`);
 	if (el.dataset.g === "mfx") { const f = MFX_IDS.indexOf(el.dataset.f), k = f >= 0 ? MFXD[el.dataset.f].k.indexOf(el.dataset.n) : -1; return f >= 0 && k >= 0 ? f * 8 + k : -1; }
 	if (el.id === "bpm") return 32;
 	return el.dataset.l2 === "swing" ? 33 : el.dataset.l2 === "accAmt" ? 34 : -1;
 }
 const globalMaps = g => ((Docs.learn && Docs.learn.mappings) || []).filter(m => m.g === g);
+/* the Add row's list of global values, one group per card (the master effects, the tempo, a track's LFO ...) */
+function globalOptions() {
+	const groups = [], at = {};
+	learnGlobals().forEach(x => { if (!(x.group in at)) { at[x.group] = []; groups.push(x.group); } at[x.group].push(`<option value="${x.g}">${x.name}</option>`); });
+	return groups.map(g => at[g].length > 1 && groups.length > 1 ? `<optgroup label="${g}">${at[g].join("")}</optgroup>` : at[g].join("")).join("");
+}
 /* what a mapping or the learning target drives, in words: "T3 DEC" or "RHYTHM ECHO TIME" */
 function targetWords(x) { return x.g != null ? globalName(x.g) : `T${x.t + 1} ${learnName(x.t, x.i, x.name)}`; }
 /* a mapping is in the Control page's selected column (a track, "g" for the global column, null for all) */
@@ -153,7 +167,7 @@ function renderControl() {
    <button class="ptog ${l.invert ? "on" : ""}" data-linv="${l.index}"><i class="led"></i>Inv</button><button class="iconkey" data-ldel="${l.index}" aria-label="Remove mapping" title="Remove">×</button>
    ${overridesText(l) ? `<span class="note ovr" data-ovr="${l.index}">${overridesText(l)}</span>` : ""}</div>`).join("") || `<div class="note">Not mapped: this row does nothing yet.</div>`}</div>
   <div class="irow addrow"><span class="ilab">Add</span><select id="ct">${V.tracks.map((x, i) => `<option value="${i}" ${!addG && i === t ? "selected" : ""}>Track ${i + 1} · ${x.m}</option>`).join("")}<option value="g" ${addG ? "selected" : ""}>Global values (FX, tempo, pattern)</option></select>
-   <select id="cp">${addG ? learnGlobals().map(x => `<option value="${x.g}">${x.name}</option>`).join("") : slots(V.tracks[t].m, Cat).map((p, i) => p ? `<option value="${i}">${p}</option>` : "").join("") + `<option value="24">LEVEL</option>`}</select><button class="cream" id="caddl" ${maps.length >= max ? "disabled" : ""} title="${maps.length >= max ? "The project holds " + max + " mappings at most. Remove one first." : ""}">Add target</button></div>
+   <select id="cp">${addG ? globalOptions() : slots(V.tracks[t].m, Cat).map((p, i) => p ? `<option value="${i}">${p}</option>` : "").join("") + `<option value="24">LEVEL</option>`}</select><button class="cream" id="caddl" ${maps.length >= max ? "disabled" : ""} title="${maps.length >= max ? "The project holds " + max + " mappings at most. Remove one first." : ""}">Add target</button></div>
   <div class="irow"><span class="ilab"></span><button data-addsrc="lfo">+ App LFO</button><button data-addsrc="random">+ Random</button></div></section>`;
 	}
 	$("#main").innerHTML = `<div class="ctlui"><section class="card"><header><h3>Mapping matrix</h3><span>rows = controller knobs, learned CCs and app modulators · columns = tracks</span></header>${status}${mx}</section>${insp}</div>`;
@@ -186,6 +200,9 @@ document.addEventListener("pointerdown", e => {
 		S.ctl.learnT = { t, p: n }; syncControls(); cmd("learnStart", { t, i }); toast(`Target: track ${t + 1} ${n}. Now turn a knob on your controller.`);
 	}
 }, true);
+
+/* LEARN is on: a click on a choice of the page (a shape, UPDTE, the LFO target) picks the learn target, it does not change the value */
+document.addEventListener("click", e => { if (S.ctl.learn && e.target.closest?.("[data-lgf]")) { e.stopPropagation(); e.preventDefault(); } }, true);
 
 /* the Control page's clicks (the router's, mdDeskRender.js CLICKS): true when the click was theirs */
 function clickControl(e) {

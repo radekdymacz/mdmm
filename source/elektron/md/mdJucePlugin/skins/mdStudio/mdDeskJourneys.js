@@ -3475,6 +3475,23 @@ const MdJourneys = (() => {
 		],
 		async tidy(u) { if (S.ctl.learn) u.key("Escape"); await learnTidy(u); S.ws = "seq"; render(); }
 	};
+	/* B-169 part 2: the LFO page of the selected track (TRCK PARAM SHP1 SHP2 UPDTE): a click picks the target and never changes the value */
+	const LFOF = ["TRCK", "PARAM", "SHP1", "SHP2", "UPDTE"];
+	const MDG2 = MDG.concat(Array.from({ length: 16 * 5 }, (_, k) => ({ g: 35 + k, name: `T${(k / 5 | 0) + 1} LFO ${LFOF[k % 5]}`, group: "LFO T" + ((k / 5 | 0) + 1), min: 0, max: 5 })));
+	const gdoc2 = (maps, o = {}) => ldoc(maps, Object.assign({ limits: { tracks: 16, params: LP, globals: MDG2, max: 128 } }, o));
+	const controlLearnLfo = {
+		name: "md-control-learn-lfo", proves: [],
+		steps: [
+			{ say: "LEARN on, the Kit tab: clicking SHP2, UPDTE and the LFO target sends learnStart with the track's LFO ids and changes nothing", act: async (u, c) => { await learnIn(u, c, gdoc2([])); c.n = learnSent.mark(); u.click("#learnkey"); u.click(tab("sound")); await sleep(300);
+				c.t = S.sel; c.before = JSON.stringify(V.tracks[S.sel].lfo);
+				u.click('#main [data-lgf="SHP2"] [data-shape="3"]'); await sleep(100); u.click('#main [data-lgf="UPDTE"] button[data-v="HOLD"]'); await sleep(100); u.click('#main [data-lgf="TRCK"] .kselbtn'); await sleep(100); },
+				machine: c => { const g = learnSent.since(c.n).filter(x => x.op === "learnStart").map(x => x.g); return ok(g.join() === [35 + c.t * 5 + 3, 35 + c.t * 5 + 4, 35 + c.t * 5].join() && JSON.stringify(V.tracks[c.t].lfo) === c.before, "sent " + JSON.stringify(learnSent.since(c.n)) + ", lfo " + JSON.stringify(V.tracks[c.t].lfo)); } },
+			{ say: "a mapping on the UPDTE of this track arrives: the switch is outlined as mapped with its CC", act: async (u, c) => { await learnIn(u, c, gdoc2([{ index: 0, g: 35 + c.t * 5 + 4, name: `T${c.t + 1} LFO UPDTE`, cc: 33, ch: 255, mode: "Absolute", invert: false, overrides: [] }])); u.click(tab("sound")); await sleep(300); },
+				screen: () => { const el = $1('#main [data-lgf="UPDTE"]'), o = $1('#main [data-lgf="SHP1"]'); return ok(el.classList.contains("mapped") && /CC 33/.test(el.dataset.mapped) && !o.classList.contains("mapped"), "class " + el.className + ", other " + o.className); } },
+			{ say: "Escape: LEARN goes out", act: u => u.key("Escape"), screen: () => ok(!pressed("#learnkey") && !S.ctl.learn, "learn " + S.ctl.learn) }
+		],
+		async tidy(u) { if (S.ctl.learn) u.key("Escape"); await learnTidy(u); S.ws = "seq"; render(); }
+	};
 	/* Esc leaves LEARN from any tab, the Kit tab too */
 	const controlLearnEsc = {
 		name: "md-control-learn-esc", proves: [],
@@ -3519,7 +3536,7 @@ const MdJourneys = (() => {
 		mixSolo, soloSaved, shiftMutes, allOff, fader, lev, outKey, masterFx,
 		songArrange, songChain, modeCycle, songPlayhead, songSlots, songKeys, shotsSongSlots, samplerSlots, samplerSetup, audition,
 		libDialog, kitCopy, kitRename, kitClear, patGo, patClear, dialogEsc,
-		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, controlLearn, controlLearnOverrides, controlLearnPaused, controlLearnLeft, controlLearnLimit, controlLearnKnob, controlLearnEsc, controlLearnGlobals, fitMapping, noteLights, followPlayed, audioPanel, romCard, notePlay,
+		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, controlLearn, controlLearnOverrides, controlLearnPaused, controlLearnLeft, controlLearnLfo, controlLearnLimit, controlLearnKnob, controlLearnEsc, controlLearnGlobals, fitMapping, noteLights, followPlayed, audioPanel, romCard, notePlay,
 		lockRamp, pasteMany, mutScope, songInspector, songRowMarks, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
 		syxImportMute, globalReset, shotsGlobal, shotsSound, shotsReview, shots, shotsSong, shotsImport, editorMenuJ, memoryJ, shotsMenu, ...cpuJs, ...volJs,
 		dropSyxJ, dropSampleJ, ...viewJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, modalLock, songFactoryPlay, lockKeysFit, resetFactory, resetEmpty, syxRunningReach];
