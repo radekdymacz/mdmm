@@ -3448,6 +3448,33 @@ const MdJourneys = (() => {
 		],
 		tidy: learnTidy
 	};
+	/* B-169: MIDI Learn on the values that belong to no track: the master effects, the tempo, the pattern's swing and accent */
+	const MDG = [..."0123".split("").flatMap(f => [0, 1, 2, 3, 4, 5, 6, 7].map(k => ({ g: +f * 8 + k, name: ["RHYTHM ECHO", "GATE BOX", "MASTER EQ", "DYNAMIX"][+f] + " " + MFXD[MFX_IDS[+f]].k[k], group: "x", min: 0, max: 127 }))),
+		{ g: 32, name: "TEMPO", group: "TEMPO", min: 30, max: 300 }, { g: 33, name: "SWING", group: "PATTERN", min: 50, max: 80 }, { g: 34, name: "ACCENT", group: "PATTERN", min: 0, max: 15 }];
+	const gdoc = (maps, o = {}) => ldoc(maps, Object.assign({ limits: { tracks: 16, params: LP, globals: MDG, max: 128 } }, o));
+	const gmap = (index, g, cc, ch, o = {}) => Object.assign({ index, g, name: MDG[g].name, cc, ch, mode: "Absolute", invert: false, overrides: [] }, o);
+	const controlLearnGlobals = {
+		name: "md-control-learn-globals", proves: [],
+		steps: [
+			{ say: "LEARN on, the Mix tab: a master effect's value is outlined and a click sends learnStart with its global id", act: async (u, c) => { await learnIn(u, c, gdoc([])); c.n = learnSent.mark(); u.click("#learnkey"); u.click(tab("mix")); await sleep(300);
+				c.el = $1('#main .pc[data-g="mfx"][data-f="gate"][data-n="DEC"]'); u.click('#main .pc[data-g="mfx"][data-f="gate"][data-n="DEC"]'); },
+				screen: () => ok(S.ctl.learnT && S.ctl.learnT.g === 10, "target " + JSON.stringify(S.ctl.learnT)),
+				machine: c => { const m = learnSent.since(c.n).find(x => x.op === "learnStart"); return ok(m && m.g === 10 && m.t == null, "sent " + JSON.stringify(learnSent.since(c.n))); } },
+			{ say: "the plug-in has seen one value: CONTROL names the target GATE BOX DEC", act: async (u, c) => { window.gm.recv([gdoc([], { learning: { g: 10, name: "x", got: 1, need: 2 } })]); await sleep(100); u.click(tab("control")); await sleep(300); },
+				screen: () => ok(/GATE BOX DEC/.test($1("#linfo")?.textContent || "") && /\(1 of 2\)/.test($1("#linfo").textContent), $1("#linfo")?.textContent) },
+			{ say: "the mapping arrives: the toast names it, the matrix has the FX column with its chip, the inspector lists it", act: async (u, c) => { await learnIn(u, c, gdoc([gmap(0, 10, 74, 255)])); },
+				screen: () => ok(/CC 74 on any channel now moves GATE BOX DEC/.test(toastText()) && $all(".mxh").length === 17 && /GATE BOX DEC/.test($1('.mxc[data-mxsrc="255:74"][data-mxt="g"]')?.title || "") && $all(".lnk .lcdchip").some(x => x.textContent === "GATE BOX DEC"),
+					`toast "${toastText()}", heads ${$all(".mxh").length}, cell "${$1('.mxc[data-mxsrc="255:74"][data-mxt="g"]')?.title}"`), within: 3000 },
+			{ say: "Add target with Global values chosen: learnAdd goes with g and no track", act: async (u, c) => { c.n = learnSent.mark(); u.click('.srch[data-src="255:21"]'); await sleep(200); const sel = $1("#ct"); sel.value = "g"; sel.dispatchEvent(new Event("change", { bubbles: true })); await sleep(200); $1("#cp").value = "34"; u.click("#caddl"); },
+				machine: c => { const m = learnSent.since(c.n).find(x => x.op === "learnAdd"); return ok(m && m.g === 34 && m.t == null && m.cc === 21, "sent " + JSON.stringify(learnSent.since(c.n))); } },
+			{ say: "leave CONTROL: the mapped master effect carries .mapped with its CC; LEARN is still on", act: async (u, c) => { await learnIn(u, c, gdoc([gmap(0, 10, 74, 255)])); u.click(tab("mix")); await sleep(300); },
+				screen: () => { const el = $1('#main .pc[data-g="mfx"][data-f="gate"][data-n="DEC"]'); return ok(el.classList.contains("mapped") && /CC 74/.test(el.title) && !$1('#main .pc[data-g="mfx"][data-f="gate"][data-n="HP"]').classList.contains("mapped"), "class " + el.className + ", title " + el.title); } },
+			{ say: "click the tempo and the SWG value in the Sequence tab: learnStart goes with global 32 and 33", act: async (u, c) => { c.n = learnSent.mark(); u.click(tab("seq")); await sleep(300); u.click("#bpm"); await sleep(100); u.click('.l2.ed[data-l2="swing"]'); await sleep(100); },
+				machine: c => { const g = learnSent.since(c.n).filter(x => x.op === "learnStart").map(x => x.g); return ok(g.join() === "32,33", "sent " + JSON.stringify(learnSent.since(c.n))); } },
+			{ say: "Escape: LEARN goes out", act: u => u.key("Escape"), screen: () => ok(!pressed("#learnkey") && !S.ctl.learn, "learn " + S.ctl.learn) }
+		],
+		async tidy(u) { if (S.ctl.learn) u.key("Escape"); await learnTidy(u); S.ws = "seq"; render(); }
+	};
 	/* Esc leaves LEARN from any tab, the Kit tab too */
 	const controlLearnEsc = {
 		name: "md-control-learn-esc", proves: [],
@@ -3492,7 +3519,7 @@ const MdJourneys = (() => {
 		mixSolo, soloSaved, shiftMutes, allOff, fader, lev, outKey, masterFx,
 		songArrange, songChain, modeCycle, songPlayhead, songSlots, songKeys, shotsSongSlots, samplerSlots, samplerSetup, audition,
 		libDialog, kitCopy, kitRename, kitClear, patGo, patClear, dialogEsc,
-		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, controlLearn, controlLearnOverrides, controlLearnPaused, controlLearnLeft, controlLearnLimit, controlLearnKnob, controlLearnEsc, fitMapping, noteLights, followPlayed, audioPanel, romCard, notePlay,
+		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, controlLearn, controlLearnOverrides, controlLearnPaused, controlLearnLeft, controlLearnLimit, controlLearnKnob, controlLearnEsc, controlLearnGlobals, fitMapping, noteLights, followPlayed, audioPanel, romCard, notePlay,
 		lockRamp, pasteMany, mutScope, songInspector, songRowMarks, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
 		syxImportMute, globalReset, shotsGlobal, shotsSound, shotsReview, shots, shotsSong, shotsImport, editorMenuJ, memoryJ, shotsMenu, ...cpuJs, ...volJs,
 		dropSyxJ, dropSampleJ, ...viewJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, modalLock, songFactoryPlay, lockKeysFit, resetFactory, resetEmpty, syxRunningReach];
