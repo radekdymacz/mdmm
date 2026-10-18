@@ -394,4 +394,6 @@ The Monomachine has no such function. With MIDI Learn a knob or fader of your co
 5. To reverse a mapping, select it in the list and click the INV key. To remove it, click the × key.
 6. Press [ESC] to leave Learn.
 
+Values that belong to no track can be learned too: the **tempo**, the **master tune** on the Global page, the five values of the **multi envelope** on the Perform tab and the **SWG** value of the playing pattern. Click one in Learn as you would a track value. On the Control page they have a column of their own, **FX**, at the right of the matrix. To add one without learning, choose **Global values** in the first list under **Add**. A learned CC moves the value as a click on the page does, and a turn of a knob is one undo step. The effects of a synth track are on its EFX page and are learned like any other track value. You cannot learn the values of the MIDI tracks, the arpeggiator or the assign table.
+
 A button that sends 127 and 0 is learned as the highest and lowest value. Only control changes are mapped, 128 at most, and they are saved with the project. A learned CC wins over the machine's own CC on that channel: the page says what it hides, for example "Overrides the machine's CC 21 on channel 1: T1 DEC", and removing the mapping gives the CC back. Learn is off while the **HW MIDI** engine is in use, and the page says why.
