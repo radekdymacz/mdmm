@@ -108,6 +108,10 @@ jobs:
           fi
           exit "${status}"
 
+      - name: Delete the ROMs (before anything is uploaded)
+        if: always()
+        run: rm -rf "${RUNNER_TEMP}/roms"
+
       # Test output only: the logs carry no firmware bytes (the tests read the image, they do not print it).
       - name: Keep the ctest log on failure
         if: failure()
@@ -119,10 +123,6 @@ jobs:
             build/Testing/Temporary/LastTest.log
           if-no-files-found: ignore
           retention-days: 14
-
-      - name: Delete the ROMs
-        if: always()
-        run: rm -rf "${RUNNER_TEMP}/roms"
 
       - name: Save the compiler cache
         if: always()
@@ -183,6 +183,10 @@ jobs:
       - name: Run the firmware E2E
         run: ./scripts/mdmm-e2e.sh both --no-build --jobs 2
 
+      - name: Delete the ROMs (before anything is uploaded)
+        if: always()
+        run: rm -rf "${RUNNER_TEMP}/roms"
+
       # Reports and logs only. No folder that can hold the ROM (the sandboxes link it) is uploaded: the files are
       # copied by type and size into a staging folder first.
       - name: Stage the report
@@ -194,7 +198,7 @@ jobs:
           if [ -d "${MDMM_E2E_OUT}" ]; then
             (cd "${MDMM_E2E_OUT}" && find . -type f ! -type l -size -4M \
               \( -name '*.log' -o -name '*.txt' -o -name '*.json' -o -name '*.html' -o -name '*.png' -o -name '*.webp' \) \
-              -print0 | cpio -pdm0 "${stage}" 2>/dev/null) || true
+              -print0 | cpio -pdm0 "${stage}" 2>&1 | tail -n 3)
           fi
           du -sh "${stage}"
 
@@ -206,10 +210,6 @@ jobs:
           path: ${{ runner.temp }}/e2e-report
           if-no-files-found: ignore
           retention-days: 14
-
-      - name: Delete the ROMs
-        if: always()
-        run: rm -rf "${RUNNER_TEMP}/roms"
 
       - name: Save the compiler cache
         if: always()

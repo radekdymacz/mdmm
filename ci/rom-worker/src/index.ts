@@ -19,7 +19,8 @@ const app = new Hono<{ Bindings: Env }>();
 app.get("/rom/:model", async (c) => {
 	const header = c.req.header("Authorization") ?? "";
 	const match = /^Bearer ([A-Za-z0-9._-]+)$/.exec(header);
-	const key = KEYS[c.req.param("model")];
+	const model = c.req.param("model");
+	const key = Object.hasOwn(KEYS, model) ? KEYS[model] : undefined;
 	if (!match || !match[1] || !key) return deny();
 
 	const verdict = await verifyGithubToken(match[1], jwks, Math.floor(Date.now() / 1000));

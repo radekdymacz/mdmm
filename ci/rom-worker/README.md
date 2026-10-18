@@ -22,7 +22,7 @@ The log has the decision and the repository, ref and event, never the token.
 
 ## One-time setup (Radek)
 
-Steps 1 and 2 are done (2026-10-18, bucket `mdmm-ci-roms`, both objects verified by sha256). Kept as documentation:
+Steps 1, 2 and the environment of step 4 are done (2026-10-18: bucket `mdmm-ci-roms`, both objects verified by sha256, environment `rom` limited to `main` and `release/*`). Open: deploy (3) and the variable `MDMM_ROM_URL`. Kept as documentation:
 
 1. Create the bucket:
    ```sh
@@ -58,3 +58,10 @@ npm run dry-run
 ```
 
 Revoke or rotate: see `doc/release/CI.md`, "Firmware tests on CI".
+
+## Known limit: who can create a `release/*` branch
+
+A run on a `release/*` branch uses that branch's copy of the workflow and scripts, so whoever can push such a branch can
+make a run that copies the ROMs out. Keep creation of `release/**` (and writes to `main`) limited to the owner: a
+GitHub ruleset on `release/**` (restrict creations, block force pushes, require a pull request) and branch protection
+on `main`. While Radek is the only writer this is moot.
