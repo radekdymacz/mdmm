@@ -502,6 +502,26 @@ namespace
 		const auto old = mappingsFromJson(parse(R"([{"ch":0,"cc":1,"g":3},{"ch":0,"cc":2,"t":1,"i":1}])"), LearnLimits{16, 0, 25}, errors);
 		check(old.size() == 1 && old[0].cc == 2 && errors.size() == 1, "a model without globals leaves a global mapping out and keeps the track ones");
 
+		// part 2 grew the lists (Machinedrum 115, Monomachine 591): a part-1 project (globals below the old counts) loads unchanged,
+		// ids above 255 survive a round trip, and a build with the old counts leaves a newer id out and keeps the rest
+		const LearnLimits md2{16, 0, 25, 115};
+		const LearnLimits mm2{6, 8, 8, 591};
+		errors.clear();
+		const auto part1 = mappingsFromJson(parse(R"([{"ch":0,"cc":5,"g":34,"mode":"absolute","invert":false},{"ch":0,"cc":6,"t":2,"i":5,"mode":"absolute","invert":false}])"), md2, errors);
+		check(errors.empty() && part1.size() == 2 && part1[0].at == LearnRef::global(34), "a part-1 project loads under the part-2 limits");
+		errors.clear();
+		const auto part1Mm = mappingsFromJson(parse(R"([{"ch":0,"cc":5,"g":7,"mode":"absolute","invert":false},{"ch":0,"cc":6,"t":1,"pg":1,"i":4,"mode":"absolute","invert":false}])"), mm2, errors);
+		check(errors.empty() && part1Mm.size() == 2 && part1Mm[0].at == LearnRef::global(7), "a part-1 Monomachine project loads under the part-2 limits");
+		LearnMapping big;
+		big.cc = 9;
+		big.at = LearnRef::global(590);
+		errors.clear();
+		const auto bigBack = mappingsFromJson(mappingsToJson({big}, true), mm2, errors);
+		check(errors.empty() && bigBack.size() == 1 && bigBack[0].at == LearnRef::global(590), "a global id above 255 round-trips");
+		errors.clear();
+		const auto newer = mappingsFromJson(mappingsToJson({big, map(0, 21, 2, 5)}, false), md, errors);
+		check(newer.size() == 1 && errors.size() == 1, "a build with the part-1 counts leaves a part-2 id out and keeps the track mappings");
+
 		// the setup document carries them
 		SetupSpec spec;
 		spec.learn = md;

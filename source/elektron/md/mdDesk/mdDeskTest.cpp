@@ -3227,6 +3227,13 @@ namespace
 		desk.applyLearnGlobals({{33, absolute, false, 127}, {34, absolute, false, 127}});
 		const auto* p = desk.documents().patterns.empty() ? nullptr : &desk.documents().patterns.begin()->second;
 		check(p && ed::swingPercent(p->swingAmount) == 80 && ed::accentDisplay(p->accentAmount) == 15, "swing and accent amount follow the CC over their ranges");
+		// part 2: the LFO page of every track: the five settings through the lfo command; a choice takes the CC range across its entries
+		check(Desk::learnGlobals()[35].name == "T1 LFO TRCK" && Desk::learnGlobals()[37].name == "T1 LFO SHP1" && Desk::learnGlobals()[114].name == "T16 LFO UPDTE",
+			"the LFO targets are named as the page");
+		now += 1000;
+		desk.applyLearnGlobals({{37, absolute, false, 127}, {39, absolute, false, 64}, {35 + 5 * 3 + 1, absolute, false, 127}});
+		const auto& lfos = desk.documents().working->kit.lfos;
+		check(lfos[0].shape1 == 5 && lfos[0].update == 1 && lfos[3].param == 23, "a learned CC sets an LFO shape, UPDTE and a target parameter over their lists");
 		// an id past the list, and a machine that takes no input, do nothing
 		const auto stepsNow = desk.coreState().history().size();
 		desk.applyLearnGlobals({{200, absolute, false, 5}});

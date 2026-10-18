@@ -36,7 +36,7 @@ namespace mdJucePlugin
 		{
 			const auto& m = _mappings[n];
 			const bool global = m.at.isGlobal();
-			if(global && (m.at.i < 0 || m.at.i >= _globals || m.at.i > 255))
+			if(global && (m.at.i < 0 || m.at.i >= _globals || m.at.i > 0xffff))
 				continue;
 			auto* param = global || !_parameter ? nullptr : _parameter(m.at);
 			if(!param && !global)
@@ -198,8 +198,8 @@ namespace mdJucePlugin
 			m_globalDropped.fetch_add(1, std::memory_order_relaxed);
 			return;
 		}
-		const auto record = static_cast<uint32_t>(_target.global & 0xff) | static_cast<uint32_t>(_target.mode) << 8
-			| static_cast<uint32_t>(_target.invert ? 1 : 0) << 16 | static_cast<uint32_t>(_value & 0x7f) << 24;
+		const auto record = static_cast<uint32_t>(_target.global & 0xffff) | static_cast<uint32_t>(_target.mode & 0xf) << 16
+			| static_cast<uint32_t>(_target.invert ? 1 : 0) << 20 | static_cast<uint32_t>(_value & 0x7f) << 21;
 		m_globalRing[write & (GlobalCapacity - 1)].store(record, std::memory_order_relaxed);
 		m_globalWrite.store(write + 1, std::memory_order_release);
 		m_globalQueued.fetch_add(1, std::memory_order_relaxed);

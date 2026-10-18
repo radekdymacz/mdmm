@@ -398,6 +398,34 @@ namespace
 			check(d.pattern(3) && d.pattern(3)->swingAmount == 0, "and back to 50 %");
 			d.applyLearnGlobals({{99, absolute, false, 5}});
 			run(2000);
+			// part 2: the pattern's and the tracks' transpose, the arpeggiator, ASSIGN and the MIDI page, each through its own command
+			const auto& list = mmDesk::Desk::learnGlobals();
+			const auto idOf = [&](const std::string& _name)
+			{
+				for(size_t i = 0; i < list.size(); ++i)
+					if(list[i].name == _name)
+						return static_cast<uint16_t>(i);
+				check(false, ("a learn global named " + _name).c_str());
+				return uint16_t{0};
+			};
+			const auto pick = [&](const std::string& _name, const uint8_t _cc) { d.applyLearnGlobals({{idOf(_name), absolute, false, _cc}}); run(200); };
+			check(list.size() == static_cast<size_t>(mmDesk::g_mmLearnGlobals), "the table has the count the setup spec says");
+			pick("PATTERN TRANSPOSE", 127);
+			check(d.pattern(3)->patternTranspose == 63, "a learned CC moves the pattern transpose over -64..63");
+			pick("T1 SCALE", 127);
+			check(d.pattern(3)->transpose.scale[0] == 3, "a list (the scale) takes the CC range across its entries");
+			pick("T2 ARP MODE", 127);
+			pick("T2 ARP MODE", 0);
+			pick("T2 ARP MODE", 64);
+			check(d.pattern(3)->arp.mode[1] == 2, "the arpeggiator mode: the middle of the range is the third of four entries");
+			pick("T1 ARP STEP 3", 127);
+			check(d.pattern(3)->arp.steps[0][2] == ed::g_mmArpStepMuted, "the top of an arpeggiator step is muted");
+			pick("T1 ARP STEP 3", 40);
+			check(d.pattern(3)->arp.steps[0][2] == 40, "and below it the step's value");
+			pick("M1 ARP SPEED", 127);
+			check(d.pattern(3)->midiArp.speed[0] == 127, "a MIDI track's arpeggiator is its own block");
+			pick("T1 ARP LENGTH", 0);
+			check(d.pattern(3)->arp.length[0] == 1, "LENGTH starts at 1");
 		}
 
 		// Edit pattern 3: add a trig. It goes out on SYSEX RECV and is confirmed.
@@ -621,6 +649,24 @@ namespace
 			msg(R"({"op":"param","id":45,"k":5,"t":2,"page":1,"i":3,"v":98})");
 			run(500);
 			check(params.size() == 1 && std::get<0>(params[0]) == 2 && std::get<3>(params[0]) == 98, "span 6: T3's value is its CC again");
+			// B-169 part 2: ASSIGN and the MIDI page through their own commands (kit edits, so here where the kit is pushed to the slot)
+			{
+				const auto& list = mmDesk::Desk::learnGlobals();
+				const auto pick = [&](const std::string& _name, const uint8_t _cc)
+				{
+					for(size_t i = 0; i < list.size(); ++i)
+						if(list[i].name == _name)
+							d.applyLearnGlobals({{static_cast<uint16_t>(i), static_cast<uint8_t>(deskCore::LearnMode::Absolute), false, _cc}});
+				};
+				pick("T1 ASSIGN VEL 1 PAGE", 127);
+				pick("T1 ASSIGN VEL 2 ADD", 127);
+				pick("T3 ASSIGN HPF", 0);
+				pick("M2 MIDI VEL", 127);
+				run(4000);
+				const auto kit = ed::decodeMmKit(m.slots[{0x52, 5}]);
+				check(kit && kit->assignPage[0][8] == 8 && kit->assignAdd[0][9] == 63 && !((kit->hpfMask >> 2) & 1) && d.workingKit() && d.workingKit()->tracks[1].midi[1] == 127,
+					"ASSIGN rows and flags reach the kit slot, the MIDI page the working kit");
+			}
 		}
 
 		// The 0.5.0 gate (mm-global-slot): another GLOBAL slot made active while a dump of the active one is on its way
