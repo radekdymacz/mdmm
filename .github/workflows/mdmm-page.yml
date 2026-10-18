@@ -16,20 +16,7 @@ on:
       - "base.cmake"
       - "source/*.cmake"
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - "release/0.*"
-    paths:
-      - ".github/workflows/mdmm-page.yml"
-      - "scripts/**"
-      - "doc/modern-ux/*schema*"
-      - "doc/modern-ux/intent-cases.json"
-      - "source/elektron/md/**"
-      - "source/baseLib/**"
-      - "CMakeLists.txt"
-      - "base.cmake"
-      - "source/*.cmake"
+  workflow_call:
 
 permissions:
   contents: read
