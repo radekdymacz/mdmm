@@ -446,7 +446,7 @@ const MmJourneys = (() => {
 					c.lane = S().lane; c.pg = PAGES.indexOf(c.lane.split(".")[0]); c.pi = +c.lane.split(".")[1]; c.s = trigsOf(c.t).find(s => s < Math.min(16, S().len)); },
 				screen: c => ok(S().sel === c.t && !!$1(`#lane .lb[data-s="${c.s}"] .base`), "no kit line on step " + c.s), machine: c => ok(c.s != null && c.pg >= 0, "no note or no page") },
 			{ say: "the kit line is 2 px and its number is on the lane", screen: c => { const { m } = laneMeta(), b = $1(`#lane .lb[data-s="${c.s}"] .base`), k = $1("#lane .kvl");
-					return ok(b.getBoundingClientRect().height >= 2 && !!k && k.textContent === fmt(m, getP(c.t, c.lane)), `line ${b.getBoundingClientRect().height} px, number ${k?.textContent}`); } },
+					return ok(Math.abs(b.getBoundingClientRect().height - 2) < 0.02 && !!k && k.textContent === fmt(m, getP(c.t, c.lane)), `line ${b.getBoundingClientRect().height} px, number ${k?.textContent}`); } },
 			{ say: "click exactly on the line: it is a click on the lane, the step is locked at the kit value", act: async (u, c) => { c.l0 = laneLocks(c.t, c.lane).length; c.k0 = getP(c.t, c.lane);
 					const { mx } = laneMeta(), key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), y = r.bottom - 6 - (r.height - 14) * c.k0 / mx; u.click(key, {}, 0.5, (y - r.top) / r.height); },
 				machine: c => ok(laneLocks(c.t, c.lane).some(([x, v]) => x === c.s && v === c.k0) && getP(c.t, c.lane) === c.k0, `locks ${JSON.stringify(laneLocks(c.t, c.lane))}, kit value ${c.k0}`), within: 20000 },
@@ -4074,7 +4074,9 @@ const MmJourneys = (() => {
 						await loadSlot(u, s);
 						u.click('[data-set="songpick"] button[data-v="song"]'); await until(() => machine().song?.songMode === true, 6000); await sleep(300);
 						const rows = (I().doc("song", s)?.rows || []).filter(r => r.kind === "pattern").length;
-						const r = await playFor(u, 10000, rows > 1);
+						/* A 64-step row takes eight seconds at 120 BPM even at real time. Shared CI runners can
+						   emulate slower: stop as soon as the next row is observed, with a bounded allowance. */
+						const r = await playFor(u, 60000, rows > 1);
 						if (s === c.songs[0]) Journey.snapshot("mm-real-song-playing");
 						const why = [!r.started && "did not start (pressed twice)", r.again && r.started && "needed a second press of PLAY", r.started && r.steps.size < 4 && `only ${r.steps.size} steps moved`, r.peak <= 0.0002 && "silent", rows > 1 && r.rows.size < 2 && `stayed on row ${[...r.rows].join(",") || "?"}`, S().playing && "did not stop"].filter(Boolean);
 						Bridge.log(`E2E song ${s + 1}: ${rows} rows, ${r.steps.size} steps, rows ${[...r.rows].join(",")}, peak ${r.peak.toFixed(3)}${why.length ? " PROBLEM " + why.join(", ") : ""}`);

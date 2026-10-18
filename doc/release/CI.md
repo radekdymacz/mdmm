@@ -4,14 +4,15 @@ Why: on 2026-10-07 and 10-08 there were 182 CI runs, and 0.3.5's Editors job ran
 same commit was tested on the release branch, again on main, again on the tag, and again in the local gate. A small
 fix paid the price of a release. This file is the rule since 0.4.0.
 
-## Dev loop: build and the change's own test
+## Dev loop: edit locally, validate on GitHub Actions
 
 Rule of 2026-10-18 (Radek); the short form is in [CLAUDE.md](../../CLAUDE.md) ("Development lifecycle").
 
 1. Work on a branch.
-2. Run only the change's own check locally: `scripts/mdmm-check.sh --quick` ([DEV-CYCLE.md](DEV-CYCLE.md)).
-   If the local main branch is behind GitHub, use `MDMM_CHECK_BASE=origin/main` so unrelated commits are not selected.
-3. Unit suites, firmware tests, E2E and packages run on CI. A focused firmware check can be dispatched there.
+2. Inspect and edit locally; generate the checked-in page assets when needed. Do not run local tests, quick checks,
+   layout probes or builds unless Radek explicitly requests them ([DEV-CYCLE.md](DEV-CYCLE.md)).
+3. All validation, including generated-file checks, unit suites, firmware tests, E2E and packages, runs on CI.
+   A focused firmware check can be dispatched there.
 4. Merge to main. CI (`mdmm-ci.yml`, below) runs the whole pipeline on the push, cheapest stage first.
 5. Before a tag: the `MD/MM CI` run of the release-branch head is green (stages 0 to 4, firmware included). Radek tests by hand before the tag.
 
@@ -80,13 +81,30 @@ The next batch waits for final boot readiness and actual readback in the failing
 reset their boot/readback time, draws the 2 px lane marker without a zoom-rounded border, and adds failure diagnostics
 to the MM project-global memory check. Run 39135272248 passed checks, core tests and all 34 page unit tests, but stopped
 at one page journey: `md-mix-solo-saved` clicked before the startup card finished fading out (339 journeys passed).
-Commit `347f3454f` waits for the card to be hidden; run 39137347886 validates that fix.
+Commit `347f3454f` waits for the card to be hidden. Its initial run 39137347886 was cancelled before editor builds
+when the combined fixes were pushed, to avoid duplicate firmware runs. The page suite passed in run 39137700253
+(`d600904ec`), which has also passed every stage 2 build, plug-in/launch check and sanitizer suite.
 
 The following layout batch gives kit names room at reduced zoom, fits song labels and marks inside their cells,
 centres dialogs against the viewport including the scrollbar gutter, gives Sound headers a shared line height,
 and reduces GEN control padding to avoid a horizontal scrollbar changing its height. The MM machine-reference
 journey waits for the selected machine's defaults to settle. Large native page logs are retained compressed for
-CI diagnosis. These changes still need CI validation; the MM project-global memory failure remains under investigation.
+CI diagnosis. Run 39137700253 passed firmware shards 1 and 4. Shard 3's MM project-global save now passes; its only
+failure was the memory-copy lock hold (10.52 ms against the existing CI budget of 10 ms). Shard 2 is still running.
+MD E2E finished with 181 passes, five failures and 12 skips; MM with 217 passes, three failures and seven skips.
+All previous MM layout/import failures passed except the four-code song mark and fractional lane-line height.
+
+The follow-up batch pre-initialises the memory-copy buffers outside the device lock (reserve alone leaves the first
+page writes inside it), and reports the configured timing budget accurately without changing it. Song cells have an
+explicit shrinking grid column so scaled labels stay centred. Lane checks allow 0.02 px rounding around 2 px.
+Journeys wait for the inverted locks and kit baseline, undo back to their recorded history count, and allow song
+playback to reach the next row on slower runners. MD MIDI Learn fixture journeys record commands without forwarding
+them to the real engine, whose asynchronous replies previously replaced the simulated mappings; real-engine tests
+remain connected. Large page logs are retained regardless of their uncompressed size.
+
+For focused CI debugging, a manual `mdmm-firmware.yml` run accepts `firmware_test` (CTest name regex; one job) and
+`e2e_args` (for example `--jobs 1 --select journey-md-sound-knob-steps,mm-song-row-marks`). Empty selections run the full
+suites. These manual runs do not satisfy the release gate: the complete `mdmm-ci.yml` must pass on the release SHA.
 Keep the existing assertions and the release gate intact.
 PGO training on main passed in run 39126917819: the downloaded profile parses, its hash matches, and all four recorded
 emulator source trees match this branch. It is included with its metadata.

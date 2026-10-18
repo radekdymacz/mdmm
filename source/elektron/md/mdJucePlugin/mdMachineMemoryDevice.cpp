@@ -63,7 +63,11 @@ namespace mdJucePlugin
 		_heldMs = 0;
 		_copyMs = 0;
 		md::OneMomentCopy copy;
-		copy.begin(std::move(_areas));	// reserves: outside the lock
+		copy.begin(_areas);	// reserves: outside the lock
+		// Reserve alone leaves the pages untouched. Initialise the destination buffers here too, so their
+		// first writes and any resulting page faults do not extend a hold of the device lock.
+		for(const auto& area : _areas)
+			area.to->resize(area.size);
 		for(;;)
 		{
 			auto result = md::OneMomentCopy::Step::Failed;

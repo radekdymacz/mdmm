@@ -319,7 +319,7 @@ const MdJourneys = (() => {
 					const k = $1('#chips .pk[data-lane="FLTF"]') || $1("#chips .pk[data-lane]"); c.p = k.dataset.lane; c.i = pidx(c.t, c.p); u.click(k); await sleep(250); c.s = trigsOf(c.t).find(s => s < Math.min(16, V.len)); },
 				screen: c => ok(S.sel === c.t && S.lane === c.p && !!$1(`#lane .lb[data-s="${c.s}"] .base`), "no kit line on step " + c.s), machine: c => ok(c.s != null && c.i >= 0, "no trig or no parameter") },
 			{ say: "the kit line is 2 px and its number is on the lane", screen: c => { const b = $1(`#lane .lb[data-s="${c.s}"] .base`), v = grp(c.t, c.p)[c.p] ?? 0, k = $1("#lane .kvl");
-					return ok(b.getBoundingClientRect().height >= 2 && !!k && k.textContent === laneFmt(v), `line ${b.getBoundingClientRect().height} px, number ${k?.textContent} for ${v}`); } },
+					return ok(Math.abs(b.getBoundingClientRect().height - 2) < 0.02 && !!k && k.textContent === laneFmt(v), `line ${b.getBoundingClientRect().height} px, number ${k?.textContent} for ${v}`); } },
 			{ say: "click exactly on the line: it is a click on the lane, the step is locked at the kit value", act: async (u, c) => { c.l0 = locksOf(c.t, c.i).length; c.k0 = grp(c.t, c.p)[c.p] ?? 0; c.ul = V.undoCount;
 					const key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), y = r.bottom - 3 - (r.height - 6) * c.k0 / 127; u.click(key, {}, 0.5, (y - r.top) / r.height); },
 				machine: c => ok(locksOf(c.t, c.i).some(([x, v]) => x === c.s && v === c.k0) && (grp(c.t, c.p)[c.p] ?? 0) === c.k0, `locks ${JSON.stringify(locksOf(c.t, c.i))}, kit value ${c.k0}`), within: 8000 },
@@ -758,7 +758,9 @@ const MdJourneys = (() => {
 			{ say: "click Flat five times: the machine holds 50, 75, 100, 25 and 0 % (the lock value 0 is a lock)", act: async (u, c) => { c.vals = []; for (const want of [64, 95, 127, 32, 0]) { u.click(".xlane [data-xs=flat]"); await until(() => { const m = new Map(locksOf(c.t, c.i)); return idle() && c.s.every(s => m.get(s) === want); }, 8000); const m = new Map(locksOf(c.t, c.i)); c.vals.push(c.s.map(s => m.get(s)).join("/")); } },
 				screen: () => ok(true), machine: c => ok(c.vals.join(" ") === [64, 95, 127, 32, 0].map(v => c.s.map(() => v).join("/")).join(" "), c.vals.join(" ")), within: 4000 },
 			{ say: "the Flat icon at 0 % differs from the one at 25 %, and the lane still shows the locks", screen: c => ok($1(".xlane [data-xs=flat] path:not([opacity])") && $all("#lane .lb:not(.none) i").length >= c.s.length, "no bars: " + $all("#lane .lb:not(.none) i").length) },
-			{ say: "click Inv: the machine holds 127; then Undo seven times: the lane is as at the start", act: async (u, c) => { u.click(".xlane [data-xt=invert]"); await until(idle, 4000); await sleep(300); const m = new Map(locksOf(c.t, c.i)); c.inv = c.s.map(s => m.get(s)).join("/"); for (let i = 0; i < 7; i++) { u.click("#undo"); await until(idle, 4000); await sleep(300); } },
+			{ say: "click Inv: the machine holds 127; then undo the toolbox edits: the lane is as at the start", act: async (u, c) => { u.click(".xlane [data-xt=invert]");
+					if (!await until(() => { const m = new Map(locksOf(c.t, c.i)); return idle() && c.s.every(s => m.get(s) === 127); }, 8000)) throw new Error("the inverted lane was not read back: " + JSON.stringify(locksOf(c.t, c.i)));
+					const m = new Map(locksOf(c.t, c.i)); c.inv = c.s.map(s => m.get(s)).join("/"); await undoTo(u, c.u0); },
 				machine: c => ok(c.inv === c.s.map(() => 127).join("/") && JSON.stringify(locksOf(c.t, c.i)) === c.m0, `inv ${c.inv}; locks ${JSON.stringify(locksOf(c.t, c.i))}`), within: 9000 }
 		],
 		async tidy(u, c) { if (c.u0 != null) await undoTo(u, c.u0); }
@@ -2486,10 +2488,10 @@ const MdJourneys = (() => {
 		name: "md-sound-knob-steps", proves: ["MD-036"],
 		steps: [
 			go("sound"), sel(() => soundTrack()),
-			{ say: "scroll one notch over a synthesis value: one step", act: async (u, c) => { const el = $1('#main .pc[data-g="syn"]'); c.q = `#main .pc[data-g="syn"][data-n="${el.dataset.n}"]`; c.n = el.dataset.n; c.i = pidx(c.t, c.n, "syn"); c.v0 = kitVals(c.t)[c.i]; c.d = c.v0 > 90 ? -1 : 1; u.wheel(c.q, c.d); },
-				screen: c => ok(+$1(c.q + " b")?.textContent === c.v0 + c.d, "shows " + $1(c.q + " b")?.textContent), machine: c => ok(kitVals(c.t)[c.i] === c.v0 + c.d, "kit " + kitVals(c.t)[c.i]), within: 5000 },
+			{ say: "scroll one notch over a synthesis value: one step", act: async (u, c) => { await settled(); const el = $1('#main .pc[data-g="syn"]'); c.q = `#main .pc[data-g="syn"][data-n="${el.dataset.n}"]`; c.n = el.dataset.n; c.i = pidx(c.t, c.n, "syn"); c.v0 = kitVals(c.t)[c.i]; c.d = c.v0 > 90 ? -1 : 1; u.wheel(c.q, c.d); },
+				screen: c => ok(+$1(c.q + " b")?.textContent === c.v0 + c.d, `shows ${$1(c.q + " b")?.textContent}, expected ${c.v0 + c.d} from ${c.v0}`), machine: c => ok(idle() && kitVals(c.t)[c.i] === c.v0 + c.d, "kit " + kitVals(c.t)[c.i]), within: 8000 },
 			{ say: "scroll one notch with Shift held: ten steps", act: (u, c) => { c.v1 = kitVals(c.t)[c.i]; u.wheel(c.q, c.d, { shift: true }); },
-				screen: c => ok(+$1(c.q + " b")?.textContent === c.v1 + 10 * c.d, "shows " + $1(c.q + " b")?.textContent), machine: c => ok(kitVals(c.t)[c.i] === c.v1 + 10 * c.d, "kit " + kitVals(c.t)[c.i]), within: 5000 },
+				screen: c => ok(+$1(c.q + " b")?.textContent === c.v1 + 10 * c.d, `shows ${$1(c.q + " b")?.textContent}, expected ${c.v1 + 10 * c.d} from ${c.v1}`), machine: c => ok(idle() && kitVals(c.t)[c.i] === c.v1 + 10 * c.d, "kit " + kitVals(c.t)[c.i]), within: 8000 },
 			{ say: "drag the value 8 pixels sideways, then again with Shift held: the second is a quarter as far", act: async (u, c) => { c.v2 = kitVals(c.t)[c.i]; await u.drag(c.q, [[c.d * 4, 0], [c.d * 8, 0]]); c.v3 = kitVals(c.t)[c.i]; await u.drag(c.q, [[c.d * 4, 0], [c.d * 8, 0]], { shift: true }); Journey.snapshot("md-sound-knob-steps"); },
 				screen: c => ok(Math.abs(c.v3 - c.v2) === 8 && Math.abs(+$1(c.q + " b")?.textContent - c.v3) === 2, `plain ${c.v2} -> ${c.v3}, fine ${$1(c.q + " b")?.textContent}`), machine: c => ok(Math.abs(kitVals(c.t)[c.i] - c.v3) === 2, "kit " + kitVals(c.t)[c.i]), within: 5000 }
 		],
@@ -3197,7 +3199,7 @@ const MdJourneys = (() => {
 				screen: () => ok(leftOf() === "2" && /row 001 of 2 · A01 · 2 more/.test($1("#songPlays")?.textContent || ""), `mark ${leftOf()}, plays ${$1("#songPlays")?.textContent}`),
 				machine: () => ok(tele.last?.playing && tele.last.songRow === 0 && tele.last.songRepeats === 2, `row ${tele.last?.songRow}, repeats ${tele.last?.songRepeats}`), within: 8000 },
 			{ say: "the second pass: +1, the third: last; then row 002 has none", act: async (u, c) => {
-				const end = performance.now() + 12000; while (performance.now() < end && tele.last?.songRow !== 1) { const l = leftOf(); if (l != null && c.lefts[c.lefts.length - 1] !== l) c.lefts.push(l); await sleep(40); } },
+				const end = performance.now() + 60000; while (performance.now() < end && tele.last?.songRow !== 1) { const l = leftOf(); if (l != null && c.lefts[c.lefts.length - 1] !== l) c.lefts.push(l); await sleep(40); } },
 				screen: c => ok(c.lefts.join(" ") === "2 1 0" && !leftOf(), `marks ${c.lefts.join(" ")}, now ${leftOf()}`), machine: () => ok(tele.last?.songRow === 1 && tele.last.songRepeats === 0, `row ${tele.last?.songRow}, repeats ${tele.last?.songRepeats}`), within: 4000 },
 			{ say: "press STOP", act: u => { if (V.playing) u.click("#play"); }, screen: () => ok(!$1("#tl .scell.ph"), "still marked"), machine: () => ok(!V.playing, "playing") }
 		],
@@ -3371,14 +3373,31 @@ const MdJourneys = (() => {
 	/* ---------- 0.8 (L4): MIDI Learn on the CONTROL page. The plug-in's learn documents are played to the page as the plug-in
 	   would send them (the page tier has no controller; the host's side is mdLearnFirmwareTest and the editor-tier md-control-learn) ---------- */
 	const learnSent = Journey.recent(80);	/* the learn commands the page sent, whole, newest last */
-	{ const send1 = Bridge.send; Bridge.send = (m, o) => { if (/^learn/.test(m.op)) learnSent.add(m); return send1(m, o); }; }
+	let learnFixture = null;
+	{ const send1 = Bridge.send; Bridge.send = (m, o) => {
+		if (/^learn/.test(m.op)) {
+			learnSent.add(m);
+			/* These fixtures supply the host's replies. A real reply would overwrite the fixture and change
+			   the user's mappings. Outside a fixture, the real-engine journeys still reach the host. */
+			if (learnFixture) return;
+		}
+		return send1(m, o);
+	}; }
 	const LP = Array.from({ length: 25 }, (_, i) => ({ i, name: "P" + i }));
 	const lmap = (index, t, i, cc, ch, o = {}) => Object.assign({ index, t, i, name: "plug-in " + t + "/" + i, cc, ch, mode: "Absolute", invert: false, overrides: [] }, o);
 	const ldoc = (maps, o = {}) => ({ type: "learn", doc: Object.assign({ enabled: true, mappings: maps, learning: null, limits: { tracks: 16, params: LP, max: 128 } }, o) });
 	const learnOff = () => window.gm.recv([{ type: "learn", doc: { enabled: false, mappings: [], learning: null } }]);
 	const toastText = () => $1("#toast").classList.contains("on") ? $1("#toast").textContent : "";
-	const learnTidy = async u => { learnOff(); await sleep(150); S.ctl.leftSeen = ""; S.ctl.sel = null; S.ctl.selT = null; if (S.ws === "control") { S.ws = "seq"; render(); } };
-	const learnIn = async (u, c, ...msgs) => { window.gm.recv(msgs); await sleep(150); };
+	const learnTidy = async u => {
+		learnOff(); await sleep(150); S.ctl.leftSeen = ""; S.ctl.sel = null; S.ctl.selT = null;
+		if (learnFixture?.doc) window.gm.recv([{ type: "learn", doc: learnFixture.doc }]);
+		learnFixture = null;
+		if (S.ws === "control") { S.ws = "seq"; render(); }
+	};
+	const learnIn = async (u, c, ...msgs) => {
+		if (!learnFixture) learnFixture = { doc: Docs.learn };
+		window.gm.recv(msgs); await sleep(150);
+	};
 	/* the whole learn: LEARN, a value, progress on CONTROL, the mapping and what it overrides, invert, remove, Esc */
 	const controlLearn = {
 		name: "md-control-learn-flow", proves: [],
@@ -3458,8 +3477,7 @@ const MdJourneys = (() => {
 		name: "md-control-learn-globals", proves: [],
 		steps: [
 			{ say: "LEARN on, the Mix tab: a master effect's value is outlined and a click sends learnStart with its global id", act: async (u, c) => { await learnIn(u, c, gdoc([])); c.n = learnSent.mark(); u.click("#learnkey"); u.click(tab("mix")); await sleep(300);
-				c.el = $1('#main .pc[data-g="mfx"][data-f="gate"][data-n="DEC"]'); u.click('#main .pc[data-g="mfx"][data-f="gate"][data-n="DEC"]');
-				if (!Journey.pageTier() && !await until(() => Docs.learn?.learning?.g === 10, 6000)) throw new Error("the plug-in did not acknowledge the global learn target"); },
+				c.el = $1('#main .pc[data-g="mfx"][data-f="gate"][data-n="DEC"]'); u.click('#main .pc[data-g="mfx"][data-f="gate"][data-n="DEC"]'); },
 				screen: () => ok(S.ctl.learnT && S.ctl.learnT.g === 10, "target " + JSON.stringify(S.ctl.learnT)),
 				machine: c => { const m = learnSent.since(c.n).find(x => x.op === "learnStart"); return ok(m && m.g === 10 && m.t == null, "sent " + JSON.stringify(learnSent.since(c.n))); } },
 			{ say: "the plug-in has seen one value: CONTROL names the target GATE BOX DEC", act: async (u, c) => { window.gm.recv([gdoc([], { learning: { g: 10, name: "x", got: 1, need: 2 } })]); await sleep(100); u.click(tab("control")); await sleep(300); },
