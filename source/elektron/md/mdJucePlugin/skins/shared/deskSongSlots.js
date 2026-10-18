@@ -228,11 +228,22 @@ const SongMarks = (() => {
 	/* the words when each cell's small line holds them, else the codes (re-run after a render and when the page resizes) */
 	function fit(grid) {
 		if (!grid) return;
+		const labels = [...grid.querySelectorAll(".scell>b,.scell>small")];
+		for (const el of labels) el.style.transform = "";
 		grid.classList.add("rmkwide");
 		for (const s of grid.querySelectorAll(".scell small")) {
 			const c = s.parentNode, cs = getComputedStyle(c), room = c.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-			if (s.getBoundingClientRect().width > room + 0.5) { grid.classList.remove("rmkwide"); return; }
+			if (s.getBoundingClientRect().width > room + 0.5) { grid.classList.remove("rmkwide"); break; }
 		}
+		/* WebKit's font floor can make even the short codes and pattern names wider than a cell at reduced zoom.
+		   Keep all sixteen steps and the text's height; compress only a line that still overflows after using codes. */
+		const sizes = labels.map(el => {
+			const c = el.parentNode, cs = getComputedStyle(c);
+			const room = c.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+			return [el, room, el.getBoundingClientRect().width];
+		});
+		for (const [el, room, width] of sizes)
+			if (room > 0 && width > room) el.style.transform = `scaleX(${Math.max(0, room - 0.5) / width})`;
 	}
 	function watch(gridOf) {
 		if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("resize", () => fit(gridOf()));

@@ -2962,7 +2962,8 @@ const MmJourneys = (() => {
 					u.click(famBtn); await sleep(30); if (m === "SWAVE-SAW") Journey.snapshot("mm-machine-picker");
 					const key = $1(`#machpop .mk[data-mach="${m}"]`); if (!key || key.disabled) { c.bad.push(m + ": no key"); if (!$1("#machpop").hidden) u.key("Escape"); continue; }
 					u.click(key); if (!await until(() => wk().tracks[0].machineName === m && S().tracks[0].m === m, 4000)) { c.bad.push(`${m}: not picked, kit has ${wk().tracks[0].machineName}`); continue; }
-					await sleep(250);
+					/* A model name can arrive before the firmware has loaded that model's default values. */
+					await settled();
 					const boxes = $all('#main .pc[data-g="SYN"]').map(e => [+e.dataset.n, e.getAttribute("aria-label")]).sort((a, b) => a[0] - b[0]);
 					if (boxes.map(b => b[1]).join(" ") !== want) { c.bad.push(`${m}: ${boxes.map(b => b[1]).join(" ")} (manual: ${want})`); continue; }
 					/* TUNE is on every synth machine except the beat box and silence */

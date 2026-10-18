@@ -1501,7 +1501,8 @@ body.engwait #main,body.engwait #rail{pointer-events:none;opacity:.6;transition:
 .libacts button:disabled{opacity:.35;cursor:default}
 .libacts .danger:hover:not(:disabled){background:var(--rec);color:#fff}
 .libgrid{display:grid;gap:4px}
-.libgrid.kits{grid-template-columns:repeat(16,minmax(0,1fr))}
+/* Leave room for the full eleven-character name and its unlinked marker, also under WebKit's zoom font floor. */
+.libgrid.kits{font:500 9.5px var(--mono);grid-template-columns:repeat(auto-fit,minmax(calc(12ch + 6px),1fr))}
 .libgrid.pats{grid-template-columns:30px repeat(16,minmax(0,1fr))}
 .ls{position:relative;display:grid;gap:2px;align-content:center;text-align:left;min-width:0;padding:4px 5px;font-weight:500;letter-spacing:0}
 .ls .lsh{display:flex;justify-content:space-between;align-items:center;gap:3px}
@@ -1746,7 +1747,8 @@ svg.route .mtr.off{opacity:.3}
 .modalbg[hidden]{display:none}
 .modalbg.clear{background:transparent}
 .modalbg.through{pointer-events:none}
-.modal:not(.dlg):not(.bootcard):not(.deskmenu){position:fixed!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;margin:0!important;max-width:calc(100vw - 48px)!important;max-height:calc(100vh - 48px)!important;overflow:auto!important;z-index:var(--mz,60)!important;box-sizing:border-box}
+/* Viewport units keep panels centred when WebKit reserves a scrollbar gutter on the root element. */
+.modal:not(.dlg):not(.bootcard):not(.deskmenu){position:fixed!important;left:50vw!important;top:50vh!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;margin:0!important;max-width:calc(100vw - 48px)!important;max-height:calc(100vh - 48px)!important;overflow:auto!important;z-index:var(--mz,60)!important;box-sizing:border-box}
 .dlg.modal{background:transparent!important;z-index:var(--mz,60)!important}
 .modal:focus,.modal .dlgbox:focus{outline:none}
 .modalopen .kpop{z-index:120!important}
@@ -2248,6 +2250,7 @@ img,svg,canvas{-webkit-user-drag:none}
 .gsc button:last-child{border-right:0}
 .gsc button[aria-pressed=true]{background:var(--led);color:#fff}
 .gdrow .gsc{flex:none}
+.gdrow .gsc button{padding:0 8px;letter-spacing:.04em}
 .gdrow .gvs>.gsc:not(:first-child){margin-left:8px}
 .gdsum{min-height:16px;margin-top:8px;font:12px var(--mono);color:var(--print2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gdsum em{font-style:normal;color:var(--print)}
@@ -2351,8 +2354,9 @@ img,svg,canvas{-webkit-user-drag:none}
 .sg{display:contents}
 .sg>*{grid-column:1}
 .sg>header{grid-row:1;border-top:2px solid var(--print);padding-top:7px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;min-width:0}
-.sg h3{margin:0;font:600 12px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--print);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.sg>header>span{font:12px var(--mono);color:var(--print3);white-space:nowrap;cursor:help}
+/* The same title line in every column, including the fallback without subgrid and titles with no page number. */
+.sg h3{margin:0;font:600 12px/16px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--print);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.sg>header>span{font:12px/16px var(--mono);color:var(--print3);white-space:nowrap;cursor:help}
 .sg>.plot{grid-row:2;position:relative;min-height:0;border-radius:4px;overflow:hidden}
 .sg>:is(.ctl,.sgline,.sgsel,.sgabout){grid-row:3;align-self:start;min-width:0}
 .sgrow.flat .sg>:is(.ctl,.sgline,.sgsel,.sgabout){grid-row:2}
@@ -2672,6 +2676,8 @@ header.top.tf4 .row2 .lcd2{gap:5px!important}
 /* The Song page's song slots (deskSongSlots.js) and the PATTERN · CHAIN · SONG keys of its one palette (0.6 wave 1,
    doc/modern-ux/DESIGN-machine-menus.md §2, Song). Both editors: the same classes, the page's own tokens. */
 .songui.withlib{grid-template-columns:366px minmax(340px,400px) minmax(0,1fr)!important}
+/* SongMarks.fit measures the complete label before fitting it inside a narrow cell. */
+.slotgrid .scell>b,.slotgrid .scell>small{width:max-content;max-width:none;justify-self:center;transform-origin:center}
 @media (max-width:1239px){.songui.withlib{grid-template-columns:minmax(0,1fr)!important}}
 /* B-165: the page asks for 1240 px (.app min-width; the Machinedrum page's html and body 1280), the plug-in's zoom gives it 1440
    or more, but a user zoom above 100 % leaves less. The Song page then takes the window's width (its columns stack below

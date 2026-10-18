@@ -19,8 +19,9 @@
 .sg{display:contents}
 .sg>*{grid-column:1}
 .sg>header{grid-row:1;border-top:2px solid var(--print);padding-top:7px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;min-width:0}
-.sg h3{margin:0;font:600 12px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--print);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.sg>header>span{font:12px var(--mono);color:var(--print3);white-space:nowrap;cursor:help}
+/* The same title line in every column, including the fallback without subgrid and titles with no page number. */
+.sg h3{margin:0;font:600 12px/16px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--print);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.sg>header>span{font:12px/16px var(--mono);color:var(--print3);white-space:nowrap;cursor:help}
 .sg>.plot{grid-row:2;position:relative;min-height:0;border-radius:4px;overflow:hidden}
 .sg>:is(.ctl,.sgline,.sgsel,.sgabout){grid-row:3;align-self:start;min-width:0}
 .sgrow.flat .sg>:is(.ctl,.sgline,.sgsel,.sgabout){grid-row:2}
