@@ -39,7 +39,7 @@ export function checkClaims(c: Claims, nowSeconds: number): Verdict {
 	if (typeof c.iat !== "number" || c.iat > nowSeconds + CLOCK_SKEW_SECONDS) return no("iat");
 	if (str(c.repository) !== REPOSITORY) return no("repository");
 	if (str(c.repository_id) !== REPOSITORY_ID) return no("repository_id");
-	if (!refAllowed(ref)) return no("ref");
+	if (!refAllowed(ref) || str(c.ref_type) !== "branch") return no("ref");
 	if (!EVENTS.has(event)) return no("event_name");
 	if (str(c.environment) !== ENVIRONMENT) return no("environment");
 	const wf = str(c.job_workflow_ref);
