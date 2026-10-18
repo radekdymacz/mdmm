@@ -495,7 +495,8 @@ body.engwait #main,body.engwait #rail{pointer-events:none;opacity:.6;transition:
 .libacts button:disabled{opacity:.35;cursor:default}
 .libacts .danger:hover:not(:disabled){background:var(--rec);color:#fff}
 .libgrid{display:grid;gap:4px}
-.libgrid.kits{grid-template-columns:repeat(16,minmax(0,1fr))}
+/* Leave room for the full eleven-character name and its unlinked marker, also under WebKit's zoom font floor. */
+.libgrid.kits{font:500 9.5px var(--mono);grid-template-columns:repeat(auto-fit,minmax(calc(12ch + 6px),1fr))}
 .libgrid.pats{grid-template-columns:30px repeat(16,minmax(0,1fr))}
 .ls{position:relative;display:grid;gap:2px;align-content:center;text-align:left;min-width:0;padding:4px 5px;font-weight:500;letter-spacing:0}
 .ls .lsh{display:flex;justify-content:space-between;align-items:center;gap:3px}

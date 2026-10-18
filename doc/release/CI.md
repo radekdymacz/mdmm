@@ -78,9 +78,16 @@ private SysEx downloads; the final release must test the newer head.
 
 The next batch waits for final boot readiness and actual readback in the failing journeys, gives import and factory
 reset their boot/readback time, draws the 2 px lane marker without a zoom-rounded border, and adds failure diagnostics
-to the MM project-global memory check. These changes still need CI validation. Remaining investigation includes the
-MM memory-save failure and the native WebKit layout failures (GEN height, Sound fallback alignment, kit names, song
-marks/labels and GLOBAL centring). Keep the existing assertions and the release gate intact.
+to the MM project-global memory check. Run 39135272248 passed checks, core tests and all 34 page unit tests, but stopped
+at one page journey: `md-mix-solo-saved` clicked before the startup card finished fading out (339 journeys passed).
+Commit `347f3454f` waits for the card to be hidden; run 39137347886 validates that fix.
+
+The following layout batch gives kit names room at reduced zoom, fits song labels and marks inside their cells,
+centres dialogs against the viewport including the scrollbar gutter, gives Sound headers a shared line height,
+and reduces GEN control padding to avoid a horizontal scrollbar changing its height. The MM machine-reference
+journey waits for the selected machine's defaults to settle. Large native page logs are retained compressed for
+CI diagnosis. These changes still need CI validation; the MM project-global memory failure remains under investigation.
+Keep the existing assertions and the release gate intact.
 PGO training on main passed in run 39126917819: the downloaded profile parses, its hash matches, and all four recorded
 emulator source trees match this branch. It is included with its metadata.
 
