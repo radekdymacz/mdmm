@@ -110,7 +110,13 @@ Focused run 39144813733 (`d69aea9ba`) passed all three MM journeys, MD knob step
 MIDI Learn fixture journey (12/14 MD journeys passed). It exposed an MD kit-line click rounding 31 to 32 and a lane
 preview cleared by late readback after cleanup. The next fix snaps a plain kit-line click to its exact displayed value,
 clicks the rendered line in the journey, and waits for cleanup/track readback before testing the preview. The memory
-test is still running. Full run 39144796389 was cancelled while queued so an already failing candidate is not rebuilt.
+test passed its timing checks (worst work in session 3q: 0.625 ms) but failed both global-setting persistence checks.
+Full run 39137700253's last shard passed both private SysEx pick tests and MIDI Learn, but the MM transport test failed
+when switching from internal back to external clock. Its later notes/playback failures followed that failed switch.
+The same transport test passed in the preceding full run. The memory and transport tests now print the command
+results and global/receive state on failure; memory also prints the differing byte values, to distinguish delivery
+from persistence without weakening either assertion. Focused run 39145772797 has passed the MM lane journey; MD is
+still running. Full run 39144796389 was cancelled while queued so an already failing candidate is not rebuilt.
 Keep the existing assertions and the release gate intact.
 PGO training on main passed in run 39126917819: the downloaded profile parses, its hash matches, and all four recorded
 emulator source trees match this branch. It is included with its metadata.

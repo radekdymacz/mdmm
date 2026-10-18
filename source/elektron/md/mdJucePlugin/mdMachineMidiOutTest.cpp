@@ -708,6 +708,28 @@ namespace
 			const std::string key = std::string(_what) == "tempoIn" ? "clockIn" : _what;
 			return R"({"op":"globalMidi","g":)" + std::to_string(g) + R"(,")" + key + R"(":)" + (_on ? "true" : "false") + "}";
 		};
+		const auto describeClock = [&]
+		{
+			std::printf("  clock command id %d, host clock %d\n", id, processor->getPlugin().hostClock());
+			const auto machine = lastMachine();
+			if(const auto* doc = machine.find("doc"))
+				for(const auto* field : {"lifecycle", "global", "recv", "loading", "status", "pending"})
+					if(const auto* value = doc->find(field))
+						std::printf("  machine %s: %s\n", field, elektronData::json::write(*value).c_str());
+			const std::lock_guard l(publishedLock);
+			int results = 0;
+			bool global = false;
+			for(auto it = published.rbegin(); it != published.rend(); ++it)
+			{
+				if(str(*it, "type") == "result" && results++ < 6)
+					std::printf("  clock result: %s\n", elektronData::json::write(*it).c_str());
+				if(!global && str(*it, "kind") == "global")
+				{
+					global = true;
+					std::printf("  clock global: %s\n", elektronData::json::write(*it).c_str());
+				}
+			}
+		};
 
 		// ---- the machine up ----
 		until([&] { return lifecycle() == "ready"; }, 180000);
@@ -931,7 +953,10 @@ namespace
 		host.seekTo = 0.0;
 		watch(300);
 		op(globalOp("tempoIn", true));
-		check(until([&] { return processor->getPlugin().hostClock(); }, 180000), "Tempo in EXT again: the host clock is on");
+		const bool externalAgain = until([&] { return processor->getPlugin().hostClock(); }, 180000);
+		if(!externalAgain || debug)
+			describeClock();
+		check(externalAgain, "Tempo in EXT again: the host clock is on");
 		hostPlay(120, 0.0);
 		check(until(playing, 20000), "EXT again: the host's Play starts the machine");
 		watch(1500);
