@@ -68,11 +68,15 @@ namespace mdJucePlugin
 
 	MidiLearnCommands::Ref MidiLearnCommands::targetOf(const Value& _message) const
 	{
+		if(const auto g = intOf(_message, "g"); g >= 0)
+			return Ref::global(g);
 		return {intOf(_message, "t"), m_model.pages ? intOf(_message, "pg") : -1, intOf(_message, "i", m_model.pages ? 0 : -1)};
 	}
 
 	std::string MidiLearnCommands::parameterOf(const Ref& _t) const
 	{
+		if(_t.isGlobal())
+			return _t.i >= 0 && static_cast<size_t>(_t.i) < m_model.globals.size() ? m_model.globals[static_cast<size_t>(_t.i)].name : std::string();
 		if(_t.t < 0 || _t.t >= m_model.tracks)
 			return {};
 		for(const auto& p : m_model.params)
@@ -93,9 +97,21 @@ namespace mdJucePlugin
 			v.set("name", p.name);
 			params.push(std::move(v));
 		}
+		json::Value globals = json::Value::array();
+		for(size_t g = 0; g < m_model.globals.size(); ++g)
+		{
+			json::Value v = json::Value::object();
+			v.set("g", static_cast<int>(g));
+			v.set("name", m_model.globals[g].name);
+			v.set("group", m_model.globals[g].group);
+			v.set("min", m_model.globals[g].min);
+			v.set("max", m_model.globals[g].max);
+			globals.push(std::move(v));
+		}
 		json::Value l = json::Value::object();
 		l.set("tracks", m_model.tracks);
 		l.set("params", std::move(params));
+		l.set("globals", std::move(globals));
 		l.set("max", static_cast<int>(deskCore::g_learnMaxMappings));
 		return l;
 	}
@@ -103,6 +119,11 @@ namespace mdJucePlugin
 	MidiLearnCommands::Value MidiLearnCommands::targetJson(const Ref& _at) const
 	{
 		json::Value v = json::Value::object();
+		if(_at.isGlobal())
+		{
+			v.set("g", _at.i);
+			return v;
+		}
 		v.set("t", _at.t);
 		if(m_model.pages)
 			v.set("pg", _at.pg);
@@ -133,7 +154,8 @@ namespace mdJucePlugin
 		m_built = m_host.mappings ? m_host.mappings() : std::vector<deskCore::LearnMapping>{};
 		m_builtValid = true;
 		// the audio thread's view; every parameter in it belongs to the controller, which outlives the session
-		const bool settled = m_router.publishAndSettle(buildLearnTable(m_built, m_host.parameter, ++m_generation, &m_params));
+		const bool settled = m_router.publishAndSettle(buildLearnTable(m_built, m_host.parameter, ++m_generation, &m_params,
+			m_host.applyGlobals ? static_cast<int>(m_model.globals.size()) : 0));
 		// the bits the old table set name its mappings, not these: none is carried over
 		(void)m_router.takeTouched();
 		// settle timed out: a block that began before the new table may still be running and set one more old bit when it
@@ -183,7 +205,14 @@ namespace mdJucePlugin
 			reply(_message, false, pausedNow());
 			return;
 		}
-		const auto learnable = [&] { return !name.empty() && m_host.parameter && m_host.parameter(target) != nullptr; };
+		const auto learnable = [&]
+		{
+			if(name.empty())
+				return false;
+			if(target.isGlobal())
+				return static_cast<bool>(m_host.applyGlobals);
+			return m_host.parameter && m_host.parameter(target) != nullptr;
+		};
 		switch(_action)
 		{
 		case A::LearnStart:
@@ -205,7 +234,7 @@ namespace mdJucePlugin
 			// A mapping made without LEARN: a controller row x a track's parameter.
 			if(!learnable())
 			{
-				reply(_message, false, "learnAdd: a learnable parameter of a track (learn.doc.limits)");
+				reply(_message, false, "learnAdd: a learnable parameter of a track or a global one (learn.doc.limits)");
 				return;
 			}
 			deskCore::LearnMapping mapping;
@@ -220,7 +249,7 @@ namespace mdJucePlugin
 				return;
 			}
 			edit(r.list);
-			reply(_message, true, "CC " + std::to_string(mapping.cc) + " -> track " + std::to_string(target.t + 1));
+			reply(_message, true, "CC " + std::to_string(mapping.cc) + (target.isGlobal() ? " -> " + name : " -> track " + std::to_string(target.t + 1)));
 			break;
 		}
 		case A::LearnCancel:
@@ -283,6 +312,15 @@ namespace mdJucePlugin
 			publish();
 	}
 
+	// The CCs the audio thread handed over for global targets: applied in one go, through the page's own edit path
+	void MidiLearnCommands::takeGlobals()
+	{
+		std::vector<deskCore::LearnGlobalEvent> events;
+		m_router.drainGlobals([&](const deskCore::LearnGlobalEvent& _e) { events.push_back(_e); });
+		if(!events.empty() && m_host.applyGlobals)
+			m_host.applyGlobals(events);
+	}
+
 	// What the audio thread moved: the host hears the value, in a change gesture that ends g_gestureMs after the last move.
 	void MidiLearnCommands::notifyHost()
 	{
@@ -340,6 +378,7 @@ namespace mdJucePlugin
 		if(base != m_publishedBase || paused != m_publishedPaused)
 			publish();	// the overrides depend on the base channel, the rest on the engine
 		takeCaptured();
+		takeGlobals();
 		notifyHost();
 	}
 
@@ -366,10 +405,15 @@ namespace mdJucePlugin
 				const auto& m = list[n];
 				json::Value v = json::Value::object();
 				v.set("index", static_cast<int>(n));
-				v.set("t", m.at.t);
-				if(m_model.pages)
-					v.set("pg", m.at.pg);
-				v.set("i", m.at.i);
+				if(m.at.isGlobal())
+					v.set("g", m.at.i);
+				else
+				{
+					v.set("t", m.at.t);
+					if(m_model.pages)
+						v.set("pg", m.at.pg);
+					v.set("i", m.at.i);
+				}
 				v.set("name", parameterOf(m.at));
 				v.set("cc", static_cast<int>(m.cc));
 				v.set("ch", static_cast<int>(m.ch));

@@ -41,9 +41,11 @@ namespace mdJucePlugin
 	// mapping whose parameter is null is left out), chains in the order of the list, at most LearnTable::MaxTargets.
 	// _byMapping (optional) gets the parameter of every mapping by its index in _mappings (null for one left out), for the
 	// host's notification.
+	// A mapping of a global target (B-169, deskCore::LearnRef::isGlobal) has no parameter: it goes in when its id is below
+	// _globals (the model's count), and the router hands its CCs to the message thread (drainGlobals).
 	LearnTable buildLearnTable(const std::vector<deskCore::LearnMapping>& _mappings,
 		const std::function<pluginLib::Parameter*(const deskCore::LearnRef&)>& _parameter, uint32_t _generation,
-		std::vector<pluginLib::Parameter*>* _byMapping = nullptr);
+		std::vector<pluginLib::Parameter*>* _byMapping = nullptr, int _globals = 0);
 
 	class LearnRouter
 	{
@@ -53,12 +55,15 @@ namespace mdJucePlugin
 		using Apply = bool (*)(pluginLib::Parameter& _param, const LearnTarget& _target, uint8_t _value);
 
 		static constexpr size_t CaptureCapacity = 256;	// records; a power of two
+		static constexpr size_t GlobalCapacity = 1024;	// records of CCs for global targets; a power of two
 
 		struct Counts
 		{
 			uint64_t applied = 0;			// targets moved
 			uint64_t captured = 0;			// CCs captured while learning
 			uint64_t capturedDropped = 0;	// captured CCs lost to a full ring
+			uint64_t globalQueued = 0;		// CCs handed to the message thread for a global target
+			uint64_t globalDropped = 0;		// of those, lost to a full ring
 			uint64_t notOnAudioThread = 0;	// CCs offered to translate from another thread (passed on untouched)
 			uint64_t physicalPassed = 0;	// CCs from a MIDI port (source Physical) that went on to the machine raw, never translated
 		};
@@ -87,6 +92,26 @@ namespace mdJucePlugin
 				++read;
 			}
 			m_captureRead.store(read, std::memory_order_release);
+		}
+
+		// F(const deskCore::LearnGlobalEvent&) for every CC a global target met, oldest first (message thread): the
+		// session applies them through the page's own edit path
+		template<typename F> void drainGlobals(F&& _f)
+		{
+			auto read = m_globalRead.load(std::memory_order_relaxed);
+			const auto write = m_globalWrite.load(std::memory_order_acquire);
+			while(read != write)
+			{
+				const auto r = m_globalRing[read & (GlobalCapacity - 1)].load(std::memory_order_relaxed);
+				deskCore::LearnGlobalEvent e;
+				e.id = static_cast<uint8_t>(r & 0xff);
+				e.mode = static_cast<uint8_t>((r >> 8) & 0xff);
+				e.invert = ((r >> 16) & 1) != 0;
+				e.value = static_cast<uint8_t>((r >> 24) & 0x7f);
+				_f(e);
+				++read;
+			}
+			m_globalRead.store(read, std::memory_order_release);
 		}
 
 		// The mapping indices (LearnTarget::mapping) moved since the last call, as two 64-bit masks
@@ -124,6 +149,7 @@ namespace mdJucePlugin
 	private:
 		bool onAudioThread() const noexcept;
 		void capture(uint8_t _status, uint8_t _cc, uint8_t _value) noexcept;
+		void queueGlobal(const LearnTarget& _target, uint8_t _value) noexcept;
 		bool runChain(uint8_t _head, uint8_t _value) noexcept;
 
 		const Apply m_apply;
@@ -147,11 +173,17 @@ namespace mdJucePlugin
 		std::atomic<uint32_t> m_captureWrite{0};		// audio thread
 		std::atomic<uint32_t> m_captureRead{0};			// message thread
 
+		std::array<std::atomic<uint32_t>, GlobalCapacity> m_globalRing{};
+		std::atomic<uint32_t> m_globalWrite{0};			// audio thread
+		std::atomic<uint32_t> m_globalRead{0};			// message thread
+
 		std::array<std::atomic<uint64_t>, 2> m_touched{};
 
 		std::atomic<uint64_t> m_applied{0};
 		std::atomic<uint64_t> m_captured{0};
 		std::atomic<uint64_t> m_capturedDropped{0};
+		std::atomic<uint64_t> m_globalQueued{0};
+		std::atomic<uint64_t> m_globalDropped{0};
 		std::atomic<uint64_t> m_notOnAudioThread{0};
 		std::atomic<uint64_t> m_physicalPassed{0};
 	};

@@ -38,7 +38,8 @@ namespace deskHost
 		using deskCore::CoreOp;
 		using deskCore::Gate;
 		using deskCore::Owner;
-		const Arg t{"t", ArgType::Integer, 0, 15};
+		const Arg t{"t", ArgType::Integer, 0, 15, true};	// optional: a global target has none (g)
+		const Arg g{"g", ArgType::Integer, 0, 255, true};	// B-169: a global target's id (learn.doc.limits.globals)
 		const Arg pg{"pg", ArgType::Integer, 0, 7, true};
 		const Arg i{"i", ArgType::Integer, 0, 24, true};
 		// An entry of the learn document's mappings; the handler checks it against the list.
@@ -134,8 +135,8 @@ namespace deskHost
 				"a chosen one "
 				"(sampleLoad messages follow; one sample at a time); refused when the window no longer holds that file",
 				Action::DropSample, Actor::Window),
-			row("learnStart", {t, pg, i}, "MIDI learn a track's parameter (learn.doc.limits: which)", Action::LearnStart),
-			row("learnAdd", {{"cc", ArgType::Integer, 0, 127}, t, pg, i, {"ch", ArgType::Integer, 0, 15, true}},
+			row("learnStart", {t, pg, i, g}, "MIDI learn a track's parameter, or a global one with g (learn.doc.limits: which)", Action::LearnStart),
+			row("learnAdd", {{"cc", ArgType::Integer, 0, 127}, t, pg, i, g, {"ch", ArgType::Integer, 0, 15, true}},
 				"a CC mapping without learning, on channel ch (none: all channels)", Action::LearnAdd),
 			row("learnCancel", {}, "", Action::LearnCancel),
 			row("learnRemove", {index}, "", Action::LearnRemove),

@@ -7155,8 +7155,8 @@
         },
         {
           "type": "object",
-          "description": "host: MIDI learn a track's parameter (learn.doc.limits: which)",
-          "required": ["op", "t"],
+          "description": "host: MIDI learn a track's parameter, or a global one with g (learn.doc.limits: which)",
+          "required": ["op"],
           "properties": {
             "op": {
               "const": "learnStart"
@@ -7166,7 +7166,8 @@
             },
             "g": {
               "type": "integer",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 255
             },
             "force": {
               "type": ["boolean", "integer"]
@@ -7192,7 +7193,7 @@
         {
           "type": "object",
           "description": "host: a CC mapping without learning, on channel ch (none: all channels)",
-          "required": ["op", "cc", "t"],
+          "required": ["op", "cc"],
           "properties": {
             "op": {
               "const": "learnAdd"
@@ -7202,7 +7203,8 @@
             },
             "g": {
               "type": "integer",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 255
             },
             "force": {
               "type": ["boolean", "integer"]

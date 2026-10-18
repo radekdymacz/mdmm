@@ -163,6 +163,7 @@ namespace mdJucePlugin
 			m.tracks = 6;
 			m.limits = mmDesk::g_mmSetupSpec.learn;
 			m.span = 6;		// the Monomachine's CCs: six channels from the base channel, one a track
+			m.globals = mmDesk::Desk::learnGlobals();	// B-169: the tempo, the master tune, the multi envelope, the pattern's swing
 			m.refusal = "learn: a synth track's DATA page value or level (MIDI page values are NRPN, not learnable)";
 			constexpr uint8_t dataPages = 7, levelPage = 7;
 			for(uint8_t pg = 0; pg < dataPages; ++pg)

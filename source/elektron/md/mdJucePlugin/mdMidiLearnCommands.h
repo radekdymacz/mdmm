@@ -26,14 +26,16 @@ namespace mdJucePlugin
 {
 	// The page's MIDI learn commands (P6: one implementation for both editors), on the setup's mappings and the realtime
 	// LearnRouter (doc/midilearn/DESIGN-learn-0.8.md, decision C, slice L2). Message thread only.
-	//   learnStart {t, [pg,] i}, learnAdd {cc, t, [pg,] i, [ch]}, learnCancel, learnRemove {index}, learnInvert {index}
+	//   learnStart {t, [pg,] i} or {g}, learnAdd {cc, t, [pg,] i, [ch]} or {cc, g, [ch]}, learnCancel, learnRemove {index},
+	//   learnInvert {index}; g is a global target's id (B-169)
 	// The mappings are the desk's (DeskSetup::mappings, saved with the project); this class edits them with the pure
 	// functions of deskLearn.h through the host's accessors, derives the audio thread's table from them and publishes it
 	// to the router. Learning is pulled: the audio thread only captures CCs into the router's ring, step() drains it. There
 	// is no callback, so nothing can free a closure that is running.
 	//
 	// The published document: {"type":"learn","doc":{"enabled", "mappings":[{index,t,[pg],i,name,cc,ch,mode,invert,
-	// overrides:[{ch,t,[pg],i}]}], "learning":{name,t,[pg],i,got,need}|null, "limits":{tracks,params:[{[pg,]i,name}],max},
+	// overrides:[{ch,t,[pg],i}]}], "learning":{name,t,[pg],i,got,need}|null, "limits":{tracks,params:[{[pg,]i,name}],globals:[{g,name,group,min,max}],max},
+	// a mapping or the learning target of a global is {g, name} without t, pg and i,
 	// "left":[...]}}; the limits are exactly the learnable targets.
 	class MidiLearnCommands
 	{
@@ -54,6 +56,9 @@ namespace mdJucePlugin
 			int tracks = 16;
 			deskCore::LearnLimits limits;	// the setup spec's learn limits (the codec's bounds)
 			std::vector<Param> params;
+			// B-169: the values of the page that belong to no track (the Machinedrum's master effects, the tempo, ...),
+			// by id (limits.globals is their count); learned CCs for them reach the desk through Host::applyGlobals
+			std::vector<deskCore::LearnGlobalSpec> globals;
 			const char* refusal = "learn: expected a track and a parameter";
 			int span = 4;				// the channels from the base channel that carry the machine's CCs (MD 4, MM 6)
 			bool enabled = deskHost::midiMappingEnabled;	// off: commands refused, no mapping applied (deskHost.h)
@@ -71,6 +76,9 @@ namespace mdJucePlugin
 			// Why Learn is off now ("" when it is on): with the HW MIDI engine the host's MIDI in carries the real machine's own
 			// MIDI out, so nothing is translated or captured; the document says why (paused)
 			std::function<std::string()> pausedReason;
+			// The CCs the audio thread handed over for global targets, oldest first, applied through the page's own edit
+			// path (the desk's commands, so the machine, the page and undo agree)
+			std::function<void(const std::vector<deskCore::LearnGlobalEvent>&)> applyGlobals;
 			deskCore::FirmwareCcMap firmwareCcMap;			// what the firmware's own CC map drives (pure)
 			std::function<double()> nowMs;
 		};
@@ -128,6 +136,7 @@ namespace mdJucePlugin
 		void stopLearning();
 		std::string pausedNow() const;
 		void takeCaptured();
+		void takeGlobals();
 		void notifyHost();
 		void closeGestures();
 
