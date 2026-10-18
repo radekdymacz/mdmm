@@ -9,10 +9,9 @@ name: MD/MM firmware tests
 # Never add pull_request or pull_request_target here: a pull request's code would run next to the ROMs. The Worker
 # refuses those tokens too, so a mistake here fails closed.
 #
-#   changes     which files the push changed: decides whether anything below runs (main: source, scripts, cmake, ci, tests,
-#               this file; release/**: everything but docs)
+#   changes     standalone runs always test; a pipeline call uses the caller's change selection
 #   build-tests the arm64 ctest tree without ThinLTO, built once, no ROM on this runner (or taken from the caller's stage 2)
-#   build-e2e   the diagnostics build of the two standalone editors for the journeys, built once, no ROM
+#   build-e2e   the diagnostics editors for the journeys, built once, no ROM (or reused from stage 2)
 #   firmware    four shards of every ctest test labelled FirmwareTest (not Slow/Soak); each only tests the built tree
 #   e2e         the firmware E2E, one job per machine (md, mm), each on the built editors
 #
@@ -20,8 +19,6 @@ name: MD/MM firmware tests
 # job_workflow_ref claim, which is this file, and the event of the caller (push, workflow_dispatch), so it works the same.
 
 on:
-  push:
-    branches: [main, "release/**"]
   workflow_dispatch:
     inputs:
       what:
@@ -37,7 +34,7 @@ on:
   workflow_call:
     inputs:
       build_tree_artifact:
-        description: "Artifact (a build-tree.tar.gz holding build/) of a prebuilt macOS ctest tree to test; empty: build it here"
+        description: "Artifact (build-tree.tar.gz holding build/ and bin/plugins/) with firmware tests and diagnostics editors; empty: build here"
         type: string
         default: ""
   schedule:
@@ -76,17 +73,18 @@ jobs:
           EVENT: ${{ github.event_name }}
           BEFORE: ${{ github.event.before }}
           REF: ${{ github.ref }}
+          PREBUILT_TREE: ${{ inputs.build_tree_artifact }}
         run: |
           set -euo pipefail
           run=true
-          if [ "${EVENT}" = push ] && [ -n "${BEFORE}" ] && ! [[ "${BEFORE}" =~ ^0+$ ]] && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+          if [ -z "${PREBUILT_TREE}" ] && [ "${EVENT}" = push ] && [ -n "${BEFORE}" ] && ! [[ "${BEFORE}" =~ ^0+$ ]] && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
             files="$(git diff --name-only "${BEFORE}" "${GITHUB_SHA}")"
             if [[ "${REF}" == refs/heads/release/* ]]; then
               # everything but documentation and the site
               rest="$(printf '%s\n' "${files}" | grep -v -E '^(doc/|site/)|\.md$' || true)"
               [ -n "${rest}" ] || run=false
             else
-              rest="$(printf '%s\n' "${files}" | grep -E '^(source/|scripts/|ci/|CMakeLists\.txt$|base\.cmake$|.*\.cmake$|\.github/workflows/mdmm-firmware\.yml$)' || true)"
+              rest="$(printf '%s\n' "${files}" | grep -E '^(source/|scripts/|ci/|CMakeLists\.txt$|base\.cmake$|.*\.cmake$|\.github/workflows/)' || true)"
               [ -n "${rest}" ] || run=false
             fi
           fi
@@ -192,7 +190,8 @@ jobs:
       - name: Pack the tree
         run: |
           set -euo pipefail
-          tar --exclude='*.o' --exclude='*.a' --exclude='.ninja_*' --exclude='*.pch' --exclude='*.gch' -czf "${RUNNER_TEMP}/build-tree.tar.gz" build
+          tar --exclude='*.o' --exclude='*.a' --exclude='.ninja_*' --exclude='*.pch' --exclude='*.gch' \
+            -czf "${RUNNER_TEMP}/build-tree.tar.gz" build bin/plugins
           ls -lh "${RUNNER_TEMP}/build-tree.tar.gz"
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -211,7 +210,7 @@ jobs:
   firmware:
     name: Firmware tests (ctest ${{ matrix.shard }}/4, macOS arm64)
     needs: [changes, build-tests]
-    if: always() && needs.changes.outputs.run == 'true' && (needs.build-tests.result == 'success' || (needs.build-tests.result == 'skipped' && inputs.build_tree_artifact != '')) && (github.event_name != 'workflow_dispatch' || (inputs.what != 'e2e' && !inputs.train_pgo))
+    if: ${{ !cancelled() && needs.changes.outputs.run == 'true' && (needs.build-tests.result == 'success' || (needs.build-tests.result == 'skipped' && inputs.build_tree_artifact != '')) && (github.event_name != 'workflow_dispatch' || (inputs.what != 'e2e' && !inputs.train_pgo)) }}
     runs-on: macos-15
     environment: rom
     timeout-minutes: 150
@@ -289,7 +288,7 @@ jobs:
   build-e2e:
     name: Build the editors (diagnostics, macOS)
     needs: changes
-    if: needs.changes.outputs.run == 'true' && (github.event_name != 'workflow_dispatch' || (inputs.what != 'firmware' && !inputs.train_pgo))
+    if: needs.changes.outputs.run == 'true' && inputs.build_tree_artifact == '' && (github.event_name != 'workflow_dispatch' || (inputs.what != 'firmware' && !inputs.train_pgo))
     runs-on: macos-15
     timeout-minutes: 90
     steps:
@@ -327,7 +326,7 @@ jobs:
       - name: Pack the tree
         run: |
           set -euo pipefail
-          tar --exclude='*.o' --exclude='*.a' --exclude='.ninja_*' --exclude='*.pch' --exclude='*.gch' -czf "${RUNNER_TEMP}/editors-tree.tar.gz" temp/dev
+          tar -czf "${RUNNER_TEMP}/editors-tree.tar.gz" bin/plugins/Release/Standalone
           ls -lh "${RUNNER_TEMP}/editors-tree.tar.gz"
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -346,7 +345,7 @@ jobs:
   e2e:
     name: Firmware E2E (${{ matrix.machine }} editor, macOS)
     needs: [changes, build-e2e]
-    if: needs.changes.outputs.run == 'true' && (github.event_name != 'workflow_dispatch' || (inputs.what != 'firmware' && !inputs.train_pgo))
+    if: ${{ !cancelled() && needs.changes.outputs.run == 'true' && (needs.build-e2e.result == 'success' || (needs.build-e2e.result == 'skipped' && inputs.build_tree_artifact != '')) && (github.event_name != 'workflow_dispatch' || (inputs.what != 'firmware' && !inputs.train_pgo)) }}
     runs-on: macos-15
     environment: rom
     timeout-minutes: 180
@@ -366,11 +365,17 @@ jobs:
 
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: fw-editors-tree
+          name: ${{ inputs.build_tree_artifact != '' && inputs.build_tree_artifact || 'fw-editors-tree' }}
           path: ${{ runner.temp }}/tree
 
       - name: Unpack the editors
-        run: tar -xzf "${RUNNER_TEMP}"/tree/editors-tree.tar.gz
+        env:
+          TREE_FILE: ${{ inputs.build_tree_artifact != '' && 'build-tree.tar.gz' || 'editors-tree.tar.gz' }}
+        run: |
+          set -euo pipefail
+          tar -xzf "${RUNNER_TEMP}/tree/${TREE_FILE}"
+          test -x "bin/plugins/Release/Standalone/Machinedrum Editor.app/Contents/MacOS/Machinedrum Editor"
+          test -x "bin/plugins/Release/Standalone/Monomachine Editor.app/Contents/MacOS/Monomachine Editor"
 
       - name: Fetch the ROMs
         run: scripts/ci-fetch-roms.sh "${RUNNER_TEMP}/roms"
