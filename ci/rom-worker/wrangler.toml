@@ -1,0 +1,9 @@
+name = "mdmm-rom"
+main = "src/index.ts"
+compatibility_date = "2025-01-09"
+account_id = "331224f43e4f448483cad2f1185ea965"
+workers_dev = true
+
+[[r2_buckets]]
+binding = "ROMS"
+bucket_name = "mdmm-ci-roms"

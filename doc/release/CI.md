@@ -37,6 +37,35 @@ step), builds their targets and runs them. A new `UnitTest` is in by default. Fi
 `FirmwareTest` or `Integration` and never run here. The plug-in is configured with every format off, only so its unit
 tests (`mdPageBridgeTest`, `mdMachineMidiOutTest`, ...) are registered.
 
+## Firmware tests on CI
+
+`mdmm-firmware.yml` runs the tests that need the Elektron ROMs, so nobody runs them on a Mac. Triggers: push to `main`
+and `release/**`, Run workflow, nightly 02:30 UTC. Never a pull request. Two macOS jobs, both in the GitHub environment
+`rom`:
+
+| Job | Runs |
+|---|---|
+| `firmware` | every ctest test labelled `FirmwareTest` except `Slow` and `Soak`, on an arm64 tree without ThinLTO. A skipped test fails the job (a skip would mean "no ROM"). |
+| `e2e` | `scripts/mdmm-e2e.sh both --no-build --jobs 2`, the firmware E2E of both editors. On failure the report (logs, pictures, no ROM) is the artifact `e2e-report`. |
+
+How the ROMs arrive: `scripts/ci-fetch-roms.sh` asks GitHub for an OIDC token (audience `mdmm-rom`) and sends it to the
+Worker `ci/rom-worker` ([README](../../ci/rom-worker/README.md)), which streams `md.bin` / `mm.bin` from the private R2
+bucket `mdmm-ci-roms`. The script checks size and SHA-256 against the constants in `scripts/macos/build_mdmm.sh`, puts
+the files in the runner's temp folder and exports `GEARMULATOR_MD_FIRMWARE_BIN` / `GEARMULATOR_MM_FIRMWARE_BIN`. They
+are never printed, cached or uploaded, and an `if: always()` step deletes them. The Worker URL is the environment
+variable `MDMM_ROM_URL` of `rom` (not a secret). No long-lived secret exists anywhere.
+
+Trust rules (the Worker answers 403, no detail, to anything else): repository `radekdymacz/mdmm` and its numeric id;
+`ref` is `main` or `release/*`; event is `push`, `workflow_dispatch` or `schedule`; environment `rom`; the workflow is
+`mdmm-firmware.yml` at that same ref; GitHub-hosted runner; token fresh and for audience `mdmm-rom`. The environment is
+restricted to branches `main` and `release/*`. Rules for the workflow file: no `pull_request` or `pull_request_target`
+trigger, no new third-party action unless pinned by full SHA, no step that uploads or caches anything that can hold a
+ROM. A change to the Worker's rules is a change to `ci/rom-worker/src/claims.ts` and its tests.
+
+Revoke or rotate: delete the objects (`npx wrangler r2 object delete mdmm-ci-roms/md.bin --remote`, same for `mm.bin`),
+or delete the Worker (`npx wrangler delete --name mdmm-rom`), or remove the `MDMM_ROM_URL` variable; any one stops the
+workflow. A new ROM version: upload under the same keys and update the two hashes in `build_mdmm.sh`.
+
 ## Workflow hardening
 
 Every action is pinned by full commit SHA with its tag in a comment (update both together; check the SHA with
@@ -79,7 +108,7 @@ Nothing else is left out. Take a name off the list when the page has room for th
    If the emulation changed since the PGO profile was trained (the build says "stale", below), retrain it on the
    branch first: `scripts/macos/train_mdmm_pgo.sh`, then commit the two files it writes.
 2. Push the branch. The full CI runs once.
-3. The local gate and the firmware E2E (`scripts/mdmm-e2e.sh`): `scripts/mdmm-full-gate.sh --plan` names the last green full gate on main and prints the gate command
+3. The firmware workflow (`mdmm-firmware.yml`) is green on the release head (it runs on every push to `release/**`; re-run it by hand after a fix). Older local route, only for a broken CI: the local gate and the firmware E2E (`scripts/mdmm-e2e.sh`): `scripts/mdmm-full-gate.sh --plan` names the last green full gate on main and prints the gate command
    for the stages the diff since touches (`MDMM_GATE_ONLY=...`); run it. Without a green full gate in the branch's
    history, the full `scripts/mdmm-local-gate.sh`.
 4. A failure: fix it, push, and re-run only the failed stage (`MDMM_GATE_ONLY=<stage>`; in Actions, Re-run failed jobs).
