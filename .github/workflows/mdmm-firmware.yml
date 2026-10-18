@@ -1,0 +1,219 @@
+name: MD/MM firmware tests
+
+# The tests that need the user's Elektron ROMs (doc/release/CI.md, "Firmware tests on CI"). The ROMs are never in the
+# repository, a secret or an artifact: each job fetches them for its own run from the ROM Worker (ci/rom-worker), which
+# hands them only to a run of THIS workflow on main or release/*, in the `rom` environment, proven by the run's GitHub
+# OIDC token (aud mdmm-rom). No long-lived secret exists. The images live in the runner's temp folder, are checked
+# against the SHA-256 pinned in scripts/macos/build_mdmm.sh, and are deleted at the end of the job (if: always()).
+#
+# Never add pull_request or pull_request_target here: a pull request's code would run next to the ROMs. The Worker
+# refuses those tokens too, so a mistake here fails closed.
+#
+#   firmware  every ctest test labelled FirmwareTest (not Slow/Soak) on an arm64 tree without ThinLTO
+#   e2e       the firmware E2E, scripts/mdmm-e2e.sh both: every journey of both editors on the real firmware
+
+on:
+  push:
+    branches: [main, "release/**"]
+  workflow_dispatch:
+  schedule:
+    - cron: "30 2 * * *"   # after the nightly full suite (02:00 UTC); main only (schedules run on the default branch)
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: mdmm-firmware-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
+jobs:
+  firmware:
+    name: Firmware tests (ctest, macOS arm64)
+    runs-on: macos-15
+    environment: rom
+    timeout-minutes: 120
+    env:
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_COMPILERCHECK: "%compiler% -v"
+      CCACHE_SLOPPINESS: "include_file_mtime,include_file_ctime,time_macros,pch_defines"
+      CCACHE_MAXSIZE: 2G
+      CCACHE_COMPRESS: "true"
+      MDMM_ROM_URL: ${{ vars.MDMM_ROM_URL }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 1
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Install ccache and Ninja
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
+        run: |
+          brew install ccache ninja
+          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> "${GITHUB_ENV}"
+
+      # The unit-test job's cache (same tree, same flags): read it, save under this workflow's own key.
+      - name: Restore the compiler cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/ccache
+          key: ccache-v1-macos15-arm64-tests-fw-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            ccache-v1-macos15-arm64-tests-fw-${{ github.ref_name }}-
+            ccache-v1-macos15-arm64-tests-${{ github.ref_name }}-
+            ccache-v1-macos15-arm64-tests-main-
+
+      - name: Configure (arm64, Release, no ThinLTO, no PGO)
+        run: |
+          set -euo pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_OBJC_COMPILER_LAUNCHER=ccache -DCMAKE_OBJCXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DXCODE_VERSION=16 \
+            -DGEARMULATOR_MDMM_APPLE_THINLTO=OFF -DGEARMULATOR_MDMM_APPLE_PGO_MODE=none \
+            -DBUILD_TESTING=ON -Dgearmulator_BUILD_JUCEPLUGIN=ON -Dgearmulator_BUILD_JUCEPLUGIN_VST3=ON \
+            -Dgearmulator_BUILD_JUCEPLUGIN_AU=ON -Dgearmulator_BUILD_JUCEPLUGIN_Standalone=ON
+
+      - name: Build
+        run: |
+          set -euo pipefail
+          home="${RUNNER_TEMP}/test-home"
+          mkdir -p "${home}/Documents"
+          HOME="${home}" GEARMULATOR_DATA_ROOT="${home}/Documents/" cmake --build build --parallel 4
+
+      - name: Fetch the ROMs
+        run: scripts/ci-fetch-roms.sh "${RUNNER_TEMP}/roms"
+
+      - name: Run the firmware tests
+        env:
+          GEARMULATOR_REQUIRE_FIRMWARE_TESTS: "1"
+          MD_AUTOMATION_REQUIRE_FIRMWARE: "1"
+        run: |
+          set -euo pipefail
+          home="${RUNNER_TEMP}/test-home"
+          log="${RUNNER_TEMP}/firmware-ctest.log"
+          set +e
+          HOME="${home}" GEARMULATOR_DATA_ROOT="${home}/Documents/" ctest --test-dir build -L FirmwareTest -LE 'Slow|Soak' \
+            -j2 --output-on-failure --no-tests=error 2>&1 | tee "${log}"
+          status=${PIPESTATUS[0]}
+          set -e
+          # A skip (exit 77) means "no ROM here": on this workflow that is a hole, not a pass.
+          if grep -Eq '\*\*\*Skipped|Not Run' "${log}"; then
+            echo "::error title=Skipped firmware tests::a firmware test skipped although the ROMs are present"
+            grep -E '\*\*\*Skipped|Not Run' "${log}" || true
+            status=1
+          fi
+          exit "${status}"
+
+      # Test output only: the logs carry no firmware bytes (the tests read the image, they do not print it).
+      - name: Keep the ctest log on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: firmware-ctest-log
+          path: |
+            ${{ runner.temp }}/firmware-ctest.log
+            build/Testing/Temporary/LastTest.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Delete the ROMs
+        if: always()
+        run: rm -rf "${RUNNER_TEMP}/roms"
+
+      - name: Save the compiler cache
+        if: always()
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/ccache
+          key: ccache-v1-macos15-arm64-tests-fw-${{ github.ref_name }}-${{ github.run_id }}
+
+  e2e:
+    name: Firmware E2E (both editors, macOS)
+    runs-on: macos-15
+    environment: rom
+    timeout-minutes: 180
+    env:
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_COMPILERCHECK: "%compiler% -v"
+      CCACHE_SLOPPINESS: "include_file_mtime,include_file_ctime,time_macros,pch_defines"
+      CCACHE_MAXSIZE: 2G
+      CCACHE_COMPRESS: "true"
+      MDMM_ROM_URL: ${{ vars.MDMM_ROM_URL }}
+      MDMM_E2E_OUT: ${{ github.workspace }}/temp/e2e-out
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 1
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Install ccache and Ninja
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
+        run: |
+          brew install ccache ninja
+          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> "${GITHUB_ENV}"
+
+      - name: Restore the compiler cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/ccache
+          key: ccache-v1-macos15-e2e-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            ccache-v1-macos15-e2e-${{ github.ref_name }}-
+            ccache-v1-macos15-e2e-main-
+
+      # The dev tree (diagnostics on: the journeys need it), the two standalones only; mdmm-e2e.sh would build them
+      # too, but a build error should fail here, before the ROMs are on the disk.
+      - name: Build the editors
+        run: |
+          set -euo pipefail
+          home="${RUNNER_TEMP}/build-home"
+          mkdir -p "${home}/Documents"
+          HOME="${home}" ./scripts/mdmm-dev.sh build mdJucePlugin_Standalone mmJucePlugin_Standalone
+
+      - name: Fetch the ROMs
+        run: scripts/ci-fetch-roms.sh "${RUNNER_TEMP}/roms"
+
+      - name: Run the firmware E2E
+        run: ./scripts/mdmm-e2e.sh both --no-build --jobs 2
+
+      # Reports and logs only. No folder that can hold the ROM (the sandboxes link it) is uploaded: the files are
+      # copied by type and size into a staging folder first.
+      - name: Stage the report
+        if: always()
+        run: |
+          set -euo pipefail
+          stage="${RUNNER_TEMP}/e2e-report"
+          rm -rf "${stage}"; mkdir -p "${stage}"
+          if [ -d "${MDMM_E2E_OUT}" ]; then
+            (cd "${MDMM_E2E_OUT}" && find . -type f ! -type l -size -4M \
+              \( -name '*.log' -o -name '*.txt' -o -name '*.json' -o -name '*.html' -o -name '*.png' -o -name '*.webp' \) \
+              -print0 | cpio -pdm0 "${stage}" 2>/dev/null) || true
+          fi
+          du -sh "${stage}"
+
+      - name: Keep the E2E report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-report
+          path: ${{ runner.temp }}/e2e-report
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Delete the ROMs
+        if: always()
+        run: rm -rf "${RUNNER_TEMP}/roms"
+
+      - name: Save the compiler cache
+        if: always()
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/ccache
+          key: ccache-v1-macos15-e2e-${{ github.ref_name }}-${{ github.run_id }}
