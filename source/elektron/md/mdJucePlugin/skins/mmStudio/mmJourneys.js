@@ -4385,7 +4385,28 @@ const MmJourneys = (() => {
 					screen: () => ok($1('#main .pc[data-g="FLT"][data-n="0"]')?.classList.contains("mapped") && !$1('#main .pc[data-g="FLT"][data-n="1"]')?.classList.contains("mapped"), "mapped " + document.querySelectorAll("#main .pc.mapped").length) }
 			],
 			tidy: learnTidy
-		}
+		},
+		/* B-169: LEARN on the values that belong to no track: the multi envelope, the tempo, the pattern's swing (the master tune is the global page's) */
+		globals: {
+			name: "mm-control-learn-globals", proves: [],
+			steps: [
+				{ say: "mapping on with the global targets in the document; LEARN on, the Perform tab, a click on the multi envelope's DEC: learnStart goes with global 3 and no track",
+					act: async u => { const G = ["TEMPO", "MASTER TUNE", "MULTI ENV ATK", "MULTI ENV DEC", "MULTI ENV SUS", "MULTI ENV REL", "MULTI ENV PORT", "SWING"].map((name, g) => ({ g, name, group: "x", min: 0, max: 127 }));
+						window.mmGlobalsDoc = (maps, o = {}) => lDoc(maps, Object.assign({ limits: Object.assign(lLimits(), { globals: G }) }, o));
+						await learnOn(u, [], { limits: Object.assign(lLimits(), { globals: G }) }); u.click("#learnkey"); await sleep(150); u.click(tab("perform")); await sleep(300); learnSent.length = 0; u.click('#main .pc[data-g="menv"][data-n="DEC"]'); },
+					screen: () => { const c = lastLearn("learnStart"); return ok(S().learnT && S().learnT.g === 3 && c && c.g === 3 && c.t == null, "waiting " + JSON.stringify(S().learnT) + ", sent " + JSON.stringify(c)); } },
+				{ say: "click the tempo and, on the Pattern tab, the SWG value: learnStart goes with global 0 and 7", act: async u => { learnSent.length = 0; u.click("#bpm"); await sleep(100); u.click(tab("seq")); await sleep(300); u.click('.l2.ed[data-l2="swing"]'); await sleep(100); },
+					screen: () => ok(learnSent.filter(m => m.op === "learnStart").map(m => m.g).join() === "0,7", JSON.stringify(learnSent)) },
+				{ say: "the mapping arrives (CC 74 drives MULTI ENV DEC): the toast names it, Control has a global column with its chip and the inspector lists it", act: async u => { u.click("#learnkey"); lSend(window.mmGlobalsDoc([{ index: 0, g: 3, name: "MULTI ENV DEC", cc: 74, ch: 255, mode: "Absolute", invert: false, overrides: [] }])); await sleep(200); u.click(tab("control")); await sleep(300); u.click('#main .srch[data-src="x255:74"]'); await sleep(200); },
+					screen: () => ok($all("#main .mxh").length === 13 && /MULTI ENV DEC/.test($1('#main .mxc[data-mxsrc="x255:74"][data-mxt="g"]')?.title || "") && $all("#main .lnk .lcdchip").some(x => x.textContent === "MULTI ENV DEC"),
+						`heads ${$all("#main .mxh").length}, cell "${$1('#main .mxc[data-mxsrc="x255:74"][data-mxt="g"]')?.title}"`), within: 2000 },
+				{ say: "Add target with Global values chosen: learnAdd goes with g and no track", act: async u => { learnSent.length = 0; const sel = $1("#lt"); sel.value = "g"; sel.dispatchEvent(new Event("change", { bubbles: true })); await sleep(200); $1("#lp").value = "7"; u.click("#laddl"); },
+					screen: () => { const c = lastLearn("learnAdd"); return ok(c && c.g === 7 && c.t == null, JSON.stringify(c)); } },
+				{ say: "back on Perform, the mapped multi envelope value is marked and its neighbour is not", act: async u => { u.click(tab("perform")); await sleep(300); },
+					screen: () => ok($1('#main .pc[data-g="menv"][data-n="DEC"]')?.classList.contains("mapped") && !$1('#main .pc[data-g="menv"][data-n="ATK"]')?.classList.contains("mapped"), "mapped " + $all("#main .pc.mapped").length) }
+			],
+			tidy: learnTidy
+		},
 	};
 	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowMarks, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixHeads, mixSolo, soloSaved, shiftMutes, routing, mixMeters, panTrim, msOff, msViews, railLamps, railLampsFwd,
