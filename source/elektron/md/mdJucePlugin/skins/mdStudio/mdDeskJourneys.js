@@ -597,7 +597,7 @@ const MdJourneys = (() => {
 		name: "md-song-arrange-rows",
 		steps: [
 			go("song"),
-			{ say: "click Arrange and a pattern pad: a row is added", act: async (u, c) => { c.r0 = JSON.stringify(songRows()); c.n0 = songRows().length; u.click('[data-set="songpick"] button[data-v="arrange"]'); await sleep(200); u.click('[data-addpat="0"]'); },
+			{ say: "click Arrange and a pattern pad: a row is added", act: async (u, c) => { c.r0 = JSON.stringify(songRows()); c.n0 = songRows().length; u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(200); u.click('[data-addpat="0"]'); },
 				machine: c => ok(songRows().length === c.n0 + 1, songRows().length + " rows"), screen: c => ok($all("#tl .scell:not(.empty)").length === c.n0 + 1, $all("#tl .scell:not(.empty)").length + " cells") },
 			{ say: "click Delete on the selected row", act: u => u.click('[data-rowact="del"]'), machine: c => ok(songRows().length === c.n0, songRows().length + " rows") },
 			{ say: "Cmd+Z twice, Cmd+Shift+Z, Cmd+Z: the song is as it was", act: async u => { for (const m of [{ cmd: true }, { cmd: true }, { cmd: true, shift: true }, { cmd: true }]) { u.key("z", m); await sleep(800); } }, machine: c => ok(JSON.stringify(songRows()) === c.r0, songRows().length + " rows"), within: 8000 }
@@ -611,7 +611,7 @@ const MdJourneys = (() => {
 				machine: () => ok(desk().chain?.active && same(desk().chain.patterns, [1, 2]), "chain " + JSON.stringify(desk().chain)), screen: () => ok(/CHAIN/.test($1("#songPlays")?.textContent || ""), "header " + $1("#songPlays")?.textContent), within: 6000 },
 			{ say: "click Clear: the chain ends", act: u => u.click('[data-chain="clear"]'), machine: () => ok(!desk().chain?.active, "chain " + JSON.stringify(desk().chain)), within: 6000 }
 		],
-		async tidy(u, c) { if (desk().chain?.active) cmd("chainClear"); if (S.ws === "song") u.click('[data-set="songpick"] button[data-v="arrange"]'); }
+		async tidy(u, c) { if (desk().chain?.active) cmd("chainClear"); if (S.ws === "song") u.click('[data-set="songpick"] button[data-v="song"]'); }
 	};
 
 	/* ---------- Sampler ---------- */
@@ -876,7 +876,7 @@ const MdJourneys = (() => {
 		name: "md-song-row-inspector",
 		steps: [
 			go("song"),
-			{ say: "add a row (Arrange, pad A01): it is selected", act: async (u, c) => { u.click('[data-set="songpick"] button[data-v="arrange"]'); await sleep(200); c.r0 = JSON.stringify(songRows()); c.n0 = songRows().length; u.click('[data-addpat="0"]'); await until(() => songRows().length === c.n0 + 1, 4000); c.i = S.songSel; },
+			{ say: "add a row (Arrange, pad A01): it is selected", act: async (u, c) => { u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(200); c.r0 = JSON.stringify(songRows()); c.n0 = songRows().length; u.click('[data-addpat="0"]'); await until(() => songRows().length === c.n0 + 1, 4000); c.i = S.songSel; },
 				machine: c => ok(songRows().length === c.n0 + 1 && songRows()[c.i]?.kind === "pattern", "rows " + songRows().length) },
 			{ say: "click Repeat +", act: (u, c) => { c.rep = songRows()[c.i].repeats; u.click('[data-step="rep"][data-d="1"]'); }, machine: c => ok(songRows()[c.i].repeats === c.rep + 1, "repeats " + songRows()[c.i].repeats), screen: c => ok($1('[data-step="rep"][data-d="1"]')?.previousElementSibling?.textContent === String(c.rep + 2), "shows " + $1('[data-step="rep"][data-d="1"]')?.previousElementSibling?.textContent) },
 			{ say: "click More and mute track 1 for the row", act: async u => { u.click("[data-rowmore]"); await sleep(250); u.click('[data-rowmute="0"]'); }, machine: c => ok((songRows()[c.i].mutes || []).includes(0), "mutes " + JSON.stringify(songRows()[c.i].mutes)), screen: () => ok($1('[data-rowmute="0"]')?.classList.contains("off"), "key not off") },
@@ -888,7 +888,7 @@ const MdJourneys = (() => {
 		name: "md-song-drag-drop",
 		steps: [
 			go("song"),
-			{ say: "drag pad A02 onto the empty end of the grid: a row is appended", act: async (u, c) => { u.click('[data-set="songpick"] button[data-v="arrange"]'); await sleep(200); c.r0 = JSON.stringify(songRows()); c.n0 = songRows().length; await u.dragDrop('[data-addpat="1"]', `#tl .scell[data-i="${c.n0 + 1}"]`); },
+			{ say: "drag pad A02 onto the empty end of the grid: a row is appended", act: async (u, c) => { u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(200); c.r0 = JSON.stringify(songRows()); c.n0 = songRows().length; await u.dragDrop('[data-addpat="1"]', `#tl .scell[data-i="${c.n0 + 1}"]`); },
 				machine: c => ok(songRows().length === c.n0 + 1 && songRows()[c.n0 - 1]?.pattern === 1, "rows " + songRows().map(r => r.kind === "pattern" ? r.pattern : r.kind).join(",")), within: 6000 },
 			{ say: "drag that row onto the first cell: it moves there", act: async (u, c) => { await u.dragDrop(`#tl .scell[data-i="${c.n0 - 1}"]`, '#tl .scell[data-i="0"]'); },
 				machine: () => ok(songRows()[0]?.pattern === 1, "rows " + songRows().map(r => r.kind === "pattern" ? r.pattern : r.kind).join(",")), within: 6000 }
@@ -1014,37 +1014,37 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { if (V.playing) u.click("#play"); await sleep(300); if (c.t != null && !c.off && mutes().includes(c.t) !== c.m0.includes(c.t)) u.click(railM(c.t)); await sleep(500); }
 	};
-	/* 0.3.5: the Song page's PATTERN | SONG switch: what is lit is the status the machine reports */
+	/* 0.3.5, 0.6: the Song page's PATTERN · CHAIN · SONG keys: PATTERN and SONG set the machine's mode, what is lit follows the status the machine reports */
 	const songModeJ = {
 		name: "md-song-mode",
 		steps: [
 			go("song"),
-			{ say: "click SONG next to Plays: the machine reports song mode", act: (u, c) => { c.m0 = machineState().songMode === true; u.click('[data-seqmode="song"]'); },
-				machine: () => ok(machineState().songMode === true, "songMode " + machineState().songMode), screen: () => ok(pressed('[data-seqmode="song"]') && !pressed('[data-seqmode="pattern"]'), "SONG not lit"), within: 6000 },
-			{ say: "click PATTERN: the machine reports pattern mode", act: u => u.click('[data-seqmode="pattern"]'),
-				machine: () => ok(machineState().songMode === false, "songMode " + machineState().songMode), screen: () => ok(pressed('[data-seqmode="pattern"]') && !pressed('[data-seqmode="song"]'), "PATTERN not lit"), within: 6000 }
+			{ say: "click SONG next to Plays: the machine reports song mode", act: (u, c) => { c.m0 = machineState().songMode === true; u.click('[data-set="songpick"] button[data-v="song"]'); },
+				machine: () => ok(machineState().songMode === true, "songMode " + machineState().songMode), screen: () => ok(pressed('[data-set="songpick"] button[data-v="song"]') && !pressed('[data-set="songpick"] button[data-v="pattern"]'), "SONG not lit"), within: 6000 },
+			{ say: "click PATTERN: the machine reports pattern mode", act: u => u.click('[data-set="songpick"] button[data-v="pattern"]'),
+				machine: () => ok(machineState().songMode === false, "songMode " + machineState().songMode), screen: () => ok(pressed('[data-set="songpick"] button[data-v="pattern"]') && !pressed('[data-set="songpick"] button[data-v="song"]'), "PATTERN not lit"), within: 6000 }
 		],
-		async tidy(u, c) { if (c.m0 && machineState().songMode !== true) { u.click('[data-seqmode="song"]'); await sleep(1500); } }
+		async tidy(u, c) { if (c.m0 && machineState().songMode !== true) { u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(1500); } }
 	};
-	/* 0.3.5: the Song page's playhead. An empty song slot (the song card's ‹ ›) gets two rows, A01 and A02; SONG mode,
+	/* 0.3.5: the Song page's playhead. An empty song slot (the song slots' Load) gets two rows, A01 and A02; SONG mode,
 	   PLAY: the arrangement marks the row the machine plays (telemetry songRow, RAM), the What plays line and the LCD
 	   say it, and the mark moves on to the next row; STOP takes it away. The steps are shared with the screenshots. */
 	const emptySong = () => { const cur = V.songSlot; for (let d = 1; d < 32; d++) for (const s of [(cur + d) % 32, (cur - d + 32) % 32]) { const g = Docs.songs[s]; if (g && g.rows.length === 1 && g.rows[0].kind === "end") return s; } return null; };
-	const songTo = async (u, s) => { for (let n = 0; n < 40 && V.songSlot !== s; n++) { const was = V.songSlot; u.click(`[data-songslot="${(s - was + 32) % 32 <= 16 ? 1 : -1}"]`); await until(() => V.songSlot !== was, 3000); } };
+	const songTo = async (u, s) => { if (V.songSlot === s) return; u.click(`[data-ss="${s}"]`); await sleep(200); u.click('[data-sa="load"]'); await until(() => V.songSlot === s, 4000); };
 	/* the LCD's box and the places of its fields (0.3.5: the same in PATTERN and SONG mode) */
 	const lcdGeo = () => [$1(".lcdpanel"), $1('#lcd2 [data-l2="seqmode"]'), $1("#kitname"), $1("#bpm")].map(e => { const r = e?.getBoundingClientRect(); return r ? `${Math.round(r.left)}/${Math.round(r.width)}` : "-"; }).join(" ");
 	const marked = c => { const i = $1("#tl .scell.ph")?.dataset.i; if (i != null) c.seen.add(+i); return [...c.seen].join(","); };
 	const songPlayheadSteps = shot => [
 		go("song"),
-		{ say: "stop, then pick an empty song with the song card's ‹ ›", act: async (u, c) => { if (V.playing) { u.click("#play"); await until(() => !V.playing, 3000); } c.s0 = V.songSlot; c.m0 = V.songMode; await until(() => Object.keys(Docs.songs).length >= 32, 20000); c.s = emptySong(); if (c.s == null) throw new Error("no empty song slot"); await songTo(u, c.s); },
+		{ say: "stop, then pick an empty song in the song slots (click it, Load)", act: async (u, c) => { if (V.playing) { u.click("#play"); await until(() => !V.playing, 3000); } c.s0 = V.songSlot; c.m0 = V.songMode; await until(() => Object.keys(Docs.songs).length >= 32, 20000); c.s = emptySong(); if (c.s == null) throw new Error("no empty song slot"); await songTo(u, c.s); },
 			screen: c => ok(V.songSlot === c.s, "song " + (V.songSlot + 1)), machine: c => ok(songSlotOf(Docs) === c.s, "machine song " + (songSlotOf(Docs) + 1)), within: 20000 },
-		{ say: "Arrange: click pads A01 and A02, two rows", act: async u => { u.click('[data-set="songpick"] button[data-v="arrange"]'); await sleep(200); u.click('[data-addpat="0"]'); await until(() => songRows().length === 2, 4000); u.click('[data-addpat="1"]'); },
+		{ say: "Arrange: click pads A01 and A02, two rows", act: async u => { u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(200); u.click('[data-addpat="0"]'); await until(() => songRows().length === 2, 4000); u.click('[data-addpat="1"]'); },
 			machine: () => ok(songRows().length === 3 && songRows()[0].pattern === 0 && songRows()[1].pattern === 1, "rows " + songRows().map(r => r.kind === "pattern" ? r.pattern : r.kind).join(",")), within: 8000 },
-		{ say: "click PATTERN: the header says pattern mode, the grid looks as ever, no reload asked", act: async u => { u.click('[data-seqmode="pattern"]'); await until(() => V.songMode === false, 4000); await sleep(400); shot("song-1-pattern-mode"); },
-			screen: c => ok(!!$1(".songui.patmode") && pressed('[data-seqmode="pattern"]') && /^PATTERN /.test($1("#songPlays")?.textContent || "") && /pattern mode/i.test($1("#arrstate")?.textContent || "")
+		{ say: "click PATTERN: the header says pattern mode, the grid looks as ever, no reload asked", act: async u => { u.click('[data-set="songpick"] button[data-v="pattern"]'); await until(() => V.songMode === false, 4000); await sleep(400); shot("song-1-pattern-mode"); },
+			screen: c => ok(!!$1(".songui.patmode") && pressed('[data-set="songpick"] button[data-v="pattern"]') && /^PATTERN /.test($1("#songPlays")?.textContent || "") && /pattern mode/i.test($1("#arrstate")?.textContent || "")
 				&& !$1("[data-reloadsong]") && (c.geo = lcdGeo()), `plays ${$1("#songPlays")?.textContent}; header ${$1("#arrstate")?.textContent}; reload ${!!$1("[data-reloadsong]")}`), machine: () => ok(V.songMode === false, "songMode " + V.songMode), within: 8000 },
-		{ say: "click SONG: the LCD keeps its size and every field its place; the desk loads the edited song by itself", act: async u => { u.click('[data-seqmode="song"]'); await until(() => V.songMode === true, 4000); await sleep(400); shot("song-2-song-mode-stopped"); },
-			screen: c => ok(!!$1(".songui.songmode") && pressed('[data-seqmode="song"]') && $1("#lcd2 [data-l2=seqmode] b")?.textContent === "SONG" && lcdGeo() === c.geo && /song mode/i.test($1("#arrstate")?.textContent || "") && !$1("[data-reloadsong]"),
+		{ say: "click SONG: the LCD keeps its size and every field its place; the desk loads the edited song by itself", act: async u => { u.click('[data-set="songpick"] button[data-v="song"]'); await until(() => V.songMode === true, 4000); await sleep(400); shot("song-2-song-mode-stopped"); },
+			screen: c => ok(!!$1(".songui.songmode") && pressed('[data-set="songpick"] button[data-v="song"]') && $1("#lcd2 [data-l2=seqmode] b")?.textContent === "SONG" && lcdGeo() === c.geo && /song mode/i.test($1("#arrstate")?.textContent || "") && !$1("[data-reloadsong]"),
 				`LCD ${lcdGeo()} (was ${c.geo}); ${$1("#lcd2 [data-l2=seqmode]")?.textContent}; header ${$1("#arrstate")?.textContent}`),
 			machine: () => ok(V.songMode === true && !V.songReload, "songMode " + V.songMode + ", reload needed " + V.songReload), within: 8000 },
 		{ say: "press PLAY (no Reload song): row 001 is marked, the edited song plays", act: (u, c) => { c.seen = new Set(); u.click("#play"); },
@@ -1057,8 +1057,85 @@ const MdJourneys = (() => {
 		if (V.playing) { u.click("#play"); await until(() => !V.playing, 3000); }
 		if (c.s != null && V.songSlot === c.s) await undoUntil(u, () => songRows().length === 1, 4);
 		if (c.s0 != null) await songTo(u, c.s0);
-		if (c.m0 != null && V.songMode !== c.m0) { u.click(`[data-seqmode="${c.m0 ? "song" : "pattern"}"]`); await sleep(1000); }
+		if (c.m0 != null && V.songMode !== c.m0) { u.click(`[data-set="songpick"] button[data-v="${c.m0 ? "song" : "pattern"}"]`); await sleep(1000); }
 	};
+	/* 0.6 wave 1: the song slots. Three empty slots A, B, C and D are the person's scratch: A gets rows (the SONG key, pads A01 and
+	   A02) and a name (F2), is copied to B (Copy, Paste), dragged onto C, saved to D with a name (Save to...); Clear asks before it
+	   removes what a slot holds; Save of an edited song the machine has not loaded asks and offers Load, then save. Tidy clears
+	   them again and puts the machine's song and mode back. */
+	const sameSong = (a, b) => !!a && !!b && JSON.stringify(a.rows) === JSON.stringify(b.rows);
+	const empties = n => { const out = []; for (let s = 0; s < 32 && out.length < n; s++) { const g = Docs.songs[s]; if (g && g.rows.length === 1 && g.rows[0].kind === "end" && !kitNameText(g.name) && s !== V.songSlot) out.push(s); } return out; };
+	const slotEl = s => `[data-ss="${s}"]`;
+	const songSlots = {
+		name: "md-song-slots",
+		steps: [
+			go("song"),
+			{ say: "stop; click an empty song slot: it is only selected, the machine's song stays", act: async (u, c) => {
+				if (V.playing) { u.click("#play"); await until(() => !V.playing, 3000); }
+				await until(() => Object.keys(Docs.songs).length >= 32, 20000);
+				c.s0 = V.songSlot; c.m0 = V.songMode; c.slots = empties(4); if (c.slots.length < 4) throw new Error("fewer than four empty song slots: " + Object.entries(Docs.songs).map(([k, g]) => `${+k + 1}:${g.rows.length}${g.rows[0].kind}:${JSON.stringify(g.name)}`).join(" "));
+				u.click(slotEl(c.slots[0])); await sleep(300); },
+				screen: c => ok($1(slotEl(c.slots[0]))?.getAttribute("aria-selected") === "true" && $1(slotEl(c.slots[0])).classList.contains("empty") && $1('[data-sa="paste"]')?.disabled, "slot " + $1(slotEl(c.slots[0]))?.className),
+				machine: c => ok(songSlotOf(Docs) === c.s0, "machine song " + (songSlotOf(Docs) + 1)), within: 20000 },
+			{ say: "Load: the machine's song is A", act: (u, c) => u.click('[data-sa="load"]'),
+				machine: c => ok(songSlotOf(Docs) === c.slots[0], "machine song " + (songSlotOf(Docs) + 1)), screen: c => ok($1(slotEl(c.slots[0]))?.classList.contains("cur"), "not lit"), within: 8000 },
+			{ say: "click the SONG key and pads A01, A02: A gets two rows", act: async (u, c) => { u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(300); u.click('[data-addpat="0"]'); await until(() => songRows().length === 2, 4000); u.click('[data-addpat="1"]'); },
+				machine: () => ok(songRows().length === 3, "rows " + songRows().length), screen: c => ok(/2 rows/.test($1(slotEl(c.slots[0]))?.textContent || ""), $1(slotEl(c.slots[0]))?.textContent), within: 8000 },
+			{ say: "press F2, type JOURNEY A, press Enter: A is named", act: async (u, c) => { u.click(slotEl(c.slots[0])); await sleep(250); u.key("F2"); await sleep(250); c.field = $1("#slin")?.value ?? "no field"; u.type("#slin", "journey a"); await sleep(100); u.key("Enter"); },
+				machine: c => ok(Docs.songs[c.slots[0]]?.name === "JOURNEY A", `name "${Docs.songs[c.slots[0]]?.name}" (field was "${c.field}")`), screen: c => ok(/JOURNEY A/.test($1(slotEl(c.slots[0]))?.textContent || "") && !$1("#slin"), $1(slotEl(c.slots[0]))?.textContent), within: 8000 },
+			{ say: "Copy A, select B, Paste: B holds the song, no question", act: async (u, c) => { u.click(slotEl(c.slots[0])); await sleep(200); u.click('[data-sa="copy"]'); await sleep(300); u.click(slotEl(c.slots[1])); await sleep(200); u.click('[data-sa="paste"]'); },
+				machine: c => ok(sameSong(Docs.songs[c.slots[1]], Docs.songs[c.slots[0]]) && Docs.songs[c.slots[1]].name === "JOURNEY A" && machineState().clipboard?.song === c.slots[0], `B rows ${Docs.songs[c.slots[1]]?.rows.length}, clipboard ${machineState().clipboard?.song}`),
+				screen: c => ok(!$1(slotEl(c.slots[1]))?.classList.contains("empty") && !dlgShown(), "B " + $1(slotEl(c.slots[1]))?.className + (dlgShown() ? ", a question" : "")), within: 8000 },
+			{ say: "drag A onto the empty slot C: a copy", act: async (u, c) => { await u.dragDrop(slotEl(c.slots[0]), slotEl(c.slots[2])); },
+				machine: c => ok(sameSong(Docs.songs[c.slots[2]], Docs.songs[c.slots[0]]), `C rows ${Docs.songs[c.slots[2]]?.rows.length}`), within: 8000 },
+			{ say: "select D, Save to... , type SAVED D, Enter: the machine's song, named, in D", act: async (u, c) => { u.click(slotEl(c.slots[3])); await sleep(250); u.click('[data-sa="saveas"]'); await sleep(250); u.type("#slin", "saved d"); await sleep(100); u.key("Enter"); },
+				machine: c => ok(sameSong(Docs.songs[c.slots[3]], Docs.songs[c.slots[0]]) && Docs.songs[c.slots[3]].name === "SAVED D", `D "${Docs.songs[c.slots[3]]?.name}" rows ${Docs.songs[c.slots[3]]?.rows.length}`), within: 8000 },
+			{ say: "select B, Clear: it asks first, and B still holds the song", act: async (u, c) => { u.click(slotEl(c.slots[1])); await sleep(250); u.click('[data-sa="clear"]'); await until(dlgShown, 3000); },
+				screen: () => ok(dlgShown() && /Clear/.test($1("#dlg").textContent), "no question"), machine: c => ok(Docs.songs[c.slots[1]].rows.length > 1, "B emptied before the answer") },
+			{ say: "answer Clear song: B is empty and quiet", act: u => u.click(dlgButton("Clear song") || $1("#dlg .danger")),
+				machine: c => ok(Docs.songs[c.slots[1]].rows.length === 1 && !kitNameText(Docs.songs[c.slots[1]].name), `B rows ${Docs.songs[c.slots[1]]?.rows.length}`), screen: c => ok($1(slotEl(c.slots[1]))?.classList.contains("empty"), "B not quiet"), within: 8000 },
+			{ say: "click PATTERN, add a row (A03) to the machine's song by the grid's own command: the machine has not loaded it, Save asks and offers Load, then save",
+				act: async (u, c) => { u.click('[data-set="songpick"] button[data-v="pattern"]'); await until(() => V.songMode === false, 4000); await sleep(300); c.n0 = songRows().length; songCmd("rowInsert", { i: 0, row: rowToContract({ pat: 2, rep: 1 }, patLen) }); await until(() => songRows().length === c.n0 + 1 && V.songReload, 6000); u.click('[data-sa="save"]'); await until(dlgShown, 3000); },
+				screen: () => ok(dlgShown() && !!dlgButton("Load the edits, then save"), "no question or alternative: " + ($1("#dlg")?.textContent || "")), machine: c => ok(V.songReload === true, "reload needed " + V.songReload), within: 12000 },
+			{ say: "answer Load the edits, then save: the machine has the song and no edit is waiting", act: u => u.click(dlgButton("Load the edits, then save")),
+				machine: c => ok(V.songReload === false && songRows().length === c.n0 + 1, `reload ${V.songReload}, rows ${songRows().length}`), screen: () => ok(!dlgShown(), "dialog still open"), within: 10000 }
+		],
+		async tidy(u, c) {
+			if (!c.slots) return;
+			if (V.playing) { u.click("#play"); await until(() => !V.playing, 3000); }
+			for (const s of c.slots) if (s !== V.songSlot) cmd("songClear", { s, force: true });
+			await sleep(1500);
+			if (c.s0 != null && V.songSlot !== c.s0) await songTo(u, c.s0);
+			for (const s of c.slots) if (Docs.songs[s] && !(Docs.songs[s].rows.length === 1 && !kitNameText(Docs.songs[s].name))) cmd("songClear", { s, force: true });
+			await sleep(1000);
+			if (c.m0 != null && V.songMode !== c.m0) { u.click(`[data-set="songpick"] button[data-v="${c.m0 ? "song" : "pattern"}"]`); await sleep(1000); }
+		}
+	};
+	/* the palette's three keys: a pad click goes to the pattern, into the chain or into the song */
+	const songKeys = {
+		name: "md-song-keys",
+		steps: [
+			go("song"),
+			{ say: "click PATTERN: the machine plays patterns, no inspector, a pad click queues that pattern", act: async (u, c) => { c.m0 = V.songMode; c.p0 = V.pat; u.click('[data-set="songpick"] button[data-v="pattern"]'); await until(() => V.songMode === false, 4000); await sleep(300); u.click('[data-bank="0"]'); await sleep(200); c.p = c.p0 === 5 ? 6 : 5; u.click(`[data-patgo="${c.p}"]`); },
+				screen: c => ok(pressed('[data-set="songpick"] button[data-v="pattern"]') && !$1(".insp") && !$1("[data-addpat]") && !$1("[data-chainpad]"), "keys/inspector: " + $all('[data-set="songpick"] button').map(b => b.dataset.v + b.getAttribute("aria-pressed")).join(" ") + (!!$1(".insp") ? " inspector" : "")),
+				machine: c => ok(V.pat === c.p || V.queued === c.p, `pattern ${V.pat}, queued ${V.queued}`), within: 8000 },
+			{ say: "click CHAIN: the pads number the chain, the machine stays in pattern mode", act: u => u.click('[data-set="songpick"] button[data-v="chain"]'),
+				screen: () => ok(pressed('[data-set="songpick"] button[data-v="chain"]') && !!$1("[data-chainpad]") && !$1(".insp"), "no chain pads"), machine: () => ok(V.songMode === false, "songMode " + V.songMode) },
+			{ say: "click SONG: the machine is in song mode, the pads add rows, the selected row shows", act: u => u.click('[data-set="songpick"] button[data-v="song"]'),
+				screen: () => ok(pressed('[data-set="songpick"] button[data-v="song"]') && !!$1("[data-addpat]") && !!$1(".insp") && !!$1(".songui.songmode"), "SONG state"), machine: () => ok(V.songMode === true, "songMode " + V.songMode), within: 8000 }
+		],
+		async tidy(u, c) {
+			if (c.p0 != null && V.pat !== c.p0) { cmd("select", { p: c.p0, now: true }); await sleep(800); }
+			if (c.m0 != null && V.songMode !== c.m0) { u.click(`[data-set="songpick"] button[data-v="${c.m0 ? "song" : "pattern"}"]`); await sleep(1000); }
+		}
+	};
+	/* the Song page with its slots as screenshots for a design review (scripts/mdmm-shots.sh with MDMM_SHOTS_JOURNEY=md-shots-song-slots) */
+	const shotsSongSlots = { name: "md-shots-song-slots", needs: () => /md-shots/.test(location.search) ? null : "screenshots only when asked by name",
+		steps: [go("song"),
+			{ say: "SONG key, a slot selected", act: async u => { await until(() => Object.keys(Docs.songs).length >= 32, 20000); u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(600); u.click('[data-ss="3"]'); await sleep(600); Bridge.log("SHOT songslots-song"); }, hold: 2500 },
+			{ say: "CHAIN key", act: async u => { u.click('[data-set="songpick"] button[data-v="chain"]'); await sleep(800); Bridge.log("SHOT songslots-chain"); }, hold: 2500 },
+			{ say: "PATTERN key", act: async u => { u.click('[data-set="songpick"] button[data-v="pattern"]'); await sleep(800); Bridge.log("SHOT songslots-pattern"); }, hold: 2500 },
+			{ say: "done", act: () => Bridge.log("SHOT done") }] };
 	const songPlayhead = { name: "md-song-playhead", steps: songPlayheadSteps(() => { }), tidy: songPlayheadTidy };
 	/* the same, as screenshots for a design review (scripts/mdmm-shots.sh with MDMM_SHOTS_JOURNEY=md-shots-song) */
 	const shotsSong = { name: "md-shots-song", needs: () => /md-shots/.test(location.search) ? null : "screenshots only when asked by name",
@@ -1173,7 +1250,7 @@ const MdJourneys = (() => {
 		genJourney("md-gen-mutate-undo", false), genJourney("md-gen-defaults-mutate-undo", true), genKeys,
 		shapeSound, arrows, machinePick, soundCopy, editorDrag, controlAll, globalKey, songModeJ,
 		mixSolo, shiftMutes, allOff, fader, outKey, masterFx,
-		songArrange, songChain, songPlayhead, samplerSlots, samplerSetup, audition,
+		songArrange, songChain, songPlayhead, songSlots, songKeys, shotsSongSlots, samplerSlots, samplerSetup, audition,
 		libDialog, kitCopy, kitRename, kitClear, patGo, patClear, dialogEsc,
 		globalJ, globalRouting, globalMapNote, audioPanel, romCard, notePlay,
 		lockRamp, pasteMany, mutScope, songInspector, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
@@ -1440,7 +1517,7 @@ const MdJourneys = (() => {
 				c.o1 = trigsOf(c.T.open); document.activeElement?.blur?.(); await atBar(51, 150); u.key("ArrowRight", { alt: true });
 			}, machine: c => ok(!same(trigsOf(c.T.open), c.o1), "open hat not rotated") },
 			/* ---- outro: the chain, loaded and started ---- */
-			{ section: "outro", say: "bar 52: Song, Arrange, then Chain", caption: "Load a chain and start it.", act: async u => { await look(u, tab("song")); await look(u, '[data-set="songpick"] button[data-v="arrange"]'); await sleep(600); await look(u, '[data-set="songpick"] button[data-v="chain"]'); },
+			{ section: "outro", say: "bar 52: Song, Arrange, then Chain", caption: "Load a chain and start it.", act: async u => { await look(u, tab("song")); await look(u, '[data-set="songpick"] button[data-v="song"]'); await sleep(600); await look(u, '[data-set="songpick"] button[data-v="chain"]'); },
 				screen: () => ok(!!$1("[data-chainpad]"), "no pads") },
 			{ section: "outro", say: "STOP on bar 53's line, chain pads A and B (loaded), PLAY: the chain starts at A", act: async (u, c) => {
 				const b = c.A >> 4; if (S.bank !== b) { await look(u, `[data-bank="${b}"]`); await sleep(200); }

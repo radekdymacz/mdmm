@@ -179,6 +179,7 @@ namespace mmDesk
 		deskCore::Outcome kitAction(int _kit, bool _save);
 		deskCore::Outcome cmdLoadSong(const Value&, const Documents&);
 		deskCore::Outcome cmdSaveSong(const Value&, const Documents&);
+		deskCore::Outcome askSaveSong(const Value&, const Documents&);
 		deskCore::Outcome cmdTempo(const Value&, const Documents&);
 		deskCore::Outcome cmdPlay(const Value&, const Documents&);
 		deskCore::Outcome cmdStop(const Value&, const Documents&);

@@ -52,8 +52,8 @@ namespace mmDesk
 		const auto* row = MmModel::commands().find(op);
 		if(!row || row->group != g_library)
 			return ok();
-		const bool clears = op == "kitClear" || op == "patClear";
-		if(op == "kitRename" || op == "kitCopy" || op == "patCopy")
+		const bool clears = op == "kitClear" || op == "patClear" || op == "songClear";
+		if(op == "kitRename" || op == "kitCopy" || op == "patCopy" || op == "songRename" || op == "songCopy")
 			return ok();	// a name, or the clipboard: nothing is lost
 		const bool edited = kitState(_view) == deskCore::KitState::Edited;
 		Outcome o;
@@ -68,6 +68,16 @@ namespace mmDesk
 			else if(clears && ref.kind == Kind::Pattern)
 				o = deskCore::withAsk(std::move(o), ask("clearSlot", "Clear <b>" + ed::mmPatternName(ref.slot) + "</b>? Its notes and locks are removed. It keeps its kit link.",
 					"Clear pattern"));
+			else if(clears && ref.kind == Kind::Song)
+			{
+				if(!songIsEmpty(std::get<ed::MmSong>(c.before)))
+					o = deskCore::withAsk(std::move(o), ask("clearSlot", "Clear <b>S" + std::string(ref.slot < 9 ? "0" : "") + std::to_string(ref.slot + 1) + "</b>? Its rows and its name are removed.", "Clear song"));
+			}
+			else if(ref.kind == Kind::Song)
+			{
+				if(!songIsEmpty(std::get<ed::MmSong>(c.before)))
+					o = deskCore::withAsk(std::move(o), ask("overwriteSlot", "Write over <b>S" + std::string(ref.slot < 9 ? "0" : "") + std::to_string(ref.slot + 1) + "</b>? What it holds is replaced.", "Overwrite"));
+			}
 			else if(ref.kind == Kind::Kit && (plays || !kitIsEmpty(std::get<ed::MmKit>(c.before))))
 				o = deskCore::withAsk(std::move(o), ask("overwriteSlot", "Write over <b>" + kitLabel(_view, ref.slot) + "</b>? What it holds is replaced." + playing, "Overwrite"));
 			else if(ref.kind == Kind::Pattern && patternHasTrigs(std::get<ed::MmPattern>(c.before)))

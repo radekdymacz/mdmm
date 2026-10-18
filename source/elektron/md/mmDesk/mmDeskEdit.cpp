@@ -1663,6 +1663,37 @@ namespace mmDesk
 		return p;
 	}
 
+	ed::MmSong emptySong(const ed::MmSong& _like, const uint8_t _slot)
+	{
+		auto s = _like;
+		s.position = _slot;
+		s.name.fill(0);
+		for(auto& r : s.rows)
+			r.bytes = {};
+		s.rows[0].bytes[ed::mmSongRow::g_pattern] = MmSong::g_end;
+		s.rows[0].bytes[ed::mmSongRow::g_tempo] = s.rows[0].bytes[ed::mmSongRow::g_tempo + 1] = 0xff;	// keep the tempo
+		return s;
+	}
+
+	std::string songNameText(const ed::MmSong& _song)
+	{
+		std::string n;
+		for(const auto c : _song.name)
+		{
+			if(!c || c == 0xff)
+				break;
+			n += (c >= 0x20 && c < 0x7f) ? static_cast<char>(c) : '?';
+		}
+		return n;
+	}
+
+	bool songIsEmpty(const ed::MmSong& _song)
+	{
+		const auto n = songNameText(_song);
+		const bool blank = n.find_first_not_of(' ') == std::string::npos;
+		return blank && _song.rows[0].pattern() == MmSong::g_end;
+	}
+
 	bool kitIsEmpty(const ed::MmKit& _k)
 	{
 		if(_k.name[0] == 0xff)
@@ -1745,9 +1776,53 @@ namespace mmDesk
 			": no notes or locks (length, speed, swing and its kit link stay)", asStored, [](const EditContext&, int) { return false; }, nullptr,
 			problemsOf};
 
+		// A song name: 7-bit printable, upper case, at most 14 characters (a name that fills the 14 bytes has no NUL).
+		std::optional<Document> songRenamed(const Document& _d, const std::string& _name, std::string& _error)
+		{
+			auto s = std::get<MmSong>(_d);
+			if(_name.size() > s.name.size())
+			{
+				_error = "A song name has at most 14 characters";
+				return {};
+			}
+			s.name.fill(0);
+			for(size_t i = 0; i < _name.size(); ++i)
+			{
+				const auto c = static_cast<unsigned char>(_name[i]);
+				if(c < 0x20 || c > 0x7e)
+				{
+					_error = "name: 7-bit printable characters only";
+					return {};
+				}
+				s.name[i] = static_cast<uint8_t>(std::toupper(c));
+			}
+			return Document(s);
+		}
+		std::string songLabel(const int _s) { return "S" + std::string(_s < 9 ? "0" : "") + std::to_string(_s + 1); }
+
+		const Shelf g_songs{
+			Kind::Song, "s", "song", songLabel,
+			[](const Documents& _docs, const EditContext&, const int _s) { return stored(_docs, Kind::Song, _s); },
+			[](const Clipboard& _c) { return _c.song ? std::optional<Document>(*_c.song) : std::nullopt; },
+			[](Clipboard& _c, const Document& _d) { _c.song = std::get<MmSong>(_d); },
+			"Copy a song first",
+			[](const int _s, const Document& _d) { return "Copied " + songLabel(_s) + " " + songNameText(std::get<MmSong>(_d)); },
+			[](const Document& _d) { return songNameText(std::get<MmSong>(_d)); },
+			[](const Document& _src, const Document& _dst, const int _slot)
+			{
+				auto s = std::get<MmSong>(_src);
+				const auto& dst = std::get<MmSong>(_dst);
+				s.position = static_cast<uint8_t>(_slot);
+				s.version = dst.version;
+				s.revision = dst.revision;
+				return Document(s);
+			},
+			[](const Document& _d, const int _slot) { return Document(emptySong(std::get<MmSong>(_d), static_cast<uint8_t>(_slot))); },
+			": no rows, no name", asStored, [](const EditContext&, int) { return false; }, songRenamed, problemsOf};
+
 		const Shelf* shelfOf(const int _kind)
 		{
-			for(const auto* sh : {&g_kits, &g_patterns})
+			for(const auto* sh : {&g_kits, &g_patterns, &g_songs})
 				if(static_cast<int>(sh->kind) == _kind)
 					return sh;
 			return nullptr;
