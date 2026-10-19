@@ -4125,12 +4125,14 @@ const MmJourneys = (() => {
 	   output is not silent); the pattern cleared, it plays silence; one undo and it plays them again. The page reads the transport
 	   and the output's peaks, not each note the firmware fires: the peaks stand for "the notes play". */
 	const playPeak = async (u, ms, skip) => {
+		/* ▶ toggles: a PLAY that waited for the panel and started late is stopped first, so this click is PLAY */
+		if (tele.last?.playing) { u.click("#play"); await until(() => !S().playing && !tele.last?.playing, 5000); }
 		heard.peak = 0; tele.steps = [];
 		u.click("#play");
 		const started = await until(() => !!tele.last?.playing, 5000);
 		await sleep(skip); heard.peak = 0; await sleep(ms - skip);
 		const r = { started, peak: heard.peak, steps: new Set(tele.steps).size };
-		u.click("#play"); await until(() => !S().playing && !tele.last?.playing, 5000);
+		if (S().playing || tele.last?.playing) u.click("#play"); await until(() => !S().playing && !tele.last?.playing, 5000);
 		return r;
 	};
 	const hasNotes = p => patTrigs(p) > 0;

@@ -27,6 +27,8 @@ namespace mmDesk
 	class RecvSession
 	{
 	public:
+		// the session's machine time (Telemetry::machineMs, or the caller's time while blocks move)
+		double machineClock() const { return m_clock; }
 		enum class State
 		{
 			Idle,		// not on SYSEX RECV, nothing to send
