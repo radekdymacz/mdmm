@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-170 · Monomachine: PLAY right after an undo is dropped on a slow machine (fixed in 0.8.0)
+
+- **From:** the 0.8.0 firmware E2E on CI, 2026-10-19 (run 39253897587, mm-real-sequence-plays step 7).
+- **What happens:** four notes drawn, the pattern cleared, Cmd+Z, PLAY at once: the page shows the notes, the machine never starts. The undo's dump took about 11 s of wall time on the runner (SYSEX RECV entering, parked, idle).
+- **Cause:** since 15b134c89 the RECV session runs on the machine's time (`Telemetry::machineMs`), so a slow runner may keep the panel busy for many wall seconds. A PLAY (or MIDI mute) that waits for the panel was still given up after 10 s of wall time (`pumpTransport`, `pumpMidiMutes`), silently. B-099's case, by another road.
+- **Fix:** the wait is measured on the same machine clock as the session (`MmMachine::waitClock`, `RecvSession::machineClock`); the journey's `playPeak` no longer turns a late PLAY into STOP.
+- **Status:** fixed in 0.8.0.
+
 ## B-169 · Both: MIDI Learn cannot map the global FX parameters and other non-track values (fixed in 0.8.0)
 
 - **From:** Radek, 2026-10-18 (0.8.0 hand test): "global FX params should be MIDI mappable and learnable, all parameters should be mappable".

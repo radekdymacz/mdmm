@@ -137,11 +137,11 @@ namespace mmDesk
 	}
 
 	// PLAY or STOP that waited for the panel: pressed once it is free, given up after g_transportWaitMs.
-	void MmMachine::pumpTransport(const double _now)
+	void MmMachine::pumpTransport()
 	{
 		if(!m_pendingTransport)
 			return;
-		if(_now - m_pendingTransportMs > g_transportWaitMs)
+		if(waitClock() - m_pendingTransportMs > g_transportWaitMs)
 		{
 			m_pendingTransport.reset();
 			return;
@@ -153,7 +153,7 @@ namespace mmDesk
 	void MmMachine::waitTransport(const TransportWait _w)
 	{
 		m_pendingTransport = _w;
-		m_pendingTransportMs = now();
+		m_pendingTransportMs = waitClock();
 	}
 
 	// The panel keys of a transport command; false while the panel is busy (nothing pressed). PLAY, STOP: also not while
@@ -511,7 +511,7 @@ namespace mmDesk
 		{
 			// B-129: the panel is taking an edit (SYSEX RECV): the mute follows once it is free (pumpMidiMutes)
 			m_pendingMidiMute[static_cast<size_t>(t)] = mute;
-			m_pendingMidiMuteMs = now();
+			m_pendingMidiMuteMs = waitClock();
 			return ok(g_transportWaits);
 		}
 		m_expectMute[i] = deskCore::FieldExpectation<bool>::sent(mute, clock());
@@ -519,14 +519,14 @@ namespace mmDesk
 	}
 
 	// B-129: the MIDI tracks' mutes that waited for the panel, pressed once it is free, one track a pump
-	void MmMachine::pumpMidiMutes(const double _now)
+	void MmMachine::pumpMidiMutes()
 	{
 		for(size_t t = 0; t < m_pendingMidiMute.size(); ++t)
 		{
 			auto& want = m_pendingMidiMute[t];
 			if(!want)
 				continue;
-			if(_now - m_pendingMidiMuteMs > g_transportWaitMs)
+			if(waitClock() - m_pendingMidiMuteMs > g_transportWaitMs)
 			{
 				want.reset();
 				continue;

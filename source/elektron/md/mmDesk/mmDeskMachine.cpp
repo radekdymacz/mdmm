@@ -278,8 +278,8 @@ namespace mmDesk
 			m_activateGlobal = -1;
 		}
 		pumpTranspose(_view);
-		pumpTransport(_now);
-		pumpMidiMutes(_now);
+		pumpTransport();
+		pumpMidiMutes();
 		pumpRecord(_now);
 		pumpAfterAccept(_now, _view);
 		pumpChain();

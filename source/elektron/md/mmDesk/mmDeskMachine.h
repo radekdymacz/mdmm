@@ -118,6 +118,9 @@ namespace mmDesk
 		double now() const { return m_port.nowMs(); }
 		// the session's clock where an engine may have none (a test's port)
 		double clock() const { return m_port.nowMs ? m_port.nowMs() : 0; }
+		// a transport key or MIDI mute that waits for the panel: given up on the machine's time, as the session that
+		// keeps the panel busy runs on it (a slow runner takes many seconds of wall time for one edit's dump)
+		double waitClock() const { return m_profile.wire ? now() : m_recv.machineClock(); }
 		// The global slot that is (or is about to be) active: the editor's choice (globalSlot) until the machine's
 		// status shows it, else the machine's. A dump of this slot is what is made active again after RECV.
 		int activeSlot() const { return m_chosenGlobal >= 0 ? m_chosenGlobal : m_curGlobal; }
@@ -170,8 +173,8 @@ namespace mmDesk
 		void gaveUpLoad(const Ref& _r);
 		bool current(const Ref& _r) const;
 		void pumpRecv(double _now);
-		void pumpTransport(double _now);
-		void pumpMidiMutes(double _now);
+		void pumpTransport();
+		void pumpMidiMutes();
 		void pumpRecord(double _now);
 		deskCore::Outcome record(const Value& _m, bool _first);
 		void pumpSequence(double _now);
