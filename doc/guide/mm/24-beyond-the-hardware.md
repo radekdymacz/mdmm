@@ -383,7 +383,7 @@ What you enter in the sequencer is what the machine plays. The notes you draw re
 7. Press {key:play-stop} again. The position moves through the pattern and the machine plays silence.
 
 ## MIDI LEARN
-<!-- rows: MM-X27 @d9536a -->
+<!-- rows: MM-X27 @f977df -->
 
 The Monomachine has no such function. With MIDI Learn a knob or fader of your controller moves any value of the editor, on any track. The machine's own CC map stays for everything you do not map.
 

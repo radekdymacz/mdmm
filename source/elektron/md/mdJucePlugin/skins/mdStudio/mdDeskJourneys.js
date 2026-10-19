@@ -1002,7 +1002,10 @@ const MdJourneys = (() => {
 			go("mix"),
 			{ say: "click a track's OUT key: an individual output", act: (u, c) => { c.t = soundTrack(); c.o0 = Docs.global.routing[c.t]; u.click(`.strip[data-sel="${c.t}"] [data-out]`); },
 				screen: c => ok($1(`.strip[data-sel="${c.t}"] [data-out]`).textContent !== "OUT " + c.o0, "key " + $1(`.strip[data-sel="${c.t}"] [data-out]`).textContent), machine: c => ok(Docs.global.routing[c.t] !== c.o0, "global routing " + Docs.global.routing[c.t]) },
-			{ say: "click it until it is back", act: async (u, c) => { for (let k = 0; k < 8 && Docs.global.routing[c.t] !== c.o0; k++) { u.click(`.strip[data-sel="${c.t}"] [data-out]`); await sleep(800); } }, machine: c => ok(Docs.global.routing[c.t] === c.o0, "global routing " + Docs.global.routing[c.t]) }
+			/* the key shows the next output at once; the machine's global follows later, so the key (not the global) says when to stop */
+			{ say: "click it until it is back", act: async (u, c) => { const key = () => $1(`.strip[data-sel="${c.t}"] [data-out]`); for (let k = 0; k < 8 && key().textContent !== "OUT " + c.o0; k++) { u.click(key()); await sleep(400); } },
+				screen: c => ok($1(`.strip[data-sel="${c.t}"] [data-out]`).textContent === "OUT " + c.o0, "key " + $1(`.strip[data-sel="${c.t}"] [data-out]`).textContent),
+				machine: c => ok(Docs.global.routing[c.t] === c.o0, "global routing " + Docs.global.routing[c.t]), within: 8000 }
 		]
 	};
 	/* wave 8: LEV, the kit's level of a track (the machine's LEVEL knob), above each strip's VOL */
@@ -2123,7 +2126,7 @@ const MdJourneys = (() => {
 	};
 	/* alone: B-133 (OS 1.63 leaves its screen list with one node after the RECEIVING SAMPLE screen, so live recording is deaf until the machine starts again; the emulator keeps the hardware's behaviour), as md-sampler-rename */
 	const dropSampleJ = {
-		name: "md-drop-sample", alone: true, proves: ["MD-191", "MD-X12"],
+		name: "md-drop-sample", alone: true, proves: ["MD-191", "MD-200", "MD-X12"],
 		needs: () => new URLSearchParams(location.search).get("wavfile") ? null
 			: "no sample for the run (GEARMULATOR_MDMM_WAV_FILE)",
 		steps: [
@@ -2141,6 +2144,30 @@ const MdJourneys = (() => {
 					+ JSON.stringify(smpSlotOf("rom", c.slot) && { empty: smpSlotOf("rom", c.slot).empty })),
 					within: 90000 }
 		]
+	};
+	/* several files: they fill the selected slot and the slots after it, one after another, after a question */
+	const dropSamplesJ = {
+		name: "md-drop-samples", alone: true, proves: ["MD-192"],
+		needs: dropSampleJ.needs,
+		steps: [
+			go("sampler"),
+			{ say: "click the last ROM slot but one", act: (u, c) => {
+				const keys = $all(".slotk.rom"), k = keys[keys.length - 2];
+				c.slot = +k.dataset.slot.slice(3) - 1; u.click(k); },
+				screen: c => ok(S.smpSlot === "ROM" + (c.slot + 1), "selected " + S.smpSlot) },
+			{ say: "drop two WAVs on the slot's waveform: it asks before it loads them into this slot and the next",
+				act: () => dropAt(".romsel canvas", "wav wav"),
+				screen: () => ok(!$1("#dlg").hidden && /Load 2 samples/.test($1("#dlg").textContent), "no question: "
+					+ ($1("#dlg").hidden ? "hidden" : $1("#dlg").textContent)), within: 8000 },
+			{ say: "click Load: the first file goes to the selected slot, the second to the slot after it",
+				act: u => u.click('#dlg .btnrow button[data-dlg="0"]'),
+				machine: c => ok(smpLoad?.slot === c.slot + 1 && smpLoad.state === "done", "sampleLoad "
+					+ JSON.stringify(smpLoad && { slot: smpLoad.slot, state: smpLoad.state, text: smpLoad.text })),
+				screen: c => ok([c.slot, c.slot + 1].every(s => smpSlotOf("rom", s) && !smpSlotOf("rom", s).empty),
+					"the slots " + JSON.stringify([c.slot, c.slot + 1].map(s => smpSlotOf("rom", s)?.empty))),
+					within: 180000 }
+		],
+		async tidy(u) { if (!$1("#dlg").hidden) u.key("Escape"); }
 	};
 
 	/* ---------- wave 2: the transport beyond PLAY and STOP (doc/modern-ux/DESIGN-machine-menus.md §2) ---------- */
@@ -3400,7 +3427,7 @@ const MdJourneys = (() => {
 	};
 	/* the whole learn: LEARN, a value, progress on CONTROL, the mapping and what it overrides, invert, remove, Esc */
 	const controlLearn = {
-		name: "md-control-learn-flow", proves: [],
+		name: "md-control-learn-flow", proves: ["MD-X27"],
 		steps: [
 			{ say: "the plug-in says MIDI mapping is on: the CONTROL and LEARN keys appear in Setup", act: (u, c) => learnIn(u, c, ldoc([])),
 				screen: () => ok(!$1(tab("control")).hidden && !$1("#learnkey").hidden, "CONTROL key hidden " + $1(tab("control")).hidden + ", key hidden " + $1("#learnkey").hidden) },
@@ -3559,7 +3586,7 @@ const MdJourneys = (() => {
 		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, controlLearn, controlLearnOverrides, controlLearnPaused, controlLearnLeft, controlLearnLfo, controlLearnLimit, controlLearnKnob, controlLearnEsc, controlLearnGlobals, fitMapping, noteLights, followPlayed, audioPanel, romCard, notePlay,
 		lockRamp, pasteMany, mutScope, songInspector, songRowMarks, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
 		syxImportMute, globalReset, shotsGlobal, shotsSound, shotsReview, shots, shotsSong, shotsImport, editorMenuJ, memoryJ, shotsMenu, ...cpuJs, ...volJs,
-		dropSyxJ, dropSampleJ, ...viewJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, modalLock, songFactoryPlay, lockKeysFit, resetFactory, resetEmpty, syxRunningReach];
+		dropSyxJ, dropSampleJ, dropSamplesJ, ...viewJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, modalLock, songFactoryPlay, lockKeysFit, resetFactory, resetEmpty, syxRunningReach];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
 	   its guard, "left:", names what stays). What back cannot put back, the journey keeps first (keep, keepMany) or is alone: true (doc/modern-ux/JOURNEYS.md, "Independent journeys") */
 	for (const j of all) { const own = j.tidy; j.tidy = async (u, c) => { try { if (own) await own(u, c); } finally { if (c.back0?.state && Journey.stateDiff(c.back0.state, state())) await back(u, c); } }; }

@@ -10,7 +10,7 @@ The rail on the left lists the slots: four RAM slots and 48 ROM slots. The page 
 NOTE: The Sampler needs the UW's ROM and RAM machines. With other firmware, or while the machine has not started, the page says so.
 
 ## SAMPLE MANAGER
-<!-- rows: MD-189 MD-195 MD-196 MD-197 MD-198 MD-200 @cb8375 -->
+<!-- rows: MD-189 MD-195 MD-196 MD-197 MD-198 MD-200 @09e377 -->
 
 ### The slots
 
@@ -100,7 +100,7 @@ You can also drop the file on the waveform of an empty ROM slot. The slot takes 
 The sample replaces what the slot holds. The plug-in gives it a name of four letters from the file name.
 
 ## ORIGINAL PLACE SAMPLE RECEIVE
-<!-- rows: MD-192 @654825 -->
+<!-- rows: MD-192 @12f036 -->
 
 Drop several WAV or AIFF files on the window with the **Sampler** open. They go into ROM slots one after another, one file at a time.
 

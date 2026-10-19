@@ -411,7 +411,7 @@ check(P.playsText() === "SONG 01 · 2 rows · stopped", "stopped: no row is said
 	frame(5, true);
 	check(!!P.S.paused, "B-086: a late frame (still playing) keeps the pause");
 	frame(-1, false);
-	check(!!P.S.paused && P.S.paused.step === 4, "B-086: the machine stops: still paused on the step it held");
+	check(!!P.S.paused && P.S.paused.step === 5, "B-086: the machine stops: paused on the step it held (the late frame's, not the click's)");
 	frame(4, true);
 	check(P.S.paused === null, "B-086: the machine plays again (PLAY, or its own panel): the pause is over");
 	/* a pause the machine never took: still playing a second after it was sent, the pause is dropped */
