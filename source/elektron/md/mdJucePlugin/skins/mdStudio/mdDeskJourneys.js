@@ -1266,7 +1266,7 @@ const MdJourneys = (() => {
 			{ say: "open the kit library and click another kit: the plug-in asks", act: async (u, c) => { c.k0 = currentKitSlot(); u.click("#kitf"); await sleep(300); c.k = [...Array(64).keys()].find(k => k !== c.k0 && !kitEmpty(k)); u.click(ks(c.k)); },
 				screen: () => ok(dlgShown() && document.activeElement?.textContent.trim() === "Cancel", `dialog ${dlgShown()}, focus ${document.activeElement?.textContent}`), machine: c => ok(currentKitSlot() === c.k0, "loaded without asking") },
 			{ say: "press Escape: Cancel, nothing loads", act: u => u.key("Escape"), screen: () => ok(!dlgShown(), "still open"), machine: c => ok(currentKitSlot() === c.k0 && machineState().kit.working === "edited", "machine kit " + currentKitSlot()), within: 2000 },
-			{ say: "click the kit again and press Space: the focused Cancel", act: async (u, c) => { u.click(ks(c.k)); await until(dlgShown, 2000); u.key(" "); }, screen: () => ok(!dlgShown(), "still open"), machine: c => ok(currentKitSlot() === c.k0, "machine kit " + currentKitSlot()), within: 2000 }
+			{ say: "click the kit again and press Space: the focused Cancel", act: async (u, c) => { u.click(ks(c.k)); await until(() => dlgShown() && document.activeElement?.textContent.trim() === "Cancel", 3000); await sleep(150); u.key(" "); }, screen: () => ok(!dlgShown(), "still open"), machine: c => ok(currentKitSlot() === c.k0, "machine kit " + currentKitSlot()), within: 2000 }
 		],
 		async tidy(u) { if (LIB.open) u.key("Escape"); await sleep(200); u.key("z", { cmd: true }); await sleep(500); }
 	};
@@ -3217,7 +3217,8 @@ const MdJourneys = (() => {
 				screen: c => ok(V.songSlot === c.s, "song " + (V.songSlot + 1)), machine: c => ok(songSlotOf(Docs) === c.s, "machine song " + (songSlotOf(Docs) + 1)), within: 20000 },
 			{ say: "Arrange: pad A01, then Repeat + twice (the row plays three times), then pad A02", act: async (u, c) => {
 				u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(200); u.click('[data-addpat="0"]'); await until(() => songRows().length === 2, 4000);
-				for (let i = 0; i < 2; i++) { const r = songRows()[0].repeats; u.click('[data-step="rep"][data-d="1"]'); await until(() => songRows()[0].repeats === r + 1, 4000); }
+				/* the row's inspector (with Repeat) is drawn after the machine's song comes back: wait for it */
+				for (let i = 0; i < 2; i++) { await until(() => !!$1('[data-step="rep"][data-d="1"]'), 6000); const r = songRows()[0].repeats; u.click('[data-step="rep"][data-d="1"]'); await until(() => songRows()[0].repeats === r + 1, 4000); }
 				u.click('[data-addpat="1"]'); },
 				machine: () => ok(songRows().length === 3 && songRows()[0].repeats === 2 && songRows()[1].pattern === 1, "rows " + JSON.stringify(songRows().map(r => [r.pattern, r.repeats]))), within: 8000 },
 			{ say: "PATTERN, then SONG: the machine takes the edited song", act: async u => { u.click('[data-set="songpick"] button[data-v="pattern"]'); await until(() => V.songMode === false, 4000); await sleep(300);
