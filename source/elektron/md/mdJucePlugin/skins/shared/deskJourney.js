@@ -266,7 +266,7 @@ const Journey = (() => {
 			"top-editor-menu", "engine-rom-card", "song-playhead"],
 		machine: ["seq-first-beat", "seq-queue-while-playing", "seq-live-record", "seq-grid-record", "sampler-setup-undo", "sampler-audition", "sampler-rename",
 			"sampler-ram-view", "sampler-setup-chop", "lib-syx-import", "lib-syx-import-mute", "song-mode", "song-mode-cycle", "keys-play-notes", "keys-black-keys",
-			"perform-keyboard", "engine-hw-no-machine", "global-tempo-out", "audio-panel", "drop-syx", "drop-sample", "old-webkit",
+			"perform-keyboard", "engine-hw-no-machine", "global-tempo-out", "audio-panel", "drop-syx", "drop-sample", "drop-samples", "old-webkit",
 			"sound-machine-stays", "engine-reset-factory", "real-factory-songs", "real-factory-patterns", "real-sequence-plays",
 			/* they time key presses against the journey's clock: in the page tier, beside the gate's busy lane 1, the page
 			   and the journey's clock drifted apart by several per cent (2026-10-11) */

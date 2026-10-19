@@ -336,6 +336,9 @@ function onTelemetry(m) {
 	/* a pause the machine did not take: still playing a second after it was sent (frames before it are late by tens of
 	   ms, not a second), so ▶ does not blink over a machine that plays on */
 	else if (V.playing && S.paused && S.paused.at && Date.now() - S.paused.at > g_pauseTakenMs) { S.paused = null; renderTop(); setPos(); }
+	/* a late frame moved on before the pause reached the machine: the machine holds that step, so the pause shows it
+	   (▶ goes on from where the machine stopped, not from the step under the click) */
+	else if (V.playing && S.paused && m.step >= 0 && m.step !== S.paused.step) { S.paused.step = m.step; setPos(); }
 	if (V.rec !== wasRec) { renderTop(); if (V.rec) toast("Live recording: click a track's steps to play it, move a value to lock it."); }
 	S.step = V.playing ? m.step : -1;
 	markSongRow();

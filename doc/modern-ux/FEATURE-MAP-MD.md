@@ -257,7 +257,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.70 | Receive samples by MIDI SDS (closed / open loop) | Sample dump in | 🟡 | Sampler: Load sample..., drag WAV/AIFF into a ROM slot | Files, not SDS from another tool; converted to mono 16-bit. | – | n/a |
 | p.72 | General sample receive (any time) | Receive | ➖ |  | Files only. | – | n/a |
 | p.73 | Specific place receive (choose slot) | Slot | ✅ | Sampler: select ROM slot, Load... |  | 1 | pass (e2e-md-drop-sample) |
-| p.74 | Original place receive (several files in order) | ORG | ✅ | Drop several files; they fill slots after the first |  | – | missing |
+| p.74 | Original place receive (several files in order) | ORG | ✅ | Drop several files; they fill slots after the first |  | 1 | missing |
 | p.74 | Send samples to a computer (one, ALL, RAM) | SEND | ❌ | Disabled with reason | Machine ignores dump requests. | – | n/a |
 | p.75 | Erase one / all samples | ERASE | ❌ | None |  | – | n/a |
 | p.71 | Preview a sample | FUNCTION + ENTER | ✅ | Sampler: audition button | Plays on plug-in output. | 1 | pass (e2e-md-sampler-audition) |
@@ -265,7 +265,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.71 | Sample names / rename | Name slot | ✅ | Sampler: Rename (0x73, then the slot's sample again by SDS) | The firmware renames a sample only when it receives it, so Rename sends the name and the slot's own sample again; it needs the slot's audio (the emulated machine). A real machine cannot send it back: the key is off with the reason. | 1 | pass (e2e-md-sampler-rename) |
 | p.71 | Copy / clear / paste / undo in sample manager | Slot clipboard | ❌ | None |  | – | n/a |
 | p.71 | RAM to ROM copy | Keep a take | ❌ | Disabled with reason | The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – | n/a |
-| p.70 | Sample limits (4-48 kHz, mono, 12-bit playback) | Rules | ✅ | Plug-in converts on load |  | – | missing |
+| p.70 | Sample limits (4-48 kHz, mono, 12-bit playback) | Rules | ✅ | Plug-in converts on load |  | 1 | missing |
 | p.71 | ROM vs RAM machines | Concept | ✅ | Sampler workspace |  | 1 | pass (md-sampler-workspace) |
 
 ## 12. Early start-up menu (pp.79-81)
@@ -417,7 +417,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p. | What you draw is what plays | What you enter in the sequencer is what the machine plays. | ✅ | Pattern: the grid or the roll; Alt+Delete clears the pattern; Cmd+Z takes it back | e2e: drawn, played, cleared, undone, each checked on the machine's output | 1 | pass (md-real-sequence-drawn) |
 | p. | Clear (was Revert track) | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Kit: Clear key at the right end of the MUTATE bar, next to R |  | 1 | pass (e2e-md-sound-revert-track) |
 | p. | The selected track follows the last track played | No such function. With it on, the track you select changes to the last one you played from a MIDI keyboard. | ✅ | Engine menu: FOLLOW PLAYED TRACK (off at first) | I-003 | 1 | – |
-| p. | MIDI Learn | No such function. A controller's knob or fader moves a value of your choice; the machine's own CC map stays for the rest. | ✅ | CONTROL key in Setup (right of LEARN, key 6): the LEARN key (L), click a value, turn a knob both ways; the matrix and inspector list, invert and remove the mappings | CCs only (a 0/127 button is learned as an absolute value). 128 mappings at most, saved with the project, off in the HW MIDI engine. Values that belong to no track are learnable too (B-169): the master effects, tempo, swing and accent of the playing pattern and the LFO page of every track (target, shapes, UPDTE; a choice is learned over its entries); the matrix has an FX column for them. Page journeys: md-control-learn-*, mdLearnFirmwareTest. | – | – |
+| p. | MIDI Learn | No such function. A controller's knob or fader moves a value of your choice; the machine's own CC map stays for the rest. | ✅ | CONTROL key in Setup (right of LEARN, key 6): the LEARN key (L), click a value, turn a knob both ways; the matrix and inspector list, invert and remove the mappings | CCs only (a 0/127 button is learned as an absolute value). 128 mappings at most, saved with the project, off in the HW MIDI engine. Values that belong to no track are learnable too (B-169): the master effects, tempo, swing and accent of the playing pattern and the LFO page of every track (target, shapes, UPDTE; a choice is learned over its entries); the matrix has an FX column for them. Page journeys: md-control-learn-*, mdLearnFirmwareTest. | 1 | – |
 
 ## Summary
 
