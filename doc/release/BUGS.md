@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-171 · Machinedrum: a muted track's trig square flashed once in Mix (open, 0.8.1)
+
+- **From:** the 0.8.0 release CI firmware E2E, 2026-10-19 (run 39307678496 attempt 2, md-mix-heads-trigs step 7: "track 0 counted 1"). It passed on the job's re-run and in five runs before.
+- **What happens:** a track muted (the machine confirmed the mute), PLAY for 2 s: its square flashed once. The sound is not affected.
+- **Guess:** for one telemetry frame at PLAY the page saw the track as audible (`audible(i)` in `onTelemetry`, mdDeskTop.js), e.g. a machine document with the mutes not yet in it.
+- **Status:** open; look at it in 0.8.1.
+
 ## B-170 · Monomachine: PLAY right after an undo is dropped on a slow machine (fixed in 0.8.0)
 
 - **From:** the 0.8.0 firmware E2E on CI, 2026-10-19 (run 39253897587, mm-real-sequence-plays step 7).
