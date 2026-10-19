@@ -41,13 +41,22 @@ function scheduleRender() {
 		render();
 	}, 16);
 }
+/* what a "doc" message would replace: its slot's document and source (the working kit with its slot and state) */
+function docFingerprint(m) {
+	const slot = m.slot != null ? m.slot : m.doc?.slot, at = { pattern: "patterns", kit: "kits", song: "songs" }[m.kind];
+	const doc = at ? Docs[at]?.[slot] : m.kind === "global" ? Docs.global : m.kind === "workingKit" ? Docs.workingKit : undefined;
+	return JSON.stringify([doc ?? null, at ? Docs.sources?.[m.kind + ":" + slot] ?? null : null]);
+}
 Bridge.onMessage(m => {
 	switch (m.type) {
 	case "catalogue": setCatalogue(m.doc); scheduleRender(); break;
 	case "doc": {
 		/* stored where its kind keeps it (mdDeskModel.js, storeDoc); the working kit is the kit that
 		   plays, "kit" the stored slots */
-		const slot = storeDoc(Docs, m); if (slot == null) break;
+		/* a read-back the same as what the page holds draws nothing: the plug-in sends a document again after a load, a chain
+		   or a request (seconds later on the firmware), and a whole render of an unchanged workspace is a redraw for nothing */
+		const was = docFingerprint(m), slot = storeDoc(Docs, m); if (slot == null) break;
+		if (was === docFingerprint(m)) break;
 		/* Background loads of other patterns only matter to the song palette. */
 		const relevant = (m.kind === "pattern" && (slot === currentPatternSlot() || S.ws === "song")) || ((m.kind === "kit" || m.kind === "workingKit") && slot === currentKitSlot()) || m.kind === "global" || (m.kind === "song" && (slot === currentSongSlot() || S.ws === "song"));
 		if (relevant) scheduleRender();
