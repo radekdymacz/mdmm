@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MD + MM Editor 0.8.0 release notes</title>
+<meta name="description" content="The MIDI release.">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/releases/0.8.0/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MD + MM Editor">
+<meta property="og:title" content="MD + MM Editor 0.8.0 release notes">
+<meta property="og:description" content="The MIDI release.">
+<meta property="og:url" content="https://mdmm.dev/releases/0.8.0/">
+<meta property="og:image" content="https://mdmm.dev/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Free editors for Machinedrum and Monomachine, beside a screenshot of the Machinedrum Editor's step grid and GEN bar.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MD + MM Editor 0.8.0 release notes">
+<meta name="twitter:description" content="The MIDI release.">
+<meta name="twitter:image" content="https://mdmm.dev/og.png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261014b">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="opt" href="/#features">Features</a>
+      <a class="keep" href="/guide/">Guide</a>
+      <a class="opt" href="/#faq">FAQ</a>
+      <a class="disc" href="https://discord.gg/8xwXwBHbtn" aria-label="Discord community"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7l-3 2.5V11.5H2.5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="5.5" cy="7.5" r="1" fill="currentColor"/><circle cx="8" cy="7.5" r="1" fill="currentColor"/><circle cx="10.5" cy="7.5" r="1" fill="currentColor"/></svg><span>Discord</span></a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-ghost btn-sm" href="https://github.com/sponsors/radekdymacz" target="_blank" rel="noopener">Sponsor</a>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="checkout legalpage guide">
+  <div class="wrap">
+    <span class="eyebrow">Release notes</span>
+    <h1>Machinedrum Editor + Monomachine Editor 0.8.0</h1>
+<p><small>Released 2026-10-20</small></p>
+<p>The MIDI release. Notes, clock, transport and program change now run through the plug-in the way they do on the machines, and the editor shows what MIDI it takes in and sends out. The audio thread no longer waits for the editor, the Monomachine tester items are done, and stacked LFOs on the Machinedrum no longer miss trigs.</p>
+<p>A release on top of <a href="/releases/0.7.0/">0.7.0</a>. Screenshots, features and FAQ: <b><a href="https://mdmm.dev">https://mdmm.dev</a></b> · User guide: <b><a href="https://mdmm.dev/guide/">https://mdmm.dev/guide/</a></b></p>
+<h2>New, on both editors</h2>
+<ul>
+<li><b>MIDI Learn is back.</b> Click the Control key in Setup (right of LEARN), press LEARN (L), click a value and turn a knob on your controller both ways: the knob now moves that value, on any track. A button that sends 127 and 0 is learned as the value's highest and lowest. Mappings are control changes only, 128 at most, and are saved with the project. A learned CC wins over the machine's own CC on that channel: the Control page says what it hides (for example "Overrides the machine's CC 21 on channel 1: T1 DEC"), and removing the mapping gives the CC back. In a DAW the moves are recorded as automation. Learn is off while the HW MIDI engine is in use, and the Control page says why. Projects from the early alphas bring their old mappings once.
+</li>
+<li><b>MIDI Learn covers every value of the page</b> (B-169). Besides the sound values of the tracks, you can learn what belongs to no track: on the Machinedrum the four master effects (Rhythm Echo, Gate Box, Master EQ, Dynamix), the tempo and the pattern's swing and accent; on the Monomachine the tempo, the master tune, the multi envelope and the pattern's swing. The Machinedrum's LFO page of every track (target, shapes, update mode) is learnable too, and on the Monomachine the pattern and track transpose, the whole arpeggiator, the assign table and the values of the MIDI tracks. A choice such as an LFO shape or an arpeggiator mode is learned over its entries. They have their own FX column on the Control page, and a learned CC moves them as a click on the page does (one undo step per turn).
+</li>
+<li><b>MIDI monitor.</b> The log carries a <code>midi: in … out … dropped …</code> line every 10 seconds while MIDI counts change, and the standalone's AUDIO / MIDI panel has a <b>Monitor</b> row with IN and OUT totals and rates. Hover a number for the types: notes, controllers, program changes, clock, transport, SysEx.
+</li>
+<li><b>A MIDI loop warning.</b> When a virtual bus (an IAC bus on macOS, a loopMIDI port on Windows, Midi Through on Linux) is on as an input and is also the output, the panel shows a red line and the log carries it. A real port in and out never warns.
+</li>
+<li><b>The AUDIO / MIDI panel says why an input stays on NONE</b> (microphone access off, no input channels at this rate, a device setup error, or another program holding the device), and the standalone has the Bluetooth permission key.
+</li>
+<li><b>Pattern and Kit.</b> The first two tabs are named Pattern and Kit (they were Sequence and Sound), in the editor, the key view, the tooltips, the guide and the site.
+</li>
+<li><b>Follow played track.</b> Engine menu &gt; FOLLOW PLAYED TRACK: a note from a MIDI controller selects the track it plays. Off at first, saved with the project.
+</li>
+<li><b>Kit arrows.</b> The KIT field has ‹ and › that step to the previous and next kit.
+</li>
+<li><b>Click a note or trig and it stays selected.</b> Double-click removes it, Delete removes the selection. On the Monomachine, up and down change the pitch of one selected note.
+</li>
+<li><b>Lock lane.</b> A thicker kit-value line with its value as a number. Drag the line to change the kit value; locks show their numbers at their bars.
+</li>
+<li><b>Song rows show their tempo, mutes and transpose</b> on the arrangement cell.
+</li>
+<li><b>SysEx import read-back is a choice.</b> The tick <b>Read back and compare</b> is on at first. Off, the import ends after Send and the report says what was sent and that it was not read back.
+</li>
+<li><b>The transport menu opens by right-click on the play key</b> (Play or Stop, Pause or Continue, Record, Panic); the small arrow key beside it is gone.
+</li>
+<li><b>MKI / MKII plate</b> moved into the engine menu.
+</li>
+<li><b>Chain, Pattern and Song stay in step with the machine</b> (B-162, see Fixes).
+</li>
+<li><b>The user guide covers MIDI and sync</b>: inputs, the Windows single-client rule, the loop warning, what MIDI out sends, notes and the key map, program change, Tempo INT and EXT, the control change map and host automation, Ableton's "Multiple plug-in windows" and Logic's old <code>.component</code> files.
+</li>
+</ul>
+<h2>New, Monomachine</h2>
+<ul>
+<li><b>Mix meters.</b> The routing graph shows the level of each output pair (A/B, C/D, E/F), with a hold tick and a clip mark.
+</li>
+<li><b>A forwarded trig lights blue.</b> A track that plays because another track's trig forwards to it shows a blue lamp on its rail number.
+</li>
+<li><b>The DigiPRO D waves have their names</b> (SINE, HSIN, TRI, 2OID … FEMÖ), read from the machine, under their number on the boxes and the morph and wave screens.
+</li>
+<li><b>The trig mark of the lock lane says what it is</b>: red fires all three envelopes, green only some or none.
+</li>
+<li><b>Pitchless trig</b> is in the step menu (the guide says how, and how on the machine).
+</li>
+<li><b>The filter envelope shows the full BOFS and WOFS range</b>, -64 to +63, in a big pane and a small square pane with ATK and DEC dots.
+</li>
+<li><b>The LFO preview follows the track's locks.</b> It draws the pattern's whole length and shades the steps where a lock changes the LFO.
+</li>
+<li><b>Octave range.</b> Z and X reach -4 to +6 and the Perform keyboard runs from MIDI note 0 to 127.
+</li>
+<li><b>Slides in the lock lane are drawn as a ramp</b> between real locks only, above the bars. Shift-drag from a lock to draw a slide to the parameter's next lock (a rubber band); click the line to remove it.
+</li>
+</ul>
+<h2>Changed</h2>
+<ul>
+<li><b>Machinedrum: notes from a DAW or a port go to the machine's own MIDI input.</b> The editor used to turn notes 36 to 51 on any channel into TRIG key presses. Now a note plays the track that the Global key map gives it, on the four channels from the base channel, as on the real machine. A change in GLOBAL &gt; Map editor works from a DAW, and host notes no longer write steps when GRID RECORD is on. A note on a channel outside the four base channels plays nothing, so a drum track on channel 10 needs the base channel set so that channel 10 is among the four (B-163).
+</li>
+<li><b>Monomachine: deleting a note writes no NOTE OFF</b> (cut and moved selections too). The note before runs on through the gap, as on the machine.
+</li>
+<li><b>Machinedrum: the background timing is finer</b> (30 µs instead of 125 µs, the Monomachine's value). Patterns that depended on missed hits may sound slightly different (B-161).
+</li>
+</ul>
+<h2>Fixes</h2>
+<ul>
+<li><b>Machinedrum: stacked LFOs no longer miss trigs.</b> Three LFOs on a kick's pitch now sweep on every hit (B-161, from Discord).
+</li>
+<li><b>Both: switching between Chain, Pattern and Song</b> no longer leaves the page and the machine in different modes or changes parameters (B-162, from Discord).
+</li>
+<li><b>Audio thread: it no longer waits for the editor.</b> The page's commands go through a queue, machine memory is copied in parts, and the machine's facts are a snapshot. The longest wait on the audio thread under load is 0 ms in the real-time gate. This may also help the Windows crackle (B-156): please retest.
+</li>
+<li><b>Both: the Song page fits narrow windows</b> (B-165). Its columns stack below 1240 px wide and the page scrolls as a whole; nothing is cut at 1100 x 800.
+</li>
+<li><b>Host saves keep the project's own machine state.</b> A save that cannot read the machine at that moment writes the last good state, never an empty machine chunk; machine memory is copied in bounded parts.
+</li>
+<li><b>Standalone: choosing Bluetooth MIDI</b> no longer takes the app down on macOS (B-155), and the input list says why it stays on NONE.
+</li>
+<li><b>Standalone: noise with Ableton over IAC</b> (B-154) was a feedback loop of the app's MIDI out into its in; the panel now warns about it. An external 24 PPQN clock alone is clean.
+</li>
+<li><b>Monomachine: a lock the panel counts is now drawn</b> (B-164). A lock on a step without a trig shows as a ghost bar, a lock of 0 keeps a mark, and the counts say their unit.
+</li>
+<li><b>Monomachine: the page no longer says the machine ignores a lock on a step without a trig</b> (B-168). A firmware probe showed it plays it (volume, filter, tune), from that step to the next trig. The ghost bar stays; its tooltip and the guide now say so.
+</li>
+<li><b>Monomachine: BOFS and WOFS are signed</b> (-64 to +63, B-148), <b>FM+ frequencies</b> show as the machine shows them (B-149), <b>the DigiPRO waves</b> are numbered D01 to D64 and S01 to S32 (B-150), <b>PCH2 to PCH4</b> are the machine's list (B-151), and <b>a pitchless trig</b> can be made in the editor (B-152). The D wave names are done too.
+</li>
+<li><b>Monomachine: a track kept playing after the host's transport stopped</b> is confirmed fixed through the processor, with All Notes Off on every channel (B-121).
+</li>
+<li><b>Emulator: 28 fixes from the upstream DSP emulator</b> (dsp56300), copied one at a time: the JIT, DMA, host port and ESSI. The sound is unchanged (every reference recording equal) and the CPU use is about 1 % lower. The list, and what was left out and why: doc/modern-ux/UPSTREAM.md.
+</li>
+<li><b>Linux:</b> the README has the SteamOS line, and a start test in CI runs the tarball on SteamOS 3 (B-153).
+</li>
+<li><b>CI:</b> Windows, Linux and macOS run the same MIDI tests (B-044, B-047). The seqlock test no longer counts a start value as a torn read.
+</li>
+</ul>
+<h2>Known</h2>
+<ul>
+<li><b>Machinedrum: after a sample is sent to the machine by SDS (Load sample, a dropped file, a rename), live recording records nothing until you restart the editor</b> (B-133). The cause is a bug in the machine's OS 1.63 screen list; the editor keeps the hardware's behaviour. Restart the editor after loading a sample, then live record.
+</li>
+<li><b>Monomachine: a song's LOOP row</b> goes back to row 1 (B-038), and <b>a pattern pick during a SysEx import</b> asks about kit edits you never made (B-045).
+</li>
+<li><b>Machinedrum: a SysEx import and the empty reset cannot be undone</b> (B-130). Export a backup first.
+</li>
+<li><b>Monomachine Sound: the UNISON and SUB screens' stems can look thicker than they should in the standalone</b> (B-132).
+</li>
+<li><b>Two reports we could not reproduce:</b> Ableton Live seeming to route one editor's MIDI into the other (B-119), and crackle on Windows when steps are entered during playback (B-156, please retest). If you have steps, please send them: <a href="https://mdmm.dev/contact/">https://mdmm.dev/contact/</a>
+</li>
+</ul>
+<h2>Tips</h2>
+<ul>
+<li><b>Both editors open at once in Ableton Live:</b> in Live &gt; Settings &gt; Plug-Ins, turn <b>Multiple Plug-In Windows</b> on and <b>Auto-Hide Plug-In Windows</b> off.
+</li>
+<li><b>Logic lists the editor twice or loads an old one:</b> delete <code>GearmulatorMD.component</code> and <code>GearmulatorMM.component</code> from <code>/Library/Audio/Plug-Ins/Components</code>, then restart Logic.
+</li>
+<li><b>On Windows a MIDI port belongs to one program at a time.</b> If Live holds the port, the standalone cannot open it, and the panel says so.
+</li>
+</ul>
+<h2>For developers</h2>
+<ul>
+<li><b>MIDI Learn:</b> the mappings are a member of the setup (<code>MDSK</code>), the audio thread reads a fixed table through a seqlock and pushes learned CCs into a ring that the session drains, and no callback exists. Design in <code>doc/midilearn/DESIGN-learn-0.8.md</code>, threads in <code>THREADING.md</code>. Global targets (B-169) cross the ring as ids and are applied by the desk as the page's own commands. Tests: <code>deskLearnTest</code>, <code>mdLearnRouterTest</code> (with a ThreadSanitizer stress run), <code>mdLearnFirmwareTest</code>, and <code>EDITFLOW_LEARN</code> in the real-time gate.
+</li>
+<li><b>Tests for the MIDI path:</b> host notes through the key map, the DAW transport and clock through the processor with a scripted play head, the B-154 loopback, the MIDI monitor, the loop rule, Mix meters, and the stacked-LFO firmware test.
+</li>
+<li><b>Monomachine machine-tier journeys still depend on run order</b> (B-160).
+</li>
+</ul>
+<h2>Platforms</h2>
+<ul>
+<li>macOS 12 or later (Intel and Apple silicon), not signed by Apple yet: the first install needs <b>Open Anyway</b> (on macOS 12 to 14: right-click the installer &gt; <b>Open</b>).
+</li>
+<li>Windows x64 and Linux x64: not tested by a person yet. Feedback welcome: <a href="https://mdmm.dev/contact/">https://mdmm.dev/contact/</a>
+</li>
+</ul>
+    <p><a href="/releases/">All release notes</a> · <a href="/get/">Download</a></p>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="wrap grid">
+    <p><b>MD + MM Editor</b> <span data-version></span> · Machinedrum Editor and Monomachine Editor<br>A NativeKloud Consulting project — <a href="https://nativekloud.com">nativekloud.com</a></p>
+    <p><b>Free software</b> under the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3</a>. <a href="https://github.com/radekdymacz/mdmm">Source</a> · <a href="https://github.com/radekdymacz/mdmm/releases">All releases</a></p>
+    <p><b>Credits.</b> Built on <a href="https://github.com/joelanders/gearmulator-md-mm">gearmulator-md-mm</a> by joelanders (the Machinedrum and Monomachine emulation) and <a href="https://github.com/dsp56300/gearmulator">Gearmulator</a> by The Usual Suspects (dsp56300). Thanks to Elektron for the instruments.</p>
+    <p class="legal"><a href="/guide/">Guide</a> · <a href="/releases/">Release notes</a> · <a href="/terms/">Terms</a> · <a href="/privacy/">Privacy</a> · <a href="/refunds/">Refunds</a> · <a href="/contact/">Contact</a> · <a href="https://discord.gg/8xwXwBHbtn">Discord</a> · <a href="https://github.com/sponsors/radekdymacz">Sponsor</a> · <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#114;&#97;&#100;&#101;&#107;&#100;&#121;&#109;&#97;&#99;&#122;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;">&#114;&#97;&#100;&#101;&#107;&#100;&#121;&#109;&#97;&#99;&#122;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;</a></p>
+    <p><b>Trademarks.</b> Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This project is independent and not affiliated with or endorsed by Elektron, joelanders or The Usual Suspects. No firmware is included. No cookies, no analytics, no third-party scripts.</p>
+  </div>
+</footer>
+
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>
