@@ -3,6 +3,13 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-055 · Spike: bundle a small WebKit (Ultralight) instead of the system WebView
+
+- **From:** Radek, 2026-10-20. Users run different WebViews (WKWebView by macOS version, WebView2 self-updating on Windows, WebKitGTK by distro), and rendering differs between them (the `color()` serialisation and the light-plate cases were that). Opening the UI in an external browser is ruled out; the page stays inside the app window.
+- **The idea:** bundle one small, consistent engine inside the app. Candidate: Ultralight (WebKit-derived, about 15 MB, GPU rendered, JavaScriptCore; commercial licence, free under 100k USD a year). Sciter is not web-standard; litehtml has no JavaScript; CEF is about 150 MB and fragile in hosts. Alternatives if the spike fails: a page baseline pinned to the oldest supported Safari with a test in it, and Windows fixed-version WebView2 in the installer.
+- **The spike (not started):** on a branch `claude/ultralight-spike`, `doc/spike/ULTRALIGHT.md` with licence terms, SDK size per platform, the page's CSS/JS features against Ultralight's support (Web MIDI is needed, Web Audio is not), threading and GPU model, the bridge shape; a minimal CMake proof that loads the built page in Ultralight, screenshots it and lists console errors; a go/no-go with size, licence and engineering cost. Would apply to Native Groovebox the same way (same page architecture).
+- **Status:** idea, 2026-10-20. Not started; Radek decides when.
+
 ## I-054 · Machinedrum lock lane: draw a slide as in the Monomachine lane
 
 - **From:** Radek, 2026-10-17 (the Monomachine lock lane draws slides since 0.8.0; the Machinedrum should too).
