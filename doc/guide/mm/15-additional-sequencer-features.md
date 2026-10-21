@@ -28,7 +28,7 @@ Each track keeps its own settings: a mode key you click changes the arpeggiator 
 **Mode** keys:
 
 - **OFF**: the track plays the base note of each trig.
-- **KEY**: the arpeggiator runs while keys are held and plays only the held notes.
+- **KEY**: one held note repeats, or the arpeggiator cycles through the held chord. Release every note to stop it.
 - **SID**: it needs two or more notes. They stay in the cycle after you release them, until a new chord.
 - **ADD**: it starts on the first note. Each extra key joins while one key is held.
 
@@ -53,7 +53,7 @@ The **Trig** keys **AMP**, **FLT** and **LFO** choose which envelopes the arpegg
 ### ARPEGGIATOR RHYTHM AND OFFSET TRACK
 <!-- rows: MM-223 MM-224 MM-225 @47af59 -->
 
-Under the values is a strip of 16 cells. It repeats while the arpeggiator runs.
+Under the values is a strip of cells, one per step of **LEN**, up to 16. It repeats while the arpeggiator runs. **ON** plays the step and **OFF** rests; click a cell or focus it and press Enter or Space to toggle it. The words have the same meaning on both plates.
 
 - Click a cell to mute it. Click it again to switch it on.
 - Drag a cell up or down to give its note an offset from minus 24 to plus 24 semitones. Drag past the top for +24 and past the bottom for minus 24.

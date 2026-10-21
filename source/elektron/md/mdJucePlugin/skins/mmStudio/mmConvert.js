@@ -166,14 +166,16 @@ const MmConvert = (() => {
 			tr.push({ steps, slide: [...x.slide], swing: [...x.swing], arp: arpToPage(x.arp, true), tr: trnToPage(x) });
 		});
 		d.midiTracks.forEach((x, t) => {
-			const T = new Set(x.trig), O = new Set(x.noteOff), notes = {};
+			const T = new Set(x.trig), N = new Set(x.note), O = new Set(x.noteOff), notes = {};
 			d.midiNotes.forEach(([mt, s, n]) => { if (mt === t) (notes[s] = notes[s] || []).push(n); });
 			const steps = Array(64).fill(null);
 			for (let s = 0; s < 64; s++) {
 				if (O.has(s)) { steps[s] = { off: 1 }; continue; }
 				if (!T.has(s)) continue;
 				const st = { a: 1, f: 1, l: 1 };
-				if (notes[s]) st.n = notes[s];
+				// The pool can retain entries whose note bit is clear. As in the core's stepAt, those
+				// are not new pitches: showing them would write them back during a track edit.
+				if (N.has(s) && notes[s]) st.n = notes[s];
 				steps[s] = st;
 			}
 			tr.push({ steps, slide: [...x.slide], swing: [...x.swing], arp: arpToPage(x.arp, false), tr: trnToPage(x) });

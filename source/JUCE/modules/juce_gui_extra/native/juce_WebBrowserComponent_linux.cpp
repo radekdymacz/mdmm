@@ -32,6 +32,7 @@ class WebKitSymbols final : public DeletedAtShutdown
 public:
     //==============================================================================
     bool isWebKitAvailable() const noexcept  { return webKitIsAvailable; }
+    const String& getLoadError() const noexcept { return loadError; }
 
     //==============================================================================
     JUCE_GENERATE_FUNCTION_WITH_DEFAULT (webkit_settings_new, juce_webkit_settings_new,
@@ -127,7 +128,33 @@ public:
     JUCE_DECLARE_SINGLETON_SINGLETHREADED_MINIMAL (WebKitSymbols)
 
 private:
-    WebKitSymbols() = default;
+    WebKitSymbols()
+    {
+        if (! gtkLib.open ("libgtk-3.so"))
+        {
+            loadError = "Could not load libgtk-3.so (GTK 3): " + String (dlerror());
+            return;
+        }
+
+        if (! webkitLib.open ("libwebkit2gtk-4.0.so"))
+        {
+            loadError = "Could not load libwebkit2gtk-4.0.so (WebKitGTK): " + String (dlerror());
+            return;
+        }
+
+        // Our packaged shim exports the forwarders even if no runtime could be loaded.
+        // Do not mistake those for a usable WebKit and pass null objects into GTK in the child.
+        if (auto* check = reinterpret_cast<const char* (*)()> (webkitLib.getFunction ("mdmm_webkit_runtime_error")))
+        {
+            if (const auto* error = check())
+            {
+                loadError = error;
+                return;
+            }
+        }
+
+        webKitIsAvailable = loadWebkitSymbols() && loadGtkSymbols();
+    }
 
     ~WebKitSymbols()
     {
@@ -156,6 +183,7 @@ private:
             return true;
         }
 
+        loadError = "The GTK/WebKitGTK runtime is missing the symbol " + String (binding.name);
         return false;
     }
 
@@ -206,8 +234,9 @@ private:
     }
 
     //==============================================================================
-    DynamicLibrary gtkLib { "libgtk-3.so" }, webkitLib { "libwebkit2gtk-4.0.so" };
-    const bool webKitIsAvailable = loadWebkitSymbols() && loadGtkSymbols();
+    DynamicLibrary gtkLib, webkitLib;
+    String loadError;
+    bool webKitIsAvailable = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WebKitSymbols)
 };
@@ -264,6 +293,15 @@ public:
                 break;
             }
 
+            if (actual == 0)
+            {
+                // EOF is permanent. Retrying it spins this thread forever and prevents the host
+                // from closing an editor whose GTK helper exited (B-172).
+                if (responder != nullptr)
+                    responder->receiverHadError();
+                return;
+            }
+
             pos += static_cast<size_t> (actual);
 
             if (pos == len)
@@ -281,7 +319,7 @@ public:
             responder->receiverHadError();
     }
 
-    static void sendCommand (int outChannel, const String& cmd, const var& params)
+    static void sendCommand (int outChannel, const String& cmd, const var& params, bool nonBlocking = false)
     {
         DynamicObject::Ptr obj = new DynamicObject;
 
@@ -303,13 +341,16 @@ public:
 
         memcpy (dst, json.toRawUTF8(), jsonLength);
 
-        ssize_t ret;
-
-        for (;;)
+        // These channels are local sockets. A child may exit between any two commands;
+        // MSG_NOSIGNAL prevents that from delivering SIGPIPE to the plug-in's host.
+        size_t sent = 0;
+        while (sent < len)
         {
-            ret = write (outChannel, buffer.getData(), len);
-
-            if (ret != -1 || errno != EINTR)
+            const auto ret = send (outChannel, buffer.getData() + sent, len - sent,
+                                   MSG_NOSIGNAL | (nonBlocking ? MSG_DONTWAIT : 0));
+            if (ret > 0)
+                sent += static_cast<size_t> (ret);
+            else if (ret == 0 || errno != EINTR)
                 break;
         }
     }
@@ -357,6 +398,13 @@ public:
     int entry()
     {
         CommandReceiver::setBlocking (outChannel, true);
+        fcntl (outChannel, F_SETFD, FD_CLOEXEC);
+        fcntl (receiver.getFd(), F_SETFD, FD_CLOEXEC);
+        if (! WebKitSymbols::getInstance()->isWebKitAvailable())
+        {
+            std::fprintf (stderr, "WebKitGTK helper: %s\n", WebKitSymbols::getInstance()->getLoadError().toRawUTF8());
+            return 1;
+        }
 
         // webkit2gtk crashes when using the wayland backend embedded into an x11 window
         WebKitSymbols::getInstance()->juce_gdk_set_allowed_backends ("x11");
@@ -388,6 +436,9 @@ public:
 
         juce_g_signal_connect (webview, "load-failed",
                                (GCallback) loadFailedCallback, this);
+
+        juce_g_signal_connect (webview, "web-process-terminated",
+                               (GCallback) webProcessTerminatedCallback, this);
 
         WebKitSymbols::getInstance()->juce_gtk_widget_show_all (plug);
         auto wID = (unsigned long) WebKitSymbols::getInstance()->juce_gtk_plug_get_id ((GtkPlug*) plug);
@@ -610,6 +661,15 @@ private:
         owner.onLoadFailed (error);
     }
 
+    static void webProcessTerminatedCallback (WebKitWebView*, WebKitWebProcessTerminationReason reason, gpointer user)
+    {
+        auto& owner = *reinterpret_cast<GtkChildProcess*> (user);
+        DynamicObject::Ptr params = new DynamicObject;
+        params->setProperty ("error", "The WebKitGTK page process terminated (reason " + String ((int) reason)
+                                      + "). Close and reopen the editor; keep its startup log and the host's terminal output.");
+        CommandReceiver::sendCommand (owner.outChannel, "pageLoadHadNetworkError", var (params.get()));
+    }
+
     int outChannel = 0;
     CommandReceiver receiver;
     String userAgent;
@@ -637,24 +697,59 @@ public:
     void init()
     {
         if (! webKitIsAvailable)
+        {
+            reportFailure (WebKitSymbols::getInstance()->getLoadError());
+            return;
+        }
+
+        if (! launchChild())
             return;
 
-        launchChild();
+        if (pipe (threadControl) != 0)
+        {
+            reportFailure ("Could not create the WebKitGTK control pipe: " + String (strerror (errno)));
+            killChild();
+            return;
+        }
 
-        [[maybe_unused]] auto ret = pipe (threadControl);
-
-        jassert (ret == 0);
-
+        fcntl (threadControl[0], F_SETFD, FD_CLOEXEC);
+        fcntl (threadControl[1], F_SETFD, FD_CLOEXEC);
         CommandReceiver::setBlocking (inChannel,        true);
         CommandReceiver::setBlocking (outChannel,       true);
         CommandReceiver::setBlocking (threadControl[0], false);
         CommandReceiver::setBlocking (threadControl[1], true);
 
-        unsigned long windowHandle;
-        auto actual = read (inChannel, &windowHandle, sizeof (windowHandle));
-
-        if (actual != (ssize_t) sizeof (windowHandle))
+        // A helper that cannot initialise GTK must not leave the DAW blocked indefinitely.
+        unsigned long windowHandle = 0;
+        auto* destination = reinterpret_cast<char*> (&windowHandle);
+        size_t received = 0;
+        const auto deadline = Time::getMillisecondCounterHiRes() + 10000.0;
+        while (received < sizeof (windowHandle))
         {
+            const auto remaining = deadline - Time::getMillisecondCounterHiRes();
+            if (remaining <= 0.0)
+                break;
+            pollfd startup { inChannel, POLLIN, 0 };
+            const auto ready = poll (&startup, 1, jmax (1, (int) remaining));
+            if (ready < 0 && errno == EINTR)
+                continue;
+            if (ready <= 0)
+                break;
+            const auto actual = read (inChannel, destination + received, sizeof (windowHandle) - received);
+            if (actual < 0 && errno == EINTR)
+                continue;
+            if (actual <= 0)
+                break;
+            received += static_cast<size_t> (actual);
+        }
+
+        if (received != sizeof (windowHandle) || windowHandle == 0)
+        {
+            const auto detail = Time::getMillisecondCounterHiRes() >= deadline
+                ? "The WebKitGTK helper did not create its X11 window within 10 seconds. "
+                : "The WebKitGTK helper closed its startup channel before creating an X11 window. ";
+            reportFailure (String (detail) + "Check GTK/WebKitGTK in the host's runtime, X11/XWayland, "
+                                            "and the host's terminal output.");
             killChild();
             return;
         }
@@ -672,9 +767,6 @@ public:
 
     void quit()
     {
-        if (! webKitIsAvailable)
-            return;
-
         if (isThreadRunning())
         {
             signalThreadShouldExit();
@@ -694,11 +786,16 @@ public:
             receiver = nullptr;
         }
 
-        if (childProcess != 0)
+        if (childProcess > 0)
         {
-            CommandReceiver::sendCommand (outChannel, "quit", {});
+            // A wedged child may no longer drain commands. Closing an editor must still reach killChild().
+            CommandReceiver::sendCommand (outChannel, "quit", {}, true);
             killChild();
         }
+        closeChannel (inChannel);
+        closeChannel (outChannel);
+        closeChannel (threadControl[0]);
+        closeChannel (threadControl[1]);
     }
 
     //==============================================================================
@@ -733,48 +830,71 @@ public:
 
 private:
     //==============================================================================
-    void killChild()
+    static void closeChannel (int& channel)
     {
-        if (childProcess != 0)
-        {
-            xembed = nullptr;
-
-            int status = 0, result = 0;
-
-            result = waitpid (childProcess, &status, WNOHANG);
-            for (int i = 0; i < 15 && (! WIFEXITED (status) || result != childProcess); ++i)
-            {
-                Thread::sleep (100);
-                result = waitpid (childProcess, &status, WNOHANG);
-            }
-
-            // clean-up any zombies
-            status = 0;
-            if (! WIFEXITED (status) || result != childProcess)
-            {
-                for (;;)
-                {
-                    kill (childProcess, SIGTERM);
-                    waitpid (childProcess, &status, 0);
-
-                    if (WIFEXITED (status))
-                        break;
-                }
-            }
-
-            childProcess = 0;
-        }
+        if (channel >= 0)
+            close (std::exchange (channel, -1));
     }
 
-    void launchChild()
+    void reportFailure (const String& message)
     {
-        int inPipe[2], outPipe[2];
+        webKitIsAvailable = false;
+        DynamicObject::Ptr params = new DynamicObject;
+        params->setProperty ("error", message);
+        // init() runs in WebBrowserComponent's constructor: the derived callbacks are not ready yet.
+        handleCommand ("pageLoadHadNetworkError", var (params.get()));
+    }
 
-        [[maybe_unused]] auto ret = pipe (inPipe);
-        jassert (ret == 0);
+    void killChild()
+    {
+        xembed = nullptr;
+        if (childProcess <= 0)
+            return;
 
-        ret = pipe (outPipe);
-        jassert (ret == 0);
+        const auto pid = std::exchange (childProcess, 0);
+        const auto reaped = [pid]
+        {
+            int status = 0;
+            int result;
+            do { result = waitpid (pid, &status, WNOHANG); } while (result < 0 && errno == EINTR);
+            return result == pid || (result < 0 && errno == ECHILD);
+        };
+        for (int i = 0; i < 15; ++i)
+        {
+            if (reaped())
+                return;
+            Thread::sleep (100);
+        }
+        kill (pid, SIGTERM);
+        for (int i = 0; i < 10; ++i)
+        {
+            if (reaped())
+                return;
+            Thread::sleep (50);
+        }
+        // Termination by a signal is terminal too; WIFEXITED alone caused an endless wait here.
+        kill (pid, SIGKILL);
+        int status;
+        while (waitpid (pid, &status, 0) < 0 && errno == EINTR) {}
+    }
+
+    bool launchChild()
+    {
+        int inPipe[2] { -1, -1 }, outPipe[2] { -1, -1 };
+        if (socketpair (AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, inPipe) != 0
+            || socketpair (AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, outPipe) != 0)
+        {
+            const auto error = String (strerror (errno));
+            for (auto& fd : inPipe) closeChannel (fd);
+            for (auto& fd : outPipe) closeChannel (fd);
+            reportFailure ("Could not create WebKitGTK channels: " + error);
+            return false;
+        }
+        const auto closePipes = [&]
+        {
+            for (auto& fd : inPipe) closeChannel (fd);
+            for (auto& fd : outPipe) closeChannel (fd);
+        };
 
         std::vector<String> arguments;
 
@@ -787,8 +907,12 @@ private:
                                                                                                 LinuxSubprocessHelperBinaryData::juce_linux_subprocess_helperSize)
                                                      && subprocessFile->getFile().setExecutePermission (true);
 
-            ignoreUnused (externalSubprocessAvailable);
-            jassert (externalSubprocessAvailable);
+            if (! externalSubprocessAvailable)
+            {
+                closePipes();
+                reportFailure ("Could not write the WebKitGTK helper: " + subprocessFile->getFile().getFullPathName());
+                return false;
+            }
 
             /*  The external subprocess will load the .so specified as its first argument and execute
                 the function specified by the second. The remaining arguments will be passed on to
@@ -814,32 +938,41 @@ private:
             return arg.toRawUTF8();
         });
 
+        // Nothing in the forked host may allocate or lock before exec. Build every argument and
+        // decide the executable in the parent (including the unsupported plug-in configuration).
+       #if ! JUCE_USE_EXTERNAL_TEMPORARY_SUBPROCESS
+        if (! JUCEApplicationBase::isStandaloneApp())
+        {
+            closePipes();
+            reportFailure ("This plug-in was built without the external WebKitGTK helper.");
+            return false;
+        }
+       #endif
+        const auto* executable = argv.front();
+        auto* const argumentsForExec = const_cast<char* const*> (argv.data());
         auto pid = fork();
+        if (pid < 0)
+        {
+            const auto error = String (strerror (errno));
+            closePipes();
+            reportFailure ("Could not start the WebKitGTK helper: " + error);
+            return false;
+        }
 
         if (pid == 0)
         {
             close (inPipe[0]);
             close (outPipe[1]);
+            // Only this child's two endpoints survive exec, not another editor instance's channels.
+            fcntl (inPipe[1], F_SETFD, 0);
+            fcntl (outPipe[0], F_SETFD, 0);
+            execv (executable, argumentsForExec);
 
-            if (JUCEApplicationBase::isStandaloneApp())
-            {
-                execv (arguments[0].toRawUTF8(), (char**) argv.data());
-            }
-            else
-            {
-               #if JUCE_USE_EXTERNAL_TEMPORARY_SUBPROCESS
-                execv (arguments[0].toRawUTF8(), (char**) argv.data());
-               #else
-                // After a fork in a multithreaded program, the child can only safely call
-                // async-signal-safe functions until it calls execv, but if we reached this point
-                // then execv won't be called at all! The following call is unsafe, and is very
-                // likely to lead to unexpected behaviour.
-                jassertfalse;
-                juce_gtkWebkitMain ((int) arguments.size(), argv.data());
-               #endif
-            }
-
-            exit (0);
+            // exec failed: use only async-signal-safe functions in this fork of the host.
+            constexpr char error[] = "WebKitGTK helper exec failed; check temporary directory execution permissions and the host runtime.\n";
+            const auto ignored = write (STDERR_FILENO, error, sizeof (error) - 1);
+            (void) ignored;
+            _exit (127);
         }
 
         close (inPipe[1]);
@@ -849,6 +982,7 @@ private:
         outChannel = outPipe[1];
 
         childProcess = pid;
+        return true;
     }
 
     void run() override
@@ -859,6 +993,8 @@ private:
                 return;
 
             receiver->tryNextRead();
+            if (threadShouldExit())
+                return;
 
             int result = 0;
 
@@ -922,7 +1058,14 @@ private:
                                    });
     }
 
-    void receiverHadError() override {}
+    void receiverHadError() override
+    {
+        signalThreadShouldExit();
+        DynamicObject::Ptr params = new DynamicObject;
+        params->setProperty ("error", "The WebKitGTK helper disconnected. Close and reopen the editor; "
+                                      "keep its startup log and the host's terminal output.");
+        handleCommand ("pageLoadHadNetworkError", var (params.get()));
+    }
 
     //==============================================================================
     bool webKitIsAvailable = false;
@@ -930,8 +1073,8 @@ private:
     WebBrowserComponent& owner;
     String userAgent;
     std::unique_ptr<CommandReceiver> receiver;
-    int childProcess = 0, inChannel = 0, outChannel = 0;
-    int threadControl[2];
+    int childProcess = 0, inChannel = -1, outChannel = -1;
+    int threadControl[2] { -1, -1 };
     std::unique_ptr<XEmbedComponent> xembed;
     std::shared_ptr<int> livenessProbe = std::make_shared<int> (0);
     std::vector<pollfd> pfds;

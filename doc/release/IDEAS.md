@@ -3,14 +3,94 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-068 · Community bank of patterns and kits
+
+- **From:** [Discord #general, 2026-10-19](https://discord.com/channels/1557742798936084565/1557742800060031060/1561813330799362259).
+- **Idea:** a contributor offered to assemble a bank from their own patterns/kits if given a list of styles and sounds. Related to the sound library (I-057).
+- **Status:** offer recorded, not a commissioned or scheduled bank. Any distribution needs the contributor's permission and a defined format/scope.
+
+## I-067 · Optional oscillator phase reset per trig, saved with each track's sound
+
+- **From:** [Discord #bugs, 2026-10-21](https://discord.com/channels/1557742798936084565/1557745221930848277/1562326252931649619), in a Monomachine discussion.
+- **Idea:** a per-track option to reset the oscillator on every trig, stored with the kit/preset.
+- **Status:** feature request, not a diagnosis or fix for B-161. Check which machines already support phase reset and whether extending it would change hardware behaviour; any emulation extension needs an explicit sound/compatibility decision.
+
+## I-066 · Shift-click the top pattern arrows for immediate pattern changes
+
+- **From:** [Discord #general, 2026-10-20](https://discord.com/channels/1557742798936084565/1557742800060031060/1562197035418001430).
+- **Idea:** apply the existing Shift-click immediate-pattern behaviour to the previous/next arrows at the top of the page, as well as the pattern choices.
+- **Status:** request recorded; confirm ordinary arrow behaviour remains unchanged and both editors use the same modifier convention.
+
+## I-065 · Add ×3 to the lock lane's quick pattern tools
+
+- **From:** [Discord #bugs, 2026-10-21](https://discord.com/channels/1557742798936084565/1557745221930848277/1562326252931649619).
+- **Idea:** offer ×3 alongside ×1, ×2 and ×4 in the lock/trig quick-edit section.
+- **Status:** request recorded; clarify the intended tool's repeat/spacing meaning before implementing it.
+
+## I-064 · Fit Machinedrum Mix and Monomachine Multi Map without page scrolling
+
+- **From:** [Discord #general, 2026-10-20](https://discord.com/channels/1557742798936084565/1557742800060031060/1562211844960288821); window size and zoom not supplied.
+- **Idea:** make the MD ECHO, GATE BOX, MASTER and DYNAMIX sections more compact so Mix fits. For MM Perform > Keyboard > Multi Map, consider a separate dialog like GLOBAL so opening it does not make the whole page scroll.
+- **Status:** layout requests recorded. Need the viewport/zoom before defining a fit target; no clipping or inaccessible control was established by this report.
+
+## I-063 · Consistent library dialogs, type sizes and skin colours
+
+- **From:** [Discord #general, 2026-10-20](https://discord.com/channels/1557742798936084565/1557742800060031060/1562211844960288821), plus the [standalone-icon follow-up, 2026-10-19](https://discord.com/channels/1557742798936084565/1557742800060031060/1561756732361933013).
+- **Requests:** give PATTERN and KIT choosers matching dimensions and 16 items per row; align track-list font sizes across Pattern/Kit and both editors; harmonise the whites/blacks across plates; on MD MKI use black rather than brown lettering and grey/black rather than blue buttons. Update the standalone icon's LED to match the changed display colour.
+- **Status:** visual requests recorded, not agreed colour values or verified layout regressions. Preserve intentional plate distinctions unless Radek chooses otherwise.
+
+## I-062 · Monomachine Perform keyboard follows the octave of played notes
+
+- **From:** [Discord #general, 2026-10-20](https://discord.com/channels/1557742798936084565/1557742800060031060/1562211802912268422).
+- **Idea:** show the octave containing a played note automatically, without repeatedly pressing the Perform keyboard's + / - buttons.
+- **Status:** request recorded. Distinguish incoming MIDI, computer keys and on-screen keys; decide how manual positioning and multiple held octaves interact. Uneven key widths are a separate bug (B-177).
+
+## I-061 · Monomachine joystick hold and bounded random movement
+
+- **From:** [Discord #general, 2026-10-20](https://discord.com/channels/1557742798936084565/1557742800060031060/1562211802912268422).
+- **Idea:** hold the joystick at a chosen position; optionally move it randomly with adjustable speed and a chosen region of the field.
+- **Status:** feature request recorded; no implementation or persistence/automation behaviour chosen.
+
+## I-060 · Make the Monomachine plate a visual choice without hiding machines
+
+- **From:** [Discord #general, 2026-10-20](https://discord.com/channels/1557742798936084565/1557742800060031060/1561994223388069999). A user prefers the silver MD plate and asks whether plates affect sound, noting MM MKI loses DigiPRO WAVE.
+- **Direction discussed:** Radek [replied](https://discord.com/channels/1557742798936084565/1557742800060031060/1561996380531331074) that the plate is a skin and all machines should remain available. I-023 records the older MM behaviour that enables MKII-only machines through the plate switch.
+- **Status:** requested change recorded. Confirm implementation and preserve loaded sounds when changing appearance; not marked shipped from the Discord reply alone.
+
+## I-059 · Controller banks/scenes for four or eight knobs following the selected track/page
+
+- **From:** [Discord #general, 2026-10-19](https://discord.com/channels/1557742798936084565/1557742800060031060/1561813406053306411), [scene suggestion](https://discord.com/channels/1557742798936084565/1557742800060031060/1561846138976477336), and [Push discussion, 2026-10-20](https://discord.com/channels/1557742798936084565/1557742800060031060/1561955323089125388).
+- **Idea:** reuse four/eight physical knobs for the selected track and parameter page, with page highlighting and a key/MIDI-controlled bank or scene switch. A Push user describes the difficulty of routing the same knobs only to the active track in another Gearmulator build.
+- **Status:** feature request, distinct from fixed MIDI Learn mappings. Define selection and mapping-bank behaviour first; the other build's routing problem is not an established bug in this editor.
+
+## I-058 · Select and clear multiple kits or patterns together
+
+- **From:** [Discord #general, 2026-10-19](https://discord.com/channels/1557742798936084565/1557742800060031060/1561786927710076959).
+- **Idea:** multi-select kits/patterns and clear the chosen slots in one operation, alongside the library workflow.
+- **Status:** request recorded. Define confirmation and recovery for destructive slot edits; reset/import undo is already open as B-130.
+
+## I-057 · Favourite kits/patterns and browse reusable individual sounds
+
+- **From:** [Discord #general, 2026-10-19](https://discord.com/channels/1557742798936084565/1557742800060031060/1561764639199592631).
+- **Idea:** favourites for kits and patterns in both editors, and a sound library that saves one machine plus its settings for reuse in another kit. Users want SysEx/hardware compatibility and a clear workflow, rather than repeated manual track copy/paste.
+- **Discussion:** Radek [showed prototype screenshots](https://discord.com/channels/1557742798936084565/1557742800060031060/1561779736022097931) and described an app-side library that can send material to the emulator or hardware. This roundup records that discussion; the prototype's implementation/release state was not verified.
+- **Status:** requested/prototyped, not marked released. Keep the stored sound's dependencies and the hardware export rules explicit.
+
+## I-056 · Optional hybrid Kit view with all 56 controls and the lock lane
+
+- **From:** [Discord #general, 2026-10-18](https://discord.com/channels/1557742798936084565/1557742800060031060/1561419413218004996), expanded in a [mockup and explanation, 2026-10-19](https://discord.com/channels/1557742798936084565/1557742800060031060/1561730523313872907).
+- **Idea:** an optional compact grid of seven parameter pages / 56 knobs in the editor's style, retaining LFO graphs and a lock lane that follows the last parameter touched. The space beside LFO3 could hold ASSIGN/other kit controls. Widen the lane's LFO page buttons to show LFO1/2/3 clearly.
+- **Direction discussed:** Radek agreed to an optional Kit-view switch; keep the existing graphical view available. Several users prefer each view for different tasks.
+- **Status:** request accepted in the discussion, implementation not verified by this roundup. The attached mockup is linked, not copied into the repository.
+
 ## I-055 · Spike: bundle a small WebKit (Ultralight) instead of the system WebView
 
 - **From:** Radek, 2026-10-20. Users run different WebViews (WKWebView by macOS version, WebView2 self-updating on Windows, WebKitGTK by distro), and rendering differs between them (the `color()` serialisation and the light-plate cases were that). Opening the UI in an external browser is ruled out; the page stays inside the app window.
 - **The idea:** bundle one small, consistent engine inside the app. Candidate: Ultralight (WebKit-derived, about 15 MB, GPU rendered, JavaScriptCore; commercial licence, free under 100k USD a year). Sciter is not web-standard; litehtml has no JavaScript; CEF is about 150 MB and fragile in hosts. Alternatives if the spike fails: a page baseline pinned to the oldest supported Safari with a test in it, and Windows fixed-version WebView2 in the installer.
-- **The spike (not started):** on a branch `claude/ultralight-spike`, `doc/spike/ULTRALIGHT.md` with licence terms, SDK size per platform, the page's CSS/JS features against Ultralight's support (Web MIDI is needed, Web Audio is not), threading and GPU model, the bridge shape; a minimal CMake proof that loads the built page in Ultralight, screenshots it and lists console errors; a go/no-go with size, licence and engineering cost. Would apply to Native Groovebox the same way (same page architecture).
+- **Original spike plan:** on a branch `claude/ultralight-spike`, `doc/spike/ULTRALIGHT.md` with licence terms, SDK size per platform, the page's CSS/JS features against Ultralight's support (Web MIDI is needed, Web Audio is not), threading and GPU model, the bridge shape; a minimal CMake proof that loads the built page in Ultralight, screenshots it and lists console errors; a go/no-go with size, licence and engineering cost. Would apply to Native Groovebox the same way (same page architecture).
 - **Why it is more than a WebView (Radek, 2026-10-20):** Ultralight has direct C++ DOM bindings (`dom::Document`, `getElementById`, `textContent`, `classList`, `style`, `addEventListener` with a C++ lambda) and the page runs with JavaScript disabled too. So the host can drive meters, LCD text and knob fills from C++ without a JSON bridge, the same HTML still runs in a plain browser with JavaScript for the web edition, and a script error cannot take the plug-in UI down. The spike should measure that path, not only rendering.
 - **GPU rendering (Radek, 2026-10-20):** Ultralight's GPU renderer would let the UI run meters, scopes, waveform overlays and LCD animation at a steady 60 fps with no CPU cost in the plug-in, and open WebGL/shader looks (glow, depth, the Oxide/Fascia language) that the system WebViews throttle or lack. The spike measures frame rate under a busy DAW and WebGL support, not only static rendering.
-- **Status:** idea, 2026-10-20. Not started; Radek decides when.
+- **Status (2026-10-20 decision):** a local Ultralight experiment was built and compared with WebKit, then discarded at Radek's request. The experiment worktree is archived and its local packages moved to Trash. Keep WKWebView on macOS, WebView2 on Windows and WebKitGTK on Linux. The proposed zero-CPU/GPU and direct-DOM benefits above were investigation goals, not established guarantees; measured CPU/frame-rate trade-offs did not justify adopting it. Do not restart the experiment from the original plan without a new request.
 
 ## I-054 · Machinedrum lock lane: draw a slide as in the Monomachine lane
 
@@ -137,6 +217,7 @@
 - **Today:** the dashed line is `.lb .base` (a 1 px dashed border at 55 % opacity: `mdStudio/mdDesk.css:139,1152`, `mmStudio/src/*.css`), drawn per trig by `baseHTML` (`70-seq.js:83`) and `mdDeskSeq.js:87`. A lock's value is only in the tooltip (`title` "Locked 64" / "Kit value 64"); the kit value is in the lane's left scale (`.lbscale`, MM only) as a number. A plain drag draws locks (`laneAt`, `mdDeskGestures.js:11-18`); changing the kit value itself is done on the Sound page.
 - **The idea:** (1) 2 px line, full opacity; (2) ⌘-drag on the lane moves the kit value (the same value the Sound page edits), shown live; (3) the lane shows the number of the value under the pointer or of the selected step in a small readout under the lane, always visible.
 - **Status:** built in 0.8.0 (0.8, WP10 E; Radek left the call to Claude: the line itself is dragged, no modifier, no new strip, the layout stays). The kit line is 2 px, solid, full strength, on every key with a trig (and on the Monomachine's ghost keys). Its number sits on it at the lane's right end (the last key with a trig), in the form the knob shows (a signed parameter -64..+63, a Monomachine list or table parameter by name). A lock's number sits at its bar's end while the pointer is on the step or the step is selected. A press within 4 px of the line grabs it (cursor ns-resize); dragging changes the kit value of the lane's parameter on the track, the edit the Sound page's knob makes, one undo step, and draws no lock (a press near the line is a click until it moves more than 3 px up or down: released before that it sets the lock like any click); the Monomachine's old kit number on the left scale is gone (the line carries it); Alt (erase) and Shift (ramp) presses stay the lane's, and a press anywhere else draws as before. Tests: `mdDeskPageTest`, `mmLockLaneTest`, page journeys `md-lane-kit-drag`, `mm-lane-kit-drag`; the journey hands keep 9 px off the line when they press the lane (`deskJourney.js` pointIn).
+- **Follow-up (2026-10-21):** [Discord #bugs](https://discord.com/channels/1557742798936084565/1557745221930848277/1562326252931649619) asks for a dedicated current/kit-value slider to the left of step 1 because nearby locks are hard to grab without moving the kit value. The accidental-edit report is B-184; the slider is a proposed solution, not yet selected.
 
 ## I-034 · GEN settings: Keep on for every track by default, placed between the patterns and the mutes/solos
 
@@ -209,6 +290,7 @@
 - **Way B (start-up memory, by hand):** a menu item "Use this memory for new sessions" copies the current memory into the file; new sessions start from it. Nothing is written by itself. Simpler and safe with many instances, but the user must remember to do it.
 - **Status:** Radek, 2026-10-12: way A, with a setting to turn it off. Planned for 0.6 (wave 11, PLAN-0.6.md). Built on `feat/0.6-memory` (doc/modern-ux/DESIGN-machine-memory.md): one file per machine in `<data folder>/memory/`, a session with no project state starts from it, a watch thread writes each save, the engine menu's KEEP MEMORY, RESET MACHINE…'s Start from factory memory…; the standalone starts from the file too.
 - **More (Discord roundup, 2026-10-16):** a tester (2026-10-14): in the standalone, saved kits and patterns persist across restarts; he asks for the same in the plug-in. No new request.
+- **Reset follow-up (2026-10-19/20):** [#general asks for factory/empty reset and bulk clearing](https://discord.com/channels/1557742798936084565/1557742800060031060/1561786927710076959); bulk clearing is I-058. A [later report](https://discord.com/channels/1557742798936084565/1557742800060031060/1562211802912268422) notes one fewer reset option on MM. Source inspection on 2026-10-21 explains the Factory reset difference: MM sets `Syx.host.factory:false` (`mmStudio/src/130-main.js`), and `deskSyx.js` deliberately omits that command and says its factory data is unavailable. Start from factory memory is a separate conditional option. No evidence of an accidentally missing menu item yet; confirm which label the user means. Empty Reset leaving K01 unchanged is independently tracked as B-175.
 
 ## I-023 · Monomachine: a real MKII look (silver panel, bluish-white LCD with black text)
 

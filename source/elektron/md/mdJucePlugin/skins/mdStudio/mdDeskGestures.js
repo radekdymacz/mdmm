@@ -10,8 +10,7 @@ function laneAt(e, exactValue) {
 	const d = Held.as("lane"); if (!d) return;
 	/* a slide being drawn (a dot dragged sideways, a Shift rubber band, a press on a ramp): its own, until it hands the press back */
 	if (d.slide || d.cut || d.band) { if (slideAt(e)) return; }
-	/* a press near the kit line is "maybe": moved more than KIT_MOVE px up or down it is the kit drag, released without
-	   that move it was a click on the lane (endLaneDraw) */
+	/* A press on the explicit KIT handle waits for movement; a click alone changes nothing. */
 	if (d.kit === "maybe") { if (Math.abs(e.clientY - d.y0) <= KIT_MOVE) return; Held.with("lane", { kit: true }); $("#lane").classList.add("kitdrag"); kitAt(e); return; }
 	if (d.kit) { kitAt(e); return; }
 	if (d.ramp) { rampAt(e); return; }
@@ -25,9 +24,6 @@ function laneAt(e, exactValue) {
 function endLaneDraw() { let d = Held.as("lane"); if (!d) return;
 	if (slideEnd()) return;
 	d = Held.as("lane");
-	/* A click on the kit line locks its exact value. Converting the pointer's rounded pixel position back to
-	   0..127 can land one value away at reduced zoom; a drag still follows the pointer normally. */
-	if (d.kit === "maybe") { d = Held.with("lane", { kit: false, erase: false, ramp: false, touched: new Set() }); laneAt(d.down, grp(S.sel, S.lane)[S.lane] ?? 0); }
 	if (d.ramp) rampSend(); Held.end("lane"); Gesture.end(); $("#lane")?.classList.remove("kitdrag"); refreshRow(S.sel); renderLane(); }
 
 /* ===== A slide drawn in the lock lane (0.8, I-054; the Monomachine lane's gestures, in the Machinedrum's rule). The machine's
@@ -42,7 +38,7 @@ function endLaneDraw() { let d = Held.as("lane"); if (!d) return;
    - band: Shift on a lock bar, dragged out of its column: a rubber band to the cursor, set when it is dropped on the target
      (Esc, a drop elsewhere or left of the start cancels); up and down inside the column stays the Shift ramp of locks;
    - cut: a press on the line of a ramp: a click takes the flag off (every track's, with All tracks).
-   Up and down from the dot is the lane's own (the lock's value, or the kit line). ===== */
+   Up and down from the dot edits the lock's value. ===== */
 const DOT_HIT = 8, LINE_HIT = 5, SLIDE_MOVE = 4;
 /* the next trig of the track after step s (a lock on a step without a trig is never played), where the glide ends; null at the
    last trig */
@@ -67,8 +63,7 @@ function slideKey(e) {
 const slideDown = e => ({ button: 0, clientX: e.clientX, clientY: e.clientY, target: e.target, pointerId: e.pointerId, altKey: false, shiftKey: !!e.shiftKey, preventDefault() { } });
 /* the lane's own press, replayed from where the slide gesture began (a click, a vertical drag): as if there were no slide */
 function slideHandBack(dn, e) {
-	if (!dn.shiftKey && kitHit(dn)) Held.begin("lane", { kit: "maybe", y0: dn.clientY, down: { clientX: dn.clientX, clientY: dn.clientY } });
-	else { Held.begin("lane", { erase: false, ramp: !!dn.shiftKey, touched: new Set() }); laneAt(dn); }
+	Held.begin("lane", { erase: false, ramp: !!dn.shiftKey, touched: new Set() }); laneAt(dn);
 	if (e) laneAt(e);
 }
 /* a press: the dot of a lock on a step with a trig, the line of a ramp, or Shift on a lock bar; true when the slide gesture took it */
@@ -144,32 +139,35 @@ function slideEnd() {
 	return done();
 }
 
-/* ===== The lock lane's kit-value line (I-035): grab the line itself (a hit zone of KIT_HIT px each side of it) and
-   drag: the kit value of the lane's parameter on the selected track changes, the edit the Kit page's knob makes
-   (sendParam), one undo step for the drag. Nothing is locked while it is held. ===== */
-const KIT_HIT = 4, KIT_MOVE = 3;
-/* the line's y in a step's key (the .base: bottom 3px + (height - 6px) * kit / 127, 2 px thick) */
-function kitLineY(r) { const g = grp(S.sel, S.lane); return r.bottom - 3 - (r.height - 6) * ((g[S.lane] ?? 0) / 127) - 1; }
-/* the key under the pointer when the pointer is on its kit line, else null */
+/* B-184: the labelled KIT handle edits the kit. The baseline across step columns is only a reference;
+   a lock at the same height keeps its own target. Relative movement prevents a jump from the header handle. */
+const KIT_MOVE = 3;
 function kitHit(e) {
-	const lane = $("#lane"); if (!lane || !lane.contains(e.target)) return null;
-	const el = e.target.closest(".lb"); if (!el || !el.querySelector(".base")) return null;
-	return Math.abs(e.clientY - kitLineY(el.getBoundingClientRect())) <= KIT_HIT ? el : null;
+	const el = e.target.closest?.("[data-kitvalue]");
+	return $("#lane") && el?.dataset.kitvalue != null ? el : null;
 }
-/* a plain press on the line may begin the drag (Alt erases and Shift ramps: those stay the lane's own) */
 function kitGrab(e) {
-	if (e.button !== 0 || e.altKey || e.shiftKey || !kitHit(e)) return false;
-	Held.begin("lane", { kit: "maybe", y0: e.clientY, down: { clientX: e.clientX, clientY: e.clientY } }); Gesture.begin(); grabPointer($("#lane"), e); e.preventDefault(); return true;
+	if (e.button !== 0 || e.altKey || e.shiftKey || e.ctrlKey || e.metaKey || !kitHit(e)) return false;
+	Held.begin("lane", { kit: "maybe", y0: e.clientY, v0: grp(S.sel, S.lane)[S.lane] ?? 0 }); Gesture.begin(); grabPointer($("#lane"), e); e.preventDefault(); return true;
 }
 function kitAt(e) {
-	const el = $("#lane .lb"); if (!el) return; const r = el.getBoundingClientRect(), t = S.sel, g = grp(t, S.lane);
-	const v = clamp(Math.round((r.bottom - 3 - e.clientY) / (r.height - 6) * 127));
+	const el = $("#lane .lb"), d = Held.as("lane"); if (!el || !d) return; const r = el.getBoundingClientRect(), t = S.sel, g = grp(t, S.lane);
+	const v = clamp(Math.round(d.v0 + (d.y0 - e.clientY) / (r.height - 6) * 127));
 	if (g[S.lane] === v) return;
 	sendParam(t, g === V.tracks[t].syn ? "syn" : g === V.tracks[t].fx ? "fx" : "rt", S.lane, v);
 	/* in place: the page's renders wait for the drag (Held) */
 	$$("#lane .base").forEach(b => b.style.setProperty("--bf", (v / 127).toFixed(4)));
 	const k = $("#lane .kvl"); if (k) { k.textContent = laneFmt(v); k.style.bottom = kitLabelAt(v); k.className = kitLabelCls(v); }
+	const h = $("[data-kitvalue]"); if (h) { h.setAttribute("aria-label", "Kit value " + laneFmt(v)); h.title = `Kit value ${laneFmt(v)}: drag up or down, or use arrow keys, to change the sound; the step columns edit locks`; }
 	syncControls(); redraw();
+}
+function kitNudge(e) {
+	if (!kitHit(e) || e.ctrlKey || e.metaKey || e.altKey) return false;
+	const d = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 }[e.key]; if (!d) return false;
+	e.preventDefault(); e.stopPropagation(); const t = S.sel, g = grp(t, S.lane), v = clamp((g[S.lane] ?? 0) + d);
+	if (v === g[S.lane]) return true;
+	Gesture.begin(); sendParam(t, g === V.tracks[t].syn ? "syn" : g === V.tracks[t].fx ? "fx" : "rt", S.lane, v); Gesture.end();
+	renderLane(); $("[data-kitvalue]")?.focus(); syncControls(); redraw(); return true;
 }
 
 /* ===== Song: a palette pad or an arrangement row dragged onto the grid ===== */
@@ -329,7 +327,7 @@ main.addEventListener("pointerdown", e => {
 	const el = e.target.closest(".pc[data-g],.fader[data-g]"); if (el && ValueEdit.isOpenClick(e)) { e.preventDefault(); ValueEdit.open(el, ValueBox); return; }
 	if (el) { Held.begin("value", { el, x: e.clientX, y: e.clientY, v: getV(el), vert: el.classList.contains("fader") }); Gesture.begin(); grabPointer(el, e); el.classList.add("act"); e.preventDefault(); return; }
 	const lb = e.target.closest(".lb"); if ((lb || e.target.id === "lane") && slideGrab(e)) return;
-	if (lb && kitGrab(e)) return;
+	if (kitGrab(e)) return;
 	if (lb) { Held.begin("lane", { erase: e.altKey, ramp: e.shiftKey && !e.altKey, touched: new Set() }); Gesture.begin(); grabPointer($("#lane"), e); laneAt(e); e.preventDefault(); }
 });
 main.addEventListener("pointermove", e => {
@@ -341,7 +339,7 @@ main.addEventListener("pointermove", e => {
 	if (drag) { const fine = e.shiftKey ? .25 : 1, dx = e.clientX - drag.x, dy = drag.y - e.clientY; const d = drag.vert ? dy * 127 / 132 : (Math.abs(dx) >= Math.abs(dy) ? dx : dy); setV(drag.el, drag.v + d * fine); return; }
 	if (Held.as("lane")) { laneAt(e); return; }
 	const c = e.target.closest("canvas.ed"); if (c && ED[c.dataset.ed]) c.style.cursor = nearest(c, e) ? "grab" : "default";
-	/* the kit line is grabbed with a vertical arrow */
+	/* the KIT handle is grabbed with a vertical arrow */
 	const ln = $("#lane"); if (ln) ln.classList.toggle("kithot", !e.altKey && !e.shiftKey && !!kitHit(e));
 });
 function endDrag() { if (Held.end("editor")) redraw(); const drag = Held.end("value"); if (drag) drag.el.classList.remove("act"); endLaneDraw(); Gesture.end(); }
@@ -353,6 +351,7 @@ window.addEventListener("blur", () => { if (dragging()) endDrag(); });
 /* A gesture ends with any pointer release, wherever it lands. */
 document.addEventListener("pointerup", () => setTimeout(() => { if (!interacting()) Gesture.end(); }), true);
 main.addEventListener("wheel", e => { const el = e.target.closest(".pc[data-g],.fader[data-g]"); if (!el) return; e.preventDefault(); const d = (e.deltaY || e.deltaX) < 0 ? 1 : -1; setV(el, getV(el) + d * (e.shiftKey ? 10 : 1)); }, { passive: false });
+main.addEventListener("keydown", e => { kitNudge(e); });
 main.addEventListener("dblclick", e => { const el = e.target.closest(".pc[data-g],.fader[data-g]"); if (el && !ValueEdit.isOpenClick(e)) setV(el, el.dataset.n === "VOL" || el.dataset.g === "lev" ? 100 : 64); });
 main.addEventListener("keydown", e => { const el = e.target.closest("[data-g]"); if (!el) return; if (e.key === "Enter" && !e.metaKey && !e.ctrlKey && !e.altKey && el.matches(".pc,.fader")) { e.preventDefault(); ValueEdit.open(el, ValueBox); return; } const d = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1, PageUp: 10, PageDown: -10 }[e.key]; if (d == null) return; e.preventDefault(); setV(el, getV(el) + d * (e.shiftKey ? 10 : 1)); });
 

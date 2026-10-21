@@ -4,6 +4,112 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-184 · Lock lane: editing a lock can accidentally change the kit value (open)
+
+- **From:** [Discord #bugs, 2026-10-21](https://discord.com/channels/1557742798936084565/1557745221930848277/1562326252931649619), in a Monomachine discussion; exact editor version, OS and host not stated.
+- **What happens:** when a lock is close to the editable current-value line, a gesture intended for the lock changes the kit value instead.
+- **Should:** nearby lock and kit-value handles have predictable, distinguishable hit targets; editing a lock must not silently edit the underlying sound.
+- **To reproduce:** put a lock at and just above/below the kit value, then drag at each target and compare which intent is sent. Check both editors and zoom levels.
+- **Status:** Local candidate, awaiting CI: the Monomachine lane now has a labelled KIT handle in the left gutter. Step columns always address locks, including a lock exactly on the baseline. Keyboard arrows adjust the handle. The Machinedrum has the same explicit handle in its existing lane header so its grid alignment stays unchanged. Regression coverage includes kit drag versus lock drag at/beside the baseline in both editors; no hand test or CI run yet.
+
+## B-183 · Monomachine: some ghost parameter locks cannot be cleared (open)
+
+- **From:** [Discord #bugs, 2026-10-21](https://discord.com/channels/1557742798936084565/1557745221930848277/1562326252931649619); version, OS and host not stated.
+- **What happens:** ghost locks remain in the lane; the reporter tries Ctrl-click on every step, and some locks still do not clear.
+- **To distinguish:** a valid lock on a step without a note (B-164/B-168), the wrong modifier for the platform, a failed delete, or stale read-back. Ghost rendering alone is not invalid data. B-164 documents Alt-click as the erase gesture.
+- **Needed:** affected pattern/parameter, OS, exact modifier, whether the lock remains audible, and whether reopening the pattern changes the display. Compare the page, exported pattern and machine after an erase.
+- **Status:** Local candidate, awaiting CI: right-click/Ctrl-click no longer starts painting a lock, and the lane menu offers Clear lock for ordinary and ghost locks. Alt erase remains. Regression coverage checks deletion without altering the note or kit value. The reporter's exact pattern is still needed to confirm there is no additional read-back failure.
+
+## B-182 · Monomachine: trigless and pitchless trig displays are confusing (open)
+
+- **From:** [Discord #bugs, 2026-10-21](https://discord.com/channels/1557742798936084565/1557745221930848277/1562326252931649619); version, OS and host not stated.
+- **What happens:** a trigless trig sometimes has a box around it and sometimes does not; there is usually a note in the same column. The distinction from a pitchless trig is unclear.
+- **To distinguish:** selection outlines, envelope flags, held-note drawing and actual note/trig data. Obtain a screenshot and steps before treating the displayed note as a spurious note event.
+- **Should:** normal, trigless, pitchless and note-off steps remain visually distinguishable with and without a selection.
+- **Status:** Local clarification, awaiting CI: trigless help now says no envelopes (it may carry pitch), and piano-roll tooltips distinguish trigless, pitchless and note-off steps. No speculative change to stored trig/note data. The reported outline inconsistency still needs a screenshot and reproduction.
+
+## B-181 · Monomachine: slide gestures give inconsistent results and create unwanted locks (open)
+
+- **From:** [Discord #bugs, 2026-10-21](https://discord.com/channels/1557742798936084565/1557745221930848277/1562322234792607875); exact version, OS and host not stated.
+- **What happens:** slides sometimes do nothing and sometimes appear to work after clicking a distant trig. While trying to connect two locks the reporter creates several intervening locks.
+- **Expected by the reporter:** a slide flag on the starting step glides to the next lock of that parameter; a separate slide-trig row/arrow would be easier than drawing a connection. This is a gesture suggestion as well as a behaviour report.
+- **To reproduce:** use two known lock values, compare setting the slide flag through the existing controls with dragging the ramp, and inspect unintended intervening locks. Include wraparound, other trigs between locks, and deselection. Do not substitute the Machinedrum's next-trig rule for the Monomachine's next-lock rule.
+- **Status:** Local candidate, awaiting CI: Shift-drag from an existing lock remains a slide even with vertical jitter; dragging an existing slide cannot paint locks underneath it. The lock menu also exposes the slide flag. Regression coverage checks gesture cancellation and unchanged intervening locks. Playback-specific failures remain unconfirmed.
+
+## B-180 · Monomachine ARP: enabled-step colours appear inverted or inconsistent (open)
+
+- **From:** [Discord #bugs, 2026-10-21](https://discord.com/channels/1557742798936084565/1557745221930848277/1562322234792607875); exact version, skin, OS and host not stated.
+- **What happens:** the reporter says ARP trig-button presses are inverted and cannot tell whether white or black means selected; other pages seem to use the opposite convention.
+- **To distinguish:** a wrong stored enable bit from a correct bit with misleading colours. Compare each button's style, page state, outgoing value and machine state on both plates.
+- **Status:** Local candidate, awaiting CI: ARP steps explicitly expose ON/OFF state and keyboard activation; displayed state is tied to the same rhythm bit that produces the firmware value. Existing ARP journeys cover the enabled-step path. No inverted stored bit has been established in the report.
+
+## B-179 · Monomachine ARP: a single triggered note does not repeat as expected (open)
+
+- **From:** [Discord #bugs, 2026-10-21](https://discord.com/channels/1557742798936084565/1557745221930848277/1562322234792607875); exact version, OS and host not stated.
+- **What happens:** the reporter expects the arpeggiator to repeat with one triggered note, but says it does not.
+- **Needed:** ARP mode, speed, range, length and active steps; note length, envelope settings and whether the note comes from the sequencer or a held key. B-180 may affect which ARP steps are actually enabled.
+- **Status:** Open for the reported setup. Source/manual semantics already require at least two notes in SID mode; KEY/ADD can repeat one note. Help now explains the distinction and focused preview regressions cover it. No firmware rule was changed without the mode and pattern; awaiting CI.
+
+## B-178 · Monomachine: LFO3 FILTER selection keeps returning to its default (open)
+
+- **From:** [Discord #bugs, 2026-10-21](https://discord.com/channels/1557742798936084565/1557745221930848277/1562322234792607875); exact version, OS and host not stated.
+- **What happens:** changing LFO3 to FILTER repeatedly returns to the default; other page choices sometimes revert too.
+- **Needed:** the exact selector and destination parameter, old/new values, whether playback or DAW automation is active, and whether the sound reverts or only the display. The wording suggests the destination page, but that is not yet confirmed.
+- **To check:** LFO page/parameter encoding and read-back, pending edits, and working-kit restoration (B-027). Do not assume these share a cause.
+- **Status:** Local B-027 read-back candidate applies to all LFO pages as well: pending live edits remain protected while queued. The mm-sound-lfo journey now checks LF3 FILTER after readback and a Kit/Pattern round trip. PAGE encoding/CC112 mapping are consistent in source. The B-027 production-port fix also resends cached LF3 values when explicitly restored; mdAutomationFirmwareTest covers that path. Exact reported setup not reproduced, CI pending.
+
+## B-177 · Monomachine Perform: keyboard key widths change at C6 (open)
+
+- **From:** [Discord #general, 2026-10-20](https://discord.com/channels/1557742798936084565/1557742800060031060/1562211802912268422); version, OS, host, window size and zoom not stated.
+- **What happens:** changing octave with + / - reaches C6 and the keys become a different width from the other octaves.
+- **Code evidence:** `mmStudio/src/110-perform.js` clips `kbRange()` at MIDI note 127; `renderKb()` then divides the full width by the number of remaining white keys. A shortened range therefore widens its keys. Read-only inspection, not a rendered reproduction.
+- **Should:** preserve key widths at the top of the MIDI range and make unavailable space clear. Auto-following a played note's octave is a separate request (I-062).
+- **Status:** Local fix, awaiting CI: keyboard width uses the full four-octave geometry even when note 127 clips the last range. Multi-map bands and split-point dragging use the same geometry; no note above 127 is created. mmKeysTest covers equal widths at C3/C6 and the playable top range.
+
+## B-176 · Monomachine: a new kit starts AMP VOL at 100, reported hardware default is 64 (open)
+
+- **From:** [Discord #general, 2026-10-20](https://discord.com/channels/1557742798936084565/1557742800060031060/1562211844960288821); exact editor version not stated.
+- **What happens:** a new kit has AMP VOL 100 on every track; the reporter says the original Monomachine's default is 64. Track LEVEL 100 is also mentioned, but is a different control; the reporter does not establish a wrong LEVEL default.
+- **Code evidence:** `mmStudio/src/40-data.js` `DEFV.AMP[5]` and `mmDesk/mmDeskEdit.cpp` `g_neutralPages` both use VOL 100. `emptyKit` separately sets track LEVEL 100. This confirms the editor's value, not the hardware's default.
+- **Needed:** verify AMP VOL with the firmware or hardware for new/cleared kits and tracks. Check page and core defaults together; existing saved kits must retain their values.
+- **Status:** open; reported editor default confirmed in source, hardware comparison not yet verified. The Empty Reset firmware case now logs AMP values after native GND-SIN assignment with init=1, clearly separated from NEW KIT defaults. No production defaults changed. Separate from FX DEC/REL defaults in B-166.
+
+## B-175 · Monomachine: Empty Reset leaves K01 SUPERWAVES unchanged (open)
+
+- **From:** [Discord #general, 2026-10-20](https://discord.com/channels/1557742798936084565/1557742800060031060/1562211802912268422); exact version, OS and host not stated.
+- **What happens:** Empty Reset clears A01, the other patterns and the remaining kits, but K01 SUPERWAVES retains its factory machines and parameter values.
+- **Should:** the first stored kit and the active working kit agree with the reset, using the documented empty-kit defaults.
+- **To reproduce:** reset with K01 active and with another kit active; read back slot 0 and the working kit, switch away/back and reload the session. Distinguish a skipped slot from a stale working kit or stale display. The reporter asks for all-zero parameters; that is not accepted as the hardware default without checking (B-176 covers VOL separately).
+- **Status:** Open; no production reset change without a confirmed cause. Source includes all 128 kit slots, including K01. A new firmware case exercises the actual reset coordinator and compares stored K01, the working kit and switching away/back. CI has not run yet.
+
+## B-174 · Kit names from a previous SysEx import remain listed (open)
+
+- **From:** [Discord #general, 2026-10-20](https://discord.com/channels/1557742798936084565/1557742800060031060/1562197035418001430), described as the new version; exact version, editor, OS and host not explicit.
+- **What happens:** kit names from an earlier SysEx import are still listed. The report does not say whether this follows an update, another import or a reset.
+- **To distinguish:** expected persistent machine memory / slots untouched by a partial import, stale library names, or failed replacement. Obtain the chosen import mode, affected slots and before/after names; compare stored kit names with the chooser.
+- **Status:** open, needs reproduction details. Do not clear unrelated kits merely because another file was imported.
+
+## B-173 · Pattern pitches display as one note, then an edit overwrites the original pitches (open)
+
+- **From:** [Discord #general, 2026-10-20](https://discord.com/channels/1557742798936084565/1557742800060031060/1562197035418001430), the new version, in a Monomachine discussion; exact editor/version, synth versus MIDI track, OS and host need confirmation.
+- **What happens:** a pattern with several note pitches plays correctly, but the editor shows one pitch at the correct trig positions. After editing that track it plays the single-pitch version shown by the page.
+- **Impact:** possible destructive write-back from an incorrectly decoded or stale pattern. Prioritise before cosmetic fixes.
+- **To reproduce:** preserve the original project/SysEx, import the affected pattern, compare machine notes with the page before any edit, change one unrelated value, and compare the resulting pattern. Determine whether "MIDI notes" means the six MIDI tracks or synth-track pitches.
+- **Status:** Partial local data-safety fix, awaiting CI: patternToPage now respects the MIDI note mask instead of turning residual note-pool entries into visible/editable notes. Regressions cover distinct synth/MIDI pitches and masked residue. This does not yet explain every note displaying at one pitch; the original affected pattern and edit are still needed.
+
+## B-172 · Linux: black editor in Bitwig Studio 6 on CachyOS (open)
+
+- **From:** Radek relaying a Linux report, 2026-10-20; checked directly in [Discord #general](https://discord.com/channels/1557742798936084565/1557742800060031060/1562126234501120201) on 2026-10-21. The post has a screenshot attachment. [The follow-up](https://discord.com/channels/1557742798936084565/1557742800060031060/1562172632936349817) says CachyOS latest / Bitwig Studio 6; no later installation-type or standalone result was present in the channel at this roundup.
+- **Setup:** CachyOS ("latest"), Bitwig Studio 6. Which editor, editor version, exact Bitwig version, desktop/session (X11 or Wayland), GPU and Bitwig installation type (native/AUR or Flatpak) are not yet known.
+- **What happens:** the editor window is black. Standalone behaviour on the same machine has not been reported.
+- **What should happen:** the packaged VST3 renders the editor, accepts input, and survives closing and reopening its window in Bitwig.
+- **Evidence so far:** the 0.8.0 release CI run [39307678496](https://github.com/radekdymacz/mdmm/actions/runs/39307678496) passed both editors' standalone and VST3 startup checks on Ubuntu 22.04, Ubuntu 24.04 and the SteamOS container with GTK/WebKitGTK installed. Saved screenshots inspected on 2026-10-20 show the MD VST3 page on Ubuntu 24.04 and the MM VST3 page on SteamOS. These use `mdmmVst3EditorHost` and no ROM; they do not verify CachyOS, Bitwig, a real Wayland desktop or audio.
+- **To distinguish:** missing or inaccessible GTK/WebKitGTK (including inside a Flatpak runtime), an incomplete VST3 bundle, failure to launch the temporary WebKit helper, or window embedding/presentation in Bitwig. These are hypotheses, not a diagnosis. The Linux web view already selects the X11 GTK backend and disables WebKit hardware acceleration.
+- **Next evidence:** exact package versions and installation type; compare the standalone from the same editor release with the VST3; capture Bitwig's terminal output and `editor-*.log` immediately after the black window, before another editor launch rotates the log. Procedure: [LINUX.md](LINUX.md#cachyos-and-bitwig-black-window-report-b-172).
+- **Status:** open, not reproduced on the reported system. Keep separate from the earlier SteamOS report (B-153/B-033); its missing-library reproduction does not establish this report's cause.
+
+- **Local candidate (2026-10-21, CI pending):** missing-runtime and helper-launch failures now retain loader diagnostics; startup is bounded; browser/helper termination reaches the native failure view. Fixed a definite receiver EOF busy-loop and signal-death shutdown hang, and guarded IPC against SIGPIPE killing the host. Linux smoke tests now require visible rendering and visible fallback after killing a browser/helper process. These changes do not yet prove the CachyOS/Bitwig cause or fix.
+
 ## B-171 · Machinedrum: a muted track's trig square flashed once in Mix (open, 0.8.1)
 
 - **From:** the 0.8.0 release CI firmware E2E, 2026-10-19 (run 39307678496 attempt 2, md-mix-heads-trigs step 7: "track 0 counted 1"). It passed on the job's re-run and in five runs before.
@@ -19,13 +125,16 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Fix:** the wait is measured on the same machine clock as the session (`MmMachine::waitClock`, `RecvSession::machineClock`); the journey's `playPeak` no longer turns a late PLAY into STOP.
 - **Status:** fixed in 0.8.0.
 
-## B-169 · Both: MIDI Learn cannot map the global FX parameters and other non-track values (fixed in 0.8.0)
+## B-169 · Both: MIDI Learn cannot map the global FX parameters and other non-track values (0.8.0 fix; new report open)
 
 - **From:** Radek, 2026-10-18 (0.8.0 hand test): "global FX params should be MIDI mappable and learnable, all parameters should be mappable".
 - **Found:** the Machinedrum learn model is 16 tracks x 25 parameters (the 24 kit values and the level, `mdDeskSetup.h:29`); the kit FX (RHYTHM ECHO, GATE BOX, MASTER EQ, DYNAMIX, 32 parameters) are not in it. The Monomachine model (`SetupSpec::learn` in `mmDesk.h`) is per track too; its FX and other non-track parameters need the same check.
 - **Should:** every parameter on the page can be learned and mapped (FX, and any other global page parameter), saved with the project like the track mappings (doc/midilearn/DESIGN-learn-0.8.md).
 - **Status:** fixed in 0.8.0 (complete with part 2, same day). A mapping can name a global target (`{"g": id}` in the setup's `mappings`, ids in `deskCore::LearnRef::global`, lists in `Desk::learnGlobals`). Machinedrum: RHYTHM ECHO, GATE BOX, MASTER EQ, DYNAMIX (32 values), tempo, the playing pattern's swing and accent, and the LFO page of every track (TRCK, PARAM, SHP1, SHP2, UPDTE; 80 values; SPD, DEPTH and SHMIX were track values already): 115 in all. Monomachine: tempo, master tune, the five multi envelope values, the playing pattern's swing, the pattern transpose, each track's TRANSPOSE, SCALE and KEY (12 tracks), each track's ARP (PLAY, OJMP, MODE, RANGE, SPEED, TRIGS, LENGTH and the 16 steps, 270), ASSIGN (5 sources x 2 rows x PAGE, DEST, ADD, MIRROR, HPF, LPF, 6 synth tracks, 198) and the six MIDI tracks (8 page values, 4 CC numbers, the channel, 78): 591 in all. A choice (a shape, a mode, a destination, the scale) is learned over its entries: the CC spreads across the list. The audio thread pushes the CC into a ring (`LearnRouter::drainGlobals`, a record holds a 16-bit id), the session step applies it as the page's own command (`masterFx`, `lfo`, `tempo`, `swing`, `accentAmount`, `masterTune`, `multiEnv`, `transpose`, `arp`, `assign`, `param`, `midiTrack`), folded per value, one undo gesture per turn. Page: LEARN outline and click on these values (the page names its target: `data-lgn` on the Monomachine, `data-lgf` on the Machinedrum), an FX column on the Control matrix, Global values in the Add row (grouped). Beta projects (track mappings, or the first build's global ids) load unchanged (deskLearnTest). Not learnable, by design: names, and anything that is a structure (a machine, a group, an output, a step's note). Tests: deskLearnTest, mdLearnRouterTest, mdDeskTest, mmDeskTest, page journeys md-control-learn-globals, md-control-learn-lfo, mm-control-learn-globals and mm-control-learn-globals2, mdLearnFirmwareTest (step 6).
 - **Firmware check state (2026-10-18):** `mdLearnFirmwareTest_md` step 6 failed once on CI (run 39121106409, shard 1/4) but passes locally with the ROMs (md and mm, repeated). Likely cause: a loaded runner needs longer than the old 2.5 s window for the learned FX edit to reach the machine (a resend of the same value changes nothing). The test now waits up to 30 s per CC (3 tries), commit 81335ff2e. Next step: check the firmware run of that commit (39125683330); if step 6 is still red, look at the desk's input-ready state when the first CC arrives.
+- **New report open (2026-10-21):** [Discord #bugs](https://discord.com/channels/1557742798936084565/1557745221930848277/1562326252931649619): MIDI Learn for the LFOs is missing some functionality. The exact controls and whether the failure is selection, learn, playback or persistence are not specified. Obtain those names and the editor/version, then compare the mapping UI, stored mapping and actual parameter response. The earlier broad mapping fix remains recorded; this follow-up is not verified fixed.
+
+- **Follow-up candidate (2026-10-21, CI pending):** the Monomachine LFO PAGE, DEST, TRIG and WAVE choices lacked direct LEARN bindings although the learn model already supports those DATA parameters. Added choice bindings and mapped/selected feedback for all three LFOs. The mm-control-learn-start journey now checks all 12 choices select the correct target without changing the sound or opening a picker.
 
 ## B-168 · Monomachine: the page says a lock on a step with no trig is ignored, the machine plays it (fixed in 0.8.0)
 
@@ -65,6 +174,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **What should happen:** every counted lock is seen: a lock of 0 gets a visible mark, a lock on a step without a trig is either not counted or shown (a ghost mark, and a way to clear it); the panel and LCD say their unit ("4 locked steps", "7 of 62 locked parameters").
 - **Test:** `mmLockLaneTest.js` (page, no ROM): fails today on both causes. Not verified on the firmware (needs the tester's pattern).
 - **Status:** fixed in 0.8.0 (decision: keep the data, show it). A lock on a step without a trig is kept on import and drawn as a ghost bar (hollow, dashed, the step hatched; tooltip "Lock on a step without a trig: the machine ignores it (tooltip then; B-168 changed it)"; Alt-click erases it; painting there still needs a trig, the core refuses). A lock of 0 keeps a 2 px mark. The panel tooltip says "n locked steps" (and "(n on steps without a trig)"); the LCD LOCKS tooltip says "n of 62 locked parameters (the machine's limit)". No layout change, no new control. `mmLockLaneTest` covers ghost bars and the 0 mark (registered in ctest and `mdmm-affected.tsv`); page journeys mm-seq-lock*, mm-seq-locks, mm-lane-tools pass. Still worth asking the tester for the .syx to confirm which cause hit their pattern.
+- **Follow-up (2026-10-21):** a new report concerns ghost locks that cannot be cleared, now B-183. Do not treat every ghost as invalid data or assume the earlier rendering fix resolves deletion.
 
 ## B-163 · Machinedrum: host notes 36 to 51 pressed TRIG keys instead of playing the key map
 
@@ -100,6 +210,9 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Fix:** the Machinedrum's quantum is 30 µs, the Monomachine's value: every hit plays at blocks 1, 7, 64 and 512, with the speed-ups on and off and L3 on and off; host instructions per frame unchanged; speed-ups on and off stay bit-exact to each other. The Machinedrum's 18 playing goldens were re-recorded (Radek's sign-off, 2026-10-16); the Monomachine's 12 are unchanged. The Monomachine (LFO1-3 of one track on PTCH, note trigs, `stackedLfoFirmwareTest --mm`) plays every hit at every block size; it already ran at 30 µs. Tests: `stackedLfoFirmwareTest`, `stackedLfoMmFirmwareTest` (ctest, need the ROMs).
 - **Release note:** "Machinedrum: stacked LFOs no longer miss trigs; the sound of patterns that relied on that may change slightly."
 - **Status:** fixed in 0.8.0 (MD quantum 125 to 30 us; the sound may change slightly, the 18 golden entries were re-recorded).
+- **New report open (2026-10-21):** [Discord #bugs](https://discord.com/channels/1557742798936084565/1557745221930848277/1562326252931649619): trigs still drop out with multiple LFOs on one parameter. Exact machine/editor/version, block size, LFO modes and a minimal pattern are needed. The surrounding discussion is Monomachine, but this item does not explicitly identify which editor. The 0.8.0 MD fix and passing MM test above cover their tested setups only; they do not settle this recurrence or establish its cause.
+
+- **Additional coverage (2026-10-21, CI pending):** the existing MM test drives host MIDI notes. New stackedLfoMmSequencerFirmwareTest drives the internal sequencer with explicit AMP/FILTER/LFO/pitch trigs at the same block-size/speed-up matrix. No emulation timing or sound defaults changed; the reported minimal pattern is still needed if this setup passes.
 
 ## B-160 · Monomachine machine-tier journeys depend on run order
 
@@ -177,6 +290,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **What should happen:** a way to turn a trig pitchless and back (for example a **Pitchless** item in the step menu beside Trigless trig, on a selection, one undo step; the step intent can already write one, `doc/modern-ux/intent-cases.json` "step: pitchless"), the guide's section saying how, and MM-214 partial until then.
 - **Guide (WP9, feat/0.8-mm-tester-items):** doc/guide/mm/14-advanced-sequencer-control.md PITCHLESS TRIGS says how (step menu > Pitchless trig on a selection; on the machine hold the trig and press EXIT), MM-214 in mm.json is done; checked, nothing left.
 - **Status:** fixed in 0.8.0. The step menu has **Pitchless trig (the note before)** after Trigless trig (synth tracks, on the selection, one steps intent so one undo step, ticked when every selected step is one; no key, as Trigless trig has none): a note loses its note and keeps its envelope trigs and locks, an empty step or a NOTE OFF gets a trig with all three envelopes, a trigless trig gets its envelopes (a trig with neither is no step), and choosing it again gives the step the track's last pitch. It sends the step intent without `n`, which the core stores as the machine does: the trig bit (the 0x120 mask, set on every trig; the header comment in elektronData/mmPattern.h said the opposite and is corrected), the envelope bits, notes[] 0xff. Guide: doc/guide/mm/14-advanced-sequencer-control.md says how; OPEN-FACTS MM-214 removed; mm.json MM-214 names the menu item. Tests: `mmViewTest` (the menu, the intents), the intent case "step: a note made pitchless" (`mmDeskTest`, `mmViewTest` writes), journey `mm-seq-env-trigs` (page tier, two new steps; its last step makes its pitchless trig with the menu now, not the intent), firmware `MMDESK_INTENT_ONLY=pitchless mmDeskFirmwareTest <MM ROM> intentcases` (both pitchless cases read back from the machine as the core says) and `mmDeskFirmwareTest <MM ROM> trigkinds` (a pitchless trig fires the envelopes at the pitch before).
+- **Follow-up (2026-10-21):** trigless/pitchless appearance and note-column confusion are tracked in B-182; providing the menu command did not settle that usability report.
 
 ## B-151 · Monomachine: SWAVE-ENS and DPRO-DENS PCH2-PCH4 shown as -64 to +63 semitones; the machine has OFF and ±12 with interval steps
 
@@ -1041,8 +1155,11 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Fix (0.4.0, branch `fix/machine-change`):** as the Machinedrum's: a dump of the pattern that plays which links the kit that plays is followed, once the machine has read and applied it (the stream's after-work), by the kit's edits as live messages (0x55 name, 0x5B machine, 0x5C routing, CC, NRPN: from the stored slot to the working kit the page shows), pending until memory shows them; meanwhile no memory image of the kit is taken, so the page never shows the reload (`MmMachine::reloadFollows`, `restoreWorkingKit`). The machine plays the stored kit for about a quarter of a second before the edits are back. Over HW MIDI the edits follow the dumps the person sends on SYSEX RECV (SEND, `hwSend`). Tests: `mmDeskFirmwareTest <MM ROM> machine` (the factory kit, then a saved kit: a machine and a value on Sound, a step on Sequence stopped and while playing, a second machine while playing, PLAY and STOP, another pattern with the same kit and back, each time the machine's memory and the page holding the same edited kit; then a step sent on the person's SYSEX RECV over HW MIDI): 24 failures before, passes after; `mmDeskTest` (0x5B again after a dump of the pattern that plays, not after another pattern's: fails before); the journey `mm-sound-machine-stays` now clicks a step on Sequence (not yet run in the plug-in).
 - **Reported again:** Discord, 2026-10-11 (0.5.0, plug-in): "switching from the sound editor to the sequencer it switches back to some previous state".
 - **Re-checked 2026-10-13 on the 0.6 line (`fix/0.6-discord`), not reproduced:** `mmDeskFirmwareTest <MM ROM> machine` (a machine and values on Sound, then a step and a piano-roll note on Sequence, stopped and playing, another pattern with the kit and back, SAVE KIT, over HW MIDI: 44 of 44 checks) and `kitlink` (an E-H pattern that keeps another kit, its roll edit: 9 of 9) pass; the page journeys `mm-sound-machine-stays` and `mm-ms-across-views` pass on the firmware. So no new number. Left to ask the tester: whether the DAW has automation for the plug-in's parameters (a lane, or Live's automation arm while turning knobs), which writes the recorded values back as the song plays; whether it plays a pattern in banks E-H; the version.
-- **Status:** fixed for 0.4.0; reported again for 0.5.0, not reproduced on the 0.6 line; the tester to confirm with 0.6.
+- **Status:** the original cause was fixed in 0.4.0 and subsequent checks passed on the 0.6 line; the 2026-10-21 recurrence below is open, not reproduced.
 - **More (Discord roundup, 2026-10-16):** reported again for 0.5.0 on 2026-10-11 ("still got the bug with switching from sound editor to sequencer where it switches back to some previous state"); no reply since. Ask to retest on 0.7.0.
+- **New report (2026-10-21):** [Discord #bugs](https://discord.com/channels/1557742798936084565/1557745221930848277/1562322234792607875): kit-page settings frequently reset, both while on Kit and when changing to Pattern, enough that the user expects to remake the sound. Exact version, host/automation state and whether a pattern edit follows the workspace switch are missing. This is broader than the old machine-selector report; prioritise preserving unsaved sound edits, compare working/stored kit and page state, and do not close it on the old passing journey alone. LFO3 selection reverting is tracked separately as B-178.
+
+- **Follow-up candidates (2026-10-21, CI pending):** two concrete delivery defects addressed. Working-kit expectations now remain pending while live CC/NRPN messages are still queued, then receive the normal settling interval after delivery. In the production MmStudioLink port, an explicit restore resends a value even when the plug-in parameter cache already holds it; previously Parameter::sendToSynth suppressed that CC after a firmware kit reload. mmDeskTest covers delayed delivery; mdAutomationFirmwareTest now exercises the production port for AMP VOL, LEVEL and LF3 PAGE, including exactly one CC and firmware readback. These are source-confirmed mechanisms, not yet a reproduction of the tester's whole project.
 
 ## B-026 · Mutes don't work after a SysEx import with its globals (0.3.5 candidate)
 

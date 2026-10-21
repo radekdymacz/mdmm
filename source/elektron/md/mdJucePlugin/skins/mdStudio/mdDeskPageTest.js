@@ -55,7 +55,7 @@ const src = FILES.map(f => fs.readFileSync(path.join(__dirname, f), "utf8").repl
 const P = new Function("scope", "with (scope) {\n" + src + `
 ;let renders = 0;
 render = () => { renders++; }; syncControls = () => { }; renderTop = () => { }; renderSub = () => { }; redraw = () => { }; refreshAudible = () => { };
-return { overridesText, learnName, progressText, onLearnDoc, learnPaused, learnMax, toggleLearn, kitHit, kitGrab, kitAt, laneAt, slideGrab, slideNext, slideVal, bandLive, bandEsc, drawSlides, endLaneDraw, valueHTML, kitLabelHTML, laneFmt, grp, Gesture, Boot, hostTempoRefused, l2step, onTelemetry, pauseNow, playsText, songLcd, S, Docs, Overlay, Held, PREP, scheduleRender, clickSteps, secAction, selStart, stepMenu, stepMenuItems, Modifiers, selCut, selDuplicate, clearSel, setSel, endSelect, interacting, genEnsure, genSpec, setGenSpec, clickTrackKeys, userMute, soloWrites, muteSel, msSet, prepToggle, unmuteAll, Keys,
+return { overridesText, learnName, progressText, onLearnDoc, learnPaused, learnMax, toggleLearn, kitHit, kitGrab, kitAt, kitNudge, laneAt, slideGrab, slideNext, slideVal, bandLive, bandEsc, drawSlides, endLaneDraw, valueHTML, kitLabelHTML, kitHandleHTML, laneFmt, grp, Gesture, Boot, hostTempoRefused, l2step, onTelemetry, pauseNow, playsText, songLcd, S, Docs, Overlay, Held, PREP, scheduleRender, clickSteps, secAction, selStart, stepMenu, stepMenuItems, Modifiers, selCut, selDuplicate, clearSel, setSel, endSelect, interacting, genEnsure, genSpec, setGenSpec, clickTrackKeys, userMute, soloWrites, muteSel, msSet, prepToggle, unmuteAll, Keys,
 	get V() { return V; }, setToast(f) { const was = toast; toast = f; return was; }, setV(v) { V = v; }, view, get renders() { return renders; }, get pending() { return pendingRender; } }; }`)(scope);
 
 /* the machine document: its mutes (machine.desk.mutes) as the machine has them */
@@ -669,8 +669,7 @@ return { Bridge, cmd, asked, errors, banners, S, Drop, get V() { return V; }, se
 	}
 }
 
-/* ---- I-035: the lock lane's kit-value line: grabbed within 4 px of it, dragged to change the kit value (one undo step,
-   no lock painted), its number and the locks' numbers on the lane ---- */
+/* ---- B-184: kit and lock targets stay separate, including locks equal to the kit baseline. ---- */
 {
 	const HEX62 = "0".repeat(62);
 	const tr = (i) => ({ machine: "GND-EMPTY", model: 0, level: 100, synth: Array(8).fill(0), effects: Array(8).fill(0).map((x, k) => k === 4 && i === 0 ? 64 : 0), routing: Array(8).fill(0),
@@ -683,40 +682,42 @@ return { Bridge, cmd, asked, errors, banners, S, Drop, get V() { return V; }, se
 		tracks: Array.from({ length: 16 }, (_, i) => ({ trigs: i === 0 ? [0, 1, 4] : [], accent: [], slide: [], swing: [] })), locks: [], firmware: { format: { version: 2, revision: 0 }, lockedRowsField: 0 } };
 	P.Docs.machine = Object.assign({}, P.Docs.machine || {}, { pattern: { current: 5 }, kit: { current: 3 }, desk: {} });
 	P.Overlay.clear(); P.S.multi = new Set(); P.S.sel = 0; P.S.ws = "seq"; P.S.lane = "FLTF"; P.setV(P.view());
-	/* a key 106 px tall at the bottom 200: the bars' scale is 3 px in, 100 px high, the kit line (64 of 127) at y 145.6 */
+	/* 106 px tall: a 100 px meter, kit FLTF 64. The header handle uses relative movement. */
 	const classes = new Set();
-	const lane = { contains: () => true, classList: { add: c => classes.add(c), remove: c => classes.delete(c), toggle: (c, on) => on ? classes.add(c) : classes.delete(c) }, innerHTML: "" };
-	const key = { dataset: { s: "1" }, insertAdjacentHTML() { }, getBoundingClientRect: () => ({ bottom: 200, height: 106, top: 94, left: 0, right: 20, width: 20 }), querySelector: q => q === ".base" ? {} : null, closest: () => key };
-	hooks["#lane"] = lane; hooks["#lane .lb"] = key; hooks.under = key;
-	const at = (y, m = {}) => Object.assign({ button: 0, clientX: 5, clientY: y, target: key, preventDefault() { } }, m);
-	check(P.grp(0, "FLTF").FLTF === 64, "the kit value the lane's line shows: FLTF 64");
-	check(!!P.kitHit(at(146)) && !!P.kitHit(at(142)) && !!P.kitHit(at(149)), "the line's hit zone: 146, 142 and 149 are on it (4 px each side of its middle, 145.6)");
-	check(!P.kitHit(at(141)) && !P.kitHit(at(151)) && !P.kitHit(at(60)), "141, 151 and 60 are off it");
-	check(!P.kitHit(Object.assign(at(146), { target: { closest: () => ({ querySelector: () => null }) } })), "a key without a line (no trig) has no zone");
-	check(!P.kitGrab(at(146, { altKey: true })) && !P.kitGrab(at(146, { shiftKey: true })) && !P.kitGrab(at(146, { button: 2 })) && !P.Held.now, "Alt (erase), Shift (ramp) and a right button never grab it");
-	/* a click on the line (released without moving more than 3 px) is the lane's: it locks the step at the value under the pointer, the kit value */
+	const lane = { contains: () => true, classList: { add: c => classes.add(c), remove: c => classes.delete(c), toggle() { } }, innerHTML: "" };
+	const key = { dataset: { s: "1" }, insertAdjacentHTML() { }, getBoundingClientRect: () => ({ bottom: 200, height: 106, top: 94, left: 0, right: 20, width: 20 }), querySelector: q => q === ".base" ? {} : null };
+	key.closest = q => q === ".lb" ? key : null;
+	const handle = { dataset: { kitvalue: "" }, setAttribute() { }, focus() { } }; handle.closest = q => q === "[data-kitvalue]" ? handle : null;
+	hooks["#lane"] = lane; hooks["#lane .lb"] = key; hooks["[data-kitvalue]"] = handle; hooks.under = key;
+	const at = (y, target = key, m = {}) => Object.assign({ button: 0, clientX: 10, clientY: y, target, preventDefault() { } }, m);
+	check(P.grp(0, "FLTF").FLTF === 64, "the kit baseline is FLTF 64");
+	check(!P.kitHit(at(146)) && !P.kitGrab(at(146)), "a step at the baseline never grabs the kit");
+	check(!!P.kitHit(at(146, handle)), "the KIT handle has its own target");
+	check(!P.kitGrab(at(146, handle, { altKey: true })) && !P.kitGrab(at(146, handle, { shiftKey: true })) && !P.kitGrab(at(146, handle, { button: 2 })) && !P.Held.now, "Alt, Shift and a right button never grab the kit");
+	for (const value of [63, 64, 65]) {
+		P.Docs.patterns[5].locks = [{ track: 0, param: 12, steps: [[1, value]] }]; P.Overlay.clear(); P.setV(P.view()); sent.length = 0;
+		const y = 197 - 100 * value / 127;
+		P.slideGrab(at(y)); P.laneAt(at(y + 20)); P.endLaneDraw(); run();
+		check(sent.some(m => m.op === "lock") && !sent.some(m => m.op === "param") && P.grp(0, "FLTF").FLTF === 64,
+			`drag a lock at ${value} beside kit value 64: only the lock changes`);
+	}
 	sent.length = 0;
-	check(P.kitGrab(at(146.6)) && P.Held.as("lane")?.kit === "maybe" && !classes.has("kitdrag"), "a press on the line is a maybe-drag: nothing is written yet");
-	P.laneAt(at(148)); fire("document", "pointerup"); run();
-	check(sent.filter(m => m.op === "lock").length === 1 && sent.find(m => m.op === "lock").v === 64 && sent.find(m => m.op === "lock").s === 1 && !sent.some(m => m.op === "param") && !P.Held.now,
-		"released after a 2 px move it is a click: the step is locked at the kit value 64, no kit edit: " + sent.map(m => m.op + ":" + (m.v ?? "")).join(" "));
-	sent.length = 0;
-	check(P.kitGrab(at(146)) && P.Held.as("lane")?.kit === "maybe", "a press on the line begins as a maybe-drag");
-	P.laneAt(at(144)); check(P.Held.as("lane")?.kit === "maybe" && !classes.has("kitdrag"), "3 px of movement is still a click");
-	P.laneAt(at(100)); check(P.Held.as("lane")?.kit === true && classes.has("kitdrag"), "more than 3 px up or down is the kit drag (the lane's cursor follows)");
-	P.laneAt(at(60)); P.laneAt(at(60));
+	check(P.kitGrab(at(146, handle)) && P.Held.as("lane")?.kit === "maybe", "the KIT handle waits for a drag");
+	P.laneAt(at(148, handle)); fire("document", "pointerup"); run();
+	check(!sent.length && !P.Held.now, "click the KIT handle with 2 px jitter: no edit");
+	sent.length = 0; P.kitGrab(at(146, handle)); P.laneAt(at(143, handle));
+	check(P.Held.as("lane")?.kit === "maybe" && !classes.has("kitdrag"), "3 px of movement still waits");
+	P.laneAt(at(100, handle)); P.laneAt(at(60, handle)); P.laneAt(at(60, handle));
 	const params = sent.filter(m => m.op === "param");
-	check(sent.filter(m => m.op === "lock").length === 0, "dragging the line paints no lock: " + sent.map(m => m.op).join(" "));
-	check(params.length === 2 && params[0].t === 0 && params[0].i === 12 && params[0].v === 123 && params[1].v === 127, "the drag sets the track's FLTF kit value as the Kit page's knob does (param, index 12): " + JSON.stringify(params.map(m => m.v)));
-	check(new Set(params.map(m => m.g)).size === 1 && params[0].g, "all the drag's edits are one undo step (one gesture id): " + params.map(m => m.g));
-	check(P.grp(0, "FLTF").FLTF === 127, "the view shows the new kit value at once");
+	check(!sent.some(m => m.op === "lock"), "dragging KIT paints no lock");
+	check(params.length === 2 && params[0].t === 0 && params[0].i === 12 && params[0].v === 122 && params[1].v === 127, "relative drag sends the FLTF kit values 122 then 127: " + JSON.stringify(params.map(m => m.v)));
+	check(new Set(params.map(m => m.g)).size === 1 && params[0].g, "the drag uses one undo gesture");
+	check(P.grp(0, "FLTF").FLTF === 127, "the kit view follows immediately");
 	fire("document", "pointerup"); run();
-	check(!P.Held.now && !classes.has("kitdrag") && P.Gesture.id === 0, "letting go ends the drag");
-	/* the lane elsewhere: a press off the line draws a lock as before */
-	sent.length = 0;
-	check(!P.kitGrab(at(60)), "a press off the line is the lane's: no grab");
-	P.Held.begin("lane", { erase: false, ramp: false, touched: new Set() }); P.laneAt(at(60)); P.Held.end("lane");
-	check(sent.filter(m => m.op === "lock").length === 1 && !sent.some(m => m.op === "param"), "and it locks the step, changing no kit value: " + sent.map(m => m.op).join(" "));
+	check(!P.Held.now && !classes.has("kitdrag") && P.Gesture.id === 0, "release ends the kit drag");
+	sent.length = 0; P.kitNudge({ target: handle, key: "ArrowDown", preventDefault() { }, stopPropagation() { } });
+	check(P.grp(0, "FLTF").FLTF === 126 && sent.filter(m => m.op === "param").length === 1 && !sent.some(m => m.op === "lock"), "arrow key on KIT changes the kit alone");
+	check(/data-kitvalue/.test(P.kitHandleHTML(64)) && /aria-label="Kit value 64"/.test(P.kitHandleHTML(64)), "the handle names its value without occupying a step column");
 	/* the numbers: a lock's at its bar's end, the kit's on the line, a signed parameter as -64..+63 */
 	check(/>99</.test(P.valueHTML(99)) && /vl/.test(P.valueHTML(99)), "a lock's value is written as a number: " + P.valueHTML(99));
 	check(/0\.7795\) \+ 1px/.test(P.valueHTML(99)) && /0\.9449\) - 13px/.test(P.valueHTML(120)), "the number sits above a bar's end, below it near the top");

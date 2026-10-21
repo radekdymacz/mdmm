@@ -93,12 +93,14 @@ function valueHTML(m,v,mx){const f=v/mx,below=m.signed?f<.5&&f>.05:f>.8;return`<
 function kitLabelAt(base,mx){const f=base/mx;return`calc(6px + ${IN}*${f.toFixed(4)} ${f>.85?"- 15px":"+ 3px"})`}
 function kitLabelCls(base,mx){return base/mx>.85?"kvl fl":"kvl"}
 function kitLabelHTML(m,base,mx){return`<span class="${kitLabelCls(base,mx)}" style="bottom:${kitLabelAt(base,mx)}">${fmt(m,base)}</span>`}
+/* The kit has its own target in the gutter. A lock may equal the kit value: its bar must still edit the lock. */
+function kitHandleHTML(m,base,mx){return`<button type="button" data-kitvalue class="kitvalue" style="bottom:clamp(18px,calc(6px + ${IN}*${(base/mx).toFixed(4)}),calc(100% - 18px))" aria-label="Kit value ${fmt(m,base)}" title="Kit value ${fmt(m,base)}: drag up or down to change the sound; the step columns edit locks">KIT ↕</button>`}
 function renderLane(){const lane=$("#lane");if(!lane)return;const t=S.sel,tr=trk(t),pid=S.lane,[pg,i]=pid.split("."),m=meta(t,pg,+i),mx=maxOf(m),lm=S.locks.get(lkKey(t,pid)),base=getP(t,pid);
  const sc=$("#lanescale");if(sc)sc.textContent=m.tab?`${m.tab[0].t}…${m.tab[m.tab.length-1].t}`:m.en?`${m.en[0]}…${m.en[mx]}`:m.signed?"−64…+63":"0–127";
  const last=steps().filter(s=>{const q=tr.steps[s];return q&&!q.off}).pop();
- lane.innerHTML=`<div class="lbscale"><b>${fmt(m,mx)}</b><b>${fmt(m,0)}</b></div>`+steps().map(s=>{const st=tr.steps[s],on=st&&!st.off,v=lm?.get(s);
+ lane.innerHTML=`<div class="lbscale"><b>${fmt(m,mx)}</b>${pidArgs(pid).page>=0?kitHandleHTML(m,base,mx):""}<b>${fmt(m,0)}</b></div>`+steps().map(s=>{const st=tr.steps[s],on=st&&!st.off,v=lm?.get(s);
   const ghost=!on&&v!=null;/* a lock on a step without a trig: kept and played: the Monomachine applies it on that step and holds it to the next trig (B-168, measured w13mmslide), the page draws it as a ghost bar because there is no trig */
-  return`<div class="lb ${on||ghost?"":"none"} ${ghost?"ghost":""} ${on?"k-"+(isMidiT(t)?"full":stepKind(st)):""} ${gapC(s)} ${inSel(t,s)?"vsel":""} " data-s="${s}" title="${on?(v!=null?"Locked "+fmt(m,v)+" · drag its dot sideways to slide to the next lock":"Kit value "+fmt(m,base))+(isMidiT(t)?"":{full:" · all envelopes",part:" · some envelopes",trigless:" · trigless"}[stepKind(st)]||""):ghost?"Lock on a step without a trig: the machine plays it ("+fmt(m,v)+") from this step until the next trig. Alt-click removes it.":"No trig here: add one (a trigless trig with alt-click keeps the envelopes quiet)"}">${on?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${v!=null?barHTML(v)+valueHTML(m,v,mx):""}${s===last?kitLabelHTML(m,base,mx):""}`:ghost?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${barHTML(v)}${valueHTML(m,v,mx)}`:""}</div>`}).join("");
+  return`<div class="lb ${on||ghost?"":"none"} ${ghost?"ghost":""} ${on?"k-"+(isMidiT(t)?"full":stepKind(st)):""} ${gapC(s)} ${inSel(t,s)?"vsel":""} " data-s="${s}" title="${on?(v!=null?"Locked "+fmt(m,v)+" · right-click: Clear lock or Slide · drag its dot sideways to slide to the next lock":"Kit value "+fmt(m,base))+(isMidiT(t)?"":{full:" · all envelopes",part:" · some envelopes",trigless:" · trigless"}[stepKind(st)]||""):ghost?"Lock on a step without a trig: the machine plays it ("+fmt(m,v)+") from this step until the next trig. Alt-click or right-click > Clear lock removes it.":"No trig here: add one (a trigless trig with alt-click keeps the envelopes quiet)"}">${on?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${v!=null?barHTML(v)+valueHTML(m,v,mx):""}${s===last?kitLabelHTML(m,base,mx):""}`:ghost?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${barHTML(v)}${valueHTML(m,v,mx)}`:""}</div>`}).join("");
  requestAnimationFrame(drawSlides)}
 function drawSlides(){const svg=$("#lanesvg"),lane=$("#lane");if(!svg||!lane)return;const t=S.sel,tr=trk(t),lm=S.locks.get(lkKey(t,S.lane));svg.innerHTML="";if(!lm)return;
  const[pg,i]=S.lane.split("."),mx=maxOf(meta(t,pg,+i)),box=lane.getBoundingClientRect(),ink=cssv("--ink");let d="";const real=x=>{const q=tr.steps[x];return !!q&&!q.off},locked=[...lm.keys()].sort((a,b)=>a-b);/* a slide starts on a lock on a step with a trig and ends on the parameter's next lock, on a step with a trig or without one (measured on OS 1.32B, mmDeskFirmwareTest/gapProbes w13mmslide: a lock on an empty step is the glide's target, and holds) */
@@ -119,6 +121,11 @@ function clickStep(t,s,e){const tr=trk(t),st=tr.steps[s];
  else{if(st&&!st.off){tr.steps[s]=null;clearStepLocks(t,s)}else tr.steps[s]=note(lastNote(t,s))}
  editStep(t,s);renderTop();if(t!==S.sel){S.sel=t;stepFocus();autoRange(t);render()}else rerenderSeq()}
 let laneDraw=null;
+function laneDown(e){const lb=e.target.closest?.(".lb"),kit=e.target.closest?.("[data-kitvalue]");if(!lb&&!kit&&e.target.id!=="lane")return false;
+ /* Right-click and the platform's command/context modifiers must never paint before opening a menu. */
+ if(e.button!==0||e.ctrlKey||e.metaKey)return true;
+ if((lb||e.target.id==="lane")&&slideGrab(e)||kit&&kitGrab(e))return true;
+ if(!lb)return false;laneDraw=e.shiftKey&&!e.altKey?{ramp:true,touched:false}:{erase:e.altKey,touched:false};$("#lane").setPointerCapture(e.pointerId);laneAt(e);e.preventDefault();return true}
 /* ---- a slide drawn in the lock lane. The machine's slide is a flag on a step (the slide track): every parameter locked on that
    step glides to its own next lock, past trigs that do not lock it, and holds it there (manual, SLIDE; the Monomachine's rule
    measured, a trig between that does not lock it plays the kit value and the glide goes on from there). So the lane draws it
@@ -146,16 +153,18 @@ function slideGrab(e){const el=slideKey(e);if(!el)return false;const t=S.sel,tr=
 function bandLive(){const d=laneDraw;return d&&d.band==="on"&&!d.esc&&d.cur&&d.cur.x>=d.x0?d:null}
 function bandEsc(){if(laneDraw?.band==="on"){laneDraw.esc=true;drawSlides();toast("Slide cancelled")}}
 function bandAt(e){const d=laneDraw,t=S.sel;
- if(d.band==="maybe"){const dn=d.down;
+ if(d.band==="maybe"){
   if(e.clientX<d.x0||e.clientX>=d.x1)d.band="on";/* out of the column sideways: the slide */
-  else{if(Math.abs(e.clientY-dn.clientY)<=SLIDE_MOVE)return true;laneDraw={ramp:true,touched:false};laneAt(dn);laneAt(e);return true}}/* up and down inside it: the Shift ramp of locks */
+  else return true}/* A Shift press on an existing lock stays a slide, including initial vertical jitter. */
  const nx=slideNext(t,S.lane,d.s);d.cur={x:e.clientX,y:e.clientY};d.nx=nx;
  if(!d.told&&e.clientX>=d.x0){d.told=1;toast(nx==null?"No later lock to slide to":`Drop on step ${nx+1}: this parameter's next lock`)}
  drawSlides();return true}
 /* true when the event was the slide gesture's; false hands it back to the lane's own paint */
 function slideAt(e){const d=laneDraw,t=S.sel;if(d.band)return bandAt(e);
+ if(d.cut==="cancelled")return true;
  if(d.cut==="maybe"||d.slide==="maybe"){const dn=d.down,dx=e.clientX-dn.clientX,dy=e.clientY-dn.clientY;if(Math.hypot(dx,dy)<=SLIDE_MOVE)return true;
-  if(d.cut==="maybe"||Math.abs(dy)>Math.abs(dx)){/* moved off the line, or up and down from the dot: the lane's own gesture, as if there were no slide */
+  if(d.cut==="maybe"){d.cut="cancelled";return true}/* Dragging an existing slide never paints locks underneath it. */
+  if(Math.abs(dy)>Math.abs(dx)){/* up and down from the dot: edit that lock's value */
    laneDraw={erase:false,touched:false};if(!kitGrab(dn))laneAt(dn);laneAt(e);return true}
   d.slide="on"}
  if(d.slide!=="on")return false;
@@ -164,7 +173,7 @@ function slideAt(e){const d=laneDraw,t=S.sel;if(d.band)return bandAt(e);
  if(was!==d.pv)drawSlides();return true}
 /* the release: true when the slide gesture took it (a plain click on the dot is the lane's click, replayed) */
 function slideEnd(){const d=laneDraw;if(!d||!(d.slide||d.cut||d.band))return false;const t=S.sel,tr=trk(t);$("#lane")?.classList.remove("kitdrag");
- if(d.band==="maybe"){laneDraw={ramp:true,touched:false};laneAt(d.down);endLaneDraw();return true}
+ if(d.band==="maybe"){laneDraw=null;return true}
  if(d.band){const live=bandLive(),nel=live&&live.nx!=null?$(`#lane .lb[data-s="${live.nx}"]`):null,nr=nel?.getBoundingClientRect(),hit=!!nr&&live.cur.x>=nr.left&&live.cur.x<nr.right;
   laneDraw=null;if(hit&&!tr.slide.has(d.s)){tr.slide.add(d.s);edit("slide",{t,s:d.s,on:true});commit();renderTop()}
   rerenderSeq();return true}
@@ -178,21 +187,24 @@ function laneAt(e){const lane=$("#lane");if(!lane)return;if(laneDraw.slide||lane
  else{if(S.locks.get(lkKey(t,S.lane))?.get(s)===v)return;if(!setLock(t,S.lane,s,v))return;edit("lock",{t,...pidArgs(S.lane),s,v})}
  el.querySelector("i")?.remove();if(!laneDraw.erase)el.insertAdjacentHTML("beforeend",barHTML(v));
  laneDraw.touched=true;renderTop();drawSlides()}
-/* I-035: the kit-value line is grabbed (KIT_HIT px each side of it) and dragged: the lane parameter's kit value on the
-   selected track changes, the edit the knob makes (an intent "param"), one undo step for the drag; nothing is locked */
-/* a press near the line is "maybe": moved more than KIT_MOVE px up or down it is the kit drag, released without that it was a click on the lane (endLaneDraw) */
-const KIT_HIT=4,KIT_MOVE=3;
-function kitLineY(r){const{m,mx}=laneMeta(),f=(getP(S.sel,S.lane)??0)/mx;return r.bottom-6-(r.height-14)*f-1}
-function kitHit(e){const lane=$("#lane");if(!lane||!e.target.closest||!lane.contains(e.target))return null;const el=e.target.closest(".lb");if(!el||!el.querySelector(".base"))return null;
- return pidArgs(S.lane).page>=0&&Math.abs(e.clientY-kitLineY(el.getBoundingClientRect()))<=KIT_HIT?el:null}
-/* a plain press on the line may begin the drag (Alt erases and Shift ramps: those stay the lane's own) */
-function kitGrab(e){if(e.button!==0||e.altKey||e.shiftKey||!kitHit(e))return false;laneDraw={kit:"maybe",y0:e.clientY,down:{clientX:e.clientX,clientY:e.clientY},touched:false};$("#lane").setPointerCapture(e.pointerId);e.preventDefault();return true}
-function kitAt(e){const el=$("#lane .lb");if(!el)return;const t=S.sel,{m,mx}=laneMeta(),r=el.getBoundingClientRect(),[pg,i]=S.lane.split("."),v=clamp(Math.round((r.bottom-6-e.clientY)/(r.height-14)*mx),0,mx);
+/* B-184: only the labelled gutter handle edits the kit. The baseline inside every step is a reference, so a lock
+   at, above or below it has the same hit target. A click on the handle without a drag changes nothing. */
+const KIT_MOVE=3;
+function kitHit(e){const lane=$("#lane"),el=e.target.closest?.("[data-kitvalue]");return lane&&el&&lane.contains(el)&&pidArgs(S.lane).page>=0?el:null}
+function kitGrab(e){if(e.button!==0||e.altKey||e.shiftKey||!kitHit(e))return false;laneDraw={kit:"maybe",y0:e.clientY,v0:getP(S.sel,S.lane),touched:false};$("#lane").setPointerCapture(e.pointerId);e.preventDefault();return true}
+function kitAt(e){const el=$("#lane .lb");if(!el)return;const t=S.sel,{m,mx}=laneMeta(),r=el.getBoundingClientRect(),[pg,i]=S.lane.split("."),v=clamp(Math.round(laneDraw.v0+(laneDraw.y0-e.clientY)/(r.height-14)*mx),0,mx);
  if(trk(t).v[pg][+i]===v)return;trk(t).v[pg][+i]=v;edit("param",{t,...pidArgs(S.lane),v});
  /* in place: the page's renders wait for the drag */
  $$("#lane .base").forEach(b=>b.style.bottom=`calc(6px + ${IN}*${(v/mx).toFixed(4)})`);const k=$("#lane .kvl");if(k){k.textContent=fmt(m,v);k.style.bottom=kitLabelAt(v,mx);k.className=kitLabelCls(v,mx)}
+ const h=$("#lane [data-kitvalue]");if(h){h.style.bottom=`clamp(18px,calc(6px + ${IN}*${(v/mx).toFixed(4)}),calc(100% - 18px))`;h.setAttribute("aria-label","Kit value "+fmt(m,v));h.title=`Kit value ${fmt(m,v)}: drag up or down to change the sound; the step columns edit locks`}
  syncControls();redraw()}
-function endLaneDraw(){if(!laneDraw)return;if(slideEnd())return;if(laneDraw.kit==="maybe"){const dn=laneDraw.down;laneDraw={erase:false,touched:false};laneAt(dn)}const d=laneDraw;$("#lane")?.classList.remove("kitdrag");if(d.kit){laneDraw=null;rerenderSeq();return}if(d.ramp){rampSend();laneDraw=null;renderTop();rerenderSeq();return}laneDraw=null;if(d.touched)rerenderSeq()}
+function endLaneDraw(){if(!laneDraw)return;if(slideEnd())return;const d=laneDraw;$("#lane")?.classList.remove("kitdrag");if(d.kit){laneDraw=null;rerenderSeq();return}if(d.ramp){rampSend();laneDraw=null;renderTop();rerenderSeq();return}laneDraw=null;if(d.touched)rerenderSeq()}
+function kitNudge(e){if(!e.target.closest?.("[data-kitvalue]")||e.ctrlKey||e.metaKey||e.altKey)return false;const d={ArrowUp:1,ArrowRight:1,ArrowDown:-1,ArrowLeft:-1}[e.key];if(!d)return false;e.preventDefault();e.stopPropagation();const t=S.sel,{m,mx}=laneMeta(),[pg,i]=S.lane.split("."),v0=getP(t,S.lane),v=clamp(m.tab?tabStep(m.tab,v0,d):v0+d,0,mx);if(v===v0)return true;commit();trk(t).v[pg][+i]=v;edit("param",{t,...pidArgs(S.lane),v});commit();renderLane();$("#lane [data-kitvalue]")?.focus();syncControls();redraw();return true}
+/* Erase is also available without a modifier, including locks whose step has no note. */
+function laneMenuItems(t,pid,s){const has=()=>S.locks.get(lkKey(t,pid))?.has(s);return[
+ {id:"lane-clear-lock",label:`Clear ${pidLabel(t,pid)} lock on step ${s+1}`,enabled:!!has(),run:()=>{const lm=S.locks.get(lkKey(t,pid));if(!lm?.has(s))return;commit();lm.delete(s);if(!lm.size)S.locks.delete(lkKey(t,pid));edit("lock",{t,...pidArgs(pid),s,v:null});commit();renderTop();rerenderSeq()}},
+ {id:"lane-slide",label:"Slide to next lock",checked:trk(t).slide.has(s),enabled:!!has()&&!!trk(t).steps[s]&&!trk(t).steps[s].off&&pidArgs(pid).page>=0,run:()=>{commit();const tr=trk(t),on=!tr.slide.has(s);on?tr.slide.add(s):tr.slide.delete(s);edit("slide",{t,s,on});commit();renderTop();rerenderSeq()}}]}
+document.addEventListener("contextmenu",e=>{if(S.ws!=="seq")return;const el=e.target.closest?.("#lane .lb");if(!el)return;e.preventDefault();if(S.rec){toast("Wait until live recording stops.");return}endLaneDraw();DeskMenu.open(laneMenuItems(S.sel,S.lane,+el.dataset.s),e.clientX,e.clientY,{title:`${tLabel(S.sel)} · Step ${+el.dataset.s+1}`})});
 
 /* ===== the note lane: the selected track's trigs by pitch, same columns as the overview ===== */
 const ROWS=24;
@@ -326,9 +338,14 @@ function rollSelectDown(c,e,h){const t=S.sel,tr=trk(t);
 function rollLenAt(G,d,x){let e2=null;for(const k of G.vs){const q=G.col[k];if(q&&x>(q.x0+q.x1)/2)e2=k+1}if(e2==null)e2=G.a;
  if(d.wrap)e2+=S.len;else if(x>G.lastX){const q=G.col[G.b-1],cw=q?Math.max(4,q.x1-q.x0):16;e2=G.b+Math.floor((x-G.lastX)/cw)}
  return Math.max(1,e2-d.s)}
+function rollStepTip(t,s){const st=trk(t).steps[s];if(!st)return"";const head=`Step ${s+1}: `;if(st.off)return head+"NOTE OFF: ends the previous note";
+ const env=[["a","AMP"],["f","FILTER"],["l","LFO"]].filter(([k])=>st[k]).map(([,n])=>n).join(", "),pitch=st.n?.map(noteName).join(" + ");
+ if(stepKind(st)==="trigless")return head+`Trigless trig (hollow square): no envelopes; ${pitch?"pitch "+pitch:"keeps the previous pitch"}; locks still apply`;
+ if(!st.n)return head+`Pitchless trig (dashed bar): uses the previous pitch ${noteName(lastNote(t,s))}; fires ${env}`;
+ return head+`Note ${pitch}; ${isMidiT(t)?"MIDI note":"fires "+env}`}
 function rollMove(c,e){const t=+c.dataset.t;if(!rollDrag){if(t!==S.sel){c.style.cursor="pointer";return}const G=laneGeom(c),n=rollRow(c,G,e),key=onKeys(c,G,e);
   if((S.rollHov?.n??null)!==n||S.rollHov?.t!==t){S.rollHov=n==null?null:{t,n};drawEd(c)}
-  if(key){c.style.cursor=n==null?"default":"pointer";return}const h=laneHit(c,e);c.style.cursor=h?.edge?"ew-resize":h?.k>=0?"move":"crosshair";return}
+  if(key){c.style.cursor=n==null?"default":"pointer";c.title=ROLL_TIP(t);return}const h=laneHit(c,e);c.style.cursor=h?.edge?"ew-resize":h?.k>=0?"move":"crosshair";c.title=h&&(h.k>=0||trk(t).steps[h.cell]?.off)?rollStepTip(t,h.k>=0?h.s:h.cell):ROLL_TIP(t);return}
  if(rollDrag.mode==="key"){const d=rollDrag,n=rollRow(d.c,laneGeom(d.c),e);if(n!==d.n){if(d.n!=null)keyNote(d.t,d.n,0);rollKey(d.t,n);S.rollHov=n==null?null:{t:d.t,n};drawEd(d.c)}return}
  c=rollDrag.c;const d=rollDrag,G=laneGeom(c),r=c.getBoundingClientRect();
  if(d.mode==="note"||d.mode==="move"){const h=laneHit(c,e),cell=h?h.cell:d.cell0,n=clamp(G.lo+G.rows-1-Math.floor((e.clientY-r.top-G.top)/G.rh),0,127);

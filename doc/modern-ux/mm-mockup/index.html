@@ -1285,9 +1285,9 @@ table.mmap tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 body.learn .pc[data-g]{outline:1px dashed var(--print2);outline-offset:1px;cursor:pointer}
 body.learn .pc.mapped{outline:2px solid var(--led)}
 /* B-169: LEARN on the values that belong to no track: the multi envelope (.pc above), the top bar's tempo and swing, the global page's master tune */
-body.learn #bpm,body.learn .l2.ed[data-l2="swing"],body.learn [data-lg],body.learn [data-lgn]{outline:1px dashed var(--print2);outline-offset:1px;cursor:pointer}
-body.learn .f.mapped,body.learn .l2.mapped,body.learn [data-lg].mapped,body.learn [data-lgn].mapped{outline:2px solid var(--led)}
-body.learn .f.learnt,body.learn .l2.learnt,body.learn [data-lg].learnt,body.learn [data-lgn].learnt,body.learn .pc.learnt{outline:2px solid var(--cream);box-shadow:0 0 0 4px var(--led)}
+body.learn #bpm,body.learn .l2.ed[data-l2="swing"],body.learn [data-lg],body.learn [data-lgn],body.learn [data-lpid]{outline:1px dashed var(--print2);outline-offset:1px;cursor:pointer}
+body.learn .f.mapped,body.learn .l2.mapped,body.learn [data-lg].mapped,body.learn [data-lgn].mapped,body.learn [data-lpid].mapped{outline:2px solid var(--led)}
+body.learn .f.learnt,body.learn .l2.learnt,body.learn [data-lg].learnt,body.learn [data-lgn].learnt,body.learn .pc.learnt,body.learn [data-lpid].learnt{outline:2px solid var(--cream);box-shadow:0 0 0 4px var(--led)}
 .pc.mapped:not(.lk) span::before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--lcd);margin-right:4px;vertical-align:1px}
 .rowst{height:40px;display:grid;align-content:center;gap:3px;padding-left:6px;font:600 10px var(--sans);letter-spacing:.1em;color:var(--print2)}
 .rowst span{display:flex;gap:4px;align-items:center;white-space:nowrap}
@@ -1501,7 +1501,8 @@ body.engwait #main,body.engwait #rail{pointer-events:none;opacity:.6;transition:
 .libacts button:disabled{opacity:.35;cursor:default}
 .libacts .danger:hover:not(:disabled){background:var(--rec);color:#fff}
 .libgrid{display:grid;gap:4px}
-.libgrid.kits{grid-template-columns:repeat(16,minmax(0,1fr))}
+/* Leave room for the full eleven-character name and its unlinked marker, also under WebKit's zoom font floor. */
+.libgrid.kits{font:500 9.5px var(--mono);grid-template-columns:repeat(auto-fit,minmax(calc(12ch + 6px),1fr))}
 .libgrid.pats{grid-template-columns:30px repeat(16,minmax(0,1fr))}
 .ls{position:relative;display:grid;gap:2px;align-content:center;text-align:left;min-width:0;padding:4px 5px;font-weight:500;letter-spacing:0}
 .ls .lsh{display:flex;justify-content:space-between;align-items:center;gap:3px}
@@ -1746,7 +1747,8 @@ svg.route .mtr.off{opacity:.3}
 .modalbg[hidden]{display:none}
 .modalbg.clear{background:transparent}
 .modalbg.through{pointer-events:none}
-.modal:not(.dlg):not(.bootcard):not(.deskmenu){position:fixed!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;margin:0!important;max-width:calc(100vw - 48px)!important;max-height:calc(100vh - 48px)!important;overflow:auto!important;z-index:var(--mz,60)!important;box-sizing:border-box}
+/* Viewport units keep panels centred when WebKit reserves a scrollbar gutter on the root element. */
+.modal:not(.dlg):not(.bootcard):not(.deskmenu){position:fixed!important;left:50vw!important;top:50vh!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;margin:0!important;max-width:calc(100vw - 48px)!important;max-height:calc(100vh - 48px)!important;overflow:auto!important;z-index:var(--mz,60)!important;box-sizing:border-box}
 .dlg.modal{background:transparent!important;z-index:var(--mz,60)!important}
 .modal:focus,.modal .dlgbox:focus{outline:none}
 .modalopen .kpop{z-index:120!important}
@@ -2248,6 +2250,7 @@ img,svg,canvas{-webkit-user-drag:none}
 .gsc button:last-child{border-right:0}
 .gsc button[aria-pressed=true]{background:var(--led);color:#fff}
 .gdrow .gsc{flex:none}
+.gdrow .gsc button{padding:0 8px;letter-spacing:.04em}
 .gdrow .gvs>.gsc:not(:first-child){margin-left:8px}
 .gdsum{min-height:16px;margin-top:8px;font:12px var(--mono);color:var(--print2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gdsum em{font-style:normal;color:var(--print)}
@@ -2351,8 +2354,9 @@ img,svg,canvas{-webkit-user-drag:none}
 .sg{display:contents}
 .sg>*{grid-column:1}
 .sg>header{grid-row:1;border-top:2px solid var(--print);padding-top:7px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;min-width:0}
-.sg h3{margin:0;font:600 12px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--print);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.sg>header>span{font:12px var(--mono);color:var(--print3);white-space:nowrap;cursor:help}
+/* The same title line in every column, including the fallback without subgrid and titles with no page number. */
+.sg h3{margin:0;font:600 12px/16px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--print);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.sg>header>span{font:12px/16px var(--mono);color:var(--print3);white-space:nowrap;cursor:help}
 .sg>.plot{grid-row:2;position:relative;min-height:0;border-radius:4px;overflow:hidden}
 .sg>:is(.ctl,.sgline,.sgsel,.sgabout){grid-row:3;align-self:start;min-width:0}
 .sgrow.flat .sg>:is(.ctl,.sgline,.sgsel,.sgabout){grid-row:2}
@@ -2672,6 +2676,9 @@ header.top.tf4 .row2 .lcd2{gap:5px!important}
 /* The Song page's song slots (deskSongSlots.js) and the PATTERN · CHAIN · SONG keys of its one palette (0.6 wave 1,
    doc/modern-ux/DESIGN-machine-menus.md §2, Song). Both editors: the same classes, the page's own tokens. */
 .songui.withlib{grid-template-columns:366px minmax(340px,400px) minmax(0,1fr)!important}
+/* SongMarks.fit measures the complete label before fitting it inside a narrow cell. */
+.slotgrid .scell{grid-template-columns:minmax(0,1fr)}
+.slotgrid .scell>b,.slotgrid .scell>small{width:max-content;max-width:none;justify-self:center;transform-origin:center}
 @media (max-width:1239px){.songui.withlib{grid-template-columns:minmax(0,1fr)!important}}
 /* B-165: the page asks for 1240 px (.app min-width; the Machinedrum page's html and body 1280), the plug-in's zoom gives it 1440
    or more, but a user zoom above 100 % leaves less. The Song page then takes the window's width (its columns stack below
@@ -2792,6 +2799,10 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
 .dkvis .arptrack .ac.add{cursor:pointer;display:grid;place-items:center}
 .dkvis .arptrack .ac.add b{position:static;font:600 18px var(--sans);color:var(--keytext)}
 .dkvis .arptrack .ac b{font-size:10px}
+.dkvis .arptrack .ac .arpstate{position:absolute;bottom:5px;left:0;right:0;text-align:center;font:9px var(--pix);color:var(--keytext)}
+.dkvis .arptrack .ac.on{box-shadow:inset 0 -3px 0 var(--led)}
+.dkvis .arptrack .ac.mute .arpstate{opacity:.7}
+.dkvis .arptrack .ac:focus-visible{outline:2px solid var(--led);outline-offset:-2px}
 #rail .dkk{display:flex;align-items:center;justify-content:center;text-align:center;padding:0 2px}
 .dkvals.dktv{grid-template-columns:repeat(3,minmax(0,1fr)) calc(clamp(170px,26%,300px) + 8px)}
 .dkvis .arptrack .ac.add b{color:var(--print)}
@@ -2809,8 +2820,11 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
    (70-seq.js kitHit); its number sits on it at the lane's right end, a lock's number at its bar's end on hover or on a
    selected step */
 .ws-seq .lb:not(.none){overflow:visible}
-.ws-seq .lb .base{border-top:2px solid var(--ink)!important;opacity:1!important;filter:drop-shadow(0 0 1px var(--lcd))}
-.lane.kithot,.lane.kithot .lb,.lane.kitdrag,.lane.kitdrag .lb{cursor:ns-resize!important}
+/* Keep the 2 px line at fractional WebKit zooms; borders are rounded to device pixels. */
+.ws-seq .lb .base{height:2px;border-top:0!important;background:var(--ink);opacity:1!important;filter:drop-shadow(0 0 1px var(--lcd))}
+.lane.kitdrag,.lane.kitdrag .lb{cursor:ns-resize!important}
+.ws-seq .lbscale .kitvalue{position:absolute;left:2px;right:5px;height:20px;padding:0;transform:translateY(50%);z-index:5;font:8px var(--pix);cursor:ns-resize;color:var(--keytext);background:var(--key);border:1px solid var(--rule);border-radius:3px}
+.ws-seq .lbscale .kitvalue:hover,.ws-seq .lbscale .kitvalue:focus-visible{outline:2px solid var(--led);outline-offset:1px}
 .lb .vl,.lb .kvl{position:absolute;z-index:4;padding:0 3px;border-radius:2px;font:9px/12px var(--pix);pointer-events:none;white-space:nowrap}
 .lb .vl{display:none;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--lcd)}
 .lb:hover .vl,.lb.vsel .vl{display:block}
@@ -4187,11 +4201,22 @@ const SongMarks = (() => {
 	/* the words when each cell's small line holds them, else the codes (re-run after a render and when the page resizes) */
 	function fit(grid) {
 		if (!grid) return;
+		const labels = [...grid.querySelectorAll(".scell>b,.scell>small")];
+		for (const el of labels) el.style.transform = "";
 		grid.classList.add("rmkwide");
 		for (const s of grid.querySelectorAll(".scell small")) {
 			const c = s.parentNode, cs = getComputedStyle(c), room = c.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-			if (s.getBoundingClientRect().width > room + 0.5) { grid.classList.remove("rmkwide"); return; }
+			if (s.getBoundingClientRect().width > room + 0.5) { grid.classList.remove("rmkwide"); break; }
 		}
+		/* WebKit's font floor can make even the short codes and pattern names wider than a cell at reduced zoom.
+		   Keep all sixteen steps and the text's height; compress only a line that still overflows after using codes. */
+		const sizes = labels.map(el => {
+			const c = el.parentNode, cs = getComputedStyle(c);
+			const room = c.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+			return [el, room, el.getBoundingClientRect().width];
+		});
+		for (const [el, room, width] of sizes)
+			if (room > 0 && width > room) el.style.transform = `scaleX(${Math.max(0, room - 0.5) / width})`;
 	}
 	function watch(gridOf) {
 		if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("resize", () => fit(gridOf()));
@@ -6246,7 +6271,7 @@ function syncControls(){
   if(PAGES.includes(g)||g==="MID"){const pid=g+"."+n;el.classList.toggle("lk",S.locks.has(lkKey(t,pid)));const mb=modBy(t,g,+n);let md=el.querySelector(".mod");
    if(mb.length){if(!md){md=document.createElement("i");md.className="mod";el.appendChild(md)}md.textContent="~"+mb.join("");el.title=`Modulated by LFO ${mb.join(" + ")}`}else if(md)md.remove();
    const mp=S.ctl.links.some(l=>l.t===t&&l.pid===pid)||LD().mappings.some(m=>m.t===t&&m.pg!==LEVELPG&&PAGES[m.pg]===g&&m.i===+n);el.classList.toggle("mapped",mp)}});
- markGlobalAll();
+ markGlobalAll();markLearnChoices();
  $$("#main [data-show]").forEach(el=>{const t=+el.dataset.show;el.textContent=trk(t).lev});
  if(typeof syncDock==="function")syncDock();
  if(typeof syncRevert==="function")syncRevert()}
@@ -6255,8 +6280,9 @@ function syncControls(){
 let kFor=null;
 function enhanceSelects(root){root.querySelectorAll("select").forEach(sel=>{if(sel.dataset.k)return;sel.dataset.k="1";sel.hidden=true;
  const b=document.createElement("button");b.className="kselbtn";b.type="button";b.dataset.for=sel.id;b.setAttribute("aria-haspopup","listbox");b.setAttribute("aria-expanded","false");
+ if(sel.dataset.lpid){b.dataset.lpid=sel.dataset.lpid;b.dataset.t=sel.dataset.t}
  const lab=sel.closest("label");b.setAttribute("aria-label",(lab?lab.firstChild.textContent.trim()+": ":(sel.getAttribute("aria-label")||"")+" ")+sel.selectedOptions[0]?.text);
- if(sel.disabled)b.disabled=true;b.innerHTML=`<span>${sel.selectedOptions[0]?.text??""}</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`;sel.after(b)})}
+ if(sel.disabled)b.disabled=true;b.innerHTML=`<span>${sel.selectedOptions[0]?.text??""}</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`;sel.after(b)});markLearnChoices()}
 function openK(btn){const sel=document.getElementById(btn.dataset.for);kFor=btn;const pop=$("#kpop");let n=0,h="";
  for(const node of sel.children){if(node.tagName==="OPTGROUP"){h+=`<div class="kgrp">${node.label}</div>`;for(const o of node.children){h+=kopt(o,sel);n++}}else{h+=kopt(node,sel);n++}}
  const cols=n>24?4:n>18?3:n>9?2:1;pop.innerHTML=`<div class="klist" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${h}</div>`;
@@ -6276,7 +6302,7 @@ addEventListener("resize",placeK);addEventListener("scroll",e=>{if(!$("#kpop").c
 function menuOpen(){return!$("#kpop")?.hidden||!$("#machpop")?.hidden}
 function kopt(o,sel){if(o.hidden)return"";return`<button class="kopt" role="option" data-v="${o.value}" aria-selected="${o.value===sel.value}" ${o.disabled?"disabled":""}>${o.text}</button>`}
 function closeK(){const pop=$("#kpop");if(pop.hidden)return;pop.hidden=true;kFor?.setAttribute("aria-expanded","false")}
-document.addEventListener("click",e=>{const b=e.target.closest(".kselbtn");if(b){const same=kFor===b&&!$("#kpop").hidden;closeK();if(!same)openK(b);return}
+document.addEventListener("click",e=>{const b=e.target.closest(".kselbtn");if(b){if(S.learn&&b.dataset.lpid)return;const same=kFor===b&&!$("#kpop").hidden;closeK();if(!same)openK(b);return}
  const o=e.target.closest("#kpop .kopt");if(o&&kFor){const sel=document.getElementById(kFor.dataset.for);sel.value=o.dataset.v;kFor.querySelector("span").textContent=sel.selectedOptions[0].text;closeK();kFor.focus();sel.dispatchEvent(new Event("change",{bubbles:true}));return}
  if(!e.target.closest("#kpop"))closeK()},true);
 document.addEventListener("keydown",e=>{if($("#kpop").hidden)return;if(e.key==="Escape"){closeK();kFor?.focus();return}
@@ -6396,12 +6422,14 @@ function valueHTML(m,v,mx){const f=v/mx,below=m.signed?f<.5&&f>.05:f>.8;return`<
 function kitLabelAt(base,mx){const f=base/mx;return`calc(6px + ${IN}*${f.toFixed(4)} ${f>.85?"- 15px":"+ 3px"})`}
 function kitLabelCls(base,mx){return base/mx>.85?"kvl fl":"kvl"}
 function kitLabelHTML(m,base,mx){return`<span class="${kitLabelCls(base,mx)}" style="bottom:${kitLabelAt(base,mx)}">${fmt(m,base)}</span>`}
+/* The kit has its own target in the gutter. A lock may equal the kit value: its bar must still edit the lock. */
+function kitHandleHTML(m,base,mx){return`<button type="button" data-kitvalue class="kitvalue" style="bottom:clamp(18px,calc(6px + ${IN}*${(base/mx).toFixed(4)}),calc(100% - 18px))" aria-label="Kit value ${fmt(m,base)}" title="Kit value ${fmt(m,base)}: drag up or down to change the sound; the step columns edit locks">KIT ↕</button>`}
 function renderLane(){const lane=$("#lane");if(!lane)return;const t=S.sel,tr=trk(t),pid=S.lane,[pg,i]=pid.split("."),m=meta(t,pg,+i),mx=maxOf(m),lm=S.locks.get(lkKey(t,pid)),base=getP(t,pid);
  const sc=$("#lanescale");if(sc)sc.textContent=m.tab?`${m.tab[0].t}…${m.tab[m.tab.length-1].t}`:m.en?`${m.en[0]}…${m.en[mx]}`:m.signed?"−64…+63":"0–127";
  const last=steps().filter(s=>{const q=tr.steps[s];return q&&!q.off}).pop();
- lane.innerHTML=`<div class="lbscale"><b>${fmt(m,mx)}</b><b>${fmt(m,0)}</b></div>`+steps().map(s=>{const st=tr.steps[s],on=st&&!st.off,v=lm?.get(s);
+ lane.innerHTML=`<div class="lbscale"><b>${fmt(m,mx)}</b>${pidArgs(pid).page>=0?kitHandleHTML(m,base,mx):""}<b>${fmt(m,0)}</b></div>`+steps().map(s=>{const st=tr.steps[s],on=st&&!st.off,v=lm?.get(s);
   const ghost=!on&&v!=null;/* a lock on a step without a trig: kept and played: the Monomachine applies it on that step and holds it to the next trig (B-168, measured w13mmslide), the page draws it as a ghost bar because there is no trig */
-  return`<div class="lb ${on||ghost?"":"none"} ${ghost?"ghost":""} ${on?"k-"+(isMidiT(t)?"full":stepKind(st)):""} ${gapC(s)} ${inSel(t,s)?"vsel":""} " data-s="${s}" title="${on?(v!=null?"Locked "+fmt(m,v)+" · drag its dot sideways to slide to the next lock":"Kit value "+fmt(m,base))+(isMidiT(t)?"":{full:" · all envelopes",part:" · some envelopes",trigless:" · trigless"}[stepKind(st)]||""):ghost?"Lock on a step without a trig: the machine plays it ("+fmt(m,v)+") from this step until the next trig. Alt-click removes it.":"No trig here: add one (a trigless trig with alt-click keeps the envelopes quiet)"}">${on?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${v!=null?barHTML(v)+valueHTML(m,v,mx):""}${s===last?kitLabelHTML(m,base,mx):""}`:ghost?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${barHTML(v)}${valueHTML(m,v,mx)}`:""}</div>`}).join("");
+  return`<div class="lb ${on||ghost?"":"none"} ${ghost?"ghost":""} ${on?"k-"+(isMidiT(t)?"full":stepKind(st)):""} ${gapC(s)} ${inSel(t,s)?"vsel":""} " data-s="${s}" title="${on?(v!=null?"Locked "+fmt(m,v)+" · right-click: Clear lock or Slide · drag its dot sideways to slide to the next lock":"Kit value "+fmt(m,base))+(isMidiT(t)?"":{full:" · all envelopes",part:" · some envelopes",trigless:" · trigless"}[stepKind(st)]||""):ghost?"Lock on a step without a trig: the machine plays it ("+fmt(m,v)+") from this step until the next trig. Alt-click or right-click > Clear lock removes it.":"No trig here: add one (a trigless trig with alt-click keeps the envelopes quiet)"}">${on?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${v!=null?barHTML(v)+valueHTML(m,v,mx):""}${s===last?kitLabelHTML(m,base,mx):""}`:ghost?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${barHTML(v)}${valueHTML(m,v,mx)}`:""}</div>`}).join("");
  requestAnimationFrame(drawSlides)}
 function drawSlides(){const svg=$("#lanesvg"),lane=$("#lane");if(!svg||!lane)return;const t=S.sel,tr=trk(t),lm=S.locks.get(lkKey(t,S.lane));svg.innerHTML="";if(!lm)return;
  const[pg,i]=S.lane.split("."),mx=maxOf(meta(t,pg,+i)),box=lane.getBoundingClientRect(),ink=cssv("--ink");let d="";const real=x=>{const q=tr.steps[x];return !!q&&!q.off},locked=[...lm.keys()].sort((a,b)=>a-b);/* a slide starts on a lock on a step with a trig and ends on the parameter's next lock, on a step with a trig or without one (measured on OS 1.32B, mmDeskFirmwareTest/gapProbes w13mmslide: a lock on an empty step is the glide's target, and holds) */
@@ -6422,6 +6450,11 @@ function clickStep(t,s,e){const tr=trk(t),st=tr.steps[s];
  else{if(st&&!st.off){tr.steps[s]=null;clearStepLocks(t,s)}else tr.steps[s]=note(lastNote(t,s))}
  editStep(t,s);renderTop();if(t!==S.sel){S.sel=t;stepFocus();autoRange(t);render()}else rerenderSeq()}
 let laneDraw=null;
+function laneDown(e){const lb=e.target.closest?.(".lb"),kit=e.target.closest?.("[data-kitvalue]");if(!lb&&!kit&&e.target.id!=="lane")return false;
+ /* Right-click and the platform's command/context modifiers must never paint before opening a menu. */
+ if(e.button!==0||e.ctrlKey||e.metaKey)return true;
+ if((lb||e.target.id==="lane")&&slideGrab(e)||kit&&kitGrab(e))return true;
+ if(!lb)return false;laneDraw=e.shiftKey&&!e.altKey?{ramp:true,touched:false}:{erase:e.altKey,touched:false};$("#lane").setPointerCapture(e.pointerId);laneAt(e);e.preventDefault();return true}
 /* ---- a slide drawn in the lock lane. The machine's slide is a flag on a step (the slide track): every parameter locked on that
    step glides to its own next lock, past trigs that do not lock it, and holds it there (manual, SLIDE; the Monomachine's rule
    measured, a trig between that does not lock it plays the kit value and the glide goes on from there). So the lane draws it
@@ -6449,16 +6482,18 @@ function slideGrab(e){const el=slideKey(e);if(!el)return false;const t=S.sel,tr=
 function bandLive(){const d=laneDraw;return d&&d.band==="on"&&!d.esc&&d.cur&&d.cur.x>=d.x0?d:null}
 function bandEsc(){if(laneDraw?.band==="on"){laneDraw.esc=true;drawSlides();toast("Slide cancelled")}}
 function bandAt(e){const d=laneDraw,t=S.sel;
- if(d.band==="maybe"){const dn=d.down;
+ if(d.band==="maybe"){
   if(e.clientX<d.x0||e.clientX>=d.x1)d.band="on";/* out of the column sideways: the slide */
-  else{if(Math.abs(e.clientY-dn.clientY)<=SLIDE_MOVE)return true;laneDraw={ramp:true,touched:false};laneAt(dn);laneAt(e);return true}}/* up and down inside it: the Shift ramp of locks */
+  else return true}/* A Shift press on an existing lock stays a slide, including initial vertical jitter. */
  const nx=slideNext(t,S.lane,d.s);d.cur={x:e.clientX,y:e.clientY};d.nx=nx;
  if(!d.told&&e.clientX>=d.x0){d.told=1;toast(nx==null?"No later lock to slide to":`Drop on step ${nx+1}: this parameter's next lock`)}
  drawSlides();return true}
 /* true when the event was the slide gesture's; false hands it back to the lane's own paint */
 function slideAt(e){const d=laneDraw,t=S.sel;if(d.band)return bandAt(e);
+ if(d.cut==="cancelled")return true;
  if(d.cut==="maybe"||d.slide==="maybe"){const dn=d.down,dx=e.clientX-dn.clientX,dy=e.clientY-dn.clientY;if(Math.hypot(dx,dy)<=SLIDE_MOVE)return true;
-  if(d.cut==="maybe"||Math.abs(dy)>Math.abs(dx)){/* moved off the line, or up and down from the dot: the lane's own gesture, as if there were no slide */
+  if(d.cut==="maybe"){d.cut="cancelled";return true}/* Dragging an existing slide never paints locks underneath it. */
+  if(Math.abs(dy)>Math.abs(dx)){/* up and down from the dot: edit that lock's value */
    laneDraw={erase:false,touched:false};if(!kitGrab(dn))laneAt(dn);laneAt(e);return true}
   d.slide="on"}
  if(d.slide!=="on")return false;
@@ -6467,7 +6502,7 @@ function slideAt(e){const d=laneDraw,t=S.sel;if(d.band)return bandAt(e);
  if(was!==d.pv)drawSlides();return true}
 /* the release: true when the slide gesture took it (a plain click on the dot is the lane's click, replayed) */
 function slideEnd(){const d=laneDraw;if(!d||!(d.slide||d.cut||d.band))return false;const t=S.sel,tr=trk(t);$("#lane")?.classList.remove("kitdrag");
- if(d.band==="maybe"){laneDraw={ramp:true,touched:false};laneAt(d.down);endLaneDraw();return true}
+ if(d.band==="maybe"){laneDraw=null;return true}
  if(d.band){const live=bandLive(),nel=live&&live.nx!=null?$(`#lane .lb[data-s="${live.nx}"]`):null,nr=nel?.getBoundingClientRect(),hit=!!nr&&live.cur.x>=nr.left&&live.cur.x<nr.right;
   laneDraw=null;if(hit&&!tr.slide.has(d.s)){tr.slide.add(d.s);edit("slide",{t,s:d.s,on:true});commit();renderTop()}
   rerenderSeq();return true}
@@ -6481,21 +6516,24 @@ function laneAt(e){const lane=$("#lane");if(!lane)return;if(laneDraw.slide||lane
  else{if(S.locks.get(lkKey(t,S.lane))?.get(s)===v)return;if(!setLock(t,S.lane,s,v))return;edit("lock",{t,...pidArgs(S.lane),s,v})}
  el.querySelector("i")?.remove();if(!laneDraw.erase)el.insertAdjacentHTML("beforeend",barHTML(v));
  laneDraw.touched=true;renderTop();drawSlides()}
-/* I-035: the kit-value line is grabbed (KIT_HIT px each side of it) and dragged: the lane parameter's kit value on the
-   selected track changes, the edit the knob makes (an intent "param"), one undo step for the drag; nothing is locked */
-/* a press near the line is "maybe": moved more than KIT_MOVE px up or down it is the kit drag, released without that it was a click on the lane (endLaneDraw) */
-const KIT_HIT=4,KIT_MOVE=3;
-function kitLineY(r){const{m,mx}=laneMeta(),f=(getP(S.sel,S.lane)??0)/mx;return r.bottom-6-(r.height-14)*f-1}
-function kitHit(e){const lane=$("#lane");if(!lane||!e.target.closest||!lane.contains(e.target))return null;const el=e.target.closest(".lb");if(!el||!el.querySelector(".base"))return null;
- return pidArgs(S.lane).page>=0&&Math.abs(e.clientY-kitLineY(el.getBoundingClientRect()))<=KIT_HIT?el:null}
-/* a plain press on the line may begin the drag (Alt erases and Shift ramps: those stay the lane's own) */
-function kitGrab(e){if(e.button!==0||e.altKey||e.shiftKey||!kitHit(e))return false;laneDraw={kit:"maybe",y0:e.clientY,down:{clientX:e.clientX,clientY:e.clientY},touched:false};$("#lane").setPointerCapture(e.pointerId);e.preventDefault();return true}
-function kitAt(e){const el=$("#lane .lb");if(!el)return;const t=S.sel,{m,mx}=laneMeta(),r=el.getBoundingClientRect(),[pg,i]=S.lane.split("."),v=clamp(Math.round((r.bottom-6-e.clientY)/(r.height-14)*mx),0,mx);
+/* B-184: only the labelled gutter handle edits the kit. The baseline inside every step is a reference, so a lock
+   at, above or below it has the same hit target. A click on the handle without a drag changes nothing. */
+const KIT_MOVE=3;
+function kitHit(e){const lane=$("#lane"),el=e.target.closest?.("[data-kitvalue]");return lane&&el&&lane.contains(el)&&pidArgs(S.lane).page>=0?el:null}
+function kitGrab(e){if(e.button!==0||e.altKey||e.shiftKey||!kitHit(e))return false;laneDraw={kit:"maybe",y0:e.clientY,v0:getP(S.sel,S.lane),touched:false};$("#lane").setPointerCapture(e.pointerId);e.preventDefault();return true}
+function kitAt(e){const el=$("#lane .lb");if(!el)return;const t=S.sel,{m,mx}=laneMeta(),r=el.getBoundingClientRect(),[pg,i]=S.lane.split("."),v=clamp(Math.round(laneDraw.v0+(laneDraw.y0-e.clientY)/(r.height-14)*mx),0,mx);
  if(trk(t).v[pg][+i]===v)return;trk(t).v[pg][+i]=v;edit("param",{t,...pidArgs(S.lane),v});
  /* in place: the page's renders wait for the drag */
  $$("#lane .base").forEach(b=>b.style.bottom=`calc(6px + ${IN}*${(v/mx).toFixed(4)})`);const k=$("#lane .kvl");if(k){k.textContent=fmt(m,v);k.style.bottom=kitLabelAt(v,mx);k.className=kitLabelCls(v,mx)}
+ const h=$("#lane [data-kitvalue]");if(h){h.style.bottom=`clamp(18px,calc(6px + ${IN}*${(v/mx).toFixed(4)}),calc(100% - 18px))`;h.setAttribute("aria-label","Kit value "+fmt(m,v));h.title=`Kit value ${fmt(m,v)}: drag up or down to change the sound; the step columns edit locks`}
  syncControls();redraw()}
-function endLaneDraw(){if(!laneDraw)return;if(slideEnd())return;if(laneDraw.kit==="maybe"){const dn=laneDraw.down;laneDraw={erase:false,touched:false};laneAt(dn)}const d=laneDraw;$("#lane")?.classList.remove("kitdrag");if(d.kit){laneDraw=null;rerenderSeq();return}if(d.ramp){rampSend();laneDraw=null;renderTop();rerenderSeq();return}laneDraw=null;if(d.touched)rerenderSeq()}
+function endLaneDraw(){if(!laneDraw)return;if(slideEnd())return;const d=laneDraw;$("#lane")?.classList.remove("kitdrag");if(d.kit){laneDraw=null;rerenderSeq();return}if(d.ramp){rampSend();laneDraw=null;renderTop();rerenderSeq();return}laneDraw=null;if(d.touched)rerenderSeq()}
+function kitNudge(e){if(!e.target.closest?.("[data-kitvalue]")||e.ctrlKey||e.metaKey||e.altKey)return false;const d={ArrowUp:1,ArrowRight:1,ArrowDown:-1,ArrowLeft:-1}[e.key];if(!d)return false;e.preventDefault();e.stopPropagation();const t=S.sel,{m,mx}=laneMeta(),[pg,i]=S.lane.split("."),v0=getP(t,S.lane),v=clamp(m.tab?tabStep(m.tab,v0,d):v0+d,0,mx);if(v===v0)return true;commit();trk(t).v[pg][+i]=v;edit("param",{t,...pidArgs(S.lane),v});commit();renderLane();$("#lane [data-kitvalue]")?.focus();syncControls();redraw();return true}
+/* Erase is also available without a modifier, including locks whose step has no note. */
+function laneMenuItems(t,pid,s){const has=()=>S.locks.get(lkKey(t,pid))?.has(s);return[
+ {id:"lane-clear-lock",label:`Clear ${pidLabel(t,pid)} lock on step ${s+1}`,enabled:!!has(),run:()=>{const lm=S.locks.get(lkKey(t,pid));if(!lm?.has(s))return;commit();lm.delete(s);if(!lm.size)S.locks.delete(lkKey(t,pid));edit("lock",{t,...pidArgs(pid),s,v:null});commit();renderTop();rerenderSeq()}},
+ {id:"lane-slide",label:"Slide to next lock",checked:trk(t).slide.has(s),enabled:!!has()&&!!trk(t).steps[s]&&!trk(t).steps[s].off&&pidArgs(pid).page>=0,run:()=>{commit();const tr=trk(t),on=!tr.slide.has(s);on?tr.slide.add(s):tr.slide.delete(s);edit("slide",{t,s,on});commit();renderTop();rerenderSeq()}}]}
+document.addEventListener("contextmenu",e=>{if(S.ws!=="seq")return;const el=e.target.closest?.("#lane .lb");if(!el)return;e.preventDefault();if(S.rec){toast("Wait until live recording stops.");return}endLaneDraw();DeskMenu.open(laneMenuItems(S.sel,S.lane,+el.dataset.s),e.clientX,e.clientY,{title:`${tLabel(S.sel)} · Step ${+el.dataset.s+1}`})});
 
 /* ===== the note lane: the selected track's trigs by pitch, same columns as the overview ===== */
 const ROWS=24;
@@ -6629,9 +6667,14 @@ function rollSelectDown(c,e,h){const t=S.sel,tr=trk(t);
 function rollLenAt(G,d,x){let e2=null;for(const k of G.vs){const q=G.col[k];if(q&&x>(q.x0+q.x1)/2)e2=k+1}if(e2==null)e2=G.a;
  if(d.wrap)e2+=S.len;else if(x>G.lastX){const q=G.col[G.b-1],cw=q?Math.max(4,q.x1-q.x0):16;e2=G.b+Math.floor((x-G.lastX)/cw)}
  return Math.max(1,e2-d.s)}
+function rollStepTip(t,s){const st=trk(t).steps[s];if(!st)return"";const head=`Step ${s+1}: `;if(st.off)return head+"NOTE OFF: ends the previous note";
+ const env=[["a","AMP"],["f","FILTER"],["l","LFO"]].filter(([k])=>st[k]).map(([,n])=>n).join(", "),pitch=st.n?.map(noteName).join(" + ");
+ if(stepKind(st)==="trigless")return head+`Trigless trig (hollow square): no envelopes; ${pitch?"pitch "+pitch:"keeps the previous pitch"}; locks still apply`;
+ if(!st.n)return head+`Pitchless trig (dashed bar): uses the previous pitch ${noteName(lastNote(t,s))}; fires ${env}`;
+ return head+`Note ${pitch}; ${isMidiT(t)?"MIDI note":"fires "+env}`}
 function rollMove(c,e){const t=+c.dataset.t;if(!rollDrag){if(t!==S.sel){c.style.cursor="pointer";return}const G=laneGeom(c),n=rollRow(c,G,e),key=onKeys(c,G,e);
   if((S.rollHov?.n??null)!==n||S.rollHov?.t!==t){S.rollHov=n==null?null:{t,n};drawEd(c)}
-  if(key){c.style.cursor=n==null?"default":"pointer";return}const h=laneHit(c,e);c.style.cursor=h?.edge?"ew-resize":h?.k>=0?"move":"crosshair";return}
+  if(key){c.style.cursor=n==null?"default":"pointer";c.title=ROLL_TIP(t);return}const h=laneHit(c,e);c.style.cursor=h?.edge?"ew-resize":h?.k>=0?"move":"crosshair";c.title=h&&(h.k>=0||trk(t).steps[h.cell]?.off)?rollStepTip(t,h.k>=0?h.s:h.cell):ROLL_TIP(t);return}
  if(rollDrag.mode==="key"){const d=rollDrag,n=rollRow(d.c,laneGeom(d.c),e);if(n!==d.n){if(d.n!=null)keyNote(d.t,d.n,0);rollKey(d.t,n);S.rollHov=n==null?null:{t:d.t,n};drawEd(d.c)}return}
  c=rollDrag.c;const d=rollDrag,G=laneGeom(c),r=c.getBoundingClientRect();
  if(d.mode==="note"||d.mode==="move"){const h=laneHit(c,e),cell=h?h.cell:d.cell0,n=clamp(G.lo+G.rows-1-Math.floor((e.clientY-r.top-G.top)/G.rh),0,127);
@@ -6868,8 +6911,10 @@ Keys.bind({id:"unmark-paste",scope:"seq",keys:["Escape"],group:"Pattern",does:"U
 Keys.bind({id:"lockstep-wheel",scope:"seq",area:"Lock lane",keys:["wheel on a lock step"],group:"Pattern",does:"Move its lock in the lane's parameter, 4 a notch (⇧: 1)"});
 Keys.bind({id:"lane-slide",scope:"seq",area:"Lock lane",keys:["lock's dot"],group:"Pattern",does:"Drag sideways: a slide to the next lock of this parameter, drawn as a ramp (the machine glides every parameter locked on the step; one undo step). Click the ramp's line: slide off. Up and down is the lock's value as before"});
 Keys.bind({id:"lane-slide-band",scope:"seq",area:"Lock lane",keys:["lock bar"],mod:"shift",group:"Pattern",does:"Drag sideways out of a lock bar: a slide, a line to the cursor; drop on this parameter's next lock to set it (one undo step). Anywhere else, Esc or left of the start cancels. From a step without a lock the same drag is the ramp of locks"});
+Keys.bind({id:"lane-lock-menu",scope:"seq",area:"Lock lane",keys:["right-click a step"],group:"Pattern",does:"Clear this parameter's lock, including a ghost lock on a step without a note, or toggle Slide. Alt-click also erases a lock"});
+Keys.bind({id:"lane-kit-value",scope:"seq",area:"Lock lane",keys:["KIT handle"],group:"Pattern",does:"Drag the labelled KIT handle in the left gutter to edit the sound. The line across the steps is a reference; every step column edits its lock"});
 Keys.bind({id:"lane-slide-cancel",short:"Cancel",hidden:true,scope:"seq",keys:["Escape"],group:"Pattern",does:"While drawing a slide in the lock lane: cancel it",when:()=>laneDraw?.band==="on",run:()=>bandEsc()});
-Keys.bind({id:"lane-ramp",scope:"seq",area:"Lock lane",keys:["lock lane"],mod:"shift",group:"Pattern",does:"Drag: a ramp, a straight line from the press to the release (one undo step)"});
+Keys.bind({id:"lane-ramp",scope:"seq",area:"Lock lane",keys:["unlocked step"],mod:"shift",group:"Pattern",does:"Drag from a step without a lock: paint a ramp of lock values (one undo step). Shift from an existing lock draws a slide instead"});
 Keys.bind({id:"track-mark-paste",scope:"seq",area:"Tracks",keys:["track header"],mod:"shift",group:"Pattern",does:"Click: mark the track for paste; ⌘V then pastes into every marked track (one undo step)"});
 
 /* ===== GEN and MUTATE on the page (MM-PORT-PLAN.md d, the Machinedrum Editor's DESIGN-generators.md §5) =====
@@ -7359,7 +7404,7 @@ const keyOf=id=>StepSel.keyOf(Keys,id);
 function stepMenuItems(t,s,pitch){const x=S.stepSel,st=trk(t).steps[s],one=StepSel.one(x),midi=isMidiT(t);
  const marks=[{id:"sel-trigs",label:one?(st&&!st.off?"Note off":"Note on"):"Notes on / off",key:keyOf("sel-trigs"),run:()=>selTrigs()},
   {id:"step-note-off",label:"NOTE OFF",key:"",checked:selHas("noteoff"),run:()=>selMark("noteoff")},
-  ...(midi?[]:[{id:"step-trigless",label:"Trigless trig (locks only)",key:"",checked:selHas("trigless"),run:()=>selMark("trigless")},
+  ...(midi?[]:[{id:"step-trigless",label:"Trigless trig (no envelopes)",key:"",checked:selHas("trigless"),run:()=>selMark("trigless")},
    {id:"step-pitchless",label:"Pitchless trig (the note before)",key:"",checked:selHas("pitchless"),run:()=>selMark("pitchless")},
    {id:"step-env",label:"Envelopes",items:[["a","Amp"],["f","Filter"],["l","LFO"]].map(([k,n])=>({id:"step-env-"+k,label:n,key:"",checked:selHas(k),enabled:selHasTrig(),run:()=>selMark(k)}))}]),
   {id:"step-slide",label:"Slide",key:"",checked:selHas("slide"),run:()=>selMark("slide")},
@@ -7426,7 +7471,7 @@ Keys.bind({id:"clear-what",short:"Clear what",scope:"any",keys:["Backspace"],mod
 /* ===== Gates, arpeggiator, transpose, trig setup (the dock under the note lane) ===== */
 const ARPM=["OFF","KEY","SID","ADD"],ARPP=["TRUE","UP","DOWN","CYCLE","RND"],SCALES=["---","FIX","MAJ","MIN"];
 const ARPHELP={0:"<b>OFF</b> The track plays the base note of each trig. Chord notes wait for the arpeggiator or POLY.",
- 1:"<b>KEY</b> Runs while notes are held and plays only held notes. Release all and it stops.",
+ 1:"<b>KEY</b> Repeats one held note or cycles the held chord. Release all notes and it stops.",
  2:"<b>SID</b> Needs two or more notes. They stay in the cycle after release until a new chord.",
  3:"<b>ADD</b> Starts on the first note. Each extra key joins while one key is held."};
 /* a MIDI track's LEN on step s (its lock, or the kit's MIDI page): ticks, 6 a step (measured, MmRoll) */
@@ -7457,7 +7502,7 @@ function arpTicks(t,span){const tr=trk(t),a=tr.arp;if(!a.MODE||!a.SPD)return[];i
 /* only the arp's length is drawn (as the grid fits the pattern's length), one step after it is a "+" that adds a step */
 const arpCols=a=>`repeat(${a.len},minmax(0,1fr))`;
 function arpCells(a){const n=a.len,cells=Array.from({length:n},(_,k)=>{const o=a.ofs[k],on=a.rhy[k],f=(Math.abs(o)/24).toFixed(4);
- return`<div class="ac ${on?"":"mute"}" data-ac="${k}"${lgAttr(`${tLabel(S.sel)} ARP STEP ${k+1}`)} title="Step ${k+1}: ${on?"plays, offset "+(o>0?"+":"")+o:"muted"}. Click = mute, drag = offset.">`+`<span class="z"></span><i class="${o>=0?"up":"dn"}" style="${o>=0?`bottom:50%;height:max(2px,calc((50% - 8px)*${f}))`:`top:50%;height:calc((50% - 8px)*${f})`}"></i><b>${o?(o>0?"+":"")+o:k+1}</b></div>`});
+ return`<div class="ac ${on?"on":"mute"}" role="button" tabindex="0" aria-pressed="${!!on}" aria-label="ARP step ${k+1}: ${on?"on":"off"}, offset ${o}" data-ac="${k}"${lgAttr(`${tLabel(S.sel)} ARP STEP ${k+1}`)} title="Step ${k+1}: ${on?"plays, offset "+(o>0?"+":"")+o:"muted"}. Click or Enter = ${on?"mute":"enable"}, drag = offset.">`+`<span class="z"></span><i class="${o>=0?"up":"dn"}" style="${o>=0?`bottom:50%;height:max(2px,calc((50% - 8px)*${f}))`:`top:50%;height:calc((50% - 8px)*${f})`}"></i><b>${o?(o>0?"+":"")+o:k+1}</b><span class="arpstate">${on?"ON":"OFF"}</span></div>`});
  return cells.join("")}
 /* The dock's tabs share one layout, the lock lane's: the rail's LOCK PARAMETER keys area holds the panel's
    choices as keys (a group label over each row, the lock-parameter key style), the dock body holds one row of
@@ -7489,7 +7534,7 @@ function dockRead(t,d){const tr=trk(t);
 const TRNSHORT=["<b>---</b> no scale: the transposes add up and any note can sound.","<b>FIX</b> only track transpose applies. Use it for drums and FX.","<b>MAJ</b> notes stay in the major scale of KEY: click a key to set it.","<b>MIN</b> notes stay in the minor scale of KEY: click a key to set it."];
 const TRNHELP=["<b>---</b> no transpose scale: track, pattern, song and multi-trig transpose add up and any note can sound. Click a key: C plays it (up from C; Alt-click: down to it).","<b>FIX</b> only track transpose applies. Use it for drums and FX. Click a key: C plays it (up from C; Alt-click: down to it).","<b>MAJ</b> transposed notes stay in the major scale of KEY: click a key to set it. Out-of-scale keys and roll rows are hatched.","<b>MIN</b> transposed notes stay in the minor scale of KEY: click a key to set it. Out-of-scale keys and roll rows are hatched."];
 function dockHelp(t,d){const tr=trk(t);
- if(d==="arp"){const h=dkPlain(ARPHELP[tr.arp.MODE]);return["Click a step to mute it, drag for an offset",h+" SPD 6 = a 16th. Chords come from the trig: shift-click in the roll. The light notes in the roll are what it plays. In the strip: click a step to mute it, drag it up or down for an offset, click past the end or the LEN row under it to set the length. FUNCTION + ARP: one per track, 12 per pattern."]}
+ if(d==="arp"){const h=dkPlain(ARPHELP[tr.arp.MODE]);return[tr.arp.MODE===2?"SID needs a chord · ON plays, OFF rests":"ON plays, OFF rests · click to toggle",h+" SPD 6 = a 16th. Chords come from the trig: shift-click in the roll. The light notes in the roll are what it plays. Click a step or press Enter to enable or mute it; drag up or down for an offset. LEN sets the number of steps. FUNCTION + ARP: one per track, 12 per pattern."]}
  if(d==="trn"){const h=dkPlain(TRNHELP[tr.tr.SCALE]);return[dkPlain(TRNSHORT[tr.tr.SCALE]),h+" Transpose is live: the programmed notes do not change. Song rows and multi trig add their own. FUNCTION + TRANSPOSE."]}
  if(d==="trig")return["Drag the dots or the values","ATK, HOLD and DEC shape how long a gate really sounds, in steps after the trig at this tempo (the light part of a bar in the roll: 40 dB down). ATK and DEC are times, each 8 more about doubling (ATK 64 ≈ 0.14 s, DEC 64 ≈ 0.55 s to -20 dB); HOLD counts sixteenths (HOLD 8 = one step); DEC 127 holds to the NOTE OFF. PORT is the glide to the next note: ALWAYS, or only when notes overlap. LEGATO picks the envelopes that still fire when notes overlap (filled A F L): all on = staccato bass, all off = a smooth lead. TRIG POSITION forwards this track's notes to another track. KIT › TRIG."];
  return["LEN 127 = until a NOTE OFF · PCHG only sends when locked","LEN 127 = until a NOTE OFF; drag a note's end in the roll to lock its LEN. PCHG only sends when it is locked. CL1-4 pick the CC numbers (or AFT) of the four CC values above them. Internal tracks can also send MIDI (GLOBAL › CONTROL OUT1), but without these values. GLOBAL › MIDI SEQ › MIDISEQ SET: the page is stored in the kit."]}
@@ -7927,9 +7972,9 @@ function lfoGroup(t,k){const l="LF"+k,v=trk(t).v[l],dn=LPAGES[v[0]]?destNames(t,
  return{key:"lfo",title:"LFO "+k,pg:l,idx:[4,5,6,7],knobs:[4,5,6,7].map(i=>FIXED[l][i]),n:4,w:4,tag:v[7]?"":"off",
   titleHtml:`<span class="lfohead"><button class="lfohandle" data-cord="${l}" title="Drag onto any value to route LFO ${k} there" aria-label="Route LFO ${k}">~${k}</button><button class="mutg" data-mutsg="${l}:lfo" aria-pressed="${S.mut.scope.has(l+":lfo")}" title="Add LFO ${k} to what Mutate moves (its PAGE and DEST stay)">LFO ${k}</button></span>`,
   plot:`<div class="plot" title="${attrS(SND_TIP.lfo)}"><canvas class="ed" data-ed="lfo" data-l="${l}" aria-label="LFO ${k} across the pattern with this track's locks, ticks = LFO trigs"></canvas></div>`,
-  body:`<div class="lfobody"><div class="sgline lforoute"><select id="lp${k}" aria-label="LFO ${k} page">${LPAGES.map((p,i)=>opt(i,p==="MID"?"MIDI":p,v[0])).join("")}</select><span class="arrow">›</span><select id="ld${k}" aria-label="LFO ${k} destination">${dn.map((d,i)=>opt(i,d,v[1])).join("")}</select>
-   <span class="seg" data-set="ltrig" data-l="${l}" title="TRIG: FREE runs on, TRIG restarts it on a trig, HOLD keeps the value a trig takes, ONE and HALF play one cycle or half of one">${LTRIG.map((n,i)=>`<button data-v="${i}" aria-pressed="${v[2]===i}">${n}</button>`).join("")}</span></div>
-   <div class="shapes w11">${LWAVE.map((n,i)=>`<button data-lwave="${l}" data-w="${i}" aria-pressed="${v[3]===i}" title="${n}" aria-label="${n}">${shapeIcon(i)}</button>`).join("")}</div>
+  body:`<div class="lfobody"><div class="sgline lforoute"><select id="lp${k}" data-lpid="${l}.0" data-t="${t}" aria-label="LFO ${k} page">${LPAGES.map((p,i)=>opt(i,p==="MID"?"MIDI":p,v[0])).join("")}</select><span class="arrow">›</span><select id="ld${k}" data-lpid="${l}.1" data-t="${t}" aria-label="LFO ${k} destination">${dn.map((d,i)=>opt(i,d,v[1])).join("")}</select>
+   <span class="seg" data-lpid="${l}.2" data-t="${t}" data-set="ltrig" data-l="${l}" title="TRIG: FREE runs on, TRIG restarts it on a trig, HOLD keeps the value a trig takes, ONE and HALF play one cycle or half of one">${LTRIG.map((n,i)=>`<button data-v="${i}" aria-pressed="${v[2]===i}">${n}</button>`).join("")}</span></div>
+   <div class="shapes w11" data-lpid="${l}.3" data-t="${t}">${LWAVE.map((n,i)=>`<button data-lwave="${l}" data-w="${i}" aria-pressed="${v[3]===i}" title="${n}" aria-label="${n}">${shapeIcon(i)}</button>`).join("")}</div>
    <div class="ctl" style="grid-template-columns:repeat(4,minmax(0,1fr))">${[4,5,6,7].map(i=>pc(l,i,{t,label:FIXED[l][i]})).join("")}</div></div>`}}
 function machButton(m){return`<button class="machbtn" id="machbtn" aria-haspopup="dialog" aria-expanded="false" aria-label="Change machine"><span class="lcdtxt">${m}</span><span class="mfam">${famKey(m)}</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>`}
 /* the track's pattern settings live in the Sequence dock: one key each to go there */
@@ -8117,18 +8162,18 @@ function menvHint(){const m=S.multi.mode,play=S.mode!=="multi"&&m!==1;
  return`<b>${MTM[m]}:</b> ${MENV_SAY[m]}${play?` <span class="menvto">The keys play ${{normal:"AUTO TRACK",map:"MULTI MAP",poly:"POLY"}[S.mode]} now: choose <b>Multi trig</b> under Keyboard to hear it.</span>`:""}`}
 const MTM=["ALL TRK","SPLIT KEY","SEQ START","SEQ TRNSP"],TIMS=["DIRECT","1/16","2/16","4/16","8/16","16/16","32/16"];
 const isBlack=n=>[1,3,6,8,10].includes(n%12);
-/* the on-screen keyboard: four octaves from C (MIDI 0 at the lowest stop), the last stop cut at note 127 (I-040) */
-const KBOCT=[-1,6];
+/* the on-screen keyboard: four octaves from C (MIDI 0 at the lowest stop), the last stop cut at note 127 (I-040). Keep the same key width at that stop (B-177) */
+const KBOCT=[-1,6],KB_WHITE_COUNT=28;
 function kbRange(){const lo=12*(S.kbOct+1);return[lo,Math.min(lo+47,127)]}
 function zoneOf(n){if(S.mode!=="multi"||S.multi.mode!==1)return null;return n>=S.multi.splitKey?"up":"lo"}
 function mapRow(n){let lo=0;for(let i=0;i<S.mmap.length;i++){const r=S.mmap[i];if(n>=lo&&n<=r.hi)return i;lo=r.hi+1}return -1}
-function renderKb(){const[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const ww=100/whites.length;let h="",wi=0;
+function renderKb(){const[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const ww=100/KB_WHITE_COUNT;let h="",wi=0;
  for(let n=lo;n<=hi;n++){if(isBlack(n)){h+=`<div class="b${kbLit(n)}" data-key="${n}" style="left:${wi*ww-ww*.3}%;width:${ww*.6}%" aria-label="${noteName(n)}"></div>`;continue}
   h+=`<div class="w${kbLit(n)}" data-key="${n}" style="left:${wi*ww}%;width:${ww}%" aria-label="${noteName(n)}">${n%12===0?`<small>${noteName(n)}</small>`:""}</div>`;wi++}
  if(S.mode==="multi"&&S.multi.mode===1){const sk=S.multi.splitKey;let idx=whites.findIndex(w=>w>=sk);if(idx<0)idx=whites.length;const x=idx*ww;
-  h+=`<div class="zone" style="left:0;width:${x}%;background:var(--ledg)"></div><div class="zone" style="left:${x}%;width:${100-x}%;background:var(--led)"></div><div class="splitm" id="splitm" style="left:${x}%" title="Drag the split point"><span>SPLIT ${noteName(sk)} · T${S.multi.splitTrack}-6 above</span></div>`}
+  h+=`<div class="zone" style="left:0;width:${x}%;background:var(--ledg)"></div><div class="zone" style="left:${x}%;width:${whites.length*ww-x}%;background:var(--led)"></div><div class="splitm" id="splitm" style="left:${x}%" title="Drag the split point"><span>SPLIT ${noteName(sk)} · T${S.multi.splitTrack}-6 above</span></div>`}
  return h}
-function mapBands(){const[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const ww=100/whites.length,xOf=n=>{let i=whites.findIndex(w=>w>=n);if(i<0)i=whites.length;return i*ww};let from=0;
+function mapBands(){const[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const ww=100/KB_WHITE_COUNT,xOf=n=>{let i=whites.findIndex(w=>w>=n);if(i<0)i=whites.length;return i*ww};let from=0;
  return S.mmap.map((r,i)=>{const a=Math.max(from,lo),b=Math.min(r.hi,hi);from=r.hi+1;if(b<lo||a>hi)return"";const x0=xOf(a),x1=xOf(b+1);return`<div class="band ${i===S.mmapSel?"sel":""}" data-band="${i}" style="left:${x0}%;width:${Math.max(2,x1-x0)}%">${r.pat<0?"CUR":patName(r.pat)}${r.trn!==0&&r.trn!==64?"":""}</div>`}).join("")}
 /* The multi envelope as an ADSR (review 1, 2026-10-12: the old one drew REL 127 as a flat line with its dot left at the
    foot). Each stage has its own slot across the screen: ATK rises from 0 to the top, DEC falls to SUS, SUS holds, REL
@@ -8395,6 +8440,20 @@ const GLOBAL_LEARN_SEL='[data-lgn], .pc[data-g="menv"], #bpm, .l2.ed[data-l2="sw
 /* LEARN is on: a click on a choice of the page picks the learn target and changes nothing */
 document.addEventListener("click",e=>{if(S.learn&&e.target.closest("[data-lgn]")){e.stopPropagation();e.preventDefault()}},true);
 function markGlobalAll(){$$('.pc[data-g="menv"]').forEach(el=>markGlobal(el));markGlobal($("#bpm")&&$("#bpm").closest(".f"),0);$$("[data-l2='swing']").forEach(el=>markGlobal(el));$$("#globpop .stepper").forEach(el=>markGlobal(el));$$("#main [data-lgn], .l2[data-lgn]").forEach(el=>markGlobal(el))}
+
+/* B-169: the LFO choice controls address the same DATA values as its numeric controls. Capture before a choice
+   changes the sound; the enhanced dropdown carries the select's target too. */
+function learnChoice(el){const t=+el.dataset.t,pid=el.dataset.lpid,{pg,i}=pidRef(pid);
+ if(!canLearn(t,pg,i)){toast("This value cannot be learned.");return}
+ S.learnT={t,pid};markLearnChoices();toast(`Target: ${tLabel(t)} ${pidLabel(t,pid)}. Now turn a knob on your controller, or press 1-8 for a knob row.`);
+ if(HOST.learnTarget)HOST.learnTarget({...S.learnT})}
+function markLearnChoices(){$$("#main [data-lpid]").forEach(el=>{const t=+el.dataset.t,pid=el.dataset.lpid,{pg,i}=pidRef(pid);
+ el.classList.toggle("mapped",LD().mappings.some(m=>m.t===t&&m.pg===pg&&m.i===i));
+ el.classList.toggle("learnt",!!S.learnT&&S.learnT.t===t&&S.learnT.pid===pid)})}
+document.addEventListener("pointerdown",e=>{if(!S.learn)return;const el=e.target.closest("[data-lpid]");if(!el)return;
+ e.preventDefault();e.stopPropagation();learnChoice(el)},true);
+document.addEventListener("click",e=>{if(!S.learn)return;const el=e.target.closest("[data-lpid]");if(!el)return;
+ e.preventDefault();e.stopImmediatePropagation();if(!S.learnT||S.learnT.t!==+el.dataset.t||S.learnT.pid!==el.dataset.lpid)learnChoice(el)},true);
 "use strict";
 /* The GLOBAL page both editors share (B-051, F3; the Machinedrum Editor's v61 panel, P5, made shared; 0.6 wave 5 made it
    a page under the header, review 1 (Radek, 2026-10-12, B-091) a modal again: a dialog of the modal layer over a dimmed
@@ -8938,7 +8997,7 @@ document.addEventListener("keydown",e=>{
  if(!LIB.open){if((e.key==="Enter"||e.key===" ")&&(e.target.id==="kitf"||e.target.id==="pat")){e.preventDefault();e.stopImmediatePropagation();openLib(e.target.id==="kitf"?"kit":"pat")}return}
  if(!$("#dlg").hidden)return;
  if(e.target.id==="lsin"){if(e.key==="Enter"||e.key==="Escape"){e.preventDefault();finishRename(e.key==="Enter")}e.stopImmediatePropagation();return}
- const mod=e.metaKey||e.ctrlKey,kit=LIB.open==="kit",n=128,cols=16,key=e.key;let h=true;
+ const mod=e.metaKey||e.ctrlKey,kit=LIB.open==="kit",n=128,cols=kit?getComputedStyle($("#libpop .libgrid.kits")).gridTemplateColumns.trim().split(/\s+/).length:16,key=e.key;let h=true;
  if(key==="Escape")closeLib(true);
  else if(!mod&&!e.altKey&&/^Arrow/.test(key)){LIB.sel=(LIB.sel+{ArrowLeft:-1,ArrowRight:1,ArrowUp:-cols,ArrowDown:cols}[key]+n)%n;drawLib(true)}
  else if(key==="Enter"){if(kit)kitLoad(LIB.sel);else patGo(LIB.sel,false)}
@@ -9375,9 +9434,8 @@ main.addEventListener("pointerdown",e=>{
  const c=e.target.closest("canvas.ed");if(c){const hh=nearest(c,e);if(!hh)return;active={c,k:hh.k,all:e.altKey&&!isMidiT(S.sel)};if(active.all)allTip();c.setPointerCapture(e.pointerId);e.preventDefault();redraw();return}
  const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el&&ValueEdit.isOpenClick(e)){e.preventDefault();ValueEdit.open(el,ValueBox);return}
  if(el){const t=el.dataset.t!=null?+el.dataset.t:S.sel;drag={el,x:e.clientX,y:e.clientY,v:getV(el),vert:el.classList.contains("fader"),hz:el.classList.contains("hz")&&el.getBoundingClientRect().width,mx:maxOf(ref(el)[2]),all:e.altKey&&!isMidiT(t)&&PAGES.includes(el.dataset.g)};if(drag.all)allTip();el.setPointerCapture(e.pointerId);el.classList.add("act");e.preventDefault();return}
- const lb=e.target.closest(".lb");if((lb||e.target.id==="lane")&&slideGrab(e))return;if(lb&&kitGrab(e))return
- if(lb){laneDraw=e.shiftKey&&!e.altKey?{ramp:true,touched:false}:{erase:e.altKey,touched:false};$("#lane").setPointerCapture(e.pointerId);laneAt(e);e.preventDefault();return}
- const ac=e.target.closest(".ac");if(ac){const k=+ac.dataset.ac,a=trk(S.sel).arp;if(k>=a.len){a.len=k+1;edit("arp",{t:S.sel,field:"length",v:a.len});renderArp();return}arpDrag={k,y:e.clientY,moved:false};$("#arptrack").setPointerCapture(e.pointerId);e.preventDefault();return}
+ if(laneDown(e))return;
+ const ac=e.target.closest(".ac");if(ac){if(e.button!==0||e.ctrlKey||e.metaKey)return;const k=+ac.dataset.ac,a=trk(S.sel).arp;if(k>=a.len){a.len=k+1;edit("arp",{t:S.sel,field:"length",v:a.len});renderArp();return}arpDrag={k,y:e.clientY,moved:false};$("#arptrack").setPointerCapture(e.pointerId);e.preventDefault();return}
  if(e.target.closest("#joy")){joyDrag=true;$("#joy").setPointerCapture(e.pointerId);joyAt(e);e.preventDefault();return}
  if(e.target.closest("#splitm")){splitDrag=true;$("#splitm").setPointerCapture(e.pointerId);e.preventDefault();return}
  const key=e.target.closest(".kb [data-key]");if(key){kbDown=true;$("#kb").setPointerCapture(e.pointerId);playKey(+key.dataset.key);e.preventDefault()}});
@@ -9393,7 +9451,7 @@ main.addEventListener("pointermove",e=>{
  if(laneDraw){laneAt(e);return}
  if(arpDrag){const a=trk(S.sel).arp,dd=Math.round((arpDrag.y-e.clientY)/4);if(Math.abs(dd)>0||arpDrag.moved){arpDrag.moved=true;a.ofs[arpDrag.k]=clamp((arpDrag.v0??(arpDrag.v0=a.ofs[arpDrag.k]))+dd,-24,24);renderArp()}return}
  if(joyDrag){joyAt(e);return}
- if(splitDrag){const kb=$("#kb").getBoundingClientRect(),[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const i=clamp(Math.round((e.clientX-kb.left)/kb.width*whites.length),1,whites.length-1);if(S.multi.splitKey!==whites[i]){S.multi.splitKey=whites[i];$("#kb").innerHTML=renderKb();$("#splitm").setPointerCapture?.(e.pointerId)}return}
+ if(splitDrag){const kb=$("#kb").getBoundingClientRect(),[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const i=clamp(Math.round((e.clientX-kb.left)/kb.width*KB_WHITE_COUNT),1,whites.length-1);if(S.multi.splitKey!==whites[i]){S.multi.splitKey=whites[i];$("#kb").innerHTML=renderKb();$("#splitm").setPointerCapture?.(e.pointerId)}return}
  if(kbDown){const k=document.elementFromPoint(e.clientX,e.clientY)?.closest(".kb [data-key]");if(k&&KBLIT.mouse!==+k.dataset.key)playKey(+k.dataset.key);return}
  const c=e.target.closest?.("canvas.ed");if(c)c.style.cursor=ED[c.dataset.ed]?.cursor?.(c,e)||(nearest(c,e)?"grab":"default");
  /* the kit line is grabbed with a vertical arrow */
@@ -9415,6 +9473,7 @@ function joyAt(e){const r=$("#joy").getBoundingClientRect();S.joy={x:clamp((e.cl
  const tr=S.tracks[asgT()],A=tr.assign,rows=A.tabs[S.asTab];const amt=S.asTab==="JOY U"?Math.max(0,S.joy.y):S.asTab==="JOY D"?Math.max(0,-S.joy.y):A.mirr?S.joy.x:Math.max(0,S.joy.x);
  $("#kbinfo")&&($("#kbinfo").textContent=rows.map(r=>`${LPAGES[r.pg]} ${destNames(asgT(),r.pg)[r.d]} ${Math.round((r.add-64)*amt)>=0?"+":""}${Math.round((r.add-64)*amt)}`).join(" · "));tx();if(HOST.joy)HOST.joy(S.joy)}
 function renderArp(){const el=$("#arptrack");if(!el)return;const a=trk(S.sel).arp;el.innerHTML=arpCells(a);el.style.gridTemplateColumns=arpCols(a);const c2=$("#arpcap");if(c2)c2.textContent="Rhythm + offset · "+a.len+" steps";$$(".mrowg .rowst").length&&0;redraw()}
+main.addEventListener("keydown",e=>{if(kitNudge(e))return;const ac=e.target.closest?.(".ac[data-ac]");if(!ac||!["Enter"," "].includes(e.key)||e.ctrlKey||e.metaKey||e.altKey)return;e.preventDefault();e.stopPropagation();if(e.repeat||S.learn)return;const k=+ac.dataset.ac,a=trk(S.sel).arp;commit();a.rhy[k]=!a.rhy[k];edit("arp",{t:S.sel,field:"step",i:k,v:a.rhy[k]?clamp(64+a.ofs[k]):255});commit();renderArp();$(`#arptrack [data-ac="${k}"]`)?.focus()});
 /* I-022: a value typed (shared/deskValueEdit.js): ⌘-click a value box or fader, or Enter on one that has the focus. What
    may be typed is what the box shows (a list's names, a signed value as -64 to +63, PAN as L12 / C / R5 or the number);
    one edit, its own undo step (commit before and after) */
@@ -10451,14 +10510,16 @@ const MmConvert = (() => {
 			tr.push({ steps, slide: [...x.slide], swing: [...x.swing], arp: arpToPage(x.arp, true), tr: trnToPage(x) });
 		});
 		d.midiTracks.forEach((x, t) => {
-			const T = new Set(x.trig), O = new Set(x.noteOff), notes = {};
+			const T = new Set(x.trig), N = new Set(x.note), O = new Set(x.noteOff), notes = {};
 			d.midiNotes.forEach(([mt, s, n]) => { if (mt === t) (notes[s] = notes[s] || []).push(n); });
 			const steps = Array(64).fill(null);
 			for (let s = 0; s < 64; s++) {
 				if (O.has(s)) { steps[s] = { off: 1 }; continue; }
 				if (!T.has(s)) continue;
 				const st = { a: 1, f: 1, l: 1 };
-				if (notes[s]) st.n = notes[s];
+				// The pool can retain entries whose note bit is clear. As in the core's stepAt, those
+				// are not new pitches: showing them would write them back during a track edit.
+				if (N.has(s) && notes[s]) st.n = notes[s];
 				steps[s] = st;
 			}
 			tr.push({ steps, slide: [...x.slide], swing: [...x.swing], arp: arpToPage(x.arp, false), tr: trnToPage(x) });

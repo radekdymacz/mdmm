@@ -416,7 +416,7 @@ A parameter lock gives one parameter its own value on one step. The step has to 
 
 ![The lock lane](shot:md-lock-lane)
 
-The lane shows the value locked on each step, and a solid line shows the value of the kit, with its number at the right end of the lane. Rest the pointer on a step, or select it, to read its lock as a number at the top of its bar. Drag the line itself to change the kit value of the parameter on that track, the value the **Kit** page changes. The whole drag is one undo step and draws no lock. A click on or near the line, without moving up or down, still sets a lock on that step. A bipolar parameter draws from the centre: up for right or boost, down for left or cut.
+The lane shows the value locked on each step, and a solid line shows the value of the kit, with its number at the right end of the lane. Rest the pointer on a step, or select it, to read its lock as a number at the top of its bar. Drag the labelled **KIT ↕** handle at the left of the lane header to change the kit value, or focus it and use the arrow keys. The whole drag is one undo step and draws no lock. The line across the steps is a reference: a plain click or vertical drag on a step edits its lock, even when its value equals the kit value. A bipolar parameter draws from the centre: up for right or boost, down for left or cut.
 
 ### The lock count
 

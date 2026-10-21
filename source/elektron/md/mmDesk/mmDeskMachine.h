@@ -279,7 +279,7 @@ namespace mmDesk
 		std::map<uint32_t, Ref> m_recvRefs;		// a dump on the RECV session -> the push it is
 		Pushes m_pushes;
 		std::set<Ref> m_loadAfter;				// kit slots to LOAD KIT once their waiting dump goes
-		bool m_kitDumpHold = false;				// B-136: a dump of the current kit's slot was on its way at the last image
+		bool m_kitDumpHold = false;				// kit delivery (a dump or live edits) held the last memory image
 		// Without the panel: what waits for the person's SYSEX RECV, in order (a dump names its push).
 		struct Waiting
 		{

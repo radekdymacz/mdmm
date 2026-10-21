@@ -48,7 +48,7 @@ runs through XWayland). Built on Ubuntu 22.04: needs glibc 2.35 or newer.
       libx11-6 libxext6 libxcursor1 libxinerama1 libxrandr2 libxrender1 \
       libxcomposite1 libfreetype6 libfontconfig1
   Fedora:  sudo dnf install webkit2gtk4.1 gtk3 alsa-lib mesa-libGL
-  Arch:    sudo pacman -S webkit2gtk-4.1 gtk3 alsa-lib
+  Arch / CachyOS: sudo pacman -S webkit2gtk-4.1 gtk3 alsa-lib
   SteamOS 3 (Steam Deck, desktop mode; same line as Arch):
     sudo steamos-readonly disable
     sudo pacman-key --init && sudo pacman-key --populate holo archlinux
@@ -59,7 +59,18 @@ runs through XWayland). Built on Ubuntu 22.04: needs glibc 2.35 or newer.
 
 Troubleshooting
 ---------------
-  Empty (grey) editor window: WebKitGTK is missing; install the package
-    above. The two shims must stay beside the app / inside the VST3 folder.
+  Empty or black editor window: check GTK/WebKitGTK and keep both shims
+    beside the app / inside the VST3 folder. Missing libraries are one
+    possible cause; window embedding or a web process failure can also
+    leave the page invisible. Compare the standalone with the VST3.
+  Bitwig via Flatpak: it uses its own runtime libraries. Installing the
+    packages above on the host does not ensure they are available inside
+    Bitwig. Include "Flatpak" or "native" in the report.
+  For a black-window report, wait at least 35 seconds and save the
+    terminal output and editor-*.log (Open Log Folder, if available)
+    before launching another editor instance, which rotates that log.
+    The log records the display/session, Flatpak ID and temporary folder;
+    runtime load, helper startup and web-process failures have separate
+    messages. Include the whole VST3 folder and the exact host version.
   "GLIBC_2.35 not found": your system is older than this build supports.
   No window at all: check that X11 or XWayland is available.

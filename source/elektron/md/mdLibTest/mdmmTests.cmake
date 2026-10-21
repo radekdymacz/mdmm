@@ -63,13 +63,15 @@ function(mdmm_add_lib_tests _dir)
 	# from the median hit) with the speed-ups on and off, L3 on and off, at several host block sizes; the test registered
 	# here plays the case that missed (scenario stack3, about 4 min); --matrix alone plays every scenario. Needs the MD ROM.
 	add_executable(stackedLfoFirmwareTest ${_dir}/stackedLfoFirmwareTest.cpp ${_dir}/mdFirmwareSession.h)
-	target_link_libraries(stackedLfoFirmwareTest PRIVATE mdLib elektronData)
+	target_link_libraries(stackedLfoFirmwareTest PRIVATE mdLib elektronData mmDesk)
 	set_property(TARGET stackedLfoFirmwareTest PROPERTY FOLDER "Elektron/test")
 	add_test(NAME stackedLfoFirmwareTest COMMAND stackedLfoFirmwareTest --scenario stack3 --matrix)
 	set_tests_properties(stackedLfoFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
 	# the same on the Monomachine: LFO1-3 of one track on PTCH, note trigs (about 3 min)
 	add_test(NAME stackedLfoMmFirmwareTest COMMAND stackedLfoFirmwareTest --mm --scenario mm-stack3 --matrix)
 	set_tests_properties(stackedLfoMmFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
+	add_test(NAME stackedLfoMmSequencerFirmwareTest COMMAND stackedLfoFirmwareTest --mm --scenario mm-stack3-seq --matrix)
+	set_tests_properties(stackedLfoMmSequencerFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
 
 	# DESIGN-edit-flow.md: the firmware and the desk under a stream of page edits (manual: needs a ROM).
 	add_executable(editFlowBenchTest ${_dir}/editFlowBenchTest.cpp ${_dir}/mdFirmwareSession.h)
@@ -158,6 +160,8 @@ function(mdmm_add_lib_tests _dir)
 	# like the sections below; skips (77) without it. Never a bare ${GEARMULATOR_MM_ROM} (unset in temp/dev = a silent skip).
 	add_test(NAME mmDeskFirmwareTest COMMAND mmDeskFirmwareTest --env)
 	set_tests_properties(mmDeskFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
+	add_test(NAME mmEmptyResetFirmwareTest COMMAND mmDeskFirmwareTest --env emptyreset)
+	set_tests_properties(mmEmptyResetFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
 	# B-049: the amp envelope the editor draws against the firmware's (one note per value, the output's level).
 	# B-027 and B-050: a kit's unsaved edits stay over a step or a piano-roll note (a dump of the pattern that plays).
 	if(TRUE)

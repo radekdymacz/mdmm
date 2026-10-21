@@ -120,6 +120,14 @@ namespace mdJucePlugin
 		auto* p = parameter(_track, _page, _index);
 		if(!p)
 			return false;
+		// A desk restore after a pattern dump is an explicit delivery. The firmware may have
+		// reloaded its stored kit while the plug-in parameter still caches the unsaved value;
+		// Parameter::sendToSynth would then suppress the CC as unchanged (B-027).
+		if(p->getUnnormalizedValue() == _value)
+		{
+			m_controller.sendParameterChange(*p, _value, pluginLib::Parameter::Origin::Ui);
+			return true;
+		}
 		p->setUnnormalizedValueNotifyingHost(static_cast<int>(_value), pluginLib::Parameter::Origin::Ui);
 		return true;
 	}

@@ -185,3 +185,17 @@ const GLOBAL_LEARN_SEL='[data-lgn], .pc[data-g="menv"], #bpm, .l2.ed[data-l2="sw
 /* LEARN is on: a click on a choice of the page picks the learn target and changes nothing */
 document.addEventListener("click",e=>{if(S.learn&&e.target.closest("[data-lgn]")){e.stopPropagation();e.preventDefault()}},true);
 function markGlobalAll(){$$('.pc[data-g="menv"]').forEach(el=>markGlobal(el));markGlobal($("#bpm")&&$("#bpm").closest(".f"),0);$$("[data-l2='swing']").forEach(el=>markGlobal(el));$$("#globpop .stepper").forEach(el=>markGlobal(el));$$("#main [data-lgn], .l2[data-lgn]").forEach(el=>markGlobal(el))}
+
+/* B-169: the LFO choice controls address the same DATA values as its numeric controls. Capture before a choice
+   changes the sound; the enhanced dropdown carries the select's target too. */
+function learnChoice(el){const t=+el.dataset.t,pid=el.dataset.lpid,{pg,i}=pidRef(pid);
+ if(!canLearn(t,pg,i)){toast("This value cannot be learned.");return}
+ S.learnT={t,pid};markLearnChoices();toast(`Target: ${tLabel(t)} ${pidLabel(t,pid)}. Now turn a knob on your controller, or press 1-8 for a knob row.`);
+ if(HOST.learnTarget)HOST.learnTarget({...S.learnT})}
+function markLearnChoices(){$$("#main [data-lpid]").forEach(el=>{const t=+el.dataset.t,pid=el.dataset.lpid,{pg,i}=pidRef(pid);
+ el.classList.toggle("mapped",LD().mappings.some(m=>m.t===t&&m.pg===pg&&m.i===i));
+ el.classList.toggle("learnt",!!S.learnT&&S.learnT.t===t&&S.learnT.pid===pid)})}
+document.addEventListener("pointerdown",e=>{if(!S.learn)return;const el=e.target.closest("[data-lpid]");if(!el)return;
+ e.preventDefault();e.stopPropagation();learnChoice(el)},true);
+document.addEventListener("click",e=>{if(!S.learn)return;const el=e.target.closest("[data-lpid]");if(!el)return;
+ e.preventDefault();e.stopImmediatePropagation();if(!S.learnT||S.learnT.t!==+el.dataset.t||S.learnT.pid!==el.dataset.lpid)learnChoice(el)},true);

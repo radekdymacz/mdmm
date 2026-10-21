@@ -58,7 +58,7 @@ function renderSeq() {
 	let h = `<div class="panel ${V.mode === "CLASSIC" ? "classic" : ""}" id="seqp"><div class="scroll" id="seqscroll"><div class="seq" id="seq">
   <div class="r" style="grid-template-columns:${cols()}">${steps().map(s => `<div class="rul ${s % 16 === 0 && s !== vis()[0] ? "gap" : ""}${S.stepSel && s >= S.stepSel.from && s < S.stepSel.to ? " selx" : ""}" data-s="${s}">${s % 4 === 0 ? s + 1 : ""}</div>`).join("")}</div>`;
 	V.tracks.forEach((t, i) => { h += `<div class="r ${i === S.sel ? "sel" : ""} ${audible(i) ? "" : "off"}" data-row="${i}" style="grid-template-columns:${cols()};--c:${FAMC[t.fam]}">${steps().map(s => `<button class="${stepCls(i, s)}" data-t="${i}" data-s="${s}" aria-label="Track ${i + 1} step ${s + 1}" aria-pressed="${t.trigs[s]}"></button>`).join("")}</div>`; });
-	h += `</div></div><div class="genbar">${trigTypes()}${stepLegend()}${pageCtl()}</div><div class="lanewrap"><div class="lanetop"><span class="cap">Lock lane · ${S.sel + 1} ${V.tracks[S.sel].name} · <b id="lanename">${laneLabel(V.tracks[S.sel].m, S.lane, Cat)}</b> <span class="lanescale">${bipLane() ? "L 64 · centre · R 63" : "0–127"}</span></span><span class="lockbudget" id="lockbudget"></span>${V.mode === "CLASSIC" ? `<span class="warnline" title="Locks stay in the pattern but do nothing until you switch to EXTENDED.">CLASSIC: locks muted</span>` : ""}${laneToolsHtml()}</div>
+	h += `</div></div><div class="genbar">${trigTypes()}${stepLegend()}${pageCtl()}</div><div class="lanewrap"><div class="lanetop"><span id="lanekit"></span><span class="cap">Lock lane · ${S.sel + 1} ${V.tracks[S.sel].name} · <b id="lanename">${laneLabel(V.tracks[S.sel].m, S.lane, Cat)}</b> <span class="lanescale">${bipLane() ? "L 64 · centre · R 63" : "0–127"}</span></span><span class="lockbudget" id="lockbudget"></span>${V.mode === "CLASSIC" ? `<span class="warnline" title="Locks stay in the pattern but do nothing until you switch to EXTENDED.">CLASSIC: locks muted</span>` : ""}${laneToolsHtml()}</div>
 </div>
   <div class="scroll" id="lanescroll"><div class="lanebox"><div class="lane" id="lane" style="grid-template-columns:${cols()}"></div><svg class="lanesvg" id="lanesvg" aria-hidden="true"></svg></div></div></div>`;
 	$("#main").innerHTML = h; renderLane(); syncScroll();
@@ -72,6 +72,7 @@ function barHTML(v) { return bipLane() ? (v >= 64 ? `<i class="bp up" style="hei
 function renderLane() {
 	const lane = $("#lane"); if (!lane) return;
 	const t = S.sel, tr = V.tracks[t], m = V.locks.get(lk(t, S.lane)), g = grp(t, S.lane), base = g[S.lane] ?? 0;
+	const handle = $("#lanekit"); if (handle) handle.innerHTML = kitHandleHTML(base);
 	altLabels(); syncLockBudget();
 	const pg = pages(tr.m, Cat); $("#chips").innerHTML = [["Synth", pg.s], ["Effects", pg.e], ["Routing", pg.r]].map(([lab, ps]) => {
 		return `<span class="plab">${lab}</span>` + ps.map(p => {
@@ -138,6 +139,7 @@ function valueHTML(v) {
 function kitLabelCls(base) { return base / 127 > .85 ? "kvl fl" : "kvl"; }
 function kitLabelHTML(base) { return `<span class="${kitLabelCls(base)}" style="bottom:${kitLabelAt(base)}">${laneFmt(base)}</span>`; }
 function kitLabelAt(base) { const f = base / 127; return `calc(3px + (100% - 6px) * ${f.toFixed(4)} ${f > .85 ? "- 15px" : "+ 3px"})`; }
+function kitHandleHTML(base) { return `<button type="button" class="kitvalue" data-kitvalue aria-label="Kit value ${laneFmt(base)}" title="Kit value ${laneFmt(base)}: drag up or down, or use arrow keys, to change the sound; the step columns edit locks">KIT ↕</button>`; }
 function syncScroll() { const a = $("#seqscroll"), b = $("#lanescroll"); if (!a || !b) return; a.onscroll = () => { b.scrollLeft = a.scrollLeft; }; b.onscroll = () => { a.scrollLeft = b.scrollLeft; }; }
 function refreshRow(i) { $$(`.st[data-t="${i}"]`).forEach(b => { const s = +b.dataset.s; b.className = stepCls(i, s); b.setAttribute("aria-pressed", V.tracks[i].trigs[s]); }); }
 

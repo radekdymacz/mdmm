@@ -24,13 +24,28 @@
 */
 
 #include <dlfcn.h>
+#include <cstdio>
 
 int main (int argc, const char* const* argv)
 {
-    if (argc >= 3)
-        if (auto* handle = dlopen (argv[1], RTLD_LAZY))
-            if (auto* function = reinterpret_cast<int (*) (int, const char* const*)> (dlsym (handle, argv[2])))
-                return function (argc - 3, argv + 3);
+    if (argc < 3)
+    {
+        std::fprintf (stderr, "WebKitGTK helper: missing module or entry point argument\n");
+        return 1;
+    }
 
-    return 1;
+    auto* handle = dlopen (argv[1], RTLD_LAZY);
+    if (handle == nullptr)
+    {
+        std::fprintf (stderr, "WebKitGTK helper: could not load %s: %s\n", argv[1], dlerror());
+        return 1;
+    }
+
+    auto* function = reinterpret_cast<int (*) (int, const char* const*)> (dlsym (handle, argv[2]));
+    if (function == nullptr)
+    {
+        std::fprintf (stderr, "WebKitGTK helper: could not find %s: %s\n", argv[2], dlerror());
+        return 1;
+    }
+    return function (argc - 3, argv + 3);
 }

@@ -309,8 +309,7 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.l0?.length) u.key("z", { cmd: true }); }
 	};
-	/* I-035: the lock lane's kit-value line (2 px, grabbed within 4 px of it): dragged, it changes the kit value of the lane's parameter on
-	   the track as the Sound page's knob does, one undo step, and paints no lock; its number on the line says the value */
+	/* B-184: the KIT handle edits the kit; every step column edits its lock, including at the kit baseline. */
 	const laneKitDrag = {
 		name: "md-lane-kit-drag", proves: ["MD-134"],
 		steps: [
@@ -321,12 +320,15 @@ const MdJourneys = (() => {
 			{ say: "the kit line is 2 px and its number is on the lane", screen: c => { const b = $1(`#lane .lb[data-s="${c.s}"] .base`), v = grp(c.t, c.p)[c.p] ?? 0, k = $1("#lane .kvl");
 					return ok(Math.abs(b.getBoundingClientRect().height - 2) < 0.02 && !!k && k.textContent === laneFmt(v), `line ${b.getBoundingClientRect().height} px, number ${k?.textContent} for ${v}`); } },
 			{ say: "click exactly on the line: it is a click on the lane, the step is locked at the kit value", act: async (u, c) => { c.l0 = locksOf(c.t, c.i).length; c.k0 = grp(c.t, c.p)[c.p] ?? 0; c.ul = V.undoCount;
-					const key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), b = $1(key + " .base").getBoundingClientRect(); u.click(key, {}, 0.5, (b.top + b.height / 2 - r.top) / r.height); },
+					const key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), y = r.bottom - 3 - (r.height - 6) * c.k0 / 127; u.click(key, {}, 0.5, (y - r.top) / r.height); },
 				machine: c => ok(locksOf(c.t, c.i).some(([x, v]) => x === c.s && v === c.k0) && (grp(c.t, c.p)[c.p] ?? 0) === c.k0, `locks ${JSON.stringify(locksOf(c.t, c.i))}, kit value ${c.k0}`), within: 8000 },
+			{ say: "drag the lock exactly at the kit baseline: only the lock changes", act: async (u, c) => { const key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), y = r.bottom - 3 - (r.height - 6) * c.k0 / 127;
+					await u.drag(key, [[0, c.k0 > 64 ? 12 : -12], [0, c.k0 > 64 ? 30 : -30]], {}, { fy: (y - r.top) / r.height, click: false }); },
+				machine: c => ok((grp(c.t, c.p)[c.p] ?? 0) === c.k0 && locksOf(c.t, c.i).some(([x, v]) => x === c.s && v !== c.k0), "lock drag edited the kit or did not change the lock"), within: 8000 },
+			{ ...undoKey, say: "undo the lock drag: lock restored and kit unchanged", machine: c => ok((grp(c.t, c.p)[c.p] ?? 0) === c.k0 && locksOf(c.t, c.i).some(([x, v]) => x === c.s && v === c.k0), "lock not restored"), within: 8000 },
 			{ ...undoKey, say: "press Cmd+Z: the lock is gone", machine: c => ok(locksOf(c.t, c.i).length === c.l0 && V.undoCount === c.ul, `locks ${JSON.stringify(locksOf(c.t, c.i))}, undo steps ${V.undoCount} (expected ${c.ul})`), within: 8000 },
-			{ say: "drag the line itself: the kit value follows the pointer, no lock is drawn", act: async (u, c) => { await settled(); c.l0 = locksOf(c.t, c.i).length; c.u0 = V.undoCount; c.k0 = grp(c.t, c.p)[c.p] ?? 0;
-					const key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), b = $1(key + " .base").getBoundingClientRect(), y = b.top + b.height / 2, dy = y - r.top < r.height / 2 ? 30 : -30;
-					await u.drag(key, [[0, dy / 2], [0, dy]], {}, { fy: (y - r.top) / r.height, click: false }); },
+			{ say: "drag the labelled KIT handle: the kit value follows, no lock is drawn", act: async (u, c) => { await settled(); c.l0 = locksOf(c.t, c.i).length; c.u0 = V.undoCount; c.k0 = grp(c.t, c.p)[c.p] ?? 0;
+					const dy = c.k0 > 64 ? 30 : -30; await u.drag("#lanekit [data-kitvalue]", [[0, dy / 2], [0, dy]], {}, { click: false }); },
 				screen: c => { const v = grp(c.t, c.p)[c.p], k = $1("#lane .kvl"); return ok(v !== c.k0 && !!k && k.textContent === laneFmt(v), `kit ${c.k0} -> ${v}, number ${k?.textContent}`); },
 				machine: c => { const i = c.i, d = kit()?.tracks[c.t], v = d && d[["synth", "effects", "routing"][i >> 3]][i & 7]; return ok(v === grp(c.t, c.p)[c.p] && v !== c.k0 && locksOf(c.t, c.i).length === c.l0, `machine ${v}, page ${grp(c.t, c.p)[c.p]}, was ${c.k0}; locks ${locksOf(c.t, c.i).length} (was ${c.l0})`); }, within: 8000 },
 			{ say: "the whole drag was one undo step", machine: c => ok(V.undoCount === c.u0 + 1, `undo steps ${c.u0} -> ${V.undoCount}`), within: 4000 },

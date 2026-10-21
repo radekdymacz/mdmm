@@ -562,6 +562,13 @@ namespace mdJucePlugin
 
 	void WebPageHost::flush()
 	{
+		if(m_failure)
+		{
+			// A dead web process cannot acknowledge batches. Do not fill its temp folder while the
+			// native failure view is showing; reopening the editor requests a fresh session snapshot.
+			m_outbox.clear();
+			return;
+		}
 		if(!m_pageReady)
 			return;
 		// Linux: batches that could not be written wait and are tried again here, also when nothing new came
@@ -728,6 +735,15 @@ namespace mdJucePlugin
 			+ juce::SystemStats::getOperatingSystemName() + (juce::SystemStats::isOperatingSystem64Bit() ? " 64-bit" : "")
 			+ ", " + (juce::JUCEApplicationBase::isStandaloneApp() ? "standalone" : "plug-in in " + juce::File::getSpecialLocation(juce::File::hostApplicationPath).getFileName())
 			+ ", CPU " + juce::SystemStats::getCpuModel() + ", " + processArch::describe(processArch::current()));
+#if JUCE_LINUX || JUCE_BSD
+		// These distinguish the desktop and the host's sandbox without dumping the environment or user data.
+		for(const auto* name : {"XDG_SESSION_TYPE", "DISPLAY", "WAYLAND_DISPLAY", "GDK_BACKEND", "FLATPAK_ID"})
+			note(juce::String("Linux web view: ") + name + "="
+				+ juce::SystemStats::getEnvironmentVariable(name, "(unset)").substring(0, 160)
+					.replaceCharacters("\r\n", "  "));
+		note("Linux web view: GTK uses X11/XEmbed; WebKit hardware acceleration is disabled; temporary folder="
+			+ juce::File::getSpecialLocation(juce::File::tempDirectory).getFullPathName());
+#endif
 		// what the web view said while it was being made, before this file was named
 		for(const auto& line : std::exchange(m_early, {}))
 			m_startupLog.appendText(line);
@@ -767,7 +783,9 @@ namespace mdJucePlugin
 				text += "What to do: install or update the Microsoft Edge WebView2 Runtime (the Evergreen Runtime, version "
 					+ juce::String(g_minimumRuntimeText) + " or newer; Windows Update or the button below), then open the editor again.\n\n";
 #elif JUCE_LINUX || JUCE_BSD
-				text += "What to do: install webkit2gtk (libwebkit2gtk-4.1 or 4.0), then open the editor again.\n\n";
+				text += "What to do: check GTK 3 and WebKitGTK 4.1 or 4.0 in the host's runtime, and X11/XWayland. "
+					"Flatpak hosts use separate libraries. Close and reopen the editor, then include the host's "
+					"terminal output with your report.\n\n";
 #else
 				text += "What to do: open the editor again; if it stays like this, send the log.\n\n";
 #endif

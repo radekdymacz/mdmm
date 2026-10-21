@@ -13,7 +13,8 @@
 //                                        steprec (0.6 wave 7: LIVE RECORDING's erase and STEP RECORDING), perform (0.6
 //                                        wave 9, B-064: POLY, key tracking and the MULTI ENV, judged by the output), hoststop
 //                                        (B-121: the host's Stop lets go of a held note), reselect (B-122: picking the
-//                                        current pattern again keeps it)
+//                                        current pattern again keeps it), emptyreset (B-175: stored K01 and the working
+//                                        kit after Empty Reset; B-176: native machine-init AMP defaults)
 //
 // Exits 77 (skip) without arguments.
 
@@ -45,7 +46,9 @@
 #include "deskWire/mmWire.h"
 
 #include "../mdJucePlugin/mdSyxSession.h"	// the session's .syx import, header only (B-019)
+#include "../mdJucePlugin/mdSyxWork.h"	// the production Empty Reset coordinator (B-175)
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <deque>
@@ -1397,7 +1400,8 @@ namespace
 	class ImportTap
 	{
 	public:
-		ImportTap(mmDesk::Desk& _desk, mdJucePlugin::SyxJob<MmSyxTraits>& _job) : m_desk(_desk)
+		template<typename Traits>
+		ImportTap(mmDesk::Desk& _desk, mdJucePlugin::SyxJob<Traits>& _job) : m_desk(_desk)
 		{
 			m_desk.setSysexTap([&_job](const Bytes& _m) { _job.onMachineSysex(_m); });
 		}
@@ -1421,6 +1425,94 @@ namespace
 		o.songs = v.songs;
 		o.globals = v.globals;
 		return o;
+	}
+
+	std::optional<ed::MmKit> workingKitInMemory(const Rig& _r);
+
+	// B-175: use the same coordinator as the menu, not a hand-made clear. Check the first stored
+	// slot separately from the working kit, including when reset starts with a different kit active.
+	void emptyReset(const Bytes& _rom)
+	{
+		std::puts("Empty Reset: K01 and the active working kit (B-175)");
+		Rig r(_rom);
+		// B-176 evidence: the native assign/init command, before the desk starts sending anything.
+		// This measures a machine assignment, not the hardware's separate NEW KIT operation.
+		r.m.send(ed::mmAssignMachine(0, 1, 1));
+		r.m.run(200);
+		r.readTelemetry();
+		const auto native = workingKitInMemory(r);
+		check(native && native->machines[0] == 1, "native init assigned GND-SIN before reading its AMP defaults");
+		if(native)
+		{
+			const auto& a = native->tracks[0].pages[1];
+			std::printf("  B-176 native GND-SIN init=1: AMP ATK %u HLD %u DEC %u REL %u DIST %u VOL %u PAN %u PORT %u\n",
+				a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]);
+		}
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		const auto boot = r.ms();
+		while(r.desk->loaded() < 288 && r.ms() - boot < 60000)
+			r.run(100);
+		check(r.desk->loaded() == 288, "read every slot before resetting");
+		if(r.desk->loaded() < 288)
+			return;
+		const auto soundMatches = [](const ed::MmKit& a, const ed::MmKit& b)
+		{
+			bool same = a.machines == b.machines && a.levels == b.levels && a.routing == b.routing;
+			for(size_t t = 0; t < 6; ++t)
+				same = same && a.tracks[t].pages == b.tracks[t].pages;
+			return same;
+		};
+		for(const int active : {0, 5})
+		{
+			// The second pass starts with non-empty kits too; a previously cleared machine must not
+			// let it pass merely because K01 and the other active kit were already empty.
+			for(const uint8_t slot : {uint8_t{0}, uint8_t{5}})
+			{
+				auto k = *r.desk->kit(slot);
+				k.name.fill(0);
+				std::copy_n("RESET TEST", 10, k.name.begin());
+				k.machines.fill(3);
+				for(auto& t : k.tracks)
+					t.pages[1][5] = 77;
+				r.msgConfirmed(R"({"op":"set","kind":"kit","doc":)" + ed::json::write(ed::mmKitToJson(k)) + "}");
+				r.run(3000);
+			}
+			r.msgConfirmed(R"({"op":"select","p":0})");
+			r.run(2000);
+			r.msgConfirmed(R"({"op":"loadKit","k":)" + std::to_string(active) + "}");
+			r.run(2000);
+			check(r.desk->currentKit() == active, "reset starts on K" + std::to_string(active + 1));
+			const auto expected = mmDesk::emptyKit(*r.desk->kit(0), 0);
+			mdJucePlugin::SyxWork<mmDesk::Desk> work;
+			const ImportTap tap(*r.desk, work.job());
+			bool accepted = false;
+			work.handle(*r.desk, *ed::json::parse(R"({"op":"machineReset","how":"empty"})"),
+				[&](const Value&, const bool ok, const std::string&) { accepted = ok; }, [](const Value&) {});
+			check(accepted, "the menu's Empty Reset starts");
+			const auto started = r.ms();
+			while(work.running() && r.ms() - started < 300000)
+			{
+				work.step(*r.desk, r.ms(), false, [](const Value&) {});
+				r.run(100);
+			}
+			check(!work.running(), "Empty Reset finishes within five minutes of machine time");
+			if(work.running())
+				return;
+			r.run(2000);
+			const auto slot = r.desk->kit(0), working = r.desk->workingKit(), memory = workingKitInMemory(r);
+			check(slot && slot->name == expected.name && soundMatches(*slot, expected),
+				"K01's stored name, machines and sound values are empty after reset");
+			check(working && memory && soundMatches(*working, expected) && soundMatches(*memory, expected),
+				"the page and firmware working kit use the reset sound");
+			for(const int kit : {1, 0})
+			{
+				r.msgConfirmed(R"({"op":"loadKit","k":)" + std::to_string(kit) + "}");
+				r.run(2000);
+			}
+			const auto reloaded = workingKitInMemory(r);
+			check(reloaded && soundMatches(*reloaded, expected), "K01 stays empty after switching away and back");
+		}
 	}
 
 	// P7: Export SysEx as the session does (writeSyx of every document the desk holds) from a fresh machine, to
@@ -5326,6 +5418,8 @@ int main(const int _argc, char** _argv)
 			trigKinds(rom);
 		if(only == "syximport")
 			syxImport(rom);
+		if(only == "emptyreset")
+			emptyReset(rom);
 		if(only == "syxexport")
 			syxExport(rom);
 		if(only.empty() || only == "hostclock")

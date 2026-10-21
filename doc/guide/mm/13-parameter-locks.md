@@ -1,7 +1,7 @@
 # 13. Parameter locks
 <!-- summary: Give a parameter its own value on single steps, draw the values in the lock lane, and record them while the pattern plays. -->
 
-A parameter lock gives one parameter a value of its own on one step. The parameter takes the value when that step plays and goes back to the kit value after it. A lock needs a trig: a step without one cannot hold a lock.
+A parameter lock gives one parameter a value of its own on one step. The parameter takes the value when that step plays and goes back to the kit value after it. The editor paints new locks on steps with a trig. Existing locks on steps without a trig are kept and shown as ghost bars; the machine plays them too.
 
 The pattern holds locks for 62 parameters. The count is shared by all twelve tracks. A parameter counts once however many steps lock it. The **Locks** field of the LCD shows the count, for example 12/62. When all 62 are used, the editor refuses a new locked parameter and says so. Clear the locks of one parameter to make room.
 
@@ -14,7 +14,7 @@ The lock lane is under the piano roll on **Pattern**. Press {key:workspace-1} an
 
 The rail on the left of the lane lists what you can lock. For a synth track the page keys are SYN, AMP, FLT, EFX, LF1, LF2 and LF3. For a MIDI track there is one key, MIDI PAGE. A green light on a page key means the page holds locks. Under the page keys are the parameters of the page. A number on a parameter key counts its locked steps.
 
-The lane shows one parameter at a time, the one lit in the rail. Each step with a trig has a bar. A solid line across the lane marks the value of the kit, and its number sits on the line at the right end of the lane. Rest the pointer on a step, or select it, to read its lock as a number at the top of its bar. Drag the line itself to change the kit value of the parameter on that track, the value the knob changes. The whole drag is one undo step and draws no lock. A click on or near the line, without moving up or down, still sets a lock on that step. Hatched steps have no trig. A lock that sits on a step with no trig is drawn there as a hatched ghost bar with a dashed outline and its number. The machine plays such a lock: its value takes hold on that step, without a new note, and stays until the next trig plays the kit value again. Hold [⌥] and click it to remove it.
+The lane shows one parameter at a time, the one lit in the rail. Each step with a trig has a bar. A solid line across the lane marks the value of the kit, and its number sits on the line at the right end of the lane. Rest the pointer on a step, or select it, to read its lock as a number at the top of its bar. Drag the labelled **KIT ↕** handle in the left gutter to change the kit value, or focus it and use the arrow keys. The whole drag is one undo step and draws no lock. The line across the steps is a reference: a plain click or vertical drag on a step edits its lock, even when its value equals the kit value. Hatched steps have no trig. A lock that sits on a step with no trig is drawn there as a hatched ghost bar with a dashed outline and its number. The machine plays such a lock: its value takes hold on that step, without a new note, and stays until the next trig plays the kit value again. Hold [⌥] and click it, or right-click it and choose **Clear … lock**, to remove it.
 
 A small mark at the top of a bar tells what the trig fires. Red: the trig fires all three envelopes (AMP, FILTER and LFO). Green: it fires only some of them, or none (a trigless trig). The tip of the bar says the same.
 
@@ -26,7 +26,7 @@ On the machine you hold a trig and turn a knob. In the editor you draw the value
 1. Click the page key and the parameter key in the rail.
 2. Drag across the bars in the lane. Each step with a trig that the pointer crosses takes the value at the height of the pointer. Every lock shows as a bar.
 3. To move one lock, scroll the wheel over its step. A notch moves the value by 4. Hold [⇧] for 1. A step with no lock starts from the kit value.
-4. To draw a straight line of values, hold [⇧] and drag from the first step to the last. Every step with a trig under the line gets a lock. It is one undo step.
+4. To draw a straight line of values, hold [⇧] and drag from a step without a lock to the last step. Starting on an existing lock draws a slide instead. Every step with a trig under the line gets a lock. It is one undo step.
 
 ![Locks drawn across the lane](shot:e2e-mm-seq-lock-ramp-erase-wheel)
 
@@ -35,6 +35,7 @@ Every lock of the parameter shows as a bar, so you can read the values of a step
 ### Remove locks
 
 - Hold [⌥] and drag across the bars to remove the locks of that parameter on the steps you cross. The bars go.
+- Right-click a lock bar and choose **Clear … lock** to remove just that parameter on that step. This works on ghost bars too.
 - Click the bin in the lane header to remove all the locks of the parameter.
 - Hold [⌥] and click the bin to remove every lock of the track.
 - Select a step or steps, click the small ⋯ on the selection (or right-click a step) and choose **Clear locks (keep the notes)** to remove all the locks of the step, or of the selected steps. The note stays. Press {key:undo} to put them back.
