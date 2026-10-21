@@ -2209,6 +2209,28 @@
 			"area": "Lock lane"
 		},
 		{
+			"id": "lane-lock-menu",
+			"scope": "seq",
+			"keys": [
+				"right-click a step"
+			],
+			"mod": "",
+			"group": "Pattern",
+			"does": "Clear this parameter's lock, including a ghost lock on a step without a note, or toggle Slide. Alt-click also erases a lock",
+			"area": "Lock lane"
+		},
+		{
+			"id": "lane-kit-value",
+			"scope": "seq",
+			"keys": [
+				"KIT handle"
+			],
+			"mod": "",
+			"group": "Pattern",
+			"does": "Drag the labelled KIT handle in the left gutter to edit the sound. The line across the steps is a reference; every step column edits its lock",
+			"area": "Lock lane"
+		},
+		{
 			"id": "lane-slide-cancel",
 			"scope": "seq",
 			"keys": [
@@ -2225,11 +2247,11 @@
 			"id": "lane-ramp",
 			"scope": "seq",
 			"keys": [
-				"lock lane"
+				"unlocked step"
 			],
 			"mod": "shift",
 			"group": "Pattern",
-			"does": "Drag: a ramp, a straight line from the press to the release (one undo step)",
+			"does": "Drag from a step without a lock: paint a ramp of lock values (one undo step). Shift from an existing lock draws a slide instead",
 			"area": "Lock lane"
 		},
 		{
