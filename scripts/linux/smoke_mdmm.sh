@@ -13,7 +13,8 @@
 #   - the page's zoom: it starts at 125 % (the editor's config, seeded) and Ctrl+= makes it 150 %; webkit2gtk has no
 #     page zoom, so the plug-in sends it as a message (a batch file), and the web process must live through it (a
 #     javascript: URL for it crashed the web process next to the bridge's iframes until the codex review of 2026-10);
-#   - the firmware-needed card is actually drawn in the screenshot (OCR), not only in the accessibility tree;
+#   - the firmware-needed card is actually drawn in the screenshot (its instruction text, OCR), not only in
+#     the accessibility tree (the exact machine heading);
 #     screenshots of the display (md-standalone.png, md-vst3.png, ...) are kept as artifacts.
 #   - after the working page checks, terminate the standalone's WebKit page process / VST3's GTK helper;
 #     the host stays alive, logs the cause and draws the native error (read from a screenshot using OCR).
@@ -142,6 +143,9 @@ run() {
 	local name="$1" label="$2" machine="$3" smokeHome="$4"
 	shift 4
 	local wanted="${machine} firmware needed"
+	# The MD heading uses a condensed display font that Tesseract can omit despite drawing correctly.
+	# Its normal-font instruction belongs to the same card; the exact machine heading is checked by AT-SPI.
+	local visible_wanted="Click here to choose the file."
 	echo "== ${label}: $*"
 	# the page's zoom at 125 % from the start (PageEditor's pageZoom, the editor's config in the data folder)
 	mkdir -p "${smokeHome}/data/Gearmulator Preview/${machine}/config"
@@ -173,10 +177,10 @@ run() {
 	ps -eo pid,ppid,args --forest > "${out}/${name}-processes.txt"
 	import -display "${display}" -window root "${out}/${name}.png" 2>/dev/null || true
 	tesseract "${out}/${name}.png" "${out}/${name}-screen" --psm 11 2>"${out}/${name}-screen-ocr.txt"
-	if grep -q -i -F "${wanted}" "${out}/${name}-screen.txt"; then
+	if grep -q -i -F "${visible_wanted}" "${out}/${name}-screen.txt"; then
 		record "${label}" "firmware card visible in screenshot (OCR)" "yes"
 	else
-		fail "${label}: screenshot did not show '${wanted}' (a live accessibility tree alone is not a visible editor)"
+		fail "${label}: screenshot did not show '${visible_wanted}' (a live accessibility tree alone is not a visible editor)"
 		record "${label}" "firmware card visible in screenshot (OCR)" "no"
 	fi
 	tail -n "+$((events_before + 1))" "${out}/temp-events.txt" > "${out}/${name}-temp-events.txt"

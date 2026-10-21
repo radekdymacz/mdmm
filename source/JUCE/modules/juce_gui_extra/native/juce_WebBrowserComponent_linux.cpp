@@ -828,6 +828,25 @@ public:
             xembed->setBounds (owner.getLocalBounds());
     }
 
+    void checkWindowAssociation()
+    {
+        if (xembed == nullptr)
+            return;
+
+        // XEmbedComponent maps its native host window when attached to a peer, but does not
+        // follow JUCE visibility. Detach it while hidden so it cannot cover a native failure
+        // view with a blank or stale page. Keep the client alive for a later show/slow start.
+        if (owner.isVisible())
+        {
+            if (xembed->getParentComponent() == nullptr)
+                owner.addAndMakeVisible (xembed.get());
+        }
+        else
+        {
+            owner.removeChildComponent (xembed.get());
+        }
+    }
+
 private:
     //==============================================================================
     static void closeChannel (int& channel)
@@ -1148,6 +1167,8 @@ void WebBrowserComponent::paint (Graphics& g)
 
 void WebBrowserComponent::checkWindowAssociation()
 {
+    if (browser != nullptr)
+        browser->checkWindowAssociation();
 }
 
 void WebBrowserComponent::reloadLastURL()
