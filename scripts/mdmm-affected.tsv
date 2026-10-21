@@ -19,7 +19,7 @@ source/elektron/md/mdJucePlugin/skins/mmStudio/src/52-gen.js	mmViewPageTest|mmCo
 source/elektron/md/mdJucePlugin/skins/mmStudio/src/76-gen.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-gen-*,mm-seq-*	-	no	2 2c 7d
 source/elektron/md/mdJucePlugin/skins/mmStudio/src/56-keys.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-keys-*	-	no	2 2c 7d
 source/elektron/md/mdJucePlugin/skins/mmStudio/src/58-roll.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-roll-*,mm-seq-*	-	no	2 2c 7d
-source/elektron/md/mdJucePlugin/skins/mmStudio/src/70-seq.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmLockLaneTest|mmSoundTest	-	mm-seq-*,mm-roll-*,mm-note-*	-	no	2 2c 7d
+source/elektron/md/mdJucePlugin/skins/mmStudio/src/70-seq.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmLockLaneTest|mmSoundTest	-	mm-seq-*,mm-roll-*,mm-note-*,mm-lane-*	-	no	2 2c 7d
 source/elektron/md/mdJucePlugin/skins/mmStudio/src/85-sound-groups.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-sound-*	-	no	2 2c 7d
 source/elektron/md/mdJucePlugin/skins/mmStudio/src/90-sound.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-sound-*	-	no	2 2c 7d
 source/elektron/md/mdJucePlugin/skins/mmStudio/src/100-mix.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-mix-*	-	no	2 2c 7d
@@ -62,7 +62,7 @@ source/elektron/md/deskCore/*	deskCoreTest|deskLearnTest|mdDeskTest|mmDeskTest|d
 source/elektron/md/deskHost/*	deskCoreTest|deskLearnTest|mdDeskTest|mmDeskTest	-	*	-	no	2 2b 2c 7d
 source/elektron/md/deskStubHost/*	-	-	*	-	no	2c
 source/elektron/md/mdDesk/*	mdDeskTest|mdDataLinkTest	mdIntentCasesFirmwareTest|mdTransportFirmwareTest|mdLiveEraseFirmwareTest	md-*	-	no	2 2b 2c 4 7d
-source/elektron/md/mmDesk/*	mmDeskTest	mmIntentCasesFirmwareTest|mmDeskFirmwareTest|mmTransportFirmwareTest|mmStepRecordFirmwareTest|mmPerformSoundFirmwareTest|mmChordEraseFirmwareTest	mm-*	-	no	2 2b 2c 4 7d
+source/elektron/md/mmDesk/*	mmDeskTest	mmIntentCasesFirmwareTest|mmDeskFirmwareTest|mmEmptyResetFirmwareTest|mmTransportFirmwareTest|mmStepRecordFirmwareTest|mmPerformSoundFirmwareTest|mmChordEraseFirmwareTest	mm-*	-	no	2 2b 2c 4 7d
 source/elektron/md/mdDataLink/*	mdDataLinkTest|mdDeskTest	mdIntentCasesFirmwareTest	md-*	-	no	2 2b 4 7d
 source/elektron/md/deskWire/*	deskWire	mdTransportFirmwareTest|mmTransportFirmwareTest	-	*-engine-hw-*	no	2 2b 7d
 source/elektron/md/elektronData/*	elektronData|mmData|mmConvert|syxImport|mdDeskTest|mmDeskTest	mdSyxPick|mmSyxPick|mmChordEraseFirmwareTest	*	-	no	2 2b 2c 4
@@ -71,13 +71,16 @@ source/elektron/md/mdmmUpdate/*	mdmmUpdate|mdmmReleaseScripts	-	-	-	no	2
 source/elektron/md/mdLib/*	mdLib|mdRam|mdUart|mdState|mdSequencer|mdFlash|mdAudio|mdMidi|mdHostRx|mdIdle|mdTransport|mdSds|mdTurbo|mdMemory|mmSine|mmDigiPro|mmSysex	mdSessionFirmwareTest|mmBootFirmwareTest|mdAudioFirmwareTest|mmAudioFirmwareTest	-	*-boot-card	yes	1 2 2b 3 4 5 5b 6a 6b 7a 7d
 source/elektron/md/mdLibTest/goldens/*	-	-	-	-	yes	5
 source/elektron/md/mdLibTest/mdDeskFirmwareTest.cpp	-	mdIntentCasesFirmwareTest|mdTransportFirmwareTest|mdLiveEraseFirmwareTest	-	-	no	2 2b
-source/elektron/md/mdLibTest/mmDeskFirmwareTest.cpp	-	mmIntentCasesFirmwareTest|mmStepRecordFirmwareTest|mmPerformSoundFirmwareTest|mmChordEraseFirmwareTest	-	-	no	2 2b
+source/elektron/md/mdLibTest/mmDeskFirmwareTest.cpp	-	mmEmptyResetFirmwareTest|mmIntentCasesFirmwareTest|mmStepRecordFirmwareTest|mmPerformSoundFirmwareTest|mmChordEraseFirmwareTest	-	-	no	2 2b
+source/elektron/md/mdLibTest/stackedLfoFirmwareTest.cpp	-	stackedLfoFirmwareTest|stackedLfoMmFirmwareTest|stackedLfoMmSequencerFirmwareTest	-	-	no	2 2b
 source/elektron/md/mdLibTest/*	mdLib|mdRam|mdUart|mdState|mdSequencer|mdFlash|mdAudio|mdMidi|mdHostRx|mdIdle|mdTransport|mdSds|mdTurbo|mdMemory|mmSine|mmDigiPro|mmSysex|deskWirePort	-	-	-	no	2 2b
 source/dsp56300/*	dsp56300|dsp56k|ringBuffer|semaphore|sharedAudio|cowMemory|pagedArray	mdAudioFirmwareTest|mmAudioFirmwareTest	-	-	yes	1 2 2b 3 4 5 5b 6a 6b 7a 7d
 source/mc68k/*	mc68k	mdSessionFirmwareTest|mmBootFirmwareTest	-	*-boot-card	yes	1 2 2b 3 4 5 5b 6a 6b 7a 7d
 source/elektron/md/pgo/*	-	-	-	-	yes	1 2 2b 3 4 5 5b 6a 6b 7a 7d
 # --- the plug-in (JUCE, the window, the host side)
 source/elektron/md/mdJucePlugin/mdMachineMemory*	mdMachineMemoryTest	mdMachineMemoryFirmwareTest	*-engine-memory	-	no	2 6b 7a 7b 7c 7d
+source/elektron/md/mdJucePlugin/mdAutomationFirmwareTest.cpp	-	mdAutomationFirmwareTest	-	-	no	2 2b
+source/elektron/md/mdJucePlugin/mmStudioLink.cpp	mdAutomation	mdAutomationFirmwareTest	mm-*	-	no	2 2b 7d
 source/elektron/md/mdJucePlugin/*	mdPageBridge|mdEditorMenu|mdDroppedFiles|mdAbout|mdCpuLoad|mdOutputLevel|mdMixMeters|mdDeskSetupState|mdSessionNoRom|mdRomInstall|mdSettingsMigration|mdProcessArch|mdRosettaNotice|mdWindow|mdAudioIo|mdAutomation|mdMachineMidiOut|mdStandalone|mdProcessorHooks|mdmmIdentity|mdMachineMemory|mdLearnRouter|mdMidiLoop|mdMidiHotplug|mdAudioMidiLink|mdmmStandalonePlist	mdSessionFirmwareTest|mdFirstStartFirmwareTest|mdFactorySourceFirmwareTest|mdMachineMemoryFirmwareTest|mdLearnFirmwareTest	-	journey	no	2 6b 7a 7b 7c 7d
 source/synthLib/*	synthLib|midiRouting|midiOutput	-	-	*-boot-card,*-keys-space-play	yes	2 5 6a 6b 7a 7c 7d
 source/baseLib/*	baseLib	-	-	-	no	2

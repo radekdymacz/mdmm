@@ -27,7 +27,7 @@ const scope = new Proxy({}, {
 	set: (t, k, v) => { t[k] = v; return true; } });
 const src = FILES.map(f => fs.readFileSync(path.join(__dirname, f), "utf8").replace(/^"use strict";/, ""))
 	.join("\n;\n");
-const { Keys, piano, oct, base, kbOct } = new Function("scope", "with (scope) {\n" + src + "\n;return { Keys, piano: KEYS_PIANO, oct: KEYS_OCT, base: KEYS_BASE, kbOct: KBOCT }; }")(scope);
+const { Keys, piano, oct, base, kbOct, S, renderKb } = new Function("scope", "with (scope) {\n" + src + "\n;return { Keys, piano: KEYS_PIANO, oct: KEYS_OCT, base: KEYS_BASE, kbOct: KBOCT, S, renderKb }; }")(scope);
 const list = Keys.list(), does = b => { try { return typeof b.does === "function" ? String(b.does()) : String(b.does); } catch (_) { return ""; } };
 check(list.length > 40, `the scripts ran to their ends: ${list.length} entries`);
 
@@ -35,6 +35,19 @@ check(list.length > 40, `the scripts ran to their ends: ${list.length} entries`)
 const topKey = Math.max(...Object.values(piano));
 check(base + 12 * oct[0] === 0 && base + 12 * oct[1] + topKey >= 127 && base + 12 * (oct[1] - 1) + topKey < 127, `the A key plays from MIDI ${base + 12 * oct[0]} to ${base + 12 * oct[1]}, the top key to ${base + 12 * oct[1] + topKey} (clamped 127): ${oct[1] - oct[0] + 1} octaves`);
 check(12 * (kbOct[0] + 1) === 0 && 12 * (kbOct[1] + 1) + 47 >= 127 && 12 * kbOct[1] + 47 < 127, `the Perform keyboard (four octaves) stops from MIDI ${12 * (kbOct[0] + 1)} to ${12 * (kbOct[1] + 1)}`);
+
+/* B-177: the clipped top octave keeps the same key width and emits no out-of-range notes. */
+const oldOctave = S.kbOct;
+S.kbOct = 3;
+const normalKeys = renderKb();
+S.kbOct = kbOct[1];
+const topKeys = renderKb();
+S.kbOct = oldOctave;
+const widths = h => [...h.matchAll(/class="w[^"\n]*" data-key="\d+" style="left:[^;]+;width:([^%]+)%/g)].map(m => +m[1]);
+const normalWidths = widths(normalKeys), topWidths = widths(topKeys);
+check(normalWidths.length === 28 && topWidths.length === 26 && [...normalWidths, ...topWidths].every(w => Math.abs(w - 100 / 28) < 1e-9), "Perform: the same white-key width at C3 and the clipped C6 stop");
+const topNotes = [...topKeys.matchAll(/data-key="(\d+)"/g)].map(m => +m[1]);
+check(topNotes.length === 44 && Math.min(...topNotes) === 84 && Math.max(...topNotes) === 127, "Perform: the top stop plays MIDI 84-127 only");
 
 /* ---- the physical key of an entry's key, as the dispatcher matches it (e.key upper-cased, or e.code) ---- */
 const keyId = k => /^[A-Z]$/.test(k) ? "Key" + k : /^[0-9]$/.test(k) ? "Digit" + k : k;

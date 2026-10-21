@@ -5,18 +5,26 @@
  * Debian 13 have only webkit2gtk-4.1, whose C API is the same; 4.1 only moved to libsoup 3). This file is
  * built as a library of that name, put beside the standalone and the VST3 module (both have $ORIGIN in their
  * run path, which dlopen searches for the calling object): it opens whichever webkit2gtk is installed, 4.0 or
- * 4.1, and forwards the sixteen functions to it. With neither installed, every call is a no-op returning
- * nothing: the editor stays empty instead of the host crashing.
+ * 4.1, and forwards the sixteen functions to it. The optional mdmm_webkit_runtime_error entry point lets our
+ * JUCE browser distinguish a usable shim from one whose underlying runtime could not load.
  *
  * Only the functions JUCE 7.0.10's juce_WebBrowserComponent_linux.cpp binds; a JUCE that binds more fails its
  * own symbol lookup (an empty editor), so a JUCE update must check this list.
  */
 #include <dlfcn.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <string.h>
 
 #define MDMM_EXPORT __attribute__((visibility("default")))
 
 static void* g_webkit;
+static char g_error[4096];
+
+MDMM_EXPORT const char* mdmm_webkit_runtime_error(void)
+{
+	return g_webkit ? NULL : g_error;
+}
 
 static void* lookup(const char* _name)
 {
@@ -26,8 +34,21 @@ static void* lookup(const char* _name)
 __attribute__((constructor)) static void mdmmWebkitShimOpen(void)
 {
 	static const char* const names[] = { "libwebkit2gtk-4.0.so.37", "libwebkit2gtk-4.1.so.0" };
+	snprintf(g_error, sizeof(g_error), "Could not load a WebKitGTK runtime. ");
 	for(size_t i = 0; i < sizeof(names) / sizeof(names[0]) && !g_webkit; ++i)
+	{
 		g_webkit = dlopen(names[i], RTLD_NOW | RTLD_GLOBAL);
+		if(!g_webkit)
+		{
+			const char* error = dlerror();
+			const size_t used = strlen(g_error);
+			snprintf(g_error + used, sizeof(g_error) - used, "%s: %s; ", names[i], error ? error : "unknown error");
+		}
+		else
+			fprintf(stderr, "MD/MM WebKitGTK runtime: %s\n", names[i]);
+	}
+	if(!g_webkit)
+		fprintf(stderr, "MD/MM WebKitGTK: %s\n", g_error);
 }
 
 /* One forwarder: resolved on its first call, then called directly. */

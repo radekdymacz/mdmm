@@ -218,7 +218,7 @@ jobs:
       - name: Install runtime packages
         run: >-
           sudo apt-get update && sudo apt-get install -y --no-install-recommends xvfb x11-utils xdotool imagemagick
-          inotify-tools dbus dbus-x11 at-spi2-core python3-gi gir1.2-atspi-2.0 libglib2.0-bin
+          inotify-tools dbus dbus-x11 at-spi2-core python3-gi gir1.2-atspi-2.0 libglib2.0-bin tesseract-ocr
           ${{ matrix.packages }} libx11-6 libxext6 libxcursor1 libxinerama1 libxrandr2 libxrender1
           libxcomposite1 libfreetype6 libfontconfig1 &&
           dpkg -l | grep -i -E 'webkit2gtk|libgtk-3-0'
@@ -233,7 +233,7 @@ jobs:
           name: linux-mdmm-vst3host
           path: ${{ runner.temp }}/vst3host
 
-      - name: Start each standalone and VST3, check the page and the bridge, take screenshots
+      - name: Start each standalone and VST3, check the page, bridge and browser failure display
         run: |
           chmod +x "${{ runner.temp }}/vst3host/mdmmVst3EditorHost"
           ./scripts/linux/smoke_mdmm.sh "${{ runner.temp }}/linux-mdmm" "${{ runner.temp }}/smoke" \

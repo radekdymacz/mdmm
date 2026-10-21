@@ -26,7 +26,7 @@ A note that fires only some envelopes shows their letters at the start of its ba
 
 A trigless trig fires no envelope. It is there to carry a pitch or locks.
 
-1. Right-click an empty step, or a note, and choose **Trigless trig (locks only)**.
+1. Right-click an empty step, or a note, and choose **Trigless trig (no envelopes)**.
 2. An empty step gets a trigless trig at the track's last pitch. A note keeps its pitch and loses its envelope trigs.
 3. Draw the locks in the lock lane.
 

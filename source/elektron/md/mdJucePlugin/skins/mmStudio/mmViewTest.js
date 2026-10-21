@@ -425,6 +425,47 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 	check(logged.some(l => /1 link\(s\) from no source left out/.test(l)), "and the log says so: " + logged.filter(l => /link/.test(l)).join(" | "));
 }
 
+/* ---- B-174: read-back of a replaced kit updates its library name, while a partial import leaves
+   the other stored slots alone. The working kit changes only with its own document. ---- */
+{
+	const p = loaded(), S = p.S(), base = fixture.docs.find(m => m.kind === "kit");
+	const kit = (slot, name) => {
+		const m = copy(base); m.slot = m.doc.slot = slot; m.doc.name = name;
+		delete m.doc.nameBytes;
+		return m;
+	};
+	p.recv([kit(120, "BEFORE"), kit(121, "KEEP")]);
+	p.recv([kit(120, "AFTER")]);
+	check(S.kits[120].name === "AFTER" && S.kits[121].name === "KEEP",
+		"a kit read-back replaces its old library name without clearing untouched import slots");
+}
+
+/* ---- B-173: distinct imported pitches survive the document -> page -> track-edit path. A MIDI pool entry
+   whose note bit is clear is residue, not a pitch to add on the next edit. ---- */
+{
+	const p = loaded(), S = p.S(), pat = copy(docMsg("pattern", S.pat));
+	const positions = [0, 4, 8], synth = [36, 55, 79], midi = [48, 67, 91];
+	const t = pat.doc.tracks[0], m = pat.doc.midiTracks[0];
+	Object.assign(t, { trig: positions, amp: positions, filter: positions, lfo: positions, noteOff: [],
+		notes: positions.map((s, i) => [s, synth[i]]), chord: [4] });
+	Object.assign(m, { trig: [...positions, 12], note: positions, noteOff: [] });
+	pat.doc.chordNotes = [[0, 4, 59], [0, 4, 62]];
+	pat.doc.midiNotes = [...positions.map((s, i) => [0, s, midi[i]]), [0, 4, 71], [0, 12, 99]];
+	p.recv([pat]);
+	check(positions.map(s => S.tracks[0].steps[s].n[0]).join() === synth.join()
+		&& JSON.stringify(S.tracks[0].steps[4].n) === "[55,59,62]", "imported synth pitches and chord notes stay distinct");
+	check(positions.map(s => S.midi[0].steps[s].n[0]).join() === midi.join()
+		&& JSON.stringify(S.midi[0].steps[4].n) === "[67,71]", "imported MIDI pitches and chord notes stay distinct");
+	check(S.midi[0].steps[12] && !S.midi[0].steps[12].n, "a MIDI trig without the note bit does not show stale pool pitches");
+	p.sent.length = 0;
+	p.mockup.editSpan(6, new Set([0, 4, 8, 12]), true);
+	p.run();
+	const out = lastOp(p, "steps"), steps = out && new Map(out.rows[0].steps);
+	check(steps && positions.every((s, i) => steps.get(s).n[0] === midi[i])
+		&& JSON.stringify(steps.get(4).n) === "[67,71]" && !steps.get(12).n,
+		"a track edit keeps the distinct MIDI pitches and does not turn pool residue into a note");
+}
+
 /* ---- I-007, I-010 (0.5 slice 3): the piano roll's notes with their lengths, as the core's intents ---- */
 {
 	const p = loaded(), S = p.S(), M = p.mockup;

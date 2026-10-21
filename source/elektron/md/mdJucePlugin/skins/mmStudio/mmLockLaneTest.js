@@ -24,7 +24,7 @@ const FILES = ["shared/deskBridge.js", "shared/deskDocs.js", "shared/deskOverlay
    run when the test says; the bridge's dev transport collects what the page sends ---- */
 /* a DOM that keeps what the page writes to #lane and answers the rest with "any" */
 /* the lane's keys: one per step, 10 px wide, 124 px tall (what drawSlides measures) */
-const keyEl = s => ({ dataset: { s: String(s) }, getBoundingClientRect: () => ({ left: s * 10, top: 0, width: 10, right: s * 10 + 10, height: 124, bottom: 124 }), querySelector: () => null, closest: () => keyEl(s) });
+const keyEl = s => ({ dataset: { s: String(s) }, getBoundingClientRect: () => ({ left: s * 10, top: 0, width: 10, right: s * 10 + 10, height: 124, bottom: 124 }), querySelector: () => null, closest: q => q === ".lb" ? keyEl(s) : null });
 const meterEl = { title: "", className: "", classList: { add() { }, remove() { } }, style: {}, dataset: {} };
 const svgEl = { innerHTML: "", setAttribute() { } };
 const laneEl = { getBoundingClientRect: () => ({ left: 0, top: 0, width: 640, height: 124, bottom: 124 }), contains: () => true, querySelector: q => { const m = /data-s="(\d+)"/.exec(q); return m ? keyEl(+m[1]) : null; }, innerHTML: "", textContent: "", style: {}, dataset: {}, classList: { add() { }, remove() { } } };
@@ -58,7 +58,7 @@ function page() {
 	const src = FILES.map(f => fs.readFileSync(f, "utf8").replace(/^"use strict";/, "") + (/mmAdapter/.test(f) ? hold : "")).join("\n;\n")
 		+ "\n;__start();\nreturn { S: () => S, renderLane, Overlay, MmView, docStore, storeDoc, MM_SEAM, Dlg, Banner, mockup: { " +
 			"mutApply, genLive, genEnd, setMachine, songAction, secAction, setSel, clearSel, selCut, selDuplicate, selTrigs, selMark, selMove, selGrow, stepMenuItems, Keys, HOST, " +
-			"drawSlides, slideGrab, slideNext, bandLive, bandEsc, lockPicker, kitHit, kitGrab, kitAt, laneAt, endLaneDraw, commit, laneMeta, valueHTML, kitLabelHTML, laneNow: () => laneDraw, laneSet: d => { laneDraw = d; }, renderTop, laneAlt: s => { window.__pick = s; laneDraw = { erase: true, touched: false }; try { laneAt({ clientX: 0, clientY: 0 }); } catch (e) { console.log('ERR', e.message); } }, rollAdd, rollLen, rollRemove, editSpan, setRollLen, selMoveTo, selClear, noteSpans, vis } };";
+			"drawSlides, slideGrab, slideNext, bandLive, bandEsc, laneDown, laneMenuItems, rollStepTip, arpCells, arpTicks, dockHelp, lockPicker, kitHit, kitGrab, kitAt, kitNudge, laneAt, endLaneDraw, commit, laneMeta, valueHTML, kitLabelHTML, laneNow: () => laneDraw, laneSet: d => { laneDraw = d; }, renderTop, laneAlt: s => { window.__pick = s; laneDraw = { erase: true, touched: false }; try { laneAt({ clientX: 0, clientY: 0 }); } catch (e) { console.log('ERR', e.message); } }, rollAdd, rollLen, rollRemove, editSpan, setRollLen, selMoveTo, selClear, noteSpans, vis } };";
 	const out = new Function("scope", "with (scope) {\n" + src + "\n}")(scope);
 	const run = () => { for (let n = 0; timers.length && n < 10000; n++) timers.shift()(); };
 	run();
@@ -129,61 +129,56 @@ check(/data-lane="AMP\.5"[^>]*title="4 locked steps"/.test(picker), "a parameter
 p.mockup.renderTop();
 check(/of 62 locked parameters/.test(meterEl.title), "the lock meter's tooltip counts \"of 62 locked parameters\" (" + meterEl.title.slice(0, 40) + ")");
 
-/* 6. I-035: the kit-value line is grabbed within 4 px of it and dragged (one undo step, no lock painted); the numbers on the lane */
+/* 6. B-184: the kit handle and lock bars have disjoint targets, even at equal values. */
 {
-	S.lane = "AMP.0"; S.sel = TRK; S.lanePage = "AMP"; lane("AMP.0", { 2: 90 }); S.tracks[TRK].v.AMP[0] = 80; p.renderLane();
-	/* a key 124 px tall from y 0: the bars' scale is 6 px in from the bottom, 110 px high; the kit line (80 of 127) is at y 47.7 */
+	S.lane = "AMP.0"; S.sel = TRK; S.lanePage = "AMP"; lane("AMP.0", { 2: 80 }); S.tracks[TRK].v.AMP[0] = 80;
 	const classes = new Set();
-	const laneBox = Object.assign(Object.create(laneEl), { contains: () => true, setPointerCapture() { }, classList: { add: c => classes.add(c), remove: c => classes.delete(c), toggle: (c, on) => on ? classes.add(c) : classes.delete(c) } });
+	const laneBox = Object.assign(Object.create(laneEl), { contains: () => true, setPointerCapture() { }, classList: { add: c => classes.add(c), remove: c => classes.delete(c), toggle() { } } });
 	const key = { dataset: { s: "2" }, getBoundingClientRect: () => ({ bottom: 124, top: 0, height: 124, left: 20, right: 30, width: 10 }), insertAdjacentHTML() { }, querySelector: q => q === ".base" ? {} : null };
-	key.closest = () => key;
-	hooks["#lane"] = laneBox; hooks["#lane .lb"] = key; hooks.under = key;
-	const at = (y, m = {}) => Object.assign({ button: 0, clientX: 25, clientY: y, target: key, pointerId: 1, preventDefault() { } }, m);
-	const M = p.mockup; M.laneSet(null);
+	key.closest = q => q === ".lb" ? key : null;
+	const handle = { closest: q => q === "[data-kitvalue]" ? handle : null, style: {}, setAttribute() { } };
+	hooks["#lane"] = laneBox; hooks["#lane .lb"] = key; hooks["#lane [data-kitvalue]"] = handle; hooks.under = key;
+	const at = (y, target = key, m = {}) => Object.assign({ button: 0, clientX: 25, clientY: y, target, pointerId: 1, preventDefault() { } }, m);
+	const M = p.mockup, yOf = v => 124 - 6 - 110 * v / 127;
 	const ops = () => p.sent.map(m => JSON.stringify(m));
-	check(!!M.kitHit(at(48)) && !!M.kitHit(at(44)) && !!M.kitHit(at(51)), "the line's hit zone: 48, 44 and 51 are on it (4 px each side of 47.7)");
-	check(!M.kitHit(at(43)) && !M.kitHit(at(53)) && !M.kitHit(at(100)), "43, 53 and 100 are off it");
-	check(!M.kitHit(Object.assign(at(48), { target: { closest: () => ({ querySelector: () => null }) } })), "a key without a line (no trig) has no zone");
-	check(!M.kitGrab(at(48, { altKey: true })) && !M.kitGrab(at(48, { shiftKey: true })) && !M.kitGrab(at(48, { button: 2 })) && !M.laneNow(), "Alt (erase), Shift (ramp) and a right button never grab it");
-	/* a click on the line (released without moving more than 3 px) is the lane's: it locks the step at the value under the pointer, the kit value */
-	p.sent.length = 0; S.tracks[TRK].v.AMP[0] = 80; S.locks.delete(TRK + "|AMP.0");
-	const y80 = 124 - 6 - 110 * 80 / 127;	// the value 80 exactly
-	check(M.kitGrab(at(y80)) && M.laneNow()?.kit === "maybe" && !classes.has("kitdrag"), "a press on the line is a maybe-drag: nothing is written yet");
-	M.laneAt(at(y80 + 2)); M.endLaneDraw(); p.run();
-	check(ops().some(o => /"lock"/.test(o) && /"v":80\b/.test(o)) && !ops().some(o => /"param"/.test(o)) && !M.laneNow(), "released after a 2 px move it is a click: the step is locked at the kit value 80, no kit edit: " + ops().join(" ").slice(0, 100));
+	M.laneSet(null);
+	check(!M.kitHit(at(yOf(80))) && !M.kitGrab(at(yOf(80))), "a lock at the kit baseline cannot grab the kit");
+	check(!!M.kitHit(at(yOf(80), handle)), "the separate KIT handle is the kit's target");
+	check(!M.kitGrab(at(48, handle, { altKey: true })) && !M.kitGrab(at(48, handle, { shiftKey: true })) && !M.kitGrab(at(48, handle, { button: 2 })), "Alt, Shift and a right button do not grab the kit handle");
+	for (const value of [79, 80, 81]) {
+		lane("AMP.0", { 2: value }); p.sent.length = 0; M.laneSet(null);
+		M.slideGrab(at(yOf(value))); M.laneAt(at(yOf(value) + 20)); M.endLaneDraw(); p.run();
+		check(ops().some(o => /"lock"/.test(o)) && !ops().some(o => /"param"/.test(o)) && S.tracks[TRK].v.AMP[0] === 80,
+			`drag a lock at ${value} beside kit value 80: only the lock changes`);
+	}
+	p.sent.length = 0; M.kitGrab(at(yOf(80), handle)); M.laneAt(at(yOf(80) + 2, handle)); M.endLaneDraw(); p.run();
+	check(!p.sent.length && !M.laneNow(), "click the KIT handle with a small jitter: no kit or lock edit");
 	p.sent.length = 0; let commits = 0; const hc = M.HOST.commit; M.HOST.commit = () => { commits++; };
-	check(M.kitGrab(at(48)) && M.laneNow()?.kit === "maybe", "a press on the line begins as a maybe-drag");
-	M.laneAt(at(45)); check(M.laneNow()?.kit === "maybe" && !classes.has("kitdrag"), "3 px of movement is still a click");
-	M.laneAt(at(20)); check(M.laneNow()?.kit === true && classes.has("kitdrag"), "more than 3 px up or down is the kit drag (the lane's cursor follows)");
-	M.laneAt(at(5)); M.laneAt(at(5)); M.commit(); p.run();
-	const prm = ops().filter(o => /"param"/.test(o));
-	check(!ops().some(o => /"lock"/.test(o)), "dragging the line paints no lock: " + ops().join(" ").slice(0, 120));
-	check(prm.length >= 1 && /"v":127\b/.test(prm[prm.length - 1]) && /"t":3,"page":1,"i":0/.test(prm[0]) && new Set(prm.map(o => JSON.parse(o).g)).size === 1 && S.tracks[TRK].v.AMP[0] === 127, "the drag sets the kit value like the knob (param intents on ATK, ending at 127, one gesture): " + prm.join(" "));
-	check(commits === 0 && M.laneNow(), "no commit while the line is held: the whole drag is one undo step");
+	M.kitGrab(at(yOf(80), handle)); M.laneAt(at(yOf(80) - 3, handle));
+	check(M.laneNow()?.kit === "maybe" && !classes.has("kitdrag"), "3 px of movement still waits");
+	M.laneAt(at(20, handle)); M.laneAt(at(5, handle)); M.commit(); p.run();
+	check(!ops().some(o => /"lock"/.test(o)) && ops().some(o => /"param"/.test(o)) && S.tracks[TRK].v.AMP[0] === 127,
+		"drag the KIT handle: changes the kit to 127 and paints no lock");
+	check(commits === 0 && M.laneNow(), "the drag remains one gesture while held");
 	M.endLaneDraw(); M.commit(); p.run();
-	check(!M.laneNow() && commits === 1 && !classes.has("kitdrag"), "letting go ends it and commits once");
+	check(!M.laneNow() && commits === 1 && !classes.has("kitdrag"), "release ends the kit gesture once");
 	M.HOST.commit = hc;
-	/* elsewhere the lane draws a lock as before */
-	p.sent.length = 0; S.tracks[TRK].v.AMP[0] = 80;
-	check(!M.kitGrab(at(100)), "a press off the line is the lane's: no grab");
-	M.laneSet({ touched: false }); M.laneAt(at(60)); M.laneSet(null); p.run();
-	check(ops().some(o => /"lock"/.test(o)) && !ops().some(o => /"param"/.test(o)), "and it edits the lock, no kit value: " + ops().join(" ").slice(0, 100));
-	delete hooks["#lane"]; delete hooks["#lane .lb"]; delete hooks.under;
-	/* the numbers: a lock's at its bar's end, the kit's on the line; a list parameter shows its name, a signed one -64..+63 */
-	S.tracks[TRK].steps[2] = { n: [60], a: 1, f: 1, l: 1 }; lane("AMP.0", { 2: 90, 10: 30 }); S.tracks[TRK].v.AMP[0] = 80;
-	let html = draw("AMP.0"); const m0 = M.laneMeta().m;
-	check(/<span class="vl"[^>]*>90<\/span>/.test(html) && /<span class="vl"[^>]*>30<\/span>/.test(html) && /<span class="kvl"[^>]*>80<\/span>/.test(html), "ATK: the locks' numbers 90 and 30 and the kit line's 80 are on the lane");
-	check((html.match(/class="kvl"/g) || []).length === 1 && html.lastIndexOf('class="kvl"') > html.lastIndexOf('data-s="10"'), "the kit number is once, at the lane's right end (the last key with a trig)");
-	check(/class="kvl fl"/.test(M.kitLabelHTML(m0, 127, 127)) && /class="kvl"/.test(M.kitLabelHTML(m0, 40, 127)), "near the top the kit's number moves left of its key");
-	check(!/<span>80/.test(html) && !/lbscale[^>]*><b>[^<]*<\/b><span/.test(html), "the scale on the left keeps its top and bottom numbers and no kit value (the line carries it)");
-	check(/<div class="base"/.test(html.slice(html.indexOf('data-s="2"'))), "the kit line is drawn on a key with a trig");
+	for (const k of Object.keys(hooks)) delete hooks[k];
+	S.tracks[TRK].v.AMP[0] = 80; lane("AMP.0", { 2: 90, 10: 30 });
+	let html = draw("AMP.0");
+	check(/data-kitvalue class="kitvalue"/.test(html) && /aria-label="Kit value 80"/.test(html), "the gutter visibly labels KIT and names its current value");
+	check(/<span class="vl"[^>]*>90<\/span>/.test(html) && /<span class="vl"[^>]*>30<\/span>/.test(html) && /<span class="kvl"[^>]*>80<\/span>/.test(html), "locks and kit retain their separate value labels");
+	check(/<div class="base"/.test(html.slice(html.indexOf('data-s="2"'))), "the baseline remains a reference on a trig step");
+	check((html.match(/class="kvl"/g) || []).length === 1 && html.lastIndexOf('class="kvl"') > html.lastIndexOf('data-s="10"'), "the kit value label is still once at the lane's right end");
+	const m0 = M.laneMeta().m;
+	check(/class="kvl fl"/.test(M.kitLabelHTML(m0, 127, 127)) && /class="kvl"/.test(M.kitLabelHTML(m0, 40, 127)), "near the top the kit's number still moves left of its key");
 	S.lane = "LF1.3"; S.lanePage = "LF1"; const m = M.laneMeta().m;
 	lane("LF1.3", { 2: 1, 10: 2 }); S.tracks[TRK].v.LF1[3] = 0; html = draw("LF1.3");
-	check(m.en && new RegExp(">" + m.en[1] + "</span>").test(html) && new RegExp(">" + m.en[2] + "</span>").test(html) && new RegExp('class="kvl"[^>]*>' + m.en[0] + "<").test(html), "a list parameter (LFO wave) shows its names: " + m.en.slice(0, 3).join(" "));
-	S.lane = "AMP.0"; S.lanePage = "AMP"; S.tracks[TRK].steps[2] = { n: [60], a: 1, f: 1, l: 1 };
-	const ghostHtml = (() => { lane("AMP.0", { 5: 70 }); return draw("AMP.0"); })();
-	check(/data-s="5"[^>]*><div class="base"/.test(ghostHtml), "the line is drawn on a ghost step too");
-	for (const k of Object.keys(hooks)) delete hooks[k];
+	check(m.en && new RegExp(">" + m.en[1] + "</span>").test(html) && new RegExp(">" + m.en[2] + "</span>").test(html) && new RegExp('class="kvl"[^>]*>' + m.en[0] + "<").test(html), "list parameters retain their names on lock and kit labels");
+	S.lane = "AMP.0"; S.lanePage = "AMP";
+
+	lane("AMP.0", { 5: 70 }); html = draw("AMP.0");
+	check(/data-s="5"[^>]*><div class="base"/.test(html), "the baseline remains a reference on a ghost step");
 }
 
 /* 7. a slide drawn in the lane: the dot dragged sideways sets the slide flag of its step (the machine's slide track: every
@@ -192,10 +187,10 @@ check(/of 62 locked parameters/.test(meterEl.title), "the lock meter's tooltip c
 {
 	const M = p.mockup, classes = new Set();
 	const laneBox = Object.assign(Object.create(laneEl), { contains: () => true, setPointerCapture() { }, classList: { add: c => classes.add(c), remove: c => classes.delete(c), toggle() { } } });
-	const keys = {}; for (const k of TRIGS.concat([3])) { keys[k] = Object.assign(keyEl(k), { insertAdjacentHTML() { }, querySelector: () => null }); keys[k].closest = () => keys[k]; }
+	const keys = {}; for (const k of TRIGS.concat([3])) { keys[k] = Object.assign(keyEl(k), { insertAdjacentHTML() { }, querySelector: () => null }); keys[k].closest = q => q === ".lb" ? keys[k] : null; }
 	const setHooks = () => { hooks.under = keys[2]; hooks["#lane"] = laneBox; hooks["#lane .lb"] = keys[2]; for (const k of Object.keys(keys)) hooks[`#lane .lb[data-s="${k}"]`] = keys[k]; };
 	const clearHooks = () => { for (const k of Object.keys(hooks)) delete hooks[k]; };
-	const at = (x, y, el = keys[2], m = {}) => Object.assign({ button: 0, clientX: x, clientY: y, target: Object.assign(Object.create(el), { closest: () => el }), pointerId: 1, preventDefault() { } }, m);
+	const at = (x, y, el = keys[2], m = {}) => Object.assign({ button: 0, clientX: x, clientY: y, target: Object.assign(Object.create(el), { closest: q => q === ".lb" ? el : null }), pointerId: 1, preventDefault() { } }, m);
 	const yOf = v => 124 - 6 - 110 * v / 127;	// the bar's top for a value, in the 124 px key
 	const ops = () => p.sent.map(m => JSON.stringify(m));
 	const slides = () => ops().filter(o => /"slide"/.test(o)), lockOps = () => ops().filter(o => /"lock"/.test(o));
@@ -245,14 +240,14 @@ check(/of 62 locked parameters/.test(meterEl.title), "the lock meter's tooltip c
 	fresh({ 2: 90, 10: 30 }); M.slideGrab(at(25, yOf(90) + 5)); M.endLaneDraw(); p.run();
 	check(!slides().length && lockOps().length === 1, "a click on the dot is a lane click (a lock, no slide): " + ops().join(" ").slice(0, 100));
 
-	/* the ramp's line: a click removes the flag (one commit); moving from it paints as the lane does */
+	/* the ramp line: a click removes the flag; moving cancels without painting underlying locks */
 	fresh({ 2: 90, 10: 30 }, [2]); const mid = { x: 65, y: (yOf(90) + yOf(30)) / 2 };
 	check(!!M.slideGrab(at(mid.x, mid.y, keys[3])) && M.laneNow()?.cut === "maybe", "a press on the ramp's line is a maybe-cut");
 	M.laneSet(null); check(!M.slideGrab(at(mid.x, mid.y + 12, keys[3])), "12 px off the line is the lane's");
 	commits = 0; M.slideGrab(at(mid.x, mid.y, keys[3])); M.endLaneDraw(); p.run();
 	check(slides().length === 1 && /"s":2,"on":false/.test(slides()[0]) && !S.tracks[TRK].slide.has(2) && commits === 1 && !lockOps().length, "a click on the line removes the slide: one intent, one commit: " + ops().join(" ").slice(0, 100));
 	fresh({ 2: 90, 10: 30 }, [2]); M.slideGrab(at(mid.x, mid.y, keys[3])); M.laneAt(at(mid.x + 1, mid.y - 20, keys[3])); M.endLaneDraw(); p.run();
-	check(S.tracks[TRK].slide.has(2) && !slides().length, "moving off the line paints a lock instead and keeps the slide");
+	check(S.tracks[TRK].slide.has(2) && !slides().length && !lockOps().length, "dragging the ramp line keeps the slide and never paints intervening locks");
 
 
 	/* Shift on a lock bar: the rubber band. Out of the column sideways it follows the cursor, the parameter's next lock is the one
@@ -263,7 +258,7 @@ check(/of 62 locked parameters/.test(meterEl.title), "the lock meter's tooltip c
 	M.laneSet(null); check(!M.slideGrab(sh(25, 100, keys[4])) && !M.laneNow(), "Shift on a step without a lock on this parameter is the lane's ramp (no grab)");
 	check(!M.slideGrab(at(25, 100)) || M.laneNow()?.band !== "maybe", "without Shift a press low on the bar is not a band"); M.laneSet(null);
 	fresh({ 2: 90, 10: 30 }); M.slideGrab(sh(25, 60)); M.laneAt(sh(26, 60)); check(M.laneNow()?.band === "maybe", "inside the column, without vertical movement, it waits");
-	M.laneAt(sh(26, 100)); check(M.laneNow()?.ramp === true && !M.laneNow()?.band, "up and down inside the column is the Shift ramp of locks"); M.laneSet(null);
+	M.laneAt(sh(26, 100)); check(M.laneNow()?.band === "maybe" && !M.laneNow()?.ramp && !lockOps().length, "vertical jitter inside the start column never changes a slide gesture into lock painting"); M.endLaneDraw(); p.run(); check(!lockOps().length && !slides().length, "release inside the start column makes no edit");
 	fresh({ 2: 90, 10: 30 }); commits = 0; M.slideGrab(sh(25, 70));
 	M.laneAt(sh(33, 70)); check(M.laneNow()?.band === "on" && !!M.bandLive() && M.laneNow().nx === 10, "out of the column to the right: the band, target step index 10 (past the trig at 4 with no lock)");
 	M.laneAt(sh(60, 50)); check(/M25 \S+ L60 50/.test(svgEl.innerHTML) && /r="9"/.test(svgEl.innerHTML) && !/stroke-dasharray/.test(svgEl.innerHTML), "a solid line to the cursor and a ring on the target");
@@ -282,6 +277,52 @@ check(/of 62 locked parameters/.test(meterEl.title), "the lock meter's tooltip c
 	check(!!M.bandLive() && M.laneNow().nx == null && !/r="9"/.test(svgEl.innerHTML), "no later lock: the band follows, no target"); M.endLaneDraw(); p.run();
 	check(!slides().length, "and the drop sets nothing");
 	M.HOST.commit = hc; clearHooks(); S.tracks[TRK].slide = new Set();
+}
+
+/* 8. B-183: a menu press never paints; its explicit clear reaches ghost locks as well as notes. */
+{
+	const M = p.mockup;
+	S.sel = TRK; S.lane = "AMP.2"; S.lanePage = "AMP"; S.tracks[TRK].steps[3] = null;
+	lane("AMP.2", { 3: 90, 11: 50 }); p.sent.length = 0; M.laneSet(null);
+	for (const mod of [{ button: 2 }, { button: 0, ctrlKey: true }, { button: 0, metaKey: true }]) {
+		M.laneDown({ target: keyEl(3), clientX: 35, clientY: 30, pointerId: 1, preventDefault() { }, ...mod });
+	}
+	p.run();
+	check(!p.sent.length && !M.laneNow() && S.locks.get(TRK + "|AMP.2").get(3) === 90, "right-click, Ctrl-click and Cmd-click never paint a lock");
+	const menu = M.laneMenuItems(TRK, "AMP.2", 3), erase = menu.find(x => x.id === "lane-clear-lock");
+	check(erase.enabled && !menu.find(x => x.id === "lane-slide").enabled, "a ghost lock has an enabled Clear command and no slide start");
+	erase.run(); p.run();
+	const clears = p.sent.filter(x => x.op === "lock" && x.v === null);
+	check(clears.length === 1 && clears[0].s === 3 && clears[0].t === TRK && !S.locks.get(TRK + "|AMP.2")?.has(3) && S.locks.get(TRK + "|AMP.2")?.has(11), "menu erase sends one exact lock deletion and keeps the other ghost lock");
+	check(S.tracks[TRK].steps[3] === null && !p.sent.some(x => x.op === "param" || x.op === "step"), "erasing a ghost lock creates no note and changes no kit value");
+	check(!M.laneMenuItems(TRK, "AMP.2", 3).find(x => x.id === "lane-clear-lock").enabled, "an empty step cannot issue a second erase");
+}
+
+/* 9. B-179/B-180: explicit ON/OFF rhythm state, with the documented one-note mode rules unchanged. */
+{
+	const M = p.mockup, tr = S.tracks[TRK], saved = tr.arp;
+	tr.arp = { ...saved, MODE: 1, SPD: 6, PLAY: 0, RNGE: 1, len: 2, ofs: [0, 0], rhy: [true, false] };
+	const html = M.arpCells(tr.arp);
+	check(/class="ac on"[^>]*aria-pressed="true"[^>]*data-ac="0"/.test(html) && /class="ac mute"[^>]*aria-pressed="false"[^>]*data-ac="1"/.test(html), "ARP keys expose the actual rhythm enable state");
+	check(/class="arpstate">ON<\/span>/.test(html) && /class="arpstate">OFF<\/span>/.test(html), "ARP on/off is readable without relying on plate colours");
+	const span = { s: 0, e: 4, n: [60] }, ticks = () => M.arpTicks(TRK, span);
+	check(JSON.stringify(ticks().map(q => [q.x, q.n])) === "[[0,60],[2,60]]", "KEY repeats one held note, with disabled rhythm steps silent");
+	tr.arp.MODE = 3; check(ticks().length === 2, "ADD also starts with one held note");
+	tr.arp.MODE = 2; check(!ticks().length && /SID needs a chord/.test(M.dockHelp(TRK, "arp")[0]), "SID keeps its documented two-note rule and makes that requirement visible");
+	tr.arp = saved;
+}
+
+/* 10. B-182: explain the glyph and pitch independently from selection or envelope flags. */
+{
+	const M = p.mockup, tr = S.tracks[TRK], original = tr.steps;
+	tr.steps = Array(64).fill(null); tr.steps[0] = { n: [60], a: 1, f: 1, l: 1 };
+	tr.steps[2] = { n: [64], a: 0, f: 0, l: 0 }; tr.steps[3] = { a: 1, f: 0, l: 0 }; tr.steps[4] = { off: 1 };
+	const before = JSON.stringify(tr.steps);
+	check(/Trigless trig \(hollow square\).*no envelopes; pitch/.test(M.rollStepTip(TRK, 2)), "a trigless trig can carry a pitch: the square does not mean pitchless");
+	check(/Pitchless trig \(dashed bar\).*previous pitch.*fires AMP/.test(M.rollStepTip(TRK, 3)), "a pitchless trig inherits the earlier pitch and names its active envelope");
+	check(/NOTE OFF/.test(M.rollStepTip(TRK, 4)) && /fires AMP, FILTER, LFO/.test(M.rollStepTip(TRK, 0)), "note-off and normal note descriptions remain distinct");
+	check(JSON.stringify(tr.steps) === before, "descriptions never change the pattern");
+	tr.steps = original;
 }
 
 console.log(failures ? `mmLockLaneTest: ${failures} failure(s)` : "mmLockLaneTest: PASS");

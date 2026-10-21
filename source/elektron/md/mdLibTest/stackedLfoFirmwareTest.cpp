@@ -9,19 +9,24 @@
 // TRIG mode (DEST 1OCT, SAW), played by a host note on its channel every beat (a note trigs amp, filter and LFO), each
 // note at the same machine frame whatever the block size. The oscillator runs free, so the MM is judged by each hit's
 // pitch (0-15 ms and 15-30 ms), not by its waveform: a hit more than 2 % off the median pitch is a miss.
+// B-161 recurrence: mm-stack3-seq uses the internal sequencer, with explicit AMP/FILTER/LFO/pitch trigs,
+// rather than incoming MIDI notes. It extends coverage; it does not identify the unprovided reported pattern.
 //
 // Manual: needs a user-supplied ROM (GEARMULATOR_MD_FIRMWARE_BIN, --mm: GEARMULATOR_MM_FIRMWARE_BIN). Usage:
 //   stackedLfoFirmwareTest [--mm] [--bars N] [--scenario NAME] [--block N] [--wav DIR] [--matrix] [-v]
 // Exit 0 when no hit is missed in every run, 1 otherwise, 77 without a ROM.
 
 #include "mdFirmwareSession.h"
+#include "mmSysexRecv.h"
 
 #include "elektronData/mdCommands.h"
 #include "elektronData/mdKit.h"
 #include "elektronData/mdMachines.h"
 #include "elektronData/mdPattern.h"
 #include "elektronData/mmCommands.h"
+#include "elektronData/mmDump.h"
 #include "elektronData/mmKit.h"
+#include "elektronData/mmPattern.h"
 
 #include <cmath>
 #include <cstdlib>
@@ -108,7 +113,7 @@ namespace
 	};
 
 	// Onsets: the first sample above the threshold after 60 ms below it.
-	Result analyse(const std::vector<float>& _x, const size_t _start, const double _framesPerBeat, const int _beats)
+	Result analyse(const std::vector<float>& _x, const size_t _start, const double _framesPerBeat, const int _beats, const bool _initialQuiet = false)
 	{
 		Result r;
 		r.expected = _beats;
@@ -123,7 +128,7 @@ namespace
 				++quiet;
 				continue;
 			}
-			if(quiet > g_rate * 60 / 1000 || onsets.empty())
+			if(quiet > g_rate * 60 / 1000 || (!_initialQuiet && onsets.empty()))
 				onsets.push_back(i);
 			quiet = 0;
 		}
@@ -331,6 +336,7 @@ namespace
 		const char* name;
 		const char* about;
 		int lfos;		// LFO1..LFOn on the PTCH page
+		bool sequencer = false;
 	};
 
 	const std::vector<MmScenario>& mmScenarios()
@@ -339,6 +345,7 @@ namespace
 			{"mm-none", "no LFO (the reference note)", 0},
 			{"mm-one", "LFO1 on PTCH, TRIG", 1},
 			{"mm-stack3", "LFO1-3 on PTCH, TRIG", 3},
+			{"mm-stack3-seq", "LFO1-3 on PTCH, TRIG, internal sequencer", 3, true},
 		};
 		return s;
 	}
@@ -395,6 +402,45 @@ namespace
 				std::printf("\n");
 			}
 
+		if(_s.sequencer)
+		{
+			ed::MmPattern p;
+			for(auto& notes : p.notes)
+				notes.fill(ed::MmPattern::g_noNote);
+			for(auto& row : p.lockRows)
+				row.fill(ed::MmPattern::g_noLock);
+			p.midiNotes.fill(0xffff);
+			p.chordNotes.fill(0xffff);
+			for(auto* arp : {&p.arp, &p.midiArp})
+			{
+				arp->length.fill(16);
+				arp->speed.fill(5);
+				for(auto& steps : arp->steps)
+					steps.fill(64);
+			}
+			for(size_t step = 0; step < p.length; step += 4)
+			{
+				const auto bit = ed::mmStepBit(step);
+				p.pitch[0] |= bit;
+				p.amp[0] |= bit;
+				p.filter[0] |= bit;
+				p.lfo[0] |= bit;
+				p.notes[0][step] = 60;
+			}
+			const auto received = mmSysexRecv::send(m, {ed::encodeMmKit(k), ed::encodeMmPattern(p)});
+			require(received.taken == 2 && received.errors == 0, "the sequencer kit and pattern did not import");
+			const auto stored = ed::decodeMmPattern(m.request(ed::mmPatternRequest(0), ed::g_mmPatternDump));
+			require(stored && stored->pitch == p.pitch && stored->amp == p.amp && stored->lfo == p.lfo
+				&& stored->filter == p.filter && stored->notes == p.notes, "the stored sequencer trigs differ");
+			m.send(ed::mmLoadPattern(0));
+			m.send(ed::mmLoadKit(0));
+			m.send(ed::mmSetTempo(120));
+			m.run(300);
+			require(mmWorkingKit(m).tracks[0].pages == k.tracks[0].pages, "loading the pattern changed the LFO kit");
+			m.send({0xfa});
+			m.run(2000); // one warm-up bar, then measure continuing sequencer trigs
+		}
+
 		std::array<std::vector<float>, 6> out;
 		for(auto& o : out)
 			o.assign(std::max<uint32_t>(_o.block, 1), 0.0f);
@@ -408,7 +454,7 @@ namespace
 		const size_t total = static_cast<size_t>(framesPerBeat * beats) + g_rate;
 		// note on at each beat, off 60 ms later, each at its own machine frame
 		std::vector<std::pair<size_t, Bytes>> events;
-		for(int b = 0; b < beats; ++b)
+		for(int b = 0; !_s.sequencer && b < beats; ++b)
 		{
 			const auto at = static_cast<size_t>(g_rate / 10 + b * framesPerBeat);
 			events.push_back({at, {0x90, 60, 100}});
@@ -427,7 +473,8 @@ namespace
 			midi.clear();
 			m.hardware().readMidiOut(midi);
 		}
-		auto r = analyse(left, 0, framesPerBeat, beats);
+		// A running sequencer can be mid-note at capture start. Wait for silence before its first measured onset.
+		auto r = analyse(left, 0, framesPerBeat, beats, _s.sequencer);
 		// a free-running oscillator starts each note at another phase: judge the MM by pitch, not by waveform
 		r.misses = 0;
 		double median[2]{};

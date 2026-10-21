@@ -321,7 +321,10 @@ namespace mmDesk
 		// than an expectation waits (1 s): the page put the old value back, and the next edit was reckoned from it. While
 		// that dump is on its way the edits stay pending over memory; when it is through memory gets the usual time again.
 		const Ref slot{Kind::Kit, static_cast<uint8_t>(std::max(0, m_curKit))};
-		const bool hold = m_curKit >= 0 && (m_pushes.busy(slot) || m_loadAfter.count(slot));
+		// Live CC/NRPN edits can also wait behind a dump or their value budget. Their one-second
+		// expectation starts after delivery, not while the stream still holds those messages (B-027).
+		const bool hold = m_stream.sending(_now)
+			|| (m_curKit >= 0 && (m_pushes.busy(slot) || m_loadAfter.count(slot)));
 		if(m_kitDumpHold && !hold && m_working.expect.any())
 			m_working.expect.atMs = _now;
 		m_kitDumpHold = hold;

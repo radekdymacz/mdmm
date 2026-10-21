@@ -436,8 +436,7 @@ const MmJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.m0 != null) await undoUntil(u, () => JSON.stringify(laneLocks(c.t, c.pid)) === c.m0, 8); }
 	};
-	/* I-035: the lock lane's kit-value line (2 px, grabbed within 4 px of it): dragged, it changes the kit value of the lane's parameter on
-	   the track as the knob does, one undo step, and paints no lock; its number on the line says the value as the knob shows it */
+	/* B-184: the kit has a dedicated gutter handle; the line across every step is a reference, including when a lock equals it. */
 	const laneKitDrag = {
 		name: "mm-lane-kit-drag", proves: ["MM-081"],
 		steps: [
@@ -450,10 +449,16 @@ const MmJourneys = (() => {
 			{ say: "click exactly on the line: it is a click on the lane, the step is locked at the kit value", act: async (u, c) => { c.l0 = laneLocks(c.t, c.lane).length; c.k0 = getP(c.t, c.lane);
 					const { mx } = laneMeta(), key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), y = r.bottom - 6 - (r.height - 14) * c.k0 / mx; u.click(key, {}, 0.5, (y - r.top) / r.height); },
 				machine: c => ok(laneLocks(c.t, c.lane).some(([x, v]) => x === c.s && v === c.k0) && getP(c.t, c.lane) === c.k0, `locks ${JSON.stringify(laneLocks(c.t, c.lane))}, kit value ${c.k0}`), within: 20000 },
+			{ say: "drag the lock exactly at the kit baseline: only the lock changes", act: async (u, c) => { const key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), { mx } = laneMeta(), y = r.bottom - 6 - (r.height - 14) * c.k0 / mx;
+					await u.drag(key, [[0, c.k0 > mx / 2 ? 12 : -12], [0, c.k0 > mx / 2 ? 30 : -30]], {}, { fy: (y - r.top) / r.height, click: false }); },
+				machine: c => ok(getP(c.t, c.lane) === c.k0 && wk().tracks[c.t].pages[c.pg][c.pi] === c.k0 && laneLocks(c.t, c.lane).some(([x, v]) => x === c.s && v !== c.k0), "dragging a lock changed the kit or failed to change the lock"), within: 20000 },
+			{ ...undoKey, say: "undo the lock drag: the lock is back at the unchanged kit value", act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(laneLocks(c.t, c.lane).some(([x, v]) => x === c.s && v === c.k0) && getP(c.t, c.lane) === c.k0, "lock or kit not restored"), within: 20000 },
+			{ say: "right-click the lock: an explicit Clear command, with no edit before choosing it", act: async (u, c) => { c.menuLocks = JSON.stringify(laneLocks(c.t, c.lane)); c.menuUndo = machine().history?.undoCount || 0; u.rightClick(`#lane .lb[data-s="${c.s}"]`); await sleep(200); c.clearShown = !!$1('#deskmenu [data-mid="lane-clear-lock"]'); closeDeskMenu(); },
+				screen: c => ok(c.clearShown, "no Clear lock menu item"), machine: c => ok(JSON.stringify(laneLocks(c.t, c.lane)) === c.menuLocks && (machine().history?.undoCount || 0) === c.menuUndo, "opening the menu painted a lock"), within: 6000 },
 			{ ...undoKey, say: "press Cmd+Z: the lock is gone", act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(laneLocks(c.t, c.lane).length === c.l0, "locks " + JSON.stringify(laneLocks(c.t, c.lane))), within: 20000 },
-			{ say: "drag the line itself: the kit value follows the pointer, no lock is drawn", act: async (u, c) => { c.l0 = laneLocks(c.t, c.lane).length; c.u0 = machine().history?.undoCount || 0; c.k0 = getP(c.t, c.lane);
-					const key = `#lane .lb[data-s="${c.s}"]`, r = $1(key).getBoundingClientRect(), b = $1(key + " .base").getBoundingClientRect(), y = b.top + b.height / 2, dy = y - r.top < r.height / 2 ? 30 : -30;
-					await u.drag(key, [[0, dy / 2], [0, dy]], {}, { fy: (y - r.top) / r.height, click: false }); },
+			{ say: "drag the labelled KIT handle in the gutter: the kit value follows, no lock is drawn", act: async (u, c) => { c.l0 = laneLocks(c.t, c.lane).length; c.u0 = machine().history?.undoCount || 0; c.k0 = getP(c.t, c.lane);
+					const { mx } = laneMeta(), dy = c.k0 > mx / 2 ? 30 : -30;
+					await u.drag("#lane [data-kitvalue]", [[0, dy / 2], [0, dy]], {}, { click: false }); },
 				screen: c => { const { m } = laneMeta(), v = getP(c.t, c.lane), k = $1("#lane .kvl"); return ok(v !== c.k0 && !!k && k.textContent === fmt(m, v), `kit ${c.k0} -> ${v}, number ${k?.textContent}`); },
 				machine: c => { const v = wk().tracks[c.t].pages[c.pg][c.pi]; return ok(v === getP(c.t, c.lane) && v !== c.k0 && laneLocks(c.t, c.lane).length === c.l0, `machine ${v}, page ${getP(c.t, c.lane)}, was ${c.k0}; locks ${laneLocks(c.t, c.lane).length} (was ${c.l0})`); }, within: 20000 },
 			{ say: "the whole drag was one undo step", machine: c => ok((machine().history?.undoCount || 0) === c.u0 + 1, `undo steps ${c.u0} -> ${machine().history?.undoCount}`), within: 8000 },
@@ -494,9 +499,9 @@ const MmJourneys = (() => {
 			{ say: "Shift-drag from the first lock bar and drop beside the second lock's column: cancelled", act: async (u, c) => { const key = `#lane .lb[data-s="${c.on[0]}"]`, r = $1(key).getBoundingClientRect(), far = $1(`#lane .lb[data-s="${c.on[2]}"]`).getBoundingClientRect();
 					await u.drag(key, [[r.width + 6, 0], [far.left - r.left, 0]], { shift: true }, { fy: 0.6, click: false }); await sleep(400); },
 				machine: c => ok(!slidesOf(c.t).includes(c.on[0]) && (machine().history?.undoCount || 0) === c.u2, "slides " + slidesOf(c.t).join(",")), within: 8000 },
-			{ say: "Shift-drag from the first lock bar and drop on the second lock's column: the slide is set, one undo step", act: async (u, c) => { const key = `#lane .lb[data-s="${c.on[0]}"]`, r = $1(key).getBoundingClientRect(), t2 = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect();
-					await u.drag(key, [[r.width + 6, 0], [(t2.left + t2.width / 2) - (r.left + r.width / 2), 0]], { shift: true }, { fy: 0.6, click: false }); await sleep(500); },
-				machine: c => ok(slidesOf(c.t).includes(c.on[0]) && (machine().history?.undoCount || 0) === c.u2 + 1, "slides " + slidesOf(c.t).join(",") + `, undo steps ${c.u2} -> ${machine().history?.undoCount}`), within: 15000 },
+			{ say: "Shift-drag from the first lock bar and drop on the second lock's column, after initial vertical jitter: one slide and no extra locks", act: async (u, c) => { c.bandLocks = JSON.stringify(laneLocks(c.t, c.lane)); const key = `#lane .lb[data-s="${c.on[0]}"]`, r = $1(key).getBoundingClientRect(), t2 = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect();
+					await u.drag(key, [[0, 8], [r.width + 6, 8], [(t2.left + t2.width / 2) - (r.left + r.width / 2), 0]], { shift: true }, { fy: 0.6, click: false }); await sleep(500); },
+				machine: c => ok(slidesOf(c.t).includes(c.on[0]) && (machine().history?.undoCount || 0) === c.u2 + 1 && JSON.stringify(laneLocks(c.t, c.lane)) === c.bandLocks, "slides " + slidesOf(c.t).join(",") + `, undo steps ${c.u2} -> ${machine().history?.undoCount}`), within: 15000 },
 			{ say: "click on the ramp's line: the slide is off", act: async (u, c) => { const k1 = `#lane .lb[data-s="${c.on[0]}"]`, a = $1(k1).getBoundingClientRect(), b = $1(`#lane .lb[data-s="${c.on[1]}"]`).getBoundingClientRect(), { mx } = laneMeta(), L = S().locks.get(c.t + "|" + c.lane),
 						ya = a.bottom - 6 - L.get(c.on[0]) / mx * (a.height - 14), yb = b.bottom - 6 - L.get(c.on[1]) / mx * (b.height - 14), xa = a.left + a.width / 2, xb = b.left + b.width / 2;
 					const f = 0.9, px = a.left + a.width * f, t = (px - xa) / (xb - xa), py = ya + (yb - ya) * t; u.click(k1, {}, f, (py - a.top) / a.height); await sleep(500); },
@@ -3056,6 +3061,12 @@ const MmJourneys = (() => {
 				if (lfoPage(0, 1) !== 6 || lfoDest(0, 1) !== 5) c.bad.push(`LFO on LFO: ${lfoCell(0, 1, 0)}/${lfoCell(0, 1, 1)}`);
 				await choose(u, "lp1", 8); await sleep(200); if (lfoPage(0, 1) !== 8 || selOptions("ld1").join(" ") !== LFO_DEST.MIDI) c.bad.push("MIDI page: " + selOptions("ld1").join(" ")); },
 				screen: c => ok(!c.bad.length, c.bad.slice(0, 5).join(" | ")), within: 1000 },
+			{ say: "LFO 3 stays on FILTER after readback and a Kit / Pattern workspace round trip", act: async (u, c) => {
+				await choose(u, "lp3", 3); await choose(u, "ld3", 0); await sleep(1800);
+				u.click(tab("seq")); await sleep(200); u.click(tab("sound")); await sleep(300);
+				c.lfo3 = [+($1("#lp3")?.value), +($1("#ld3")?.value)]; },
+				screen: c => ok(c.lfo3[0] === 3 && c.lfo3[1] === 0, "page / destination " + c.lfo3),
+				machine: () => ok(lfoPage(0, 3) === 3 && lfoDest(0, 3) === 0, "LFO 3 FILTER readback changed"), within: 6000 },
 			{ say: "TRIG: the five keys FREE TRIG HOLD ONE HALF in that order; each is the third LFO value", act: async (u, c) => { c.bad = [];
 					const names = $all('[data-set="ltrig"][data-l="LF1"] button').map(b => b.textContent.trim()); if (names.join(" ") !== LFO_TRIGS) c.bad.push("keys " + names.join(" "));
 					for (let i = 0; i < 5; i++) { u.click(`[data-set="ltrig"][data-l="LF1"] button[data-v="${i}"]`); if (!await until(() => enIdx(lfoCell(0, 1, 2), 5) === i && pressed(`[data-set="ltrig"][data-l="LF1"] button[data-v="${i}"]`), 3000)) c.bad.push(`TRIG ${i}: kit ${lfoCell(0, 1, 2)}`); } },
@@ -3365,6 +3376,11 @@ const MmJourneys = (() => {
 				screen: c => ok(!c.bad.length && c.none, c.bad.join(" | ") + " MIDI none " + c.none), within: 1000 },
 			{ say: "the arp's cells (only its length is drawn): a click mutes step 3 (255) and again brings it back; a drag up to the top and past it gives +24, down to the bottom -24; the LEN box sets how many are drawn, 16 too, and a double-click gives 8", act: async (u, c) => { c.bad = []; const cell = k => `.arptrack .ac[data-ac="${k}"]`; u.click(rail(0)); await sleep(200); const was = arpOf(0).steps[2], mute0 = was === 255;
 					u.click(cell(2)); if (!await until(() => (arpOf(0).steps[2] === 255) !== mute0, 3000)) c.bad.push("mute: " + arpOf(0).steps[2]); u.click(cell(2)); if (!await until(() => (arpOf(0).steps[2] === 255) === mute0, 3000)) c.bad.push("unmute: " + arpOf(0).steps[2]);
+					const plate0 = document.documentElement.dataset.plate; for (const plate of ["mk1", "mk2"]) { document.documentElement.dataset.plate = plate; const el = $1(cell(2)), on = arpOf(0).steps[2] !== 255;
+						if (el.getAttribute("aria-pressed") !== String(on) || el.querySelector(".arpstate")?.textContent !== (on ? "ON" : "OFF")) c.bad.push(plate + ": enabled step state is unclear"); }
+					if (plate0 == null) delete document.documentElement.dataset.plate; else document.documentElement.dataset.plate = plate0;
+					const stepBeforeKey = arpOf(0).steps[2]; $1(cell(2)).focus(); u.key("Enter"); if (!await until(() => (arpOf(0).steps[2] === 255) !== (stepBeforeKey === 255), 3000)) c.bad.push("Enter did not toggle the focused step");
+					$1(cell(2)).focus(); u.key("Enter"); if (!await until(() => (arpOf(0).steps[2] === 255) === (stepBeforeKey === 255), 3000)) c.bad.push("Enter did not restore the focused step"); blur();
 					const k0 = Math.min(3, arpOf(0).length - 1); await u.drag(cell(k0), [[0, -60], [0, -120], [0, -240]]); if (!await until(() => arpOf(0).steps[k0] === 64 + 24, 3000)) c.bad.push("+24: " + arpOf(0).steps[k0]);
 					await u.drag(cell(k0), [[0, 60], [0, 120], [0, 240], [0, 400]]); if (!await until(() => arpOf(0).steps[k0] === 64 - 24, 3000)) c.bad.push("-24: " + arpOf(0).steps[k0]);
 					const lenBox = '.pc[data-g="arp"][data-n="len"]', setLen = async n => { u.click(lenBox, { cmd: true }); await until(() => !!field(), 1500); typeIn(u, String(n)); if (!await until(() => arpOf(0).length === n, 3000)) c.bad.push(`LEN ${n}: ${arpOf(0).length}`); await sleep(150); if ($all(".arptrack .ac").length !== n) c.bad.push(`${$all(".arptrack .ac").length} steps drawn, LEN ${n}`); };
@@ -4258,6 +4274,16 @@ const MmJourneys = (() => {
 					screen: () => ok(S().learn && /turn a knob on your controller/.test(toastText()), "learn " + S().learn + ", toast " + toastText()) },
 				{ say: "click T3 FLT value 1: it waits for a knob, learnStart names track 3, FLT (page 2), value 0", act: u => u.click(FLT0(2).split(",")[0]),
 					screen: () => { const c = lastLearn("learnStart"); return ok(S().learnT && S().learnT.t === 2 && S().learnT.pid === "FLT.0" && c && c.t === 2 && c.pg === 2 && c.i === 0, "waiting " + JSON.stringify(S().learnT) + ", sent " + JSON.stringify(c)); }, within: 2000 },
+				{ say: "LEARN picks PAGE, DEST, TRIG and WAVE of all three LFOs without opening a menu or changing the sound", act: async (u, c) => {
+					c.lfoLearnBad = []; const before = JSON.stringify(S().tracks[2].v);
+					for (let k = 1; k <= 3; k++) for (let i = 0; i < 4; i++) {
+						const q = i < 2 ? `.kselbtn[data-for="${i === 0 ? "lp" : "ld"}${k}"]` : i === 2 ? `[data-set="ltrig"][data-l="LF${k}"] button[data-v="1"]` : `[data-lwave="LF${k}"][data-w="2"]`;
+						u.click(q); await sleep(40); const cmd = lastLearn("learnStart"), target = S().learnT;
+						if (!target || target.t !== 2 || target.pid !== `LF${k}.${i}` || !cmd || cmd.t !== 2 || cmd.pg !== 3 + k || cmd.i !== i) c.lfoLearnBad.push(`LFO ${k} value ${i}: ${JSON.stringify(cmd)}`);
+						if (!$1("#kpop").hidden) c.lfoLearnBad.push(`LFO ${k} value ${i}: picker opened`);
+					}
+					if (JSON.stringify(S().tracks[2].v) !== before) c.lfoLearnBad.push("Learning changed the sound"); },
+					screen: c => ok(!c.lfoLearnBad.length, c.lfoLearnBad.join(" | ")) },
 				{ say: "press LEARN again: learnCancel goes out, nothing waits", act: u => u.click("#learnkey"),
 					screen: () => ok(!S().learn && lastLearn("learnCancel") && !$1("body").classList.contains("learn"), "learn " + S().learn) }
 			],

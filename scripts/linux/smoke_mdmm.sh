@@ -13,7 +13,10 @@
 #   - the page's zoom: it starts at 125 % (the editor's config, seeded) and Ctrl+= makes it 150 %; webkit2gtk has no
 #     page zoom, so the plug-in sends it as a message (a batch file), and the web process must live through it (a
 #     javascript: URL for it crashed the web process next to the bridge's iframes until the codex review of 2026-10);
-#   - a screenshot of the display (md-standalone.png, md-vst3.png, ...), kept as an artifact.
+#   - the firmware-needed card is actually drawn in the screenshot (OCR), not only in the accessibility tree;
+#     screenshots of the display (md-standalone.png, md-vst3.png, ...) are kept as artifacts.
+#   - after the working page checks, terminate the standalone's WebKit page process / VST3's GTK helper;
+#     the host stays alive, logs the cause and draws the native error (read from a screenshot using OCR).
 #
 #   scripts/linux/smoke_mdmm.sh <dir with the .tar.gz files> <output dir> [<mdmmVst3EditorHost binary>]
 # Runs itself again inside dbus-run-session when there is no session bus (AT-SPI needs one).
@@ -67,6 +70,67 @@ export GEARMULATOR_MDMM_KEYPROBE=1
 keys_wanted=(cmd+C cmd+V cmd+X cmd+Z cmd+D "shift+?")
 record() { summary+=("| $1 | $2 | $3 |"); }
 
+# Scope failure injection to this app's descendants, even if the runner has another WebKit user.
+descendants() {
+	local child
+	for child in $(pgrep -P "$1" 2>/dev/null); do
+		printf '%s\n' "${child}"
+		descendants "${child}"
+	done
+}
+
+check_failure() {
+	local name="$1" label="$2" smokeHome="$3" pid="$4" target expected child found=0
+	if [[ "${name}" == *-vst3 ]]; then
+		target='--juce-gtkwebkitfork-child'
+		expected='The WebKitGTK helper disconnected'
+	else
+		target='WebKitWebProcess'
+		expected='The WebKitGTK page process terminated'
+	fi
+	while read -r child; do
+		if [[ "$(ps -p "${child}" -o args= 2>/dev/null)" == *"${target}"* ]]; then
+			kill -KILL "${child}" || continue
+			found=1
+		fi
+	done < <(descendants "${pid}")
+	if (( ! found )); then
+		fail "${label}: no ${target} descendant found for failure handling check"
+		return
+	fi
+	local attempt log_seen=0
+	for attempt in {1..10}; do
+		sleep 1
+		if grep -R -F --include='editor-*.log' "FAILED: the page did not load (${expected}" "${smokeHome}/data" >/dev/null 2>&1; then
+			log_seen=1
+			break
+		fi
+	done
+	# JUCE 7's native Linux widgets do not export an AT-SPI tree. OCR checks the actual drawn fallback,
+	# not just its log, and catches a black/covered window after a browser process dies.
+	sleep 1
+	import -display "${display}" -window root "${out}/${name}-failure.png" 2>"${out}/${name}-failure-capture.txt"
+	tesseract "${out}/${name}-failure.png" "${out}/${name}-failure" --psm 6 \
+		2>"${out}/${name}-failure-ocr.txt"
+	if kill -0 "${pid}" 2>/dev/null && (( log_seen )) \
+		&& grep -qi -F 'The editor page could not start' "${out}/${name}-failure.txt"; then
+		record "${label}" "${target} terminated: native error visible, host alive" "yes"
+	else
+		fail "${label}: browser process failure did not leave a live host with a visible native error"
+		record "${label}" "${target} terminated: native error visible, host alive" "no"
+	fi
+	if [[ "${name}" == *-vst3 ]]; then
+		if grep -q -x 'Webview' /proc/"${pid}"/task/*/comm 2>/dev/null; then
+			fail "${label}: the Webview receiver thread stayed alive after its helper disconnected"
+			record "${label}" "helper EOF stops receiver thread" "no"
+		else
+			record "${label}" "helper EOF stops receiver thread" "yes"
+		fi
+	fi
+	mkdir -p "${out}/${name}-startup-logs"
+	find "${smokeHome}/data" -type f -name 'editor-*.log' -exec cp {} "${out}/${name}-startup-logs/" \;
+}
+
 # Every file written and deleted in the temp folders (JUCE's is /var/tmp, else /tmp): the bridge's script files
 # (<page>.recv-<seq>.js, written whole and renamed into place) come and go there.
 inotifywait -q -m -e create -e moved_to -e delete --format '%e %f' /tmp /var/tmp > "${out}/temp-events.txt" 2>/dev/null &
@@ -75,17 +139,17 @@ sleep 1
 
 #   run <name> <label> <machine> <home> <program> [args...]
 run() {
-	local name="$1" label="$2" machine="$3" home="$4"
+	local name="$1" label="$2" machine="$3" smokeHome="$4"
 	shift 4
 	local wanted="${machine} firmware needed"
 	echo "== ${label}: $*"
 	# the page's zoom at 125 % from the start (PageEditor's pageZoom, the editor's config in the data folder)
-	mkdir -p "${home}/data/Gearmulator Preview/${machine}/config"
+	mkdir -p "${smokeHome}/data/Gearmulator Preview/${machine}/config"
 	printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' '<PROPERTIES>' '  <VALUE name="pageZoom" val="1.25"/>' \
-		'</PROPERTIES>' > "${home}/data/Gearmulator Preview/${machine}/config/${product_name}.xml"
+		'</PROPERTIES>' > "${smokeHome}/data/Gearmulator Preview/${machine}/config/${product_name}.xml"
 	local events_before
 	events_before="$(wc -l < "${out}/temp-events.txt")"
-	HOME="${home}" XDG_CONFIG_HOME="${home}/.config" GEARMULATOR_DATA_ROOT="${home}/data/" \
+	HOME="${smokeHome}" XDG_CONFIG_HOME="${smokeHome}/.config" GEARMULATOR_DATA_ROOT="${smokeHome}/data/" \
 		"$@" > "${out}/${name}-stdout.txt" 2> "${out}/${name}-stderr.txt" &
 	local pid=$!
 	local found=0 alive=1 waited=0
@@ -108,6 +172,13 @@ run() {
 	kill -0 "${pid}" 2>/dev/null || alive=0
 	ps -eo pid,ppid,args --forest > "${out}/${name}-processes.txt"
 	import -display "${display}" -window root "${out}/${name}.png" 2>/dev/null || true
+	tesseract "${out}/${name}.png" "${out}/${name}-screen" --psm 11 2>"${out}/${name}-screen-ocr.txt"
+	if grep -q -i -F "${wanted}" "${out}/${name}-screen.txt"; then
+		record "${label}" "firmware card visible in screenshot (OCR)" "yes"
+	else
+		fail "${label}: screenshot did not show '${wanted}' (a live accessibility tree alone is not a visible editor)"
+		record "${label}" "firmware card visible in screenshot (OCR)" "no"
+	fi
 	tail -n "+$((events_before + 1))" "${out}/temp-events.txt" > "${out}/${name}-temp-events.txt"
 	local written read_back
 	written="$(grep -c -E '^(CREATE|MOVED_TO) gearmulator-.*\.recv-[0-9]+\.js$' "${out}/${name}-temp-events.txt" || true)"
@@ -215,6 +286,7 @@ run() {
 			fail "${label}: after Ctrl+= (page zoom) the web process changed or the bridge stopped (${zoom_detail})"
 			record "${label}" "page zoom by message (Ctrl+=)" "no"
 		fi
+		check_failure "${name}" "${label}" "${smokeHome}" "${pid}"
 	fi
 	kill "${pid}" 2>/dev/null || true
 	sleep 2

@@ -2337,12 +2337,15 @@ html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[dat
 .lb i:not(.bp){min-height:4px}
 
 /* I-035 the lock lane's kit-value line: 2 px, full strength, a dark edge so it reads on a lit bar and on an empty key;
-   solid, so a narrow key still shows it whole; it is grabbed and dragged (mdDeskGestures.js kitHit); its number sits on it at the lane's right end, and a lock's
+   solid, so a narrow key still shows it whole; it is a reference (the labelled KIT handle edits it); its number sits on it at the lane's right end, and a lock's
    number at its bar's end on hover or on a selected step */
 .lb:not(.none){overflow:visible}
 /* A filled 2 px box keeps its thickness when WebKit rounds zoomed borders to device pixels. */
 .lb .base{height:2px;border-top:0!important;background:var(--keytext);opacity:1!important;filter:drop-shadow(0 0 1px rgba(0,0,0,.85))}
-.lane.kithot,.lane.kithot .lb,.lane.kitdrag,.lane.kitdrag .lb{cursor:ns-resize!important}
+.lane.kitdrag,.lane.kitdrag .lb{cursor:ns-resize!important}
+#lanekit{flex:none}
+#lanekit .kitvalue{height:22px;padding:0 6px;font:9px var(--pix);cursor:ns-resize;color:var(--keytext);background:var(--key);border:1px solid var(--rule);border-radius:3px}
+#lanekit .kitvalue:hover,#lanekit .kitvalue:focus-visible{outline:2px solid var(--led);outline-offset:1px}
 .lb .vl,.lb .kvl{position:absolute;z-index:4;right:2px;padding:0 3px;border-radius:2px;font:9px/12px var(--pix);pointer-events:none;white-space:nowrap}
 .lb .vl{display:none;right:auto;left:50%;transform:translateX(-50%);background:var(--lcd);color:var(--ink)}
 .lb:hover .vl,.lb.vsel .vl{display:block}

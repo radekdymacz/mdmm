@@ -3,7 +3,7 @@
 #
 # JUCE 7 runs webkit2gtk in a child process and loads libgtk-3 and libwebkit2gtk-4.0 with dlopen
 # at run time, so the plug-ins only need the headers to build: no DT_NEEDED on WebKit, and a
-# machine without it gets an empty editor instead of a plug-in that fails to load.
+# machine without it gets the native editor failure message instead of a plug-in that fails to load.
 #
 # A standalone app starts its own executable as that child (--juce-gtkwebkitfork-child). A plug-in
 # cannot (a fork of a host is not safe to run JUCE in), so JUCE embeds a small helper program

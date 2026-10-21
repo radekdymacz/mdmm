@@ -997,6 +997,72 @@ void kitAfterPatternDump(const uint8_t _link3 = 5)
 		"a dump of another pattern: nothing again");
 }
 
+// B-027: a value budget or a preceding dump can keep a live edit in the stream longer than the
+// memory expectation's timeout. Old memory must not discard that edit before it is delivered.
+void workingKitWaitsForStream()
+{
+	std::puts("B-027: working-kit edits wait for stream delivery before their memory timeout");
+	double now = 0;
+	std::vector<std::array<uint8_t, 4>> values;
+	mmDesk::Desk::Port port;
+	port.device.nowMs = [&] { return now; };
+	port.device.sendSysex = [](const Bytes&) {};
+	port.device.sendParam = [&](uint8_t t, uint8_t pg, uint8_t i, uint8_t v) { values.push_back({t, pg, i, v}); };
+	port.toPage = [&](const Value& v) { g_published.push_back(v); };
+	auto profile = mmDesk::emulatorProfile();
+	profile.stream.valueBytesPerSecond = 2;
+	profile.stream.valueBurstBytes = 3;	// one immediate CC; the next waits 1.5 seconds
+	mmDesk::Desk d(port, profile);
+	auto tel = screen(mmDesk::Screen::Main);
+	tel.running = true;
+	d.onTelemetry(tel);
+	d.setProbe(mmDesk::Desk::Probe::Running);
+	for(const auto param : {0x01, 0x02, 0x04})
+		d.onDeviceSysex({0xf0, 0, 0x20, 0x3c, 3, 0, 0x72, static_cast<uint8_t>(param), 0, 0xf7});
+	ed::MmKit k;
+	k.machines.fill(1);
+	k.trigPos.fill(0xff);
+	d.onDeviceSysex(ed::encodeMmKit(k));
+	d.onDeviceSysex(ed::encodeMmPattern(emptyPattern(0)));
+	d.onDeviceSysex(ed::encodeMmGlobal(ed::mmFactoryGlobal(0)));
+	const auto memory = [&](const ed::MmKit& image)
+	{
+		Bytes region(5, 0);
+		const auto raw = ed::mmKitRaw(image);
+		region.insert(region.end(), raw.begin(), raw.end());
+		d.onWorkingKit(region);
+	};
+	const auto run = [&](const double ms, const ed::MmKit& image)
+	{
+		for(double t = 0; t < ms; t += 10)
+		{
+			now += 10;
+			d.onTelemetry(tel);
+			memory(image);
+			d.tick();
+		}
+	};
+	const auto msg = [&](const char* json) { d.onPageMessage(*ed::json::parse(json)); };
+	msg(R"({"op":"ready"})");
+	run(10, k);
+	msg(R"({"op":"param","k":0,"t":0,"page":2,"i":0,"v":55})");
+	msg(R"({"op":"param","k":0,"t":0,"page":2,"i":1,"v":66})");
+	check(values.size() == 1, "the first live value left; the second waits on the stream budget");
+	k.tracks[0].pages[2][0] = 55;
+	run(1200, k);
+	check(values.size() == 1 && d.workingKit() && d.workingKit()->tracks[0].pages[2][1] == 66,
+		"old memory after a second does not replace the unsent edit");
+	run(400, k);
+	check(values.size() == 2 && d.workingKit() && d.workingKit()->tracks[0].pages[2][1] == 66,
+		"after delivery, old memory still gets the normal settling interval");
+	k.tracks[0].pages[2][1] = 66;
+	run(20, k);
+	check(d.workingKit() && ed::mmKitRaw(*d.workingKit()) == ed::mmKitRaw(k), "matching memory settles both edits");
+	k.tracks[0].pages[2][1] = 31;
+	run(20, k);
+	check(d.workingKit() && d.workingKit()->tracks[0].pages[2][1] == 31, "a later change on the machine is observed");
+}
+
 // B-053: the OS 1.32B loads a pattern's kit on a pick in banks A-D only (mmDeskFirmwareTest kitlink); a dump of the pattern
 // that plays links the kit that plays unless the edit changed the link.
 void kitPickRules()
@@ -2503,6 +2569,7 @@ int main(const int _argc, char** _argv)
 	revertTrack();
 	kitAfterPatternDump();
 	kitAfterPatternDump(9);
+	workingKitWaitsForStream();
 	kitPickRules();
 	transposeRules();
 	transposeWhilePlaying();

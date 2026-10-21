@@ -1,5 +1,7 @@
 #include "mdAutomationTestSupport.h"
+#include "mmStudioLink.h"
 
+#include <array>
 #include <iostream>
 #include <string>
 
@@ -12,6 +14,44 @@ namespace
 		auto* const result = _controller.getParameter("Level", 0);
 		require(result != nullptr, "test parameter was not registered");
 		return *result;
+	}
+
+	void verifyMmDeskReplays(Harness& _harness)
+	{
+		auto& controller = _harness.controller;
+		mdJucePlugin::MmStudioLink link(_harness.processor, controller);
+		struct Target { const char* name; uint8_t page, index, value; };
+		// The working-kit restore uses this same port for values, levels and LFO selections.
+		const std::array<Target, 3> targets{{{"AmpVolume", 1, 5, 76}, {"Level", 7, 0, 91}, {"Lfo3Page", 6, 0, 29}}};
+		for(const auto& target : targets)
+		{
+			auto* p = controller.getParameter(target.name, 0);
+			require(p != nullptr, std::string("missing MM replay parameter ") + target.name);
+			// Model the stale host-side value after a firmware kit reload. The production port
+			// must deliver it anyway; the old raw-CC desk rig did not exercise this cache.
+			p->setValueFromSynth(target.value, pluginLib::Parameter::Origin::PresetChange);
+			for(const auto value : {target.value, target.value, static_cast<uint8_t>(target.value + 1)})
+			{
+				const auto before = controller.getTransmittedAutomationChangeCount();
+				const auto midi = _harness.telemetry();
+				require(link.setParam(0, target.page, target.index, value), "the MM desk port accepts its parameter");
+				_harness.process(32);
+				require(controller.getTransmittedAutomationChangeCount() == before + 1,
+					std::string("MM desk replay must emit exactly one CC, including unchanged ") + target.name);
+				const auto after = _harness.telemetry();
+				require(after.consumed >= midi.consumed + 3 && after.overflows == midi.overflows,
+					std::string("MM desk replay was not consumed losslessly: ") + target.name);
+			}
+		}
+		const auto state = controller.createAutomationSnapshot();
+		require(state.size() >= 7 && state[3] != 0xff, "MM replay verification has no selected kit");
+		link.sendSysex(md::automation::sysex::kitSave(md::MachineModel::Monomachine, state[3]));
+		_harness.process(64);
+		controller.requestAutomationState();
+		require(_harness.synchronize(), "MM replay values were not read back after saving the ephemeral kit");
+		for(const auto& target : targets)
+			require(controller.getLastFirmwareKitValue(*controller.getParameter(target.name, 0)) == target.value + 1,
+				std::string("firmware kit does not hold the delivered MM desk value: ") + target.name);
 	}
 
 	bool verifyModel(const md::MachineModel _model)
@@ -142,6 +182,9 @@ namespace
 			+ std::to_string(restoredWrites) + " of "
 			+ std::to_string(audioProcessor.getParameters().size())
 			+ " values back to firmware");
+
+		if(_model == md::MachineModel::Monomachine)
+			verifyMmDeskReplays(harness);
 
 		std::cout << "mdAutomationFirmwareTest: "
 			<< modelName(_model)

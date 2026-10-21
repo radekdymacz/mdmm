@@ -155,7 +155,7 @@ function syncControls(){
   if(PAGES.includes(g)||g==="MID"){const pid=g+"."+n;el.classList.toggle("lk",S.locks.has(lkKey(t,pid)));const mb=modBy(t,g,+n);let md=el.querySelector(".mod");
    if(mb.length){if(!md){md=document.createElement("i");md.className="mod";el.appendChild(md)}md.textContent="~"+mb.join("");el.title=`Modulated by LFO ${mb.join(" + ")}`}else if(md)md.remove();
    const mp=S.ctl.links.some(l=>l.t===t&&l.pid===pid)||LD().mappings.some(m=>m.t===t&&m.pg!==LEVELPG&&PAGES[m.pg]===g&&m.i===+n);el.classList.toggle("mapped",mp)}});
- markGlobalAll();
+ markGlobalAll();markLearnChoices();
  $$("#main [data-show]").forEach(el=>{const t=+el.dataset.show;el.textContent=trk(t).lev});
  if(typeof syncDock==="function")syncDock();
  if(typeof syncRevert==="function")syncRevert()}
@@ -164,8 +164,9 @@ function syncControls(){
 let kFor=null;
 function enhanceSelects(root){root.querySelectorAll("select").forEach(sel=>{if(sel.dataset.k)return;sel.dataset.k="1";sel.hidden=true;
  const b=document.createElement("button");b.className="kselbtn";b.type="button";b.dataset.for=sel.id;b.setAttribute("aria-haspopup","listbox");b.setAttribute("aria-expanded","false");
+ if(sel.dataset.lpid){b.dataset.lpid=sel.dataset.lpid;b.dataset.t=sel.dataset.t}
  const lab=sel.closest("label");b.setAttribute("aria-label",(lab?lab.firstChild.textContent.trim()+": ":(sel.getAttribute("aria-label")||"")+" ")+sel.selectedOptions[0]?.text);
- if(sel.disabled)b.disabled=true;b.innerHTML=`<span>${sel.selectedOptions[0]?.text??""}</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`;sel.after(b)})}
+ if(sel.disabled)b.disabled=true;b.innerHTML=`<span>${sel.selectedOptions[0]?.text??""}</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`;sel.after(b)});markLearnChoices()}
 function openK(btn){const sel=document.getElementById(btn.dataset.for);kFor=btn;const pop=$("#kpop");let n=0,h="";
  for(const node of sel.children){if(node.tagName==="OPTGROUP"){h+=`<div class="kgrp">${node.label}</div>`;for(const o of node.children){h+=kopt(o,sel);n++}}else{h+=kopt(node,sel);n++}}
  const cols=n>24?4:n>18?3:n>9?2:1;pop.innerHTML=`<div class="klist" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${h}</div>`;
@@ -185,7 +186,7 @@ addEventListener("resize",placeK);addEventListener("scroll",e=>{if(!$("#kpop").c
 function menuOpen(){return!$("#kpop")?.hidden||!$("#machpop")?.hidden}
 function kopt(o,sel){if(o.hidden)return"";return`<button class="kopt" role="option" data-v="${o.value}" aria-selected="${o.value===sel.value}" ${o.disabled?"disabled":""}>${o.text}</button>`}
 function closeK(){const pop=$("#kpop");if(pop.hidden)return;pop.hidden=true;kFor?.setAttribute("aria-expanded","false")}
-document.addEventListener("click",e=>{const b=e.target.closest(".kselbtn");if(b){const same=kFor===b&&!$("#kpop").hidden;closeK();if(!same)openK(b);return}
+document.addEventListener("click",e=>{const b=e.target.closest(".kselbtn");if(b){if(S.learn&&b.dataset.lpid)return;const same=kFor===b&&!$("#kpop").hidden;closeK();if(!same)openK(b);return}
  const o=e.target.closest("#kpop .kopt");if(o&&kFor){const sel=document.getElementById(kFor.dataset.for);sel.value=o.dataset.v;kFor.querySelector("span").textContent=sel.selectedOptions[0].text;closeK();kFor.focus();sel.dispatchEvent(new Event("change",{bubbles:true}));return}
  if(!e.target.closest("#kpop"))closeK()},true);
 document.addEventListener("keydown",e=>{if($("#kpop").hidden)return;if(e.key==="Escape"){closeK();kFor?.focus();return}

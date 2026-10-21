@@ -27,7 +27,7 @@ script_dir="$(cd "$(dirname "$0")" && pwd)"
 # confidence. Not in it, as far as we know: GTK 3 and WebKitGTK (the case this test is about).
 stock_packages=(alsa-lib mesa libx11 libxext libxcursor libxinerama libxrandr libxrender libxcomposite freetype2 fontconfig)
 # The test's own tools (virtual display, input, screenshots, bridge watcher, accessibility tree), not the user's.
-tool_packages=(xorg-server-xvfb xdotool imagemagick inotify-tools dbus at-spi2-core python-gobject glib2 procps-ng)
+tool_packages=(xorg-server-xvfb xdotool imagemagick inotify-tools dbus at-spi2-core python-gobject glib2 procps-ng tesseract tesseract-data-eng)
 # What the editor window needs on top (README-Linux.txt).
 window_packages=(webkit2gtk-4.1 gtk3)
 
