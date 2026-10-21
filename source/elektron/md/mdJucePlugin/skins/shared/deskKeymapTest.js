@@ -45,6 +45,7 @@ const ONLY = {
 		"roll-select-note": "the piano roll: click a note to select it (I-036); the MD selects steps on Pattern",
 		"roll-length": "the piano roll (I-010)", "roll-chord": "the piano roll", "roll-paint": "the piano roll",
 		"roll-erase": "the piano roll", "piano-black": "the MM's black keys (the MD's come with D6)", "lockstep-wheel": "the MM's lock lane steps", "learn-knob": "the MM's LEARN",
+		"lane-lock-menu": "the MM's lock lane menu clears a single parameter lock, including a ghost lock; the MD lane uses Alt-erase and has no context menu",
 		"tip-reclock": "the MM's live-recorded value locks the step that plays",
 		"step-record": "STEP RECORDING (MM manual 1-50; the Machinedrum has none)", "step-move": "STEP RECORDING's cursor", "step-clear": "STEP RECORDING: clear the step",
 		"step-done": "STEP RECORDING: done" }

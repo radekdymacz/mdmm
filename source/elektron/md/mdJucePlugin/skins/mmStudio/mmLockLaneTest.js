@@ -168,7 +168,7 @@ check(/of 62 locked parameters/.test(meterEl.title), "the lock meter's tooltip c
 	let html = draw("AMP.0");
 	check(/data-kitvalue class="kitvalue"/.test(html) && /aria-label="Kit value 80"/.test(html), "the gutter visibly labels KIT and names its current value");
 	check(/<span class="vl"[^>]*>90<\/span>/.test(html) && /<span class="vl"[^>]*>30<\/span>/.test(html) && /<span class="kvl"[^>]*>80<\/span>/.test(html), "locks and kit retain their separate value labels");
-	check(/<div class="base"/.test(html.slice(html.indexOf('data-s="2"'))), "the baseline remains a reference on a trig step");
+	check(/<div class="lb [^"]*" data-s="2" title="[^"]*"><div class="base"/.test(html), "the baseline remains a reference on a trig step");
 	check((html.match(/class="kvl"/g) || []).length === 1 && html.lastIndexOf('class="kvl"') > html.lastIndexOf('data-s="10"'), "the kit value label is still once at the lane's right end");
 	const m0 = M.laneMeta().m;
 	check(/class="kvl fl"/.test(M.kitLabelHTML(m0, 127, 127)) && /class="kvl"/.test(M.kitLabelHTML(m0, 40, 127)), "near the top the kit's number still moves left of its key");
@@ -178,7 +178,8 @@ check(/of 62 locked parameters/.test(meterEl.title), "the lock meter's tooltip c
 	S.lane = "AMP.0"; S.lanePage = "AMP";
 
 	lane("AMP.0", { 5: 70 }); html = draw("AMP.0");
-	check(/data-s="5"[^>]*><div class="base"/.test(html), "the baseline remains a reference on a ghost step");
+	/* A title may contain > (right-click > Clear lock). Match its quotes, and require this ghost cell's own baseline. */
+	check(/<div class="lb [^"]*\bghost\b[^"]*" data-s="5" title="[^"]*"><div class="base"/.test(html), "the baseline remains a reference on a ghost step");
 }
 
 /* 7. a slide drawn in the lane: the dot dragged sideways sets the slide flag of its step (the machine's slide track: every

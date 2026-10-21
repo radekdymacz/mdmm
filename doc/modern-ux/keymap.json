@@ -607,6 +607,17 @@
 			"area": "Lock lane"
 		},
 		{
+			"id": "lane-kit-value",
+			"scope": "seq",
+			"keys": [
+				"KIT handle"
+			],
+			"mod": "",
+			"group": "Pattern",
+			"does": "Drag the labelled KIT handle at the left of the lane header, or focus it and use the arrow keys, to edit the sound. The line across the steps is a reference; a plain click or vertical drag on a step edits its lock",
+			"area": "Lock lane"
+		},
+		{
 			"id": "lane-slide-cancel",
 			"scope": "seq",
 			"keys": [
@@ -2227,7 +2238,7 @@
 			],
 			"mod": "",
 			"group": "Pattern",
-			"does": "Drag the labelled KIT handle in the left gutter to edit the sound. The line across the steps is a reference; every step column edits its lock",
+			"does": "Drag the labelled KIT handle in the left gutter, or focus it and use the arrow keys, to edit the sound. The line across the steps is a reference; a plain click or vertical drag on a step edits its lock",
 			"area": "Lock lane"
 		},
 		{
@@ -2247,7 +2258,7 @@
 			"id": "lane-ramp",
 			"scope": "seq",
 			"keys": [
-				"unlocked step"
+				"lock lane"
 			],
 			"mod": "shift",
 			"group": "Pattern",
