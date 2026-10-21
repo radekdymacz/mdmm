@@ -3085,10 +3085,12 @@ const MmJourneys = (() => {
 					for (let t = 0; t < 6; t++) { u.click(rail(t)); await sleep(250); for (const g of ["LF1", "LF2", "LF3"]) { const e = checkBox(await nudgeBox(u, t, g, 5), t, g, 5); if (e) c.bad.push(`T${t + 1} ${g}: ${e}`); else c.n++; } } },
 				screen: c => ok(!c.bad.length, c.bad.slice(0, 4).join(" | ")), machine: c => ok(c.n === 18, c.n + " of 18"), within: 1000 },
 			{ say: "two LFOs on one target add: LFO 1 and LFO 2 of track 1 both on FLT BASE with depth: the value shows ~12", act: async (u, c) => { u.click(rail(0)); await sleep(300);
+					/* The earlier persistence check routes LFO 3 to FILTER; this case needs exactly two sources. */
+					await choose(u, "lp3", 0); await until(() => lfoPage(0, 3) === 0, 3000);
 					for (const [k, n] of [[1, 5], [2, 6]]) { await choose(u, "lp" + k, 3); await choose(u, "ld" + k, 0); await until(() => lfoPage(0, k) === 3 && lfoDest(0, k) === 0, 3000);
 						const q = `#main .pc[data-g="LF${k}"][data-n="7"]`; u.click(q, { cmd: true }); typeIn(u, "80"); await until(() => lfoCell(0, k, 7) === 80, 3000); }
 					await sleep(300); c.t = $1('#main .pc[data-g="FLT"][data-n="0"] .mod')?.textContent; c.ti = $1('#main .pc[data-g="FLT"][data-n="0"]')?.title; },
-				screen: c => ok(c.t === "~12" && /LFO 1 \+ 2/.test(c.ti), `badge ${c.t}, title ${c.ti}`), machine: () => ok(lfoPage(0, 1) === 3 && lfoPage(0, 2) === 3 && lfoDest(0, 1) === 0 && lfoDest(0, 2) === 0, "LFO targets differ"), within: 6000 },
+				screen: c => ok(c.t === "~12" && /LFO 1 \+ 2/.test(c.ti), `badge ${c.t}, title ${c.ti}`), machine: () => ok(lfoPage(0, 1) === 3 && lfoPage(0, 2) === 3 && lfoDest(0, 1) === 0 && lfoDest(0, 2) === 0 && lfoPage(0, 3) === 0, "LFO targets differ"), within: 6000 },
 			{ say: "the MIDI track of the same number shares the three LFOs: its page says so and one key goes to the synth track's LFOs", act: async (u, c) => { u.click('[data-side="midi"]'); await sleep(300); u.click(rail(6)); await sleep(300); c.txt = $1("#main .sgabout")?.textContent || ""; u.click('[data-goto="0"]'); await sleep(300); },
 				screen: c => ok(/shares its three LFOs with synth track 1/.test(c.txt) && S().sel === 0 && S().side !== "midi" && !!$1("#lp1"), `text "${c.txt.slice(0, 60)}", track ${S().sel}, side ${S().side}`), within: 6000 }
 		],
