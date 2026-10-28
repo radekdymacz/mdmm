@@ -345,7 +345,7 @@ function rollStepTip(t,s){const st=trk(t).steps[s];if(!st)return"";const head=`S
  return head+`Note ${pitch}; ${isMidiT(t)?"MIDI note":"fires "+env}`}
 function rollMove(c,e){const t=+c.dataset.t;if(!rollDrag){if(t!==S.sel){c.style.cursor="pointer";return}const G=laneGeom(c),n=rollRow(c,G,e),key=onKeys(c,G,e);
   if((S.rollHov?.n??null)!==n||S.rollHov?.t!==t){S.rollHov=n==null?null:{t,n};drawEd(c)}
-  if(key){c.style.cursor=n==null?"default":"pointer";c.title=ROLL_TIP(t);return}const h=laneHit(c,e);c.style.cursor=h?.edge?"ew-resize":h?.k>=0?"move":"crosshair";c.title=h&&(h.k>=0||trk(t).steps[h.cell]?.off)?rollStepTip(t,h.k>=0?h.s:h.cell):ROLL_TIP(t);return}
+  if(key){c.style.cursor=n==null?"default":"pointer";c.title=n==null?ROLL_TIP(t):noteName(n);return}const h=laneHit(c,e);c.style.cursor=h?.edge?"ew-resize":h?.k>=0?"move":"crosshair";c.title=h&&(h.k>=0||trk(t).steps[h.cell]?.off)?rollStepTip(t,h.k>=0?h.s:h.cell):ROLL_TIP(t);return}
  if(rollDrag.mode==="key"){const d=rollDrag,n=rollRow(d.c,laneGeom(d.c),e);if(n!==d.n){if(d.n!=null)keyNote(d.t,d.n,0);rollKey(d.t,n);S.rollHov=n==null?null:{t:d.t,n};drawEd(d.c)}return}
  c=rollDrag.c;const d=rollDrag,G=laneGeom(c),r=c.getBoundingClientRect();
  if(d.mode==="note"||d.mode==="move"){const h=laneHit(c,e),cell=h?h.cell:d.cell0,n=clamp(G.lo+G.rows-1-Math.floor((e.clientY-r.top-G.top)/G.rh),0,127);

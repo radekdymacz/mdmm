@@ -12,14 +12,15 @@ function menvHint(){const m=S.multi.mode,play=S.mode!=="multi"&&m!==1;
  return`<b>${MTM[m]}:</b> ${MENV_SAY[m]}${play?` <span class="menvto">The keys play ${{normal:"AUTO TRACK",map:"MULTI MAP",poly:"POLY"}[S.mode]} now: choose <b>Multi trig</b> under Keyboard to hear it.</span>`:""}`}
 const MTM=["ALL TRK","SPLIT KEY","SEQ START","SEQ TRNSP"],TIMS=["DIRECT","1/16","2/16","4/16","8/16","16/16","32/16"];
 const isBlack=n=>[1,3,6,8,10].includes(n%12);
-/* the on-screen keyboard: four octaves from C (MIDI 0 at the lowest stop), the last stop cut at note 127 (I-040). Keep the same key width at that stop (B-177) */
-const KBOCT=[-1,6],KB_WHITE_COUNT=28;
-function kbRange(){const lo=12*(S.kbOct+1);return[lo,Math.min(lo+47,127)]}
+/* the on-screen keyboard: four octaves from C, inside the hardware's range C-0 to B-8 (MIDI 12 to 119, B-185). The stops
+   run from C-0 to C-3, so the last stop ends on B-8 and every stop has the same key width (B-177). */
+const KB_LO=12,KB_HI=119,KBOCT=[0,5],KB_WHITE_COUNT=28;
+function kbRange(){const lo=12*(S.kbOct+1);return[lo,Math.min(lo+47,KB_HI)]}
 function zoneOf(n){if(S.mode!=="multi"||S.multi.mode!==1)return null;return n>=S.multi.splitKey?"up":"lo"}
 function mapRow(n){let lo=0;for(let i=0;i<S.mmap.length;i++){const r=S.mmap[i];if(n>=lo&&n<=r.hi)return i;lo=r.hi+1}return -1}
 function renderKb(){const[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const ww=100/KB_WHITE_COUNT;let h="",wi=0;
- for(let n=lo;n<=hi;n++){if(isBlack(n)){h+=`<div class="b${kbLit(n)}" data-key="${n}" style="left:${wi*ww-ww*.3}%;width:${ww*.6}%" aria-label="${noteName(n)}"></div>`;continue}
-  h+=`<div class="w${kbLit(n)}" data-key="${n}" style="left:${wi*ww}%;width:${ww}%" aria-label="${noteName(n)}">${n%12===0?`<small>${noteName(n)}</small>`:""}</div>`;wi++}
+ for(let n=lo;n<=hi;n++){if(isBlack(n)){h+=`<div class="b${kbLit(n)}" data-key="${n}" style="left:${wi*ww-ww*.3}%;width:${ww*.6}%" aria-label="${noteName(n)}" title="${noteName(n)}"></div>`;continue}
+  h+=`<div class="w${kbLit(n)}" data-key="${n}" style="left:${wi*ww}%;width:${ww}%" aria-label="${noteName(n)}" title="${noteName(n)}">${n%12===0?`<small>${noteName(n)}</small>`:""}</div>`;wi++}
  if(S.mode==="multi"&&S.multi.mode===1){const sk=S.multi.splitKey;let idx=whites.findIndex(w=>w>=sk);if(idx<0)idx=whites.length;const x=idx*ww;
   h+=`<div class="zone" style="left:0;width:${x}%;background:var(--ledg)"></div><div class="zone" style="left:${x}%;width:${whites.length*ww-x}%;background:var(--led)"></div><div class="splitm" id="splitm" style="left:${x}%" title="Drag the split point"><span>SPLIT ${noteName(sk)} · T${S.multi.splitTrack}-6 above</span></div>`}
  return h}

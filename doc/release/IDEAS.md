@@ -3,6 +3,11 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-069 · Name the note when the pointer is on a key, on the keyboards
+
+- **From:** a tester on Discord, 2026-10-21: all the keyboards (Pattern, Perform and Multi Map) should show the note name on hover, as a DAW's keyboards do.
+- **Status:** built locally, awaiting CI. Monomachine Editor: every key of the Perform / Multi Trig / Multi Map keyboard has the note name as its tooltip (C-4 for MIDI 60), and the Pattern roll's key gutter names the row under the pointer. The Machinedrum Editor has no piano keyboard (its key map is the 16 TRIG pads), so nothing was added there. `mmKeysTest.js` checks the Perform titles. A hover label that follows the pointer instantly (no tooltip delay) is not done.
+
 ## I-068 · Community bank of patterns and kits
 
 - **From:** [Discord #general, 2026-10-19](https://discord.com/channels/1557742798936084565/1557742800060031060/1561813330799362259).
