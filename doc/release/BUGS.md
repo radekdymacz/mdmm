@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-189 · Monomachine: OJMP may reach the firmware at about twice the value set (open)
+
+- **From:** found in code review for B-179, 2026-10-28; no tester report.
+- **What happens:** the page writes OJMP to bits 4 to 7 of the play byte (`mmDeskEdit.cpp`, `mmJson.cpp`), but the knob was measured setting bits 3 to 6 (doc mm-manual-mapping.md, note 6). A page OJMP of n would then reach the firmware as about 2n.
+- **Should:** OJMP on the page and on the machine agree.
+- **Status:** open. Needs a firmware check of the bit layout before the encoding changes.
+
 ## B-188 · Monomachine: the Autechre 2008 backup "played nonsense" on an early emulator (not reproduced)
 
 - **From:** a tester on Discord (#videos), 2026-10-11, on an early emulator or Monomodule, "weeks ago": "i dont think it was playing properly .. its was just nonsense .. probably better now."
