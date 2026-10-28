@@ -58,6 +58,7 @@ js    mmStudio/src/110-perform.js
 js    mmStudio/src/115-control.js
 js    shared/deskGlobal.js
 js    mmStudio/src/117-global.js
+js    mmStudio/src/118-digipro.js
 js    mmStudio/src/120-song.js
 js    mmStudio/src/125-lib.js
 demo  demo/126-example.js

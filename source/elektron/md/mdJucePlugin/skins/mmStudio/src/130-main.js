@@ -453,10 +453,11 @@ const NA_SEL={
  midiMutes:[6,7,8,9,10,11].flatMap(t=>[`[data-mute="${t}"]`,`[data-solo="${t}"]`,`[data-gmute="${t}"]`]).join(","),
  transport:"#play",playFrom:'[data-rowact="from"]',panic:'[data-mid="panic"]',poly:'[data-pmode="poly"]',multiTrig:'[data-set="mtmode"] button,[data-strk],[data-tim],#splitm',
  multiMap:'.maprow [data-mhi],.maprow select,.maprow .kselbtn,.maprow .pc,[data-mdel],[data-madd],[data-band]',
- portamento:'[data-set="port"] button',gridRecord:"#rec",chains:'[data-chainpad],[data-chain]'};
+ portamento:'[data-set="port"] button',gridRecord:"#rec",chains:'[data-chainpad],[data-chain]',
+ panelKeys:'[data-ga="dperase"]'};	/* 0.9 wave 2: the DigiPRO card's Erase is the machine's panel (HW MIDI: on the machine) */
 const NA_CARD={multiMap:".maprow"};	// a card that also says the reason in words
 /* capabilities with no control of their own here: they say how the machine is read */
-const NA_INFO=["panelKeys","recvSession","lcd","workingKitMemory","telemetry"];
+const NA_INFO=["recvSession","lcd","workingKitMemory","telemetry"];
 const NA={},READING={pattern:new Set(),kit:new Set()},READ_NOTE="Still reading this slot from the machine.";
 function markNa(){
  /* one routine for both editors (shared/deskCaps.js): this page's look is [data-na], and a card that says why */
@@ -626,7 +627,7 @@ window.MMView={
  setFollow,selectTrack:followSelect,setLcd,setKeyDown,setMidiHeld,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
  /* calls */
  render,renderTop,drawLib,toast,ask,redraw,movePH,setPos,flashTracks,goWs,clickStep,autoRange,kitSave,
- redrawAudio:()=>{if(AP.open)drawAudio()},audioLevel,audioStats,openAudio,mixLevels,mixMeterState};
+ redrawAudio:()=>{if(AP.open)drawAudio()},audioLevel,audioStats,openAudio,mixLevels,mixMeterState,setWaves,setWaveFile};
 /* the view gives exactly the seam's members (53-seam.js) */
 {const have=Object.keys(window.MMView),odd=[...MM_SEAM.view.filter(k=>!have.includes(k)),...have.filter(k=>!MM_SEAM.view.includes(k))];if(odd.length)console.warn("MMView and 53-seam.js differ: "+odd.join(", "))}
 /* The self-tests (a diagnostics build's bundle sets window.MMDiagnostics before this script) play the

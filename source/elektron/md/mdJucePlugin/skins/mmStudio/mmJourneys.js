@@ -2644,6 +2644,65 @@ const MmJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.o0 != null && gDoc()?.controlOut?.sequencer !== c.o0) { if ($1("#globpop").hidden) { u.click("#globkey"); await sleep(300); } u.click(`#globpop [data-ga="out1"][data-k="sequencerOut"][data-v="${c.o0}"]`); await until(() => gDoc()?.controlOut?.sequencer === c.o0, 15000); } if (!$1("#globpop").hidden) u.key("Escape"); }
 	};
+	/* 0.9 wave 2: the GLOBAL page's DigiPRO card (118-digipro.js, mdSyxWaves.h; the page tier's machine holds W01 SAW and W04
+	   SQR at start): the list, copy and paste, erase, the card's undo, rename, a Load from a file, Save .syx, the MKI plate */
+	const dgKey = n => $1(`#globpop .dpk[data-v="${n}"]`);
+	const dgUser = n => !!dgKey(n)?.classList.contains("user");
+	const dgName = n => (dgKey(n)?.querySelector("b")?.textContent || "").trim();
+	const dgOpen = async u => { if ($1("#globpop").hidden) { u.click("#globkey"); await sleep(400); } };
+	const dgRead = () => $all("#globpop .dpk").length === 64 && !$all("#globpop .dpk.unk").length && !/Reading/.test($1("#globpop .dpnews")?.textContent || "");
+	const dgTidy = async (u, c) => { if (dlgShown()) u.click(dlgButton("Cancel")); if (!$1("#globpop").hidden) u.key("Escape"); await sleep(200); };
+	const digiproCardJ = {
+		name: "mm-digipro-card", proves: ["MM-010", "MM-310"],
+		steps: [
+			{ say: "open GLOBAL: the DigiPRO card has the 64 positions, read from the machine: W01 and W04 are user waveforms", act: dgOpen,
+				screen: () => ok(dgRead() && dgUser(0) && dgUser(3) && !dgUser(1) && dgName(0) === "uSAW" && dgName(3) === "uSQR",
+					`${$all("#globpop .dpk").length} keys, ${$all("#globpop .dpk.unk").length} not read, W01 ${dgName(0)}, W04 ${dgName(3)}, news ${$1("#globpop .dpnews")?.textContent}`), within: 90000 },
+			{ say: "click W04: it is drawn, named uSQR", act: u => u.click(dgKey(3)),
+				screen: () => ok(pressed('#globpop .dpk[data-v="3"]') && !!$1("#globpop .dpdraw polyline") && /uSQR/.test($1("#globpop .dphead")?.textContent || ""), $1("#globpop .dphead")?.textContent) },
+			{ say: "click Copy, then W10 and Paste: W10 holds SQR (nothing asked over a factory position)", act: async u => { u.click('#globpop [data-ga="dpcopy"]'); await sleep(200); u.click(dgKey(9)); await sleep(200); u.click('#globpop [data-ga="dppaste"]'); },
+				screen: () => ok(!dlgShown() && dgUser(9) && dgName(9) === "uSQR", `asked ${dlgShown()}, W10 ${dgName(9)}`), within: 40000 },
+			{ say: "click Undo: W10 is the factory waveform again", act: u => u.click('#globpop [data-ga="dpundo"]'),
+				screen: () => ok(!dgUser(9), "W10 " + dgName(9)), within: 40000 },
+			{ say: "click W04, then Erase: it asks", act: async u => { u.click(dgKey(3)); await sleep(200); u.click('#globpop [data-ga="dperase"]'); },
+				screen: () => ok(dlgShown() && /Erase W04/.test($1("#dlg").textContent), "no question"), within: 6000 },
+			{ say: "click Erase in the question: W04 holds the factory waveform", act: u => u.click(dlgButton("Erase")),
+				screen: () => ok(!dgUser(3), "W04 " + dgName(3)), within: 40000 },
+			{ say: "click Undo: W04 is SQR again", act: u => u.click('#globpop [data-ga="dpundo"]'),
+				screen: () => ok(dgUser(3) && dgName(3) === "uSQR", "W04 " + dgName(3)), within: 40000 }
+		],
+		tidy: dgTidy
+	};
+	const digiproRenameJ = {
+		name: "mm-digipro-rename", proves: ["MM-310"],
+		steps: [
+			{ say: "open GLOBAL, click W01 and Rename, type SAW2, press Enter: W01 is named SAW2", act: async u => { await dgOpen(u); await until(dgRead, 90000); u.click(dgKey(0)); await sleep(200); u.click('#globpop [data-ga="dprename"]'); await sleep(250); u.type("#dpin", "saw2"); await sleep(100); u.key("Enter"); },
+				screen: () => ok(dgName(0) === "uSAW2", "W01 " + dgName(0)), within: 120000 },
+			{ say: "click Undo: SAW again", act: u => u.click('#globpop [data-ga="dpundo"]'), screen: () => ok(dgName(0) === "uSAW", "W01 " + dgName(0)), within: 40000 }
+		],
+		tidy: dgTidy
+	};
+	const digiproLoadJ = {
+		name: "mm-digipro-load", proves: ["MM-310", "MM-378"],
+		steps: [
+			{ say: "open GLOBAL, click W20 and Load…: the file's preview asks before it goes", act: async u => { await dgOpen(u); await until(dgRead, 90000); u.click(dgKey(19)); await sleep(200); u.click('#globpop [data-ga="dpload"]'); },
+				screen: () => ok(dlgShown() && /W20/.test($1("#dlg").textContent) && !!dlgButton("Load"), "question: " + (dlgShown() ? $1("#dlg").textContent : "none")), within: 100000 },
+			{ say: "click Load: W20 holds the cycle from the file, named PAGE", act: u => u.click(dlgButton("Load")),
+				screen: () => ok(dgUser(19) && dgName(19) === "uPAGE", "W20 " + dgName(19)), within: 40000 },
+			{ say: "click Save .syx…: the waveform is written to a file", act: (u, c) => { c.n = syxNews.length; u.click('#globpop [data-ga="dpsave"]'); },
+				screen: c => { const m = syxNews.length > c.n && lastExport(); return ok(!!m && m.ok && /1 waveform\.$/.test(m.text), m ? m.text : "no export yet"); }, within: 30000 },
+			{ say: "click Undo: W20 is the factory waveform again", act: u => u.click('#globpop [data-ga="dpundo"]'), screen: () => ok(!dgUser(19), "W20 " + dgName(19)), within: 40000 }
+		],
+		tidy: dgTidy
+	};
+	const digiproMk1J = {
+		name: "mm-digipro-mk1", proves: ["MM-010"],
+		steps: [
+			{ say: "choose the MKI plate in the engine menu, open GLOBAL: the DigiPRO card says an MKI has none, its keys are off", act: async (u, c) => { c.plate = document.documentElement.dataset.plate; if (c.plate !== "mk1") await u.pick("engsel", "plate"); await sleep(300); await dgOpen(u); },
+				screen: () => ok(/An MKI has no user waveforms/.test($1("#globpop .dpcard")?.textContent || "") && !!$1('#globpop [data-ga="dperase"]')?.disabled && !!$1('#globpop [data-ga="dpload"]')?.disabled, "card: " + ($1("#globpop .dpcard .gwarn")?.textContent || "no warning")), within: 8000 }
+		],
+		async tidy(u, c) { await dgTidy(u, c); if (c.plate && document.documentElement.dataset.plate !== c.plate) await u.pick("engsel", "plate"); }
+	};
 	/* B-051: the GLOBAL panel as a screenshot (scripts/mdmm-shots.sh with MDMM_SHOTS_JOURNEY=mm-shots-global) */
 	const shotsGlobal = { name: "mm-shots-global", proves: [], needs: () => !/mm-shots/.test(location.search) ? "screenshots only when asked by name" : null,
 		steps: [{ say: "open GLOBAL", act: async u => { u.click("#globkey"); await sleep(800); shot("global-mm"); }, screen: () => ok(!$1("#globpop").hidden, "closed"), hold },
@@ -4484,7 +4543,7 @@ const MmJourneys = (() => {
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, laneDrawSlide, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
 		valueKeys, soundCopy, screenDrag, filterEnv, lfoLocksJ, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
-		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach, ...Object.values(learnJ)];
+		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, digiproCardJ, digiproRenameJ, digiproLoadJ, digiproMk1J, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach, ...Object.values(learnJ)];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
 	   its guard, "left:", names what stays). What back cannot put back, the journey keeps first (keep, keepMany) or is alone: true (doc/modern-ux/JOURNEYS.md, "Independent journeys") */
 	for (const j of all) { const own = j.tidy; j.tidy = async (u, c) => { try { if (own) await own(u, c); } finally { if (c.back0?.state && Journey.stateDiff(c.back0.state, state())) await back(u, c); } }; }

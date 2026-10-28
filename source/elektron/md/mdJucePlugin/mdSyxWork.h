@@ -408,7 +408,7 @@ namespace mdJucePlugin
 		std::string reset(DeskT& _desk, const std::vector<Bytes>& _messages, const std::string& _label, const std::string& _word,
 			const ToPage& _toPage)
 		{
-			if(m_job.running() || m_waves.running() || m_manager.running())
+			if(m_job.running() || m_waves.running() || m_manager.working())
 				return "An import, an export or the DigiPRO manager is running.";
 			Bytes file;
 			for(const auto& m : _messages)
@@ -431,7 +431,7 @@ namespace mdJucePlugin
 		// False when one runs already.
 		bool exportStart(const DeskT& _desk, const ExportRequest& _r, std::function<void(const Bytes&, const std::string&)> _done)
 		{
-			if(m_waves.running() || m_job.running() || m_manager.running())
+			if(m_waves.running() || m_job.running() || m_manager.working())
 				return false;
 			m_export = exportBytes(_desk, _r);
 			m_exportWords = _r;
@@ -447,8 +447,14 @@ namespace mdJucePlugin
 		// One session step while the machine takes input.
 		void step(DeskT& _desk, const double _nowMs, const bool _wire, const ToPage& _toPage)
 		{
+			// the DigiPRO manager's reads wait while an import or an export uses the machine (they are asked again after)
 			if constexpr(Traits::waves)
-				m_manager.step(_desk.machine(), _nowMs, _wire, _toPage);
+			{
+				if(m_job.running() || m_waves.running())
+					m_manager.pause();
+				else
+					m_manager.step(_desk.machine(), _nowMs, _wire, _toPage);
+			}
 			if(m_job.running())
 			{
 				if(auto p = m_job.step(_desk.machine(), _nowMs, _wire))

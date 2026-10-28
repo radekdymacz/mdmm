@@ -211,6 +211,12 @@ namespace mdJucePlugin
 		}
 
 		bool running() const { return reading() || working(); }
+		// An import or an export uses the machine: the position being read is asked again when the reads go on.
+		void pause()
+		{
+			m_asked = false;
+			m_answered = false;
+		}
 		bool reading() const { return !m_reads.empty(); }
 		bool working() const { return m_waiting; }
 
