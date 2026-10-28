@@ -3775,7 +3775,7 @@ function rollStepTip(t,s){const st=trk(t).steps[s];if(!st)return"";const head=`S
  return head+`Note ${pitch}; ${isMidiT(t)?"MIDI note":"fires "+env}`}
 function rollMove(c,e){const t=+c.dataset.t;if(!rollDrag){if(t!==S.sel){c.style.cursor="pointer";return}const G=laneGeom(c),n=rollRow(c,G,e),key=onKeys(c,G,e);
   if((S.rollHov?.n??null)!==n||S.rollHov?.t!==t){S.rollHov=n==null?null:{t,n};drawEd(c)}
-  if(key){c.style.cursor=n==null?"default":"pointer";c.title=ROLL_TIP(t);return}const h=laneHit(c,e);c.style.cursor=h?.edge?"ew-resize":h?.k>=0?"move":"crosshair";c.title=h&&(h.k>=0||trk(t).steps[h.cell]?.off)?rollStepTip(t,h.k>=0?h.s:h.cell):ROLL_TIP(t);return}
+  if(key){c.style.cursor=n==null?"default":"pointer";c.title=n==null?ROLL_TIP(t):noteName(n);return}const h=laneHit(c,e);c.style.cursor=h?.edge?"ew-resize":h?.k>=0?"move":"crosshair";c.title=h&&(h.k>=0||trk(t).steps[h.cell]?.off)?rollStepTip(t,h.k>=0?h.s:h.cell):ROLL_TIP(t);return}
  if(rollDrag.mode==="key"){const d=rollDrag,n=rollRow(d.c,laneGeom(d.c),e);if(n!==d.n){if(d.n!=null)keyNote(d.t,d.n,0);rollKey(d.t,n);S.rollHov=n==null?null:{t:d.t,n};drawEd(d.c)}return}
  c=rollDrag.c;const d=rollDrag,G=laneGeom(c),r=c.getBoundingClientRect();
  if(d.mode==="note"||d.mode==="move"){const h=laneHit(c,e),cell=h?h.cell:d.cell0,n=clamp(G.lo+G.rows-1-Math.floor((e.clientY-r.top-G.top)/G.rh),0,127);
@@ -5283,14 +5283,15 @@ function menvHint(){const m=S.multi.mode,play=S.mode!=="multi"&&m!==1;
  return`<b>${MTM[m]}:</b> ${MENV_SAY[m]}${play?` <span class="menvto">The keys play ${{normal:"AUTO TRACK",map:"MULTI MAP",poly:"POLY"}[S.mode]} now: choose <b>Multi trig</b> under Keyboard to hear it.</span>`:""}`}
 const MTM=["ALL TRK","SPLIT KEY","SEQ START","SEQ TRNSP"],TIMS=["DIRECT","1/16","2/16","4/16","8/16","16/16","32/16"];
 const isBlack=n=>[1,3,6,8,10].includes(n%12);
-/* the on-screen keyboard: four octaves from C (MIDI 0 at the lowest stop), the last stop cut at note 127 (I-040). Keep the same key width at that stop (B-177) */
-const KBOCT=[-1,6],KB_WHITE_COUNT=28;
-function kbRange(){const lo=12*(S.kbOct+1);return[lo,Math.min(lo+47,127)]}
+/* the on-screen keyboard: four octaves from C, inside the hardware's range C-0 to B-8 (MIDI 12 to 119, B-185). The stops
+   run from C-0 to C-3, so the last stop ends on B-8 and every stop has the same key width (B-177). */
+const KB_LO=12,KB_HI=119,KBOCT=[0,5],KB_WHITE_COUNT=28;
+function kbRange(){const lo=12*(S.kbOct+1);return[lo,Math.min(lo+47,KB_HI)]}
 function zoneOf(n){if(S.mode!=="multi"||S.multi.mode!==1)return null;return n>=S.multi.splitKey?"up":"lo"}
 function mapRow(n){let lo=0;for(let i=0;i<S.mmap.length;i++){const r=S.mmap[i];if(n>=lo&&n<=r.hi)return i;lo=r.hi+1}return -1}
 function renderKb(){const[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const ww=100/KB_WHITE_COUNT;let h="",wi=0;
- for(let n=lo;n<=hi;n++){if(isBlack(n)){h+=`<div class="b${kbLit(n)}" data-key="${n}" style="left:${wi*ww-ww*.3}%;width:${ww*.6}%" aria-label="${noteName(n)}"></div>`;continue}
-  h+=`<div class="w${kbLit(n)}" data-key="${n}" style="left:${wi*ww}%;width:${ww}%" aria-label="${noteName(n)}">${n%12===0?`<small>${noteName(n)}</small>`:""}</div>`;wi++}
+ for(let n=lo;n<=hi;n++){if(isBlack(n)){h+=`<div class="b${kbLit(n)}" data-key="${n}" style="left:${wi*ww-ww*.3}%;width:${ww*.6}%" aria-label="${noteName(n)}" title="${noteName(n)}"></div>`;continue}
+  h+=`<div class="w${kbLit(n)}" data-key="${n}" style="left:${wi*ww}%;width:${ww}%" aria-label="${noteName(n)}" title="${noteName(n)}">${n%12===0?`<small>${noteName(n)}</small>`:""}</div>`;wi++}
  if(S.mode==="multi"&&S.multi.mode===1){const sk=S.multi.splitKey;let idx=whites.findIndex(w=>w>=sk);if(idx<0)idx=whites.length;const x=idx*ww;
   h+=`<div class="zone" style="left:0;width:${x}%;background:var(--ledg)"></div><div class="zone" style="left:${x}%;width:${whites.length*ww-x}%;background:var(--led)"></div><div class="splitm" id="splitm" style="left:${x}%" title="Drag the split point"><span>SPLIT ${noteName(sk)} · T${S.multi.splitTrack}-6 above</span></div>`}
  return h}
@@ -6556,12 +6557,12 @@ const ValueBox={range:el=>[0,maxOf(ref(el)[2])],
 main.addEventListener("wheel",e=>{
  const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el){e.preventDefault();const d=(e.deltaY||e.deltaX)<0?1:-1;stepV(el,d*(e.shiftKey?10:1));return}
  const st=e.target.closest(".mst");if(st){const t=+st.dataset.t,s=+st.dataset.s,x=trk(t).steps[s];if(!x?.n)return;e.preventDefault();const d=((e.deltaY||e.deltaX)<0?1:-1)*(e.shiftKey?12:1);x.n=x.n.map(n=>clamp(n+d));editStep(t,s);refreshRow(t);return}
- const roll=e.target.closest("canvas.roll[data-big]");if(roll){e.preventDefault();const t=+roll.dataset.t;S.rollLoT[t]=clamp((S.rollLoT[t]??S.rollLo)+((e.deltaY)<0?1:-1)*(e.shiftKey?12:2),0,127-ROWS);redraw()}},{passive:false});
+ const roll=e.target.closest("canvas.roll[data-big]");if(roll){e.preventDefault();const t=+roll.dataset.t;S.rollLoT[t]=clamp((S.rollLoT[t]??S.rollLo)+((e.deltaY)<0?1:-1)*(e.shiftKey?12:2),KB_LO,KB_HI+1-ROWS);redraw()}},{passive:false});
 main.addEventListener("dblclick",e=>{const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el&&!ValueEdit.isOpenClick(e)){const m=ref(el)[2];/* I-052: a Mix level goes back to the kit default, 100, as on the Machinedrum Editor */setV(el,el.dataset.g==="lev"?LEV_DEF:m.def??(m.en?0:64))}});
 main.addEventListener("keydown",e=>{const el=e.target.closest("[data-g]");if(!el)return;if(e.key==="Enter"&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&el.matches(".pc,.fader")){e.preventDefault();ValueEdit.open(el,ValueBox);return}const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1,PageUp:10,PageDown:-10}[e.key];if(d==null)return;e.preventDefault();stepV(el,d*(e.shiftKey?10:1))});
 
 /* ===== Clicks ===== */
-function autoRange(t){const ns=trk(t).steps.flatMap(x=>x?.n||[]);if(!ns.length)return;const lo=Math.min(...ns),hi=Math.max(...ns),cur=S.rollLoT[t];if(cur==null||lo<cur||hi>cur+ROWS-1)S.rollLoT[t]=clamp(Math.round((lo+hi)/2)-Math.floor(ROWS/2),0,127-ROWS)}
+function autoRange(t){const ns=trk(t).steps.flatMap(x=>x?.n||[]);if(!ns.length)return;const lo=Math.min(...ns),hi=Math.max(...ns),cur=S.rollLoT[t];if(cur==null||lo<cur||hi>cur+ROWS-1)S.rollLoT[t]=clamp(Math.round((lo+hi)/2)-Math.floor(ROWS/2),KB_LO,KB_HI+1-ROWS)}
 /* MIDI mapping (the CONTROL workspace and LEARN) is hidden until the host says it is on (the learn document's
    "enabled", mmAdapter.js); the mockup on its own shows it. */
 function setMapping(on){S.mapping=!!on;{const t=$("#controlkey"),k=$("#learnkey");if(t)t.hidden=!on;if(k)k.hidden=!on}if(!on){S.learn=false;S.learnT=null;document.body.classList.remove("learn");if(S.ws==="control")S.ws="seq"}}
@@ -6596,7 +6597,7 @@ document.addEventListener("click",e=>{
  const at=e.target.closest("[data-arptrig]");if(at){const a=trk(S.sel).arp,k=at.dataset.arptrig;a[k]=a[k]?0:1;edit("arp",{t:S.sel,field:"trigs",v:(a.amp?1:0)|(a.flt?2:0)|(a.lfo?4:0)});render();return}
  const lg=e.target.closest("[data-leg]");if(lg){const l=trk(S.sel).leg,k=lg.dataset.leg;l[k]=l[k]?0:1;edit("legato",{t:S.sel,env:{amp:"amp",flt:"filter",lfo:"lfo"}[k],on:!!l[k]});render();return}
  
- const rl=e.target.closest("[data-roll]");if(rl){S.rollLo=clamp(S.rollLo+ +rl.dataset.roll,0,127-ROWS);render();return}
+ const rl=e.target.closest("[data-roll]");if(rl){S.rollLo=clamp(S.rollLo+ +rl.dataset.roll,KB_LO,KB_HI+1-ROWS);render();return}
  if(e.target.closest("#ghost")){S.ghost=!S.ghost;render();return}
  const lw=e.target.closest("[data-lwave]");if(lw){editTrack(S.sel,()=>{V(lw.dataset.lwave)[3]=+lw.dataset.w});render();return}
  const gt=e.target.closest("[data-goto]");if(gt){S.ws="sound";S.side="int";select(+gt.dataset.goto);return}

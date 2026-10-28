@@ -34,20 +34,23 @@ check(list.length > 40, `the scripts ran to their ends: ${list.length} entries`)
 /* ---- I-040: Z / X and the Perform keyboard reach every MIDI note 0-127 ---- */
 const topKey = Math.max(...Object.values(piano));
 check(base + 12 * oct[0] === 0 && base + 12 * oct[1] + topKey >= 127 && base + 12 * (oct[1] - 1) + topKey < 127, `the A key plays from MIDI ${base + 12 * oct[0]} to ${base + 12 * oct[1]}, the top key to ${base + 12 * oct[1] + topKey} (clamped 127): ${oct[1] - oct[0] + 1} octaves`);
-check(12 * (kbOct[0] + 1) === 0 && 12 * (kbOct[1] + 1) + 47 >= 127 && 12 * kbOct[1] + 47 < 127, `the Perform keyboard (four octaves) stops from MIDI ${12 * (kbOct[0] + 1)} to ${12 * (kbOct[1] + 1)}`);
-
-/* B-177: the clipped top octave keeps the same key width and emits no out-of-range notes. */
+/* B-185: the Perform keyboard covers the hardware's range C-0 to B-8 (MIDI 12-119), four octaves a stop, every stop the same key width (B-177). */
+check(12 * (kbOct[0] + 1) === 12 && 12 * (kbOct[1] + 1) + 47 === 119, `the Perform keyboard (four octaves) stops from MIDI ${12 * (kbOct[0] + 1)} to ${12 * (kbOct[1] + 1)}, the last ends on MIDI 119 (B-8)`);
 const oldOctave = S.kbOct;
+const widths = h => [...h.matchAll(/class="w[^"\n]*" data-key="\d+" style="left:[^;]+;width:([^%]+)%/g)].map(m => +m[1]);
+S.kbOct = kbOct[0];
+const lowKeys = renderKb();
 S.kbOct = 3;
 const normalKeys = renderKb();
 S.kbOct = kbOct[1];
 const topKeys = renderKb();
 S.kbOct = oldOctave;
-const widths = h => [...h.matchAll(/class="w[^"\n]*" data-key="\d+" style="left:[^;]+;width:([^%]+)%/g)].map(m => +m[1]);
-const normalWidths = widths(normalKeys), topWidths = widths(topKeys);
-check(normalWidths.length === 28 && topWidths.length === 26 && [...normalWidths, ...topWidths].every(w => Math.abs(w - 100 / 28) < 1e-9), "Perform: the same white-key width at C3 and the clipped C6 stop");
-const topNotes = [...topKeys.matchAll(/data-key="(\d+)"/g)].map(m => +m[1]);
-check(topNotes.length === 44 && Math.min(...topNotes) === 84 && Math.max(...topNotes) === 127, "Perform: the top stop plays MIDI 84-127 only");
+const allWidths = [lowKeys, normalKeys, topKeys].map(widths);
+check(allWidths.every(w => w.length === 28 && w.every(x => Math.abs(x - 100 / 28) < 1e-9)), "Perform: the same white-key width at C-0, C-3 and the last stop");
+const notesOf = h => [...h.matchAll(/data-key="(\d+)"/g)].map(m => +m[1]);
+const lowNotes = notesOf(lowKeys), topNotes = notesOf(topKeys);
+check(lowNotes.length === 48 && Math.min(...lowNotes) === 12 && topNotes.length === 48 && Math.max(...topNotes) === 119, "Perform: the keys run MIDI 12 (C-0) to 119 (B-8) and nothing else");
+check(/data-key="60"[^>]*title="C-4"/.test(normalKeys) && /data-key="61"[^>]*title="C#4"/.test(normalKeys), "Perform: a hovered key names its note (title)");
 
 /* ---- the physical key of an entry's key, as the dispatcher matches it (e.key upper-cased, or e.code) ---- */
 const keyId = k => /^[A-Z]$/.test(k) ? "Key" + k : /^[0-9]$/.test(k) ? "Digit" + k : k;

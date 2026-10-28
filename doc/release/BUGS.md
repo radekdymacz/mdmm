@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-185 · Monomachine: the editor's keyboards run C-0 to C-3 below the hardware's range, from MIDI 0 to 127 (fixed locally, awaiting CI)
+
+- **From:** a tester on Discord, 2026-10-21: the Monomachine's keyboard range is C-0 to B-8; the emulator's keyboards should match.
+- **What happens:** the Perform keyboard (also Multi Trig and Multi Map) had stops from MIDI 0 to the top note 127 (names "LOW" below C-0, up to G-9), and the Pattern roll's keys scrolled over all 128 notes. The hardware keyboard, in the page's note names (C-4 = MIDI 60), covers C-0 (MIDI 12) to B-8 (MIDI 119).
+- **Fix:** the Perform keyboard has six stops, C-0 to C-5 (`KBOCT` 0 to 5), four octaves each, so the last stop ends on B-8 and every stop has the same 28-white-key geometry (B-177 stays: the clip at note 127 is gone, the width rule is unchanged). The Pattern roll's window, its wheel and its arrows stay inside MIDI 12 to 119. Multi Map bands and the split point use the keyboard's geometry, so they follow. Not changed: the machine itself plays MIDI 0 to 127 (B-167), so MIDI input, imported notes and the computer keys (Z / X) can still reach those notes; they are only not drawn.
+- **Status:** fixed locally, awaiting CI. `mmKeysTest.js` pins stops 12 to 119, equal key widths at the first, middle and last stop, and no key outside 12 to 119. Not run locally.
+
 ## B-184 · Lock lane: editing a lock can accidentally change the kit value (open)
 
 - **From:** [Discord #bugs, 2026-10-21](https://discord.com/channels/1557742798936084565/1557745221930848277/1562326252931649619), in a Monomachine discussion; exact editor version, OS and host not stated.
@@ -73,6 +80,11 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Code evidence:** `mmStudio/src/40-data.js` `DEFV.AMP[5]` and `mmDesk/mmDeskEdit.cpp` `g_neutralPages` both use VOL 100. `emptyKit` separately sets track LEVEL 100. This confirms the editor's value, not the hardware's default.
 - **Needed:** verify AMP VOL with the firmware or hardware for new/cleared kits and tracks. Check page and core defaults together; existing saved kits must retain their values.
 - **Status:** open; reported editor default confirmed in source, hardware comparison not yet verified. The Empty Reset firmware case now logs AMP values after native GND-SIN assignment with init=1, clearly separated from NEW KIT defaults. No production defaults changed. Separate from FX DEC/REL defaults in B-166.
+- **Tester list (2026-10-21):** a tester on Discord sent a list of the Monomachine's factory default values per machine (displayed units; for the signed parameters 0 shown is 64 stored). Nothing was changed from it: the manual only says "default values" without numbers, and no firmware reading of a NEW KIT's values exists yet, so the list is not confirmed. Where the editor's tables differ (editor to list, displayed units):
+  - Track pages (same for every machine, the list says): AMP HOLD 40 to 0, AMP REL 20 to 64, AMP VOL 100 to 64 (the B-176 report again), FLT DEC 40 to 32, EFX DTIM 32 to 64, EFX DFB 0 to 28, LFO SPD 32 to 64. The LFO choices (PAGE PTCH, DEST 2OCT, TRIG FREE, WAVE TRI, MULT 1X) were not decoded against the editor's enum indices. Everything else on the track pages matches (AMP ATK 0, DEC 64, DIST 0, PAN 0, PORT 0; FLT BASE 0, WDTH 127, HPQ 0, LPQ 0, ATK 0, BOFS 0, WOFS 0; EFX EQF 64, EQG 0, SRR 0, DSND 0, DBAS 0, DWID 127).
+  - SYN: the editor's `synDefaults` (by parameter name) differs on SWAVE UNIL 40 / UNIW 20 / SUB1 30 (list: 0), SWAVE-PULSE and SID PW 64 (list: 0), SWAVE-ENS and DPRO-DENS PCH2-4 63 (list: OFF), VO-6 CVOL 100 (list: 64), FM+ TONE 64 (list: 98), FX INP 100 (list: 64 for THRU and REVERB, 0 for the others), FX-REVERB MIX 64 (list: 32), and others (FX-CHORUS MIX 127, PHASER and FLANGER FB -19, DAMP 2, FM+ 1FB 30). TUNE, VOC1, VOC2, V-SW, LP 127, GATE 127, DEC 64 and FM+-STAT 1ENV 80 match.
+  - Doubts about the list: it says the track pages are identical on all machines (an FX machine is already known to differ, B-166); "CONS: - or 0" is vague. Only one tester, no second source.
+  - **Next step (CI):** extend `mmEmptyResetFirmwareTest` (or a focused firmware case) to load a kit position that was never saved and read the firmware's own defaults for all tracks and every machine, then compare with this list; change `DEFV`, `synDefaults` (`40-data.js`, `50-state.js`) and `g_neutralPages`, `synDefault` (`mmDeskEdit.cpp`) together, with the intent cases.
 
 ## B-175 · Monomachine: Empty Reset leaves K01 SUPERWAVES unchanged (open)
 
@@ -81,6 +93,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Should:** the first stored kit and the active working kit agree with the reset, using the documented empty-kit defaults.
 - **To reproduce:** reset with K01 active and with another kit active; read back slot 0 and the working kit, switch away/back and reload the session. Distinguish a skipped slot from a stale working kit or stale display. The reporter asks for all-zero parameters; that is not accepted as the hardware default without checking (B-176 covers VOL separately).
 - **Status:** Open; no production reset change without a confirmed cause. Source includes all 128 kit slots, including K01. A new firmware case exercises the actual reset coordinator and compares stored K01, the working kit and switching away/back. CI has not run yet.
+- **Tester list (2026-10-21):** the same tester sent a list of factory defaults per machine; it is not all zeros (e.g. AMP VOL 64, DEC 64, FX MIX 127, FM+ TONE 98). Compared with the editor's tables and recorded in B-176; no default was changed. Whether the reset should leave K01 as the factory SUPERWAVES kit is still the open question here, not the values.
 
 ## B-174 · Kit names from a previous SysEx import remain listed (open)
 
