@@ -4,9 +4,16 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-193 · Machinedrum: the fine (Shift) knob drag test was disturbed by a late kit load (open)
+
+- **From:** firmware E2E run 40758434327, journey `md-sound-knob-steps` step 5 (plain 72 -> 61, fine 63); the toast "Loaded kit 1" appeared during the drag. The same journey passed on the same commit in CI run 40758431456; not reported by a tester.
+- **What happens:** the drag ended at 63 instead of the expected fine value.
+- **Likely cause:** a kit load from an earlier journey landed during the drag.
+- **Status:** open. Look at whether a late kit dump should overwrite a value that is being dragged.
+
 ## B-192 · Monomachine: a global change made while the editor still reads the machine may not be saved to the memory file (open)
 
-- **From:** firmware ctest `mdMachineMemoryFirmwareTest_mm`, CI run 40690753268, 2026-10-28; not reported by a tester.
+- **From:** firmware ctest `mdMachineMemoryFirmwareTest_mm`, CI run 40690753268, 2026-10-28; not reported by a tester; again in run 40758434327 at 'another global change is' (before any project opens), with 'The machine memory file is busy (another editor holds it)' retries in the log.
 - **What happens:** after a DAW project opens, a GLOBAL change (MIDI base channel) made while the editor is still reading the machine (116 of 288 slots) reached the machine, but the machine-memory file was not written within 15 s.
 - **Should:** the change is saved, read or not.
 - **Status:** open. The test now waits until the editor has finished reading before it changes the global; the product case is not explained yet. Look at `MachineMemoryService::rebase` and `Watch::look`.
