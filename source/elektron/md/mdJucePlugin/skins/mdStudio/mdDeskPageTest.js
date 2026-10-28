@@ -685,7 +685,7 @@ return { Bridge, cmd, asked, errors, banners, S, Drop, get V() { return V; }, se
 	/* 106 px tall: a 100 px meter, kit FLTF 64. The header handle uses relative movement. */
 	const classes = new Set();
 	const lane = { contains: () => true, classList: { add: c => classes.add(c), remove: c => classes.delete(c), toggle() { } }, innerHTML: "" };
-	const key = { dataset: { s: "1" }, insertAdjacentHTML() { }, getBoundingClientRect: () => ({ bottom: 200, height: 106, top: 94, left: 0, right: 20, width: 20 }), querySelector: q => q === ".base" ? {} : null };
+	const key = { dataset: { s: "1" }, insertAdjacentHTML() { }, getBoundingClientRect: () => ({ bottom: 200, height: 106, top: 94, left: 0, right: 20, width: 20 }), querySelector: q => q === ".base" ? { getBoundingClientRect: () => ({ top: -100, bottom: -99 }), style: { getPropertyValue: () => "0.5" } } : null };
 	key.closest = q => q === ".lb" ? key : null;
 	const handle = { dataset: { kitvalue: "" }, setAttribute() { }, focus() { } }; handle.closest = q => q === "[data-kitvalue]" ? handle : null;
 	hooks["#lane"] = lane; hooks["#lane .lb"] = key; hooks["[data-kitvalue]"] = handle; hooks.under = key;
