@@ -4,6 +4,28 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-188 · Monomachine: the Autechre 2008 backup "played nonsense" on an early emulator (not reproduced)
+
+- **From:** a tester on Discord (#videos), 2026-10-11, on an early emulator or Monomodule, "weeks ago": "i dont think it was playing properly .. its was just nonsense .. probably better now."
+- **What happens:** unclear; the setup is not the editor.
+- **Should:** the backup plays as on the hardware. The Autechre fixture is in the firmware tests (syximport, B-046, B-051).
+- **Status:** not reproduced; no action unless the reporter retests on 0.8.0. Related: B-046 (kit 58 vs 74), B-051.
+
+## B-187 · Ableton: only one of the Machinedrum and Monomachine plug-in windows stays open (a host setting)
+
+- **From:** a tester on Discord, 2026-10-11 (0.5.0, Ableton Live, macOS): "cant have both plug in windows opened at the same time"; opening one closed the other.
+- **What happens:** Live's plug-in window auto-hide closes the other window when one opens.
+- **Should:** nothing in the editors; the guide's DAW chapter could name the setting (Live: switch off Auto-Hide Plug-in Windows, allow multiple plug-in windows).
+- **Status:** answered by Radek on the day (not a defect). Open only for the guide line.
+
+## B-186 · Monomachine: the GLOBAL button could not be found (probably fixed, to confirm)
+
+- **From:** a tester on Discord, 2026-10-10 (0.4.0 or 0.5.0), the same day as the internal-clock report (I-026): "I cant find the Global Button also on Monomachine."
+- **What happens:** the Monomachine Editor of that version had no visible GLOBAL button; the Machinedrum Editor had one.
+- **Should:** both editors show GLOBAL in the top bar (the 0.3.5 dev log says the button replaced FN; the Monomachine caught up in 0.5.0/0.6.0).
+- **To check:** the current Monomachine top bar at 1100 x 800 and 1440 x 923 shows GLOBAL (journey mm-global-*), and the guide says where it is.
+- **Status:** probably fixed in 0.5.0/0.6.0; open until a journey or the reporter confirms.
+
 ## B-185 · Monomachine: the editor's keyboards run C-0 to C-3 below the hardware's range, from MIDI 0 to 127 (fixed locally, awaiting CI)
 
 - **From:** a tester on Discord, 2026-10-21: the Monomachine's keyboard range is C-0 to B-8; the emulator's keyboards should match.
