@@ -322,13 +322,11 @@ namespace mdJucePlugin
 			m.set("ok", !files.empty() && written == files.size());
 			m.set("count", static_cast<int>(written));
 			std::string text = why;
-			if(files.empty())
-				;
-			else if(written != files.size())
+			if(!files.empty() && written != files.size())
 				text = "Could not write " + std::to_string(files.size() - written) + " of " + std::to_string(files.size()) + " files to " + _target.getFullPathName().toStdString() + ".";
-			else if(all)
+			else if(!files.empty() && all)
 				text = "Saved " + std::to_string(written) + " WAV file" + (written == 1 ? "" : "s") + " to " + _target.getFullPathName().toStdString() + ".";
-			else
+			else if(!files.empty())
 				text = "Saved " + _target.withFileExtension("wav").getFileName().toStdString() + ".";
 			m.set("text", text);
 			toPage(m);
