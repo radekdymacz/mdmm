@@ -4,6 +4,20 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-192 · Monomachine: a global change made while the editor still reads the machine may not be saved to the memory file (open)
+
+- **From:** firmware ctest `mdMachineMemoryFirmwareTest_mm`, CI run 40690753268, 2026-10-28; not reported by a tester.
+- **What happens:** after a DAW project opens, a GLOBAL change (MIDI base channel) made while the editor is still reading the machine (116 of 288 slots) reached the machine, but the machine-memory file was not written within 15 s.
+- **Should:** the change is saved, read or not.
+- **Status:** open. The test now waits until the editor has finished reading before it changes the global; the product case is not explained yet. Look at `MachineMemoryService::rebase` and `Watch::look`.
+
+## B-191 · Machinedrum: M, M, Alt+M in a row left one track unmuted (fixed, awaiting CI)
+
+- **From:** firmware journey `md-keys-mute`, run 40690862119, 2026-10-28; not reported by a tester.
+- **What happens:** M mutes the track, M again unmutes it, Alt+M then mutes 15 of 16 tracks.
+- **Cause:** the machine's report of the first M (host parameter echo or telemetry RAM) arrived after the second M's write and marked the track muted again, so Alt+M skipped it.
+- **Fix:** `MdMachine::observeMute`: after a write, a track's reports are ignored until one shows the written value, or 1.5 s pass.
+
 ## B-190 · Monomachine: rename a kit, undo, and the kit still says "edited" (fixed locally, awaiting CI)
 
 - **From:** firmware E2E run 40660005612, 2026-10-28: journey `mm-kit-parts` left the kit state `clean -> edited` and `mm-lcd-boxes` then found "edited" on its first LCD read; not reported by a tester.
