@@ -10,7 +10,8 @@
 // note at the same machine frame whatever the block size. The oscillator runs free, so the MM is judged by each hit's
 // pitch (0-15 ms and 15-30 ms), not by its waveform: a hit more than 2 % off the median pitch is a miss.
 // B-161 recurrence: mm-stack3-seq uses the internal sequencer, with explicit AMP/FILTER/LFO/pitch trigs,
-// rather than incoming MIDI notes. It extends coverage; it does not identify the unprovided reported pattern.
+// rather than incoming MIDI notes, started by the panel PLAY (MIDI Start is ignored under the factory TRANSPORT
+// IGNORE). It extends coverage; it does not identify the unprovided reported pattern.
 //
 // Manual: needs a user-supplied ROM (GEARMULATOR_MD_FIRMWARE_BIN, --mm: GEARMULATOR_MM_FIRMWARE_BIN). Usage:
 //   stackedLfoFirmwareTest [--mm] [--bars N] [--scenario NAME] [--block N] [--wav DIR] [--matrix] [-v]
@@ -18,6 +19,8 @@
 
 #include "mdFirmwareSession.h"
 #include "mmSysexRecv.h"
+
+#include "mdLib/mmtelemetry.h"
 
 #include "elektronData/mdCommands.h"
 #include "elektronData/mdKit.h"
@@ -437,8 +440,10 @@ namespace
 			m.send(ed::mmSetTempo(120));
 			m.run(300);
 			require(mmWorkingKit(m).tracks[0].pages == k.tracks[0].pages, "loading the pattern changed the LFO kit");
-			m.send({0xfa});
+			// the panel PLAY: MIDI Start is ignored under the factory CONTROL IN TRANSPORT IGNORE (mmDeskFirmwareTest)
+			m.panel(md::PanelControl::Play);
 			m.run(2000); // one warm-up bar, then measure continuing sequencer trigs
+			require(m.read8(md::MmTelemetry::g_runningAddress) != 0, "the sequencer did not start");
 		}
 
 		std::array<std::vector<float>, 6> out;
