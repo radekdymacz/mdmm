@@ -3493,9 +3493,14 @@ const MmJourneys = (() => {
 			{ say: "Multi trig: ALL TRK, SPLIT KEY, SEQ START, SEQ TRNSP in order, each the kit's mode; ALL TRK says every track keeps its own arpeggiator", act: async (u, c) => { c.bad = []; c.n0 = histN(); u.click('[data-pmode="multi"]'); await sleep(400); const names = $all('[data-set="mtmode"] button').map(b => b.textContent); if (names.join(" ") !== "ALL TRK SPLIT KEY SEQ START SEQ TRNSP") c.bad.push("keys " + names);
 					for (let i = 0; i < 4; i++) { u.click(`[data-set="mtmode"] button[data-v="${i}"]`); if (!await until(() => wk().multiTrig.mode === i, 4000)) c.bad.push("mode " + i); if (i === 0) c.arp = $1(".kbhint")?.textContent || ""; } },
 				screen: c => ok(!c.bad.length && /each keeps its own arpeggiator/.test(c.arp), c.bad.join(" | ") + " " + c.arp), within: 1000 },
-			{ say: "SPLIT KEY: Upper from + moves the first upper track on, the split marker dragged to another key moves the split key; the hint names both zones", act: async (u, c) => { c.bad = []; u.click('[data-set="mtmode"] button[data-v="1"]');
-					/* the marker is drawn from the page's mode, which follows the kit later on the firmware: wait for both and the marker */
-					if (!await until(() => wk().multiTrig.mode === 1 && S().multi.mode === 1 && !!$1("#splitm"), 15000)) { c.bad.push(`SPLIT KEY not taken: kit ${wk().multiTrig.mode}, page ${S().multi.mode}, marker ${!!$1("#splitm")}`); return; } await sleep(300); c.st0 = wk().multiTrig.splitTrack; const wantTrack = c.st0 < 5 ? c.st0 + 1 : 4; u.click(c.st0 < 5 ? '[data-strk="1"]' : '[data-strk="-1"]'); if (!await until(() => wk().multiTrig.splitTrack === wantTrack, 4000)) c.bad.push(`upper from ${wk().multiTrig.splitTrack} for ${wantTrack}`);
+			{ say: "SPLIT KEY: Upper from + moves the first upper track on, the split marker dragged to another key moves the split key; the hint names both zones", act: async (u, c) => { c.bad = [];
+					/* the marker and the Upper from stepper are drawn from the page's mode, which follows the kit later on the firmware
+					   (a dump of the previous journey's kit can still be on its way and put the page back on another mode; nightly CI
+					   runs 2026-10-26 and -28: no [data-strk="1"]): press the key again until mode, marker and stepper hold for 300 ms */
+					const split = () => wk().multiTrig.mode === 1 && S().multi.mode === 1 && !!$1("#splitm") && !!$1('[data-strk="1"]');
+					let settled = false;
+					for (let t = 0; t < 4 && !settled; t++) { u.click('[data-set="mtmode"] button[data-v="1"]'); if (await until(split, 8000)) { await sleep(300); settled = split(); } }
+					if (!settled) { c.bad.push(`SPLIT KEY not taken: kit ${wk().multiTrig.mode}, page ${S().multi.mode}, marker ${!!$1("#splitm")}, stepper ${!!$1('[data-strk="1"]')}`); return; } c.st0 = wk().multiTrig.splitTrack; const wantTrack = c.st0 < 5 ? c.st0 + 1 : 4; u.click(c.st0 < 5 ? '[data-strk="1"]' : '[data-strk="-1"]'); if (!await until(() => wk().multiTrig.splitTrack === wantTrack, 4000)) c.bad.push(`upper from ${wk().multiTrig.splitTrack} for ${wantTrack}`);
 					c.k0 = wk().multiTrig.splitKey; await u.drag("#splitm", [[-60, 0], [-120, 0]]); await sleep(500); c.k1 = wk().multiTrig.splitKey; if (c.k1 >= c.k0) c.bad.push(`split key ${c.k0} -> ${c.k1}`); c.hint = $1(".kbhint")?.textContent || ""; },
 				screen: c => ok(!c.bad.length && /^.*Keys from .* play T\d-T6, keys below play T1-T\d/.test(c.hint), c.bad.join(" | ") + " hint " + c.hint), within: 1000 },
 			{ say: "SEQ START and SEQ TRNSP have a Timing stepper: from DIRECT through 1/16, 2/16, 4/16, 8/16, 16/16 to 32/16, the kit's timing", act: async (u, c) => { c.bad = []; u.click('[data-set="mtmode"] button[data-v="2"]'); if (!await until(() => wk().multiTrig.mode === 2 && S().multi.mode === 2, 15000)) { c.bad.push(`SEQ START not taken: kit ${wk().multiTrig.mode}, page ${S().multi.mode}`); return; } await sleep(300); const names = ["DIRECT", "1/16", "2/16", "4/16", "8/16", "16/16", "32/16"];
@@ -4136,6 +4141,10 @@ const MmJourneys = (() => {
 		return r;
 	};
 	const hasNotes = p => patTrigs(p) > 0;
+	/* The page shows an edit at once; the machine has it when the edit's dump is through SYSEX RECV, which on a slow runner takes
+	   many seconds of wall time (B-170; nightly CI run 2026-10-26: PLAY right after the undo played silence, 3 s later the notes).
+	   PLAY once the panel is idle and nothing is on its way. */
+	const machineHasIt = async () => { await sleep(500); await until(() => I().machine?.recv?.state === "idle" && !I().machine?.recv?.sending, 40000); await sleep(500); };
 	const realSequence = {
 		name: "mm-real-sequence-plays", proves: ["MM-X24"],
 		steps: [
@@ -4158,10 +4167,10 @@ const MmJourneys = (() => {
 			{ say: "press PLAY for six seconds: the position moves through the pattern and the output is not silent", within: 3000,
 				act: async (u, c) => { c.on = await playPeak(u, 6000, 1500); }, machine: c => ok(c.on.started && c.on.steps >= 8 && c.on.peak > 0.0002, `started ${c.on.started}, ${c.on.steps} steps, peak ${c.on.peak.toFixed(4)}`) },
 			{ say: "press Alt+Delete: the pattern is cleared; PLAY: it moves and plays silence", within: 3000,
-				act: async (u, c) => { blur(); u.key("Delete", { alt: true }); await until(() => !hasNotes(c.p), 15000); await sleep(2000); c.off = await playPeak(u, 5000, 1500); Journey.snapshot("mm-real-sequence-cleared"); },
+				act: async (u, c) => { blur(); u.key("Delete", { alt: true }); await until(() => !hasNotes(c.p), 15000); await sleep(2000); await machineHasIt(); c.off = await playPeak(u, 5000, 1500); Journey.snapshot("mm-real-sequence-cleared"); },
 				machine: c => ok(c.off.started && c.off.steps >= 8 && c.off.peak < 0.0001, `started ${c.off.started}, ${c.off.steps} steps, peak ${c.off.peak.toFixed(4)}`) },
 			{ say: "press Cmd+Z once: the four notes are back and play again", within: 3000,
-				act: async (u, c) => { blur(); u.key("z", { cmd: true }); await until(() => c.steps.every(s => trigsOf(c.t).includes(s)), 15000); c.back = await playPeak(u, 6000, 1500); Bridge.log(`E2E undo then play at once: peak ${c.back.peak.toFixed(4)}, ${c.back.steps} steps`); if (c.back.peak <= 0.0002) { await sleep(3000); c.back2 = await playPeak(u, 6000, 1500); Bridge.log(`E2E undo, 3 s later, play: peak ${c.back2.peak.toFixed(4)}`); c.late = c.back2.peak > 0.0002; } },
+				act: async (u, c) => { blur(); u.key("z", { cmd: true }); await until(() => c.steps.every(s => trigsOf(c.t).includes(s)), 15000); await machineHasIt(); c.back = await playPeak(u, 6000, 1500); Bridge.log(`E2E undo then play at once: peak ${c.back.peak.toFixed(4)}, ${c.back.steps} steps`); if (c.back.peak <= 0.0002) { await sleep(3000); c.back2 = await playPeak(u, 6000, 1500); Bridge.log(`E2E undo, 3 s later, play: peak ${c.back2.peak.toFixed(4)}`); c.late = c.back2.peak > 0.0002; } },
 				machine: c => ok(c.steps.every(s => trigsOf(c.t).includes(s)) && c.back.started && c.back.peak > 0.0002, `notes ${trigsOf(c.t).join(",")}, the page says they are back but the machine played silence at once after the undo (peak ${c.back.peak.toFixed(4)})${c.late ? ", and played them 3 s later" : ""}`) }
 		],
 		/* the pattern it drew in and cleared: undone, then pasted back from the clipboard (a clear leaves more than the notes behind) */
