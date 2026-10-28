@@ -3978,7 +3978,12 @@ const MmJourneys = (() => {
 				machine: () => ok(workName().trim() === "UNDOJRNY" && kitEdited(), `working ${workName()}, ${machine().kit?.working}`), within: 25000 },
 			{ say: "click another kit and load it without saving: the machine keeps the edited kit as its UNDO KIT", act: async (u, c) => { c.k1 = otherSlot(); u.click(ks2(c.k1)); await answer(u, c); },
 				machine: c => ok(machine().kit.current === c.k1 && workName().trim() !== "UNDOJRNY", `kit ${machine().kit.current}, working ${workName()}`), within: 25000 },
-			{ say: "click UNDO KIT: the edited kit plays again, unsaved, in its own slot", act: async (u, c) => { u.click('#libpop [data-la="undokit"]'); await answer(u, c); },
+			{ say: "click UNDO KIT: the edited kit plays again, unsaved, in its own slot", act: async (u, c) => {
+				/* the machine refuses the UNDO KIT while a menu of its own is open (the LOAD KIT it was just given can leave the panel off the main screen for a while on a slow runner;
+				   nightly CI run 2026-10-28: "A menu is open on the machine"): wait for the panel to be idle, and press the key again when the plug-in says so */
+				await sleep(500); await until(() => I().machine?.recv?.state === "idle" && !I().machine?.recv?.sending, 30000);
+				for (let i = 0; i < 8; i++) { results.length = 0; u.click('#libpop [data-la="undokit"]'); await answer(u, c);
+					if (!await until(() => results.some(r => r.op === "loadUndoKit" && r.ok === false), 1500)) break; c.note = `the plug-in refused the UNDO KIT ${i + 1} time(s): ${results.filter(r => r.op === "loadUndoKit").slice(-1).map(r => (r.errors || []).join(";"))}`; await sleep(2500); } },
 				machine: c => ok(machine().kit.current === c.k0 && workName().trim() === "UNDOJRNY" && kitEdited(), `kit ${machine().kit.current}, working ${workName()}, ${machine().kit?.working}`), within: 25000 },
 			{ say: "press Escape", act: u => u.key("Escape"), screen: () => ok($1("#libpop").hidden, "open") }
 		],
