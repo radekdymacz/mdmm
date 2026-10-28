@@ -100,7 +100,8 @@ const TAB={"FM+STAT.1FRQ":FMFRQ,"FM+STAT.2FRQ":FMFRQ,"FM+PAR.1FRQ":FMFRQ,"FM+PAR
 const SIGNED=new Set(["PAN","EQG","DIST","DSND","TUNE","PB","BOFS","WOFS"]);
 /* B-166: AMP DEC and REL of an FX machine as the hardware starts it (a tester on Discord: 64, not 127) */
 const FX_AMP_DEF=64;
-const DEFV={SYN:[0,0,0,0,0,0,0,64],AMP:[0,40,64,20,64,100,64,0],FLT:[0,127,0,0,0,40,64,64],EFX:[64,64,0,32,64,0,0,127],LFO:[2,1,1,0,1,32,0,0],MID:[64,100,64,0,0,0,0,0]};
+/* B-175, B-176: the firmware's start values (mmNewKitDefaultsFirmwareTest): AMP HOLD 0, DEC REL 64, VOL 64; FLT DEC 32; EFX DTIM 64, DFB 28; LFO PAGE PTCH, DEST 2OCT (index), TRIG FREE, WAVE TRI, MULT 1X, SPD 64 */
+const DEFV={SYN:[0,0,0,0,0,0,0,64],AMP:[0,0,64,64,64,64,64,0],FLT:[0,127,0,0,0,32,64,64],EFX:[64,64,0,64,64,28,0,127],LFO:[0,4,0,0,0,64,0,0],MID:[64,100,64,0,0,0,0,0]};
 
 /* Note names, the MM way: C-4 = MIDI 60 */
 const NN=["C-","C#","D-","D#","E-","F-","F#","G-","G#","A-","A#","B-"];
