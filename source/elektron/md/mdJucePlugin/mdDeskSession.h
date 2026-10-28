@@ -191,6 +191,9 @@ namespace mdJucePlugin
 		// P9: a sample file (WAV, AIFF) the user chose for UW ROM slot _slot. The Machinedrum's session
 		// sends it (sampleLoad messages follow); a model without a sampler ignores it.
 		virtual void loadSampleFile(uint8_t _slot, const juce::File& _file) { (void)_slot; (void)_file; }
+		// 0.9: a slot's samples, or a bank's, written as WAV files (sampleExport): _target is the file, or the folder for all of
+		// a bank's; the page hears {"type":"sampleExport"}. A model without a sampler ignores it.
+		virtual void exportSamples(const juce::File& _target, const elektronData::json::Value& _request) { (void)_target; (void)_request; }
 
 	protected:
 		void reply(const Value& _message, bool _ok, const std::string& _note) const;

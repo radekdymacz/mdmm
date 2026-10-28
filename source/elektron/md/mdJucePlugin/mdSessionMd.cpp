@@ -299,6 +299,40 @@ namespace mdJucePlugin
 			const auto* d = static_cast<const uint8_t*>(mb.getData());
 			desk().loadSample(_slot, _file.getFileName().toStdString(), std::vector<uint8_t>(d, d + mb.getSize()));
 		}
+
+		// 0.9: the samples of a slot (a file) or of a bank (a folder) as WAV files, written here; the desk makes the bytes
+		void exportSamples(const juce::File& _target, const Value& _request) override
+		{
+			const auto* slot = _request.find("slot");
+			const auto* every = _request.find("all");
+			const bool all = every && every->isBool() && every->asBool();
+			std::string why;
+			const auto files = desk().exportSamples(_request.find("bank")->asString(), slot ? static_cast<int>(slot->asNumber()) : 0, all, why);
+			size_t written = 0;
+			if(!files.empty() && (!all || _target.createDirectory().wasOk()))
+				for(const auto& f : files)
+				{
+					const auto out = all ? _target.getNonexistentChildFile(juce::String::fromUTF8(f.name.c_str()).upToLastOccurrenceOf(".wav", false, false), ".wav", false)
+						: _target.withFileExtension("wav");
+					if(out.replaceWithData(f.data.data(), f.data.size()))
+						++written;
+				}
+			Value m = Value::object();
+			m.set("type", "sampleExport");
+			m.set("ok", !files.empty() && written == files.size());
+			m.set("count", static_cast<int>(written));
+			std::string text = why;
+			if(files.empty())
+				;
+			else if(written != files.size())
+				text = "Could not write " + std::to_string(files.size() - written) + " of " + std::to_string(files.size()) + " files to " + _target.getFullPathName().toStdString() + ".";
+			else if(all)
+				text = "Saved " + std::to_string(written) + " WAV file" + (written == 1 ? "" : "s") + " to " + _target.getFullPathName().toStdString() + ".";
+			else
+				text = "Saved " + _target.withFileExtension("wav").getFileName().toStdString() + ".";
+			m.set("text", text);
+			toPage(m);
+		}
 	};
 
 	std::unique_ptr<DeskSession> makeMdSession(AudioPluginAudioProcessor& _processor)

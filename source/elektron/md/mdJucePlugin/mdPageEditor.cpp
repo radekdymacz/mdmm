@@ -192,6 +192,11 @@ namespace mdJucePlugin
 				chooseSample(static_cast<uint8_t>(_message.find("slot")->asNumber()));
 				m_page->send(deskCore::resultMessage(_message, {}, {}));
 			}
+			else if(row->handler.action == deskHost::Action::SampleExport)
+			{
+				sampleExport(_message);
+				m_page->send(deskCore::resultMessage(_message, {}, {}));
+			}
 			else if(row->handler.action == deskHost::Action::DropRom || row->handler.action == deskHost::Action::DropSyx
 				|| row->handler.action == deskHost::Action::DropSample)
 			{
@@ -304,6 +309,30 @@ namespace mdJucePlugin
 				if(f.existsAsFile() && m_session)
 					m_session->loadSampleFile(_slot, f);
 			});
+	}
+
+	// 0.9: UW samples as WAV files. One slot: a save dialog named after it. All of a bank: a folder, a file a slot in it.
+	void PageEditor::sampleExport(const json::Value& _request)
+	{
+		const auto* slot = _request.find("slot");
+		const auto* every = _request.find("all");
+		const bool all = every && every->isBool() && every->asBool();
+		const bool ram = _request.find("bank")->asString() == "ram";
+		const auto number = slot ? static_cast<int>(slot->asNumber()) + 1 : 1;
+		const auto dir = juce::File::getSpecialLocation(juce::File::userMusicDirectory);
+		char name[32];
+		std::snprintf(name, sizeof(name), ram ? "RAM-%d.wav" : "ROM-%02d.wav", number);
+		m_chooser = std::make_unique<juce::FileChooser>(all ? (ram ? "Export the RAM slots to a folder" : "Export the ROM slots to a folder")
+			: "Export the sample as a WAV file", all ? dir : dir.getChildFile(name), all ? "*" : "*.wav");
+		const auto flags = all ? juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectDirectories
+			: juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::warnAboutOverwriting;
+		m_chooser->launchAsync(flags, [this, _request](const juce::FileChooser& _c)
+		{
+			const genericUI::messageRoute::OwnerScope owner(m_noticeOwner);
+			const auto f = _c.getResult();
+			if(f != juce::File() && m_session)
+				m_session->exportSamples(f, _request);
+		});
 	}
 
 	void PageEditor::chooseSyx(const bool _save, const json::Value& _request)

@@ -82,6 +82,16 @@ namespace mdDesk
 		// sample memory left, then sent as SDS with its name (0x73, from the file name). The page hears
 		// {"type":"sampleLoad", ...} as it goes. The reason when it does not start ("" = it started).
 		std::string loadSample(uint8_t _slot, const std::string& _fileName, const Bytes& _file);
+		// 0.9, the sample manager (doc/release/0.9/md-sample-manager.md). Export: the samples of _bank ("rom"|"ram") slot _slot
+		// (0-47, 0-3), or every slot of the bank that holds one (_all), as WAV files (16-bit mono at the slot's own rate,
+		// exactly the samples the bank read from the machine). Pure: the plug-in's session writes the files. Empty, with
+		// _why, when there is nothing to export (a real machine, an empty slot, the samples not read yet).
+		struct ExportFile
+		{
+			std::string name;
+			Bytes data;
+		};
+		std::vector<ExportFile> exportSamples(const std::string& _bank, int _slot, bool _all, std::string& _why) const;
 		// The setup stored with the project (md-desk/setup): what of it this version can use, the default for the rest
 		// (never the previous project's); errors say what was left out.
 		std::vector<std::string> loadSetup(const Value& _setup);
@@ -129,6 +139,11 @@ namespace mdDesk
 		void publishSamples();
 		// P9: a slot's detail and the audition (the desk's own: they read the bank it holds).
 		void renameSample(const Value& _message);
+		// 0.9: copy, paste, RAM to ROM and undo of a slot's samples
+		void copySample(const Value& _message);
+		void pasteSample(const Value& _message);
+		void ramToRom(const Value& _message);
+		void undoSample(const Value& _message);
 		void sampleWave(const Value& _message);
 		void audition(const Value& _message);
 		void auditionStop(const Value& _message);
@@ -136,7 +151,37 @@ namespace mdDesk
 		void pollAudition();
 		void publishAudition(bool _playing);
 
+		// What a copy holds (the samples, shared and never changed) and what a step replaced (the undo).
+		struct SampleClip
+		{
+			bool ram = false;
+			uint8_t slot = 0;
+			std::string name;
+			uint32_t rate = 0;
+			bool loop = false;
+			std::shared_ptr<const std::vector<int16_t>> pcm;
+			uint32_t length() const { return pcm ? static_cast<uint32_t>(pcm->size()) : 0; }
+		};
+		struct SampleStep
+		{
+			uint8_t slot = 0;
+			std::string what;
+			SampleClip before;
+		};
+		static constexpr size_t g_sampleUndoSteps = 16;
+		// The memory ROM slot _slot may fill (the other slots and a second for each RAM buffer kept), in samples.
+		uint32_t sampleRoom(uint8_t _slot) const;
+		// The step that puts back what ROM slot _slot holds now, or none (empty slot, samples not read).
+		std::optional<SampleStep> sampleStepOf(uint8_t _slot, const std::string& _what) const;
+		// _clip to ROM slot _slot as SDS; _record: a step to undo it when it ends done. The reason it did not start.
+		std::string sendClip(uint8_t _slot, const SampleClip& _clip, const std::string& _file, const std::string& _what, bool _record);
+		std::string copyFrom(const std::string& _bank, size_t _slot);
+		void publishSampleHistory(bool _force);
+
 		std::optional<elektronData::MdSampleBank> m_samples;
+		std::optional<SampleClip> m_clip;
+		std::vector<SampleStep> m_sampleSteps;
+		std::string m_historyKey;
 		// The sample on its way, for the page's progress (what the adapter's sender says, plus the file).
 		struct SampleLoad
 		{
@@ -145,6 +190,8 @@ namespace mdDesk
 			uint32_t rate = 0, length = 0;
 			std::vector<std::string> notes;
 			int last = -1;				// the last published state and per cent
+			std::optional<SampleStep> step;	// kept for the undo when the send ends done
+			bool undoing = false;			// this send is an undo: its step goes when it ends done
 		};
 		std::optional<SampleLoad> m_sampleLoad;
 		// The audition the page asked for, until the device says it stopped or played out.

@@ -6656,6 +6656,39 @@
         },
         {
           "type": "object",
+          "description": "host: export UW samples as WAV files (16-bit mono at the slot's own rate, the samples the machine holds): the slot of bank through the window's save dialog, or with all every slot of the bank that holds one into a folder the window asks for; a sampleExport message follows",
+          "required": ["op", "bank"],
+          "properties": {
+            "op": {
+              "const": "sampleExport"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "bank": {
+              "type": "string",
+              "enum": ["rom", "ram"]
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 47
+            },
+            "all": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "host: import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\", the slot an item lands in), sent to the machine as they are (the firmware decides what it takes), then read back and reported (syxProgress); no undo step. placeAt (SPECIFIC, 0.6): per kind the first slot its items land in, in slot order ({\"kit\": 4}; the dumps go with that position byte and checksum); checkOnly (VERIFY ONLY): nothing is sent, each item's slot is read and compared with the file; readBack (I-038, default true): false ends the import after the messages are sent, without reading the slots back, and the report says the items were sent, not read back",
           "required": ["op", "kinds"],
           "properties": {
