@@ -41,12 +41,12 @@ Until A is done, MD-194 stays missing and MD-198 is partial (copy, paste and und
 ## Where it sits (the page's rules)
 
 - No new workspace. All of it is on the Sampler workspace, in the ROM slot card (`romsel`) and the RAM slot card (`ramtop`), as keys in the card's existing slot bar. No right-click, no duplicate of a key that already exists (Radek's rules, manual-gaps design).
-- ROM slot bar: `Put on track`, `Load sample...`, `Rename`, then new: `Copy`, `Paste` (disabled while the clipboard is empty), `Export WAV`, `Undo sample`. The disabled `Send` key goes (export replaces it).
-- RAM slot bar: new `Copy`, `Keep as ROM...` (RAM to ROM into the selected ROM slot; asks first, since it replaces what the slot holds), `Export WAV`. The note "no copy to ROM from here" goes.
-- ROM tiles header: `Export all ROM` and, in the RAM slot's card, `Export all RAM`.
-- Memory line in the tiles card header: "N of 48 hold a sample · 12.3 s used · 20.1 s free (62 %)". The top bar's MEM field shows the same percentage as free, not used. (Row MD-196 "memory left".)
-- Tile and key tooltips show the size.
-- The clipboard shows as a chip in the ROM slot bar: "Copied: ROM-05 SNR · 0.42 s".
+- ROM slot card: `Put on track`, `Load sample...`, `Rename`, then a second line of keys: `Copy`, `Paste` (off while the clipboard is empty), `Export WAV`, `Undo sample`, and the clipboard chip. The disabled `Send` key is gone (export replaces it).
+- RAM slot: a card "Keep and export" under the take: `Copy`, `Keep as ROM...` (asks for the ROM slot, the first empty one offered; the slot's old sample is replaced and Undo sample brings it back), `Export WAV`, `Export all RAM...`, and the chip. The note "no copy to ROM from here" is shortened to "no file load".
+- ROM tiles header: `Export all...` (a folder).
+- Memory line in the tiles card header: "N of 48 hold a sample · 12.3 s used · 20.1 s free (62 %)", the ROM slots and the four RAM buffers against the DSP memory. The top bar's MEM field is unchanged (used share).
+- Key and tile tooltips show the size in seconds, KB (16-bit mono) and samples.
+- The clipboard shows as a chip: "Copied: ROM-05 SNR · 0.42 s".
 
 ## Commands and messages (the contract)
 
@@ -70,8 +70,9 @@ A step is recorded when a send starts and kept when `sampleLoad` says `done` (dr
 
 - `mdDeskTest` (no ROM): clipboard copy / paste / RAM to ROM / undo through the Desk with a recording adapter; refusals (empty, real machine, no room, busy); `exportSamples` names and the WAV bytes; `sampleHistory` published; contract schema.
 - Page tier (`mdDeskPageTest.js`): the keys' enabled states, the history message, the memory line.
-- Journey `md-sampler-manager` (E2E on the firmware): copy a ROM slot, paste it into another, the target reads the same length; undo, it reads its old length. Proves MD-198 (copy, paste, undo), MD-199 (RAM part with the sampling journeys' take, when a RAM take exists) and MD-196.
+- Journey `md-sampler-manager` (E2E on the firmware): the memory line, copy a ROM slot, paste it into another, the target reads the same length; undo, it reads its old length. Proves MD-196 and MD-198. RAM to ROM (MD-199) and export (MD-193) have no journey: the first needs a RAM take, the second a native file dialog; mdDeskTest covers their bytes.
 - Not built here and so not tested: erase.
+- State when this was written: nothing was run locally (the rule). The branch goes through `mdmm-ci.yml` by hand; the firmware workflow (the journey) reaches the ROMs only from main or a release branch.
 
 ## Decisions for Radek
 
