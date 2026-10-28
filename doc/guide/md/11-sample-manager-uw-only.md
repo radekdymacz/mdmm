@@ -10,7 +10,7 @@ The rail on the left lists the slots: four RAM slots and 48 ROM slots. The page 
 NOTE: The Sampler needs the UW's ROM and RAM machines. With other firmware, or while the machine has not started, the page says so.
 
 ## SAMPLE MANAGER
-<!-- rows: MD-189 MD-195 MD-196 MD-197 MD-198 MD-200 @09e377 -->
+<!-- rows: MD-189 MD-195 MD-196 MD-197 MD-198 MD-200 @ee7467 -->
 
 ### The slots
 
@@ -18,9 +18,13 @@ The ROM slots are in the rail as a grid of 48 keys. A key that is lit holds a sa
 
 With a ROM slot selected, the page shows under it every ROM slot as a tile: its waveform, its number and name, and a key to hear it. An empty slot offers **Load…**. Click a tile to select the slot.
 
-Point at the <MEM> field to see the figures behind it.
+Point at a key or a tile to see the size of the sample: its length in seconds, in kilobytes and in samples, and its rate. A kilobyte count is the sample as the machine stores it, 16-bit and mono.
 
-{gap:MD-196}The <MEM> percentage is worked out from the samples the editor reads. It is not the machine's own figure of memory left.{/gap}
+### Memory left
+
+The header of the **ROM slots** card gives the sample memory in seconds: how much the samples hold, how much is free, and the free share in per cent. The ROM slots and the four RAM buffers share the memory, so the figure counts both. Point at the <MEM> field for the same figures in samples.
+
+NOTE: The editor works the figure out from the samples it reads. The Machinedrum does not report its own figure over MIDI, so the share can differ by a few per cent from the one on the machine's SAMPLE MGR screen.
 
 ### Hear a sample
 
@@ -52,7 +56,20 @@ The editor makes every sample it loads mono and 16-bit, at 44.1 kHz at most, and
 
 {gap:MD-189}The editor takes WAV and AIFF files. It does not receive a sample sent over MIDI by another program.{/gap}
 
-{gap:MD-198}You cannot copy, clear, paste or undo a sample slot in the editor yet.{/gap}
+### Copy, paste and undo
+
+1. Select a slot that holds a sample, ROM or RAM.
+2. Click **Copy**. A line beside the keys names what is copied.
+3. Select the ROM slot that is to take it.
+4. Click **Paste**. A bar shows the sending, as when you load a file.
+
+The copy is a snapshot taken when you click **Copy**. A RAM take that is recorded over afterwards is still pasted as it was. The paste replaces what the slot holds. The slot takes the name of the copy.
+
+**Undo sample** sends back the sample that the last paste, RAM to ROM copy, rename or file load replaced. It goes back 16 steps, one at a time. The editor has no redo for samples. A step that filled an empty slot cannot be undone, because the editor cannot erase a slot.
+
+NOTE: The loop points of a sample are not sent with a paste or an undo. A sample that does not fit in the memory left is not sent, and a message says by how much.
+
+{gap:MD-198}You cannot clear a sample slot in the editor yet.{/gap}
 
 ## THE DIFFERENCE BETWEEN ROM AND RAM MACHINES
 <!-- rows: MD-201 @0c7158 -->
@@ -76,9 +93,16 @@ Click **Live** to record again on every loop. Click **Freeze** to mute the recor
 NOTE: A RAM slot holds only what its recorder records. You cannot load a file into it.
 
 ## RAM TO ROM COPY
-<!-- rows: MD-199 @c9cb80 -->
+<!-- rows: MD-199 @004a8e -->
 
-{gap:MD-199}You cannot copy a RAM slot to a ROM slot in the editor yet. Do it on the machine.{/gap}
+To keep a RAM take when the power is off, copy it to a ROM slot:
+
+1. Select the RAM slot that holds the take.
+2. Click **Keep as ROM…**.
+3. Type the ROM slot, 1 to 48. The first empty slot is offered.
+4. Click **Keep**. A bar shows the sending.
+
+The take is sent as it is now. The ROM slot takes the name RAM1 to RAM4 and replaces what it held; **Undo sample** brings that back. The other RAM slots stay as they are. On the machine the copy empties them after a prompt, and the editor does not.
 
 ## GENERAL SAMPLE RECEIVE
 <!-- rows: MD-190 @4fd1af -->
@@ -111,11 +135,21 @@ Drop several WAV or AIFF files on the window with the **Sampler** open. They go 
 ROM-48 is the last slot. Files past it are not loaded, and a message says how many. Drag and drop works on macOS only. On Windows and Linux, load the files one at a time with **Load sample…**.
 
 ## SEND SAMPLES
-<!-- rows: MD-193 @781105 -->
+<!-- rows: MD-193 @0e551e -->
 
-{gap:MD-193}You cannot send a sample from the machine to a computer. The **Send** key is greyed out, with the reason: the Machinedrum ignores requests for its samples.{/gap}
+The Machinedrum ignores requests for its samples over MIDI, so the editor does not ask it to send. It reads the samples from the emulated machine and writes them as files instead.
+
+1. Select the slot, ROM or RAM.
+2. Click **Export WAV**.
+3. Choose where to save the file.
+
+To save every ROM slot that holds a sample, click **Export all…** in the header of the **ROM slots** card and choose a folder. A file is written for each slot, named by its slot and its name, such as "ROM-04 SNR". On a RAM slot, **Export all RAM…** does the same for the four RAM slots.
+
+The files are 16-bit mono WAV at the slot's own rate. They hold exactly the samples the machine holds, with no loop points.
+
+NOTE: Export works with the emulated machine only. A real Machinedrum does not send its samples back, so the keys are greyed out, with the reason. The editor writes WAV files, not the SysEx files of the machine's own SEND.
 
 ## ERASE SAMPLES
-<!-- rows: MD-194 @da3bf8 -->
+<!-- rows: MD-194 @364503 -->
 
-{gap:MD-194}You cannot erase one sample or all samples in the editor yet. Load a new sample into the slot to replace it.{/gap}
+{gap:MD-194}You cannot erase one sample or all samples in the editor yet. Erase them in SAMPLE MGR on the machine, or load a new sample into the slot to replace it.{/gap}

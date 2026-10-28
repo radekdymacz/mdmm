@@ -2851,6 +2851,181 @@ namespace
 		check(idle.held() == 5, "audition: nothing freed the audio thread may still read");
 	}
 
+	// 0.9, the sample manager through the desk (doc/release/0.9/md-sample-manager.md): copy, paste, RAM to ROM, undo and
+	// export over a bank the test gives (the emulated machine's memory would), the SDS on the wire as a machine would
+	// answer it.
+	void testSampleManager()
+	{
+		std::vector<std::vector<uint8_t>> wire;
+		std::vector<Value> page;
+		double now = 0;
+		Desk::Port port;
+		port.device.sendSysex = [&](const std::vector<uint8_t>& _b) { wire.push_back(_b); };
+		port.toPage = [&](const Value& _m) { page.push_back(_m); g_published.push_back(_m); };
+		port.device.nowMs = [&] { return now; };
+		auto profile = wireProfile();
+		profile.memory = true;	// the bank is the test's, as the emulated machine's memory would give it
+		Desk desk(port);
+		desk.setEngine(Desk::defaultAdapter(profile, port.device));
+		desk.onTelemetry(Telemetry{});
+		desk.onPageMessage(cmd(R"({"op":"ready"})"));
+		desk.onDeviceSysex({0xf0, 0x00, 0x20, 0x3c, 0x02, 0x00, 0x72, 0x04, 0x00, 0xf7});
+		desk.tick();
+		const auto last = [&](const std::string& _type) -> const Value*
+		{
+			for(auto it = page.rbegin(); it != page.rend(); ++it)
+				if(it->find("type")->asString() == _type)
+					return &*it;
+			return nullptr;
+		};
+		const auto ok = [&](const int _id)
+		{
+			for(auto it = page.rbegin(); it != page.rend(); ++it)
+				if(it->find("type")->asString() == "result" && it->find("id") && it->find("id")->asNumber() == _id)
+					return it->find("ok")->asBool();
+			return false;
+		};
+		const auto loadState = [&] { const auto* l = last("sampleLoad"); return l ? l->find("state")->asString() : std::string(); };
+		const auto undoOf = [&]() -> const Value* { const auto* h = last("sampleHistory"); return h ? h->find("undo") : nullptr; };
+		const auto ack = [&](const uint8_t _n) { desk.onDeviceSysex({0xf0, 0x7e, 0x00, 0x7f, _n, 0xf7}); };
+		// The machine takes a sample of _packets packets: the header's ACK, then each packet's.
+		const auto finish = [&](const size_t _packets)
+		{
+			ack(0);
+			for(size_t i = 0; i < _packets; ++i)
+				ack(static_cast<uint8_t>(i & 0x7f));
+			desk.onTelemetry(Telemetry{});
+		};
+		const auto words = [](const std::vector<uint8_t>& _header) { return _header[10] | (_header[11] << 7) | (_header[12] << 14); };
+
+		desk.onPageMessage(cmd(R"({"op":"sampleCopy","bank":"rom","slot":3,"id":1})"));
+		check(!ok(1), "copy before the samples are read: refused");
+
+		const auto fill = [](ed::MdSampleBank& _bank, const bool _ram, const uint8_t _slot, const std::string& _name, const size_t _length, const uint32_t _rate)
+		{
+			auto& s = _ram ? _bank.ram[_slot] : _bank.rom[_slot];
+			std::vector<int16_t> pcm(_length);
+			for(size_t i = 0; i < _length; ++i)
+				pcm[i] = static_cast<int16_t>((i * 7 + _slot) % 20000);
+			s.empty = false;
+			s.length = static_cast<uint32_t>(_length);
+			s.rate = _rate;
+			s.name = _name;
+			s.pcm = std::make_shared<const std::vector<int16_t>>(std::move(pcm));
+		};
+		ed::MdSampleBank bank;
+		for(uint8_t s = 0; s < 48; ++s) { ed::MdSampleSlot x; x.slot = s; bank.rom.push_back(x); }
+		for(uint8_t s = 0; s < 4; ++s) { ed::MdSampleSlot x; x.ram = true; x.slot = s; bank.ram.push_back(x); }
+		bank.ramReadable = true;
+		fill(bank, false, 3, "SNR", 3000, 22050);
+		fill(bank, false, 9, "KICK", 2000, 44100);
+		fill(bank, true, 0, "", 1500, 44100);
+		desk.onSampleBank(bank);
+
+		desk.onPageMessage(cmd(R"({"op":"sampleCopy","bank":"rom","slot":4,"id":2})"));
+		check(!ok(2), "copy of an empty slot: refused");
+		desk.onPageMessage(cmd(R"({"op":"samplePaste","slot":9,"id":3})"));
+		check(!ok(3), "paste with nothing copied: refused");
+		desk.onPageMessage(cmd(R"({"op":"sampleUndo","id":4})"));
+		check(!ok(4), "undo with nothing to undo: refused");
+		desk.onPageMessage(cmd(R"({"op":"sampleCopy","bank":"rom","slot":3,"id":5})"));
+		const auto* clip = last("sampleHistory") ? last("sampleHistory")->find("clip") : nullptr;
+		check(ok(5) && clip && clip->isObject() && clip->find("name")->asString() == "SNR" && clip->find("length")->asNumber() == 3000
+			&& clip->find("bank")->asString() == "rom" && undoOf() && undoOf()->isNull(), "copy ROM-04: the clipboard says SNR, 3000 samples; nothing to undo yet");
+
+		// paste over a slot that holds a sample: SDS to that slot, a step to undo it
+		wire.clear();
+		desk.onPageMessage(cmd(R"({"op":"samplePaste","slot":9,"id":6})"));
+		check(ok(6) && loadState() == "sending" && last("sampleLoad")->find("file")->asString() == "Paste", "paste into ROM-10: sending");
+		check(!wire.empty() && wire[0][3] == 0x01 && wire[0][4] == 9 && words(wire[0]) == 3000, "the header names slot 9 and 3000 samples");
+		finish(75);
+		check(loadState() == "done", "the machine took it: done");
+		check(undoOf() && undoOf()->isObject() && undoOf()->find("slot")->asNumber() == 9
+			&& undoOf()->find("what")->asString() == "Paste into ROM-10" && undoOf()->find("depth")->asNumber() == 1, "the paste can be undone");
+
+		// undo: what the slot held (KICK, 2000 samples) goes back; the step is gone once the machine has it
+		wire.clear();
+		desk.onPageMessage(cmd(R"({"op":"sampleUndo","id":7})"));
+		check(ok(7) && !wire.empty() && wire[0][4] == 9 && words(wire[0]) == 2000, "undo: the header of the sample the paste replaced");
+		check(undoOf() && undoOf()->isObject(), "the step stays while the sample is on its way");
+		ack(0);
+		check(wire.size() >= 3 && wire[1] == ed::mdSetSampleName(9, "KICK"), "undo: its name goes with it");
+		for(size_t i = 0; i < 50; ++i)
+			ack(static_cast<uint8_t>(i & 0x7f));
+		desk.onTelemetry(Telemetry{});
+		check(loadState() == "done" && undoOf() && undoOf()->isNull(), "undone: no step left, and no redo");
+
+		// RAM to ROM into an empty slot: the take as it is, named RAM1; an empty slot cannot be undone
+		wire.clear();
+		desk.onPageMessage(cmd(R"({"op":"ramToRom","ram":0,"slot":20,"id":8})"));
+		check(ok(8) && !wire.empty() && wire[0][4] == 20 && words(wire[0]) == 1500, "RAM to ROM: RAM 1's 1500 samples to slot 20");
+		ack(0);
+		check(wire.size() >= 2 && wire[1] == ed::mdSetSampleName(20, "RAM1"), "named RAM1");
+		for(size_t i = 0; i < 38; ++i)
+			ack(static_cast<uint8_t>(i & 0x7f));
+		desk.onTelemetry(Telemetry{});
+		check(loadState() == "done" && undoOf() && undoOf()->isNull(), "done; the slot was empty, so there is no step");
+		desk.onPageMessage(cmd(R"({"op":"ramToRom","ram":1,"slot":20,"id":9})"));
+		check(!ok(9), "RAM to ROM from an empty RAM slot: refused");
+
+		// a step is kept only when the machine takes the sample: a cancelled paste leaves none
+		desk.onPageMessage(cmd(R"({"op":"samplePaste","slot":9,"id":10})"));
+		ack(0);
+		wire.clear();
+		desk.onPageMessage(cmd(R"({"op":"sampleCancel","id":11})"));
+		desk.onTelemetry(Telemetry{});
+		check(loadState() == "cancelled" && undoOf() && undoOf()->isNull(), "a cancelled paste: no step");
+
+		// a sample that does not fit the memory left is refused, with the numbers
+		{
+			ed::MdSampleBank big = bank;
+			fill(big, false, 30, "BIG", 1300000, 44100);
+			desk.onSampleBank(big);
+			desk.onPageMessage(cmd(R"({"op":"sampleCopy","bank":"rom","slot":30,"id":12})"));
+			desk.onPageMessage(cmd(R"({"op":"samplePaste","slot":31,"id":13})"));
+			bool doesNotFit = false;
+			for(const auto& m : page)
+				if(m.find("type")->asString() == "result" && m.find("id") && m.find("id")->asNumber() == 13 && !m.find("ok")->asBool())
+					doesNotFit = m.find("errors")->asArray()[0].asString().find("does not fit") != std::string::npos;
+			check(ok(12) && doesNotFit, "a sample the other slots leave no room for: refused as not fitting");
+			desk.onSampleBank(bank);
+		}
+
+		// export: the samples as the bank holds them, a file a slot
+		std::string why;
+		auto files = desk.exportSamples("rom", 3, false, why);
+		check(files.size() == 1 && files[0].name == "ROM-04 SNR.wav" && files[0].data.size() == 44 + 3000 * 2
+			&& std::string(files[0].data.begin(), files[0].data.begin() + 4) == "RIFF", "export one: ROM-04 SNR.wav, 3000 samples");
+		const auto decoded = [&]
+		{
+			std::string e;
+			return ed::decodeAudioFile(files[0].data, e);
+		}();
+		check(decoded && decoded->rate == 22050 && decoded->frames() == 3000 && decoded->channels.size() == 1, "the file reads back as 3000 samples at 22050 Hz, mono");
+		files = desk.exportSamples("rom", 0, true, why);
+		check(files.size() == 2 && files[0].name == "ROM-04 SNR.wav" && files[1].name == "ROM-10 KICK.wav",
+			"export all ROM: a file for each slot that holds a sample");
+		files = desk.exportSamples("ram", 0, true, why);
+		check(files.size() == 1 && files[0].name == "RAM-1.wav", "export all RAM: RAM-1.wav");
+		files = desk.exportSamples("rom", 5, false, why);
+		check(files.empty() && !why.empty(), "export an empty slot: nothing, and why");
+
+		// a real Machinedrum cannot send its samples: every new key is refused with that reason
+		page.clear();
+		Desk::Port hwPort;
+		hwPort.device.sendSysex = [](const std::vector<uint8_t>&) {};
+		hwPort.toPage = [&](const Value& _m) { page.push_back(_m); g_published.push_back(_m); };
+		hwPort.device.nowMs = [] { return 0.0; };
+		Desk hw(hwPort);
+		hw.setEngine(Desk::defaultAdapter(wireProfile(), hwPort.device));
+		hw.onPageMessage(cmd(R"({"op":"ready"})"));
+		hw.onPageMessage(cmd(R"({"op":"sampleCopy","bank":"rom","slot":3,"id":1})"));
+		hw.onPageMessage(cmd(R"({"op":"ramToRom","ram":0,"slot":3,"id":2})"));
+		check(!ok(1) && !ok(2), "HW MIDI: copy and RAM to ROM refused (the machine cannot send its samples)");
+		files = hw.exportSamples("rom", 3, false, why);
+		check(files.empty() && why.find("real Machinedrum") != std::string::npos, "HW MIDI: export refused with the sampleAudio reason");
+	}
+
 	// P9: a slot's detail and its audition through the desk.
 	void testSampleWaveAndAudition()
 	{
@@ -3272,7 +3447,7 @@ namespace
 		// The plug-in's host sends these; this test has no host.
 		const auto r = contract::checkMessages(*root, g_published, {"learn", "audio", "audioLevel", "openAudio",
 			"romInstall", "romInfo", "notice", "syxPreview", "syxProgress", "syxExport", "syxExportInfo", "syxReset", "host", "audioRun", "cpuLoad", "outputLevel", "machineMemory", "midiIn", "midiHeld", "midiStats", "mixLevels",
-			"editorMenu", "zoom", "drop", "dragFiles"});
+			"editorMenu", "zoom", "drop", "dragFiles", "sampleExport"});
 		for(const auto& p : r.off)
 			std::printf("    %s\n", p.c_str());
 		for(const auto& u : r.unseen)
@@ -3647,6 +3822,7 @@ int main(const int _argc, char** _argv)
 	testSampleLoad();
 	testAuditionMixer();
 	testSampleWaveAndAudition();
+	testSampleManager();
 	testModulators();
 	testKeyMapping();
 	testNotes();

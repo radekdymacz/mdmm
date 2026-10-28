@@ -2896,6 +2896,32 @@ const MdJourneys = (() => {
 					`results ${results.map(r => r.op + ":" + r.ok).join(",")}; the machine's ROM-${c.slot}: "${Docs.samples?.rom?.[c.slot - 1]?.name ?? "?"}"`), within: 60000 }
 		]
 	};
+	/* MD-196, MD-198 (0.9, doc/release/0.9/md-sample-manager.md): the memory line, Copy a ROM slot and Paste it into another
+	   (SDS to the machine; the bank read back holds the copy's length), then Undo sample (the slot holds what it held). RAM to ROM
+	   (MD-199) is proved in mdDeskTest (the SDS on the wire) and mdDeskPageTest (the keys): a journey needs a RAM take. alone, as md-sampler-rename: B-133. */
+	const sampleManager = {
+		name: "md-sampler-manager", alone: true, proves: ["MD-196", "MD-198"],
+		steps: [
+			go("sampler"),
+			{ say: "the ROM slots' header gives the memory used and free", act: (u, c) => {
+				const rom = Docs.samples.rom, used = rom.map((x, i) => x.empty ? -1 : i).filter(i => i >= 0);
+				[c.a, c.b] = used; c.lenA = rom[c.a].length; c.lenB = rom[c.b].length; },
+				screen: () => ok(/s used · [\d.]+ s free \(\d+ %\)/.test($1(".smpmem")?.textContent || ""), "header " + ($1(".smpmem")?.textContent || "none")) },
+			{ say: "select the first slot that holds a sample and click Copy: the clipboard chip names it", act: async (u, c) => {
+				u.click(`.slotk.rom[data-slot="ROM${c.a + 1}"]`); await sleep(300); u.click(`[data-smpcopy="rom:${c.a}"]`); },
+				screen: c => ok(/Copied: ROM-\d\d/.test($1(".smpclip")?.textContent || ""), "chip " + ($1(".smpclip")?.textContent || "none")),
+				machine: c => ok(smpHist.clip?.slot === c.a && smpHist.clip.length === c.lenA, "clipboard " + JSON.stringify(smpHist.clip)), within: 8000 },
+			{ say: "select the second slot that holds a sample and click Paste: the machine takes the copy and holds its length", act: async (u, c) => {
+				u.click(`.slotk.rom[data-slot="ROM${c.b + 1}"]`); await sleep(300); u.click(`[data-smppaste="${c.b}"]`); },
+				machine: c => ok(smpLoad?.state === "done" && smpLoad.slot === c.b && Docs.samples.rom[c.b].length === c.lenA,
+					`sampleLoad ${smpLoad?.state}, the slot holds ${Docs.samples.rom[c.b].length} samples, the copy has ${c.lenA}`), within: 120000 },
+			{ say: "click Undo sample: the slot holds the sample it held before", act: u => u.click("[data-smpundo]"),
+				machine: c => ok(smpLoad?.state === "done" && smpLoad.file === "Undo" && Docs.samples.rom[c.b].length === c.lenB,
+					`sampleLoad ${smpLoad?.state} ${smpLoad?.file}, the slot holds ${Docs.samples.rom[c.b].length} samples, it held ${c.lenB}`), within: 120000 },
+			{ say: "Undo sample is off again: there is nothing more to undo", act: async () => { await sleep(300); },
+				screen: () => ok($1("[data-smpundo]")?.disabled === true, "Undo sample " + ($1("[data-smpundo]")?.disabled ? "off" : "on")) }
+		]
+	};
 	/* MD-280, MD-283: rename the current kit (SysEx 0x55), save it (0x59), and put it back */
 	const kitNameSave = {
 		name: "md-lib-kit-name-save", proves: ["MD-280", "MD-283"],
@@ -3248,7 +3274,7 @@ const MdJourneys = (() => {
 		tidy: songPlayheadTidy
 	};
 	const wave12 = [clipsJ, undoKitJ, stopQueuedJ, lenRepeatJ, songRepeatsJ];
-	const slice5 = [mixHeads, modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, revertTrackJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ, pageLeds, railLamps, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
+	const slice5 = [mixHeads, modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, revertTrackJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, sampleManager, kitNameSave, songCommands, playModeJ, pageLeds, railLamps, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
 	/* ---------- the end-to-end pass: factory content as a person uses it (scripts/mdmm-e2e.sh, doc/release/E2E.md) ---------- */
 	/* What the machine plays, as the page can see it: the transport and the step from the telemetry, the song row, the output's
 	   peaks (the plug-in's outputLevel, every 250 ms, since the last one). Not silent where sound is the point. */

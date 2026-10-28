@@ -58,6 +58,7 @@ function smpManagerBar(bank, i, sending) {
 		+ (bank === "rom" ? smpKey("smppaste", i, "Paste", `Send the copied sample to ${name}. It replaces what the slot holds (Undo sample brings it back). Loop points are not sent.`, paste) : "")
 		+ (bank === "ram" ? smpKey("ramrom", i, "Keep as ROM…", `Send ${name}'s take to a ROM slot, so it is kept when the power is off. The other RAM slots stay as they are.`, none || (sending ? "A sample is on its way." : "")) : "")
 		+ smpKey("smpexport", bank + ":" + i, "Export WAV", `Save ${name}'s sample as a WAV file (16-bit mono, the slot's own rate).`, none)
+		+ (bank === "ram" ? smpKey("smpexportall", "ram", "Export all RAM…", "Save every RAM slot that holds a take as a WAV file, into a folder you choose.", why) : "")
 		+ (bank === "rom" ? smpKey("smpundo", "1", "Undo sample", u ? `Undo: ${u.what}. The sample it replaced is sent back to ${romCode(u.slot + 1)} (${u.depth} step${u.depth === 1 ? "" : "s"}).` : "", !canDo(V, "sampleLoad") ? "" : sending ? "A sample is on its way." : u ? "" : "Nothing to undo: a paste, a RAM to ROM copy, a rename or a load over a sample can be undone.") : "")
 		+ smpClipChip() + `</div>`;
 }
