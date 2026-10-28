@@ -1189,7 +1189,8 @@ namespace mmDesk
 				{16, {64, 64, 64, 127, 0, 0, 0, 64}},	// FX-DYNAMIX
 				{17, {0, 0, 0, 0, 0, 0, 0, 64}},	// FX-RINGMOD
 				{18, {64, 64, 64, 127, 45, 0, 0, 64}},	// FX-PHASER
-				{19, {64, 64, 64, 127, 45, 0, 0, 64}},	// FX-FLANGER};
+				{19, {64, 64, 64, 127, 45, 0, 0, 64}},	// FX-FLANGER
+			};
 			const auto it = d.find(_machine);
 			return it == d.end() ? std::array<int, 8>{} : it->second;
 		}
