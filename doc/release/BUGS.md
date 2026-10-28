@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-190 · Monomachine: rename a kit, undo, and the kit still says "edited" (fixed locally, awaiting CI)
+
+- **From:** firmware E2E run 40660005612, 2026-10-28: journey `mm-kit-parts` left the kit state `clean -> edited` and `mm-lcd-boxes` then found "edited" on its first LCD read; not reported by a tester.
+- **What happens:** the kit that plays is renamed (KIT, Rename) and the rename undone; the page shows the old name but the LCD says "edited" for good.
+- **Cause:** the editor sent the kit's live name (SysEx 0x55) as a string of its non-NUL bytes. A stored kit name keeps bytes after its NUL (`ed::MmKit::name` is the 11 raw bytes; the page's hash calls them `nameTail`). The undo therefore sent a name that dropped the NULs and shifted the tail, the machine's memory held different bytes, and the working kit (memory) no longer equalled the stored slot byte for byte (`MmMachine::kitState`).
+- **Fix:** `mmSetKitNameBytes` sends the 11 bytes exactly (`MmMachine::sendKitLive`). Test: `mmDeskTest` kitRenameUndoSendsStoredNameBytes (the bytes the undo sends). The journey `mm-kit-parts` now asserts "clean" after its undo; its tidy is a plain undo. Not verified on the firmware; CI pending.
+
 ## B-189 · Monomachine: OJMP may reach the firmware at about twice the value set (open)
 
 - **From:** found in code review for B-179, 2026-10-28; no tester report.
