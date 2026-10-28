@@ -486,14 +486,14 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 	T().arp = { ...arp0, MODE: 1, SPD: 6, len: 8, rhy: Array(16).fill(true), ofs: Array(16).fill(0) };
 	a = M.rollAdd(0, 4, 50); M.editSpan(0, a.touched, a.lock);
 	o = take();
-	check(T().steps.every(st => !st?.off) && o.length === 1 && !JSON.stringify(o[0].rows[0].steps).includes("off"),
+	check(T().steps.slice(0, S.len).every(st => !st?.off) && o.length === 1 && !JSON.stringify(o[0].rows[0].steps).includes("off"),
 		"arpeggiator KEY: the new note has no NOTE OFF, the firmware holds it to the next trig: " + JSON.stringify(o.map(m => m.rows && m.rows[0].steps)));
 	const sp = M.noteSpans(0).find(x => x.s === 4);
 	check(sp && sp.e - sp.s >= 2, "and its span runs on, so the arpeggiator repeats the single note: " + JSON.stringify(sp && { s: sp.s, e: sp.e, wrap: sp.wrap }));
 	T().arp = { ...T().arp, MODE: 2 };
 	a = M.rollAdd(0, 10, 52); M.editSpan(0, a.touched, a.lock);
 	o = take();
-	check(T().steps.every(st => !st?.off), "arpeggiator SID: no NOTE OFF either (SID still needs a chord to start, as the manual says)");
+	check(T().steps.slice(0, S.len).every(st => !st?.off), "arpeggiator SID: no NOTE OFF either (SID still needs a chord to start, as the manual says)");
 	T().arp = arp0;
 	clear();
 }
@@ -501,6 +501,10 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 /* ---- I-007, I-010 (0.5 slice 3): the piano roll's notes with their lengths, as the core's intents ---- */
 {
 	const p = loaded(), S = p.S(), M = p.mockup;
+	/* the draw length is for a track whose arpeggiator is off: the fixture's pattern plays T1's in KEY (B-179 holds
+	   those notes to the next trig) */
+	{ const pat = copy(docMsg("pattern", S.pat)); pat.doc.tracks[0].arp.mode = 0; p.recv([pat]); p.sent.length = 0; }
+	check(S.tracks[0].arp.MODE === 0, "the roll's T1 arpeggiator is off for the draw-length checks");
 	const args = m => m.op + " " + JSON.stringify(Object.fromEntries(Object.entries(m).filter(([k]) => !["op", "id", "g", "p"].includes(k))));
 	const take = () => { p.run(); const o = p.sent.filter(m => /Steps|steps|step$|lock/.test(m.op || "")); p.sent.length = 0; return o; };
 	const T = () => S.tracks[0], N = n => ({ n: [n], a: 1, f: 1, l: 1 }), all = new Set([...Array(16).keys()]);
