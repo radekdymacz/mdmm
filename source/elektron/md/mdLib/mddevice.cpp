@@ -10,6 +10,7 @@
 
 #include <atomic>
 #include <cstdio>
+#include <utility>
 
 namespace
 {
@@ -261,9 +262,12 @@ namespace md
 		// Release an interrupted candidate before constructing the replacement. Both
 		// operations can tear down or create a complete emulated machine.
 		m_displaced.reset();
+		// The factory flash's bytes as beginStateTransaction shared them (immutable), copied here off the device lock
+		FactoryFlashSnapshot factoryFlash;
+		m_factoryFlash.copyTo(factoryFlash);
 		m_prepared = m_state
 			? Device::prepareState(m_context, *m_state, m_type,
-				m_factoryFlash, &m_error) : nullptr;
+				factoryFlash, &m_error) : nullptr;
 		if(!m_state)
 			m_error = "The project state payload is missing.";
 		return m_prepared != nullptr;
@@ -278,19 +282,21 @@ namespace md
 		// machine that replaces the stand-in. There is nothing to restore, and nothing failed.
 		if(!_state || _state->empty())
 			return {};
-		FactoryFlashSnapshot factoryFlash;
+		// Under the Plugin device lock: the factory flash is shared here and copied in prepare(), and what this load
+		// displaces (a deferred candidate, the requested payload) is released with the transaction, both off the lock
+		SharedFactoryFlashSnapshot factoryFlash;
 		if(m_model == MachineModel::Machinedrum)
-			(void)m_hardware->copyFactoryFlashSnapshot(factoryFlash);
+			(void)m_hardware->shareFactoryFlashSnapshot(factoryFlash);
 		auto displaced = std::move(m_deferredPreparedState);
 		++m_deferredStateGeneration;
-		m_requestedState = _state;
+		auto retiredState = std::exchange(m_requestedState, _state);
 		m_requestedStateType = _type;
 		m_restoreStatus = ProjectStateRestoreStatus::Preparing;
 		m_restoreError.clear();
 		auto transaction = std::unique_ptr<StateTransactionImpl>(
 			new StateTransactionImpl(m_preparationContext, std::move(_state), _type,
 				std::move(factoryFlash), m_deferredStateGeneration,
-				std::move(displaced)));
+				std::move(displaced), std::move(retiredState)));
 		// A state-load attempt invalidates confirmations and interrupts an import,
 		// even if preparing that state later fails. Never continue writing an old
 		// file into a newly selected project. The UART cancellation drains normally.

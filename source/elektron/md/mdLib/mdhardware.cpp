@@ -130,7 +130,7 @@ namespace md
 		, m_factoryFlashReady(!_factoryFlashCache.empty())
 		, m_factoryFlashPreparationReady(!_factoryFlashCache.empty()
 			|| !_initialFlash.empty())
-		, m_factoryFlashCache(_factoryFlashCache)
+		, m_factoryFlashCache(std::make_shared<const std::vector<uint8_t>>(_factoryFlashCache))
 		, m_factoryFlashBaseline(std::make_shared<std::vector<uint8_t>>(_model == MachineModel::Machinedrum
 			&& _factoryFlashCache.empty() ? g_romSize : 0))
 		, m_pendingFlashImage(_pendingFlashOverlay.valid ? g_romSize : 0)
@@ -160,8 +160,8 @@ namespace md
 
 		// The factory baseline of a given cache, made here (off the plug-in's device lock, the Hardware is not shared
 		// yet): made on first use it copied the cache under that lock, 1 ms and more (DESIGN-audio-lock.md)
-		if(!m_factoryFlashCache.empty())
-			m_factoryBaseline = std::make_shared<FactoryFlashBaseline>(m_factoryFlashCache, m_rom);
+		if(!m_factoryFlashCache->empty())
+			m_factoryBaseline = std::make_shared<FactoryFlashBaseline>(*m_factoryFlashCache, m_rom);
 
 		if(!m_rom->isValid())
 			return;
@@ -675,7 +675,7 @@ namespace md
 		if(!m_factoryFlashReady.load(std::memory_order_acquire))
 			return false;
 		std::lock_guard lock(m_factoryFlashMutex);
-		const bool has = m_factoryBaseline || !m_factoryFlashCache.empty() || !m_factoryFlashBaseline->empty();
+		const bool has = m_factoryBaseline || !m_factoryFlashCache->empty() || !m_factoryFlashBaseline->empty();
 		m_factoryFlashBaselineSeen.store(has, std::memory_order_relaxed);
 		return has;
 	}
@@ -687,7 +687,7 @@ namespace md
 		std::unique_lock lock(m_factoryFlashMutex, std::try_to_lock);
 		if(!lock.owns_lock())
 			return m_factoryFlashBaselineSeen.load(std::memory_order_relaxed);
-		const bool has = m_factoryBaseline || !m_factoryFlashCache.empty() || !m_factoryFlashBaseline->empty();
+		const bool has = m_factoryBaseline || !m_factoryFlashCache->empty() || !m_factoryFlashBaseline->empty();
 		m_factoryFlashBaselineSeen.store(has, std::memory_order_relaxed);
 		return has;
 	}
@@ -865,10 +865,24 @@ namespace md
 		if(!m_factoryFlashReady.load(std::memory_order_acquire))
 			return false;
 		std::lock_guard lock(m_factoryFlashMutex);
-		_snapshot.cache = m_factoryFlashCache;
+		_snapshot.cache = *m_factoryFlashCache;
 		if(_snapshot.cache.empty())
 			_snapshot.baseline = *m_factoryFlashBaseline;
 		return !_snapshot.cache.empty() || !_snapshot.baseline.empty();
+	}
+
+	bool Hardware::shareFactoryFlashSnapshot(SharedFactoryFlashSnapshot& _snapshot) const
+	{
+		_snapshot = {};
+		if(!m_factoryFlashReady.load(std::memory_order_acquire))
+			return false;
+		std::lock_guard lock(m_factoryFlashMutex);
+		// copyFactoryFlashSnapshot's choice: the cache, and the captured image only when there is no cache. The image is
+		// complete once the flash is ready (advanceFactoryFlashCapture writes it only before), so it no longer changes.
+		_snapshot.cache = m_factoryFlashCache;
+		if(_snapshot.cache->empty())
+			_snapshot.baseline = m_factoryFlashBaseline;
+		return !_snapshot.cache->empty() || (_snapshot.baseline && !_snapshot.baseline->empty());
 	}
 
 	bool Hardware::copyPendingFlashOverlay(FlashSectorOverlay& _overlay) const
@@ -887,8 +901,9 @@ namespace md
 			return false;
 		// The validation decoded the new baseline already: keep it for the state saves
 		auto baseline = std::make_shared<FactoryFlashBaseline>(std::move(decoded), std::nullopt);
+		auto cache = std::make_shared<const std::vector<uint8_t>>(_cache);
 		std::lock_guard lock(m_factoryFlashMutex);
-		m_factoryFlashCache = _cache;
+		m_factoryFlashCache = std::move(cache);
 		m_factoryFlashBaseline = std::make_shared<std::vector<uint8_t>>();	// a new one: a state save may share the old
 		m_factoryBaselineFingerprint.reset();
 		m_factoryBaseline = std::move(baseline);

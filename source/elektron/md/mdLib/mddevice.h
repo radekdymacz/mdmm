@@ -277,20 +277,25 @@ namespace md
 			StateTransactionImpl(std::shared_ptr<const PreparationContext> _context,
 				std::shared_ptr<const std::vector<uint8_t>> _state,
 				synthLib::StateType _type,
-				FactoryFlashSnapshot _factoryFlash, uint64_t _generation,
-				std::unique_ptr<PreparedState> _displaced)
+				SharedFactoryFlashSnapshot _factoryFlash, uint64_t _generation,
+				std::unique_ptr<PreparedState> _displaced,
+				std::shared_ptr<const std::vector<uint8_t>> _retiredState)
 				: m_context(std::move(_context)), m_state(std::move(_state)), m_type(_type)
 				, m_factoryFlash(std::move(_factoryFlash))
 				, m_generation(_generation), m_displaced(std::move(_displaced))
+				, m_retiredState(std::move(_retiredState))
 			{
 			}
 
 			std::shared_ptr<const PreparationContext> m_context;
 			std::shared_ptr<const std::vector<uint8_t>> m_state;
 			synthLib::StateType m_type;
-			FactoryFlashSnapshot m_factoryFlash;
+			// Shared under the device lock, copied in prepare() off it (the copy was 8 MiB under the lock, CI.md)
+			SharedFactoryFlashSnapshot m_factoryFlash;
 			uint64_t m_generation;
 			std::unique_ptr<PreparedState> m_displaced;
+			// The project payload this load replaced as the requested one, freed with the transaction off the lock
+			std::shared_ptr<const std::vector<uint8_t>> m_retiredState;
 			std::unique_ptr<PreparedState> m_prepared;
 			std::string m_error;
 			// Disposed with the transaction outside the realtime device lock.

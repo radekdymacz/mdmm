@@ -44,6 +44,25 @@ namespace md
 		std::vector<uint8_t> baseline;
 	};
 
+	// The same source bytes as a FactoryFlashSnapshot, shared instead of copied, so taking it under the Plugin device
+	// lock costs two reference counts, not a 2 MiB cache or an 8 MiB image. Both are immutable once the factory flash is
+	// ready: md::Hardware replaces them (replaceFactoryFlashCache, exchangePersistentFlashState), it never changes them.
+	struct SharedFactoryFlashSnapshot
+	{
+		std::shared_ptr<const std::vector<uint8_t>> cache;
+		std::shared_ptr<const std::vector<uint8_t>> baseline;
+
+		// The FactoryFlashSnapshot copyFactoryFlashSnapshot would have made when this was shared, byte for byte. Off the lock.
+		void copyTo(FactoryFlashSnapshot& _snapshot) const
+		{
+			_snapshot = {};
+			if(cache)
+				_snapshot.cache = *cache;
+			if(baseline)
+				_snapshot.baseline = *baseline;
+		}
+	};
+
 	// md::Hardware models the Elektron ColdFire MCU and two DSP56303s. A single
 	// deterministic interleave scheduler advances all three processors against a
 	// shared machine clock on the calling thread.
@@ -184,6 +203,8 @@ namespace md
 		// scans the complete flash image and belongs after the outer Device lock is
 		// released.
 		bool copyFactoryFlashSnapshot(FactoryFlashSnapshot& _snapshot) const;
+		// The same choice and answer as copyFactoryFlashSnapshot, shared, not copied: cheap under the Plugin device lock
+		bool shareFactoryFlashSnapshot(SharedFactoryFlashSnapshot& _snapshot) const;
 		bool copyPendingFlashOverlay(FlashSectorOverlay& _overlay) const;
 		void disqualifyFactoryFlashCache();
 		bool replaceFactoryFlashCache(const std::vector<uint8_t>& _cache);
@@ -411,7 +432,8 @@ namespace md
 		std::atomic<bool> m_factoryFlashPreparationReady{false};
 		mutable std::mutex m_factoryFlashMutex;
 		mutable std::atomic<bool> m_factoryFlashBaselineSeen{false};	// hasFactoryFlashBaseline's last answer
-		std::vector<uint8_t> m_factoryFlashCache;
+		// Never null; replaced, never changed, so a state load shares it (SharedFactoryFlashSnapshot)
+		std::shared_ptr<const std::vector<uint8_t>> m_factoryFlashCache;
 		// Never null; immutable once its capture completes, so a state save shares it (FactoryFlashBaseline)
 		std::shared_ptr<std::vector<uint8_t>> m_factoryFlashBaseline;
 		std::vector<uint8_t> m_pendingFlashImage;
