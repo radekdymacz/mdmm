@@ -1,5 +1,7 @@
 # CI and the development loop
 
+Current bug-fix validation and resume instructions: [2026-10-21 handoff](BUGFIX-HANDOFF-2026-10-21.md). It records the passing page/core suites, Linux fallback repair and unfinished full/firmware runs; read their live results before treating the batch as green.
+
 Why: on 2026-10-07 and 10-08 there were 182 CI runs, and 0.3.5's Editors job ran 8 times on its release branch. The
 same commit was tested on the release branch, again on main, again on the tag, and again in the local gate. A small
 fix paid the price of a release. This file is the rule since 0.4.0.

@@ -19,6 +19,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current state
 
+0.8.0 was released on 2026-10-20. **The current work is the 2026-10-21 Discord bug-fix batch. Read [doc/release/BUGFIX-HANDOFF-2026-10-21.md](doc/release/BUGFIX-HANDOFF-2026-10-21.md) first** for the fixes, exact CI runs, remaining failures and next steps. Radek explicitly authorized commit, push and merge to main at the usage-limit handoff. Validation is unfinished: page/core/platform unit tests passed, Linux crash-fallback visibility was repaired after CI exposed it, and full/focused firmware runs are pending. Do not call all reports fixed or cut a release from this status.
+
+The renderer remains WKWebView / WebView2 / WebKitGTK; the Ultralight experiment was discarded.
+
+## Historical 0.8 release preparation (2026-10-18)
+
+The following records the preparation before 0.8.0 shipped; the handoff above is the current status.
+
 0.7.0 was released on 2026-10-15. **0.8.0 (the MIDI release) is being cut** (state 2026-10-18). Radek's rules: every fix goes into 0.8.0; the tag waits for his hand test.
 
 - **Done on main:** MIDI, MIDI Learn including B-169 parts 1 and 2, the lock-free audio, the MD and MM slide rules, B-168, and the dsp56300 upstream batch (28 fixes, goldens 30/30 equal, CPU about -1 %; doc/modern-ux/UPSTREAM.md). Notes: doc/release/v0.8.0.md. `release/0.8.0` still needs the latest main commits.
