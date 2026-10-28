@@ -1959,9 +1959,9 @@ const MmJourneys = (() => {
 			{ say: "press Z sixteen times, then A and S", act: async u => { notesOn.length = 0; for (let i = 0; i < 16; i++) u.key("z"); await sleep(200); for (const k of ["a", "s"]) { u.key(k); await sleep(250); } },
 				screen: () => ok(KB.oct === -4 && same(notesOn.slice(-2), [-48, -46]), "octave " + KB.oct + ", pitches sent " + notesOn.join(",")) },
 			{ say: "Perform: the Octave stepper goes down to the lowest and up to the highest keyboard", act: async u => { u.click(tab("perform")); await sleep(300); for (let i = 0; i < 8; i++) u.click('[data-kboct="-1"]'); await sleep(200); },
-				screen: () => ok(!!$1('.kb [data-key="0"]') && $1('[data-kboct="-1"]').disabled, "lowest key " + !!$1('.kb [data-key="0"]')) },
+				screen: () => ok(!!$1('.kb [data-key="12"]') && !$1('.kb [data-key="11"]') && $1('[data-kboct="-1"]').disabled, "lowest key C-0 (12) " + !!$1('.kb [data-key="12"]')) },
 			{ say: "up to the top", act: async u => { for (let i = 0; i < 8; i++) u.click('[data-kboct="1"]'); await sleep(200); },
-				screen: () => ok(!!$1('.kb [data-key="127"]') && !$1('.kb [data-key="128"]') && $1('[data-kboct="1"]').disabled, "highest key 127 " + !!$1('.kb [data-key="127"]')) }
+				screen: () => ok(!!$1('.kb [data-key="119"]') && !$1('.kb [data-key="120"]') && $1('[data-kboct="1"]').disabled, "highest key B-8 (119) " + !!$1('.kb [data-key="119"]')) }
 		],
 		async tidy(u) { KB.oct = 0; S().kbOct = 3; u.click(tab("seq")); }
 	};
