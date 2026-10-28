@@ -16,9 +16,11 @@
 #include "elektronData/factoryGlobals.h"
 #include "elektronData/mmJson.h"
 #include "elektronData/mmValidate.h"
+#include "elektronData/mmWave.h"
 
 #include "elektronData/jsonSchema.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -323,6 +325,179 @@ namespace
 				a->steps[t].fill(0x40);
 			}
 		return p;
+	}
+
+	// 0.9 wave 2: the DIGIPRO MGR session (mmWaveRecv.h): RECEIVE > ORG and ERASE by the panel, one job at a time
+	void waveRecv()
+	{
+		using W = mmDesk::WaveRecv;
+		std::puts("DIGIPRO MGR session");
+		check(W::isReceiveMacro(W::receiveMacro(3)) && !W::isReceiveMacro(mmDesk::RecvSession::enterMacro(3)),
+			"the receive macro is not SYSEX RECV's");
+		check(W::eraseMacroWave(W::eraseMacro(2, -1)) == -1 && W::eraseMacroWave(W::eraseMacro(0, 63)) == 63
+			&& !W::eraseMacroWave(W::receiveMacro(0)), "the erase macro names its position (ALL is -1)");
+		{
+			const auto k = W::receiveMacro(0), r = mmDesk::RecvSession::enterMacro(0);
+			check(std::equal(r.begin(), r.end() - 4, k.begin()) && k.back() == mmDesk::Key::Enter, "the way into FILE is SYSEX RECV's, then DIGIPRO MGR");
+		}
+		W w;
+		auto out = w.tick(0, screen(mmDesk::Screen::Main));
+		check(out.keys.empty() && w.idle(), "nothing asked: idle");
+		w.want({0xf0, 0x5d, 1, 0xf7});
+		w.want({0xf0, 0x5d, 2, 0xf7});
+		out = w.tick(10, screen(mmDesk::Screen::Main));
+		check(out.keys == W::receiveMacro(0) && w.state() == W::State::Entering && w.queued() == 2, "from the main screen: the RECEIVE macro");
+		size_t sent = 0;
+		double t = 20;
+		for(; t < 20000 && w.state() != W::State::Parked; t += 10)
+			sent += w.tick(t, screen(mmDesk::Screen::GlobalEdit)).sends.size();
+		check(w.state() == W::State::Parked && sent == 0, "parked once the keys are through and the screen settled; nothing sent before");
+		out = w.tick(t, screen(mmDesk::Screen::GlobalEdit));
+		check(out.sends.size() == 2 && w.queued() == 0, "both dumps go in one RECEIVE");
+		bool wrote = false;
+		for(t += 10; t < 40000 && !wrote; t += 10)
+			wrote = w.tick(t, screen(mmDesk::Screen::GlobalEdit)).keys == W::writeKeys();
+		check(wrote && w.state() == W::State::Writing, "quiet: [EXIT/NO] writes the waveforms");
+		bool left = false;
+		const double wroteAt = t;
+		for(; t < 60000 && !left; t += 10)
+			left = w.tick(t, screen(mmDesk::Screen::GlobalEdit)).keys == W::exitKeys();
+		check(left && t - wroteAt >= w.writeMs, "EXIT back after the writing time");
+		bool finished = false;
+		for(; t < 70000 && !finished; t += 10)
+			finished = w.tick(t, screen(mmDesk::Screen::Main)).finished;
+		check(finished && w.idle(), "back on the main screen: the job is finished");
+
+		w.erase(5);
+		out = w.tick(t, screen(mmDesk::Screen::Other));
+		check(out.keys == W::exitKeys() && w.state() == W::State::ToMain, "an erase from another screen: EXIT first");
+		bool macro = false;
+		for(t += 10; t < 80000 && !macro; t += 10)
+		{
+			out = w.tick(t, screen(mmDesk::Screen::Main));
+			macro = W::eraseMacroWave(out.keys) == 5;
+		}
+		check(macro, "then the ERASE macro for W06");
+		finished = false;
+		bool anySend = false;
+		for(; t < 120000 && !finished; t += 10)
+		{
+			out = w.tick(t, screen(w.state() == W::State::Leaving ? mmDesk::Screen::Main : mmDesk::Screen::GlobalEdit));
+			anySend = anySend || !out.sends.empty();
+			finished = out.finished;
+		}
+		check(finished && !anySend && w.idle(), "the erase ends with nothing sent");
+
+		W f;
+		f.want({0xf0, 0x5d, 3, 0xf7});
+		bool gaveUp = false;
+		for(double u = 0; u < 60000 && !gaveUp; u += 10)
+			gaveUp = f.tick(u, screen(mmDesk::Screen::Main)).gaveUp;
+		check(gaveUp && f.queued() == 0 && f.quiet() && !f.idle(), "a screen that never comes: given up, the panel left alone");
+	}
+
+	// 0.9 wave 2: the adapter's DigiPRO way (sendWaves, eraseWave, waveWork, wavesSendNow) on the emulator and over HW MIDI
+	void waveDesk()
+	{
+		using W = mmDesk::WaveRecv;
+		constexpr uint8_t waveDump = 0x5d;
+		std::puts("DigiPRO manager through the adapter");
+		std::vector<float> saw(256);
+		for(size_t i = 0; i < saw.size(); ++i)
+			saw[i] = static_cast<float>(i) / 256.f - 0.5f;
+		std::string why;
+		const auto wave = ed::mmWaveFromCycle(saw, 7, "SAW", why);
+		check(wave.has_value(), "a waveform to send");
+		if(!wave)
+			return;
+		const auto dump = ed::encodeMmWave(*wave);
+		double now = 0;
+		auto screenWord = mmDesk::Screen::Main;
+		bool onWaves = false;
+		std::vector<Bytes> taken, wire;
+		std::vector<int> erased;
+		mmDesk::Desk::Port port;
+		port.device.sendSysex = [&](const Bytes& _b)
+		{
+			wire.push_back(_b);
+			if(_b.size() > 6 && _b[6] == waveDump && onWaves && screenWord == mmDesk::Screen::GlobalEdit)
+				taken.push_back(_b);
+		};
+		port.device.sendParam = [](uint8_t, uint8_t, uint8_t, uint8_t) {};
+		port.device.sendNrpn = [](uint8_t, uint8_t, uint8_t) {};
+		bool recvMacro = false;
+		port.device.pressKeys = [&](const std::vector<mmDesk::Key>& _k)
+		{
+			if(W::isReceiveMacro(_k))
+			{
+				onWaves = true;
+				screenWord = mmDesk::Screen::GlobalEdit;
+			}
+			else if(const auto e = W::eraseMacroWave(_k))
+			{
+				onWaves = true;
+				erased.push_back(*e);
+				screenWord = mmDesk::Screen::GlobalEdit;
+			}
+			else if(mmDesk::RecvSession::isEnterMacro(_k))
+			{
+				recvMacro = true;
+				screenWord = mmDesk::Screen::GlobalEdit;
+			}
+			else if(_k == mmDesk::RecvSession::exitKeys())
+			{
+				onWaves = false;
+				screenWord = mmDesk::Screen::Main;
+			}
+			return true;
+		};
+		port.toPage = [&](const Value& _v) { g_published.push_back(_v); };
+		port.device.nowMs = [&] { return now; };
+		{
+			mmDesk::Desk d(port);
+			d.onPageMessage(*ed::json::parse(R"({"op":"ready"})"));
+			d.setProbe(mmDesk::Desk::Probe::Running);
+			const auto run = [&](const double _ms)
+			{
+				for(double t = 0; t < _ms; t += 10)
+				{
+					now += 10;
+					d.onTelemetry(screen(screenWord));
+					d.tick();
+				}
+			};
+			run(200);
+			check(d.machine().sendWaves({dump}).empty(), "the emulator takes waveform dumps");
+			check(d.machine().waveWork().queued == 1 && d.machine().waveWork().finished == 0, "one waits");
+			for(int i = 0; i < 3000 && d.machine().waveWork().finished == 0; ++i)
+				run(10);
+			check(d.machine().waveWork().finished == 1 && !d.machine().waveWork().busy, "the receive job ends");
+			check(taken.size() == 1 && taken[0] == dump && !recvMacro, "the dump reached DIGIPRO MGR > RECEIVE, not SYSEX RECV");
+			check(d.machine().eraseWave(7).empty(), "an erase is taken");
+			for(int i = 0; i < 3000 && d.machine().waveWork().finished == 1; ++i)
+				run(10);
+			check(d.machine().waveWork().finished == 2 && erased == std::vector<int>{7}, "the panel erased W08");
+			check(!d.machine().eraseWave(64).empty(), "no position 65");
+		}
+		{
+			mmDesk::Desk d(port, mmDesk::wireProfile());
+			d.onPageMessage(*ed::json::parse(R"({"op":"ready"})"));
+			wire.clear();
+			check(d.machine().sendWaves({dump}).empty() && !d.machine().waveWork().waitsFor.empty() && d.machine().waveWork().queued == 1,
+				"over HW MIDI the dump waits for the person's RECEIVE");
+			check(!d.machine().eraseWave(3).empty(), "over HW MIDI the editor cannot erase (the panel's ERASE)");
+			for(int i = 0; i < 20; ++i)
+			{
+				now += 100;
+				d.tick();
+			}
+			bool early = false;
+			for(const auto& m : wire)
+				early = early || (m.size() > 6 && m[6] == waveDump);
+			check(!early, "nothing goes before the person says so");
+			check(d.machine().wavesSendNow().empty() && !wire.empty() && wire.back() == dump && d.machine().waveWork().queued == 0
+				&& d.machine().waveWork().finished == 1, "Send: the dump goes");
+		}
 	}
 
 	void desk()
@@ -2625,6 +2800,8 @@ int main(const int _argc, char** _argv)
 	}
 	recvSession();
 	recvTaking();
+	waveRecv();
+	waveDesk();
 	desk();
 	playingFromSteps();
 	watchSteps();

@@ -41,6 +41,7 @@ target_sources(elektronData PRIVATE
 	mmPattern.cpp mmPattern.h
 	mmSong.cpp mmSong.h
 	mmValidate.cpp mmValidate.h
+	mmWave.cpp mmWave.h
 	sysex7bit.cpp sysex7bit.h
 	syxImport.cpp syxImport.h
 )

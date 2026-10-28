@@ -509,6 +509,9 @@ namespace mmDesk
 	{
 		if(m_profile.wire)
 			return;
+		// 0.9 wave 2: DIGIPRO MGR has the panel; SYSEX RECV's dumps wait (its clock waits with them)
+		if(!m_waveRecv.quiet())
+			return;
 		// Parked, with the person's keys still on their way (pressKeys): the next dump waits, since a key the machine
 		// gets while it takes a dump is lost (mmDeskFirmwareTest parked).
 		if(m_recv.parked() && now() < m_keysUntilMs)
@@ -564,5 +567,83 @@ namespace mmDesk
 				+ " edit was not sent. Showing what it holds.");
 			request(ref, true);
 		}
+	}
+
+	// ---- 0.9 wave 2: the DigiPRO manager (mmWaveRecv.h, doc/release/0.9/mm-digipro.md) ----
+
+	std::string MmMachine::sendWaves(const std::vector<Bytes>& _dumps)
+	{
+		if(!m_stream.open())
+			return "This engine cannot send SysEx to the machine.";
+		for(const auto& d : _dumps)
+		{
+			if(manualDumps())
+				m_manualWaves.push_back(d);
+			else
+				m_waveRecv.want(d);
+		}
+		return {};
+	}
+
+	std::string MmMachine::eraseWave(const int _wave)
+	{
+		if(manualDumps() || !m_port.pressKeys)
+			return "The editor cannot press this machine's keys: erase on the Monomachine, GLOBAL > FILE > DIGIPRO MGR > ERASE.";
+		if(_wave < -1 || _wave > 63)
+			return "There is no such waveform.";
+		m_waveRecv.erase(_wave);
+		return {};
+	}
+
+	// HW MIDI: the person says the machine is on DIGIPRO MGR > RECEIVE > ORG. What waited goes out, in order; the machine
+	// writes it once the person presses [EXIT/NO] there.
+	std::string MmMachine::wavesSendNow()
+	{
+		if(!manualDumps())
+			return "The editor opens DIGIPRO MGR > RECEIVE on this engine by itself.";
+		for(const auto& d : m_manualWaves)
+			m_port.sendSysex(d);
+		if(!m_manualWaves.empty())
+			++m_wavesFinished;
+		m_manualWaves.clear();
+		return {};
+	}
+
+	MmAdapter::WaveWork MmMachine::waveWork() const
+	{
+		WaveWork w;
+		w.queued = m_waveRecv.queued() + m_manualWaves.size();
+		w.busy = !m_waveRecv.quiet();
+		w.finished = m_wavesFinished;
+		w.gaveUp = m_wavesGaveUp;
+		if(!m_manualWaves.empty())
+			w.waitsFor = "Open GLOBAL > FILE > DIGIPRO MGR > RECEIVE > ORG on the Monomachine (it says WAITING), then press Send.";
+		return w;
+	}
+
+	void MmMachine::pumpWaves(const double _now)
+	{
+		if(m_profile.wire || m_waveRecv.idle())
+			return;
+		// SYSEX RECV's dumps first: DIGIPRO MGR starts once that session is idle and holds nothing
+		if(m_waveRecv.state() == WaveRecv::State::Idle && (m_recv.state() != RecvSession::State::Idle || m_recv.queued() > 0))
+			return;
+		// and once the desk's own keys are through
+		if(m_waveRecv.state() == WaveRecv::State::Idle && now() < m_keysUntilMs)
+			return;
+		// a dump the session sent may still wait in the stream: it stays on RECEIVE until the stream is quiet
+		if(m_waveRecv.state() == WaveRecv::State::Parked && m_stream.sending(_now))
+			m_waveRecv.touch();
+		if(activeSlot() >= 0)
+			m_waveRecv.activeGlobal = activeSlot() & 7;
+		auto out = m_waveRecv.tick(_now, m_tel);
+		if(!out.keys.empty() && m_port.pressKeys)
+			m_port.pressKeys(out.keys);
+		for(const auto& s : out.sends)
+			m_port.sendSysex(s);
+		if(out.finished)
+			++m_wavesFinished;
+		if(out.gaveUp)
+			++m_wavesGaveUp;
 	}
 }

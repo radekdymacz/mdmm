@@ -4,6 +4,7 @@
 #include "deskCore/deskSongRow.h"
 #include "mmDeskModel.h"
 #include "mmRecv.h"
+#include "mmWaveRecv.h"
 #include "mmDeskWatch.h"
 
 #include "deskCore/deskAdapter.h"
@@ -87,6 +88,10 @@ namespace mmDesk
 		void sendModulation(uint8_t _track, uint8_t _param, uint8_t _value, const Documents& _view) override;
 		const Telemetry& telemetry() const override { return m_tel; }
 		bool playing() const override { return m_playing; }
+		std::string sendWaves(const std::vector<Bytes>& _dumps) override;
+		std::string eraseWave(int _wave) override;
+		std::string wavesSendNow() override;
+		WaveWork waveWork() const override;
 		int currentPattern() const { return m_curPattern; }
 		int currentKit() const { return m_curKit; }
 		int currentSong() const { return m_curSong; }
@@ -174,6 +179,8 @@ namespace mmDesk
 		void gaveUpLoad(const Ref& _r);
 		bool current(const Ref& _r) const;
 		void pumpRecv(double _now);
+		// 0.9 wave 2: the DIGIPRO MGR session, never at the same time as SYSEX RECV's
+		void pumpWaves(double _now);
 		void pumpTransport();
 		void pumpMidiMutes();
 		void pumpRecord(double _now);
@@ -265,6 +272,9 @@ namespace mmDesk
 		Port m_port;
 		deskCore::Stream m_stream;		// B-014: the one way to the machine (after m_port: it holds its SysEx)
 		RecvSession m_recv;
+		WaveRecv m_waveRecv;					// 0.9 wave 2: DIGIPRO MGR (the emulator)
+		std::vector<Bytes> m_manualWaves;		// HW MIDI: waveform dumps waiting for the person's RECEIVE
+		uint32_t m_wavesFinished = 0, m_wavesGaveUp = 0;
 		deskCore::WorkingCopy<elektronData::MmKit> m_working;	// where the kit that plays comes from
 		// B-027: pattern dumps whose kit reload the working kit's edits must follow (reloadFollows), from when the dump
 		// went into the stream until the machine applied it; then the kit whose edits go again (-1: none). Meanwhile

@@ -190,6 +190,9 @@ namespace mmDesk
 		// lost (RECORD, PLAY, STOP, the MUTE window, BANK GROUP; measured: mmDeskFirmwareTest parked). Busy, as above.
 		if(m_recv.taking())
 			return false;
+		// 0.9 wave 2: the panel is on its way to, on or back from DIGIPRO MGR: keys wait as for SYSEX RECV
+		if(!m_waveRecv.quiet())
+			return false;
 		if(!m_port.pressKeys || !m_port.pressKeys(_keys))
 			return false;
 		size_t states = 0;

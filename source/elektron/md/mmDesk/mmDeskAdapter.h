@@ -96,5 +96,23 @@ namespace mmDesk
 		virtual const Telemetry& telemetry() const = 0;
 		// The sequencer plays (the RAM flag, or the step byte advancing).
 		virtual bool playing() const = 0;
+
+		// 0.9 wave 2, the DigiPRO manager (doc/release/0.9/mm-digipro.md): the machine takes waveform dumps (0x5D) only on
+		// GLOBAL > FILE > DIGIPRO MGR > RECEIVE, and erases only on its panel. sendWaves queues dumps for RECEIVE > ORG (each
+		// lands at the position it carries), eraseWave the panel's ERASE (a position 0-63, -1 ALL); "" or why not. Over HW
+		// MIDI the dumps wait until the person opened RECEIVE and says so (wavesSendNow). waveWork says what runs; its
+		// counters move when a job ends (the caller reads the positions again) or is given up.
+		struct WaveWork
+		{
+			size_t queued = 0;		// dumps and erases not done yet
+			bool busy = false;		// the panel is on its way to, on or back from DIGIPRO MGR
+			std::string waitsFor;	// HW MIDI: what the person must do first ("" = nothing)
+			uint32_t finished = 0;	// jobs ended
+			uint32_t gaveUp = 0;	// jobs given up (the screen never came)
+		};
+		virtual std::string sendWaves(const std::vector<Bytes>& _dumps) { (void)_dumps; return "This engine cannot send waveforms to the machine."; }
+		virtual std::string eraseWave(int _wave) { (void)_wave; return "This engine cannot erase the machine's waveforms."; }
+		virtual std::string wavesSendNow() { return "Nothing waits for DIGIPRO MGR > RECEIVE."; }
+		virtual WaveWork waveWork() const { return {}; }
 	};
 }
