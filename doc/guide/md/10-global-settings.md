@@ -237,7 +237,7 @@ At the end the panel gives a report, slot by slot:
 
 Click **Show problems only** to list only the slots that did not go as in the file. Click **Done** to close the panel.
 
-NOTE: The import has no undo. A kit that plays, and has unsaved edits, can lose them when a dump takes its place.
+NOTE: **Undo** takes an import back in one step. It writes back the kits, patterns and songs the import overwrote, and the kit that plays with the edits it had. A global is not put back. **Redo** brings the import again. **Export SysEx…** first keeps a copy in a file.
 
 NOTE: **Globals** and **Other** are off until you tick them. A global changes the MIDI channels the machine listens on, and so which tracks the editor can mute, play and edit live. The active global becomes active at once.
 

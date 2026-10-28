@@ -154,7 +154,7 @@ NOTE: On the machine KIT, PAT+KIT and SONG+PAT+KIT take the kits and patterns wi
 
 The tick **Read back and compare**, beside **Verify only**, is on at first and stays as you set it. With it on, the import reads every slot back after it sends and compares it with the file. With it off, the import ends after the send. The report then says how many items were sent and that they were not read back.
 
-Globals and other messages are off unless you tick them. Importing a global changes the channels the machine listens on. There is no undo, so use **Export SysEx…** first.
+Globals and other messages are off unless you tick them. Importing a global changes the channels the machine listens on. **Undo** takes an import back in one step, but it does not put back a global. Use **Export SysEx…** first to keep a copy of the globals in a file.
 
 ### Original and specific place
 

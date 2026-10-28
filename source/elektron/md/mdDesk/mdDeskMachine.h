@@ -58,7 +58,8 @@ namespace mdDesk
 		bool busy() const override;
 		std::string sendAsIs(const Bytes& _message, bool _dump) override;
 		AsIs asIs() const override;
-		void reread(const DocRef& _ref) override { m_loads.want(_ref, false); }
+		void reread(const DocRef& _ref) override { m_loads.want(_ref, false); m_reread.insert(_ref); }
+		void importing(const bool _on) override { m_importing = _on; }
 
 		// ---- MdAdapter: Machinedrum facts from the device ----
 		void setProbe(Probe _probe) override;
@@ -86,6 +87,14 @@ namespace mdDesk
 		static std::vector<std::string> commandsAsking();
 
 	private:
+		// B-045: an import is at work, or a slot it wrote is not read again yet.
+		bool importSettling()
+		{
+			for(auto it = m_reread.begin(); it != m_reread.end();)
+				it = m_loads.contains(*it) ? std::next(it) : m_reread.erase(it);
+			return m_importing || !m_reread.empty();
+		}
+
 		using Handler = deskCore::Outcome (MdMachine::*)(const Value&, const Documents&);
 		// The adapter's own op -> function map for the model's machine commands.
 		static const std::map<std::string, Handler>& handlers();
@@ -289,6 +298,8 @@ namespace mdDesk
 
 		deskCore::LoadQueue<DocRef> m_loads;
 		bool m_backgroundQueued = false;
+		bool m_importing = false;		// B-045: a SysEx import is at work (deskCore::Machine::importing)
+		std::set<DocRef> m_reread;		// B-045: the slots an import wrote that are read again (until they have arrived)
 		Pushes m_pushes;
 
 		deskCore::WorkingCopy<elektronData::MdKit> m_working;	// where the kit that plays comes from

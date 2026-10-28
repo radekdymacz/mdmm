@@ -565,6 +565,49 @@ namespace
 		c.flush();
 		check(page.back().find("type")->asString() == "result" && page.back().find("id")->asNumber() == 9, "undo answers");
 	}
+	// B-130: an import overwrites documents without an edit; the copies taken before it are one undo step after it.
+	void bulk()
+	{
+		std::puts("core: a bulk step (SysEx import)");
+		std::vector<Value> page;
+		Core<ToyModel> c([&](const Value& _m) { page.push_back(_m); });
+		ToyMachine m;
+		c.setMachine(&m);
+		c.pageReady();
+		m.events.push_back(ToyMachine::Ev::observed({1, 10}, Source::Dump));
+		m.events.push_back(ToyMachine::Ev::observed({2, 7}, Source::Dump));
+		c.pump();
+		const auto msg = [](const char* _json) { return *elektronData::json::parse(_json); };
+		const auto toy = [&](const uint8_t _s) { return c.view().toys.at(_s).value; };
+		const std::vector<ToyModel::Ref> refs{{ToyModel::Kind::Toy, 1}, {ToyModel::Kind::Toy, 2}, {ToyModel::Kind::Toy, 9}};
+		const auto before = c.snapshot(refs);
+		check(before.size() == 2, "the copy holds the documents the view has (slot 9 is not held: nothing to put back)");
+		m.events.push_back(ToyMachine::Ev::observed({1, 99}, Source::Dump));
+		m.events.push_back(ToyMachine::Ev::observed({2, 98}, Source::Dump));
+		c.pump();
+		check(c.history().size() == 0, "the machine took the dumps: no step yet");
+		c.recordBulk(before);
+		check(c.history().size() == 1 && c.history().canUndo() && !c.history().canRedo(), "the import is one undo step");
+		c.undo(msg(R"({"op":"undo"})"));
+		check(toy(1) == 10 && toy(2) == 7, "undo puts every overwritten document back");
+		check(!c.history().canUndo() && c.history().canRedo(), "and leaves one step to redo");
+		c.redo(msg(R"({"op":"redo"})"));
+		check(toy(1) == 99 && toy(2) == 98, "redo brings the import back");
+		c.undo(msg(R"({"op":"undo"})"));
+		c.edit(msg(R"({"op":"set","s":1,"v":11,"g":3})"));
+		check(!c.history().canRedo() && c.history().size() == 1, "an edit after the undo ends the redo");
+		c.recordBulk({});
+		check(c.history().size() == 1, "nothing copied, no step");
+
+		History<ToyModel::Change> h;
+		for(int i = 0; i < 5; ++i)
+			h.record({ToyModel::Change{{1, i}, {1, i + 1}}, ToyModel::Change{{2, i}, {2, i + 1}}}, 0);
+		h.limitChanges(7);
+		check(h.size() == 3, "memory is bounded: the oldest steps go until at most 7 changes are kept");
+		h.limitChanges(1);
+		check(h.size() == 1, "the newest step stays, however large");
+	}
+
 	// A trial (wave 8, the machine picker's audition): its edits under one gesture, kept or taken back as a whole; never
 	// an earlier step of the user's (a refused edit recorded nothing), and taken back when the page goes or comes again.
 	void trial()
@@ -830,6 +873,7 @@ int main()
 	commands();
 	core();
 	trial();
+	bulk();
 	desk();
 	std::printf("deskCoreTest: %s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
 	return g_failures ? 1 : 0;

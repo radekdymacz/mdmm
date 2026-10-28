@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <functional>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -102,6 +103,18 @@ namespace mdJucePlugin
 			const auto of = [](const std::optional<uint8_t>& _v) { return _v ? static_cast<int>(*_v) : -1; };
 			return {of(s.pattern), of(s.kit), of(s.song), of(s.globalSlot)};
 		}
+		// B-130: the desk's document an item is (kits, patterns and songs: what its undo holds); none for the rest.
+		using Model = mdDesk::MdModel;
+		using Ref = mdDesk::DocRef;
+		static std::optional<Ref> ref(const elektronData::SyxKind _kind, const uint8_t _slot)
+		{
+			namespace ed = elektronData;
+			if(_kind == ed::SyxKind::Kit || _kind == ed::SyxKind::Pattern || _kind == ed::SyxKind::Song)
+				return Ref{_kind == ed::SyxKind::Kit ? mdDesk::DocKind::Kit : _kind == ed::SyxKind::Pattern ? mdDesk::DocKind::Pattern
+					: mdDesk::DocKind::Song, _slot};
+			return std::nullopt;
+		}
+		static Ref workingRef() { return {mdDesk::DocKind::WorkingKit, 0}; }
 		// B-174: the desk reads a slot an import wrote again (its load queue, in the background). The Machinedrum's
 		// desk holds the active global alone, which it reads on its own.
 		static void reread(mdDesk::Desk& _d, const elektronData::SyxKind _kind, const uint8_t _slot)
@@ -161,6 +174,20 @@ namespace mdJucePlugin
 		{
 			return {_d.currentPattern(), _d.currentKit(), _d.currentSong(), _d.currentGlobal()};
 		}
+		// B-130: the desk's document an item is (kits, patterns and songs: what its undo holds); none for the rest.
+		using Model = mmDesk::MmModel;
+		using Ref = mmDesk::Ref;
+		static std::optional<Ref> ref(const elektronData::SyxKind _kind, const uint8_t _slot)
+		{
+			namespace ed = elektronData;
+			using K = mmDesk::Kind;
+			if(_kind == ed::SyxKind::Kit || _kind == ed::SyxKind::Pattern)
+				return Ref{_kind == ed::SyxKind::Kit ? K::Kit : K::Pattern, static_cast<uint8_t>(_slot & 127)};
+			if(_kind == ed::SyxKind::Song)
+				return Ref{K::Song, deskCore::slotIn<mmDesk::MmModel>(K::Song, _slot)};
+			return std::nullopt;
+		}
+		static Ref workingRef() { return {mmDesk::Kind::WorkingKit, 0}; }
 		// B-174: the desk reads a slot an import wrote again (its load queue, in the background); a song's or a
 		// global's position byte folded into its range as the desk reads its dump.
 		static void reread(mmDesk::Desk& _d, const elektronData::SyxKind _kind, const uint8_t _slot)
@@ -210,6 +237,7 @@ namespace mdJucePlugin
 		using ToPage = std::function<void(const Value&)>;
 		using Reply = std::function<void(const Value& _message, bool _ok, const std::string& _note)>;
 		using Job = SyxJob<Traits>;
+		using Snapshot = std::vector<typename Traits::Model::Document>;
 
 		// What syxExport asks for: everything the editor holds (no kinds), or the kinds named with their ranges; the
 		// Monomachine's waveforms as one more kind ("wave"), read from the machine.
@@ -348,6 +376,8 @@ namespace mdJucePlugin
 				const auto* r = _message.find("readBack");	// I-038: absent = on
 				const auto why = m_job.start(strings(_message, "kinds"), skipOf(_message), Traits::machine(_desk), c && c->isBool() && c->asBool(),
 					!(r && r->isBool() && !r->asBool()));
+				if(why.empty())
+					begin(_desk);
 				_reply(_message, why.empty(), why);
 				_toPage(m_job.progress());
 				return true;
@@ -391,7 +421,7 @@ namespace mdJucePlugin
 			return false;
 		}
 
-		// A reset: _messages go to the machine as an import of every kit, pattern and song they hold (no undo), then
+		// A reset: _messages go to the machine as an import of every kit, pattern and song they hold (one undo step), then
 		// each slot is read back and reported. The page hears the preview (reset: _label, running) and the progress.
 		std::string reset(DeskT& _desk, const std::vector<Bytes>& _messages, const std::string& _label, const std::string& _word,
 			const ToPage& _toPage)
@@ -408,6 +438,7 @@ namespace mdJucePlugin
 			const auto why = m_job.start({"kit", "pattern", "song"}, {}, Traits::machine(_desk));
 			if(!why.empty())
 				return why;
+			begin(_desk);
 			preview.set("reset", _label);
 			preview.set("running", true);
 			_toPage(preview);
@@ -430,7 +461,7 @@ namespace mdJucePlugin
 
 		bool running() const { return m_job.running() || m_waves.running(); }
 		// Work for the session's step: what runs, or the slots an import wrote that the desk is still to read again.
-		bool due() const { return running() || !m_reread.empty(); }
+		bool due() const { return running() || !m_reread.empty() || m_undoOpen; }
 
 		// One session step while the machine takes input.
 		void step(DeskT& _desk, const double _nowMs, const bool _wire, const ToPage& _toPage)
@@ -449,6 +480,7 @@ namespace mdJucePlugin
 					m_rereadAtMs = std::max(_nowMs, m_job.quietAtMs());
 				}
 			}
+			end(_desk);
 			if(!m_reread.empty() && _nowMs >= m_rereadAtMs && !m_job.running())
 			{
 				for(const auto& i : m_reread)
@@ -478,6 +510,8 @@ namespace mdJucePlugin
 					done(bytes, exportWords(_desk, m_exportWords, dumps.size()));
 				}
 			}
+			if(!due())
+				_desk.machine().importing(false);
 		}
 
 		void onMachineSysex(const Bytes& _message)
@@ -489,6 +523,51 @@ namespace mdJucePlugin
 		Job& job() { return m_job; }
 
 	private:
+		// B-130: an import or a reset starts (it was accepted, nothing has gone yet). The documents it will write are
+		// copied from the desk (only those slots, and the kit that plays: its live edits), the first of the step so
+		// that undo puts it back last; and the adapter is told an import is at work (B-045).
+		void begin(DeskT& _desk)
+		{
+			m_undoOpen = false;
+			m_undo.clear();
+			if(m_job.checkOnly())
+				return;	// VERIFY ONLY sends nothing: nothing to put back, nothing stale
+			_desk.machine().importing(true);
+			std::vector<typename Traits::Ref> refs{Traits::workingRef()};
+			for(const auto& i : m_job.written())
+				if(const auto r = Traits::ref(i.kind, i.slot))
+					refs.push_back(*r);
+			m_undo = _desk.core().snapshot(refs);
+			m_undoOpen = true;
+		}
+
+		// B-130: the job is over (done, stopped, or given up): what it sent is one undo step, the copies of the slots it
+		// wrote (not those it never sent), and the kit that plays when any was. Nothing sent: no step.
+		void end(DeskT& _desk)
+		{
+			if(!m_undoOpen || m_job.running())
+				return;
+			m_undoOpen = false;
+			std::set<typename Traits::Ref> sent;
+			for(const auto& i : m_job.written(true))
+				if(const auto r = Traits::ref(i.kind, i.slot))
+					sent.insert(*r);
+			if(sent.empty())
+			{
+				m_undo.clear();
+				return;
+			}
+			Snapshot keep;
+			for(auto& d : m_undo)
+			{
+				const auto r = Traits::Model::refOf(d);
+				if(r == Traits::workingRef() || sent.count(r))
+					keep.push_back(std::move(d));
+			}
+			m_undo.clear();
+			_desk.core().recordBulk(keep);
+		}
+
 		static std::optional<elektronData::SyxKind> kindOf(const std::string& _id)
 		{
 			for(const auto k : {elektronData::SyxKind::Global, elektronData::SyxKind::Kit, elektronData::SyxKind::Pattern, elektronData::SyxKind::Song})
@@ -522,6 +601,8 @@ namespace mdJucePlugin
 		}
 
 		Job m_job;
+		Snapshot m_undo;	// B-130: the copies, until the job is over
+		bool m_undoOpen = false;
 		std::vector<elektronData::SyxItem> m_reread;	// B-174: the slots the desk reads again at m_rereadAtMs
 		double m_rereadAtMs = 0;
 		SyxWaveRead m_waves;

@@ -29,8 +29,9 @@ namespace mdJucePlugin
 	// order, through the adapter (sendAsIs: the stream, the Monomachine's SYSEX RECV), and the firmware decides what
 	// it takes. Then each document is read back from the machine and compared with the file and with what the
 	// editor knew of the slot before: the report says per item what the machine did. Only what cannot be sent at
-	// all (not this machine's SysEx, broken framing) is left out up front, with the reason. No undo step: a dump
-	// to a machine is not an edit (the preview says so; Export SysEx first keeps a way back).
+	// all (not this machine's SysEx, broken framing) is left out up front, with the reason. Undo (B-130, 0.9): the
+	// kits, patterns and songs it overwrites are copied before it starts (SyxWork) and are one undo step once it has
+	// written; globals are not (Export SysEx first keeps a way back for them).
 	// 0.6 (wave 6): SPECIFIC place (place: each kind's items, in slot order, from a first slot of the person's; the dumps
 	// go with their position byte and checksum made for the slot they land on, elektronData::syxPlaced, and the preview
 	// shows where each lands and whether it overwrites data there), and VERIFY ONLY (start with _checkOnly: nothing is
@@ -325,6 +326,20 @@ namespace mdJucePlugin
 			return out;
 		}
 		double quietAtMs() const { return m_quietAtMs; }
+
+		// B-130: the kits, patterns and songs the import writes (where they land), or of those the ones with a message
+		// handed to the machine (_sentOnly). Globals and other messages are not documents the desk's undo holds.
+		std::vector<elektronData::SyxItem> written(const bool _sentOnly = false) const
+		{
+			std::vector<elektronData::SyxItem> out;
+			if(m_check)
+				return out;
+			for(const auto& i : m_items)
+				if(i.chosen && (!_sentOnly || i.sent) && (i.kind == elektronData::SyxKind::Kit || i.kind == elektronData::SyxKind::Pattern
+					|| i.kind == elektronData::SyxKind::Song))
+					out.push_back({i.kind, i.target});
+			return out;
+		}
 		// The report's word for an item taken ("imported"; a reset's "cleared" or "restored").
 		void setWord(std::string _word) { m_word = std::move(_word); }
 

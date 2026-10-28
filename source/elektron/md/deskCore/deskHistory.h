@@ -79,6 +79,20 @@ namespace deskCore
 			push(to, {_d == Direction::Undo ? inverted(_delivered) : _delivered, 0});
 		}
 
+		// Bounded memory: the oldest undo steps go until the undo list holds at most _max changes in all (the newest
+		// step stays, however large: an import's step holds one change per slot it overwrote).
+		void limitChanges(const size_t _max)
+		{
+			size_t total = 0;
+			for(const auto& s : m_undo)
+				total += s.changes.size();
+			while(total > _max && m_undo.size() > 1)
+			{
+				total -= m_undo.front().changes.size();
+				m_undo.pop_front();
+			}
+		}
+
 		// The gesture of the newest undo step (0: none, or a step of no gesture).
 		uint64_t lastGesture() const { return m_undo.empty() ? 0 : m_undo.back().gesture; }
 		// The redo list goes (a trial taken back leaves nothing to redo).

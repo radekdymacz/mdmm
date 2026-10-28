@@ -450,7 +450,8 @@ where it came from, the setup, what happens, what should happen, status.*
 - **From:** the independent-journeys run, 2026-10-13.
 - **What happens:** an import overwrites kits, patterns and songs and the empty reset clears everything; neither is an undo step, so a journey (or a person) has no way back. The import journeys of whole files and the empty resets are `alone: true` (their own editor); the two-slot imports are kept with the plug-in's clipboard and one undo step (`keepMany`).
 - **Should be:** an undo step, or a copy of what the import is about to overwrite.
-- **Status:** open.
+- **Fix (0.9, wave 4, branch `feat/0.9-import-undo`, spec doc/release/0.9/import-undo.md, both editors):** the kits, patterns and songs an import or an Empty or Factory reset will write are copied first and recorded as one undo step when the job is over; undo and redo deliver them through the desk's own history. Globals and a start from factory memory are not undone. Tests: `deskCoreTest` (bulk), the journeys `md-lib-syx-import-undo`, `mm-lib-syx-import-undo`, the reset journeys' Cmd+Z steps.
+- **Status:** fixed on the branch (CI to confirm); not merged.
 
 ## B-123 · Solo is lost when the project is saved and opened again
 
@@ -1047,7 +1048,8 @@ where it came from, the setup, what happens, what should happen, status.*
 
 - **From:** found by the B-031 work, 2026-10-09.
 - **What happens:** a pattern picked while a SysEx import runs asks "Your edits to K.. are not saved" although nothing was edited. A dump over the current pattern reloads the linked kit before that slot has been read back. Transient: gone once the import finishes.
-- **Status:** open.
+- **Fix (0.9, wave 4, branch `feat/0.9-import-undo`):** the Machinedrum adapter asks no discard question for a pattern pick while an import runs or a slot it wrote is still waiting to be read again (`Machine::importing`, `MdMachine::importSettling`); the question comes back once those slots have arrived.
+- **Status:** fixed on the branch (CI to confirm); not merged.
 
 ## B-044 · Linux CI: synthLibMidiClockTimingTest is still left out
 

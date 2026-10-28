@@ -20,7 +20,7 @@ The empty reset clears the memory of the machine.
 
 The globals stay. A global is reset in its own slot in GLOBAL (chapter 19).
 
-NOTE: The reset has no undo. Click **Export SysEx…** in the question first to keep a way back.
+NOTE: **Undo** takes the Empty reset back in one step. Every kit, pattern and song is written back, and the kit that plays has its edits again. The globals were not touched. **Redo** clears them again. **Export SysEx…** in the question keeps a copy in a file.
 
 NOTE: With a real Monomachine over MIDI, the machine must be on its SYSEX RECV screen. The sync field reads SEND and the number of waiting dumps until it is.
 
