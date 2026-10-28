@@ -2267,6 +2267,7 @@ const MmJourneys = (() => {
 			machine: c => {
 				const notTaken = syxNotTaken("kit");
 				c.taken = c.names.filter(([k, n]) => !notTaken.has(k) && n && (kitName(k) || "").trim() === n);
+				if (/cannot be undone/.test($1("#syxpop .syxsum")?.textContent || "")) return ok(false, "the report: " + $1("#syxpop .syxsum").textContent);
 				return ok(c.taken.length > 0 && c.was.some(([k, n]) => (kitName(k) || "").trim() !== n), c.taken.length + " kits as in the file");
 			}, within: 240000 },
 			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") },

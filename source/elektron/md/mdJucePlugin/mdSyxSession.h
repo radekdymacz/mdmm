@@ -252,6 +252,7 @@ namespace mdJucePlugin
 			if(m_bytes.empty())
 				return "Open a .syx file first.";
 			m_check = _checkOnly;
+			m_note.clear();
 			m_stopped = false;
 			m_stopAtMs = -1;
 			m_readBack = _checkOnly || _readBack;
@@ -326,6 +327,8 @@ namespace mdJucePlugin
 			return out;
 		}
 		double quietAtMs() const { return m_quietAtMs; }
+		// B-130: a line the finished report ends with (slots that cannot be undone); cleared by start().
+		void setNote(std::string _note) { m_note = std::move(_note); }
 
 		// B-130: the kits, patterns and songs the import writes (where they land), or of those the ones with a message
 		// handed to the machine (_sentOnly). Globals and other messages are not documents the desk's undo holds.
@@ -660,6 +663,8 @@ namespace mdJucePlugin
 					text += ".";
 				}
 			}
+			if(m_phase == Phase::Done && !m_note.empty())
+				text += (text.empty() ? "" : " ") + m_note;
 			m.set("text", text);
 			return m;
 		}
@@ -1017,6 +1022,7 @@ namespace mdJucePlugin
 		std::vector<size_t> m_queue;		// message indexes still to send, file order
 		size_t m_total = 0, m_done = 0;		// messages
 		size_t m_reading = 0;				// items read back (or given up)
+		std::string m_note;
 		Phase m_phase = Phase::Idle;
 		std::string m_text;
 		double m_askedMs = 0;

@@ -599,6 +599,21 @@ namespace
 		c.recordBulk({});
 		check(c.history().size() == 1, "nothing copied, no step");
 
+		// a slot the editor had not read: once it is read it is in the copy, and undo puts it back
+		m.events.push_back(ToyMachine::Ev::observed({1, 10}, Source::Dump));
+		c.pump();
+		const std::vector<ToyModel::Ref> late{{ToyModel::Kind::Toy, 1}, {ToyModel::Kind::Toy, 5}};
+		check(c.snapshot(late).size() == 1, "an unread slot is not in the copy");
+		m.events.push_back(ToyMachine::Ev::observed({5, 3}, Source::Dump));
+		c.pump();
+		const auto withFive = c.snapshot(late);
+		check(withFive.size() == 2, "read first, it is in the copy");
+		m.events.push_back(ToyMachine::Ev::observed({5, 77}, Source::Dump));
+		c.pump();
+		c.recordBulk(withFive);
+		c.undo(msg(R"({"op":"undo"})"));
+		check(toy(5) == 3, "and undo puts the slot that was unread back");
+
 		History<ToyModel::Change> h;
 		for(int i = 0; i < 5; ++i)
 			h.record({ToyModel::Change{{1, i}, {1, i + 1}}, ToyModel::Change{{2, i}, {2, i + 1}}}, 0);

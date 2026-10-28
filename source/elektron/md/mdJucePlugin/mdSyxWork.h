@@ -466,6 +466,8 @@ namespace mdJucePlugin
 		// One session step while the machine takes input.
 		void step(DeskT& _desk, const double _nowMs, const bool _wire, const ToPage& _toPage)
 		{
+			if(!undoReady(_desk, _nowMs))
+				return;
 			if(m_job.running())
 			{
 				if(auto p = m_job.step(_desk.machine(), _nowMs, _wire))
@@ -533,12 +535,45 @@ namespace mdJucePlugin
 			if(m_job.checkOnly())
 				return;	// VERIFY ONLY sends nothing: nothing to put back, nothing stale
 			_desk.machine().importing(true);
-			std::vector<typename Traits::Ref> refs{Traits::workingRef()};
+			m_refs = {Traits::workingRef()};
+			m_wait.clear();
+			m_waitUntilMs = -1;
 			for(const auto& i : m_job.written())
 				if(const auto r = Traits::ref(i.kind, i.slot))
-					refs.push_back(*r);
-			m_undo = _desk.core().snapshot(refs);
+				{
+					m_refs.push_back(*r);
+					// not read yet: the desk reads it now, the job waits for it (undoReady) so that nothing is imported unsaved
+					if(_desk.core().snapshot({*r}).empty())
+					{
+						m_wait.push_back({i.kind, i.slot});
+						Traits::reread(_desk, i.kind, i.slot);
+					}
+				}
+			m_undo = m_wait.empty() ? _desk.core().snapshot(m_refs) : Snapshot{};
 			m_undoOpen = true;
+		}
+
+		// B-130: the slots the editor had not read when the job was accepted are read first. True when the copies are
+		// taken (every slot arrived, or 60 s passed: the report then says how many cannot be undone).
+		bool undoReady(DeskT& _desk, const double _nowMs)
+		{
+			if(!m_undoOpen || m_wait.empty())
+				return true;
+			if(m_waitUntilMs < 0)
+				m_waitUntilMs = _nowMs + 60000.0;
+			std::vector<elektronData::SyxItem> left;
+			for(const auto& i : m_wait)
+				if(const auto r = Traits::ref(i.kind, i.slot); r && _desk.core().snapshot({*r}).empty())
+					left.push_back(i);
+			m_wait = left;
+			if(!m_wait.empty() && _nowMs < m_waitUntilMs)
+				return false;
+			m_undo = _desk.core().snapshot(m_refs);
+			if(!m_wait.empty())
+				m_job.setNote(std::to_string(m_wait.size()) + (m_wait.size() == 1 ? " slot cannot" : " slots cannot")
+					+ " be undone: the editor could not read " + (m_wait.size() == 1 ? "it" : "them") + " first.");
+			m_wait.clear();
+			return true;
 		}
 
 		// B-130: the job is over (done, stopped, or given up): what it sent is one undo step, the copies of the slots it
@@ -601,7 +636,10 @@ namespace mdJucePlugin
 		}
 
 		Job m_job;
-		Snapshot m_undo;	// B-130: the copies, until the job is over
+		Snapshot m_undo;
+		std::vector<typename Traits::Ref> m_refs;
+		std::vector<elektronData::SyxItem> m_wait;	// B-130: slots read before the job goes
+		double m_waitUntilMs = -1;	// B-130: the copies, until the job is over
 		bool m_undoOpen = false;
 		std::vector<elektronData::SyxItem> m_reread;	// B-174: the slots the desk reads again at m_rereadAtMs
 		double m_rereadAtMs = 0;

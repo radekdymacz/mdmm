@@ -29,8 +29,7 @@ Use the existing history. Do not add a second undo list.
    desk's core for a snapshot (`Core::snapshot(refs)`): a copy of the documents the view holds for
    - the working kit (first: the kit that plays with its live edits), and
    - every kit, pattern and song the job will write (`SyxJob::written()`: the chosen items at their landing slot).
-   Only those slots are copied. Slots the editor has not read yet (the report's "before" reads them from the
-   machine as a canonical form, not as a document) have nothing to put back and are left out.
+   Only those slots are copied. Slots the editor has not read yet are read first (see the last section).
 2. **Record after.** When the job is over (`SyxWork::end`: done, stopped or given up, also a cancel inside
    `handle`), the copies of the slots that had a message sent (`written(sentOnly)`), and the working kit when any
    was, become one history step (`Core::recordBulk`): `Change{doc, doc}` per document. Nothing sent: no step. A
@@ -84,5 +83,4 @@ waiting in the load queue. Real edits made when no import is near ask as before.
 
 - The import and reset journeys stay `alone: true`: a global import is not undone and the page-tier copies are cheap
   but a failed undo would leave the run's machine changed. Say when they may share an editor.
-- Slots the editor had not read when the import started cannot be put back (nothing to restore from). Alternative:
-  read them first (the report already does for the "before").
+- Decided (Radek): slots the editor has not read are read first. `SyxWork::begin` asks the desk to read them (`reread`), the job waits (`undoReady`, up to 60 s) and the copy is taken after. Any slot that did not arrive ends the report with "N slots cannot be undone" (`SyxJob::setNote`).
