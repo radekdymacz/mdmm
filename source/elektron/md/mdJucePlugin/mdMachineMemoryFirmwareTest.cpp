@@ -452,6 +452,11 @@ namespace
 					if(!type || !type->isString() || type->asString() != "machine")
 						continue;
 					const auto* doc = message->find("doc");
+					// the MD's desk says the reads still pending (doc.desk.loading), the MM's doc.loading done of total
+					const auto* desk = doc ? doc->find("desk") : nullptr;
+					const auto* pending = desk ? desk->find("loading") : nullptr;
+					if(pending && pending->isNumber())
+						return pending->asNumber() == 0;
 					const auto* loading = doc ? doc->find("loading") : nullptr;
 					if(!loading || !loading->isObject())
 						return false;

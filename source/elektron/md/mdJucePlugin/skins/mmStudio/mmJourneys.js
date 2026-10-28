@@ -1523,7 +1523,9 @@ const MmJourneys = (() => {
 			{ say: "pick a synth track whose first step is empty", act: (u, c) => { c.t = [0, 1, 2, 3, 4, 5].find(t => !trigsOf(t).includes(0)) ?? 0; c.p0 = trigsOf(c.t); u.click(rail(c.t)); }, screen: c => ok(S().sel === c.t, "selected " + S().sel),
 				machine: c => ok(!c.p0.includes(0), "every track has a note on step 1") },
 			{ say: "Cmd-drag over steps 5 to 7 of the roll: a step selection", act: async (u, c) => { if (S().stepSel) clearSel(); await dragRoll(u, c.t, [4, 6], { cmd: true }); }, screen: () => ok(!!S().stepSel, "nothing selected") },
-			{ say: "Shift-click RECORD (stopped): step recording, the cursor on step 1, the selection dropped, no new row above the roll", act: async (u, c) => { c.top = $1("#seqscroll")?.getBoundingClientRect().top; if (S().playing) u.click("#play");
+			{ say: "Shift-click RECORD (stopped): step recording, the cursor on step 1, the selection dropped, no new row above the roll", act: async (u, c) => { c.top = $1("#seqscroll")?.getBoundingClientRect().top;
+				/* the journey before may leave it playing: stopped first, and waited for (the click alone races the STOP) */
+				if (S().playing) { u.click("#play"); await until(() => !S().playing && !tele.last?.playing, 5000); }
 				/* the selection's drag may still be on its way through SYSEX RECV on a busy Mac: once it is in */
 				await recvIdle(); results.length = 0; u.click("#rec", { shift: true });
 				/* refused while the panel still takes an earlier dump on SYSEX RECV (the keys would be lost: "The panel is busy");
