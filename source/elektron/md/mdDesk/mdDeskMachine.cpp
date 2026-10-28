@@ -1767,12 +1767,18 @@ namespace mdDesk
 			observe(WorkingKit{*seed}, Source::Dump);
 	}
 
-	void MdMachine::onGlobal(const ed::MdGlobal& _g)
+	void MdMachine::onGlobal(const ed::MdGlobal& _dumped)
 	{
-		const DocRef ref{DocKind::Global, _g.position};
+		const DocRef ref{DocKind::Global, _dumped.position};
 		m_loads.arrived(ref);
-		if(m_session.state().globalSlot && *m_session.state().globalSlot != _g.position)
+		if(m_session.state().globalSlot && *m_session.state().globalSlot != _dumped.position)
 			return;
+		// A dump read while the TEMPO nudge is held carries the nudged tempo: the global keeps the tempo the nudge
+		// started from (the page would nudge the nudged tempo again; the release sets it back anyway).
+		ed::MdGlobal g = _dumped;
+		if(m_nudgeFrom)
+			g.tempo = *m_nudgeFrom;
+		const ed::MdGlobal& _g = g;
 		observe(_g, Source::Dump);
 		setBaseChannel(_g);
 		// The read-back after a global edit: what the firmware stored, whatever it normalised.

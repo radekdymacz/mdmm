@@ -441,8 +441,14 @@ namespace
 			m.run(300);
 			require(mmWorkingKit(m).tracks[0].pages == k.tracks[0].pages, "loading the pattern changed the LFO kit");
 			// the panel PLAY: MIDI Start is ignored under the factory CONTROL IN TRANSPORT IGNORE (mmDeskFirmwareTest)
-			m.panel(md::PanelControl::Play);
-			m.run(2000); // one warm-up bar, then measure continuing sequencer trigs
+			// A key pressed while the machine still takes a dump (SYSEX RECV) is lost (mmDesk pressKeys): wait, and press again
+			// until the sequencer runs (CI run 40648229103: 0 of one press). PLAY is only pressed while it does not run.
+			m.run(1500);
+			for(int tries = 0; tries < 6 && m.read8(md::MmTelemetry::g_runningAddress) == 0; ++tries)
+			{
+				m.panel(md::PanelControl::Play);
+				m.run(2000); // one warm-up bar, then measure continuing sequencer trigs
+			}
 			require(m.read8(md::MmTelemetry::g_runningAddress) != 0, "the sequencer did not start");
 		}
 

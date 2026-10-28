@@ -221,15 +221,36 @@ namespace
 		}
 
 		// The firmware takes MIDI and the watch has its base (a few looks after it holds still)
-		bool waitWatching(const int _ms = 120000)
+		bool waitWatching(const int _ms = 240000)
 		{
+			// A cold start prepares the factory flash first and reboots in process (nightly CI run 2026-10-28: the first
+			// session of the MD run did not have its base within 120 s on a loaded runner); the limits are only ceilings,
+			// and a failure names the stage it stopped at
+			const auto t0 = std::chrono::steady_clock::now();
+			const auto since = [&] { return std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count(); };
 			// the start's decision (the file's slots laid over, a restore begun) comes first
 			if(!until([this] { return processor->machineMemoryStarted(); }, _ms))
+			{
+				std::printf("  waitWatching: the start's decision did not come within %.0f s\n", since());
 				return false;
+			}
 			pump(300);
 			const bool ready = until([this] { return firmwareReady(); }, _ms);
+			if(!ready)
+			{
+				std::printf("  waitWatching: the firmware was not ready for MIDI within %.0f s (restore pending: %d)\n", since(),
+					processor->getPlugin().withDeviceLocked([](synthLib::Device* _d)
+					{
+						auto* d = dynamic_cast<md::DeskDevice*>(_d);
+						return d && d->isProjectStateRestorePending() ? 1 : 0;
+					}));
+				return false;
+			}
 			const auto looks = processor->machineMemoryCost().looks;
-			return ready && until([&] { return processor->machineMemoryCost().looks >= looks + 8; }, 90000);
+			const bool watching = until([&] { return processor->machineMemoryCost().looks >= looks + 8; }, 180000);
+			if(!watching)
+				std::printf("  waitWatching: %d looks of the 8 asked for after %.0f s\n", static_cast<int>(processor->machineMemoryCost().looks - looks), since());
+			return watching;
 		}
 
 
