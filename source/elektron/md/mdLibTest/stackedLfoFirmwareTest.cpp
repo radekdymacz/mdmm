@@ -363,6 +363,41 @@ namespace
 		return *k;
 	}
 
+	// The panel PLAY as the editor presses it (10 ms, the push checked; MIDI Start is ignored under the factory CONTROL IN
+	// TRANSPORT IGNORE, mmDeskFirmwareTest), from the main screen. Started: the running flag or the step moves within
+	// 1.5 s. Three tries; each failed one prints what the machine showed.
+	void startMmSequencer(Machine& _m)
+	{
+		const auto play = md::panelPacket(md::MachineModel::Monomachine, md::PanelControl::Play);
+		require(play.has_value(), "no MM PLAY packet");
+		std::string seen;
+		for(int attempt = 0; attempt < 3; ++attempt)
+		{
+			if(mmSysexRecv::screen(_m) != md::MmScreen::Main)
+				mmSysexRecv::leave(_m);
+			const int step0 = _m.read8(md::MmTelemetry::g_stepAddress);
+			require(_m.hardware().trySendPanelEvent(play->row, play->mask), "the PLAY press was not taken");
+			_m.run(10);
+			require(_m.hardware().trySendPanelEvent(play->row, 0), "the PLAY release was not taken");
+			const bool started = mmSysexRecv::runUntil(_m, 1500, [&]
+			{
+				return _m.read8(md::MmTelemetry::g_runningAddress) != 0 || _m.read8(md::MmTelemetry::g_stepAddress) != step0;
+			});
+			const auto songMode = ed::parseMmStatusResponse(_m.request(ed::mmStatusRequest(ed::MmStatus::SongMode), 0x72));
+			char line[200];
+			std::snprintf(line, sizeof(line), " [try %d: running %d, step %d -> %d, screen %d, song mode %d, panel bytes %zu, overflows %zu]",
+				attempt + 1, _m.read8(md::MmTelemetry::g_runningAddress), step0, _m.read8(md::MmTelemetry::g_stepAddress),
+				static_cast<int>(mmSysexRecv::screen(_m)), songMode ? songMode->value : -1, _m.hardware().getPendingPanelInputBytes(),
+				_m.hardware().getPanelInputOverflowCount());
+			std::printf("    PLAY%s\n", line);
+			if(started)
+				return;
+			seen += line;
+			_m.run(500);
+		}
+		require(false, "the sequencer did not start:" + seen);
+	}
+
 	Result runMm(const Bytes& _rom, const MmScenario& _s, const Options& _o)
 	{
 		Machine m(_rom, g_romName, {}, true, md::MachineModel::Monomachine);
@@ -407,20 +442,28 @@ namespace
 
 		if(_s.sequencer)
 		{
-			ed::MmPattern p;
+			// the machine's own pattern A01 (as the MD case: the firmware's residue and settings kept), its trigs replaced
+			const auto own = ed::decodeMmPattern(m.request(ed::mmPatternRequest(0), ed::g_mmPatternDump));
+			require(own.has_value(), "pattern A01 did not read");
+			auto p = *own;
+			p.position = 0;
+			p.kit = 0;
+			p.length = 16;
+			p.multiplier = 0;
+			for(auto* masks : {&p.amp, &p.filter, &p.lfo, &p.noteOff, &p.midiTrig, &p.midiNoteOff, &p.pitch, &p.chord, &p.midiNote,
+				&p.slide, &p.swing, &p.midiSlide, &p.midiSwing})
+				masks->fill(0);
 			for(auto& notes : p.notes)
 				notes.fill(ed::MmPattern::g_noNote);
+			for(auto& masks : p.lockMasks)
+				masks.fill(0);
 			for(auto& row : p.lockRows)
 				row.fill(ed::MmPattern::g_noLock);
+			p.lockRowCount = 0;
+			p.midiNoteCount = 0;
+			p.chordNoteCount = 0;
 			p.midiNotes.fill(0xffff);
 			p.chordNotes.fill(0xffff);
-			for(auto* arp : {&p.arp, &p.midiArp})
-			{
-				arp->length.fill(16);
-				arp->speed.fill(5);
-				for(auto& steps : arp->steps)
-					steps.fill(64);
-			}
 			for(size_t step = 0; step < p.length; step += 4)
 			{
 				const auto bit = ed::mmStepBit(step);
@@ -435,15 +478,17 @@ namespace
 			const auto stored = ed::decodeMmPattern(m.request(ed::mmPatternRequest(0), ed::g_mmPatternDump));
 			require(stored && stored->pitch == p.pitch && stored->amp == p.amp && stored->lfo == p.lfo
 				&& stored->filter == p.filter && stored->notes == p.notes, "the stored sequencer trigs differ");
+			m.send(ed::mmSetStatus(ed::MmStatus::SongMode, 0));
+			m.run(100);
 			m.send(ed::mmLoadPattern(0));
+			m.run(100);
 			m.send(ed::mmLoadKit(0));
+			m.run(100);
 			m.send(ed::mmSetTempo(120));
 			m.run(300);
 			require(mmWorkingKit(m).tracks[0].pages == k.tracks[0].pages, "loading the pattern changed the LFO kit");
-			// the panel PLAY: MIDI Start is ignored under the factory CONTROL IN TRANSPORT IGNORE (mmDeskFirmwareTest)
-			m.panel(md::PanelControl::Play);
+			startMmSequencer(m);
 			m.run(2000); // one warm-up bar, then measure continuing sequencer trigs
-			require(m.read8(md::MmTelemetry::g_runningAddress) != 0, "the sequencer did not start");
 		}
 
 		std::array<std::vector<float>, 6> out;
