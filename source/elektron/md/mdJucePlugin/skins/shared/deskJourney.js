@@ -264,7 +264,7 @@ const Journey = (() => {
 	const TIERS = {
 		host: ["boot-card", "keys-space-play", "seq-os-copy-paste", "keys-os-help", "dev-speedups", "top-cpu-meter", "lcd-volume",
 			"top-editor-menu", "engine-rom-card", "song-playhead"],
-		machine: ["seq-first-beat", "seq-queue-while-playing", "seq-live-record", "seq-grid-record", "sampler-setup-undo", "sampler-audition", "sampler-rename",
+		machine: ["seq-first-beat", "seq-queue-while-playing", "seq-live-record", "seq-grid-record", "sampler-setup-undo", "sampler-audition", "sampler-rename", "sampler-manager",
 			"sampler-ram-view", "sampler-setup-chop", "lib-syx-import", "lib-syx-import-mute", "song-mode", "song-mode-cycle", "keys-play-notes", "keys-black-keys",
 			"perform-keyboard", "engine-hw-no-machine", "global-tempo-out", "audio-panel", "drop-syx", "drop-sample", "drop-samples", "old-webkit",
 			"sound-machine-stays", "engine-reset-factory", "real-factory-songs", "real-factory-patterns", "real-sequence-plays",
