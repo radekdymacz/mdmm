@@ -71,6 +71,29 @@ export GEARMULATOR_MDMM_KEYPROBE=1
 keys_wanted=(cmd+C cmd+V cmd+X cmd+Z cmd+D "shift+?")
 record() { summary+=("| $1 | $2 | $3 |"); }
 
+# ImageMagick 6 (Ubuntu) has convert, ImageMagick 7 (SteamOS/Arch) has magick.
+magick_cmd="$(command -v magick || command -v convert || true)"
+[[ -z "${magick_cmd}" ]] && echo "::warning::no ImageMagick magick/convert: OCR reads the plain screenshots only"
+
+#   ocr_screen <png> <out base> <psm>: the text Tesseract reads in a screenshot, into <out base>.txt.
+# At the display's 1:1 size Tesseract garbles small text: run 39558191948 drew the native error and the MM card
+# correctly, yet read "The editor page could not start." (light on dark) as "[=o Cla OD" and "Click here" as
+# "ick here". The text file gets the plain read plus reads of a 3x grey copy and a 3x inverted grey copy (dark
+# text on light). Every read is of the same captured screen, so a covered or blank window still fails.
+ocr_screen() {
+	local png="$1" base="$2" psm="$3" variant
+	tesseract "${png}" "${base}" --psm "${psm}" 2>"${base}-ocr.txt"
+	[[ -z "${magick_cmd}" ]] && return
+	for variant in grey inverted; do
+		local args=(-colorspace Gray -resize 300%)
+		[[ "${variant}" == inverted ]] && args+=(-negate)
+		"${magick_cmd}" "${png}" "${args[@]}" "${base}-${variant}.png" 2>>"${base}-ocr.txt" || continue
+		tesseract "${base}-${variant}.png" "${base}-${variant}" --psm 11 2>>"${base}-ocr.txt" || continue
+		{ echo "--- ${variant} 3x"; cat "${base}-${variant}.txt"; } >> "${base}.txt"
+		rm -f "${base}-${variant}.png" "${base}-${variant}.txt"
+	done
+}
+
 # Scope failure injection to this app's descendants, even if the runner has another WebKit user.
 descendants() {
 	local child
@@ -111,8 +134,7 @@ check_failure() {
 	# not just its log, and catches a black/covered window after a browser process dies.
 	sleep 1
 	import -display "${display}" -window root "${out}/${name}-failure.png" 2>"${out}/${name}-failure-capture.txt"
-	tesseract "${out}/${name}-failure.png" "${out}/${name}-failure" --psm 6 \
-		2>"${out}/${name}-failure-ocr.txt"
+	ocr_screen "${out}/${name}-failure.png" "${out}/${name}-failure" 6
 	if kill -0 "${pid}" 2>/dev/null && (( log_seen )) \
 		&& grep -qi -F 'The editor page could not start' "${out}/${name}-failure.txt"; then
 		record "${label}" "${target} terminated: native error visible, host alive" "yes"
@@ -176,7 +198,7 @@ run() {
 	kill -0 "${pid}" 2>/dev/null || alive=0
 	ps -eo pid,ppid,args --forest > "${out}/${name}-processes.txt"
 	import -display "${display}" -window root "${out}/${name}.png" 2>/dev/null || true
-	tesseract "${out}/${name}.png" "${out}/${name}-screen" --psm 11 2>"${out}/${name}-screen-ocr.txt"
+	ocr_screen "${out}/${name}.png" "${out}/${name}-screen" 11
 	if grep -q -i -F "${visible_wanted}" "${out}/${name}-screen.txt"; then
 		record "${label}" "firmware card visible in screenshot (OCR)" "yes"
 	else
