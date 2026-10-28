@@ -15,16 +15,17 @@ where it came from, the setup, what happens, what should happen, status.*
 
 - **From:** a tester on Discord, 2026-10-11 (0.5.0, Ableton Live, macOS): "cant have both plug in windows opened at the same time"; opening one closed the other.
 - **What happens:** Live's plug-in window auto-hide closes the other window when one opens.
-- **Should:** nothing in the editors; the guide's DAW chapter could name the setting (Live: switch off Auto-Hide Plug-in Windows, allow multiple plug-in windows).
-- **Status:** answered by Radek on the day (not a defect). Open only for the guide line.
+- **Should:** nothing in the editors; the guide's DAW chapter names the setting (Live: switch off Auto-Hide Plug-in Windows, allow multiple plug-in windows).
+- **Guide:** the line is in `doc/guide/start.md`, section "In a DAW" (**Both editors open at once in Ableton Live**: Settings > Plug-Ins, **Multiple Plug-In Windows** on, **Auto-Hide Plug-In Windows** off), and in the 0.5.1 release notes; it is in the site's guide page (`site/public/guide/start/index.html`). Checked 2026-10-28: it follows the guide's voice, so no change was needed.
+- **Status:** done (not a defect; the guide line shipped in 0.5.1).
 
 ## B-186 · Monomachine: the GLOBAL button could not be found (probably fixed, to confirm)
 
 - **From:** a tester on Discord, 2026-10-10 (0.4.0 or 0.5.0), the same day as the internal-clock report (I-026): "I cant find the Global Button also on Monomachine."
 - **What happens:** the Monomachine Editor of that version had no visible GLOBAL button; the Machinedrum Editor had one.
 - **Should:** both editors show GLOBAL in the top bar (the 0.3.5 dev log says the button replaced FN; the Monomachine caught up in 0.5.0/0.6.0).
-- **To check:** the current Monomachine top bar at 1100 x 800 and 1440 x 923 shows GLOBAL (journey mm-global-*), and the guide says where it is.
-- **Status:** probably fixed in 0.5.0/0.6.0; open until a journey or the reporter confirms.
+- **Checked (2026-10-28, from the sources):** the Monomachine top bar has the **Global** key (`skins/mmStudio/src/30-body.html`, `#globkey`, since the GLOBAL page of B-051, 2026-10-10, in 0.5.0), and the engine menu has GLOBAL… too. The guide, `doc/guide/mm/19-global-settings.md`, says "Click **Global** in the top bar, or choose **GLOBAL…** in the engine menu." The journey `mm-global-page` (row MM-026, `mmJourneys.js`) clicks `#globkey` and checks the panel opens and the key is lit; `mm-fit-workspaces` checks the top bar's keys fit at 1280 to 2560 px.
+- **Status:** fixed in 0.5.0 (the key and the page), covered by `mm-global-page`; no page change needed. Closed unless the reporter shows otherwise.
 
 ## B-185 · Monomachine: the editor's keyboards run C-0 to C-3 below the hardware's range, from MIDI 0 to 127 (fixed locally, awaiting CI)
 
@@ -869,7 +870,10 @@ where it came from, the setup, what happens, what should happen, status.*
 - **From:** Discord tester M, 2026-10-11 (screenshots promised): the Monomachine Editor's window cannot be resized by dragging; the Machinedrum Editor's can, but the page "ends up looking distorted".
 - **Read in the code:** both editors use the same window code (free size, 60 % minimum, aspect free: `pluginEditorWindow.cpp` ~149-170, `editorWindowFit.h`); the page zooms to fit its 1440 x 924 design size, and below 1440 x 720 it zooms out (as in B-056). A plug-in window's resizing also depends on the host.
 - **Needs:** standalone or plug-in, which host, and the screenshots. Meanwhile: right-click > Window Size (50-300 %) and Page Zoom (Cmd +/-).
-- **Status:** open, waiting for the tester's screenshots and host.
+- **Re-read 2026-10-28 (0.8.0 code):** no cause found. Both editors make the same `PageEditor` (a `FreeSizeEditor`, `mdEditorPages.cpp`) in the same `EditorWindow`; only the page file differs. The window is `setResizable(true, true)` with a constrainer of free aspect ratio (`setFixedAspectRatio(0.0)`), from 60 % to 400 % of 1440 x 924 (`pluginEditorWindow.cpp` `setUiRoot`, `editorWindowFit.h` `constrain`). `EditorWindow::setEmbedded` (the one path that makes the window non-resizable) is never called, so the plug-in window reports itself resizable to VST3 and AU hosts. The page zoom (`mdPageZoom.h`) follows the window size. So in code the Monomachine window resizes as the Machinedrum's does; whether a host lets the user drag its plug-in window is the host's choice (some hosts size a plug-in window only through its own menu or a fixed frame).
+- **Test:** `mdDeskSetupStateTest` now makes both editors' windows (macOS) and checks they are resizable, with free aspect ratio and the 60 % to 400 % limits. Not run locally; CI runs it.
+- **Needs from the reporter:** the host and its version, plug-in format (VST3 or AU) or standalone, and a screenshot of the distorted Machinedrum window with the window's size. The B-056 and B-061 fits (small windows, top bar) are the likely "distorted" look below 1440 x 720.
+- **Status:** open, no defect found in code; waiting for the tester's host and screenshots.
 
 ## B-062 · Monomachine Perform keyboard: a key stays lit after you let go
 

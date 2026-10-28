@@ -654,6 +654,25 @@ int main()
 	// window closed first, as a plug-in host and the standalone do on quit, and made without a
 	// window. Freed memory is scribbled (MallocScribble in ctest), so a detach from a freed session
 	// crashes here rather than passing by luck. macOS only: it opens a real editor (a web view).
+	// B-063: both editors share one window (EditorWindow + PageEditor, a FreeSizeEditor), so the Monomachine window
+	// resizes exactly as the Machinedrum's: resizable, no fixed aspect ratio, from 60 % of the design size up to four
+	// times it. Checked for both models once the page has its design size (the host then sizes it freely).
+	for(const auto model : {md::MachineModel::Machinedrum, md::MachineModel::Monomachine})
+	{
+		auto c = std::make_unique<mdJucePlugin::AudioPluginAudioProcessor>(model, isolated());
+		std::unique_ptr<juce::AudioProcessorEditor> window(static_cast<juce::AudioProcessor&>(*c).createEditorIfNeeded());
+		const auto& state = c->getOrCreateEditorState();
+		const int dw = state.getWidth(), dh = state.getHeight();
+		const auto* limits = window ? window->getConstrainer() : nullptr;
+		const char* name = model == md::MachineModel::Monomachine ? "Monomachine" : "Machinedrum";
+		check(window != nullptr, (std::string(name) + " window: made").c_str());
+		check(dw <= 0 || dh <= 0 || (window->isResizable() && limits && limits->getFixedAspectRatio() == 0.0
+			&& limits->getMinimumWidth() == dw * 6 / 10 && limits->getMinimumHeight() == dh * 6 / 10
+			&& limits->getMaximumWidth() == dw * 4 && limits->getMaximumHeight() == dh * 4),
+			(std::string(name) + " window: resizable by the mouse, free aspect, 60 % to 400 % of the design size").c_str());
+		window.reset();
+		c.reset();
+	}
 	for(const bool withWindow : {true, false})
 	{
 		auto c = std::make_unique<mdJucePlugin::AudioPluginAudioProcessor>(md::MachineModel::Machinedrum, isolated());
