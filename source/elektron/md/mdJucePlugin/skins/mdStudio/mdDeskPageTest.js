@@ -752,7 +752,7 @@ return { Bridge, cmd, asked, errors, banners, S, Drop, get V() { return V; }, se
 	/* the lane: 16 keys of 20 px from x 0, 106 px tall with the bottom at 200 (the bars' scale: 3 px in, 100 px high) */
 	const classes = new Set();
 	const BOT = 200, KEYH = 106, dotY = v => BOT - 3 - (KEYH - 6) * v / 127;
-	const keyEls = Array.from({ length: 16 }, (_, s) => { const k = { dataset: { s: String(s) }, insertAdjacentHTML() { }, classList: { add() { }, remove() { } }, getBoundingClientRect: () => ({ bottom: BOT, height: KEYH, top: BOT - KEYH, left: s * 20, right: s * 20 + 20, width: 20 }), querySelector: q => q === ".base" ? {} : null }; k.closest = () => k; return k; });
+	const keyEls = Array.from({ length: 16 }, (_, s) => { const k = { dataset: { s: String(s) }, insertAdjacentHTML() { }, classList: { add() { }, remove() { } }, getBoundingClientRect: () => ({ bottom: BOT, height: KEYH, top: BOT - KEYH, left: s * 20, right: s * 20 + 20, width: 20 }), querySelector: q => q === ".base" ? { getBoundingClientRect: () => ({ top: -100, bottom: -99 }) } : null }; k.closest = () => k; return k; });
 	const svg = { innerHTML: "", setAttribute() { } };
 	const lane = { contains: () => true, classList: { add: c => classes.add(c), remove: c => classes.delete(c), toggle: (c, on) => on ? classes.add(c) : classes.delete(c) }, innerHTML: "",
 		getBoundingClientRect: () => ({ left: 0, top: BOT - KEYH, width: 320, height: KEYH, right: 320, bottom: BOT }), querySelector: q => { const m = /data-s="(\d+)"/.exec(q); return m ? keyEls[+m[1]] : null; } };
