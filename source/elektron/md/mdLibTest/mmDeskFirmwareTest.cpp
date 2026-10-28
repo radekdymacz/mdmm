@@ -1164,6 +1164,70 @@ namespace
 		r.run(1000);
 	}
 
+	// B-038: a LOOP row goes back to the row it names. A song of four one-pass rows (patterns 1 to 4, 8 steps each) and a
+	// LOOP row at the end, target 2, 1 and 0 in turn (0-based; infinite count): the patterns the machine reports at each
+	// pass are the rows from the target on, round and round.
+	void songLoopTarget(const Bytes& _rom)
+	{
+		std::puts("song loop: a LOOP row returns to the row it names (B-038)");
+		for(const uint8_t target : {2, 1, 0})
+		{
+			Rig r(_rom);
+			r.msg(R"({"op":"ready"})");
+			r.desk->setProbe(mmDesk::Desk::Probe::Running);
+			r.run(600);
+			while(r.desk->loaded() < 288)
+				r.run(100);
+			auto s = *r.desk->song(23);
+			const auto row = [&](const size_t _i, const uint8_t _pattern, const uint8_t _target = 0)
+			{
+				auto& b = s.rows[_i].bytes;
+				b = {};
+				b[ed::mmSongRow::g_pattern] = _pattern;
+				b[ed::mmSongRow::g_target] = _target;
+				b[ed::mmSongRow::g_length] = _pattern < 0xfe ? 8 : 0;
+				b[ed::mmSongRow::g_tempo] = b[ed::mmSongRow::g_tempo + 1] = 0xff;
+			};
+			row(0, 1); row(1, 2); row(2, 3); row(3, 4); row(4, ed::MmSong::g_loop, target); row(5, ed::MmSong::g_end);
+			r.msg(R"({"op":"set","kind":"song","doc":)" + ed::json::write(ed::mmSongToJson(s)) + "}");
+			r.run(1500);
+			const auto back = r.desk->song(23);
+			check(back && back->rows[4].bytes[ed::mmSongRow::g_target] == target, "the loop's target reads back from the machine");
+			r.msg(R"({"op":"loadSong","s":23})");
+			r.run(1500);
+			r.msg(R"({"op":"seqMode","song":true})");
+			r.run(1500);
+			r.msg(R"({"op":"play"})");
+			std::vector<int> patterns;
+			int last = -1;
+			for(int i = 0; i < 8000 && patterns.size() < 9; ++i)
+			{
+				r.run(5);
+				const int st = r.tel.step.load();
+				if(st == 3 && last != 3)
+				{
+					const auto reply = ed::parseMmStatusResponse(r.m.request(ed::mmStatusRequest(ed::MmStatus::Pattern), 0x72));
+					patterns.push_back(reply ? reply->value : -1);
+				}
+				last = st;
+			}
+			// the rows play 1 2 3 4, then the body from the target round again
+			std::vector<int> want{1, 2, 3, 4};
+			while(want.size() < 9)
+				for(int k = target; k < 4 && want.size() < 9; ++k)
+					want.push_back(k + 1);
+			std::string seen;
+			for(const int p : patterns)
+				seen += " " + std::to_string(p);
+			std::printf("  target %d: patterns (0-based) at each pass:%s\n", target, seen.c_str());
+			check(patterns == want, "the machine plays the rows from the loop's target on, round and round (target " + std::to_string(target) + ")");
+			r.msg(R"({"op":"stop"})");
+			r.run(600);
+			r.msg(R"({"op":"seqMode","song":false})");
+			r.run(1000);
+		}
+	}
+
 	// B-122 (Discord 2026-10-12): "the reset pattern often loads another one". Picking a pattern again (the current one, stopped
 	// and playing, and back to the current one after another was queued) on the firmware: which pattern plays after.
 	void reselect(const Bytes& _rom)
@@ -5507,6 +5571,8 @@ int main(const int _argc, char** _argv)
 			reselect(rom);
 		if(only.empty() || only == "songrow")
 			songRowPlayhead(rom);
+		if(only.empty() || only == "songloop")
+			songLoopTarget(rom);
 		if(only.empty() || only == "transport")
 			transport(rom);
 		if(only.empty() || only == "steprec")

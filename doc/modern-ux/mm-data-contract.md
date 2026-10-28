@@ -114,7 +114,7 @@ after it ride in `hidden.rowsAfterEnd`.
 | `mutes` | synth track mutes, bit t | song editor |
 | `trackTranspose[6]` | per synth track (TR1-TR6) | song editor (TR1) |
 | `midiMutes`, `midiTranspose[6]` | the MIDI tracks' versions, by position | inferred |
-| `x3`, `x21` | not decoded, kept | |
+| `x3`, `x21` | not decoded, kept (`x3` is row byte 1; the loop's target is row byte 3, B-038) | |
 
 ### 4.4 `mm-desk/global` (slot 0-7)
 
@@ -270,10 +270,8 @@ reports by status, a repeated row shows twice, a loop goes back). A LOOP row is 
 Machinedrum the desk publishes the row heard (`deskCore::SongRowHeard`: the byte at PLAY and at each wrap
 of the playhead), so a byte that queues the next row early never moves the mark before the pass ends. It is
 the machine's only while `song.songMode` is true and the machine plays; the page marks a row only
-then, without a render. Measured on the way: with a LOOP row the song went back to row 1 whatever
-the row's target byte (+1) said (B-038; a skipped row seen at first was the test's: RAM 0x26b46e, the "running" byte, reads 0
-during some passes of a playing song, so the test samples on the step alone);
-the target's offset in `MmSongRow` is inferred (MM-P1) and worth a probe of its own.
+then, without a render. A LOOP row's target is row byte 3, the Machinedrum row's order (B-038: it was taken to be byte 1, and the machine
+went back to row 1 whatever it said; `mmDeskFirmwareTest songloop` plays loops to rows 3, 2 and 1).
 
 **Chaining (MM-P8).** `machine.desk.chain` is the firmware's own pattern chain (manual 1-46: hold
 BANK, press the TRIG keys), read from RAM (`md::MmTelemetry`, measured with
