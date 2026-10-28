@@ -34,7 +34,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Highlights 1-2 | 18 tempo synced LFOs | 3 per track | ✅ | Kit > LFO 1-3 |  | 1 | pass (mm-sound-lfos) |
 | Highlights 1-2 | 12 arpeggiators | One per track, synth and MIDI | ✅ | Pattern dock > Arp |  | 1 | pass (e2e-mm-seq-arp-setup) |
 | Highlights 1-2 | Full real-time control | Every DATA value live | ✅ | Every value box, drag or wheel | Sent as CC while dragging | 1 | pass (e2e-mm-seq-six-tracks) |
-| Highlights 1-2 | DigiPRO user waveforms (MKII) | 64 user waveform slots | 🟡 | Export SysEx…: Waveforms W01 to W64, read from the machine into the .syx | An empty waveform answers nothing and is left out. | 1 | n/a |
+| Highlights 1-2 | DigiPRO user waveforms (MKII) | 64 user waveform slots | ✅ | GLOBAL page > DigiPRO card: the 64 positions W01 to W64, a user waveform marked u with its name, drawn when selected; Export SysEx…: Waveforms for a bank | The emulated OS 1.32B runs as an MKII (user flash, DIGIPRO MGR). The MKI plate turns the card off. A factory position answers no 0x5E: the list waits 0.7 s for each (mdSyxWaves.h). Firmware proof: mmDigiproManagerFirmwareTest (main and release/* only). | 3 | n/a |
 | +Drive 1-3 | Snapshots, Digibanks, 8192 waveforms | Optional storage drive | ➖ | – | Not emulated, see section 19 | – | n/a |
 
 ## 2. User interface and connectors (1-4 to 1-9)
@@ -424,7 +424,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | File 1-95 | Sysex send: ALL, KIT, PAT+KIT, SONG+PAT+KIT with ranges | Send dumps | ✅ | Engine menu: EXPORT SYSEX…: All (every kit, pattern, song and global), or untick All and tick Kits, Patterns, Songs, Globals, Waveforms, each with its range | The kinds are chosen one by one: a song range does not add its patterns by itself. | 1 | stub-only |
 | File 1-97 | Sysex receive: ORIG, SPEC, VERF | Receive dumps | ✅ | Import SysEx: PLACE row (Original place, Specific place from a first slot per kind, the grid shows where each item lands); Verify only beside Import | Verify only writes nothing: the slots are read and compared. The tick Read back and compare beside Verify only (on by default, kept): off, the import ends after Send and the report says not read back. | 5 | pass (e2e-mm-lib-syx-import) |
 | File 1-95, 1-97 | Needs the machine on SYSEX RECV | Receive session | ✅ | Editor drives it itself; pattern field shows RECV / SEND n | HW MIDI: user opens the screen | 2 | pass (e2e-mm-lib-syx-import) |
-| DigiPRO manager 1-99 | Send, receive, erase, rename user waveforms; copy between Digibanks | Waveform manager | 🟡 | Export SysEx…: Waveforms (the manager's SEND) |  | – | n/a |
+| DigiPRO manager 1-99 | Send, receive, erase, rename user waveforms; copy between Digibanks | Waveform manager | ✅ | GLOBAL page > DigiPRO card: Read, Load… (.syx or a WAV / AIFF of one cycle, asked first), Save .syx… (Shift: all), Rename, Copy, Paste, Erase (Shift: all, asked first), the card's Undo | RECEIVE and ERASE by the machine's keys on the emulator (mmWaveRecv.h); over HW MIDI the person opens RECEIVE > ORG and presses Send, and erases on the machine. Rename is the dump sent again with the new name. Digibanks are the +Drive's (not emulated): a bank is a .syx of the waveforms. Firmware proof: mmDigiproManagerFirmwareTest (main and release/* only). | 3 | n/a |
 | +Drive settings 1-105 | Quick mode, format | +Drive | ➖ | – | Not emulated | – | n/a |
 | Snapshot manager 1-106 | Load, save, rename, erase, lock snapshots | +Drive | ➖ | – |  | – | n/a |
 | Digibank manager 1-107 | Switch, rename, erase, lock banks | +Drive | ➖ | – |  | – | n/a |
@@ -512,7 +512,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | 0x58 / 0x59 Load / save kit C-2 | Kit load, save | LOAD / SAVE KIT | ✅ | Kit library |  | 1 | pass (e2e-mm-wire-sysex) |
 | 0x5B Assign machine C-2 | Machine and init mode | Machine | ✅ | Machine picker |  | 1 | pass (e2e-mm-wire-sysex) |
 | 0x5C Set track routing C-2 | Output bus, input | Routing | ✅ | Mix |  | 1 | pass (mm-mix-routing) |
-| 0x5D / 0x5E Digipro waveform dump, request C-2 | User waveforms | Waveforms | 🟡 | Export SysEx…: Waveforms (0x5E requests, the dumps written to the file) |  | – | n/a |
+| 0x5D / 0x5E Digipro waveform dump, request C-2 | User waveforms | Waveforms | ✅ | DigiPRO card: Read (0x5E per position), Load / Rename / Paste / Undo (0x5D on DIGIPRO MGR > RECEIVE > ORG); Export SysEx…: Waveforms | 7027-byte dump: position in byte 9 (outside the sum), the name in bytes 10 to 13, 6132 data bytes 7-bit packed (elektronData/mmWave.h; doc/release/0.9/mm-digipro.md). | 1 | n/a |
 | 0x5E Set Gate box parameter C-2 | Reverb parameter | Reverb | ➖ | – | Not used; reverb values go as CC | – | n/a |
 | 0x61 Set tempo C-2 | Tempo | Tempo | ✅ | LCD TEMPO | 30-300 BPM | 1 | pass (e2e-mm-wire-sysex) |
 | 0x67 / 0x68 Pattern dump, request C-3 | Pattern data | Pattern | ✅ | All sequence edits, chooser |  | 1 | pass (e2e-mm-wire-sysex) |
@@ -563,8 +563,8 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 363 |
-| 🟡 | 14 |
+| ✅ | 366 |
+| 🟡 | 11 |
 | ❌ | 1 |
 | ➖ | 34 |
 | Total | 412 |

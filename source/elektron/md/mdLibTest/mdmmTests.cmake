@@ -162,6 +162,9 @@ function(mdmm_add_lib_tests _dir)
 	set_tests_properties(mmDeskFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
 	add_test(NAME mmEmptyResetFirmwareTest COMMAND mmDeskFirmwareTest --env emptyreset)
 	set_tests_properties(mmEmptyResetFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
+	# 0.9 wave 2 (doc/release/0.9/mm-digipro.md): the DigiPRO manager through the desk and the session's manager on the ROM
+	add_test(NAME mmDigiproManagerFirmwareTest COMMAND mmDeskFirmwareTest --env digipro)
+	set_tests_properties(mmDigiproManagerFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
 	# B-175, B-176: the firmware's own start values of every machine (0x5B with init) against the editor's tables.
 	add_test(NAME mmNewKitDefaultsFirmwareTest COMMAND mmDeskFirmwareTest --env newkit)
 	set_tests_properties(mmNewKitDefaultsFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)

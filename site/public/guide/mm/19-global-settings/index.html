@@ -150,8 +150,23 @@
 <section class="gd-sec" id="digipro-manager" aria-labelledby="digipro-manager-h">
 <div class="gd-body gd-prose"><h2 id="digipro-manager-h">DIGIPRO MANAGER <a class="gd-anchor" href="#digipro-manager" aria-label="Link to DIGIPRO MANAGER">#</a></h2>
 <p class="gd-ref">MM manual p.1-99</p>
-<p>The DigiPRO manager of an MKII sends, receives, renames and erases user waveforms. The editor does the send: tick <b class="gd-ui">Waveforms</b> in <b class="gd-ui">Export SysEx…</b> and set the range W01 to W64. The editor asks the machine for each waveform and writes the ones it has into the file. An empty waveform answers nothing and is left out.</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot send waveforms to the machine, rename or erase them in the editor.</p>
+<p>The DigiPRO manager of an MKII sends, receives, renames and erases user waveforms. In the editor it is the <b class="gd-ui">DigiPRO</b> card at the bottom of the GLOBAL page. Click <b class="gd-ui">GLOBAL</b> in the top bar to open it.</p>
+<p>The card shows the 64 positions, W01 to W64, as the machine counts them. A user waveform shows a u and its name. A position without one holds its factory waveform. The first time you open the card, the editor reads the positions from the machine. This takes a while: a factory waveform answers nothing, so the editor waits for each one. Click <b class="gd-ui">Read</b> to read them again.</p>
+<p>Click a position to select it. The card draws a user waveform and shows its name.</p>
+<h4 class="gd-h3" id="receive-waveforms">Receive waveforms</h4>
+<ol class="gd-steps"><li>Select the position the first waveform goes to.</li><li>Click <b class="gd-ui">Load…</b> and choose a file. A .syx file holds one waveform or a bank of them. A WAV or AIFF file must hold one period of the sound, as C6 expects. The editor names it after the first four letters of the file name.</li><li>The editor lists where each waveform goes and which user waveforms it replaces. Click <b class="gd-ui">Load</b>, or <b class="gd-ui">Replace</b>.</li></ol>
+<p>The editor opens DIGIPRO MGR on the machine, sends the waveforms, writes them and reads the positions back. The waveforms of a bank go to the selected position and the ones after it. Those that would go past W64 are left out.</p>
+<h4 class="gd-h3" id="send-waveforms">Send waveforms</h4>
+<p>Select a user waveform and click <b class="gd-ui">Save .syx…</b>. <kbd class="gd-key">[⇧]</kbd>-click <b class="gd-ui">Save .syx…</b> to save every user waveform as one bank. The machine sends user waveforms only. <b class="gd-ui">Export SysEx…</b> in the engine menu saves them too: tick <b class="gd-ui">Waveforms</b> and set the range.</p>
+<h4 class="gd-h3" id="rename-a-waveform">Rename a waveform</h4>
+<ol class="gd-steps"><li>Select a user waveform and click <b class="gd-ui">Rename</b>.</li><li>Type up to four characters: A to Z, 0 to 9, space and - + . / #. Press <kbd class="gd-key">[ENTER]</kbd>.</li></ol>
+<h4 class="gd-h3" id="copy-a-waveform">Copy a waveform</h4>
+<p>Select a user waveform and click <b class="gd-ui">Copy</b>. Select another position and click <b class="gd-ui">Paste</b>. The editor asks first when that position holds a user waveform.</p>
+<h4 class="gd-h3" id="erase-waveforms">Erase waveforms</h4>
+<p>Select a user waveform and click <b class="gd-ui">Erase</b>. The editor asks first. The factory waveform of that position comes back. <kbd class="gd-key">[⇧]</kbd>-click <b class="gd-ui">Erase</b> to erase every user waveform.</p>
+<p><b class="gd-ui">Undo</b> on the card takes back the last change to the waveforms. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> does not reach them: they are not part of a kit, a pattern, a song or a global.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>With a real Monomachine over HW MIDI, open GLOBAL &gt; FILE &gt; DIGIPRO MGR &gt; RECEIVE &gt; ORG on the machine before you load, rename, paste or undo. The card says so and shows <b class="gd-ui">Send</b>. Click it when the machine says WAITING, then press <kbd class="gd-key">[EXIT/NO]</kbd> on the machine to write the waveforms, and click <b class="gd-ui">Read</b>. The editor cannot erase on a real machine: use ERASE in its DigiPRO manager.</p><p>An MKI has no user waveforms. With the MKI plate chosen in the engine menu, the card is off.</p></aside>
+<p>Digibanks belong to the +Drive, which the editor does not emulate. A bank file on the computer takes their place: save one with <kbd class="gd-key">[⇧]</kbd>-click <b class="gd-ui">Save .syx…</b>, load it with <b class="gd-ui">Load…</b>.</p>
 </div></section>
 <section class="gd-sec" id="drive-settings" aria-labelledby="drive-settings-h">
 <div class="gd-body gd-prose"><h2 id="drive-settings-h">+DRIVE SETTINGS <a class="gd-anchor" href="#drive-settings" aria-label="Link to +DRIVE SETTINGS">#</a></h2>

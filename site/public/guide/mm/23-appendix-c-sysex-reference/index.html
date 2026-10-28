@@ -115,7 +115,7 @@
 <section class="gd-sec" id="0x5d-0x5e-digipro-waveform-dump-request" aria-labelledby="0x5d-0x5e-digipro-waveform-dump-request-h">
 <div class="gd-body gd-prose"><h2 id="0x5d-0x5e-digipro-waveform-dump-request-h">0x5D / 0x5E DIGIPRO WAVEFORM DUMP, REQUEST <a class="gd-anchor" href="#0x5d-0x5e-digipro-waveform-dump-request" aria-label="Link to 0x5D / 0x5E DIGIPRO WAVEFORM DUMP, REQUEST">#</a></h2>
 <p class="gd-ref">MM manual p.C-2</p>
-<p>These messages carry the user waveforms of the DigiPRO. The editor requests them when you tick <b class="gd-ui">Waveforms</b> in <b class="gd-ui">Export SysEx…</b> and writes the ones it gets into the file. It does not send waveforms to the machine.</p>
+<p>These messages carry the user waveforms of the DigiPRO. The DigiPRO card of the GLOBAL page requests each position to list them, and <b class="gd-ui">Export SysEx…</b> requests them for a file. A factory waveform answers nothing. The machine takes a waveform dump only on GLOBAL &gt; FILE &gt; DIGIPRO MGR &gt; RECEIVE: the editor opens that screen with the machine's keys, sends the dumps and writes them. Load, Rename, Paste and Undo on the card send them. Over HW MIDI you open the screen yourself.</p>
 </div></section>
 <section class="gd-sec" id="0x5e-set-gate-box-parameter" aria-labelledby="0x5e-set-gate-box-parameter-h">
 <div class="gd-body gd-prose"><h2 id="0x5e-set-gate-box-parameter-h">0x5E SET GATE BOX PARAMETER <a class="gd-anchor" href="#0x5e-set-gate-box-parameter" aria-label="Link to 0x5E SET GATE BOX PARAMETER">#</a></h2>

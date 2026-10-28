@@ -171,11 +171,46 @@ The **Place** row under the grid has two keys. **Original place**, the default, 
 The Monomachine takes a dump only on its SysEx receive screen. The editor opens it for you. With a real Monomachine over MIDI, the sync field on the second line of the LCD reads SEND and the number of waiting edits. Click it and follow the steps.
 
 ## DIGIPRO MANAGER
-<!-- rows: MM-310 @cfd149 -->
+<!-- rows: MM-310 @ccdbb0 -->
 
-The DigiPRO manager of an MKII sends, receives, renames and erases user waveforms. The editor does the send: tick **Waveforms** in **Export SysEx…** and set the range W01 to W64. The editor asks the machine for each waveform and writes the ones it has into the file. An empty waveform answers nothing and is left out.
+The DigiPRO manager of an MKII sends, receives, renames and erases user waveforms. In the editor it is the **DigiPRO** card at the bottom of the GLOBAL page. Click **GLOBAL** in the top bar to open it.
 
-{gap:MM-310}You cannot send waveforms to the machine, rename or erase them in the editor.{/gap}
+The card shows the 64 positions, W01 to W64, as the machine counts them. A user waveform shows a u and its name. A position without one holds its factory waveform. The first time you open the card, the editor reads the positions from the machine. This takes a while: a factory waveform answers nothing, so the editor waits for each one. Click **Read** to read them again.
+
+Click a position to select it. The card draws a user waveform and shows its name.
+
+### Receive waveforms
+
+1. Select the position the first waveform goes to.
+2. Click **Load…** and choose a file. A .syx file holds one waveform or a bank of them. A WAV or AIFF file must hold one period of the sound, as C6 expects. The editor names it after the first four letters of the file name.
+3. The editor lists where each waveform goes and which user waveforms it replaces. Click **Load**, or **Replace**.
+
+The editor opens DIGIPRO MGR on the machine, sends the waveforms, writes them and reads the positions back. The waveforms of a bank go to the selected position and the ones after it. Those that would go past W64 are left out.
+
+### Send waveforms
+
+Select a user waveform and click **Save .syx…**. [⇧]-click **Save .syx…** to save every user waveform as one bank. The machine sends user waveforms only. **Export SysEx…** in the engine menu saves them too: tick **Waveforms** and set the range.
+
+### Rename a waveform
+
+1. Select a user waveform and click **Rename**.
+2. Type up to four characters: A to Z, 0 to 9, space and - + . / #. Press [ENTER].
+
+### Copy a waveform
+
+Select a user waveform and click **Copy**. Select another position and click **Paste**. The editor asks first when that position holds a user waveform.
+
+### Erase waveforms
+
+Select a user waveform and click **Erase**. The editor asks first. The factory waveform of that position comes back. [⇧]-click **Erase** to erase every user waveform.
+
+**Undo** on the card takes back the last change to the waveforms. {key:undo} does not reach them: they are not part of a kit, a pattern, a song or a global.
+
+NOTE: With a real Monomachine over HW MIDI, open GLOBAL > FILE > DIGIPRO MGR > RECEIVE > ORG on the machine before you load, rename, paste or undo. The card says so and shows **Send**. Click it when the machine says WAITING, then press [EXIT/NO] on the machine to write the waveforms, and click **Read**. The editor cannot erase on a real machine: use ERASE in its DigiPRO manager.
+
+NOTE: An MKI has no user waveforms. With the MKI plate chosen in the engine menu, the card is off.
+
+Digibanks belong to the +Drive, which the editor does not emulate. A bank file on the computer takes their place: save one with [⇧]-click **Save .syx…**, load it with **Load…**.
 
 ## +DRIVE SETTINGS
 <!-- rows: MM-311 MM-312 MM-313 @25af9c -->
