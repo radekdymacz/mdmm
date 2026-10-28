@@ -56,8 +56,8 @@ namespace md
 		std::lock_guard lock(m_factoryFlashMutex);
 		// The same choice as copyFactoryFlashSnapshot: the cache when there is one, else the captured image. Both
 		// stay as they are until replaceFactoryFlashCache or exchangePersistentFlashState, which replace this too.
-		if(!m_factoryBaseline && !m_factoryFlashCache.empty())
-			m_factoryBaseline = std::make_shared<FactoryFlashBaseline>(m_factoryFlashCache, m_rom);
+		if(!m_factoryBaseline && !m_factoryFlashCache->empty())
+			m_factoryBaseline = std::make_shared<FactoryFlashBaseline>(*m_factoryFlashCache, m_rom);
 		else if(!m_factoryBaseline && !m_factoryFlashBaseline->empty())
 			m_factoryBaseline = std::make_shared<FactoryFlashBaseline>(
 				std::shared_ptr<const std::vector<uint8_t>>(m_factoryFlashBaseline), m_factoryBaselineFingerprint);
