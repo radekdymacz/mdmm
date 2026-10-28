@@ -174,3 +174,13 @@ the last change to the waveforms". A Load or an Erase all is one step.
 3. "Copy between Digibanks" read as copy between positions plus bank files; real Digibanks need the +Drive.
 4. A WAV is taken as one cycle (the whole file), normalised to full scale less 0.1 dB; files over 65536 frames are
    refused as "not one cycle".
+
+## 11. Status (2026-10-28, feat/0.9-mm-digipro)
+
+Built: 2 to 6 and 8 as specified. CI hand run 40656831703 (stages 0 to 2): checks, page suite (the four DigiPRO journeys
+pass), core unit tests (mmDataTest, mmDeskTest) and the editors on macOS, Windows and Linux green; only the Linux
+SteamOS 3 container start test failed (WebKitGTK crash fallback, not this work). Open:
+
+- `mmDigiproManagerFirmwareTest` (7.1, 7.3, 7.4, 7.5 and the round trip, rename, copy, erase, undo) runs only on main
+  and release/* (the ROM Worker): first result after the merge.
+- 7.2 (the lower levels at a high note) has no firmware test yet.
