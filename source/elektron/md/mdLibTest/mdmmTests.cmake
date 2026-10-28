@@ -162,6 +162,9 @@ function(mdmm_add_lib_tests _dir)
 	set_tests_properties(mmDeskFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
 	add_test(NAME mmEmptyResetFirmwareTest COMMAND mmDeskFirmwareTest --env emptyreset)
 	set_tests_properties(mmEmptyResetFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
+	# B-175, B-176: the firmware's own start values of every machine (0x5B with init) against the editor's tables.
+	add_test(NAME mmNewKitDefaultsFirmwareTest COMMAND mmDeskFirmwareTest --env newkit)
+	set_tests_properties(mmNewKitDefaultsFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
 	# B-049: the amp envelope the editor draws against the firmware's (one note per value, the output's level).
 	# B-027 and B-050: a kit's unsaved edits stay over a step or a piano-roll note (a dump of the pattern that plays).
 	if(TRUE)

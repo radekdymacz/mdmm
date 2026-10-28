@@ -213,6 +213,9 @@ namespace mmDesk
 	// rest of the slot stays); a pattern without notes, slides or locks (its length, speed, swing, arpeggiator,
 	// transposes and kit link stay). What the machine's own CLEAR leaves is not known.
 	elektronData::MmKit emptyKit(const elektronData::MmKit& _like, uint8_t _slot);
+	// The seven DATA pages (SYN AMP FLT EFX LF1-3, raw bytes) the editor starts a track with when it assigns this machine
+	// without keeping the FX pages (the page's DEFV / synDefaults twin); mmDeskFirmwareTest 'newkit' compares them with the firmware's.
+	std::array<std::array<uint8_t, 8>, 7> machineStartPages(uint8_t _machine);
 	elektronData::MmPattern emptyPattern(const elektronData::MmPattern& _like);
 	// The song slots (songClear): the END row alone and no name. A slot the library shows as empty: no name (or the
 	// firmware's unused mark) and no row but END. A song's name as text.

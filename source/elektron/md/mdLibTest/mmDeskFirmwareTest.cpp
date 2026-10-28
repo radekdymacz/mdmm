@@ -14,7 +14,8 @@
 //                                        wave 9, B-064: POLY, key tracking and the MULTI ENV, judged by the output), hoststop
 //                                        (B-121: the host's Stop lets go of a held note), reselect (B-122: picking the
 //                                        current pattern again keeps it), emptyreset (B-175: stored K01 and the working
-//                                        kit after Empty Reset; B-176: native machine-init AMP defaults)
+//                                        kit after Empty Reset; B-176: native machine-init AMP defaults), newkit (B-175, B-176: the
+//                                        firmware's start values of every machine against the editor's tables)
 //
 // Exits 77 (skip) without arguments.
 
@@ -1513,6 +1514,76 @@ namespace
 			const auto reloaded = workingKitInMemory(r);
 			check(reloaded && soundMatches(*reloaded, expected), "K01 stays empty after switching away and back");
 		}
+	}
+
+	// B-175, B-176: what the firmware itself gives a track for each machine: ASSIGN MACHINE with its init flag (0x5B, the
+	// command the machine's own machine change and NEW KIT run), read from the working kit in memory before and after.
+	// One log line per machine and page ("NEWKIT"): fw = the firmware's bytes, ed = the editor's table (mmDesk::
+	// machineStartPages), was = the page before the assignment; "=" marks a byte the firmware left alone (it says nothing
+	// about the default), "!" a byte the firmware wrote that the editor's table does not have. Raw bytes (a signed value
+	// shows 64 for 0). Only the bytes the firmware wrote are asserted.
+	void newKitDefaults(const Bytes& _rom)
+	{
+		std::puts("NEW KIT: the firmware's start values of every machine against the editor's tables (B-175, B-176)");
+		Rig r(_rom);
+		r.run(500);
+		const std::array<const char*, 7> pageNames{"SYN", "AMP", "FLT", "EFX", "LF1", "LF2", "LF3"};
+		const auto list = [](const std::array<uint8_t, 8>& _a)
+		{
+			std::string s;
+			for(size_t i = 0; i < _a.size(); ++i)
+				s += (i ? "," : "") + std::to_string(_a[i]);
+			return s;
+		};
+		const uint8_t t = 0;
+		int wrote = 0, kept = 0;
+		for(const auto& info : ed::mmMachines())
+		{
+			r.readTelemetry();
+			const auto before = workingKitInMemory(r);
+			r.m.send(ed::mmAssignMachine(t, info.id, 1));
+			r.run(300);
+			r.readTelemetry();
+			const auto after = workingKitInMemory(r);
+			if(!before || !after || after->machines[t] != info.id)
+			{
+				std::printf("  NEWKIT %-10s (id %2d) not assigned: the machine holds %d\n", info.name, info.id, after ? after->machines[t] : -1);
+				check(info.mk2, std::string(info.name) + ": the firmware takes the machine");
+				continue;
+			}
+			const auto want = mmDesk::machineStartPages(info.id);
+			std::string diffs;
+			for(size_t pg = 0; pg < 7; ++pg)
+			{
+				const auto& fw = after->tracks[t].pages[pg];
+				const auto& was = before->tracks[t].pages[pg];
+				std::string mark;
+				for(size_t i = 0; i < 8; ++i)
+				{
+					if(fw[i] == was[i])
+					{
+						mark += '=';
+						++kept;
+						continue;
+					}
+					++wrote;
+					if(fw[i] == want[pg][i])
+					{
+						mark += '.';
+						continue;
+					}
+					mark += '!';
+					diffs += " " + std::string(pageNames[pg]) + "." + ed::mmParamName(info.id, static_cast<uint8_t>(pg), static_cast<uint8_t>(i))
+						+ " fw " + std::to_string(fw[i]) + " ed " + std::to_string(want[pg][i]) + ";";
+				}
+				std::printf("  NEWKIT %-10s (id %2d) %s fw=%s ed=%s was=%s marks=%s\n", info.name, info.id, pageNames[pg], list(fw).c_str(),
+					list(want[pg]).c_str(), list(was).c_str(), mark.c_str());
+			}
+			std::printf("  NEWKIT %-10s (id %2d) level %d (was %d), routing byte %d\n", info.name, info.id, after->levels[t],
+				before->levels[t], after->routing[t]);
+			check(diffs.empty(), std::string(info.name) + ": the editor's start values equal what the firmware wrote:" + diffs);
+		}
+		std::printf("  NEWKIT summary: the firmware wrote %d bytes, left %d alone\n", wrote, kept);
 	}
 
 	// P7: Export SysEx as the session does (writeSyx of every document the desk holds) from a fresh machine, to
@@ -5420,6 +5491,12 @@ int main(const int _argc, char** _argv)
 			syxImport(rom);
 		if(only == "emptyreset")
 			emptyReset(rom);
+		if(only == "newkit")
+		{
+			newKitDefaults(rom);
+			std::printf("%s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
 		if(only == "syxexport")
 			syxExport(rom);
 		if(only.empty() || only == "hostclock")
