@@ -316,6 +316,16 @@ keeps the next upstream sync clean); the measured gain of the batch is small and
 **Checked at the end (HEAD of the branch):** 30 of 30 playing goldens equal (24 + the 6 exact-ESSI keys, MD and MM,
 speed-ups on and off), dsp56kTestRunner, accumulator and ESSI-on-demand tests green on arm64 and x86_64 (Rosetta).
 
+## Upstream fixes copied for 0.8.1
+
+One commit each, bit-exact (audit of 2026-10-28). Validation runs on CI.
+
+| Upstream | Date | What | Decision | Our commit | Reason |
+|---|---|---|---|---|---|
+| dsp56300/mc68k `a2cbb6b` | 2026-10-13 | Musashi opcode table built once under `std::call_once` | copied | `388905497` | two instances booting together (two plug-ins in one host) ran into a half-built table; the guard sits in `Mc68k::Mc68k` |
+| dsp56300/dsp56300 `3ff6610d` | 2026-10-13 | HDI08 pending host flags taken with one `exchange(-1)` | copied | `3f1fc1ebf` | a flag change stored between the load and the reset was lost |
+| dsp56300/gearmulator `8b2f9db1` | 2026-09-12 | `AudioBuffer::append` with size 0 | copied | `214faef4c` | `_dst[oldSize]` one past the end aborts under `_GLIBCXX_ASSERTIONS` |
+
 ## Fixes to offer upstream
 
 The fork carries these fixes in upstream files (the hooks above). Each is worth a pull request, so that the hook can
