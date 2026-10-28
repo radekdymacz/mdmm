@@ -2,6 +2,8 @@
 
 #include "mdSyxSession.h"
 
+#include "deskCore/deskKinds.h"
+
 #include "mdDesk/mdDesk.h"
 #include "mdDesk/mdDeskLibrary.h"
 #include "mmDesk/mmDesk.h"
@@ -14,6 +16,7 @@
 #include "elektronData/mmPattern.h"
 #include "elektronData/mmSong.h"
 
+#include <algorithm>
 #include <functional>
 #include <optional>
 #include <string>
@@ -99,6 +102,15 @@ namespace mdJucePlugin
 			const auto of = [](const std::optional<uint8_t>& _v) { return _v ? static_cast<int>(*_v) : -1; };
 			return {of(s.pattern), of(s.kit), of(s.song), of(s.globalSlot)};
 		}
+		// B-174: the desk reads a slot an import wrote again (its load queue, in the background). The Machinedrum's
+		// desk holds the active global alone, which it reads on its own.
+		static void reread(mdDesk::Desk& _d, const elektronData::SyxKind _kind, const uint8_t _slot)
+		{
+			namespace ed = elektronData;
+			if(_kind == ed::SyxKind::Kit || _kind == ed::SyxKind::Pattern || _kind == ed::SyxKind::Song)
+				_d.machine().reread({_kind == ed::SyxKind::Kit ? mdDesk::DocKind::Kit : _kind == ed::SyxKind::Pattern ? mdDesk::DocKind::Pattern
+					: mdDesk::DocKind::Song, _slot});
+		}
 		// Empty reset: 64 kits and 32 songs as the library clears a slot (mdDeskLibrary.h; the slot's own document is the
 		// base where the editor holds it, another of its kind where not), 128 patterns as the machine's own empty one
 		// (emptyPatternMd). "" or why not.
@@ -148,6 +160,18 @@ namespace mdJucePlugin
 		static SyxPlaying playing(const mmDesk::Desk& _d)
 		{
 			return {_d.currentPattern(), _d.currentKit(), _d.currentSong(), _d.currentGlobal()};
+		}
+		// B-174: the desk reads a slot an import wrote again (its load queue, in the background); a song's or a
+		// global's position byte folded into its range as the desk reads its dump.
+		static void reread(mmDesk::Desk& _d, const elektronData::SyxKind _kind, const uint8_t _slot)
+		{
+			namespace ed = elektronData;
+			using K = mmDesk::Kind;
+			const auto kind = _kind == ed::SyxKind::Kit ? K::Kit : _kind == ed::SyxKind::Pattern ? K::Pattern : _kind == ed::SyxKind::Song ? K::Song
+				: _kind == ed::SyxKind::Global ? K::Global : K::WorkingKit;
+			if(kind == K::WorkingKit)
+				return;
+			_d.machine().reread({kind, kind == K::Kit || kind == K::Pattern ? static_cast<uint8_t>(_slot & 127) : deskCore::slotIn<mmDesk::MmModel>(kind, _slot)});
 		}
 		// Empty reset: 128 kits and 24 songs as the library clears a slot (mmDeskModel.h), 128 patterns as the machine's
 		// own empty one (emptyPatternMm).
@@ -405,13 +429,32 @@ namespace mdJucePlugin
 		}
 
 		bool running() const { return m_job.running() || m_waves.running(); }
+		// Work for the session's step: what runs, or the slots an import wrote that the desk is still to read again.
+		bool due() const { return running() || !m_reread.empty(); }
 
 		// One session step while the machine takes input.
 		void step(DeskT& _desk, const double _nowMs, const bool _wire, const ToPage& _toPage)
 		{
 			if(m_job.running())
+			{
 				if(auto p = m_job.step(_desk.machine(), _nowMs, _wire))
 					_toPage(*p);
+				// B-174: an import that did not read back what it sent (the read-back off, a slot given up) left the
+				// desk with what those slots held before (a previous import's kit names in the library): the desk reads
+				// them again once the cable has carried the dumps.
+				if(!m_job.running())
+				{
+					const auto unread = m_job.unread();
+					m_reread.insert(m_reread.end(), unread.begin(), unread.end());
+					m_rereadAtMs = std::max(_nowMs, m_job.quietAtMs());
+				}
+			}
+			if(!m_reread.empty() && _nowMs >= m_rereadAtMs && !m_job.running())
+			{
+				for(const auto& i : m_reread)
+					Traits::reread(_desk, i.kind, i.slot);
+				m_reread.clear();
+			}
 			if(m_waves.running())
 			{
 				if(m_waves.step(_desk.machine(), _nowMs, _wire) && _nowMs - m_waveNewsMs > 250 && m_waves.running())
@@ -479,6 +522,8 @@ namespace mdJucePlugin
 		}
 
 		Job m_job;
+		std::vector<elektronData::SyxItem> m_reread;	// B-174: the slots the desk reads again at m_rereadAtMs
+		double m_rereadAtMs = 0;
 		SyxWaveRead m_waves;
 		Bytes m_export;
 		ExportRequest m_exportWords;

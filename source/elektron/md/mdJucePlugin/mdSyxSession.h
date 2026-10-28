@@ -309,6 +309,22 @@ namespace mdJucePlugin
 		}
 		bool checkOnly() const { return m_check; }
 		bool readBack() const { return m_readBack; }
+
+		// B-174: the documents this import sent and did not read back (the read-back off, I-038; given up; stopped
+		// before their read): the editor still holds what the slot held before, a previous import's kit names in the
+		// library. The session has the desk read them again (SyxWork::step) once the cable has carried the dumps
+		// (quietAtMs). Empty while the import runs.
+		std::vector<elektronData::SyxItem> unread() const
+		{
+			std::vector<elektronData::SyxItem> out;
+			if(running() || m_check)
+				return out;
+			for(const auto& i : m_items)
+				if(i.chosen && i.sent && !i.after && i.kind != elektronData::SyxKind::Other)
+					out.push_back({i.kind, i.target});
+			return out;
+		}
+		double quietAtMs() const { return m_quietAtMs; }
 		// The report's word for an item taken ("imported"; a reset's "cleared" or "restored").
 		void setWord(std::string _word) { m_word = std::move(_word); }
 
@@ -398,8 +414,9 @@ namespace mdJucePlugin
 					// Over HW MIDI the plug-in's wire paces at DIN speed behind the adapter: what was handed over is on
 					// the cable for its time yet (a full backup about 4 minutes), and a read-back asked now would wait
 					// behind it and time out. The reads start once it has passed (the cable's time from now: an upper
-					// bound, the dumps went to the wire at the earliest when the first was handed over).
-					if(_wire && m_readBack)
+					// bound, the dumps went to the wire at the earliest when the first was handed over). Without the
+					// read-back the desk's own reads of the slots wait for it too (unread, B-174).
+					if(_wire)
 						m_quietAtMs = _nowMs + deskCore::DinPacer::wireMs(m_handedBytes);
 				}
 				if(now || (news && _nowMs - m_progressMs > 100))

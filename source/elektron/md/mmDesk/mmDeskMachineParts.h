@@ -28,6 +28,7 @@ namespace mmDesk::parts
 	constexpr double g_recordReadMs = 1000;				// while recording: the current pattern read back this often
 	constexpr deskCore::LoadQueue<Ref>::Policy g_loadPolicy{25, 2};
 	constexpr double g_loadTimeoutMs = 400;
+	constexpr double g_portHoldMs = 5000;				// B-027: the parameter layer's hold keeps kit edits pending this long at most
 	constexpr double g_telemetryMinMs = 25;				// the playhead message at most this often
 	// A panel key state is held 10 ms (DevicePort::pressKeys); the keys are through after their states
 	// and a little more (the telemetry shows what they did).

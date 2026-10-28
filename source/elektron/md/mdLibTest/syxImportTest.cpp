@@ -526,6 +526,16 @@ namespace
 				&& i.find("text")->asString().find("format 3.1") != std::string::npos);
 		check(says, "kit 2's line says the machine ignored it, with the dump's format");
 		check(last.find("text")->asString().find("2 imported") == 0, "the summary: " + last.find("text")->asString());
+		// B-174: what was read back is the desk's already (its replies are the desk's dumps too); pattern 5, given up,
+		// is the one slot the session has the desk read again
+		const auto unreadWords = [](const std::vector<ed::SyxItem>& _u)
+		{
+			std::string t;
+			for(const auto& i : _u)
+				t += std::string(t.empty() ? "" : " ") + ed::syxKindName(i.kind) + std::to_string(i.slot);
+			return t;
+		};
+		check(unreadWords(job.unread()) == "pattern5", "B-174: after a read-back only the slot given up is left to read again (" + unreadWords(job.unread()) + ")");
 
 		// HW MIDI on the Monomachine's way: the dumps wait for the person's SEND together
 		FakeMachine manual;
@@ -591,6 +601,11 @@ namespace
 		check(l4.find("text")->asString().find("not read back") != std::string::npos && l4.find("text")->asString().find("imported") == std::string::npos
 			&& l4.find("text")->asString().find("taken") == std::string::npos, "the summary says not read back, never imported: " + l4.find("text")->asString());
 		check(last.find("readBack")->asBool(), "the default run reported readBack true");
+		// B-174: without the read-back the editor still held what kits 1-3 and pattern 5 held before (a previous
+		// import's kit names in the library): every slot the import sent is left to the desk to read again, the
+		// command and kit 9 (left out) are not
+		check(unreadWords(j4.unread()) == "kit1 kit2 kit3 pattern5", "B-174: without the read-back every slot sent is read again by the desk ("
+			+ unreadWords(j4.unread()) + ")");
 
 		// Stop while sending, read-back off: done, nothing read
 		FakeMachine m5;

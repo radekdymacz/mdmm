@@ -321,6 +321,9 @@ namespace deskCore
 			std::string waitsFor;	// the person must act first (HW MIDI: open SYSEX RECV, press SEND); "" = nothing
 		};
 		virtual AsIs asIs() const { return {}; }
+		// B-174: a document the person's import sent as it is and did not read back: what the editor holds of it may not
+		// be the machine's any more. Read it again in the background, as a slot not known yet is read.
+		virtual void reread(const Ref& _ref) { (void)_ref; }
 	};
 
 	// The engine-neutral core (P6): documents as observed + pending, pure edits (the

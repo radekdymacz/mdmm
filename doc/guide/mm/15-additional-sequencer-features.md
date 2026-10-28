@@ -28,7 +28,7 @@ Each track keeps its own settings: a mode key you click changes the arpeggiator 
 **Mode** keys:
 
 - **OFF**: the track plays the base note of each trig.
-- **KEY**: one held note repeats, or the arpeggiator cycles through the held chord. Release every note to stop it.
+- **KEY**: one held note repeats, or the arpeggiator cycles through the held chord. Release every note to stop it. A trig holds its note until its NOTE OFF or the next trig, so a note you click in the roll while the arpeggiator is on has no NOTE OFF: it repeats up to the next trig. Drag the end of the note to make the run shorter.
 - **SID**: it needs two or more notes. They stay in the cycle after you release them, until a new chord.
 - **ADD**: it starts on the first note. Each extra key joins while one key is held.
 

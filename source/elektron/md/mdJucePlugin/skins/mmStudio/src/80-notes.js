@@ -2,9 +2,9 @@
 /* ===== Gates, arpeggiator, transpose, trig setup (the dock under the note lane) ===== */
 const ARPM=["OFF","KEY","SID","ADD"],ARPP=["TRUE","UP","DOWN","CYCLE","RND"],SCALES=["---","FIX","MAJ","MIN"];
 const ARPHELP={0:"<b>OFF</b> The track plays the base note of each trig. Chord notes wait for the arpeggiator or POLY.",
- 1:"<b>KEY</b> Repeats one held note or cycles the held chord. Release all notes and it stops.",
+ 1:"<b>KEY</b> Repeats one held note or cycles the held chord. A trig holds its note to its NOTE OFF or the next trig: there it stops.",
  2:"<b>SID</b> Needs two or more notes. They stay in the cycle after release until a new chord.",
- 3:"<b>ADD</b> Starts on the first note. Each extra key joins while one key is held."};
+ 3:"<b>ADD</b> Starts on the first note. Each extra key joins while one key is held. A NOTE OFF or the next trig ends it."};
 /* a MIDI track's LEN on step s (its lock, or the kit's MIDI page): ticks, 6 a step (measured, MmRoll) */
 const midiLenOf=(t,s)=>S.locks.get(lkKey(t,"MID.0"))?.get(s)??trk(t).v.MID[0];
 function midiLenSteps(t,s){const v=midiLenOf(t,s);return v>=MmRoll.LEN_HOLD?Infinity:Math.max(1,v)/MmRoll.TICKS}

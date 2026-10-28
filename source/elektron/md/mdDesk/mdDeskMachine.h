@@ -58,6 +58,7 @@ namespace mdDesk
 		bool busy() const override;
 		std::string sendAsIs(const Bytes& _message, bool _dump) override;
 		AsIs asIs() const override;
+		void reread(const DocRef& _ref) override { m_loads.want(_ref, false); }
 
 		// ---- MdAdapter: Machinedrum facts from the device ----
 		void setProbe(Probe _probe) override;
