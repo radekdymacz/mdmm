@@ -16,7 +16,7 @@
 | Firmware tests | **PASS**: `mdDeskFirmwareTest` default, `hw`, `p4`, `playload`; `mmDeskFirmwareTest`; `mdSessionFirmwareTest`; `mmBootFirmwareTest`. Every published message is on the contract (0 off) |
 | In-plugin self-tests (diagnostics build) | **PASS**: MD `1`, `p4`, `p4hw`, `p5`, `p6audio` (7/7); MM `1` (11/11), `mmcpu`, `p6audio` (7/7) |
 | Page tests | **PASS**: `mdDeskModelTest.js` (35/35, fixtures validated against the schema), `mmConvertTest.js` (300 checks); both sync scripts `--check` clean, including the page contract check |
-| Release build (diagnostics OFF) | **PASS** after one fix (the editor did not compile without diagnostics since round 4, `9625ea01`). No self-test code in the release binaries |
+| Release build (diagnostics OFF) | **PASS** after one fix (the editor did not compile without diagnostics since round 4, `a30bc3cf`). No self-test code in the release binaries |
 | auval | **AU VALIDATION SUCCEEDED** for `aumu Tmdr GmPv` (MD) and `aumu Tmno GmPv` (MM) |
 | Radek's config and settings | Restored after every run; hashes MD xml `cbbc7cda…`, MD settings `fc68a82e…`, MM xml `0c18a310…`, MM settings `8a06fa3f…` |
 | Install | **Not installed** (see "What Radek must do") |
@@ -115,14 +115,14 @@ None of these is a bug; each was judged not worth another round.
 
 ## Commits
 
-`5d580c39` (hammock design) … `9625ea01`, 43 commits on `p6/simple-core`, author radekdymacz. The main steps:
+`f772f1e5` (hammock design) … `a30bc3cf`, 43 commits on `p6/simple-core`, author radekdymacz. The main steps:
 
-- `c5d53d18`–`fd9e56f7`: deskCore, the MD Desk split into a core and an adapter, the MM desk on the same core, the processor owns the desk.
-- `cd09d88c`–`63c40730`: one generic Desk and session, facts-driven timing, contract both ways, diagnostics off by default, FOUNDATION.md.
-- `7f89395e`–`4c3dd4a3` (round 3): the working kit as its own document, one adapter base, the plug-in host table, the MM view seam.
-- `16765302`–`a7c0cdd6` (round 4): the edit layer as tables, kinds as records, asks from the plug-in, closed commands, deskWire.
-- `ee5c45ad`–`90c341c9` (round 5): one ask names every loss, narrower adapters, the transport only in telemetry, wirePort, typed engine.
-- `b5e1c60c`–`9625ea01` (round 6): the held kit, one KitState, generated asks and slot ranges, op maps checked, page and plug-in bug fixes, the release build fix.
+- `f22eed29`–`da32470c`: deskCore, the MD Desk split into a core and an adapter, the MM desk on the same core, the processor owns the desk.
+- `8a119eda`–`d40d586f`: one generic Desk and session, facts-driven timing, contract both ways, diagnostics off by default, FOUNDATION.md.
+- `52350a77`–`0db62228` (round 3): the working kit as its own document, one adapter base, the plug-in host table, the MM view seam.
+- `9ba12126`–`28d21b73` (round 4): the edit layer as tables, kinds as records, asks from the plug-in, closed commands, deskWire.
+- `543ab2bd`–`d864471d` (round 5): one ask names every loss, narrower adapters, the transport only in telemetry, wirePort, typed engine.
+- `0ee445e2`–`a30bc3cf` (round 6): the held kit, one KitState, generated asks and slot ranges, op maps checked, page and plug-in bug fixes, the release build fix.
 
 ## What Radek must do
 

@@ -141,7 +141,7 @@ User-facing extras from the same work:
 
 ## 6. Features
 
-From a feature-completeness review of main at `9674857a` (2026-10-09): both editors against the hardware
+From a feature-completeness review of main at `d5bab0fb` (2026-10-09): both editors against the hardware
 (MD OS 1.63, MM OS 1.32B), [IDEAS.md](release/IDEAS.md) and [BUGS.md](release/BUGS.md). Neither editor shows the
 emulated front panel (the firmware LCD only appears at boot), so what an editor does not offer natively cannot be
 reached at all.

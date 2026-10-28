@@ -1,7 +1,7 @@
 # Simplicity review (Simple Made Easy), pre-1.0, 2026-10-15
 
 Scope: source/elektron/md/* (our code), doc/modern-ux/mm-mockup (the MM page's real source), the sync scripts.
-Branch `codex/native-audio-engine` at 2c59fdb95. Read-only. Findings already fixed in DESIGN-REVIEW-2026-10-02.md
+Branch `codex/native-audio-engine` at f75cf8980. Read-only. Findings already fixed in DESIGN-REVIEW-2026-10-02.md
 are not repeated; where one is only partly fixed, the residual is reported with new evidence.
 
 ## Rating: MOSTLY SIMPLE

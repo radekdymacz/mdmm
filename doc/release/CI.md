@@ -73,7 +73,7 @@ tests (`mdPageBridgeTest`, `mdMachineMidiOutTest`, ...) are registered.
 **Status (2026-10-18, resumed).** The pipeline, artifact fixes and SysEx fixture setup are on `codex/continue-0.8.0`,
 being validated on `release/0.0.0-ci-test`. All further validation runs on GitHub Actions, including focused debugging;
 the earlier local-check exception was withdrawn by Radek. See [DEV-CYCLE.md](DEV-CYCLE.md).
-Run 39127283546 (`dc770ec97`) finished red after passing stages 0–2. Firmware shard 1 passed MIDI Learn but failed
+Run 39127283546 (`cd599a1e1`) finished red after passing stages 0–2. Firmware shard 1 passed MIDI Learn but failed
 `mdSessionNoRomManageFirmwareTest_md` after first boot; shard 2 failed the two SysEx pick tests using the programmed
 corpus; shard 3 failed the Monomachine memory test's project-global save. Shard 4 passed. Firmware E2E had eight MD
 failures and seven MM failures. Packages were correctly held back. This run predates the refreshed PGO profile and
@@ -83,9 +83,9 @@ The next batch waits for final boot readiness and actual readback in the failing
 reset their boot/readback time, draws the 2 px lane marker without a zoom-rounded border, and adds failure diagnostics
 to the MM project-global memory check. Run 39135272248 passed checks, core tests and all 34 page unit tests, but stopped
 at one page journey: `md-mix-solo-saved` clicked before the startup card finished fading out (339 journeys passed).
-Commit `347f3454f` waits for the card to be hidden. Its initial run 39137347886 was cancelled before editor builds
+Commit `ba10411e9` waits for the card to be hidden. Its initial run 39137347886 was cancelled before editor builds
 when the combined fixes were pushed, to avoid duplicate firmware runs. The page suite passed in run 39137700253
-(`d600904ec`), which has also passed every stage 2 build, plug-in/launch check and sanitizer suite.
+(`fbe7d5b12`), which has also passed every stage 2 build, plug-in/launch check and sanitizer suite.
 
 The following layout batch gives kit names room at reduced zoom, fits song labels and marks inside their cells,
 centres dialogs against the viewport including the scrollbar gutter, gives Sound headers a shared line height,
@@ -108,7 +108,7 @@ For focused CI debugging, a manual `mdmm-firmware.yml` run accepts `firmware_tes
 `e2e_args` (for example `--jobs 1 --select journey-md-sound-knob-steps,mm-song-row-marks`). Empty selections run the full
 suites. These manual runs do not satisfy the release gate: the complete `mdmm-ci.yml` must pass on the release SHA.
 
-Focused run 39144813733 (`d69aea9ba`) passed all three MM journeys, MD knob stepping and song repeats, and every MD
+Focused run 39144813733 (`8c550c557`) passed all three MM journeys, MD knob stepping and song repeats, and every MD
 MIDI Learn fixture journey (12/14 MD journeys passed). It exposed an MD kit-line click rounding 31 to 32 and a lane
 preview cleared by late readback after cleanup. The next fix snaps a plain kit-line click to its exact displayed value,
 clicks the rendered line in the journey, and waits for cleanup/track readback before testing the preview. The memory
@@ -138,7 +138,7 @@ PGO training on main passed in run 39126917819: the downloaded profile parses, i
 emulator source trees match this branch. It is included with its metadata.
 
 No full green firmware run yet. Older runs failed B-169's final global-learn checks on both machines (the longer waits
-in `81335ff2e` still need CI confirmation), skipped the SysEx pick tests without backups, and had no apps in the E2E archive.
+in `c1fcf22f7` still need CI confirmation), skipped the SysEx pick tests without backups, and had no apps in the E2E archive.
 The latter two are fixed in this branch (details below). `mdSysexLifecycleTest` retains its existing exclusion because its
 Monomachine factory-memory fixture is unavailable. Next: get the complete pipeline green, then merge the tested changes
 into main and `release/0.8.0` before tagging.
@@ -304,11 +304,11 @@ mm-perform-multi-setup (the SPLIT KEY stepper not drawn: the page's mode went ba
 md-mix-heads-trigs (B-171, still open: the journey now logs what the page held at the flash); 10-28 mm-perform-multi-setup.
 The journeys now wait for the state they test (assertions unchanged); the lock budget stays 10 ms on CI (Radek's decision; the project-state load hold no longer copies the factory flash under the lock, see above).
 
-## Firmware run 40648229103 (commit 5e3629e6a, 2026-10-28)
+## Firmware run 40648229103 (commit db758d1c4, 2026-10-28)
 
 - **md-top-tempo-window** (step 4, LCD 151.3 for 137.5 from 125; also failed 10-24): a product race. A dump of the active global that arrives while the nudge is held carries the nudged tempo (137.5), and the page nudges that again (151.3). `MdMachine::onGlobal` now keeps the tempo the nudge started from (`m_nudgeFrom`) in the global it observes. The journey is unchanged.
 - **md-lane-kit-drag** (step 4, lock 32 for kit value 31): a pixel of a short lane is more than one value, so a click on the 2 px kit line gave a neighbour of the kit value. `laneAt` (mdDeskGestures.js): the first press within a pixel of the kit line is the kit value itself (the journey's own title). Assertion unchanged.
 - **mm-lib-undo-kit** (step 4, "A menu is open on the machine"): the plug-in refuses the UNDO KIT while the panel is off the main screen (correct); after the LOAD KIT of the step before, on a slow runner, it can still be. The journey waits for the panel to be idle and presses the key again when the plug-in refuses. Assertion unchanged.
 - **mdMachineMemoryFirmwareTest_md**, session 1, "the machine starts and the watch has its base": the cold start prepares the factory flash and reboots in process on a loaded runner; which stage stopped is not known. `waitWatching` ceilings are 240 s and 180 s (were 120 s and 90 s) and a failure prints the stage. Not proven to be the cause: read the `waitWatching:` line of the next run.
-- **stackedLfoMmSequencerFirmwareTest** ("the sequencer did not start", from 18f3f4718): a panel key pressed while the machine still takes the imported dump is lost (mmDesk `pressKeys`). The test waits 1.5 s and presses PLAY again while the sequencer is not running, up to six times.
+- **stackedLfoMmSequencerFirmwareTest** ("the sequencer did not start", from e365c5120): a panel key pressed while the machine still takes the imported dump is lost (mmDesk `pressKeys`). The test waits 1.5 s and presses PLAY again while the sequencer is not running, up to six times.
 - **mmNewKitDefaultsFirmwareTest**: red by design. It is the probe of B-175/B-176 and lists where the editor's start values differ from what the firmware writes (AMP REL, AMP VOL, FLT DEC, EFX DTIM, LFO pages, several SYN pages). It goes green when `DEFV`, `synDefaults` and `g_neutralPages` / `synDefault` change together (BUGS.md B-176); a product decision, not done here.

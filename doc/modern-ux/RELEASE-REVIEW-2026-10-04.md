@@ -1,4 +1,4 @@
-# Release review: MD + MM Editors (2026-10-04, main @ 855902a8c)
+# Release review: MD + MM Editors (2026-10-04, main @ 83ae976c3)
 
 Five read-only reviews, merged here into one fix list. Full reports with file:line, failure scenarios and
 fixes: [release-review-2026-10-04/](release-review-2026-10-04/) (`ux-md.md`, `ux-mm.md`, `code-cpp.md`,

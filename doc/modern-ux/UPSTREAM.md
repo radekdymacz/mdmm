@@ -131,9 +131,9 @@ upstream HEAD version of that test (`ds-pulltest`: the function is taken from up
 | Upstream | Date | What | Decision | Our commit | Reason |
 |---|---|---|---|---|---|
 | `c8da0c58` | 2026-03-09 | Add readRSMA/readRSMB to both peripherals classes | left out |  | readRSMA/readRSMB: already in our tree |
-| `7bb68a1f` | 2026-08-31 | jit: sign extend the multiplier's 24 bit immediate, and cover the signed/unsigne | copied | `71e1e439a` | JIT multiplier immediate sign extension (mpyi/maci immediates at or above $800000; MD/MM run mpyi, maci, mpysu, macsu); tests taken from upstream HEAD |
-| `4a654dff` | 2026-08-31 | jit: fold the multiplier's product scale into its operand's sign extension | copied | `ee3a35a56` | x64 JIT only (aarch64 code unchanged); verified with the x64 unit tests under Rosetta |
-| `503b0c98` | 2026-08-31 | jit: only split an accumulator into a write latch when the parallel move names i | copied | `a921d5bbc` | JIT register-pool optimisation (bit-exact; MD instructions per frame -1.7 %) |
+| `7bb68a1f` | 2026-08-31 | jit: sign extend the multiplier's 24 bit immediate, and cover the signed/unsigne | copied | `6ac360fc3` | JIT multiplier immediate sign extension (mpyi/maci immediates at or above $800000; MD/MM run mpyi, maci, mpysu, macsu); tests taken from upstream HEAD |
+| `4a654dff` | 2026-08-31 | jit: fold the multiplier's product scale into its operand's sign extension | copied | `552a29788` | x64 JIT only (aarch64 code unchanged); verified with the x64 unit tests under Rosetta |
+| `503b0c98` | 2026-08-31 | jit: only split an accumulator into a write latch when the parallel move names i | copied | `4ccae0e3a` | JIT register-pool optimisation (bit-exact; MD instructions per frame -1.7 %) |
 | `f151a2eb` | 2026-08-31 | JIT: implement DO FOREVER | left out |  | DO FOREVER / DOR aa / MACRI / LRA / TRAP forms: no unimplemented-instruction hit in any of the six golden scenarios (probe), dor and mpyri are used and already run |
 | `cc2415d2` | 2026-09-01 | DSP: clear SR_FV on interrupt entry, in both engines | left out |  | DO FOREVER / DOR aa / MACRI / LRA / TRAP forms: no unimplemented-instruction hit in any of the six golden scenarios (probe), dor and mpyri are used and already run |
 | `7d69d7a9` | 2026-09-01 | JIT: only check LA against a block's loop end while a loop is active | left out |  | assert / comment only (debug builds) |
@@ -153,43 +153,43 @@ upstream HEAD version of that test (`ds-pulltest`: the function is taken from up
 | `6a229bb3` | 2026-09-03 | ENDDO restores the DO FOREVER flag too, not just the loop flag | left out |  | DO FOREVER / DOR aa / MACRI / LRA / TRAP forms: no unimplemented-instruction hit in any of the six golden scenarios (probe), dor and mpyri are used and already run |
 | `edae9159` | 2026-09-03 | implement the DAX, the DSP56362 digital audio transmitter | left out |  | DSP56362 digital audio transmitter |
 | `f748b184` | 2026-09-03 | move the pp addressing tests off the DAX address | left out |  | DSP56362 digital audio transmitter |
-| `1c0694c8` | 2026-09-03 | BSET/BCLR/BCHG on SR: keep the bit change, and let it decide C | copied | `1f09ebe8e` | bset/bclr/bchg on SR lost its bit change behind a pending CCR update; MD/MM run bset, bclr |
+| `1c0694c8` | 2026-09-03 | BSET/BCLR/BCHG on SR: keep the bit change, and let it decide C | copied | `9cb7287d0` | bset/bclr/bchg on SR lost its bit change behind a pending CCR update; MD/MM run bset, bclr |
 | `621a1b2f` | 2026-09-03 | SA: a short immediate into an accumulator is not a bus value | left out |  | Sixteen-bit Arithmetic mode (SA) and DSP56362 ESAI: SA is never set in any MD/MM block (probe). 31ee15c0 also carries an x64 JIT shift-count fix: see open items |
 | `e73ae097` | 2026-09-03 | MERGE: implement the Sixteen-bit Arithmetic form | left out |  | BRKcc/MERGE not used; MPYRI already in our tree |
-| `f50b4dc7` | 2026-09-03 | DSPThread: give the DSP thread an 8 MB stack on POSIX | copied | `fe74768dc` | DSP thread gets an 8 MB stack (JIT compiles recursively; macOS default 512 KB) |
+| `f50b4dc7` | 2026-09-03 | DSPThread: give the DSP thread an 8 MB stack on POSIX | copied | `4b3c9293d` | DSP thread gets an 8 MB stack (JIT compiles recursively; macOS default 512 KB) |
 | `5ea516cd` | 2026-09-04 | catch a device that puts ordinary code in the vector region | left out |  | devices that run code in the vector region (dynamicFastInterrupts); MD/MM do not |
 | `554f0fab` | 2026-09-04 | SA: bitfield instructions from measured hardware behaviour | left out |  | Sixteen-bit Arithmetic mode (SA) and DSP56362 ESAI: SA is never set in any MD/MM block (probe). 31ee15c0 also carries an x64 JIT shift-count fix: see open items |
-| `ed26920e` | 2026-09-05 | Timers: implement the prescaler instead of ignoring PCE | copied | `0bdde6ed5` | timer prescaler; MD/MM never touch the timers (probe: no timer register write), so no effect, kept as the base of the timer file |
+| `ed26920e` | 2026-09-05 | Timers: implement the prescaler instead of ignoring PCE | copied | `ede06b31d` | timer prescaler; MD/MM never touch the timers (probe: no timer register write), so no effect, kept as the base of the timer file |
 | `a1a4db79` | 2026-09-05 | declare LF line endings for our own sources | left out |  | line-ending declaration, no source change |
 | `ff6a2c85` | 2026-09-05 | NORMF: pin SR before branching, so both arms see the same register pool | left out |  | our op_Normf already goes through If(), which reconciles the register pool |
 | `004bea1e` | 2026-09-05 | ASL: set L on overflow | left out |  | already in our tree (verified by reading the code) |
-| `e32c7059` | 2026-09-05 | NORMF: leave the carry bit alone | copied | `fa894ac68` | normf (used by MD/MM) leaves C alone; merged with our If()-based op_Normf |
+| `e32c7059` | 2026-09-05 | NORMF: leave the carry bit alone | copied | `13faf2c22` | normf (used by MD/MM) leaves C alone; merged with our If()-based op_Normf |
 | `0e070bee` | 2026-09-05 | ASR: take the carry from the accumulator, not from the host flag (x64) | left out |  | already in our tree (verified by reading the code) |
 | `f7d5f237` | 2026-09-05 | Memory: do not dereference m_mmuBuffer when the host MMU is unavailable | left out |  | already in our tree (verified by reading the code) |
-| `65a3c6ce` | 2026-09-06 | MemoryBuffer: reserve 192 MB of address space, not 768 | copied | `0a1bde798` | address space reservation 768 MB -> 192 MB; no emulated behaviour |
+| `65a3c6ce` | 2026-09-06 | MemoryBuffer: reserve 192 MB of address space, not 768 | copied | `5869c89e4` | address space reservation 768 MB -> 192 MB; no emulated behaviour |
 | `14864be3` | 2026-09-06 | ASL: take the carry from the right bit on AArch64 | left out |  | our AArch64 ASL right-aligns the accumulator before the shift, so bit 56 is the carry (equivalent) |
-| `a31c1dfb` | 2026-09-06 | LE: fix the condition on AArch64 | copied | `c46f90b52` | AArch64 JIT LE condition wrong when Z is set and N differs from V (ble/blt/bgt/bge/tgt/tge are used by MD/MM) |
+| `a31c1dfb` | 2026-09-06 | LE: fix the condition on AArch64 | copied | `1e4a744ab` | AArch64 JIT LE condition wrong when Z is set and N differs from V (ble/blt/bgt/bge/tgt/tge are used by MD/MM) |
 | `6235d60e` | 2026-09-06 | ROL/ROR: N comes from bit 23, not bit 23 plus the ALU offset | left out |  | ROL/ROR: never compiled by MD/MM (probe) |
 | `f6ae8743` | 2026-09-06 | ROR/ROL: compute Z before N on x64 | left out |  | ROL/ROR: never compiled by MD/MM (probe) |
-| `30434b46` | 2026-09-06 | bit-test jumps: apply an updating effective address on both paths | copied | `1d52a4d78` | brclr/brset/jclr/jset with an updating effective address kept the old Rn on the fall-through path |
-| `4bbbed98` | 2026-09-06 | GT/LE: decode the condition properly on x64, and record the SR read | copied | `f9325e226` | x64 JIT GT/LE decode (same family) |
-| `fa5e0af7` | 2026-09-06 | SUBR: port to the left-aligned ALU | copied | `6bfba12b9` | subr (used) on the left-aligned ALU: wrong N, C and Z |
-| `2ffbea65` | 2026-09-06 | JitBlockInfo: clear the CCR masks on reset | copied | `beed3ec74` | recycled JIT blocks started with the previous block's CCR masks (a stale ccrOverwrite could drop a needed flag flush) |
+| `30434b46` | 2026-09-06 | bit-test jumps: apply an updating effective address on both paths | copied | `947d56cfc` | brclr/brset/jclr/jset with an updating effective address kept the old Rn on the fall-through path |
+| `4bbbed98` | 2026-09-06 | GT/LE: decode the condition properly on x64, and record the SR read | copied | `5f288fd88` | x64 JIT GT/LE decode (same family) |
+| `fa5e0af7` | 2026-09-06 | SUBR: port to the left-aligned ALU | copied | `bad8529ba` | subr (used) on the left-aligned ALU: wrong N, C and Z |
+| `2ffbea65` | 2026-09-06 | JitBlockInfo: clear the CCR masks on reset | copied | `7e7627d1a` | recycled JIT blocks started with the previous block's CCR masks (a stale ccrOverwrite could drop a needed flag flush) |
 | `9017b0ec` | 2026-09-06 | add a cross-block condition code regression test | left out |  | test only (covered by the tests pulled with 2ffbea65 and 30434b46) |
-| `f0398f14` | 2026-09-06 | NR/NN: a zero accumulator is normalized | copied | `779706519` | NR/NN: a zero accumulator is normalized (interpreter and both JITs); needed by the condition test of 5898ebbd |
-| `5898ebbd` | 2026-09-06 | LE: fix the condition in the interpreter | copied | `ff3e2a46e` | interpreter LE condition; tests cover all 256 CCR values for LE, GT, NR, NN |
+| `f0398f14` | 2026-09-06 | NR/NN: a zero accumulator is normalized | copied | `16042b372` | NR/NN: a zero accumulator is normalized (interpreter and both JITs); needed by the condition test of 5898ebbd |
+| `5898ebbd` | 2026-09-06 | LE: fix the condition in the interpreter | copied | `998cae4d3` | interpreter LE condition; tests cover all 256 CCR values for LE, GT, NR, NN |
 | `33af298a` | 2026-09-06 | JIT: parallel X:Y writes ignored memoryWritesCallCpp | left out |  | debug option memoryWritesCallCpp |
 | `e3b48602` | 2026-09-06 | bit-test jumps: cover the remaining updating addressing modes | left out |  | test only (covered by the tests pulled with 2ffbea65 and 30434b46) |
-| `42611210` | 2026-09-10 | CCR: fix DIV/NEG overflow, Scale Up E and deferred-flag lifetime | copied | `ccd62991a` | partly: NEG/Scale-Up E/x64 DIV V were already in our tree (comments differ); the interpreter's deferred-CCR lifetime and the test ccrGroundTruth are new |
+| `42611210` | 2026-09-10 | CCR: fix DIV/NEG overflow, Scale Up E and deferred-flag lifetime | copied | `1709fd85c` | partly: NEG/Scale-Up E/x64 DIV V were already in our tree (comments differ); the interpreter's deferred-CCR lifetime and the test ccrGroundTruth are new |
 | `04d30c02` | 2026-09-11 | CCR: fix U in Scale Up on AArch64 when the scaling mode is not static | left out |  | already in our tree (verified by reading the code) |
 | `65406f8f` | 2026-09-11 | CCR: overflow flags for ADD/SUB/CMP/INC/DEC/ABS/ADDL, and ROL, LSL, CLB, bit-tes | left out |  | OPEN: V/L for ADD/SUB/CMP. Experiment: setting V (and L) from the host flag on AArch64 leaves all goldens equal and costs about 1 % of instructions, so no observed effect; ABS, ADDL, INC, DEC, NEG are already ours |
-| `a1a64bc7` | 2026-09-11 | JIT: run a REP's instruction once at a volatile address, and keep the ALU half o | copied | `952875c29`, REP half undone by `0fe25b9d8` | partly: the ALU-latch half (parallel move writing part of the accumulator its ALU half wrote). The REP-scan half is left out: it moves block boundaries (MD playing hash changed) and the case it fixes (a REP at a volatile P address) is not reached by MD/MM |
+| `a1a64bc7` | 2026-09-11 | JIT: run a REP's instruction once at a volatile address, and keep the ALU half o | copied | `1c4d9c33b`, REP half undone by `b6ae08ed4` | partly: the ALU-latch half (parallel move writing part of the accumulator its ALU half wrote). The REP-scan half is left out: it moves block boundaries (MD playing hash changed) and the case it fixes (a REP at a volatile P address) is not reached by MD/MM |
 | `7eb91002` | 2026-09-11 | Interpreter: continue behind a repeated two-word instruction | left out |  | interpreter-only fixes (MD/MM run the JIT) |
 | `8d491c0b` | 2026-09-11 | CMPU: set N from the unsigned borrow, together with C | left out |  | CMPU: never compiled by MD/MM (probe) |
 | `848923e5` | 2026-09-11 | Implement ADC and SBC in the interpreter and the JIT | left out |  | ADC/SBC: never compiled by MD/MM (probe) |
-| `e8b56f7f` | 2026-09-12 | Audio: publish the callback atomically instead of assigning it in place | copied | `30aca3e8a` | audio callback published atomically (rare bad_function_call abort when a device is torn down with live DSP threads) |
-| `f77d69d4` | 2026-09-12 | Logging: stop and join the logger thread at exit | copied | `65e44d60c` | file logger thread is joined at exit (every process that wrote a log line aborted on exit) |
-| `6a37034d` | 2026-09-15 | JitTrampoline: attach the asmjit logger only with asmjitDiagnostics | copied | `0e52ff640` | asmjit logger only with asmjitDiagnostics |
+| `e8b56f7f` | 2026-09-12 | Audio: publish the callback atomically instead of assigning it in place | copied | `ec54ea98d` | audio callback published atomically (rare bad_function_call abort when a device is torn down with live DSP threads) |
+| `f77d69d4` | 2026-09-12 | Logging: stop and join the logger thread at exit | copied | `636e9b1cf` | file logger thread is joined at exit (every process that wrote a log line aborted on exit) |
+| `6a37034d` | 2026-09-15 | JitTrampoline: attach the asmjit logger only with asmjitDiagnostics | copied | `b131961b7` | asmjit logger only with asmjitDiagnostics |
 | `b58e26b6` | 2026-09-15 | ESAI: log a transmit underrun when it starts and ends in a slot, not on every fr | left out |  | ESAI and ESAI clock (DSP56362/56367); MD/MM use ESSI |
 | `c2b2e459` | 2026-09-15 | JIT: make volatile P memory tracking a JitConfig option | left out |  | new JitConfig option, default behaviour unchanged |
 | `33fc9e66` | 2026-09-15 | DspBoot: invalidate the decoded opcode cache of booted code, not only the JIT | left out |  | DspBoot (boot of a second program into a running DSP); not used by us |
@@ -236,23 +236,23 @@ upstream HEAD version of that test (`ds-pulltest`: the function is taken from up
 | `faef176c` | 2026-09-26 | ESAI: reset clears TDE and TFS | left out |  | ESAI and ESAI clock (DSP56362/56367); MD/MM use ESSI |
 | `fd087196` | 2026-09-26 | JIT: a branch out of P memory is fine while blocks are not linked | left out |  | device boot ROM jump / 32 bit interpreter build |
 | `4f15f23c` | 2026-09-26 | Threads can join the audio workgroup of the host | left out |  | profiler facade / audio workgroup (tooling) |
-| `75a86b6b` | 2026-09-26 | HDI08: stopping the DSP no longer hands it host words that nobody sent | copied | `e85cfcdb0` | terminate() no longer feeds 8192 invented zero words to the HDI08 |
-| `c29028f2` | 2026-09-26 | DMA: the 56303 serves a raised request like the 56362, ESSI reset clears TDE and | copied | `efea13d24` | ESSI half only: TDE and TFS start at 0. The DMA half is our own rule already (hasPendingReceiveDmaRequest) |
+| `75a86b6b` | 2026-09-26 | HDI08: stopping the DSP no longer hands it host words that nobody sent | copied | `a8218b007` | terminate() no longer feeds 8192 invented zero words to the HDI08 |
+| `c29028f2` | 2026-09-26 | DMA: the 56303 serves a raised request like the 56362, ESSI reset clears TDE and | copied | `e9f6f6cf4` | ESSI half only: TDE and TFS start at 0. The DMA half is our own rule already (hasPendingReceiveDmaRequest) |
 | `4858fd83` | 2026-09-27 | Memory: mirrors of external memory below the bridged address | left out |  | memory mirror device feature |
 | `823e697c` | 2026-09-27 | Interrupts: the peripherals keep running while a masked interrupt waits | left out |  | already in our tree (verified by reading the code) |
 | `8506df77` | 2026-09-27 | DSP: writeReg writes every register that readReg reads | left out |  | device / assembler API additions |
 | `e8989e41` | 2026-09-28 | JIT: fast forward serial status polls on TDE and RDF, not only on the frame sync | left out |  | serial status poll fast-forward: judged in RESEARCH-emulation-cpu section 5 (no block tests an ESSI status register) |
 | `882b9225` | 2026-09-23 | ESSI clock: optional callback once per slot, for boards that derive a clock from | left out |  | ESAI and ESAI clock (DSP56362/56367); MD/MM use ESSI |
-| `fdd98fc5` | 2026-09-29 | AGU: the interpreter compares the modulo bounds signed, as the JIT does | copied | `ec0a2b933` | interpreter modulo compare signed, like the JIT (parity for the unit tests) |
+| `fdd98fc5` | 2026-09-29 | AGU: the interpreter compares the modulo bounds signed, as the JIT does | copied | `981ab9869` | interpreter modulo compare signed, like the JIT (parity for the unit tests) |
 | `cfcb2d85` | 2026-09-29 | AudioWorkgroup: std::atomic<uint32_t> is complete before s_generation, MSVC /LTC | left out |  | profiler facade / audio workgroup (tooling) |
 | `4ebb896d` | 2026-09-29 | ESAI: SAICR reads back what the DSP wrote | left out |  | ESAI and ESAI clock (DSP56362/56367); MD/MM use ESSI |
 | `1d4cc7f1` | 2026-09-29 | SHI: reset sets HTDE, and an empty HTX requests the transmit interrupt | left out |  | DSP56362 serial host interface |
 | `44353be2` | 2026-09-30 | ESAI clock: a slot waits until the DSP has taken the request of the slot before  | left out |  | ESAI and ESAI clock (DSP56362/56367); MD/MM use ESSI |
-| `d26552ab` | 2026-10-05 | Transfers: Scale Up limits with the sign of the accumulator | copied | `7756e946e` | Scale Up transfers limit with the accumulator's sign; 64 bit compare (17 block compiles in the MD/MM busy scenarios run Scale Up). Sixteen-bit Arithmetic lines left out |
+| `d26552ab` | 2026-10-05 | Transfers: Scale Up limits with the sign of the accumulator | copied | `423909d62` | Scale Up transfers limit with the accumulator's sign; 64 bit compare (17 block compiles in the MD/MM busy scenarios run Scale Up). Sixteen-bit Arithmetic lines left out |
 | `56e2632d` | 2026-10-05 | Interpreter: a DO loop ends at the fetch of its last word, not wherever PC meets | left out |  | interpreter-only fixes (MD/MM run the JIT) |
 | `8a654fd5` | 2026-10-05 | Interpreter: MOVEP pp,ea reaches a peripheral on the ea side too | left out |  | interpreter-only fixes (MD/MM run the JIT) |
-| `c1d6593f` | 2026-10-05 | HDI08: HSR is read-only for the DSP | copied | `3005f7b4d` | HSR is read-only for the DSP (goldens unchanged, so MD/MM never wrote it) |
-| `90d3af66` | 2026-10-06 | BUG-10217: MmuHelper (Linux/macOS): unmapping a region no longer frees its addre | copied | `93bb303d0` | macOS/Linux MmuHelper: a second thread can no longer take the address range between munmap and MAP_FIXED |
+| `c1d6593f` | 2026-10-05 | HDI08: HSR is read-only for the DSP | copied | `3f4329947` | HSR is read-only for the DSP (goldens unchanged, so MD/MM never wrote it) |
+| `90d3af66` | 2026-10-06 | BUG-10217: MmuHelper (Linux/macOS): unmapping a region no longer frees its addre | copied | `e9a32143d` | macOS/Linux MmuHelper: a second thread can no longer take the address range between munmap and MAP_FIXED |
 | `80bd6c6a` | 2026-10-08 | JIT: a loop that becomes known recompiles the code holding its LA | left out |  | JIT block scanner / loop edge cases (self-modifying code, jumps into a loop tail, interrupts at an iteration boundary); none is reached by MD/MM, and jitblock.cpp carries our L4 work |
 | `c0976cbc` | 2026-10-08 | JIT: a loop ends at its LA only while it is the loop that runs | left out |  | JIT block scanner / loop edge cases (self-modifying code, jumps into a loop tail, interrupts at an iteration boundary); none is reached by MD/MM, and jitblock.cpp carries our L4 work |
 | `77b5be51` | 2026-10-08 | ESAI: the receive last slot interrupt | left out |  | ESAI and ESAI clock (DSP56362/56367); MD/MM use ESSI |
@@ -276,7 +276,7 @@ upstream HEAD version of that test (`ds-pulltest`: the function is taken from up
 | `c4b99b8b` | 2026-10-12 | EMU-115: DMA: a two- or three-dimensional block triggered by DE completes after  | left out |  | new DMA modes (2D/3D, request-triggered blocks, DSP56367 ESAI); MD/MM use word transfers |
 | `da2ff232` | 2026-10-12 | EMU-116: JIT: a DO loop body block that writes an Mn or the MR leaves the block  | left out |  | JIT block scanner / loop edge cases (self-modifying code, jumps into a loop tail, interrupts at an iteration boundary); none is reached by MD/MM, and jitblock.cpp carries our L4 work |
 | `9a7c85bd` | 2026-10-14 | JIT: the block chain's destructor visits only the cache blocks that were written | left out |  | our JIT cache is a PagedArray: it already visits only allocated pages; the shared-page write needs a block at a 16384-word region end |
-| `0155c135` | 2026-10-14 | Audio: the output frames of a block are waited for at once, and SpscSemaphoreWit | copied | `da4ee485f` | audio frames of a block waited for at once (one wake per block); copied for the sync, no measurable gain for MD/MM (nothing of ours calls processAudioOutput, see below) |
+| `0155c135` | 2026-10-14 | Audio: the output frames of a block are waited for at once, and SpscSemaphoreWit | copied | `a51e0837f` | audio frames of a block waited for at once (one wake per block); copied for the sync, no measurable gain for MD/MM (nothing of ours calls processAudioOutput, see below) |
 | `2a7ca1e9` | 2026-10-14 | JIT: a block that starts at the last address of an untouched region of the block | left out |  | our JIT cache is a PagedArray: it already visits only allocated pages; the shared-page write needs a block at a 16384-word region end |
 
 **Also copied, older than the list:** `36efd0fd` (JIT `max a,b x1,a` dropped the move into A; the test of `7bb68a1f` failed
@@ -322,9 +322,9 @@ One commit each, bit-exact (audit of 2026-10-28). Validation runs on CI.
 
 | Upstream | Date | What | Decision | Our commit | Reason |
 |---|---|---|---|---|---|
-| dsp56300/mc68k `a2cbb6b` | 2026-10-13 | Musashi opcode table built once under `std::call_once` | copied | `388905497` | two instances booting together (two plug-ins in one host) ran into a half-built table; the guard sits in `Mc68k::Mc68k` |
-| dsp56300/dsp56300 `3ff6610d` | 2026-10-13 | HDI08 pending host flags taken with one `exchange(-1)` | copied | `3f1fc1ebf` | a flag change stored between the load and the reset was lost |
-| dsp56300/gearmulator `8b2f9db1` | 2026-09-12 | `AudioBuffer::append` with size 0 | copied | `214faef4c` | `_dst[oldSize]` one past the end aborts under `_GLIBCXX_ASSERTIONS` |
+| dsp56300/mc68k `a2cbb6b` | 2026-10-13 | Musashi opcode table built once under `std::call_once` | copied | `42cdda832` | two instances booting together (two plug-ins in one host) ran into a half-built table; the guard sits in `Mc68k::Mc68k` |
+| dsp56300/dsp56300 `3ff6610d` | 2026-10-13 | HDI08 pending host flags taken with one `exchange(-1)` | copied | `304bdcedf` | a flag change stored between the load and the reset was lost |
+| dsp56300/gearmulator `8b2f9db1` | 2026-09-12 | `AudioBuffer::append` with size 0 | copied | `30f7a449b` | `_dst[oldSize]` one past the end aborts under `_GLIBCXX_ASSERTIONS` |
 
 ## Fixes to offer upstream
 

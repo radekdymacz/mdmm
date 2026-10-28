@@ -1,6 +1,6 @@
 # Architecture review (Hickey lens), MD + MM Editors, before 1.0
 
-Reviewer: System Architecture. Read-only. Branch `codex/native-audio-engine` at 2c59fdb95 (2026-10-15).
+Reviewer: System Architecture. Read-only. Branch `codex/native-audio-engine` at f75cf8980 (2026-10-15).
 Scope: `source/elektron/md/*`, their CMake graph, `scripts/mdmm-*`, `.github/workflows/mdmm-*.yml`.
 Paths are relative to `source/elektron/md/` unless they start with `scripts/`, `.github/` or `source/`.
 Builds on DESIGN-REVIEW-2026-10-02.md (whose 16 findings are mostly fixed); nothing from it is repeated.

@@ -1,4 +1,4 @@
-# Pre-release C++ review: the MD + MM editors (main @ 855902a8c)
+# Pre-release C++ review: the MD + MM editors (main @ 83ae976c3)
 
 Scope: `source/elektron/md/{deskCore,deskHost,deskWire,elektronData,mdDesk,mmDesk,mdJucePlugin}` plus the
 fork's `mdLib/mddeskdevice.*` where the editors reach the audio thread. Items fixed in

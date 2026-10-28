@@ -1,6 +1,6 @@
 # Rich Hickey review: the MD and MM Editors (2026-10-02)
 
-Scope: the fork's own code, `git diff release/md-mm-alpha...main` (483 files, about 95k lines), at 5636b716e.
+Scope: the fork's own code, `git diff release/md-mm-alpha...main` (483 files, about 95k lines), at a7a07e8f3.
 Three read-only reviewers: simplicity, data and state, architecture. Generated files skipped. Paths are
 relative to `source/elektron/md/` unless they start with `doc/`.
 
