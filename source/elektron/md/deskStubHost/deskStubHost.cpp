@@ -36,6 +36,7 @@
 #include "elektronData/mmMachines.h"
 #include "elektronData/mmPattern.h"
 #include "elektronData/mmSong.h"
+#include "elektronData/mmWave.h"
 
 #include "deskWire/mmWire.h"
 
@@ -658,11 +659,24 @@ namespace
 	// the working kit (parameter changes and machine assigns move it; memory shows it), the mutes and the transport.
 	void toPage(const Value& _m);
 
+	// 0.9 wave 2: a user waveform for the fake's DIGIPRO MGR (a saw or a square cycle)
+	Bytes stubWave(const uint8_t _position, const char* _name, const bool _square)
+	{
+		std::vector<float> c(256);
+		for(size_t i = 0; i < c.size(); ++i)
+			c[i] = _square ? (i < c.size() / 2 ? 0.5f : -0.5f) : static_cast<float>(i) / 128.f - 1.f;
+		std::string why;
+		const auto w = ed::mmWaveFromCycle(c, _position, _name, why);
+		return w ? ed::encodeMmWave(*w) : Bytes{};
+	}
+
 	class FakeMm
 	{
 	public:
 		FakeMm()
 		{
+			m_waves[0] = stubWave(0, "SAW", false);
+			m_waves[3] = stubWave(3, "SQR", true);
 			const ed::MmKit kits0[3] = {*ed::decodeMmKit(load("mm/programmed-kit-000.syx")), *ed::decodeMmKit(load("mm/programmed-kit-001.syx")),
 				*ed::decodeMmKit(load("mm/programmed-kit-002.syx"))};
 			for(uint8_t k = 0; k < ed::MmKit::g_slots; ++k)
@@ -952,9 +966,14 @@ namespace
 				auto k = m_working; k.position = v & 127; m_kits[v & 127] = k; m_kit = v & 127; return; }
 			case 0x6c: m_song = v % ed::MmSong::g_slots; return;
 			case 0x6d: return;
-			case 0x5e:	// a DigiPRO waveform: answered when used (waveforms 1 and 4 here), else nothing (P4)
-				if(v == 0 || v == 3)
-					reply({0xf0, 0x00, 0x20, 0x3c, 0x03, 0x00, 0x5d, 0x01, 0x01, v, 0, 0, 0, 0, static_cast<uint8_t>(0x10 + v), 0, 0, 0xf7});
+			case 0x5e:	// a DigiPRO waveform: answered when it is a user one (W01 and W04 at start), else nothing (P4)
+				if(const auto it = m_waves.find(v); it != m_waves.end())
+					reply(it->second);
+				return;
+			case 0x5d:	// 0.9 wave 2: a waveform dump, taken on DIGIPRO MGR > RECEIVE > ORG only, at the position it carries
+				if(m_digi == Digi::Receive && m_screen == mmDesk::Screen::GlobalEdit && _m.size() > 9 && v < 64)
+					if(ed::decodeMmWave(_m))
+						m_waves[_m[9]] = _m;
 				return;
 			case 0x5b: if(_m.size() >= 11 && v < 6) m_working.machines[v] = _m[8]; return;
 			case 0x61: if(_m.size() >= 10) m_tempo = (v << 7) | _m[8]; return;	// TEMPO, BPM x 24
@@ -1058,11 +1077,30 @@ namespace
 			if(mmDesk::RecvSession::isEnterMacro(_keys))
 			{
 				m_screen = mmDesk::Screen::GlobalEdit;
+				m_digi = Digi::None;
+				return true;
+			}
+			// 0.9 wave 2: DIGIPRO MGR's RECEIVE > ORG and ERASE (the question's yes in the macro)
+			if(mmDesk::WaveRecv::isReceiveMacro(_keys))
+			{
+				m_screen = mmDesk::Screen::GlobalEdit;
+				m_digi = Digi::Receive;
+				return true;
+			}
+			if(const auto e = mmDesk::WaveRecv::eraseMacroWave(_keys))
+			{
+				m_screen = mmDesk::Screen::GlobalEdit;
+				m_digi = Digi::Erase;
+				if(*e < 0)
+					m_waves.clear();
+				else
+					m_waves.erase(static_cast<uint8_t>(*e));
 				return true;
 			}
 			if(_keys == mmDesk::RecvSession::exitKeys())
 			{
 				m_screen = mmDesk::Screen::Main;
+				m_digi = Digi::None;
 				return true;
 			}
 			// the MUTE window: TRIG 9-14 mute and unmute the MIDI tracks
@@ -1172,6 +1210,9 @@ namespace
 		uint64_t m_blocks = 0;
 		uint32_t m_recvTaken = 0;
 		mmDesk::Screen m_screen = mmDesk::Screen::Main;
+		enum class Digi : uint8_t { None, Receive, Erase };	// 0.9 wave 2: where DIGIPRO MGR is
+		Digi m_digi = Digi::None;
+		std::map<uint8_t, Bytes> m_waves;		// the user waveforms by position (the rest are factory: no answer)
 		double m_stepAt = 0, m_memoryAt = -1000;
 		std::vector<Bytes> m_replies;
 	};
@@ -1300,6 +1341,30 @@ namespace
 			reply(_message, true, "");
 			const char* f = std::getenv("GEARMULATOR_MDMM_SYX_FILE");
 			toPage(_syx.open(_desk, stubSyx(mm), f && *f ? std::string(f).substr(std::string(f).find_last_of('/') + 1) : std::string("page-tier.syx")));
+			return;
+		}
+		if(op == "chooseWave")
+		{
+			if(!mm)
+			{
+				reply(_message, false, "The Machinedrum has no DigiPRO waveforms.");
+				return;
+			}
+			reply(_message, true, "");
+			const int wave = static_cast<int>(_message.find("wave")->asNumber());
+			if(const char* f = std::getenv("GEARMULATOR_MDMM_WAVE_FILE"); f && *f)
+			{
+				std::ifstream in(f, std::ios::binary);
+				const Bytes bytes{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+				toPage(_syx.waves().openFile(bytes, std::string(f).substr(std::string(f).find_last_of('/') + 1), wave));
+				return;
+			}
+			ed::AudioClip clip;
+			clip.rate = 44100;
+			clip.channels.assign(1, std::vector<float>(300));
+			for(size_t i = 0; i < 300; ++i)
+				clip.channels[0][i] = static_cast<float>(std::sin(6.283185307179586 * static_cast<double>(i) / 300.0) * 0.8);
+			toPage(_syx.waves().openFile(ed::encodeWav16(clip), "Page sine.wav", wave));
 			return;
 		}
 		if(op == "syxExport")
