@@ -1063,6 +1063,69 @@ void workingKitWaitsForStream()
 	check(d.workingKit() && d.workingKit()->tracks[0].pages[2][1] == 31, "a later change on the machine is observed");
 }
 
+// B-027 (2026-10-21): the emulator's kit values go through the plug-in's parameter layer, which sends no CC while it
+// reads the machine's kit and global again (after a kit change or a SET STATUS). An edit on Kit must stay over memory
+// that cannot show it yet, and get the normal settling interval once the layer lets it go; a layer that never lets go
+// does not keep it pending for good.
+void workingKitWaitsForParameterLayer()
+{
+	std::puts("B-027: working-kit edits wait while the parameter layer holds them");
+	double now = 0;
+	bool held = true;
+	std::vector<std::array<uint8_t, 4>> values;
+	mmDesk::Desk::Port port;
+	port.device.nowMs = [&] { return now; };
+	port.device.sendSysex = [](const Bytes&) {};
+	port.device.sendParam = [&](uint8_t t, uint8_t pg, uint8_t i, uint8_t v) { values.push_back({t, pg, i, v}); };
+	port.device.paramsHeld = [&] { return held; };
+	port.toPage = [&](const Value& v) { g_published.push_back(v); };
+	mmDesk::Desk d(port, mmDesk::emulatorProfile());
+	auto tel = screen(mmDesk::Screen::Main);
+	tel.running = true;
+	d.onTelemetry(tel);
+	d.setProbe(mmDesk::Desk::Probe::Running);
+	for(const auto param : {0x01, 0x02, 0x04})
+		d.onDeviceSysex({0xf0, 0, 0x20, 0x3c, 3, 0, 0x72, static_cast<uint8_t>(param), 0, 0xf7});
+	ed::MmKit k;
+	k.machines.fill(1);
+	k.trigPos.fill(0xff);
+	d.onDeviceSysex(ed::encodeMmKit(k));
+	d.onDeviceSysex(ed::encodeMmPattern(emptyPattern(0)));
+	d.onDeviceSysex(ed::encodeMmGlobal(ed::mmFactoryGlobal(0)));
+	const auto run = [&](const double ms, const ed::MmKit& image)
+	{
+		for(double t = 0; t < ms; t += 10)
+		{
+			now += 10;
+			d.onTelemetry(tel);
+			Bytes region(5, 0);
+			const auto raw = ed::mmKitRaw(image);
+			region.insert(region.end(), raw.begin(), raw.end());
+			d.onWorkingKit(region);
+			d.tick();
+		}
+	};
+	const auto msg = [&](const char* json) { d.onPageMessage(*ed::json::parse(json)); };
+	msg(R"({"op":"ready"})");
+	run(10, k);
+	msg(R"({"op":"param","k":0,"t":0,"page":1,"i":5,"v":64})");
+	check(values.size() == 1, "the value went to the parameter layer");
+	run(2500, k);
+	check(d.workingKit() && d.workingKit()->tracks[0].pages[1][5] == 64,
+		"memory without the value for 2.5 s while the layer holds it: the edit stays (was: back to the old value after 1 s)");
+	held = false;
+	run(800, k);
+	check(d.workingKit() && d.workingKit()->tracks[0].pages[1][5] == 64, "once the layer lets it go, memory gets the usual time to show it");
+	k.tracks[0].pages[1][5] = 64;
+	run(20, k);
+	check(d.workingKit() && ed::mmKitRaw(*d.workingKit()) == ed::mmKitRaw(k), "matching memory settles the edit");
+	// a layer that never lets go: bounded
+	held = true;
+	msg(R"({"op":"param","k":0,"t":0,"page":1,"i":5,"v":20})");
+	run(7000, k);
+	check(d.workingKit() && d.workingKit()->tracks[0].pages[1][5] == 64, "a hold that never ends keeps the edit pending for a few seconds only, then memory wins");
+}
+
 // B-053: the OS 1.32B loads a pattern's kit on a pick in banks A-D only (mmDeskFirmwareTest kitlink); a dump of the pattern
 // that plays links the kit that plays unless the edit changed the link.
 void kitPickRules()
@@ -2570,6 +2633,7 @@ int main(const int _argc, char** _argv)
 	kitAfterPatternDump();
 	kitAfterPatternDump(9);
 	workingKitWaitsForStream();
+	workingKitWaitsForParameterLayer();
 	kitPickRules();
 	transposeRules();
 	transposeWhilePlaying();

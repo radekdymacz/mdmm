@@ -6362,7 +6362,7 @@ function renderRail(){const r=$("#rail"),withSide=S.ws==="seq"||S.ws==="sound";
  const anyMs=[...S.tracks,...S.midi].some(x=>x.mute||x.solo);
  r.innerHTML=`<div class="railhead">Track<button class="iconkey allon" id="allon" ${anyMs?"":"disabled"} title="Unmute and unsolo every track (0)">M/S off</button></div>`+side().map(th).join("")+(withSide?`<div style="margin-top:4px">${sideSw()}</div>`:"")+(S.ws==="seq"?lockPicker(S.sel):"");altLabels()}
 function rowStatus(t){const tr=trk(t),arp=tr.arp.MODE>0,trn=tr.tr.TRACK-64;return[arp?"ARP":"",t<6&&tr.tr.SCALE?["","FIX","MAJ","MIN"][tr.tr.SCALE]:(trn?(trn>0?"+":"")+trn:"")].filter(Boolean).join(" ")}
-const ROLL_TIP=t=>`${tLabel(t)} notes. Click an empty place: a note of ${MmRoll.say(S.rollLen)} (drag sideways paints) · drag a note's end: its length (new notes get it too; a ${isMidiT(t)?"MIDI note's LEN, 6 a step":"NOTE OFF where it ends"}) · drag a note: up or down its pitch, sideways to move it · shift-click adds a chord note · alt-click deletes a note (the earlier note runs on to the next trig or NOTE OFF), or sets a NOTE OFF on an empty step · ⌘-click or ⌘-drag selects steps · right-click: the step menu · scroll = pitch${isMidiT(t)?"":" · the keys on the left play the note"}${(()=>{const a=trk(t).arp;return a.MODE&&a.SPD?` · light notes: what the arpeggiator plays${a.PLAY===4?" (random order: outlined, the pitches vary)":""}`:""})()}`;
+const ROLL_TIP=t=>`${tLabel(t)} notes. Click an empty place: a note of ${drawLen(t)===S.rollLen?MmRoll.say(S.rollLen):"to the next trig (the arpeggiator is on: no NOTE OFF, as a TRIG key writes it)"} (drag sideways paints) · drag a note's end: its length (new notes get it too; a ${isMidiT(t)?"MIDI note's LEN, 6 a step":"NOTE OFF where it ends"}) · drag a note: up or down its pitch, sideways to move it · shift-click adds a chord note · alt-click deletes a note (the earlier note runs on to the next trig or NOTE OFF), or sets a NOTE OFF on an empty step · ⌘-click or ⌘-drag selects steps · right-click: the step menu · scroll = pitch${isMidiT(t)?"":" · the keys on the left play the note"}${(()=>{const a=trk(t).arp;return a.MODE&&a.SPD?` · light notes: what the arpeggiator plays${a.PLAY===4?" (random order: outlined, the pitches vary)":""}`:""})()}`;
 /* ===== Values while live recording (as the MD Editor's): the firmware locks the step that plays when a value arrives (CC; a
    step without a trig gets a trigless lock); the plug-in names it (machine.desk.recLock: track, page.value, step) and
    the trig row's cell and the lock lane's bar show it until the read-back brings the real lock. ===== */
@@ -6638,8 +6638,13 @@ document.addEventListener("dblclick",e=>{const c=e.target.closest?.("canvas.roll
  const G=laneGeom(c);if(onKeys(c,G,e))return;const h=laneHit(c,e);if(!h||h.k<0||h.edge||!trk(S.sel).steps[h.s])return;
  if(rollDrawn&&rollDrawn.t===S.sel&&rollDrawn.s===h.s&&Date.now()-rollDrawn.at<DBL_MS)return;
  const t=S.sel,touched=rollDelNote(t,h);S.stepSel=null;editSpan(t,new Set(touched),true);renderTop();rerenderSeq();syncSel();toast(`Deleted the note on ${tLabel(t)} step ${h.s+1} (⌘Z brings it back).`)});
+/* B-179: the length a new note on track t gets. With the arpeggiator on (KEY, SID, ADD) a synth track's note is drawn as
+   the machine's TRIG key writes it: no NOTE OFF, held to the track's next trig. The firmware's arpeggiator runs while
+   the note is held, and a NOTE OFF one step later (the 1/16 draw length) released it after one arpeggiated note: "the
+   arp does not repeat a single note". Dragging the note's end still gives it a NOTE OFF. */
+function drawLen(t){return !isMidiT(t)&&trk(t).arp.MODE>0?S.len:S.rollLen}
 /* a new note on step s at pitch n that lasts the draw length */
-function rollAdd(t,s,n){trk(t).steps[s]=note(n);const r=rollLen(t,s,S.rollLen);return{touched:new Set([s,...r.touched]),lock:r.lock,off:r.off}}
+function rollAdd(t,s,n){trk(t).steps[s]=note(n);const r=rollLen(t,s,drawLen(t));return{touched:new Set([s,...r.touched]),lock:r.lock,off:r.off}}
 function rollDown(c,e){if(e.button!==0)return;const t=+c.dataset.t;if(t!==S.sel){select(t);return}
  {const G=laneGeom(c);if(e.button===0&&onKeys(c,G,e)){const n=rollRow(c,G,e);if(n==null)return;if(isMidiT(t)){kbTell("midi","The keys play the synth tracks: a MIDI track's notes go to the MIDI OUT only.");return}rollDrag={mode:"key",t,c};rollKey(t,n);drawEd(c);return}}
  const h=laneHit(c,e);if(!h)return;const tr=trk(t);
@@ -6674,7 +6679,7 @@ function rollStepTip(t,s){const st=trk(t).steps[s];if(!st)return"";const head=`S
  return head+`Note ${pitch}; ${isMidiT(t)?"MIDI note":"fires "+env}`}
 function rollMove(c,e){const t=+c.dataset.t;if(!rollDrag){if(t!==S.sel){c.style.cursor="pointer";return}const G=laneGeom(c),n=rollRow(c,G,e),key=onKeys(c,G,e);
   if((S.rollHov?.n??null)!==n||S.rollHov?.t!==t){S.rollHov=n==null?null:{t,n};drawEd(c)}
-  if(key){c.style.cursor=n==null?"default":"pointer";c.title=ROLL_TIP(t);return}const h=laneHit(c,e);c.style.cursor=h?.edge?"ew-resize":h?.k>=0?"move":"crosshair";c.title=h&&(h.k>=0||trk(t).steps[h.cell]?.off)?rollStepTip(t,h.k>=0?h.s:h.cell):ROLL_TIP(t);return}
+  if(key){c.style.cursor=n==null?"default":"pointer";c.title=n==null?ROLL_TIP(t):noteName(n);return}const h=laneHit(c,e);c.style.cursor=h?.edge?"ew-resize":h?.k>=0?"move":"crosshair";c.title=h&&(h.k>=0||trk(t).steps[h.cell]?.off)?rollStepTip(t,h.k>=0?h.s:h.cell):ROLL_TIP(t);return}
  if(rollDrag.mode==="key"){const d=rollDrag,n=rollRow(d.c,laneGeom(d.c),e);if(n!==d.n){if(d.n!=null)keyNote(d.t,d.n,0);rollKey(d.t,n);S.rollHov=n==null?null:{t:d.t,n};drawEd(d.c)}return}
  c=rollDrag.c;const d=rollDrag,G=laneGeom(c),r=c.getBoundingClientRect();
  if(d.mode==="note"||d.mode==="move"){const h=laneHit(c,e),cell=h?h.cell:d.cell0,n=clamp(G.lo+G.rows-1-Math.floor((e.clientY-r.top-G.top)/G.rh),0,127);
@@ -6695,7 +6700,7 @@ function rollPaintMove(c,e){const d=rollDrag;if(d.mode==="pitch"&&!d.paint)retur
  if(d.mode==="erase"){const a=Math.min(d.last,s),b=Math.max(d.last,s);for(let k=a;k<=b;k++)if(tr.steps[k]&&!tr.steps[k].off)rollRemove(t,k).forEach(x=>d.touched.add(x))}
  else{if(d.paintOff>=0&&tr.steps[d.paintOff]?.off){tr.steps[d.paintOff]=null;d.touched.add(d.paintOff)}
   for(const[k,x] of mmPaint(tr.steps,d.last,s,"paint",d.n)){tr.steps[k]=x;d.touched.add(k);d.painted.add(k)}
-  const q=rollLen(t,Math.max(...d.painted),S.rollLen);q.touched.forEach(k=>d.touched.add(k));d.lock=d.lock||q.lock;d.paintOff=q.off}
+  const q=rollLen(t,Math.max(...d.painted),drawLen(t));q.touched.forEach(k=>d.touched.add(k));d.lock=d.lock||q.lock;d.paintOff=q.off}
  d.last=s;redraw();return true}
 /* the steps a drag changed, as one steps intent over their span (one per step would not do: each intent shows the
    view again from the documents and its own writes, so the later steps' changes were gone before they were sent);
@@ -6912,9 +6917,9 @@ Keys.bind({id:"lockstep-wheel",scope:"seq",area:"Lock lane",keys:["wheel on a lo
 Keys.bind({id:"lane-slide",scope:"seq",area:"Lock lane",keys:["lock's dot"],group:"Pattern",does:"Drag sideways: a slide to the next lock of this parameter, drawn as a ramp (the machine glides every parameter locked on the step; one undo step). Click the ramp's line: slide off. Up and down is the lock's value as before"});
 Keys.bind({id:"lane-slide-band",scope:"seq",area:"Lock lane",keys:["lock bar"],mod:"shift",group:"Pattern",does:"Drag sideways out of a lock bar: a slide, a line to the cursor; drop on this parameter's next lock to set it (one undo step). Anywhere else, Esc or left of the start cancels. From a step without a lock the same drag is the ramp of locks"});
 Keys.bind({id:"lane-lock-menu",scope:"seq",area:"Lock lane",keys:["right-click a step"],group:"Pattern",does:"Clear this parameter's lock, including a ghost lock on a step without a note, or toggle Slide. Alt-click also erases a lock"});
-Keys.bind({id:"lane-kit-value",scope:"seq",area:"Lock lane",keys:["KIT handle"],group:"Pattern",does:"Drag the labelled KIT handle in the left gutter to edit the sound. The line across the steps is a reference; every step column edits its lock"});
+Keys.bind({id:"lane-kit-value",scope:"seq",area:"Lock lane",keys:["KIT handle"],group:"Pattern",does:"Drag the labelled KIT handle in the left gutter, or focus it and use the arrow keys, to edit the sound. The line across the steps is a reference; a plain click or vertical drag on a step edits its lock"});
 Keys.bind({id:"lane-slide-cancel",short:"Cancel",hidden:true,scope:"seq",keys:["Escape"],group:"Pattern",does:"While drawing a slide in the lock lane: cancel it",when:()=>laneDraw?.band==="on",run:()=>bandEsc()});
-Keys.bind({id:"lane-ramp",scope:"seq",area:"Lock lane",keys:["unlocked step"],mod:"shift",group:"Pattern",does:"Drag from a step without a lock: paint a ramp of lock values (one undo step). Shift from an existing lock draws a slide instead"});
+Keys.bind({id:"lane-ramp",scope:"seq",area:"Lock lane",keys:["lock lane"],mod:"shift",group:"Pattern",does:"Drag from a step without a lock: paint a ramp of lock values (one undo step). Shift from an existing lock draws a slide instead"});
 Keys.bind({id:"track-mark-paste",scope:"seq",area:"Tracks",keys:["track header"],mod:"shift",group:"Pattern",does:"Click: mark the track for paste; ⌘V then pastes into every marked track (one undo step)"});
 
 /* ===== GEN and MUTATE on the page (MM-PORT-PLAN.md d, the Machinedrum Editor's DESIGN-generators.md §5) =====
@@ -7471,9 +7476,9 @@ Keys.bind({id:"clear-what",short:"Clear what",scope:"any",keys:["Backspace"],mod
 /* ===== Gates, arpeggiator, transpose, trig setup (the dock under the note lane) ===== */
 const ARPM=["OFF","KEY","SID","ADD"],ARPP=["TRUE","UP","DOWN","CYCLE","RND"],SCALES=["---","FIX","MAJ","MIN"];
 const ARPHELP={0:"<b>OFF</b> The track plays the base note of each trig. Chord notes wait for the arpeggiator or POLY.",
- 1:"<b>KEY</b> Repeats one held note or cycles the held chord. Release all notes and it stops.",
+ 1:"<b>KEY</b> Repeats one held note or cycles the held chord. A trig holds its note to its NOTE OFF or the next trig: there it stops.",
  2:"<b>SID</b> Needs two or more notes. They stay in the cycle after release until a new chord.",
- 3:"<b>ADD</b> Starts on the first note. Each extra key joins while one key is held."};
+ 3:"<b>ADD</b> Starts on the first note. Each extra key joins while one key is held. A NOTE OFF or the next trig ends it."};
 /* a MIDI track's LEN on step s (its lock, or the kit's MIDI page): ticks, 6 a step (measured, MmRoll) */
 const midiLenOf=(t,s)=>S.locks.get(lkKey(t,"MID.0"))?.get(s)??trk(t).v.MID[0];
 function midiLenSteps(t,s){const v=midiLenOf(t,s);return v>=MmRoll.LEN_HOLD?Infinity:Math.max(1,v)/MmRoll.TICKS}
@@ -8162,14 +8167,15 @@ function menvHint(){const m=S.multi.mode,play=S.mode!=="multi"&&m!==1;
  return`<b>${MTM[m]}:</b> ${MENV_SAY[m]}${play?` <span class="menvto">The keys play ${{normal:"AUTO TRACK",map:"MULTI MAP",poly:"POLY"}[S.mode]} now: choose <b>Multi trig</b> under Keyboard to hear it.</span>`:""}`}
 const MTM=["ALL TRK","SPLIT KEY","SEQ START","SEQ TRNSP"],TIMS=["DIRECT","1/16","2/16","4/16","8/16","16/16","32/16"];
 const isBlack=n=>[1,3,6,8,10].includes(n%12);
-/* the on-screen keyboard: four octaves from C (MIDI 0 at the lowest stop), the last stop cut at note 127 (I-040). Keep the same key width at that stop (B-177) */
-const KBOCT=[-1,6],KB_WHITE_COUNT=28;
-function kbRange(){const lo=12*(S.kbOct+1);return[lo,Math.min(lo+47,127)]}
+/* the on-screen keyboard: four octaves from C, inside the hardware's range C-0 to B-8 (MIDI 12 to 119, B-185). The stops
+   run from C-0 to C-3, so the last stop ends on B-8 and every stop has the same key width (B-177). */
+const KB_LO=12,KB_HI=119,KBOCT=[0,5],KB_WHITE_COUNT=28;
+function kbRange(){const lo=12*(S.kbOct+1);return[lo,Math.min(lo+47,KB_HI)]}
 function zoneOf(n){if(S.mode!=="multi"||S.multi.mode!==1)return null;return n>=S.multi.splitKey?"up":"lo"}
 function mapRow(n){let lo=0;for(let i=0;i<S.mmap.length;i++){const r=S.mmap[i];if(n>=lo&&n<=r.hi)return i;lo=r.hi+1}return -1}
 function renderKb(){const[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const ww=100/KB_WHITE_COUNT;let h="",wi=0;
- for(let n=lo;n<=hi;n++){if(isBlack(n)){h+=`<div class="b${kbLit(n)}" data-key="${n}" style="left:${wi*ww-ww*.3}%;width:${ww*.6}%" aria-label="${noteName(n)}"></div>`;continue}
-  h+=`<div class="w${kbLit(n)}" data-key="${n}" style="left:${wi*ww}%;width:${ww}%" aria-label="${noteName(n)}">${n%12===0?`<small>${noteName(n)}</small>`:""}</div>`;wi++}
+ for(let n=lo;n<=hi;n++){if(isBlack(n)){h+=`<div class="b${kbLit(n)}" data-key="${n}" style="left:${wi*ww-ww*.3}%;width:${ww*.6}%" aria-label="${noteName(n)}" title="${noteName(n)}"></div>`;continue}
+  h+=`<div class="w${kbLit(n)}" data-key="${n}" style="left:${wi*ww}%;width:${ww}%" aria-label="${noteName(n)}" title="${noteName(n)}">${n%12===0?`<small>${noteName(n)}</small>`:""}</div>`;wi++}
  if(S.mode==="multi"&&S.multi.mode===1){const sk=S.multi.splitKey;let idx=whites.findIndex(w=>w>=sk);if(idx<0)idx=whites.length;const x=idx*ww;
   h+=`<div class="zone" style="left:0;width:${x}%;background:var(--ledg)"></div><div class="zone" style="left:${x}%;width:${whites.length*ww-x}%;background:var(--led)"></div><div class="splitm" id="splitm" style="left:${x}%" title="Drag the split point"><span>SPLIT ${noteName(sk)} · T${S.multi.splitTrack}-6 above</span></div>`}
  return h}

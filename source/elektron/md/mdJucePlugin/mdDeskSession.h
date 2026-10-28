@@ -466,8 +466,8 @@ namespace mdJucePlugin
 			// (synthLib::MidiClock); the machine follows them only with its global set for it. The model
 			// says how (hostFollowing), the adapter sets it without an undo step; ready machines only.
 			// P7, B-019: a .syx import goes to the machine as it is, a few messages at a time while the machine takes
-			// input, then each document is read back (mdSyxSession.h)
-			if(m_syx.running() && m_desk->lifecycle() == deskCore::Lifecycle::Ready)
+			// input, then each document is read back (mdSyxSession.h), or the desk reads it again (B-174)
+			if(m_syx.due() && m_desk->lifecycle() == deskCore::Lifecycle::Ready)
 			{
 				m_syx.step(*m_desk, sessionNowMs(), m_record->profile.wire, [this](const Value& _m) { toPage(_m); });
 				m_desk->flush();

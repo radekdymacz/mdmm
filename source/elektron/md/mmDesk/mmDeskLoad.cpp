@@ -323,7 +323,16 @@ namespace mmDesk
 		const Ref slot{Kind::Kit, static_cast<uint8_t>(std::max(0, m_curKit))};
 		// Live CC/NRPN edits can also wait behind a dump or their value budget. Their one-second
 		// expectation starts after delivery, not while the stream still holds those messages (B-027).
-		const bool hold = m_stream.sending(_now)
+		// The emulator's kit values go through the plug-in's parameter layer, which holds them while it reads the
+		// machine's kit and global again (after a kit change or a SET STATUS): memory cannot show them yet, and an edit
+		// on Kit went back to the old value when the expectation ran out first (B-027, 2026-10-21). Bounded: a layer
+		// that never gets its snapshot does not keep edits pending over memory for good.
+		const bool portHolds = m_port.paramsHeld && m_port.paramsHeld();
+		if(!portHolds)
+			m_portHeldSinceMs = -1;
+		else if(m_portHeldSinceMs < 0)
+			m_portHeldSinceMs = _now;
+		const bool hold = m_stream.sending(_now) || (portHolds && _now - m_portHeldSinceMs < g_portHoldMs)
 			|| (m_curKit >= 0 && (m_pushes.busy(slot) || m_loadAfter.count(slot)));
 		if(m_kitDumpHold && !hold && m_working.expect.any())
 			m_working.expect.atMs = _now;

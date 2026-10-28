@@ -132,6 +132,11 @@ namespace mdJucePlugin
 		return true;
 	}
 
+	bool MmStudioLink::paramsHeld() const
+	{
+		return !m_controller.isAutomationSynchronized();
+	}
+
 	void MmStudioLink::sendNrpn(const uint8_t _track, const uint8_t _param, const uint8_t _value) const
 	{
 		// NRPN on the base channel, the wire's own encoding (deskWire::mm::nrpn).

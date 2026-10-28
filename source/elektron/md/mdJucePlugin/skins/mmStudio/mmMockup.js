@@ -3463,7 +3463,7 @@ function renderRail(){const r=$("#rail"),withSide=S.ws==="seq"||S.ws==="sound";
  const anyMs=[...S.tracks,...S.midi].some(x=>x.mute||x.solo);
  r.innerHTML=`<div class="railhead">Track<button class="iconkey allon" id="allon" ${anyMs?"":"disabled"} title="Unmute and unsolo every track (0)">M/S off</button></div>`+side().map(th).join("")+(withSide?`<div style="margin-top:4px">${sideSw()}</div>`:"")+(S.ws==="seq"?lockPicker(S.sel):"");altLabels()}
 function rowStatus(t){const tr=trk(t),arp=tr.arp.MODE>0,trn=tr.tr.TRACK-64;return[arp?"ARP":"",t<6&&tr.tr.SCALE?["","FIX","MAJ","MIN"][tr.tr.SCALE]:(trn?(trn>0?"+":"")+trn:"")].filter(Boolean).join(" ")}
-const ROLL_TIP=t=>`${tLabel(t)} notes. Click an empty place: a note of ${MmRoll.say(S.rollLen)} (drag sideways paints) · drag a note's end: its length (new notes get it too; a ${isMidiT(t)?"MIDI note's LEN, 6 a step":"NOTE OFF where it ends"}) · drag a note: up or down its pitch, sideways to move it · shift-click adds a chord note · alt-click deletes a note (the earlier note runs on to the next trig or NOTE OFF), or sets a NOTE OFF on an empty step · ⌘-click or ⌘-drag selects steps · right-click: the step menu · scroll = pitch${isMidiT(t)?"":" · the keys on the left play the note"}${(()=>{const a=trk(t).arp;return a.MODE&&a.SPD?` · light notes: what the arpeggiator plays${a.PLAY===4?" (random order: outlined, the pitches vary)":""}`:""})()}`;
+const ROLL_TIP=t=>`${tLabel(t)} notes. Click an empty place: a note of ${drawLen(t)===S.rollLen?MmRoll.say(S.rollLen):"to the next trig (the arpeggiator is on: no NOTE OFF, as a TRIG key writes it)"} (drag sideways paints) · drag a note's end: its length (new notes get it too; a ${isMidiT(t)?"MIDI note's LEN, 6 a step":"NOTE OFF where it ends"}) · drag a note: up or down its pitch, sideways to move it · shift-click adds a chord note · alt-click deletes a note (the earlier note runs on to the next trig or NOTE OFF), or sets a NOTE OFF on an empty step · ⌘-click or ⌘-drag selects steps · right-click: the step menu · scroll = pitch${isMidiT(t)?"":" · the keys on the left play the note"}${(()=>{const a=trk(t).arp;return a.MODE&&a.SPD?` · light notes: what the arpeggiator plays${a.PLAY===4?" (random order: outlined, the pitches vary)":""}`:""})()}`;
 /* ===== Values while live recording (as the MD Editor's): the firmware locks the step that plays when a value arrives (CC; a
    step without a trig gets a trigless lock); the plug-in names it (machine.desk.recLock: track, page.value, step) and
    the trig row's cell and the lock lane's bar show it until the read-back brings the real lock. ===== */
@@ -3739,8 +3739,13 @@ document.addEventListener("dblclick",e=>{const c=e.target.closest?.("canvas.roll
  const G=laneGeom(c);if(onKeys(c,G,e))return;const h=laneHit(c,e);if(!h||h.k<0||h.edge||!trk(S.sel).steps[h.s])return;
  if(rollDrawn&&rollDrawn.t===S.sel&&rollDrawn.s===h.s&&Date.now()-rollDrawn.at<DBL_MS)return;
  const t=S.sel,touched=rollDelNote(t,h);S.stepSel=null;editSpan(t,new Set(touched),true);renderTop();rerenderSeq();syncSel();toast(`Deleted the note on ${tLabel(t)} step ${h.s+1} (⌘Z brings it back).`)});
+/* B-179: the length a new note on track t gets. With the arpeggiator on (KEY, SID, ADD) a synth track's note is drawn as
+   the machine's TRIG key writes it: no NOTE OFF, held to the track's next trig. The firmware's arpeggiator runs while
+   the note is held, and a NOTE OFF one step later (the 1/16 draw length) released it after one arpeggiated note: "the
+   arp does not repeat a single note". Dragging the note's end still gives it a NOTE OFF. */
+function drawLen(t){return !isMidiT(t)&&trk(t).arp.MODE>0?S.len:S.rollLen}
 /* a new note on step s at pitch n that lasts the draw length */
-function rollAdd(t,s,n){trk(t).steps[s]=note(n);const r=rollLen(t,s,S.rollLen);return{touched:new Set([s,...r.touched]),lock:r.lock,off:r.off}}
+function rollAdd(t,s,n){trk(t).steps[s]=note(n);const r=rollLen(t,s,drawLen(t));return{touched:new Set([s,...r.touched]),lock:r.lock,off:r.off}}
 function rollDown(c,e){if(e.button!==0)return;const t=+c.dataset.t;if(t!==S.sel){select(t);return}
  {const G=laneGeom(c);if(e.button===0&&onKeys(c,G,e)){const n=rollRow(c,G,e);if(n==null)return;if(isMidiT(t)){kbTell("midi","The keys play the synth tracks: a MIDI track's notes go to the MIDI OUT only.");return}rollDrag={mode:"key",t,c};rollKey(t,n);drawEd(c);return}}
  const h=laneHit(c,e);if(!h)return;const tr=trk(t);
@@ -3796,7 +3801,7 @@ function rollPaintMove(c,e){const d=rollDrag;if(d.mode==="pitch"&&!d.paint)retur
  if(d.mode==="erase"){const a=Math.min(d.last,s),b=Math.max(d.last,s);for(let k=a;k<=b;k++)if(tr.steps[k]&&!tr.steps[k].off)rollRemove(t,k).forEach(x=>d.touched.add(x))}
  else{if(d.paintOff>=0&&tr.steps[d.paintOff]?.off){tr.steps[d.paintOff]=null;d.touched.add(d.paintOff)}
   for(const[k,x] of mmPaint(tr.steps,d.last,s,"paint",d.n)){tr.steps[k]=x;d.touched.add(k);d.painted.add(k)}
-  const q=rollLen(t,Math.max(...d.painted),S.rollLen);q.touched.forEach(k=>d.touched.add(k));d.lock=d.lock||q.lock;d.paintOff=q.off}
+  const q=rollLen(t,Math.max(...d.painted),drawLen(t));q.touched.forEach(k=>d.touched.add(k));d.lock=d.lock||q.lock;d.paintOff=q.off}
  d.last=s;redraw();return true}
 /* the steps a drag changed, as one steps intent over their span (one per step would not do: each intent shows the
    view again from the documents and its own writes, so the later steps' changes were gone before they were sent);
@@ -4584,9 +4589,9 @@ Keys.bind({id:"clear-what",short:"Clear what",scope:"any",keys:["Backspace"],mod
 /* ===== Gates, arpeggiator, transpose, trig setup (the dock under the note lane) ===== */
 const ARPM=["OFF","KEY","SID","ADD"],ARPP=["TRUE","UP","DOWN","CYCLE","RND"],SCALES=["---","FIX","MAJ","MIN"];
 const ARPHELP={0:"<b>OFF</b> The track plays the base note of each trig. Chord notes wait for the arpeggiator or POLY.",
- 1:"<b>KEY</b> Repeats one held note or cycles the held chord. Release all notes and it stops.",
+ 1:"<b>KEY</b> Repeats one held note or cycles the held chord. A trig holds its note to its NOTE OFF or the next trig: there it stops.",
  2:"<b>SID</b> Needs two or more notes. They stay in the cycle after release until a new chord.",
- 3:"<b>ADD</b> Starts on the first note. Each extra key joins while one key is held."};
+ 3:"<b>ADD</b> Starts on the first note. Each extra key joins while one key is held. A NOTE OFF or the next trig ends it."};
 /* a MIDI track's LEN on step s (its lock, or the kit's MIDI page): ticks, 6 a step (measured, MmRoll) */
 const midiLenOf=(t,s)=>S.locks.get(lkKey(t,"MID.0"))?.get(s)??trk(t).v.MID[0];
 function midiLenSteps(t,s){const v=midiLenOf(t,s);return v>=MmRoll.LEN_HOLD?Infinity:Math.max(1,v)/MmRoll.TICKS}

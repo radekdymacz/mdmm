@@ -78,6 +78,7 @@ namespace mmDesk
 		bool busy() const override;
 		std::string sendAsIs(const Bytes& _message, bool _dump) override;
 		AsIs asIs() const override;
+		void reread(const Ref& _ref) override { request(_ref, false); }
 
 		// ---- MmAdapter: Monomachine facts from the device ----
 		void setProbe(Probe _probe) override;
@@ -280,6 +281,7 @@ namespace mmDesk
 		Pushes m_pushes;
 		std::set<Ref> m_loadAfter;				// kit slots to LOAD KIT once their waiting dump goes
 		bool m_kitDumpHold = false;				// kit delivery (a dump or live edits) held the last memory image
+		double m_portHeldSinceMs = -1;			// B-027: since when the port's parameter layer holds its values (-1: it does not)
 		// Without the panel: what waits for the person's SYSEX RECV, in order (a dump names its push).
 		struct Waiting
 		{

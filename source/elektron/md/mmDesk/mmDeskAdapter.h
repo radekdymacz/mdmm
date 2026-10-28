@@ -49,6 +49,10 @@ namespace mmDesk
 		// A kit value as the plug-in's parameter: page 0-6 (DATA pages, CC), 7 = level (index 0),
 		// 8 = mute (index 0, value 0/1).
 		std::function<void(uint8_t _track, uint8_t _page, uint8_t _index, uint8_t _value)> sendParam;
+		// B-027: true while the parameter layer holds the values sendParam gave it (the plug-in reads the machine's kit
+		// and global again after a kit change or a SET STATUS, and sends no CC until it has them): they are not on
+		// their way to the machine yet. Unset: sendParam's values go at once.
+		std::function<bool()> paramsHeld;
 		// NRPN on the base channel: track 0-5, parameter (0x38-0x3f MIDI page, 0x40-0x45 multi env).
 		std::function<void(uint8_t _track, uint8_t _param, uint8_t _value)> sendNrpn;
 		// Press these keys one after another (10 ms held, 10 ms apart, machine time). Over HW

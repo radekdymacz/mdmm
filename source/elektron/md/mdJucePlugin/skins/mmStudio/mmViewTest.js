@@ -466,6 +466,38 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 		"a track edit keeps the distinct MIDI pitches and does not turn pool residue into a note");
 }
 
+/* ---- B-179: with the arpeggiator on, a new note in the roll is held to the next trig (no NOTE OFF), as the machine's
+   TRIG key writes it: a 1/16 note's NOTE OFF released the firmware's arpeggiator after one note, so a single note
+   did not repeat. Arpeggiator off: the draw length as before. ---- */
+{
+	const p = loaded(), S = p.S(), M = p.mockup;
+	const take = () => { p.run(); const o = p.sent.filter(m => /Steps|steps|step$/.test(m.op || "")); p.sent.length = 0; return o; };
+	S.ws = "seq"; S.sel = 0; S.len = 16;
+	const T = () => S.tracks[0], arp0 = T().arp;
+	const clear = () => { T().steps = Array(64).fill(null); M.editSpan(0, new Set([...Array(16).keys()]), true); take(); };
+	clear();
+	M.setRollLen(1);
+	T().arp = { ...arp0, MODE: 0 };
+	let a = M.rollAdd(0, 4, 50); M.editSpan(0, a.touched, a.lock);
+	let o = take();
+	check(!!T().steps[5]?.off && o.length === 1 && JSON.stringify(o[0].rows[0].steps).includes('[5,{"off":true}]'),
+		"arpeggiator OFF: a new 1/16 note gets its NOTE OFF on the next step: " + JSON.stringify(o.map(m => m.rows && m.rows[0].steps)));
+	clear();
+	T().arp = { ...arp0, MODE: 1, SPD: 6, len: 8, rhy: Array(16).fill(true), ofs: Array(16).fill(0) };
+	a = M.rollAdd(0, 4, 50); M.editSpan(0, a.touched, a.lock);
+	o = take();
+	check(T().steps.every(st => !st?.off) && o.length === 1 && !JSON.stringify(o[0].rows[0].steps).includes("off"),
+		"arpeggiator KEY: the new note has no NOTE OFF, the firmware holds it to the next trig: " + JSON.stringify(o.map(m => m.rows && m.rows[0].steps)));
+	const sp = M.noteSpans(0).find(x => x.s === 4);
+	check(sp && sp.e - sp.s >= 2, "and its span runs on, so the arpeggiator repeats the single note: " + JSON.stringify(sp && { s: sp.s, e: sp.e, wrap: sp.wrap }));
+	T().arp = { ...T().arp, MODE: 2 };
+	a = M.rollAdd(0, 10, 52); M.editSpan(0, a.touched, a.lock);
+	o = take();
+	check(T().steps.every(st => !st?.off), "arpeggiator SID: no NOTE OFF either (SID still needs a chord to start, as the manual says)");
+	T().arp = arp0;
+	clear();
+}
+
 /* ---- I-007, I-010 (0.5 slice 3): the piano roll's notes with their lengths, as the core's intents ---- */
 {
 	const p = loaded(), S = p.S(), M = p.mockup;

@@ -1453,7 +1453,7 @@ namespace
 				}
 			}
 			_fake.step(_desk);
-			if(syx.running() && _desk.lifecycle() == deskCore::Lifecycle::Ready)
+			if(syx.due() && _desk.lifecycle() == deskCore::Lifecycle::Ready)
 			{
 				syx.step(_desk, nowMs(), false, toPage);
 				_desk.flush();
