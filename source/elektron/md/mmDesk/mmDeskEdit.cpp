@@ -2005,6 +2005,15 @@ namespace mmDesk
 		return parts;
 	}
 
+	std::array<std::array<uint8_t, 8>, 7> machineStartPages(const uint8_t _machine)
+	{
+		std::array<std::array<uint8_t, 8>, 7> pages{};
+		pages[0] = synDefaults(_machine);
+		for(uint8_t pg = 1; pg < 7; ++pg)
+			pages[pg] = neutralPage(pg);
+		return pages;
+	}
+
 	ed::MmKit emptyKit(const ed::MmKit& _like, const uint8_t _slot)
 	{
 		auto k = _like;
