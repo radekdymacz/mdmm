@@ -191,7 +191,7 @@ Run 39108554055 (first run, `-j2`, one 3-core runner per job) failed in these gr
   "work under the device lock under 1 ms" check at 1.1 to 7 ms: two emulations at once on three shared cores. Now: the
   tests run in four shards, one test at a time per runner (`ctest -I n,,4 -j1`); `-DMDMM_FW_TIMEOUT_SCALE=3` triples the
   time limit of every FirmwareTest (`mdmm_scale_firmware_test_timeouts` in CMakeLists.txt; only limits move, nothing is
-  skipped); `MDMM_LOCK_HOLD_BUDGET_MS` widens the lock-hold check (1 ms on a Mac of our own, unchanged by default; 10 ms on CI at first, 25 ms since the nightly runs of 2026-10-25 and -26 measured 11.9 and 12.5 ms for the one project-state swap hold).
+  skipped); `MDMM_LOCK_HOLD_BUDGET_MS` widens the lock-hold check (1 ms on a Mac of our own, unchanged by default; 10 ms on CI; the nightly runs of 2026-10-25 and -26 measured 11.9 and 12.5 ms for the one project-state swap hold, kept at 10 ms until Radek decides: shorten the hold or widen the budget).
 - **`mdMachineMidiOutFirmwareTest_mm`** counted exactly 50 clocks and needed more than 50 in a fixed 3 s of a machine that
   plays slower than real time; the test now waits (up to 30 s) until the clocks are enough.
 - **E2E.** Both machines passed the journeys that need no running machine and failed nearly all that need one (PLAY ends
@@ -302,4 +302,4 @@ one); 10-25 and 10-26 the lock-hold budget (11.9 and 12.5 ms against 10); 10-26 
 mid-drag), mm-real-sequence-plays (PLAY right after the undo, before its dump was through SYSEX RECV) and
 mm-perform-multi-setup (the SPLIT KEY stepper not drawn: the page's mode went back after the key); 10-27
 md-mix-heads-trigs (B-171, still open: the journey now logs what the page held at the flash); 10-28 mm-perform-multi-setup.
-The journeys now wait for the state they test (assertions unchanged); the lock budget is 25 ms on CI.
+The journeys now wait for the state they test (assertions unchanged); the lock budget stays 10 ms on CI (the project-state swap hold is open, Radek decides).
