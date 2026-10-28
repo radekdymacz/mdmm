@@ -306,14 +306,17 @@ namespace mdJucePlugin
 			const auto* slot = _request.find("slot");
 			const auto* every = _request.find("all");
 			const bool all = every && every->isBool() && every->asBool();
+			const auto* fmt = _request.find("format");
+			const std::string format = fmt && fmt->isString() ? fmt->asString() : "wav";
+			const juce::String ext = format == "syx" ? "syx" : "wav";
 			std::string why;
-			const auto files = desk().exportSamples(_request.find("bank")->asString(), slot ? static_cast<int>(slot->asNumber()) : 0, all, why);
+			const auto files = desk().exportSamples(_request.find("bank")->asString(), slot ? static_cast<int>(slot->asNumber()) : 0, all, format, why);
 			size_t written = 0;
 			if(!files.empty() && (!all || _target.createDirectory().wasOk()))
 				for(const auto& f : files)
 				{
-					const auto out = all ? _target.getNonexistentChildFile(juce::String::fromUTF8(f.name.c_str()).upToLastOccurrenceOf(".wav", false, false), ".wav", false)
-						: _target.withFileExtension("wav");
+					const auto out = all ? _target.getNonexistentChildFile(juce::String::fromUTF8(f.name.c_str()).upToLastOccurrenceOf(".wav", false, false).upToLastOccurrenceOf(".syx", false, false), "." + ext, false)
+						: _target.withFileExtension(ext);
 					if(out.replaceWithData(f.data.data(), f.data.size()))
 						++written;
 				}
@@ -325,9 +328,9 @@ namespace mdJucePlugin
 			if(!files.empty() && written != files.size())
 				text = "Could not write " + std::to_string(files.size() - written) + " of " + std::to_string(files.size()) + " files to " + _target.getFullPathName().toStdString() + ".";
 			else if(!files.empty() && all)
-				text = "Saved " + std::to_string(written) + " WAV file" + (written == 1 ? "" : "s") + " to " + _target.getFullPathName().toStdString() + ".";
+				text = "Saved " + std::to_string(written) + (format == "syx" ? " SysEx file" : " WAV file") + (written == 1 ? "" : "s") + " to " + _target.getFullPathName().toStdString() + ".";
 			else if(!files.empty())
-				text = "Saved " + _target.withFileExtension("wav").getFileName().toStdString() + ".";
+				text = "Saved " + _target.withFileExtension(ext).getFileName().toStdString() + ".";
 			m.set("text", text);
 			toPage(m);
 		}

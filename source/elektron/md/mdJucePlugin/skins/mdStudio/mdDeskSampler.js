@@ -58,6 +58,7 @@ function smpManagerBar(bank, i, sending) {
 		+ (bank === "rom" ? smpKey("smppaste", i, "Paste", `Send the copied sample to ${name}. It replaces what the slot holds (Undo sample brings it back). Loop points are not sent.`, paste) : "")
 		+ (bank === "ram" ? smpKey("ramrom", i, "Keep as ROM…", `Send ${name}'s take to a ROM slot, so it is kept when the power is off. The other RAM slots stay as they are.`, none || (sending ? "A sample is on its way." : "")) : "")
 		+ smpKey("smpexport", bank + ":" + i, "Export WAV", `Save ${name}'s sample as a WAV file (16-bit mono, the slot's own rate).`, none)
+		+ (bank === "rom" ? smpKey("smpexportsyx", i, "Export SysEx", `Save ${name}'s sample as the SysEx file the machine's own SEND makes (SDS), with its slot in it: sent back with ORG it lands in the same slot.`, none) : "")
 		+ (bank === "ram" ? smpKey("smpexportall", "ram", "Export all RAM…", "Save every RAM slot that holds a take as a WAV file, into a folder you choose.", why) : "")
 		+ (bank === "rom" ? smpKey("smpundo", "1", "Undo sample", u ? `Undo: ${u.what}. The sample it replaced is sent back to ${romCode(u.slot + 1)} (${u.depth} step${u.depth === 1 ? "" : "s"}).` : "", !canDo(V, "sampleLoad") ? "" : sending ? "A sample is on its way." : u ? "" : "Nothing to undo: a paste, a RAM to ROM copy, a rename or a load over a sample can be undone.") : "")
 		+ smpClipChip() + `</div>`;
@@ -322,7 +323,7 @@ const smpCols = () => `var(--srlab) ${cols()}`;
 function romTiles(sel, sending) {
 	const b = smpBank(), why = smpWhy(), inKit = new Set(V.tracks.map(t => t.m));
 	const used = b ? b.rom.filter(s => !s.empty).length : null;
-	return `<section class="card"><header><h3>ROM slots</h3><span class="smpmem" title="${b ? "Sample memory as the editor counts it: the ROM slots and the four RAM buffers share it. The machine's own figure is not reported over MIDI." : ""}">${used != null ? `${used} of 48 hold a sample · ${smpMemory(b).text} · ` : ""}lit: used by this kit${why ? " · " + why : ""}</span>${smpKey("smpexportall", "rom", "Export all…", "Save every ROM slot that holds a sample as a WAV file, into a folder you choose.", why)}</header>
+	return `<section class="card"><header><h3>ROM slots</h3><span class="smpmem" title="${b ? "Sample memory as the editor counts it: the ROM slots and the four RAM buffers share it. The machine's own figure is not reported over MIDI." : ""}">${used != null ? `${used} of 48 hold a sample · ${smpMemory(b).text} · ` : ""}lit: used by this kit${why ? " · " + why : ""}</span>${smpKey("smpexportall", "rom", "Export all…", "Save every ROM slot that holds a sample as a WAV file, into a folder you choose.", why)}${smpKey("smpexportallsyx", "rom", "Export all SysEx…", "Save every ROM slot that holds a sample as a SysEx file with its slot in it, into a folder you choose.", why)}</header>
   <div class="romtiles">${Array.from({ length: 48 }, (_, i) => {
 		const k = i + 1, s = b ? b.rom[i] : null, code = romCode(k), name = romName(k), empty = !!(s && s.empty), lit = inKit.has(code);
 		const face = s && !empty ? `<canvas class="tw" data-k="${k}" aria-hidden="true"></canvas>` : empty ? `<span class="twno">empty</span>` : "";
@@ -461,6 +462,8 @@ function clickSlots(e) {
 	const ps = e.target.closest("[data-smppaste]"); if (ps) { if (!ps.disabled) cmd("samplePaste", { slot: +ps.dataset.smppaste }); return true; }
 	const un = e.target.closest("[data-smpundo]"); if (un) { if (!un.disabled) cmd("sampleUndo", {}); return true; }
 	const ex = e.target.closest("[data-smpexport]"); if (ex) { if (!ex.disabled) { const [bank, slot] = smpAt(ex.dataset.smpexport); cmd("sampleExport", { bank, slot }); } return true; }
+	const xs = e.target.closest("[data-smpexportsyx]"); if (xs) { if (!xs.disabled) cmd("sampleExport", { bank: "rom", slot: +xs.dataset.smpexportsyx, format: "syx" }); return true; }
+	const xa = e.target.closest("[data-smpexportallsyx]"); if (xa) { if (!xa.disabled) cmd("sampleExport", { bank: "rom", all: true, format: "syx" }); return true; }
 	const ea = e.target.closest("[data-smpexportall]"); if (ea) { if (!ea.disabled) cmd("sampleExport", { bank: ea.dataset.smpexportall, all: true }); return true; }
 	const rr = e.target.closest("[data-ramrom]"); if (rr) { if (!rr.disabled) askRamToRom(+rr.dataset.ramrom); return true; }
 	const rt = e.target.closest("[data-romtile]"); if (rt) { S.smpSlot = "ROM" + rt.dataset.romtile; render(); return true; }

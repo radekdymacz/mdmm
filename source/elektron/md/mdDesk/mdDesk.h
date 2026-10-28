@@ -91,7 +91,9 @@ namespace mdDesk
 			std::string name;
 			Bytes data;
 		};
-		std::vector<ExportFile> exportSamples(const std::string& _bank, int _slot, bool _all, std::string& _why) const;
+		// _format "syx" (ROM slots only): the SDS dump the machine's own SEND makes (header, name, packets), the slot's position in it,
+		// so an ORG receive puts it back where it was.
+		std::vector<ExportFile> exportSamples(const std::string& _bank, int _slot, bool _all, const std::string& _format, std::string& _why) const;
 		// The setup stored with the project (md-desk/setup): what of it this version can use, the default for the rest
 		// (never the previous project's); errors say what was left out.
 		std::vector<std::string> loadSetup(const Value& _setup);

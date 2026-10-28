@@ -136,7 +136,8 @@
 <ol class="gd-steps"><li>Select the slot, ROM or RAM.</li><li>Click <b class="gd-ui">Export WAV</b>.</li><li>Choose where to save the file.</li></ol>
 <p>To save every ROM slot that holds a sample, click <b class="gd-ui">Export all…</b> in the header of the <b class="gd-ui">ROM slots</b> card and choose a folder. A file is written for each slot, named by its slot and its name, such as &quot;ROM-04 SNR&quot;. On a RAM slot, <b class="gd-ui">Export all RAM…</b> does the same for the four RAM slots.</p>
 <p>The files are 16-bit mono WAV at the slot's own rate. They hold exactly the samples the machine holds, with no loop points.</p>
-<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Export works with the emulated machine only. A real Machinedrum does not send its samples back, so the keys are greyed out, with the reason. The editor writes WAV files, not the SysEx files of the machine's own SEND.</p></aside>
+<p>To get the file the machine's own SEND makes, click <b class="gd-ui">Export SysEx</b> on a ROM slot, or <b class="gd-ui">Export all SysEx…</b> in the header of the <b class="gd-ui">ROM slots</b> card. The file is a MIDI Sample Dump with the slot's position in it. When you send it back with the ORG method, the sample lands in the slot it came from. A RAM slot has no SysEx file: keep it as a ROM slot first, or export it as WAV.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Export works with the emulated machine only. A real Machinedrum does not send its samples back, so the keys are greyed out, with the reason.</p></aside>
 </div></section>
 <section class="gd-sec" id="erase-samples" aria-labelledby="erase-samples-h">
 <div class="gd-body gd-prose"><h2 id="erase-samples-h">ERASE SAMPLES <a class="gd-anchor" href="#erase-samples" aria-label="Link to ERASE SAMPLES">#</a></h2>

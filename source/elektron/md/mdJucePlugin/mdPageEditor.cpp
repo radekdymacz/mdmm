@@ -318,12 +318,14 @@ namespace mdJucePlugin
 		const auto* every = _request.find("all");
 		const bool all = every && every->isBool() && every->asBool();
 		const bool ram = _request.find("bank")->asString() == "ram";
+		const auto* fmt = _request.find("format");
+		const bool syx = fmt && fmt->isString() && fmt->asString() == "syx";
 		const auto number = slot ? static_cast<int>(slot->asNumber()) + 1 : 1;
 		const auto dir = juce::File::getSpecialLocation(juce::File::userMusicDirectory);
 		char name[32];
-		std::snprintf(name, sizeof(name), ram ? "RAM-%d.wav" : "ROM-%02d.wav", number);
+		std::snprintf(name, sizeof(name), syx ? "ROM-%02d.syx" : ram ? "RAM-%d.wav" : "ROM-%02d.wav", number);
 		m_chooser = std::make_unique<juce::FileChooser>(all ? (ram ? "Export the RAM slots to a folder" : "Export the ROM slots to a folder")
-			: "Export the sample as a WAV file", all ? dir : dir.getChildFile(name), all ? "*" : "*.wav");
+			: syx ? "Export the sample as a SysEx file" : "Export the sample as a WAV file", all ? dir : dir.getChildFile(name), all ? "*" : syx ? "*.syx" : "*.wav");
 		const auto flags = all ? juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectDirectories
 			: juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::warnAboutOverwriting;
 		m_chooser->launchAsync(flags, [this, _request](const juce::FileChooser& _c)

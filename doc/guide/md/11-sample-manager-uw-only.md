@@ -135,7 +135,7 @@ Drop several WAV or AIFF files on the window with the **Sampler** open. They go 
 ROM-48 is the last slot. Files past it are not loaded, and a message says how many. Drag and drop works on macOS only. On Windows and Linux, load the files one at a time with **Load sample…**.
 
 ## SEND SAMPLES
-<!-- rows: MD-193 @0e551e -->
+<!-- rows: MD-193 @10ce6b -->
 
 The Machinedrum ignores requests for its samples over MIDI, so the editor does not ask it to send. It reads the samples from the emulated machine and writes them as files instead.
 
@@ -147,7 +147,9 @@ To save every ROM slot that holds a sample, click **Export all…** in the heade
 
 The files are 16-bit mono WAV at the slot's own rate. They hold exactly the samples the machine holds, with no loop points.
 
-NOTE: Export works with the emulated machine only. A real Machinedrum does not send its samples back, so the keys are greyed out, with the reason. The editor writes WAV files, not the SysEx files of the machine's own SEND.
+To get the file the machine's own SEND makes, click **Export SysEx** on a ROM slot, or **Export all SysEx…** in the header of the **ROM slots** card. The file is a MIDI Sample Dump with the slot's position in it. When you send it back with the ORG method, the sample lands in the slot it came from. A RAM slot has no SysEx file: keep it as a ROM slot first, or export it as WAV.
+
+NOTE: Export works with the emulated machine only. A real Machinedrum does not send its samples back, so the keys are greyed out, with the reason.
 
 ## ERASE SAMPLES
 <!-- rows: MD-194 @364503 -->

@@ -124,7 +124,7 @@ const CAP_CONTROLS = {
 	chains: "[data-chainpad]",
 	sampleNames: "[data-rename]",
 	sampleLoad: "[data-smpload],[data-smppaste],[data-smpundo]",
-	sampleAudio: "[data-aud],[data-smpcopy],[data-smpexport],[data-smpexportall],[data-ramrom]",
+	sampleAudio: "[data-aud],[data-smpcopy],[data-smpexport],[data-smpexportall],[data-smpexportsyx],[data-smpexportallsyx],[data-ramrom]",
 	modulators: '[data-addsrc],[data-delsrc],[data-srcshape],[data-minv],[data-mdel],#maddl,[data-set="srcrate"] button,[data-set="lcurve"] button,.pc[data-g="src"],.pc[data-g="link"]' };
 const CAP_INFO = ["panelKeys", "lcd", "workingKitMemory", "mutesFromMemory", "panic"];
 /* one routine for both editors (skins/shared/deskCaps.js): this page's look is a disabled control whose own tooltip

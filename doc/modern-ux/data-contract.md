@@ -673,7 +673,7 @@ writes has none). `{"type":"sampleHistory", clip, undo}` says what the clipboard
 when none): on every change and after a ready. The window's op `sampleExport {bank, slot, all}` opens the save
 dialog (one slot) or a folder chooser (`all`: every slot of the bank that holds a sample); the session writes the
 WAV files `Desk::exportSamples` makes (16-bit mono at the slot's rate, named "ROM-04 SNR.wav", "RAM-1.wav") and
-sends `{"type":"sampleExport", ok, count, text}`. Erase is not built: no SysEx or SDS message frees a slot.
+`format` "syx" (ROM only) writes `mdSdsDump(slot, ...).bytes()` instead, a `.syx` the machine takes back with ORG into the same slot; sends `{"type":"sampleExport", ok, count, text}`. Erase is not built: no SysEx or SDS message frees a slot.
 
 ## 5. Hardware limits (`elektronData::validate`)
 

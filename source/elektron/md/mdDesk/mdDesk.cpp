@@ -544,7 +544,7 @@ namespace mdDesk
 		publish(m);
 	}
 
-	std::vector<Desk::ExportFile> Desk::exportSamples(const std::string& _bank, const int _slot, const bool _all, std::string& _why) const
+	std::vector<Desk::ExportFile> Desk::exportSamples(const std::string& _bank, const int _slot, const bool _all, const std::string& _format, std::string& _why) const
 	{
 		namespace ed = elektronData;
 		const auto caps = machine().capabilities();
@@ -559,6 +559,12 @@ namespace mdDesk
 			return {};
 		}
 		const bool ram = _bank == "ram";
+		const bool syx = _format == "syx";
+		if(syx && ram)
+		{
+			_why = "A RAM take has no place in a SysEx sample file: keep it as a ROM slot first, or export it as WAV.";
+			return {};
+		}
 		if(ram && !m_samples->ramReadable)
 		{
 			_why = m_samples->ramReason;
@@ -584,6 +590,20 @@ namespace mdDesk
 				label.pop_back();
 			if(!label.empty())
 				name += " " + label;
+			if(syx)
+			{
+				std::string sdsName = s.name;
+				while(!sdsName.empty() && sdsName.back() == ' ')
+					sdsName.pop_back();
+				if(sdsName.size() > 4)
+					sdsName.resize(4);
+				if(ed::mdSetSampleName(s.slot, sdsName).empty())
+					sdsName = "SMPL";
+				const auto dump = ed::mdSdsDump(s.slot, *s.pcm, s.rate, sdsName);
+				if(dump)
+					files.push_back({name + ".syx", dump->bytes()});
+				continue;
+			}
 			files.push_back({name + ".wav", ed::encodeWavMono16(*s.pcm, s.rate)});
 		}
 		if(files.empty())

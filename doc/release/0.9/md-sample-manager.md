@@ -33,7 +33,7 @@ What the SDS route does not carry: the slot's loop points (the header has them; 
 
 The panel route is GLOBAL EDIT (FUNCTION + PATTERN/SONG) > FILE > SAMPLE MGR > ERASE > slot > ENTER > ENTER. The cursor of the global menu and of the file menu is not known from outside, and the editor has no reader for the LCD text. A key macro written without the LCD would press into the wrong row. Two ways are open, both need Radek:
 
-- A. A firmware probe on a `release/*` branch (the ROMs reach only main and release/*): dump the LCD after each key and find how to reach SAMPLE MGR from any state (exit three times, then the menu's fixed start position). Then a panel macro, verified by the bank (the slot reads empty afterwards).
+- A (approved in principle by Radek; waits until 0.8.1 is out, because `release/0.0.0-ci-test` is in use). A firmware probe on a `release/*` branch (the ROMs reach only main and release/*): dump the LCD after each key and find how to reach SAMPLE MGR from any state (exit three times, then the menu's fixed start position). Then a panel macro, verified by the bank (the slot reads empty afterwards).
 - B. Treat a slot as "cleared" by sending a short silent sample. Rejected: the slot would still list a sample and use memory.
 
 Until A is done, MD-194 stays missing and MD-198 is partial (copy, paste and undo done; clear needs erase).
@@ -43,6 +43,7 @@ Until A is done, MD-194 stays missing and MD-198 is partial (copy, paste and und
 - No new workspace. All of it is on the Sampler workspace, in the ROM slot card (`romsel`) and the RAM slot card (`ramtop`), as keys in the card's existing slot bar. No right-click, no duplicate of a key that already exists (Radek's rules, manual-gaps design).
 - ROM slot card: `Put on track`, `Load sample...`, `Rename`, then a second line of keys: `Copy`, `Paste` (off while the clipboard is empty), `Export WAV`, `Undo sample`, and the clipboard chip. The disabled `Send` key is gone (export replaces it).
 - RAM slot: a card "Keep and export" under the take: `Copy`, `Keep as ROM...` (asks for the ROM slot, the first empty one offered; the slot's old sample is replaced and Undo sample brings it back), `Export WAV`, `Export all RAM...`, and the chip. The note "no copy to ROM from here" is shortened to "no file load".
+- `Export SysEx` on a ROM slot and `Export all SysEx...` in the tiles header: the SDS dump the machine's own SEND makes (`mdSdsDump(...).bytes()`), the slot position in its header, so ORG receive puts it back. ROM only: a RAM slot has no position (keep it as ROM first).
 - ROM tiles header: `Export all...` (a folder).
 - Memory line in the tiles card header: "N of 48 hold a sample · 12.3 s used · 20.1 s free (62 %)", the ROM slots and the four RAM buffers against the DSP memory. The top bar's MEM field is unchanged (used share).
 - Key and tile tooltips show the size in seconds, KB (16-bit mono) and samples.
@@ -77,5 +78,17 @@ A step is recorded when a send starts and kept when `sampleLoad` says `done` (dr
 ## Decisions for Radek
 
 1. Erase: approve the probe (A) on a `release/*` branch.
-2. Export as WAV only, or also as an SDS `.syx` with the slot position (the manual's SEND to C6 does that). The code path is `mdSdsDump(slot, ...).bytes()`; it is small.
-3. RAM to ROM: the manual's copy empties the other RAM slots after a prompt. The editor does not. Keep it so?
+2. Decided: export also as an SDS `.syx` with the slot position (built, ROM only).
+3. Decided: RAM to ROM leaves the other RAM slots as they are.
+4. Decided: memory left is counted from the samples the editor reads; the guide says so.
+
+## The erase probe: plan (not started)
+
+Waits for 0.8.1 to be out; runs on a `release/0.9-erase-probe` branch (the ROM Worker serves only main and `release/*`). Nothing here is built.
+
+1. A firmware test `mdSampleManagerProbeFirmwareTest` (label FirmwareTest, focused by `firmware_test` on the firmware workflow), written in the style of `mdEditorProbeFirmwareTest`, on the emulated machine with the user's UW ROM. It logs, never asserts, in its first run.
+2. Reaching SAMPLE MGR: from a cold start press EXIT three times, then `hold:function`, PATTERN/SONG (key name to add in `mdpanelsequence.cpp`; `PanelControl::PatternSong` exists), `release:function`. After each key, run the machine for 100 ms of machine time and dump the front panel LCD (`FrontPanelPublisher`) as ASCII art into the log. The log shows the global menu's fixed start cursor and which keys move it (UP/DOWN/LEFT/RIGHT), until FILE, SAMPLE MGR, the MODE column (RECEIVE, SEND, ERASE, RENAME) and the NAME/SIZE column are on screen.
+3. From the dumps, write the key sequence as data (a list of key names with the LCD rows each must show). A later run replays it and checks each step against the stored rows, so a wrong menu position stops the macro and leaves the menu with EXIT, never an erase.
+4. Erase one: MODE = ERASE, NAME/SIZE to the slot (UP/DOWN, FUNCTION + UP/DOWN to scroll faster), ENTER, ENTER to confirm. Pass: the bank read back (`readMdSampleBank`) shows the slot empty, the other slots equal, `names` for the slot unset, and the memory free grows by its length. Erase all: the ALL entry at the bottom of the list, same check.
+5. Undo of a step that filled an empty slot then becomes an erase of that slot; Clear becomes the erase with an undo step (the sample put back by SDS).
+6. Kept out until proven: no erase key on the page before the probe's replay passes on CI.

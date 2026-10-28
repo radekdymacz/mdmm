@@ -6997,7 +6997,7 @@
         },
         {
           "type": "object",
-          "description": "host: export UW samples as WAV files (16-bit mono at the slot's own rate, the samples the machine holds): the slot of bank through the window's save dialog, or with all every slot of the bank that holds one into a folder the window asks for; a sampleExport message follows",
+          "description": "host: export UW samples as WAV files (16-bit mono at the slot's own rate, the samples the machine holds): the slot of bank through the window's save dialog, or with all every slot of the bank that holds one into a folder the window asks for; format syx (ROM only) writes the SDS dump the machine's own SEND makes, with the slot's position in it; a sampleExport message follows",
           "required": ["op", "bank"],
           "properties": {
             "op": {
@@ -7024,6 +7024,10 @@
             },
             "all": {
               "type": ["boolean", "integer"]
+            },
+            "format": {
+              "type": "string",
+              "enum": ["wav", "syx"]
             }
           },
           "additionalProperties": false

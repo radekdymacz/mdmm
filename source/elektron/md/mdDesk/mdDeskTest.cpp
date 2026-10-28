@@ -2993,7 +2993,7 @@ namespace
 
 		// export: the samples as the bank holds them, a file a slot
 		std::string why;
-		auto files = desk.exportSamples("rom", 3, false, why);
+		auto files = desk.exportSamples("rom", 3, false, "wav", why);
 		check(files.size() == 1 && files[0].name == "ROM-04 SNR.wav" && files[0].data.size() == 44 + 3000 * 2
 			&& std::string(files[0].data.begin(), files[0].data.begin() + 4) == "RIFF", "export one: ROM-04 SNR.wav, 3000 samples");
 		const auto decoded = [&]
@@ -3002,12 +3002,18 @@ namespace
 			return ed::decodeAudioFile(files[0].data, e);
 		}();
 		check(decoded && decoded->rate == 22050 && decoded->frames() == 3000 && decoded->channels.size() == 1, "the file reads back as 3000 samples at 22050 Hz, mono");
-		files = desk.exportSamples("rom", 0, true, why);
+		files = desk.exportSamples("rom", 0, true, "wav", why);
 		check(files.size() == 2 && files[0].name == "ROM-04 SNR.wav" && files[1].name == "ROM-10 KICK.wav",
 			"export all ROM: a file for each slot that holds a sample");
-		files = desk.exportSamples("ram", 0, true, why);
+		files = desk.exportSamples("ram", 0, true, "wav", why);
 		check(files.size() == 1 && files[0].name == "RAM-1.wav", "export all RAM: RAM-1.wav");
-		files = desk.exportSamples("rom", 5, false, why);
+		files = desk.exportSamples("rom", 3, false, "syx", why);
+		const auto sds = ed::mdSdsDump(3, *bank.rom[3].pcm, 22050, "SNR");
+		check(files.size() == 1 && files[0].name == "ROM-04 SNR.syx" && sds && files[0].data == sds->bytes() && files[0].data[4] == 3,
+			"export one as SysEx: the SDS dump the machine's SEND makes, slot 3 in its header");
+		files = desk.exportSamples("ram", 0, true, "syx", why);
+		check(files.empty() && !why.empty(), "a RAM take has no SysEx file: refused, and why");
+		files = desk.exportSamples("rom", 5, false, "wav", why);
 		check(files.empty() && !why.empty(), "export an empty slot: nothing, and why");
 
 		// a real Machinedrum cannot send its samples: every new key is refused with that reason
@@ -3022,7 +3028,7 @@ namespace
 		hw.onPageMessage(cmd(R"({"op":"sampleCopy","bank":"rom","slot":3,"id":1})"));
 		hw.onPageMessage(cmd(R"({"op":"ramToRom","ram":0,"slot":3,"id":2})"));
 		check(!ok(1) && !ok(2), "HW MIDI: copy and RAM to ROM refused (the machine cannot send its samples)");
-		files = hw.exportSamples("rom", 3, false, why);
+		files = hw.exportSamples("rom", 3, false, "wav", why);
 		check(files.empty() && why.find("real Machinedrum") != std::string::npos, "HW MIDI: export refused with the sampleAudio reason");
 	}
 
