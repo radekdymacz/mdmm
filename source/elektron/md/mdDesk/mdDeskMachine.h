@@ -323,6 +323,12 @@ namespace mdDesk
 		deskCore::SongRowHeard m_songRepeats;	// MD-147: the row's passes still to come, read as the row
 		int m_songRepeatsHeard = -1;
 		std::array<bool, 16> m_mutes{};
+		// A mute the page wrote and the machine has not shown yet: until it does (or g_muteSettleMs pass), what the
+		// machine reports for that track is an older write's echo (M, M, Alt+M in a row) and must not undo it.
+		struct MuteWrite { bool on = false; double atMs = 0; bool open = false; };
+		std::array<MuteWrite, 16> m_muteWrites{};
+		static constexpr double g_muteSettleMs = 1500;
+		void observeMute(size_t _t, bool _muted);
 		// The page's keyboard: per track, the note sounding (one at a time; a later key replaces it). The kit
 		// value a key holds is the working copy's held layer (m_working.held).
 		struct SoundingNote { uint8_t channel = 0; uint8_t note = 0; int pitch = 0; };

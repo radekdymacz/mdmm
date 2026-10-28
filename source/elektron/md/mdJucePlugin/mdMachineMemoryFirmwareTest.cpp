@@ -416,6 +416,32 @@ namespace
 			return until([&] { return processor->getDeskHost()->session()->lifecycleName() == "ready"; }, _ms);
 		}
 
+		void clearPage() { m_pageIn.clear(); }
+
+		// The desk has read what it reads of the machine: the newest machine document says its loading is over (a
+		// lifecycle "ready" only says the firmware answers; after a project opens the editor still reads for a while)
+		bool deskLoaded(const int _ms = 120000)
+		{
+			return until([&]
+			{
+				for(auto it = m_pageIn.rbegin(); it != m_pageIn.rend(); ++it)
+				{
+					const auto message = elektronData::json::parse(*it);
+					const auto* type = message ? message->find("type") : nullptr;
+					if(!type || !type->isString() || type->asString() != "machine")
+						continue;
+					const auto* doc = message->find("doc");
+					const auto* loading = doc ? doc->find("loading") : nullptr;
+					if(!loading || !loading->isObject())
+						return false;
+					const auto* done = loading->find("done");
+					const auto* total = loading->find("total");
+					return done && total && done->asNumber() >= total->asNumber();
+				}
+				return false;
+			}, _ms);
+		}
+
 		// A page message sent until the desk takes it (it reads a slot first when asked for one it has not read)
 		bool pageOk(const std::string& _json, const int _ms = 60000)
 		{
@@ -1332,6 +1358,9 @@ int main(const int _argc, char** _argv)
 		check(daw.waitWatching(), "a project opens in the plug-in");
 		const auto beforeProject = fileStore().at({Kind::Global, 0}).bytes;
 		check(daw.deskReady(), "its editor has read the machine again");
+		daw.clearPage();
+		daw.page(R"({"op":"ready"})");	// a fresh machine document: the loading it says is the project's, not an older one
+		check(daw.deskLoaded(), "its editor has finished reading the machine");
 		check(daw.pageOk(md ? R"({"op":"globalSet","field":"baseChannel","v":3})" : R"({"op":"globalMidi","base":3})"), "a global change: " + daw.lastPageResult());
 		const bool projectSaved = until([&] { return fileStore().at({Kind::Global, 0}).bytes != beforeProject; }, 15000);
 		if(!projectSaved)
