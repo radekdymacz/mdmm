@@ -1126,6 +1126,24 @@ void workingKitWaitsForParameterLayer()
 	check(d.workingKit() && d.workingKit()->tracks[0].pages[1][5] == 64, "a hold that never ends keeps the edit pending for a few seconds only, then memory wins");
 }
 
+// B-190: a kit renamed and the rename undone: the name goes back to the machine byte for byte (a stored name keeps bytes
+// after its NUL), so the kit that plays is the stored kit again and not "edited".
+void kitRenameUndoSendsStoredNameBytes()
+{
+	std::puts("B-190: the live name SysEx carries the kit's 11 name bytes as they are");
+	ed::MmKit k;
+	k.machines.fill(1);
+	k.trigPos.fill(0xff);
+	k.name = {'W', 'A', 'V', 'E', 0, 'x', 'y', 'z', 0, 0, 0};
+	const auto m = ed::mmSetKitNameBytes(k.name);
+	check(m.size() >= 18 && m[6] == 0x55 && std::equal(k.name.begin(), k.name.end(), m.begin() + 7), "all 11 bytes, the tail after the NUL too");
+	auto renamed = k;
+	renamed.name = {'J', 'O', 'U', 'R', 'N', 'E', 'Y', 0, 0, 0, 0};
+	const auto r = ed::mmSetKitNameBytes(renamed.name);
+	check(r != m && std::equal(renamed.name.begin(), renamed.name.end(), r.begin() + 7), "the rename carries its own bytes");
+	check(ed::mmSetKitName("WAVE") != m, "the string form drops the tail (what the undo used to send)");
+}
+
 // B-053: the OS 1.32B loads a pattern's kit on a pick in banks A-D only (mmDeskFirmwareTest kitlink); a dump of the pattern
 // that plays links the kit that plays unless the edit changed the link.
 void kitPickRules()
@@ -2634,6 +2652,7 @@ int main(const int _argc, char** _argv)
 	kitAfterPatternDump(9);
 	workingKitWaitsForStream();
 	workingKitWaitsForParameterLayer();
+	kitRenameUndoSendsStoredNameBytes();
 	kitPickRules();
 	transposeRules();
 	transposeWhilePlaying();

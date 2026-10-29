@@ -2,7 +2,7 @@
 
 *Design by Claude Code (Opus) for Radek, 2026-10-16. Nothing here is built yet. Input: PLAN-0.8.md (WP-L, D1 A),
 THREADING.md (the six steps and four tests), midi_learn.md, FOUNDATION.md, DESIGN-audio-lock.md on
-`fix/1.0-lock-free-audio` (merged before this starts), and the code on origin/main `cd32a3ccb`: the translator
+`fix/1.0-lock-free-audio` (merged before this starts), and the code on origin/main `5b0a25833`: the translator
 (`jucePluginLib/midiLearnTranslator.*`), `mdMidiLearnCommands.cpp`, `pluginEditor.cpp`, `deskHost.h`,
 `mdPluginProcessor.cpp` (`usesMidiLearn`), `Processor::addMidiEvent`, `Parameter::setValue`, the MD and MM CONTROL
 pages (`mdDeskControl.js`, `mmStudio/src/115-control.js`, `mmAdapter.js`).*

@@ -147,7 +147,7 @@ What the editor and the firmware really give, checked before relying on it:
 - **LFO**: the Sound page's LFO section on the rim: target (track and parameter selects), shape keys, SPD, DEPTH.
 - **Control All**: Alt-drag, never a CTR-AL track (a kit holding CTR-AL cannot be edited yet).
 - **Machine changes** are kit edits too; they survive pattern edits (probed).
-- **Unsaved kit values** were lost on the machine at the next pattern edit until `b0fa65625` (found by these demos,
+- **Unsaved kit values** were lost on the machine at the next pattern edit until `1df6208ae` (found by these demos,
   `mdDeskFirmwareTest keepedits`).
 - **Sampler**: the RAM-P machine keeps the values of the machine it replaces (PTCH, DEC, STRT…); the demo sets the
   player's PTCH 64, HOLD and DEC 127. Chops are heard by soloing the player first (the demo-md-sampler lesson).

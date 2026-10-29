@@ -118,6 +118,13 @@ struct DefaultFontInfo
           defaultSerif (getDefaultSerifFontName()),
           defaultFixed (getDefaultMonospacedFontName())
     {
+        // MDMM: a system can have fonts and still none of one kind: SteamOS 3 has only Cantarell
+        // (no "Sans" in its name, so JUCE counts it as serif) and Source Code Pro (monospaced).
+        // The default sans name was then empty and every JUCE text, the menu bar and the native
+        // error view among them, drew nothing. Fall back to a font of another kind.
+        if (defaultSans.isEmpty())   defaultSans  = defaultSerif.isNotEmpty() ? defaultSerif : defaultFixed;
+        if (defaultSerif.isEmpty())  defaultSerif = defaultSans;
+        if (defaultFixed.isEmpty())  defaultFixed = defaultSans;
     }
 
     String getRealFontName (const String& faceName) const

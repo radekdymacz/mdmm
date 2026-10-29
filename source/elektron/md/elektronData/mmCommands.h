@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -46,5 +47,7 @@ namespace elektronData
 	// 1 INP A, 2 INP B, 3 INP A+B, 4-6 BUS AB/CD/EF).
 	std::vector<uint8_t> mmSetRouting(uint8_t _track, uint8_t _outputs, uint8_t _input);
 	std::vector<uint8_t> mmSetKitName(const std::string& _name);	// 0x55, 11 characters
+	// B-190: the kit's 11 name bytes exactly as the kit holds them (a NUL ends the name, bytes after it stay: the stored slot has them too)
+	std::vector<uint8_t> mmSetKitNameBytes(const std::array<uint8_t, 11>& _name);
 	std::vector<uint8_t> mmSetTempo(double _bpm);					// 0x61, BPM x 24
 }

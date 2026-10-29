@@ -1,4 +1,4 @@
-# MD + MM Editors v0.2.0 release-readiness audit (HEAD 855902a8c, 2026-10-04)
+# MD + MM Editors v0.2.0 release-readiness audit (HEAD 83ae976c3, 2026-10-04)
 
 Key fact: the v0.2.0 draft is stale. Tags mdmm-v0.2.0 and mdmm-v0.2.1 exist and both are DRAFT releases (each with both .pkg files). HEAD is 28 commits and 233 files past mdmm-v0.2.1. The only published release is 0.1.0-alpha, which is what /releases/latest/download/ serves.
 
@@ -25,9 +25,9 @@ Key fact: the v0.2.0 draft is stale. Tags mdmm-v0.2.0 and mdmm-v0.2.1 exist and 
 - NEEDS-RADEK: Windows. CI builds VST3 and Standalone, but the site, README and release notes say "macOS only" and no Windows installer is attached to the release. Decide if the release is macOS-only (current claim, accurate). installer/nsis is upstream's.
 
 ## 4. User docs
-- FAIL: README is stale on ROM install. It says to drag your ROM onto the editor window. Commits 63d9be1c9 and 0b0762618 removed drag-and-drop: the ROM is chosen with the file chooser only.
+- FAIL: README is stale on ROM install. It says to drag your ROM onto the editor window. Commits 76cc0bc4d and 2e9a154b9 removed drag-and-drop: the ROM is chosen with the file chooser only.
 - FAIL: README "Downloads" in the appended upstream section points to joelanders' releases. The top section is fine.
-- FAIL: the site lists "MIDI learn, app LFOs" in Features, and the Control tour tile reads "MIDI learn, app LFOs and random sources". Commits b7b752cc0, 61a4e4094 and 715b23f80 hide MIDI mapping, the Control tab and the LEARN key until a controller feature exists. The v0.2.1 notes still describe Control All, which is a different feature and still present.
+- FAIL: the site lists "MIDI learn, app LFOs" in Features, and the Control tour tile reads "MIDI learn, app LFOs and random sources". Commits b7b752cc0, 41366312f and 30dcf5f36 hide MIDI mapping, the Control tab and the LEARN key until a controller feature exists. The v0.2.1 notes still describe Control All, which is a different feature and still present.
   Fix: remove the claim or restore the feature. Also check that the Control screenshot (shots/*control*) is not shown.
 - NEEDS-RADEK: the site says "Six workspaces". Confirm that still holds after the Control tab was hidden (it is probably five).
 - PASS: release notes v0.1.0-alpha, v0.2.0 and v0.2.1 exist and are accurate for their tags. doc/release/drafts.md is internal and carries launch drafts (Discord post, message to joelanders); it was not reviewed in full.

@@ -1,6 +1,6 @@
 # Review 5: real-time and UI performance (static, read-only)
 
-Branch codex/native-audio-engine, HEAD 2c59fdb95. Read first: RESEARCH-emulation-cpu.md (levers, refuted list, section "Around the core"), md_mm_performance_diagnostics.md, DESIGN-edit-flow.md. Nothing below repeats a refuted lever or the six "around the core" items already measured. Nothing was built or run; every finding was verified by reading the cited lines.
+Branch codex/native-audio-engine, HEAD f75cf8980. Read first: RESEARCH-emulation-cpu.md (levers, refuted list, section "Around the core"), md_mm_performance_diagnostics.md, DESIGN-edit-flow.md. Nothing below repeats a refuted lever or the six "around the core" items already measured. Nothing was built or run; every finding was verified by reading the cited lines.
 
 Overall: the audio path is already unusually well hardened (try-lock publishers, chunked 64 KiB lock holds for the memory watch, lock-free ingress queues, allocation counters, paced and coalescing edit stream). No must-fix found. The remaining risks are a freeze path with no watchdog, thin headroom at small buffers, and page/idle cost.
 

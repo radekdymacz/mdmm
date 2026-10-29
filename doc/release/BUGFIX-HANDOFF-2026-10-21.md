@@ -8,8 +8,8 @@ Radek asked to fix the reports in Discord #bugs and #general using subagents, th
 
 - Working branch: `codex/continue-0.8.0`.
 - CI branch: `release/0.0.0-ci-test`.
-- Latest implementation commit: `7843b80b8192e10710e2f9cf7dc22794d5ac5fc8`.
-- Initial batch: `d508de607`; generated guide/keymap repair: `2149340fe`; check-selection expectations: `4e519b2a7`; page-test/help repairs: `db7ac6512`; LFO journey isolation: `21417be13`; Linux native-window visibility repair: `7843b80b8`.
+- Latest implementation commit: `658955355d3abe105b601783c8d78b0e7af6157c`.
+- Initial batch: `e3e029428`; generated guide/keymap repair: `2fd20fecb`; check-selection expectations: `7edf6b2fc`; page-test/help repairs: `636ba8829`; LFO journey isolation: `462626c8b`; Linux native-window visibility repair: `658955355`.
 - `origin/main` had one separate published-release site commit, `434598b1b`. Preserve it when merging; its files do not overlap the bug-fix batch. Use a normal merge and fast-forward push, never force-push.
 - All edits, generation and source review were local. **No local tests or builds were run.** Validation is CI-only under CLAUDE.md.
 
@@ -19,11 +19,11 @@ Statuses below are a snapshot at handoff, not a claim that a still-running pipel
 
 | Run | Commit / purpose | Evidence at handoff |
 |---|---|---|
-| [39555829972](https://github.com/radekdymacz/mdmm/actions/runs/39555829972) | `21417be13`, full pipeline | Setup green; all 34 page unit tests and 340 browser journeys passed, 3 existing skips; core, all three OS unit suites, transport diagnostics and ASan/UBSan green. Linux and macOS packages built; macOS 15 startup/plug-in checks green and unsigned installers produced. Linux startup tests failed as described below. Windows LTCG packaging still running; macOS 14 delayed at checkout. Firmware/package stages cannot validate the batch through this failed run. |
-| [39558191948](https://github.com/radekdymacz/mdmm/actions/runs/39558191948) | `7843b80b8`, full pipeline with Linux repair | Pending behind the earlier release-branch run. This is the full validation to follow for the implementation. |
-| [39557704668](https://github.com/radekdymacz/mdmm/actions/runs/39557704668) | `21417be13`, focused firmware | Build passed; firmware tests running. Selection: `^(mmEmptyResetFirmwareTest|stackedLfoMmSequencerFirmwareTest|mdAutomationFirmwareTest)$`. Does not replace the full pipeline. |
+| [39555829972](https://github.com/radekdymacz/mdmm/actions/runs/39555829972) | `462626c8b`, full pipeline | Setup green; all 34 page unit tests and 340 browser journeys passed, 3 existing skips; core, all three OS unit suites, transport diagnostics and ASan/UBSan green. Linux and macOS packages built; macOS 15 startup/plug-in checks green and unsigned installers produced. Linux startup tests failed as described below. Windows LTCG packaging still running; macOS 14 delayed at checkout. Firmware/package stages cannot validate the batch through this failed run. |
+| [39558191948](https://github.com/radekdymacz/mdmm/actions/runs/39558191948) | `658955355`, full pipeline with Linux repair | Pending behind the earlier release-branch run. This is the full validation to follow for the implementation. |
+| [39557704668](https://github.com/radekdymacz/mdmm/actions/runs/39557704668) | `462626c8b`, focused firmware | Build passed; firmware tests running. Selection: `^(mmEmptyResetFirmwareTest|stackedLfoMmSequencerFirmwareTest|mdAutomationFirmwareTest)$`. Does not replace the full pipeline. |
 
-The merge push to `main` also starts CI. Find its run by the resulting merge SHA. The existing CI branch can remain at `7843b80b8` while its full run finishes; the handoff documentation and main's website release files do not alter the editor binaries.
+The merge push to `main` also starts CI. Find its run by the resulting merge SHA. The existing CI branch can remain at `658955355` while its full run finishes; the handoff documentation and main's website release files do not alter the editor binaries.
 
 Earlier failed runs were repaired, not ignored:
 
@@ -37,8 +37,9 @@ Earlier failed runs were repaired, not ignored:
 Ubuntu 22.04, Ubuntu 24.04 and SteamOS startup checks found two distinct issues:
 
 1. Machinedrum rendered correctly, but OCR omitted its condensed heading. Screenshots were inspected. The smoke test now reads the normal-font instruction on the same card, while AT-SPI still requires the exact machine heading. It still requires actual visible rendering.
-2. Intentional WebKit/helper termination logged the native error and stopped the receiver thread, but the fallback was covered by a white or stale native browser window. JUCE Linux `checkWindowAssociation()` was empty; XEmbed does not follow JUCE component visibility. `7843b80b8` detaches the XEmbed child when the browser is hidden and reattaches when shown, retaining the browser for slow-start recovery. Fallback OCR, host survival and EOF assertions are unchanged. **Await the new CI result.**
-3. Run 39558191948 (`7843b80b8`): the XEmbed fix works. The failure screenshots of all four checks on Ubuntu 22.04 and SteamOS show the native error in full and the host alive; the MM standalone screenshot shows its card. Only OCR failed: Tesseract read the light-on-dark heading "The editor page could not start." as "[=o Cla OD" and "Click here" as "ick here". The smoke script now also reads a 3x grey and a 3x inverted grey copy of the same screenshot (`ocr_screen`); the asserted texts are unchanged. **Await the next CI result.**
+2. Intentional WebKit/helper termination logged the native error and stopped the receiver thread, but the fallback was covered by a white or stale native browser window. JUCE Linux `checkWindowAssociation()` was empty; XEmbed does not follow JUCE component visibility. `658955355` detaches the XEmbed child when the browser is hidden and reattaches when shown, retaining the browser for slow-start recovery. Fallback OCR, host survival and EOF assertions are unchanged. **Await the new CI result.**
+3. Run 39558191948 (`658955355`): the XEmbed fix works. The failure screenshots of all four checks on Ubuntu 22.04 show the native error in full and the host alive; the MM standalone screenshot shows its card. Only OCR failed: Tesseract read the light-on-dark heading "The editor page could not start." as "[=o Cla OD" and "Click here" as "ick here". The smoke script now also reads a 3x grey and a 3x inverted grey copy of the same screenshot (`ocr_screen`); the asserted texts are unchanged. **Await the next CI result.**
+4. Run 40653001762: Ubuntu 22.04 and 24.04 pass. SteamOS 3 still failed all four failure checks, and not because of OCR: its screenshots show the native error view and the standalone menu bar with no text at all (the button and bars are drawn; the WebKit page, with its own web fonts, drew fine). The container has only Cantarell and Source Code Pro. JUCE's Linux font list counts a family as sans-serif only when its name contains Sans, Verdana, Arial or Ubuntu, so the default sans name was empty and every JUCE text drew nothing. `juce_Fonts_linux.cpp` now falls back to a font of another kind (sans to serif to monospaced). Real SteamOS desktops and other minimal systems can hit the same. **Await the next SteamOS result.**
 
 The original report is CachyOS latest / Bitwig Studio 6. Its exact environment and cause remain unverified. Ubuntu/SteamOS and the minimal VST3 test host are not a reproduction of that setup.
 
@@ -72,3 +73,7 @@ The individual reports and source links remain in [BUGS.md](BUGS.md); feature re
 5. Hand-test packages come from CI. Do not publish/tag or send Discord replies without the applicable authorization. No external messages were sent during this work.
 
 Local evidence (temporary, not committed): `/private/tmp/mdmm-ci-39555829972-watch.log`, `/private/tmp/mdmm-ci-39557704668-watch.log`, `/private/tmp/mdmm-page-119075391012.log`, `/private/tmp/mdmm-linux22-119079484875.log`, `/private/tmp/mdmm-linux24-119079484774.log`, and screenshots under `/private/tmp/mdmm-linux-repair-22` and `/private/tmp/mdmm-linux-repair-24`. CI artifacts are the durable source. Original Discord roundup JSON is under `/private/tmp/mdmm-discord-roundup-20261021`; no affected SysEx pattern was attached there.
+
+## History rewrite, 2026-10-28
+
+The 0.8.0 release commit had committed the CI packages (`artifacts/`, 476 MB). Radek approved removing them from all history: `git filter-repo --path artifacts --invert-paths` on every branch and tag, force-pushed on 2026-10-28. git-filter-repo also dropped commit signatures, so almost every commit ID changed; the code trees are identical (the tree of `codex/continue-0.8.0` was the same before and after). The old IDs of our own commits in the docs were replaced with their new IDs; IDs of upstream commits were left as they are. CI run numbers are unchanged. Backup of the old history: `~/mdmm-backup-2026-10-28.git` (a mirror). Every other clone or worktree must be cloned again.

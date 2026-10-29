@@ -1,6 +1,6 @@
 # Pre-release review: the page side (JS/CSS/HTML) of the MD + MM editors
 
-Repo `audio/gearmulator-md-mm`, branch `main`, HEAD `855902a8c`. Read-only review. Paths are relative to
+Repo `audio/gearmulator-md-mm`, branch `main`, HEAD `83ae976c3`. Read-only review. Paths are relative to
 `source/elektron/md/mdJucePlugin/skins/` unless they start with `doc/`. The items fixed in
 `doc/modern-ux/DESIGN-REVIEW-2026-10-02.md` (Status 2026-10-03) are not reported again.
 

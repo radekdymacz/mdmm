@@ -1,7 +1,7 @@
 # MM port plan: the Machinedrum Editor's 2026-10 features on the Monomachine Editor
 
 - 2026-10-01. The owner's words: "add everything we added to the MD to the MM, GEN as well", except the
-  Sampler (the MM has none). The MD side: `git log f348a57f0..e20135d7f` plus the uncommitted MD work of the
+  Sampler (the MM has none). The MD side: `git log 11d6520b9..f86e57f11` plus the uncommitted MD work of the
   same day; the design is [DESIGN-generators.md](DESIGN-generators.md) (its "mnemonic key map" is final).
 - Phases: **1** = this plan + a) b) c) (built, see the end); **2** = d) GEN and MUTATE; **3** = e) Sound by
   function; **4** = f) library and song.
@@ -319,7 +319,7 @@ sampler). MIDI mapping is hidden by design on both; "undo says what it undoes" i
 4. **The MD's rotate run** ends only on Alt's keyup or a window blur, as the MM's did. Give it the MM's fix
    (`showAlt(false)` ends it)?
 
-### The owner's decisions (2026-10-05, after the merge of 3c8143c0d)
+### The owner's decisions (2026-10-05, after the merge of 11a6e5a1a)
 
 1. **Tap tempo stays as built:** B on both editors, T also on the Machinedrum Editor.
 2. **The MD gets the rotate fix:** `showAlt(false)` (any key or pointer event without Alt) ends the rotate run there too

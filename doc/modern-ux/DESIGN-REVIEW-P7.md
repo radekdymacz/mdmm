@@ -1,6 +1,6 @@
 # P7 design review: the Machinedrum and Monomachine Editors
 
-- **When and what:** 2026-09-28, on `p6/simple-core` (0993cd9b).
+- **When and what:** 2026-09-28, on `p6/simple-core` (53f5f5ea).
 - **How the findings were confirmed:**
   - in a browser harness of both skins (the shipped page files, run on a fake host), at 1280 × 720, 1440 × 900, 1440 × 760, 1800 × 700 and 1920 × 1080;
   - in the real standalone apps, through their self-tests;

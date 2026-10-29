@@ -1,6 +1,6 @@
 # Design critique: mdmm.dev, first version (2026-09-28)
 
-Reviewed: `c066afb5` (landing page + 3-step download flow), at 375, 1280 and 1920 px, light and dark.
+Reviewed: `0edc9f59` (landing page + 3-step download flow), at 375, 1280 and 1920 px, light and dark.
 Screenshots of that version: `site/review/before/`. Framework: first impression, hierarchy, consistency,
 accessibility, then conversion (download and pay-what-you-want). Radek's review points are binding and
 are folded in; they are marked **[R]**.

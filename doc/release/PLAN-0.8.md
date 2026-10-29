@@ -1,6 +1,6 @@
 # Plan: 0.8, the MIDI release
 
-*Drafted 2026-10-16 by Claude Code (Opus) for Radek. Nothing here is built yet. Inputs: the MIDI audit of origin/main `28b6bcb6c`, the Discord roundup of 2026-10-16, BUGS.md, IDEAS.md, ROADMAP.md, DEV-CYCLE.md, THREADING.md. Assumes `fix/mm-tester-bugs-1016` (B-148 to B-152), `ci/linux-steamos` (B-153) and `fix/1.0-lock-free-audio` are merged.*
+*Drafted 2026-10-16 by Claude Code (Opus) for Radek. Nothing here is built yet. Inputs: the MIDI audit of origin/main `c4ec64389`, the Discord roundup of 2026-10-16, BUGS.md, IDEAS.md, ROADMAP.md, DEV-CYCLE.md, THREADING.md. Assumes `fix/mm-tester-bugs-1016` (B-148 to B-152), `ci/linux-steamos` (B-153) and `fix/1.0-lock-free-audio` are merged.*
 
 ## Status (2026-10-17)
 

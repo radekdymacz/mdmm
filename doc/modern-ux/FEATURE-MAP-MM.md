@@ -4,7 +4,7 @@
 
 Manual: Monomachine SFX-6 / SFX-60 / SFX-60 MKII / SFX-60+ MKII user's manual, OS 1.32, rev H (`doc/manuals/monomachine-manual.pdf`, 158 pages). Date of this map: 2026-10-10, rechecked 2026-10-11 against the 0.5.0 release and the merges after it.
 
-Checked against main at 6da67ce3e, 2026-10-11.
+Checked against main at e94a878d4, 2026-10-11.
 
 **The question per row:** does our web page (the editor, not the firmware's LCD or panel) let the person do this?
 

@@ -55,6 +55,14 @@ namespace elektronData
 		return mmMessage(0x55, n);
 	}
 
+	std::vector<uint8_t> mmSetKitNameBytes(const std::array<uint8_t, 11>& _name)
+	{
+		std::vector<uint8_t> n(_name.begin(), _name.end());
+		for(auto& c : n)
+			c &= 0x7f;
+		return mmMessage(0x55, n);
+	}
+
 	std::vector<uint8_t> mmSetTempo(const double _bpm)
 	{
 		const auto v = static_cast<uint32_t>(std::lround(_bpm * 24.0));

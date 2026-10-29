@@ -284,4 +284,4 @@ scripts/md-editor-cpu.sh
 
 ## Commits
 
-e65918f chains and mutes · 0c25001 persistence · 24fae98 first key after boot · f3f4fdb knob lock timing · a998b6b native window, icon sources · 8d1b253 Sampler · b1e6400 MD icon wired · 72ae68b kit library, pattern chooser · b721c0f v56, boot LCD colours · 5dcb913 HW MIDI, v57-v59 · 81ec735 Mix fixes, page zoom, tap tempo, tweaking · 2d6f148 CPU measurement.
+feb040e chains and mutes · de066a3 persistence · 9eba4ab first key after boot · e6c86ef knob lock timing · 91b5432 native window, icon sources · 49b3c22 Sampler · 1277a6f MD icon wired · 0fc5c09 kit library, pattern chooser · 907aba2 v56, boot LCD colours · 473616e HW MIDI, v57-v59 · 2ddfe6f Mix fixes, page zoom, tap tempo, tweaking · 3ace009 CPU measurement.
