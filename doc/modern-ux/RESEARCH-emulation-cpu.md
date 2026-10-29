@@ -325,7 +325,7 @@ Do L1, L11, L2 (b first, then a), L5, and evaluate PR #20 (L13a). If PR #20 land
 
 Landed: L1, L11, L2b and L5 sit behind one run-time switch (`GEARMULATOR_MDMM_SPEEDUPS=0`, or *Developer > Speed-ups off (legacy emulation, slower)*), so a tester can compare against the pre-step-1 emulation in minutes; both positions are bit-exact. See `doc/md_mm_performance_diagnostics.md`.
 
-Step 1 measured (2026-10-09, `cba2ace1f`, M4 Pro, `mdmmPerfGateTest`): the shipped set is L1, L11, L2b and L5 (L2a and L13a/PR #20 not taken; step 2 starts from this set). Host work per frame: MD −15 % stopped / −16 % playing, MM −19 % / −21 %; CPU of one instance −16 to −19 %; the longest buffer while editing −17 to −27 %. The forecast row above (87 %) was beaten because L2b alone removed more scheduler glue than L2 was credited with.
+Step 1 measured (2026-10-09, `ba1dddae8`, M4 Pro, `mdmmPerfGateTest`): the shipped set is L1, L11, L2b and L5 (L2a and L13a/PR #20 not taken; step 2 starts from this set). Host work per frame: MD −15 % stopped / −16 % playing, MM −19 % / −21 %; CPU of one instance −16 to −19 %; the longest buffer while editing −17 to −27 %. The forecast row above (87 %) was beaten because L2b alone removed more scheduler glue than L2 was credited with.
 
 | Gate | Pass condition |
 |---|---|
@@ -346,11 +346,11 @@ before it):
 |---|---|---|---|---|---|---|
 | Upstream 7d69d7a9 (loop-end assert) | not taken | – | – | – | – | – |
 | Upstream e8989e41 (serial-status poll fast-forward) | not taken | – | – | – | – | – |
-| CMPM JIT fix | `79f2ee6e2` | 0 | 0 | 0 | 0 | yes (goldens 24/24) |
-| L3 exact MD ESSI deadlines | `fcb7a9b11` | −2.0 % / −5.1 % | −1.0 % / −5.7 % | 0 | 0 | MD no (by design), MM yes |
-| L4 NOP stubs | `438b8c882` | −5.3 % / −5.4 % | −0.4 % / +0.8 % | −14.0 % / −15.1 % | 0.0 % / +0.4 % | yes |
-| L4 DMA poll loops (movep) | `c93d9098c` | 0 | 0 | −4.4 % / −3.5 % | −7.2 % / −3.7 % | yes |
-| L4 DMA bit-test polls (jset) | `990f85436` | −3.4 % / −2.9 % | −3.4 % / −2.8 % | 0 | 0 | yes |
+| CMPM JIT fix | `3f354d047` | 0 | 0 | 0 | 0 | yes (goldens 24/24) |
+| L3 exact MD ESSI deadlines | `cb78273d6` | −2.0 % / −5.1 % | −1.0 % / −5.7 % | 0 | 0 | MD no (by design), MM yes |
+| L4 NOP stubs | `c87f3621b` | −5.3 % / −5.4 % | −0.4 % / +0.8 % | −14.0 % / −15.1 % | 0.0 % / +0.4 % | yes |
+| L4 DMA poll loops (movep) | `514ac66c9` | 0 | 0 | −4.4 % / −3.5 % | −7.2 % / −3.7 % | yes |
+| L4 DMA bit-test polls (jset) | `3ed3c4472` | −3.4 % / −2.9 % | −3.4 % / −2.8 % | 0 | 0 | yes |
 | **Step 2 against main (step 1), with L3 (as first built)** | | **−9.3 % / −12.3 %** | **−3.7 % / −6.5 %** | **−17.7 % / −17.7 %** | **−7.3 % / −5.7 %** | MD changes (L3) |
 
 **Shipped shape (Radek, 2026-10-10): no lever that changes the sound is on by default.** Every bit-exact lever (step 1,
@@ -402,7 +402,7 @@ Notes:
 
 **Go/no-go, measured first.** Exact counts from a per-block hook (a scratch build, not committed; the hashes with the
 hook equal the goldens), `mdmmPerfGateTest md 8` (md-busy), per audio frame (352,832 frames per phase), on main
-(`49a3a7aff`, speed-ups on, L3 off):
+(`3aa0caa71`, speed-ups on, L3 off):
 
 | | MD stopped | MD playing |
 |---|---|---|
@@ -439,8 +439,8 @@ skippable block runs per frame stopped / playing: about 1 % of the MM).
 
 | Lever | Commit | MD stopped | MD playing | MM stopped | MM playing | Bit-exact |
 |---|---|---|---|---|---|---|
-| L4 poll loops over several blocks (MD p:3c) | `4c7be9f22` | −1.8 % / −1.9 % | −1.9 % / −2.4 % | −0.4 % / −0.5 % | −0.9 % / −2.0 % | yes (goldens 30/30) |
-| L4 Port C declared pure (MD p:bb, MM p:195), against the row before | `5068b4e47` | −8.0 % / −5.4 % | −7.5 % / −5.1 % | −2.1 % / −0.9 % | −3.6 % / −2.4 % | yes (goldens 30/30) |
+| L4 poll loops over several blocks (MD p:3c) | `f37ecfaa5` | −1.8 % / −1.9 % | −1.9 % / −2.4 % | −0.4 % / −0.5 % | −0.9 % / −2.0 % | yes (goldens 30/30) |
+| L4 Port C declared pure (MD p:bb, MM p:195), against the row before | `710e91851` | −8.0 % / −5.4 % | −7.5 % / −5.1 % | −2.1 % / −0.9 % | −3.6 % / −2.4 % | yes (goldens 30/30) |
 | **Both against main** | | **−9.5 % / −7.0 %** | **−9.1 % / −6.5 %** | **−2.4 % / −2.1 %** | **−4.4 % / −3.6 %** | yes |
 
 Measured as in "Step 2 measured" (host instructions / cycles per frame, `mdmmPerfGateTest` md-busy / mm-a01, stereo,
@@ -521,7 +521,7 @@ End point if all gates pass: about 57 % / 64 % (MD) and 60 % / 68 % (MM) of toda
 ## Around the core: the audio thread outside the emulation (2026-10-10, branch perf/audio-thread-spikes)
 
 A read-only review listed six suspected costs on the plug-in's audio thread outside the emulated chips, with estimates
-only. Each was measured on main (8919a8e1c) before anything changed: the processor path with a scratch probe (the real
+only. Each was measured on main (728f1fe78) before anything changed: the processor path with a scratch probe (the real
 `AudioPluginAudioProcessor`, `RealtimeInstrumentation`'s lock-wait and resampler counters, `thread_selfcounts`
 instructions, an `operator new` counter), the emulation with `mdmmPerfGateTest` in paired runs. M4 Pro, loaded
 (load average 4-23), so times are maxima over many runs or paired medians and instructions are the steady measure.
@@ -529,9 +529,9 @@ instructions, an `operator new` counter), the emulation with `mdmmPerfGateTest` 
 | # | Claimed | Measured | Done | Bit-exact |
 |---|---|---|---|---|
 | 1 | A save copies ~9 MB under the lock the audio thread needs, 1-3 ms | Capture under the lock (`beginStateCapture`, 60 saves each): MD 0.14 ms median, 0.15 p90, MM 0.05 ms, the same with user data; the first save of a session 0.6 ms once (fresh pages). Audio thread's longest lock wait while saving every 15 ms: 0.27-0.49 ms MD, 0.24 ms MM | Not fixed: below the 0.5 ms bar | - |
-| 2 | The editor's sample list is read on the audio thread for 52 blocks, allocating | Real: a slot a block, 143 allocations (3.2 MB) on the audio thread, a slot up to 128 us (3.1 M instructions), median 16 us, ~0.85 ms in all (factory samples; a long RAM-R recording more, a word at a time) | Fixed: the audio thread copies the raw memory (25 blocks, median 4 us, at most 13 us, no allocation); the reader builds the list (~1 ms, message thread); `a81e1e4be`, `mdSampleScanFirmwareTest` | the list is equal (`MdSampleBank ==`) |
+| 2 | The editor's sample list is read on the audio thread for 52 blocks, allocating | Real: a slot a block, 143 allocations (3.2 MB) on the audio thread, a slot up to 128 us (3.1 M instructions), median 16 us, ~0.85 ms in all (factory samples; a long RAM-R recording more, a word at a time) | Fixed: the audio thread copies the raw memory (25 blocks, median 4 us, at most 13 us, no allocation); the reader builds the list (~1 ms, message thread); `2feb89b0f`, `mdSampleScanFirmwareTest` | the list is equal (`MdSampleBank ==`) |
 | 3 | Opening a project runs a second machine on the audio thread | Only when the factory cache does not exist yet (first run, or deleted) and the project holds user samples: 5,279 blocks (15 s) with both machines, the candidate 1.34 ms a 128-frame block on top of the live 1 ms, at most 6.9 ms in one block. With the cache (every later run): no second machine, the swap is O(1), the audio thread's lock wait at most 0.37 ms; the fresh machine's first blocks cost up to 3.4x (its JIT warming up, as at start-up) | Not fixed: once per installation; moving the candidate to a worker means a second owner of a Hardware the device lock guards (its switches, the save capture, cancel) | - |
-| 4 | At 48 kHz: 8 copies of large tables, all 6 outputs and silent inputs resampled | Real: libresample built its 544 KiB filter per channel (8 per instance, 4.8 MB). Resampler's own time 32-34 us a 128-frame block (device ~1.3 ms). Skipping the 4 unused outputs would save ~7 us more (0.5 %), the silent inputs ~0.4 us | Fixed: one filter per process: 19-20 us a block (-40 %), 0.34 MB; `e20c08b23`, `synthLibResamplerFilterTest`. Skipping buses not done: a bus enabled later could not be bit-exact, for 0.5 % | outputs bit-identical, latency unchanged |
+| 4 | At 48 kHz: 8 copies of large tables, all 6 outputs and silent inputs resampled | Real: libresample built its 544 KiB filter per channel (8 per instance, 4.8 MB). Resampler's own time 32-34 us a 128-frame block (device ~1.3 ms). Skipping the 4 unused outputs would save ~7 us more (0.5 %), the silent inputs ~0.4 us | Fixed: one filter per process: 19-20 us a block (-40 %), 0.34 MB; `a4c5ff24c`, `synthLibResamplerFilterTest`. Skipping buses not done: a bus enabled later could not be bit-exact, for 0.5 % | outputs bit-identical, latency unchanged |
 | 5 | The DSP-to-DSP link uses thread-safe queues on one thread | Lock-free rings (`Audio` rings `Lock=false`), 9 pairs: instructions MD -0.5 %, MM -0.7 %; host cycles MD -0.3 / +1.5 %, MM -1.2 % (paired medians, within the noise of +-5 %) | Not fixed: not shown to be 0.5 % of host time; the core's `Audio` rings serve every DSP user | goldens PASS |
 | 6 | Every patch-memory access takes a lock | The lock is taken 0.68-0.76 times a frame (MD), 1.25-1.32 (MM); the ColdFire's other slow accesses 15 (MD), 40-43 (MM). Without the lock: instructions -0.1 to -0.3 % (noise) | Not fixed: not measurable | - |
 
@@ -656,7 +656,7 @@ External:
 
 ## Profile after 0.5.0 (2026-10-11)
 
-Main at 980e1ee7f (0.5.0 + B-052/B-054), shipped configuration (ThinLTO, DSP optimisation, committed PGO) with symbols; in-process sampler on the emulation thread (CPU time only), 3 runs per phase, ±0.5 points; cross-checked with macOS `sample`. Denominator: the whole emulation thread (in this build DSP2 runs inside DSP1's serial-port callback, so `advance()` inclusive is no longer the right base).
+Main at cb45c07ac (0.5.0 + B-052/B-054), shipped configuration (ThinLTO, DSP optimisation, committed PGO) with symbols; in-process sampler on the emulation thread (CPU time only), 3 runs per phase, ±0.5 points; cross-checked with macOS `sample`. Denominator: the whole emulation thread (in this build DSP2 runs inside DSP1's serial-port callback, so `advance()` inclusive is no longer the right base).
 
 | Bucket (% of thread) | MD stopped | MD playing | MM stopped | MM playing |
 |---|---|---|---|---|

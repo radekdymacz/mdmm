@@ -221,15 +221,36 @@ namespace
 		}
 
 		// The firmware takes MIDI and the watch has its base (a few looks after it holds still)
-		bool waitWatching(const int _ms = 120000)
+		bool waitWatching(const int _ms = 240000)
 		{
+			// A cold start prepares the factory flash first and reboots in process (nightly CI run 2026-10-28: the first
+			// session of the MD run did not have its base within 120 s on a loaded runner); the limits are only ceilings,
+			// and a failure names the stage it stopped at
+			const auto t0 = std::chrono::steady_clock::now();
+			const auto since = [&] { return std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count(); };
 			// the start's decision (the file's slots laid over, a restore begun) comes first
 			if(!until([this] { return processor->machineMemoryStarted(); }, _ms))
+			{
+				std::printf("  waitWatching: the start's decision did not come within %.0f s\n", since());
 				return false;
+			}
 			pump(300);
 			const bool ready = until([this] { return firmwareReady(); }, _ms);
+			if(!ready)
+			{
+				std::printf("  waitWatching: the firmware was not ready for MIDI within %.0f s (restore pending: %d)\n", since(),
+					processor->getPlugin().withDeviceLocked([](synthLib::Device* _d)
+					{
+						auto* d = dynamic_cast<md::DeskDevice*>(_d);
+						return d && d->isProjectStateRestorePending() ? 1 : 0;
+					}));
+				return false;
+			}
 			const auto looks = processor->machineMemoryCost().looks;
-			return ready && until([&] { return processor->machineMemoryCost().looks >= looks + 8; }, 90000);
+			const bool watching = until([&] { return processor->machineMemoryCost().looks >= looks + 8; }, 180000);
+			if(!watching)
+				std::printf("  waitWatching: %d looks of the 8 asked for after %.0f s\n", static_cast<int>(processor->machineMemoryCost().looks - looks), since());
+			return watching;
 		}
 
 
@@ -414,6 +435,37 @@ namespace
 		bool deskReady(const int _ms = 120000)
 		{
 			return until([&] { return processor->getDeskHost()->session()->lifecycleName() == "ready"; }, _ms);
+		}
+
+		void clearPage() { m_pageIn.clear(); }
+
+		// The desk has read what it reads of the machine: the newest machine document says its loading is over (a
+		// lifecycle "ready" only says the firmware answers; after a project opens the editor still reads for a while)
+		bool deskLoaded(const int _ms = 120000)
+		{
+			return until([&]
+			{
+				for(auto it = m_pageIn.rbegin(); it != m_pageIn.rend(); ++it)
+				{
+					const auto message = elektronData::json::parse(*it);
+					const auto* type = message ? message->find("type") : nullptr;
+					if(!type || !type->isString() || type->asString() != "machine")
+						continue;
+					const auto* doc = message->find("doc");
+					// the MD's desk says the reads still pending (doc.desk.loading), the MM's doc.loading done of total
+					const auto* desk = doc ? doc->find("desk") : nullptr;
+					const auto* pending = desk ? desk->find("loading") : nullptr;
+					if(pending && pending->isNumber())
+						return pending->asNumber() == 0;
+					const auto* loading = doc ? doc->find("loading") : nullptr;
+					if(!loading || !loading->isObject())
+						return false;
+					const auto* done = loading->find("done");
+					const auto* total = loading->find("total");
+					return done && total && done->asNumber() >= total->asNumber();
+				}
+				return false;
+			}, _ms);
 		}
 
 		// A page message sent until the desk takes it (it reads a slot first when asked for one it has not read)
@@ -1332,6 +1384,9 @@ int main(const int _argc, char** _argv)
 		check(daw.waitWatching(), "a project opens in the plug-in");
 		const auto beforeProject = fileStore().at({Kind::Global, 0}).bytes;
 		check(daw.deskReady(), "its editor has read the machine again");
+		daw.clearPage();
+		daw.page(R"({"op":"ready"})");	// a fresh machine document: the loading it says is the project's, not an older one
+		check(daw.deskLoaded(), "its editor has finished reading the machine");
 		check(daw.pageOk(md ? R"({"op":"globalSet","field":"baseChannel","v":3})" : R"({"op":"globalMidi","base":3})"), "a global change: " + daw.lastPageResult());
 		const bool projectSaved = until([&] { return fileStore().at({Kind::Global, 0}).bytes != beforeProject; }, 15000);
 		if(!projectSaved)

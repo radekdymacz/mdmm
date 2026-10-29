@@ -1,6 +1,6 @@
 # Monomachine Editor: release-polish UX/UI review (v0.2.0)
 
-- Repo: `audio/gearmulator-md-mm`, branch `main`, HEAD `855902a8c`. Read-only: no repo file was edited.
+- Repo: `audio/gearmulator-md-mm`, branch `main`, HEAD `83ae976c3`. Read-only: no repo file was edited.
 - Screenshots: `scratchpad/review/mm-shots/` (MD comparison shots in `mm-shots/md/`).
 - **What was rendered.** The mockup `doc/modern-ux/mm-mockup/index.html`, rebuilt into the scratchpad with the
   repo's own `build.sh` lists. The result is byte-identical to the committed `index.html`, so the committed

@@ -4,7 +4,7 @@
 
 Manual: Machinedrum SPS-1 / SPS-1UW MKII user's manual, OS 1.53, rev J (2010), 122 PDF pages; page numbers are the printed ones. Date: 2026-10-10, rechecked 2026-10-11. Code state: `main`.
 
-Checked against main at 6da67ce3e, 2026-10-11.
+Checked against main at e94a878d4, 2026-10-11.
 
 The question per row: **does our web page (the Machinedrum Editor) offer this?** The page is the only UI: the shipped editor has no emulated front panel or LCD (`mdEditorPages.h`). The firmware runs underneath, so some functions work when the page, MIDI or SysEx asks, or on a real machine's panel via the HW MIDI engine. That is only noted in the last column.
 

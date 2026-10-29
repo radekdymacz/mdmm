@@ -20,7 +20,7 @@ before each tag (`scripts/mdmm-e2e.sh`, a real pass/fail gate); the dev loop is 
 
 **State on 2026-10-13 (stopped for the weekly usage limit).** Everything of 0.6 is merged into `feat/0.6-features`
 (waves 1-12, MM roll foot, MD greys on the MM, review 1, e2e rounds 1-2, screen review, Discord items, Revert track,
-saved solo, sample Rename re-send, independent journeys). Installed on Radek's Mac: `ccaf8bec5`. The last full e2e on the
+saved solo, sample Rename re-send, independent journeys). Installed on Radek's Mac: `4c2ebdaf9`. The last full e2e on the
 real firmware: 353 pass, 7 fail (`scripts/mdmm-e2e.sh both --jobs 2 --page --write-data`, report
 temp/evidence/0.5.1/index.html). Round 3 for those 7 is on `fix/0.6-e2e-3` (see its BUGS.md entries B-133+ for
 what is done and left; md-seq-live-record "no trig recorded while live recording" is the most important).
@@ -36,7 +36,7 @@ agents at once; Radek tests the whole release at the end from doc/release/TEST-0
 markers: resolve, grep for `<<<<<<<`, then commit, as separate steps.
 
 **Merged into `feat/0.6-features`** (each reviewed, tier 2 green): wave P (probes, doc/modern-ux/PROBES-manual-gaps.md,
-B-069), wave 1 song slots, wave 2 transport, wave 3 trig types and marks, wave 4 copy / paste / clear what, wave 5 GLOBAL page (2026-10-12, review fixes 4bcacdd4e), wave 6 SysEx and reset (2026-10-12; Import/Export in the engine menu only, Radek), wave 7 recording (2026-10-12), polish A (2026-10-12: MD-140 done, live lock removal: a value pressed and Delete held is EXIT/NO + its DATA ENTRY knob; mdmm-check builds the firmware test programs and the editors before the tests that use them), wave 10 MM skins true to the photos (MD unchanged, Radek), wave 8 MD LEV and machine audition (2026-10-12), wave 9 MM Perform B-064 (2026-10-12), polish A (MD-140, check tooling) and polish B (B-070, B-062, I-002, I-022), the top-bar
+B-069), wave 1 song slots, wave 2 transport, wave 3 trig types and marks, wave 4 copy / paste / clear what, wave 5 GLOBAL page (2026-10-12, review fixes d1b72e1f2), wave 6 SysEx and reset (2026-10-12; Import/Export in the engine menu only, Radek), wave 7 recording (2026-10-12), polish A (2026-10-12: MD-140 done, live lock removal: a value pressed and Delete held is EXIT/NO + its DATA ENTRY knob; mdmm-check builds the firmware test programs and the editors before the tests that use them), wave 10 MM skins true to the photos (MD unchanged, Radek), wave 8 MD LEV and machine audition (2026-10-12), wave 9 MM Perform B-064 (2026-10-12), polish A (MD-140, check tooling) and polish B (B-070, B-062, I-002, I-022), the top-bar
 and LCD fit (B-061, B-065, B-066), the volume-strip fix; the feature data, journey links and guide (slices 1-4).
 
 **Pushed, not merged** (each its own worktree under `audio/gearmulator-md-mm-wt/`):
@@ -74,7 +74,7 @@ drafted in the session, not posted; (3) Clear vs Reset to defaults (wave 5).
 
 ## Execution (started 2026-10-11, after 0.5.1 and the dev-cycle work)
 
-- Integration branch `feat/0.6-features` (rebased on main 249ba623a; the old history is `backup/0.6-before-rebase`). Each piece of work: its own branch and worktree from it, checks by doc/release/DEV-CYCLE.md (tier 1 before a merge, tier 2 for big ones), merged back into `feat/0.6-features` (play-and-accept per piece was dropped, below).
+- Integration branch `feat/0.6-features` (rebased on main 414dbccfe; the old history is `backup/0.6-before-rebase`). Each piece of work: its own branch and worktree from it, checks by doc/release/DEV-CYCLE.md (tier 1 before a merge, tier 2 for big ones), merged back into `feat/0.6-features` (play-and-accept per piece was dropped, below).
 - Radek, 2026-10-11: "don't stop until everything is done for the 0.6 release, then we test." So no play-and-accept per piece: a piece is merged into `feat/0.6-features` when its tier checks are green and an independent reviewer agent passes it; Radek tests the whole of 0.6 at the end. Waves 9 and 10 are mocked up and self-reviewed against his UI rules, then built; he sees them at the end.
 - At most 3 agents at once. Batch 1: wave P (probes), wave 1 (song slots; continues the paused worktrees), the fit fix (B-061, B-065, B-066). Then waves 2-4, then 5-8, then 9-10 (mock-ups to Radek first), slice 5 journeys and the appendices alongside.
 

@@ -36,3 +36,6 @@ __pycache__/
 doc/manuals/
 # Guide PDFs: made by scripts/mdmm-guide-pdf.sh at release, not kept in git
 site/public/guide/*.pdf
+
+# CI packages downloaded for a hand test (gh run download); never committed
+/artifacts/

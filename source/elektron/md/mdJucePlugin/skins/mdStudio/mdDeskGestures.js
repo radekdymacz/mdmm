@@ -15,7 +15,11 @@ function laneAt(e, exactValue) {
 	if (d.kit) { kitAt(e); return; }
 	if (d.ramp) { rampAt(e); return; }
 	const lane = $("#lane"); if (!lane) return; const el = document.elementFromPoint(e.clientX, e.clientY)?.closest(".lb"); if (!el || !lane.contains(el)) return;
-	const s = +el.dataset.s, t = S.sel; if (!V.tracks[t].trigs[s]) return; const r = el.getBoundingClientRect(); const v = exactValue ?? clamp(Math.round((r.bottom - 3 - e.clientY) / (r.height - 6) * 127));
+	const s = +el.dataset.s, t = S.sel; if (!V.tracks[t].trigs[s]) return; const r = el.getBoundingClientRect();
+	/* the first press on the kit line (the 2 px line, a pixel either side) is the kit value itself: a pixel is more than one value on a short lane */
+	const bl = !d.touched.size && !d.erase ? el.querySelector(".base") : null, bb = bl?.getBoundingClientRect();
+	const onLine = bb && e.clientY >= bb.top - 1 && e.clientY <= bb.bottom + 1;
+	const v = exactValue ?? (onLine ? clamp(Math.round(parseFloat(bl.style.getPropertyValue("--bf")) * 127)) : clamp(Math.round((r.bottom - 3 - e.clientY) / (r.height - 6) * 127)));
 	if (d.erase) eraseLock(t, S.lane, s); else if (!setLock(t, S.lane, s, v)) return;
 	/* One shape for render and drag (mockup's barHTML): a bipolar bar redraws while it is dragged. */
 	el.querySelector("i")?.remove(); if (!d.erase) el.insertAdjacentHTML("beforeend", barHTML(v));
