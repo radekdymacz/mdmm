@@ -1,7 +1,7 @@
 # Clean-up baseline (0.5, Phase 0)
 
 What "unchanged" means for the 0.5 clean-up ([PLAN-0.5.md](PLAN-0.5.md)), measured on 2026-10-10 at the tag
-`pre-cleanup-0.5` (`1d44505e3`, branch `cleanup/0.5`). Every later step of the clean-up compares against this.
+`pre-cleanup-0.5` (`7f1f55ffa`, branch `cleanup/0.5`). Every later step of the clean-up compares against this.
 
 **Machine:** Apple M4 Pro, 12 cores, macOS 27.0.1, Xcode 26.2, CMake 4.2.1, Ninja 1.13.2. **The Mac was busy**
 (other agents building and testing): load 17 when the build started, up to 150 during it, about 100 when the tests
@@ -187,11 +187,11 @@ Five slices on `cleanup/0.5`, each checked before the next on a fresh tree with 
 
 | Commit | Slice | Deleted (lines in the diff; C/C++/ObjC lines in brackets) |
 |---|---|---|
-| `c5533efd3` | 1. The other synths: virus*, osirus*, osTIrus*, mq*, xt*, nord, ronaldo, wLib, Android, their consoles, upstream's NSIS installer and Virus launchers, mdmm-shared-controller.yml | 119,022 (50,273) |
-| `4f15a4c92` | 2. VST2 (vstsdk2.4.2, mqVst2, fst), CLAP and cpp-terminal (both submodules), LV2 packaging, portaudio, portmidi, changelogGenerator, upstream's deploy/pack/rclone/products cmake scripts and root build scripts | 239,332 (127,020 + 25,426 in the two submodules) |
-| `a27d1c707` | 3. Upstream's workflows (cmake, elektron-*, nightly, release), AI notes, issue template, changelog and synth notes | 4,148 (0) |
-| `416f114cb` | 4. One product set: no SYNTH_* switches, no FX plug-in option; callers updated | 94 (0) |
-| `48bf68c90` | 5. The MCP server (mcpServerLib, the editor's MCP tools, the settings toggle, the constructor flag) | 5,847 (4,875) |
+| `2da397b85` | 1. The other synths: virus*, osirus*, osTIrus*, mq*, xt*, nord, ronaldo, wLib, Android, their consoles, upstream's NSIS installer and Virus launchers, mdmm-shared-controller.yml | 119,022 (50,273) |
+| `d3d15e966` | 2. VST2 (vstsdk2.4.2, mqVst2, fst), CLAP and cpp-terminal (both submodules), LV2 packaging, portaudio, portmidi, changelogGenerator, upstream's deploy/pack/rclone/products cmake scripts and root build scripts | 239,332 (127,020 + 25,426 in the two submodules) |
+| `811ff55c4` | 3. Upstream's workflows (cmake, elektron-*, nightly, release), AI notes, issue template, changelog and synth notes | 4,148 (0) |
+| `ed90a77db` | 4. One product set: no SYNTH_* switches, no FX plug-in option; callers updated | 94 (0) |
+| `c6b026f9b` | 5. The MCP server (mcpServerLib, the editor's MCP tools, the settings toggle, the constructor flag) | 5,847 (4,875) |
 
 Kept: pluginTester and midiLearnTest (the editors' tests and CI use them; pluginTester now hosts VST3 and AU
 only), bridge/networkLib/ptypes (jucePluginLib links bridgeClient and the plug-in state stores the device type
@@ -199,7 +199,7 @@ with a remote host and port: removing the bridge changes how old projects load, 
 and the install rules in the root CMakeLists (the two `_AU_Validate` tests use them; nothing of ours runs cpack),
 LICENSE.md and README.upstream.md (credit), doc/lua_scripting.md and doc/midilearn (code we keep).
 
-| | Before (end of Phase 1, `86010f6d0`) | After (`48bf68c90`) |
+| | Before (end of Phase 1, `c0dda41cb`) | After (`c6b026f9b`) |
 |---|---|---|
 | Goldens | 24 of 24 | 24 of 24, same file (after every slice but 3, which changed no code) |
 | ctest | 159 pass | 156 pass: the same names minus `mcpHttpGuardTest`, `mcpHttpServerTest`, `mcpServerTest` (deleted with the MCP server) |
@@ -238,7 +238,7 @@ damaged payload too), the chunks after it are read, and a save writes no REMO ch
 proves it with crafted states (as upstream wrote it, damaged, empty, newer version) on a synthetic device and on
 both editors' processors.
 
-| | Before (`648af9118`, main) | After |
+| | Before (`d749fe64f`, main) | After |
 |---|---|---|
 | Goldens | 24 of 24 | 24 of 24, same file, speed-ups on and off (gate stage 5 on a fresh `scripts/mdmm-dev.sh` tree) |
 | ctest (gate stage 2, both ROMs) | 156 names | 154: the same names minus `bridgeLibTest` and `bridgeServerRomPoolTest` (deleted with the bridge); `mdProcessorHooksTest` has the old-remote-state case. One red: `mdFirstStartFirmwareTest` at load 41 (B-052, the same signature: "booting > ready", no "animating"); alone 3 of 5 green at load 80 to 140 |

@@ -1560,30 +1560,30 @@ namespace
 				const auto& fw = after->tracks[t].pages[pg];
 				const auto& was = before->tracks[t].pages[pg];
 				std::string mark;
+				const std::array<size_t, 5> lfoEnums{ed::mmLfoPages().size(), 8, ed::mmLfoTrigs().size(), ed::mmLfoWaves().size(), ed::mmLfoMults().size()};
 				for(size_t i = 0; i < 8; ++i)
 				{
+					// an enumeration is the band its byte falls in (the firmware may store 1 for the first of the multipliers);
+					// a SYN slot the machine does not use keeps whatever it had
+					size_t bands = pg == 0 ? ed::mmSynthEnum(info.id, static_cast<uint8_t>(i)).size() : pg >= 4 && i < 5 ? lfoEnums[i] : 0;
+					const bool used = pg != 0 || (info.synth[i] && *info.synth[i]);
+					const bool same = !used || (bands ? ed::mmEnumIndex(fw[i], static_cast<int>(bands)) == ed::mmEnumIndex(want[pg][i], static_cast<int>(bands))
+						: fw[i] == want[pg][i]);
 					if(fw[i] == was[i])
-					{
-						mark += '=';
 						++kept;
-						continue;
-					}
-					++wrote;
-					if(fw[i] == want[pg][i])
-					{
-						mark += '.';
-						continue;
-					}
-					mark += '!';
-					diffs += " " + std::string(pageNames[pg]) + "." + ed::mmParamName(info.id, static_cast<uint8_t>(pg), static_cast<uint8_t>(i))
-						+ " fw " + std::to_string(fw[i]) + " ed " + std::to_string(want[pg][i]) + ";";
+					else
+						++wrote;
+					mark += !used ? '-' : same ? (fw[i] == was[i] ? '=' : '.') : '!';
+					if(!same)
+						diffs += " " + std::string(pageNames[pg]) + "." + ed::mmParamName(info.id, static_cast<uint8_t>(pg), static_cast<uint8_t>(i))
+							+ " fw " + std::to_string(fw[i]) + " ed " + std::to_string(want[pg][i]) + ";";
 				}
 				std::printf("  NEWKIT %-10s (id %2d) %s fw=%s ed=%s was=%s marks=%s\n", info.name, info.id, pageNames[pg], list(fw).c_str(),
 					list(want[pg]).c_str(), list(was).c_str(), mark.c_str());
 			}
 			std::printf("  NEWKIT %-10s (id %2d) level %d (was %d), routing byte %d\n", info.name, info.id, after->levels[t],
 				before->levels[t], after->routing[t]);
-			check(diffs.empty(), std::string(info.name) + ": the editor's start values equal what the firmware wrote:" + diffs);
+			check(diffs.empty(), std::string(info.name) + ": the editor's start values equal the firmware's:" + diffs);
 		}
 		std::printf("  NEWKIT summary: the firmware wrote %d bytes, left %d alone\n", wrote, kept);
 	}

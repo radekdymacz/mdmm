@@ -99,7 +99,7 @@ Mac16,8, Apple M4 Pro, 12 cores; standalone at 48 kHz, 512-frame blocks (the def
 
 ## 7. Installed
 
-- Release, arm64, from this branch (commit `7cfe57f`), with the MM icon on all three bundles.
+- Release, arm64, from this branch (commit `5f638f4`), with the MM icon on all three bundles.
 - VST3: `~/Library/Audio/Plug-Ins/VST3/Gearmulator MM.vst3`.
 - AU: `~/Library/Audio/Plug-Ins/Components/Gearmulator MM.component`. `auval -v aumu Tmno GmPv`: **AU VALIDATION SUCCEEDED**.
 - No earlier MM copies were installed, so there was nothing to back up (the MD ones were left alone).

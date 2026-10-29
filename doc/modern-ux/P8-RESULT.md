@@ -1,7 +1,7 @@
 # P8 result: v0.2.0 complete (MM-P4 on the P6/P7 core, the site, "Install for me only")
 
-- **Branch:** `p8/mm-p4-port` (from `release/v0.2.0` @ e3e845c6: P7 plus the release packaging), 2026-09-29.
-- **Why:** the MM-P4 work (`mm/editor`: 05e4ef47, efdbfc3a, 17a36648) landed after the P5 merge, so
+- **Branch:** `p8/mm-p4-port` (from `release/v0.2.0` @ 28a44baf: P7 plus the release packaging), 2026-09-29.
+- **Why:** the MM-P4 work (`mm/editor`: da3de343, ee329572, aa72812f) landed after the P5 merge, so
   v0.2.0 still greyed out the Monomachine features MM-P4 had made real. P8 re-implements them the
   P6 way instead of merging the old structure back. The evidence (byte offsets, RAM addresses) is
   MM-P4's: [MM-P4-RESULT on `mm/editor`](https://github.com/radekdymacz/mdmm/blob/mm/editor/doc/modern-ux/MM-P4-RESULT.md).

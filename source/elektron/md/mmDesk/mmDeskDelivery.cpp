@@ -248,13 +248,7 @@ namespace mmDesk
 	void MmMachine::sendKitLive(const ed::MmKit& _from, const ed::MmKit& _to, const ChannelReach& _reach)
 	{
 		if(_from.name != _to.name)
-		{
-			std::string n;
-			for(const auto c : _to.name)
-				if(c)
-					n += static_cast<char>(c);
-			m_port.sendSysex(ed::mmSetKitName(n));
-		}
+			m_port.sendSysex(ed::mmSetKitNameBytes(_to.name));	// B-190: all 11 bytes, as the stored kit has them
 		for(uint8_t t = 0; t < 6; ++t)
 		{
 			const bool machine = _from.machines[t] != _to.machines[t];

@@ -3,7 +3,7 @@
 	"run": {
 		"version": "0.5.1",
 		"date": "2026-10-13",
-		"commit": "95ed4a055",
+		"commit": "bdf983d6b",
 		"firmware": " elektron_sps1-1uw_os1.63.bin elektron_sfx6-60_os1.32b.bin"
 	},
 	"rows": {

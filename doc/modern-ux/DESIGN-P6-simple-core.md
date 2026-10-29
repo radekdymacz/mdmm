@@ -1,6 +1,6 @@
 # P6 design: a simple core for the Machinedrum and Monomachine Editors
 
-- Branch `p6/simple-core`, from `p5/md-editor-final` (37200c0), 2026-09-28.
+- Branch `p6/simple-core`, from `p5/md-editor-final` (865349d), 2026-09-28.
 - Input: [DESIGN-REVIEW-2026-09-28.md](DESIGN-REVIEW-2026-09-28.md). That review synthesised three reviews: simplicity, data and architecture.
 - Method: hammock first. This document is written before the code, and the code follows its migration plan.
 
