@@ -4,7 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-194 · Monomachine: follow played track, HW MIDI step, left on track 2 after a key-split toast (open)
+
+- **From:** firmware E2E run 40782521940 (release/0.8.1), 2026-10-29, journey `mm-follow-played-track` step 13: "a note for track 3 leaves the selection": screen track 2; toast "Split the range up to 23". Passed in the other runs of the same commit.
+- **Status:** open. A key-split gesture or toast from the step before seems to take the note. Not a tester report.
+
 ## B-193 · Machinedrum: the fine (Shift) knob drag test was disturbed by a late kit load (open)
+
+- **Also:** CI run 40782388827 (release/0.8.1) with the same numbers (plain 72 -> 61); the nightly of 2026-10-26 on main had them too, so it is older than 0.8.1.
 
 - **From:** firmware E2E run 40758434327, journey `md-sound-knob-steps` step 5 (plain 72 -> 61, fine 63); the toast "Loaded kit 1" appeared during the drag. The same journey passed on the same commit in CI run 40758431456; not reported by a tester.
 - **What happens:** the drag ended at 63 instead of the expected fine value.
