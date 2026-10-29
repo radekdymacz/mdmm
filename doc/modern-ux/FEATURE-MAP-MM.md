@@ -376,7 +376,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Song editing 1-77 | Copy, paste, clear, undo rows | Row clipboard | ✅ | LCD COPY / PASTE / CLR; page undo |  | 1 | pass (e2e-mm-song-rows-copy) |
 | Song edit transport 1-77 | Start from any row (ENTER) | Play from row | ✅ | Song: Enter on the selected row (▶ From here) |  | 1 | stub-only (e2e-mm-song-play-from-fail) |
 | Song edit transport 1-77 | Counter in bars and beats | Song time | ✅ | Song: the Arrangement header reads Playing · bar:beat while the song plays (the machine's counter, telemetry songSteps) | RAM 0x2bdf3c, the EDIT SONG header's counter (gapProbesFirmwareTest w12mmcounter); song rows, bars and time stay in the Songs column | 1 | pass (e2e-mm-song-counter) |
-| Song loops 1-78 | Loop to a row, repeat count, nesting | Loop | ✅ | Row command LOOP |  | 1 | pass (e2e-mm-song-row-inspector) |
+| Song loops 1-78 | Loop to a row, repeat count, nesting | Loop | ✅ | Row command LOOP | B-038 (0.9): the loop target is row byte 3, as on the Machinedrum; checked on the firmware by mmDeskFirmwareTest songloop. | 1 | pass (e2e-mm-song-row-inspector) |
 | Song jump 1-78 | Forward jump | Jump | ✅ | Row command JUMP |  | 1 | pass (mm-song-workspace) |
 | Song halt 1-78 | Pause playback | Halt | ✅ | Row command HALT |  | 1 | pass (mm-song-workspace) |
 | Song extra 1-79, 1-80 | Row mutes and BPM; bold M / B marks | XTRA | ✅ | Cell marks T M B ~ |  | 1 | pass (mm-song-workspace) |
