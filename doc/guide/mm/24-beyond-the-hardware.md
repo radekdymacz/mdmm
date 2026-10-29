@@ -119,7 +119,7 @@ When you play with a sound, **Clear** puts the selected track back as the kit's 
 The solo is saved with the project, in the DAW and in the standalone editor. Open the project again and the solo is on, the other synth tracks are muted, and the mutes you had before the solo come back when you end it.
 
 ## UNDO AND REDO
-<!-- rows: MM-X07 @5f1db8 -->
+<!-- rows: MM-X07 @d80fd0 -->
 
 The machine has no undo. Every edit of the editor can be taken back and done again, across kits, patterns and songs.
 
@@ -127,7 +127,7 @@ The machine has no undo. Every edit of the editor can be taken back and done aga
 2. Press {key:undo}, or click **UNDO** in the top bar. The edit is gone.
 3. Press {key:redo}, or click **REDO**. It is back.
 
-A drag, a paint or a run of rotates is one undo step. A kit you leave without saving is kept as the machine's UNDO KIT: choose it in the kit library to get the edited kit back, still unsaved, in its own slot.
+A drag, a paint or a run of rotates is one undo step. A SysEx import and the Empty reset are one step each: **Undo** writes back the kits, patterns and songs they overwrote. A global is not put back (chapters 19 and 20). A kit you leave without saving is kept as the machine's UNDO KIT: choose it in the kit library to get the edited kit back, still unsaved, in its own slot.
 
 ## TYPED VALUES
 <!-- rows: MM-X08 @8e3474 -->

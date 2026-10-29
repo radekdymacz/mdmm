@@ -130,7 +130,7 @@ The **Pattern** list of a range offers CUR and all 128 patterns, A01 to H16.
 Knob resolution, the velocity curve and the joystick mapping belong to the hardware. The editor has no setting for them.
 
 ## FILE
-<!-- rows: MM-307 MM-308 MM-309 @a183b4 -->
+<!-- rows: MM-307 MM-308 MM-309 @20a75d -->
 
 On the machine the FILE menu sends and receives SysEx. In the editor you write a .syx file on your computer, and you open one to send it to the machine.
 
@@ -154,7 +154,7 @@ NOTE: On the machine KIT, PAT+KIT and SONG+PAT+KIT take the kits and patterns wi
 
 The tick **Read back and compare**, beside **Verify only**, is on at first and stays as you set it. With it on, the import reads every slot back after it sends and compares it with the file. With it off, the import ends after the send. The report then says how many items were sent and that they were not read back.
 
-Globals and other messages are off unless you tick them. Importing a global changes the channels the machine listens on. **Undo** takes an import back in one step, but it does not put back a global. Use **Export SysEx…** first to keep a copy of the globals in a file.
+Globals and other messages are off unless you tick them. Importing a global changes the channels the machine listens on. **Undo** takes an import back in one step, but it does not put back a global. Before it sends, the editor reads the slots it has not read yet. If a slot does not answer, the report ends with how many slots cannot be undone. Use **Export SysEx…** first to keep a copy of the globals in a file.
 
 ### Original and specific place
 
