@@ -1,7 +1,7 @@
 # Data and state review (Hickey lens), before 1.0
 
 Reviewer: Data & State Architect. Read-only. Scope: `source/elektron/md/*` and `doc/features/*.json`, at
-`2c59fdb95` (branch codex/native-audio-engine). Paths relative to `source/elektron/md/` unless they start with
+`f75cf8980` (branch codex/native-audio-engine). Paths relative to `source/elektron/md/` unless they start with
 `doc/` or `source/`. Findings fixed by the 2026-10-02 review are not repeated.
 
 ## Rating: MOSTLY DATA

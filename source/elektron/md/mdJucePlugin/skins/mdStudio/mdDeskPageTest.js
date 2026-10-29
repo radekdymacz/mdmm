@@ -685,7 +685,7 @@ return { Bridge, cmd, asked, errors, banners, S, Drop, get V() { return V; }, se
 	/* 106 px tall: a 100 px meter, kit FLTF 64. The header handle uses relative movement. */
 	const classes = new Set();
 	const lane = { contains: () => true, classList: { add: c => classes.add(c), remove: c => classes.delete(c), toggle() { } }, innerHTML: "" };
-	const key = { dataset: { s: "1" }, insertAdjacentHTML() { }, getBoundingClientRect: () => ({ bottom: 200, height: 106, top: 94, left: 0, right: 20, width: 20 }), querySelector: q => q === ".base" ? {} : null };
+	const key = { dataset: { s: "1" }, insertAdjacentHTML() { }, getBoundingClientRect: () => ({ bottom: 200, height: 106, top: 94, left: 0, right: 20, width: 20 }), querySelector: q => q === ".base" ? { getBoundingClientRect: () => ({ top: -100, bottom: -99 }), style: { getPropertyValue: () => "0.5" } } : null };
 	key.closest = q => q === ".lb" ? key : null;
 	const handle = { dataset: { kitvalue: "" }, setAttribute() { }, focus() { } }; handle.closest = q => q === "[data-kitvalue]" ? handle : null;
 	hooks["#lane"] = lane; hooks["#lane .lb"] = key; hooks["[data-kitvalue]"] = handle; hooks.under = key;
@@ -752,7 +752,7 @@ return { Bridge, cmd, asked, errors, banners, S, Drop, get V() { return V; }, se
 	/* the lane: 16 keys of 20 px from x 0, 106 px tall with the bottom at 200 (the bars' scale: 3 px in, 100 px high) */
 	const classes = new Set();
 	const BOT = 200, KEYH = 106, dotY = v => BOT - 3 - (KEYH - 6) * v / 127;
-	const keyEls = Array.from({ length: 16 }, (_, s) => { const k = { dataset: { s: String(s) }, insertAdjacentHTML() { }, classList: { add() { }, remove() { } }, getBoundingClientRect: () => ({ bottom: BOT, height: KEYH, top: BOT - KEYH, left: s * 20, right: s * 20 + 20, width: 20 }), querySelector: q => q === ".base" ? {} : null }; k.closest = () => k; return k; });
+	const keyEls = Array.from({ length: 16 }, (_, s) => { const k = { dataset: { s: String(s) }, insertAdjacentHTML() { }, classList: { add() { }, remove() { } }, getBoundingClientRect: () => ({ bottom: BOT, height: KEYH, top: BOT - KEYH, left: s * 20, right: s * 20 + 20, width: 20 }), querySelector: q => q === ".base" ? { getBoundingClientRect: () => ({ top: -100, bottom: -99 }) } : null }; k.closest = () => k; return k; });
 	const svg = { innerHTML: "", setAttribute() { } };
 	const lane = { contains: () => true, classList: { add: c => classes.add(c), remove: c => classes.delete(c), toggle: (c, on) => on ? classes.add(c) : classes.delete(c) }, innerHTML: "",
 		getBoundingClientRect: () => ({ left: 0, top: BOT - KEYH, width: 320, height: KEYH, right: 320, bottom: BOT }), querySelector: q => { const m = /data-s="(\d+)"/.exec(q); return m ? keyEls[+m[1]] : null; } };

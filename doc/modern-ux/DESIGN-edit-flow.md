@@ -1,6 +1,6 @@
 # Design: the edit flow under fast gestures (knob drags, lock draws, all-track tweaks)
 
-- Worktree `review/edit-flow` (from `chore/upstream-seams` @ 7b75a809), 2026-09-29. Hammock style: facts first, then candidates, critique and a recommendation. Control All (§4.3) and paced whole-document delivery (§4.4, pacing only) are built, uncommitted: see **Built** below.
+- Worktree `review/edit-flow` (from `chore/upstream-seams` @ beb2f8d9), 2026-09-29. Hammock style: facts first, then candidates, critique and a recommendation. Control All (§4.3) and paced whole-document delivery (§4.4, pacing only) are built, uncommitted: see **Built** below.
 - **The owner's report:** dragging a knob or drawing locks in the Machinedrum or Monomachine Editor makes the VST3 glitch in a DAW, "because it is busy updating parameters". The follow-up: "even a small parameter change seems to flood".
 - **Evidence marks:**
   - **[measured]**: by the rigs in §1.1, on this Mac (Apple M4 Pro).

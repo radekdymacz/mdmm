@@ -1517,6 +1517,7 @@ namespace mdDesk
 		const auto t = static_cast<uint8_t>(*intOf(_m, "t"));
 		const bool on = flagOf(_m, "on");
 		m_mutes[t] = on;
+		m_muteWrites[t] = {on, m_port.nowMs ? now() : 0, m_port.nowMs != nullptr};
 		if(m_port.sendMute)
 			m_port.sendMute(t, on);
 		return ok();
@@ -1769,12 +1770,18 @@ namespace mdDesk
 			observe(WorkingKit{*seed}, Source::Dump);
 	}
 
-	void MdMachine::onGlobal(const ed::MdGlobal& _g)
+	void MdMachine::onGlobal(const ed::MdGlobal& _dumped)
 	{
-		const DocRef ref{DocKind::Global, _g.position};
+		const DocRef ref{DocKind::Global, _dumped.position};
 		m_loads.arrived(ref);
-		if(m_session.state().globalSlot && *m_session.state().globalSlot != _g.position)
+		if(m_session.state().globalSlot && *m_session.state().globalSlot != _dumped.position)
 			return;
+		// A dump read while the TEMPO nudge is held carries the nudged tempo: the global keeps the tempo the nudge
+		// started from (the page would nudge the nudged tempo again; the release sets it back anyway).
+		ed::MdGlobal g = _dumped;
+		if(m_nudgeFrom)
+			g.tempo = *m_nudgeFrom;
+		const ed::MdGlobal& _g = g;
 		observe(_g, Source::Dump);
 		setBaseChannel(_g);
 		// The read-back after a global edit: what the firmware stored, whatever it normalised.
@@ -1872,7 +1879,21 @@ namespace mdDesk
 	void MdMachine::onHostMute(const uint8_t _track, const bool _muted)
 	{
 		if(_track < 16)
-			m_mutes[_track] = _muted;
+			observeMute(_track, _muted);
+	}
+
+	void MdMachine::observeMute(const size_t _t, const bool _muted)
+	{
+		auto& w = m_muteWrites[_t];
+		if(w.open)
+		{
+			const bool settled = _muted == w.on || (m_port.nowMs && now() - w.atMs > g_muteSettleMs);
+			if(settled)
+				w.open = false;
+			else
+				return;	// an older write's echo: the newest write is still on its way
+		}
+		m_mutes[_t] = _muted;
 	}
 
 	void MdMachine::sendModulation(const uint8_t _track, const uint8_t _param, const uint8_t _value, const Documents& _view)
@@ -1992,7 +2013,7 @@ namespace mdDesk
 		// The mutes the machine plays with (RAM), whoever set them: the page, CCs, the MUTE window.
 		if(_t.mutes >= 0)
 			for(size_t t = 0; t < 16; ++t)
-				m_mutes[t] = (_t.mutes >> t) & 1;
+				observeMute(t, (_t.mutes >> t) & 1);
 		if(m_audibleQueue)
 		{
 			// Status and the RAM pattern byte both switch about two steps before the new pattern

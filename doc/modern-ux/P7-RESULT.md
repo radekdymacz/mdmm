@@ -1,13 +1,13 @@
 # P7 result: professional polish of the Machinedrum and Monomachine Editors
 
-- **Branch:** `p7/polish` (from `p6/simple-core` @ 0993cd9b), 2026-09-28. Pushed after each item. No PR and no release.
+- **Branch:** `p7/polish` (from `p6/simple-core` @ 53f5f5ea), 2026-09-28. Pushed after each item. No PR and no release.
 - **Architecture:** P6's is kept.
   - The mockups are the design source, synced into the skins.
   - New behaviour is data: the modal kinds, the model's `hostFollowing` and the `followHost` command row.
   - The pure parts (`windowFit`, `hostFollowing`, `lenStep`) have their own tests.
 - **The critique:** [DESIGN-REVIEW-P7.md](DESIGN-REVIEW-P7.md).
 - **The sync design:** [DESIGN-P7-sync.md](DESIGN-P7-sync.md).
-- **Screenshots** are from the browser harness: the shipped skin files on a fake host, P6 (0993cd9b) on the left, P7 on the right, in `p7-shots/`.
+- **Screenshots** are from the browser harness: the shipped skin files on a fake host, P6 (53f5f5ea) on the left, P7 on the right, in `p7-shots/`.
 
 ## Radek's list
 
@@ -72,7 +72,7 @@ A second MD bug came to light on the way. The pointer-capture helper was shadowe
 | Page tests | `mdDeskModelTest.js` and `mmConvertTest.js` (new: lenStep) pass. Both sync scripts pass `--check`, including the page contract, the AUDIO / MIDI panel and the MODAL checks. |
 | Firmware tests | See the final run below. |
 | In-plugin self-tests | See the final run below. New: MD `p7` (11 checks) and MM `p7` (11 checks). |
-| Release build (diagnostics OFF, `temp/cmake_p7rel`) | **Compiles**, at every commit checked (a96eaf5e and the final one). |
+| Release build (diagnostics OFF, `temp/cmake_p7rel`) | **Compiles**, at every commit checked (585886f8 and the final one). |
 | auval, from a temporary user install that was removed again | **AU VALIDATION SUCCEEDED** for `aumu Tmdr GmPv` and `aumu Tmno GmPv` (release build). |
 
 ### The final run (the last commit)

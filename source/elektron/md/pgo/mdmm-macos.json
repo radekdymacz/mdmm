@@ -8,7 +8,7 @@
   "functions": 3985
  },
  "trained": {
-  "commit": "cc5d001fff9ac59aa5b0be44ec754bd0b4bb4d09",
+  "commit": "3c3b33365269829a21f4fe9d2efc10f1c93cf7c3",
   "architecture": "arm64",
   "compiler": "Apple clang version 17.0.0 (clang-1700.0.13.5)",
   "workload": [

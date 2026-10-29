@@ -1163,14 +1163,36 @@ namespace mmDesk
 		// ---- a track's sound: the machine and the values it starts with (the page's own defaults, DESIGN-UNIFY.md 4.6:
 		// the intent cases pin the page's writes to these) ----
 		// A SYN slot's value when a machine is assigned, by the slot's name (page units: an enumeration's index).
-		int synDefault(const char* _name)
+		// B-175, B-176: the firmware's own start values per machine (mmNewKitDefaultsFirmwareTest, ASSIGN MACHINE with init):
+		// raw bytes, an enumeration's index; the unused slots 0.
+		std::array<int, 8> synStart(const uint8_t _machine)
 		{
-			static const std::map<std::string, int> d{{"TUNE", 64}, {"INP", 100}, {"MIX", 64}, {"UNIL", 40}, {"UNIW", 20}, {"UNIX", 0},
-				{"SUB1", 30}, {"PW", 64}, {"VOC1", 64}, {"VOC2", 64}, {"V-SW", 1}, {"CVOL", 100}, {"LP", 127}, {"GATE", 127},
-				{"DEC", 64}, {"1ENV", 80}, {"TONE", 64},
-				{"PCH2", 63}, {"PCH3", 63}, {"PCH4", 63}};	// OFF (B-151: the firmware's own machine change sets 63)
-			const auto it = d.find(_name);
-			return it == d.end() ? 0 : it->second;
+			static const std::map<uint8_t, std::array<int, 8>> d{
+				{0, {0, 0, 0, 0, 0, 0, 0, 0}},	// GND-GND
+				{1, {0, 0, 0, 0, 0, 0, 0, 64}},	// GND-SIN
+				{2, {0, 0, 0, 0, 0, 0, 0, 64}},	// GND-NOIS
+				{3, {0, 0, 1, 0, 0, 0, 64, 64}},	// SID-6581
+				{4, {0, 0, 0, 0, 0, 0, 0, 64}},	// SWAVE-SAW
+				{5, {0, 0, 0, 0, 64, 0, 0, 64}},	// SWAVE-PULS
+				{14, {63, 63, 63, 0, 64, 0, 127, 64}},	// SWAVE-ENS
+				{6, {0, 0, 0, 1, 0, 0, 0, 64}},	// DPRO-WAVE
+				{7, {64, 0, 0, 0, 0, 0, 0, 0}},	// DPRO-BBOX
+				{32, {0, 64, 0, 0, 0, 0, 0, 64}},	// DPRO-DDRW
+				{33, {63, 63, 63, 0, 0, 0, 0, 64}},	// DPRO-DENS
+				{8, {60, 64, 80, 30, 80, 64, 98, 64}},	// FM+STAT
+				{9, {60, 64, 80, 64, 102, 80, 98, 64}},	// FM+PAR
+				{10, {64, 64, 64, 64, 74, 80, 30, 64}},	// FM+DYN
+				{11, {64, 64, 1, 0, 0, 64, 64, 64}},	// VO-6
+				{12, {0, 0, 0, 0, 0, 0, 0, 64}},	// FX-THRU
+				{13, {64, 2, 127, 32, 0, 127, 0, 64}},	// FX-REVERB
+				{15, {64, 64, 64, 127, 0, 0, 127, 64}},	// FX-CHORUS
+				{16, {64, 64, 64, 127, 0, 0, 0, 64}},	// FX-DYNAMIX
+				{17, {0, 0, 0, 0, 0, 0, 0, 64}},	// FX-RINGMOD
+				{18, {64, 64, 64, 127, 45, 0, 0, 64}},	// FX-PHASER
+				{19, {64, 64, 64, 127, 45, 0, 0, 64}},	// FX-FLANGER
+			};
+			const auto it = d.find(_machine);
+			return it == d.end() ? std::array<int, 8>{} : it->second;
 		}
 		// An enumeration's index as the value the firmware stores (the band's lowest value); a plain value as it is.
 		uint8_t enumRaw(const int _v, const size_t _n)
@@ -1182,18 +1204,19 @@ namespace mmDesk
 		{
 			std::array<uint8_t, 8> v{};
 			const auto* m = ed::mmMachine(_machine);
+			const auto s = synStart(_machine);
 			for(uint8_t i = 0; m && i < 8; ++i)
 				if(m->synth[i] && *m->synth[i])
-					v[i] = enumRaw(synDefault(m->synth[i]), ed::mmSynthEnum(_machine, i).size());
+					v[i] = enumRaw(s[i], ed::mmSynthEnum(_machine, i).size());
 			return v;
 		}
 		// The fixed pages' neutral values (AMP FLT EFX, then an LFO page), page units; an LFO's PAGE DEST TRIG WAVE MULT
 		// are enumerations.
 		constexpr std::array<std::array<uint8_t, 8>, 4> g_neutralPages{{
-			{0, 40, 64, 20, 64, 100, 64, 0},	// AMP
-			{0, 127, 0, 0, 0, 40, 64, 64},		// FLT: BOFS WOFS 64, no sweep (B-148: signed; the firmware's machine change writes 64)
-			{64, 64, 0, 32, 64, 0, 0, 127},		// EFX
-			{2, 1, 1, 0, 1, 32, 0, 0}}};		// LF1-3
+			{0, 0, 64, 64, 64, 64, 64, 0},		// AMP (B-176: the firmware starts HOLD 0, DEC and REL 64, VOL 64)
+			{0, 127, 0, 0, 0, 32, 64, 64},		// FLT: DEC 32; BOFS WOFS 64, no sweep (B-148: signed; the firmware's machine change writes 64)
+			{64, 64, 0, 64, 64, 28, 0, 127},	// EFX: DTIM 64, DFB 28
+			{0, 4, 0, 0, 0, 64, 0, 0}}};		// LF1-3: PAGE PTCH, DEST 2OCT, TRIG FREE, WAVE TRI, MULT 1X, SPD 64 (indexes)
 		std::array<uint8_t, 8> neutralPage(const uint8_t _page)
 		{
 			if(_page < 4)

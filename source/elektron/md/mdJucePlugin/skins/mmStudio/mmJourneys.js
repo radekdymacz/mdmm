@@ -1523,7 +1523,9 @@ const MmJourneys = (() => {
 			{ say: "pick a synth track whose first step is empty", act: (u, c) => { c.t = [0, 1, 2, 3, 4, 5].find(t => !trigsOf(t).includes(0)) ?? 0; c.p0 = trigsOf(c.t); u.click(rail(c.t)); }, screen: c => ok(S().sel === c.t, "selected " + S().sel),
 				machine: c => ok(!c.p0.includes(0), "every track has a note on step 1") },
 			{ say: "Cmd-drag over steps 5 to 7 of the roll: a step selection", act: async (u, c) => { if (S().stepSel) clearSel(); await dragRoll(u, c.t, [4, 6], { cmd: true }); }, screen: () => ok(!!S().stepSel, "nothing selected") },
-			{ say: "Shift-click RECORD (stopped): step recording, the cursor on step 1, the selection dropped, no new row above the roll", act: async (u, c) => { c.top = $1("#seqscroll")?.getBoundingClientRect().top; if (S().playing) u.click("#play");
+			{ say: "Shift-click RECORD (stopped): step recording, the cursor on step 1, the selection dropped, no new row above the roll", act: async (u, c) => { c.top = $1("#seqscroll")?.getBoundingClientRect().top;
+				/* the journey before may leave it playing: stopped first, and waited for (the click alone races the STOP) */
+				if (S().playing) { u.click("#play"); await until(() => !S().playing && !tele.last?.playing, 5000); }
 				/* the selection's drag may still be on its way through SYSEX RECV on a busy Mac: once it is in */
 				await recvIdle(); results.length = 0; u.click("#rec", { shift: true });
 				/* refused while the panel still takes an earlier dump on SYSEX RECV (the keys would be lost: "The panel is busy");
@@ -2003,11 +2005,22 @@ const MmJourneys = (() => {
 	/* the middle row's pitch, or one next to it, with no note's bar over step s (a press there would take that note) */
 	const freePitch = (t, s) => { const n = rollCell(t, s).n; return [n, n + 1, n - 1, n + 2, n - 2].find(x => !underBar(t, s, x)) ?? n; };
 	const clickAt = (u, t, s, n) => { const p = rollAt(t, s, n); u.click(p.c, {}, p.fx, p.fy); };
+	/* B-179: a note drawn while its track's arpeggiator is on is held to the next trig (no NOTE OFF, as the TRIG keys write
+	   it). The draw-length journeys draw with the arpeggiator OFF, set with the Arp tab's OFF key (c.arp0: the mode it had,
+	   given back by arpBack in their tidy), then the tab they were on */
+	const arpKey = async (u, c, v) => { u.click('[data-dock="arp"]'); await sleep(300); u.click(`[data-set="arpmode"] button[data-v="${v}"]`); await sleep(300);
+		if (c.dock0 && c.dock0 !== "arp") { u.click(`[data-dock="${c.dock0}"]`); await sleep(300); } };
+	const arpOff = async (u, c) => { c.arp0 = S().tracks[c.t].arp.MODE; c.dock0 = S().dock; if (c.arp0) await arpKey(u, c, 0); };
+	const arpIsOff = c => S().tracks[c.t].arp.MODE === 0 && (patDoc()?.tracks[c.t]?.arp?.mode ?? 0) === 0;
+	const arpBack = async (u, c) => { if (c.t == null || !c.arp0 || S().tracks[c.t].arp.MODE === c.arp0) return; if (S().sel !== c.t) { u.click(rail(c.t)); await sleep(300); } await arpKey(u, c, c.arp0); };
 	const rollDrawLength = {
 		name: "mm-roll-draw-length", proves: ["MM-076", "MM-078", "MM-175", "MM-X23"],
 		steps: [
 			go("seq"),
 			{ say: "pick a synth track with six empty steps in a row", act: (u, c) => { c.t = [0, 1, 2, 3, 4, 5].find(t => freeRun(t, 6)); if (c.t == null) throw new Error("no synth track has six free steps in a row"); if (S().side === "midi") u.click('[data-side="int"]'); u.click(rail(c.t)); }, screen: c => ok(S().sel === c.t, "selected " + S().sel) },
+			{ say: "the track's arpeggiator OFF (Arp tab, OFF key): new notes get the draw length (B-179)", act: arpOff,
+				screen: c => ok(S().tracks[c.t].arp.MODE === 0, `arp mode ${S().tracks[c.t].arp.MODE}`),
+				machine: c => ok(arpIsOff(c), `arp mode ${S().tracks[c.t].arp.MODE}, pattern ${patDoc()?.tracks[c.t]?.arp?.mode}`), within: 15000 },
 			{ say: "the Len key at 1/16", act: async (u, c) => { c.l0 = S().rollLen; await drawLen(u, 1); }, screen: () => ok($1("#rolllen").textContent === "1/16", "Len " + $1("#rolllen").textContent) },
 			{ say: "click the run's first cell: a 1/16 note, a NOTE OFF on the next step (it does not run into the next note)", act: (u, c) => {
 				c.run = freeRun(c.t, 6); c.n = freePitch(c.t, c.run[0]); c.t0 = trigsOf(c.t); c.o0 = offsOf(c.t); if (S().stepSel) clearSel(); clickAt(u, c.t, c.run[0], c.n); },
@@ -2022,7 +2035,7 @@ const MmJourneys = (() => {
 			{ say: "Cmd+Z three times: the track as before", act: async (u, c) => { await undoUntil(u, () => same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0), 4); },
 				machine: c => ok(same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0), `pattern trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 }
 		],
-		async tidy(u, c) { if (c.t0 && !(same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0))) await undoUntil(u, () => same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0)); if (c.l0) setRollLen(c.l0); }
+		async tidy(u, c) { if (c.t0 && !(same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0))) await undoUntil(u, () => same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0)); if (c.l0) setRollLen(c.l0); await arpBack(u, c); }
 	};
 	/* 0.6 review 2 (Radek: "make it simple and make it work"): the roll always draws, there is no mode. A click adds, a note's end
 	   lengthens it, its body moves it (across the steps, or its pitch), with a swing mark on the note; nothing stays selected */
@@ -2039,8 +2052,8 @@ const MmJourneys = (() => {
 			go("seq"),
 			{ say: "pick a synth track with five empty steps in a row, the Len key at 1/8, click the first: a note of two steps (a NOTE OFF two steps on)", act: async (u, c) => {
 				c.t = [0, 1, 2, 3, 4, 5].find(t => freeRun(t, 5)); if (c.t == null) throw new Error("no synth track has ten free steps in a row"); if (S().side === "midi") u.click('[data-side="int"]'); u.click(rail(c.t)); await sleep(300);
-				c.l0 = S().rollLen; await drawLen(u, 2); c.run = freeRun(c.t, 5); c.n = freePitch(c.t, c.run[0]); c.t0 = trigsOf(c.t); c.o0 = offsOf(c.t); if (S().stepSel) clearSel(); clickAt(u, c.t, c.run[0], c.n); },
-				machine: c => ok(trigsOf(c.t).includes(c.run[0]) && offsOf(c.t).includes(c.run[2]), `trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 },
+				await arpOff(u, c); c.l0 = S().rollLen; await drawLen(u, 2); c.run = freeRun(c.t, 5); c.n = freePitch(c.t, c.run[0]); c.t0 = trigsOf(c.t); c.o0 = offsOf(c.t); if (S().stepSel) clearSel(); clickAt(u, c.t, c.run[0], c.n); },
+				machine: c => ok(arpIsOff(c) && trigsOf(c.t).includes(c.run[0]) && offsOf(c.t).includes(c.run[2]), `arp OFF ${arpIsOff(c)} (B-179), trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 },
 			{ say: "click the step where it ends: a second note of two steps, the first now runs into it", act: (u, c) => { c.o1 = offsOf(c.t); clickAt(u, c.t, c.run[2], c.n); },
 				machine: c => ok(trigsOf(c.t).includes(c.run[2]) && !offsOf(c.t).includes(c.run[2]) && offsOf(c.t).includes(c.run[4]), `trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 },
 			{ say: "double-click the second note: it is deleted: no NOTE OFF is written where it began and its own NOTE OFF stays (the first note keeps sounding, now to that NOTE OFF, as on the machine)", act: async (u, c) => { if (S().stepSel) clearSel(); await sleep(500); await dblAt(u, c.t, c.run[2], c.n); },
@@ -2059,7 +2072,7 @@ const MmJourneys = (() => {
 			{ say: "Cmd+Z until the track is as before", act: async (u, c) => { await undoUntil(u, () => same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0), 9); },
 				machine: c => ok(same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0), `trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 }
 		],
-		async tidy(u, c) { if (S().stepSel) clearSel(); if (c.t0 && !(same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0))) await undoUntil(u, () => same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0)); if (c.l0) setRollLen(c.l0); }
+		async tidy(u, c) { if (S().stepSel) clearSel(); if (c.t0 && !(same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0))) await undoUntil(u, () => same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0)); if (c.l0) setRollLen(c.l0); await arpBack(u, c); }
 	};
 	const noteClickArrows = {
 		name: "mm-note-click-arrows", proves: [],
@@ -2096,8 +2109,8 @@ const MmJourneys = (() => {
 			{ say: "no Draw key on the page; pick a synth track with eight empty steps in a row, the Len key at 1/16, click the first: a note", act: async (u, c) => {
 				if ($1("#rolldraw")) throw new Error("a Draw key is still on the page");
 				c.t = [0, 1, 2, 3, 4, 5].find(t => freeRun(t, 8)); if (c.t == null) throw new Error("no synth track has eight free steps in a row"); if (S().side === "midi") u.click('[data-side="int"]'); u.click(rail(c.t)); await sleep(300);
-				c.l0 = S().rollLen; await drawLen(u, 1); c.run = freeRun(c.t, 8); c.n = freePitch(c.t, c.run[0]); c.t0 = trigsOf(c.t); c.o0 = offsOf(c.t); if (S().stepSel) clearSel(); clickAt(u, c.t, c.run[0], c.n); },
-				machine: c => ok(trigsOf(c.t).includes(c.run[0]) && offsOf(c.t).includes(c.run[1]), `pattern trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 },
+				await arpOff(u, c); c.l0 = S().rollLen; await drawLen(u, 1); c.run = freeRun(c.t, 8); c.n = freePitch(c.t, c.run[0]); c.t0 = trigsOf(c.t); c.o0 = offsOf(c.t); if (S().stepSel) clearSel(); clickAt(u, c.t, c.run[0], c.n); },
+				machine: c => ok(arpIsOff(c) && trigsOf(c.t).includes(c.run[0]) && offsOf(c.t).includes(c.run[1]), `arp OFF ${arpIsOff(c)} (B-179), pattern trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 },
 			{ say: "the note carries a swing mark (a mark must not take a press)", act: (u, c) => { S().tracks[c.t].swing.add(c.run[0]); redraw(); }, screen: c => ok(S().tracks[c.t].swing.has(c.run[0]), "no swing") },
 			{ say: "drag the note's end two steps right: it lasts three steps", act: (u, c) => dragAt(u, c.t, [c.run[0], c.n], [c.run[2], c.n, 5], {}, true),
 				screen: c => ok(!S().tracks[c.t].steps[c.run[1]] && !!S().tracks[c.t].steps[c.run[3]]?.off, "roll " + JSON.stringify(S().tracks[c.t].steps.slice(c.run[0], c.run[0] + 4))),
@@ -2110,7 +2123,7 @@ const MmJourneys = (() => {
 			{ say: "Cmd+Z until the track is as before", act: async (u, c) => { S().tracks[c.t].swing.delete(c.run[0]); await undoUntil(u, () => same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0), 5); },
 				machine: c => ok(same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0), `pattern trigs ${trigsOf(c.t).join(",")}, NOTE OFFs ${offsOf(c.t).join(",")}`), within: 15000 }
 		],
-		async tidy(u, c) { if (S().stepSel) clearSel(); if (c.t != null && c.run) S().tracks[c.t].swing.delete(c.run[0]); if (c.t0 && !(same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0))) await undoUntil(u, () => same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0)); if (c.l0) setRollLen(c.l0); }
+		async tidy(u, c) { if (S().stepSel) clearSel(); if (c.t != null && c.run) S().tracks[c.t].swing.delete(c.run[0]); if (c.t0 && !(same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0))) await undoUntil(u, () => same(trigsOf(c.t), c.t0) && same(offsOf(c.t), c.o0)); if (c.l0) setRollLen(c.l0); await arpBack(u, c); }
 	};
 	const rollMidiLen = {
 		name: "mm-roll-midi-len", proves: ["MM-243", "MM-X23"],
@@ -3838,7 +3851,9 @@ const MmJourneys = (() => {
 					m = await pickM("FM+STAT"); u.click("#mpkeep"); await sleep(150); c.keepOff = $1("#mpkeep")?.getAttribute("aria-pressed") === "false"; u.click(`#machpop .mk[data-mach="${m}"]`); await until(() => wk().tracks[1].machineName === m, 4000); await sleep(500); c.init = set(); c.def = JSON.stringify(wk().tracks[4].pages.slice(1, 7)); u.click("#machbtn"); await sleep(300); u.click("#mpkeep"); u.key("Escape"); },
 				screen: c => ok(c.keepOn && c.kept1 === c.kept0 && c.keepOff && c.init !== c.kept0, `keep on ${c.keepOn}, pages kept ${c.kept1 === c.kept0}, keep off ${c.keepOff}, pages init ${c.init !== c.kept0}`), machine: c => { const p = JSON.parse(c.init); return ok(same(p.slice(0, 3), [DEFV.AMP, DEFV.FLT, DEFV.EFX]) && same(p[3], p[4]) && same(p[4], p[5]) && p[3][7] === 0, "init pages " + c.init + " (the page's start values " + JSON.stringify([DEFV.AMP, DEFV.FLT, DEFV.EFX]) + ")"); }, within: 1000 },
 			{ say: "rename the kit that plays (KIT, Rename, JOURNEY): the machine gets the live name SysEx 0x55 and the working kit has the name", act: async (u, c) => { u.click("#kitf"); await sleep(400); c.cur = machine().kit.current; u.click(ksq(c.cur), { alt: true }); await sleep(200); const w0 = wireSeq; u.click('#libpop [data-la="rename"]'); await sleep(250); u.type("#lsin", "JOURNEY"); await sleep(100); u.key("Enter"); await answer(u, c); await until(() => wk().name === "JOURNEY", 20000); await sleep(600); c.syx = wireLog.filter(w => w.seq > w0 && w.kind === "sysex" && w.b[6] === 0x55).map(w => w.b); u.key("Escape"); },
-				machine: c => ok(wk().name === "JOURNEY" && (Journey.noWire() || c.syx.length >= 1 && c.syx[0].slice(0, 6).join() === "240,0,32,60,3,0"), `name ${wk().name}, 0x55 sysex ${JSON.stringify(c.syx)}`), within: 30000 }
+				machine: c => ok(wk().name === "JOURNEY" && (Journey.noWire() || c.syx.length >= 1 && c.syx[0].slice(0, 6).join() === "240,0,32,60,3,0"), `name ${wk().name}, 0x55 sysex ${JSON.stringify(c.syx)}`), within: 30000 },
+			{ say: "undo every edit of the journey (the rename too): the kit that plays is the stored kit again, and says clean (B-190)", act: async (u, c) => { if (!$1("#libpop").hidden) u.key("Escape"); if ($1('[data-dock="trig"]')) u.click('[data-dock="locks"]'); if (S().side === "midi") u.click('[data-side="int"]'); await back(u, c); await until(() => kitEdited() === false, 15000); },
+				machine: () => ok(!kitEdited(), `kit state ${machine().kit?.working}, working ${workName()}`), within: 40000 }
 		],
 		async tidy(u, c) { if (!$1("#libpop").hidden) u.key("Escape"); if ($1('[data-dock="trig"]')) u.click('[data-dock="locks"]'); if (S().side === "midi") u.click('[data-side="int"]'); await back(u, c); }
 	};
@@ -3998,7 +4013,12 @@ const MmJourneys = (() => {
 				machine: () => ok(workName().trim() === "UNDOJRNY" && kitEdited(), `working ${workName()}, ${machine().kit?.working}`), within: 25000 },
 			{ say: "click another kit and load it without saving: the machine keeps the edited kit as its UNDO KIT", act: async (u, c) => { c.k1 = otherSlot(); u.click(ks2(c.k1)); await answer(u, c); },
 				machine: c => ok(machine().kit.current === c.k1 && workName().trim() !== "UNDOJRNY", `kit ${machine().kit.current}, working ${workName()}`), within: 25000 },
-			{ say: "click UNDO KIT: the edited kit plays again, unsaved, in its own slot", act: async (u, c) => { u.click('#libpop [data-la="undokit"]'); await answer(u, c); },
+			{ say: "click UNDO KIT: the edited kit plays again, unsaved, in its own slot", act: async (u, c) => {
+				/* the machine refuses the UNDO KIT while a menu of its own is open (the LOAD KIT it was just given can leave the panel off the main screen for a while on a slow runner;
+				   nightly CI run 2026-10-28: "A menu is open on the machine"): wait for the panel to be idle, and press the key again when the plug-in says so */
+				await sleep(500); await until(() => I().machine?.recv?.state === "idle" && !I().machine?.recv?.sending, 30000);
+				for (let i = 0; i < 8; i++) { results.length = 0; u.click('#libpop [data-la="undokit"]'); await answer(u, c);
+					if (!await until(() => results.some(r => r.op === "loadUndoKit" && r.ok === false), 1500)) break; c.note = `the plug-in refused the UNDO KIT ${i + 1} time(s): ${results.filter(r => r.op === "loadUndoKit").slice(-1).map(r => (r.errors || []).join(";"))}`; await sleep(2500); } },
 				machine: c => ok(machine().kit.current === c.k0 && workName().trim() === "UNDOJRNY" && kitEdited(), `kit ${machine().kit.current}, working ${workName()}, ${machine().kit?.working}`), within: 25000 },
 			{ say: "press Escape", act: u => u.key("Escape"), screen: () => ok($1("#libpop").hidden, "open") }
 		],
