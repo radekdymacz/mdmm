@@ -205,6 +205,12 @@ namespace
 			l.rows[3].bytes[ed::mmSongRow::g_target] = 1;
 			l.rows[3].bytes[ed::mmSongRow::g_repeats] = 3;
 			l.rows[4].bytes[0] = ed::MmSong::g_end;
+			// a valid song: pattern rows need a length and a tempo (keep), as the panel writes them
+			for(size_t i = 0; i < 3; ++i)
+			{
+				l.rows[i].bytes[ed::mmSongRow::g_length] = 16;
+				l.rows[i].bytes[ed::mmSongRow::g_tempo] = l.rows[i].bytes[ed::mmSongRow::g_tempo + 1] = 0xff;
+			}
 			const auto raw = ed::mmSongRaw(l);
 			const size_t at = 16 + 3 * 24;
 			check(raw[at + 3] == 1 && raw[at + 1] == 0 && raw[at + 2] == 3, "a LOOP row: target at row byte 3, count at 2, byte 1 untouched");
