@@ -445,6 +445,8 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: write
+    outputs:
+      release_id: ${{ steps.attach.outputs.release_id }}
     env:
       GH_TOKEN: ${{ github.token }}
       TAG: ${{ github.ref_name }}
@@ -471,6 +473,7 @@ jobs:
       # drafts included, and never created twice. Nothing ships unsigned: an
       # unsigned run only ever touches a draft, and titles it UNSIGNED.
       - name: Attach installers to the GitHub release
+        id: attach
         env:
           SIGNED: ${{ needs.macos-installers.outputs.signed }}
         run: |
@@ -484,8 +487,9 @@ jobs:
                   "${MDMM_OUT}/Monomachine-Editor-macOS.pkg" \
                   "${MDMM_OUT}/Machinedrum-Editor-macOS.dmg" \
                   "${MDMM_OUT}/Monomachine-Editor-macOS.dmg")
-          release_id="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
-            --jq ".[] | select(.tag_name == \"${TAG}\") | .id" | head -n 1)"
+          # A draft may carry tag_name "untagged-...", so it is matched by its title too (it ends in the version).
+          find_release='.[] | select(.tag_name == "'"${TAG}"'" or (.draft and ((.name // "") | endswith(" '"${TAG#mdmm-v}"'")))) | .id'
+          release_id="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" --jq "${find_release}" | head -n 1)"
           if [[ -n "${release_id}" ]]; then
             is_draft="$(gh api "repos/${GITHUB_REPOSITORY}/releases/${release_id}" --jq '.draft')"
             if [[ "${SIGNED}" != "true" && "${is_draft}" != "true" ]]; then
@@ -552,7 +556,10 @@ jobs:
               --draft ${channel_args[@]+"${channel_args[@]}"} --verify-tag \
               --title "${title}" \
               "${notes_args[@]}"
+            release_id="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" --jq "${find_release}" | head -n 1)"
           fi
+          # the later jobs (Windows and Linux, SHA256SUMS) take the release by this id
+          echo "release_id=${release_id}" >> "${GITHUB_OUTPUT}"
 
   # Windows and Linux: one archive per machine, "not-tested" in the name, never signed. They go only
   # to the draft the macOS job made or found (so this runs after it, and only one job creates the
@@ -628,6 +635,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       TAG: ${{ github.ref_name }}
+      MACOS_RELEASE_ID: ${{ needs.macos-publish.outputs.release_id }}
 
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -648,8 +656,12 @@ jobs:
               exit 1
             fi
           done
-          release_id="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
-            --jq ".[] | select(.tag_name == \"${TAG}\") | .id" | head -n 1)"
+          release_id="${MACOS_RELEASE_ID:-}"
+          if [[ -z "${release_id}" ]]; then
+            # A draft may carry tag_name "untagged-...", so it is matched by its title too (it ends in the version).
+            find_release='.[] | select(.tag_name == "'"${TAG}"'" or (.draft and ((.name // "") | endswith(" '"${TAG#mdmm-v}"'")))) | .id'
+            release_id="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" --jq "${find_release}" | head -n 1)"
+          fi
           if [[ -z "${release_id}" ]]; then
             echo "::error::No release for ${TAG}: the macOS job makes the draft first."
             exit 1
@@ -682,7 +694,7 @@ jobs:
   # `shasum -a 256 -c SHA256SUMS --ignore-missing` (macOS) or `sha256sum -c SHA256SUMS --ignore-missing` (Linux).
   checksums:
     name: SHA256SUMS on the draft release
-    needs: [other-platforms]
+    needs: [macos-publish, other-platforms]
     if: ${{ !cancelled() && needs.other-platforms.result == 'success' && !inputs.dry_run && startsWith(github.ref, 'refs/tags/mdmm-v') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -691,13 +703,18 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       TAG: ${{ github.ref_name }}
+      MACOS_RELEASE_ID: ${{ needs.macos-publish.outputs.release_id }}
 
     steps:
       - name: Compute and attach SHA256SUMS
         run: |
           set -euo pipefail
-          release_id="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
-            --jq ".[] | select(.tag_name == \"${TAG}\") | .id" | head -n 1)"
+          release_id="${MACOS_RELEASE_ID:-}"
+          if [[ -z "${release_id}" ]]; then
+            # A draft may carry tag_name "untagged-...", so it is matched by its title too (it ends in the version).
+            find_release='.[] | select(.tag_name == "'"${TAG}"'" or (.draft and ((.name // "") | endswith(" '"${TAG#mdmm-v}"'")))) | .id'
+            release_id="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" --jq "${find_release}" | head -n 1)"
+          fi
           if [[ -z "${release_id}" ]]; then
             echo "::error::No release for ${TAG}."
             exit 1
