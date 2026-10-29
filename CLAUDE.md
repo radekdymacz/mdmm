@@ -19,23 +19,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current state
 
-0.8.0 was released on 2026-10-20. **The current work is the 2026-10-21 Discord bug-fix batch. Read [doc/release/BUGFIX-HANDOFF-2026-10-21.md](doc/release/BUGFIX-HANDOFF-2026-10-21.md) first** for the fixes, exact CI runs, remaining failures and next steps. Radek explicitly authorized commit, push and merge to main at the usage-limit handoff. Validation is unfinished: page/core/platform unit tests passed, Linux crash-fallback visibility was repaired after CI exposed it, and full/focused firmware runs are pending. Do not call all reports fixed or cut a release from this status.
+0.8.1 was released on 2026-10-29. **The current work is 0.9, the full-feature release. Read [doc/release/HANDOFF-0.9.md](doc/release/HANDOFF-0.9.md) first** (where things stand, the four built 0.9 branches and their next steps, the open bugs), then [doc/release/PLAN-0.9.md](doc/release/PLAN-0.9.md) and the specs in doc/release/0.9/. Commit IDs changed in the history rewrite of 2026-10-28 (artifacts/ removed); old clones must be cloned again.
 
 The renderer remains WKWebView / WebView2 / WebKitGTK; the Ultralight experiment was discarded.
-
-## Historical 0.8 release preparation (2026-10-18)
-
-The following records the preparation before 0.8.0 shipped; the handoff above is the current status.
-
-0.7.0 was released on 2026-10-15. **0.8.0 (the MIDI release) is being cut** (state 2026-10-18). Radek's rules: every fix goes into 0.8.0; the tag waits for his hand test.
-
-- **Done on main:** MIDI, MIDI Learn including B-169 parts 1 and 2, the lock-free audio, the MD and MM slide rules, B-168, and the dsp56300 upstream batch (28 fixes, goldens 30/30 equal, CPU about -1 %; doc/modern-ux/UPSTREAM.md). Notes: doc/release/v0.8.0.md. `release/0.8.0` still needs the latest main commits.
-- **Hand test passed:** packages from CI dry run 39104857999 were installed; Radek said they were "pretty good" and approved cutting 0.8.0 once everything is green. Packages come from CI; install user-level (~/Applications, ~/Library/Audio/Plug-Ins/{VST3,Components}, `killall AudioComponentRegistrar`).
-- **CI work:** the staged pipeline from `ci/0.8-pipeline-order` is integrated on `codex/continue-0.8.0`: stage 3 reuses the macOS test tree and package creation waits for firmware. The E2E archives now carry the runnable apps. Radek asked to share SysEx like the ROMs: the two full backups are in private R2, with identical OIDC restrictions; ctest fetches them as `MD_SYX` / `MM_SYX`. They do not replace the missing Monomachine factory-memory snapshot. Validate on `release/0.0.0-ci-test` before merging to main. CI.md records the failures and results.
-- **PGO:** retrained successfully on CI (run 39126917819, main `3c3b33365`); the profile and metadata are included on `codex/continue-0.8.0`. All four recorded emulator source trees match the current code.
-- **Left before the tag:** get the firmware checks green; validate and merge the staged pipeline and profile; merge main into `release/0.8.0`, push, and wait for its whole pipeline (including the package dry run). Tag `mdmm-v0.8.0` on that tested head, merge to main, publish when the files are attached, ask Radek to deploy the site; the Discord post only after his OK. See doc/release/CI.md for failures and the fixture exclusion.
-- **Open for after 0.8.0:** dsp56300 cbb2398e, 623c6bce, b7ce5603 change the sound (Radek decides); an unverified AArch64 48-bit patch (audio/gearmulator-md-mm-wt/ds-aarch64-48bit-unverified.patch); upstream commits before about 2026-08-25 not audited one by one.
-- **This Mac (2026-10-18):** opening some folders and files under ~/Documents froze (cmake, shasum, the MD ROM in Gearmulator Preview). A local build works from a worktree outside it (~/mdmm-rel) with ROM copies in ~/mdmm-roms.
 
 No auto-update (Radek, 2026-10-15): the check stays, install stays off.
 
