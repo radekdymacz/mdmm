@@ -240,6 +240,9 @@ namespace md
 			uint8_t kind;	// 0 read8, 1 read16, 2 write8 (dropped), 3 write16 that programmed or erased, 4 write16 that did not
 		};
 		void setFlashAccessTrace(std::vector<FlashAccess>* _trace) { m_flashAccessTrace = _trace; }
+		// and with this set, every access that takes the slow path (kinds 5 read8, 6 read16, 7 write8, 8 write16; the
+		// fast lane off sends RAM there too)
+		void setTraceAllAccesses(const bool _all) { m_traceAllAccesses = _all; }
 		bool replaceFlashData(const std::vector<uint8_t>& _data, bool _dirty);
 		enum class StateImagePublishResult
 		{
@@ -294,6 +297,7 @@ namespace md
 		FlashCommandDecoder m_flashCommands;
 		FlashOperationObserver m_flashOperationObserver;
 		std::vector<FlashAccess>* m_flashAccessTrace = nullptr;
+		bool m_traceAllAccesses = false;
 		void traceFlash(const uint32_t _addr, const uint16_t _value, const uint8_t _kind)
 		{
 			if(!m_flashAccessTrace)

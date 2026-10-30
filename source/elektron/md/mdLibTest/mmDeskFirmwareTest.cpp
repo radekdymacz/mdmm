@@ -55,6 +55,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <deque>
+#include <tuple>
 #include <fstream>
 #include <map>
 #include <set>
@@ -1721,6 +1722,8 @@ namespace
 			traceRaw.clear();
 		};
 		r.m.hardware().getUC().setFlashAccessTrace(&traceRaw);
+		// B-195: the CPU every 10 ms of the job (the last 300 samples), with the MIDI bytes the firmware sent so far
+		std::deque<std::string> cpuSamples;
 		const auto settle = [&](const double _maxMs)
 		{
 			const auto t0 = r.ms();
@@ -1728,10 +1731,19 @@ namespace
 			// B-195: when the firmware wrote its flash in this job (machine time from t0)
 			auto flash = r.m.hardware().flashWrites();
 			double flashFirst = -1, flashLast = -1;
+			cpuSamples.clear();
 			do
 			{
 				r.run(10);
 				drain();
+				{
+					char t[64];
+					std::snprintf(t, sizeof(t), "%8.0f ms tx %llu ", r.ms() - t0,
+						static_cast<unsigned long long>(r.m.hardware().getUC().midiTxBytes()));
+					cpuSamples.push_back(t + r.m.hardware().cpuState().substr(0, 160));
+					if(cpuSamples.size() > 300)
+						cpuSamples.pop_front();
+				}
 				if(const auto f = r.m.hardware().flashWrites(); f != flash)
 				{
 					flash = f;
@@ -2175,6 +2187,41 @@ namespace
 					std::printf("  B-195 request W%d: answered at %.0f ms\n", _p + 1, ans);
 					accesses(("request W" + std::to_string(_p + 1)).c_str());
 				};
+				// the CPU around the moment the firmware's MIDI out stopped
+				{
+					size_t lastMove = 0;
+					for(size_t k = 1; k < cpuSamples.size(); ++k)
+						if(cpuSamples[k].substr(15, cpuSamples[k].find(" pc") - 15) != cpuSamples[k - 1].substr(15, cpuSamples[k - 1].find(" pc") - 15))
+							lastMove = k;
+					std::printf("  B-195 the CPU every 10 ms around the last MIDI byte out (sample %zu of %zu):\n", lastMove, cpuSamples.size());
+					for(size_t k = lastMove > 30 ? lastMove - 30 : 0; k < cpuSamples.size() && k < lastMove + 15; ++k)
+						std::printf("    %s\n", cpuSamples[k].c_str());
+				}
+				// every memory access of the CPU for a moment, the fast lane off (what the loop it sits in reads)
+				{
+					auto& uc = r.m.hardware().getUC();
+					const bool lane = uc.memoryFastLane();
+					uc.setMemoryFastLane(false);
+					uc.setTraceAllAccesses(true);
+					traceRaw.clear();
+					r.m.run(1);
+					uc.setTraceAllAccesses(false);
+					uc.setMemoryFastLane(lane);
+					std::map<std::tuple<uint32_t, uint32_t, uint8_t>, std::pair<int, uint16_t>> seen;	// pc, addr, kind: count, last value
+					for(const auto& a : traceRaw)
+					{
+						auto& e = seen[{a.pc, a.addr, a.kind}];
+						++e.first;
+						e.second = a.value;
+					}
+					std::printf("  B-195 the CPU's accesses for 1 ms at the stall: %zu, %zu kinds\n", traceRaw.size(), seen.size());
+					int n = 0;
+					for(const auto& [k, e] : seen)
+						if(++n <= 40)
+							std::printf("    pc %08x %s %08x x%d (last value %04x)\n", std::get<0>(k), std::get<2>(k) == 5 ? "read8 " : std::get<2>(k) == 6 ? "read16"
+								: std::get<2>(k) == 7 ? "write8" : std::get<2>(k) == 8 ? "write16" : "flash", std::get<1>(k), e.first, e.second);
+					traceRaw.clear();
+				}
 				const int lost = rename ? 60 : 62;
 				const int other = rename ? 62 : 60;
 				ask(lost, 3000);

@@ -726,6 +726,8 @@ namespace md
 
 	uint8_t Microcontroller::read8Slow(const uint32_t _addr)
 	{
+		if(m_traceAllAccesses && m_flashAccessTrace)
+			m_flashAccessTrace->push_back({_addr, getPC(), static_cast<uint16_t>(0), 5});
 		if(m_model == MachineModel::Machinedrum)
 		{
 			const auto offset = memorymap::g_flashLow.contains(_addr)
@@ -752,6 +754,8 @@ namespace md
 
 	uint16_t Microcontroller::read16Slow(const uint32_t _addr)
 	{
+		if(m_traceAllAccesses && m_flashAccessTrace)
+			m_flashAccessTrace->push_back({_addr, getPC(), static_cast<uint16_t>(0), 6});
 		if(m_model == MachineModel::Machinedrum)
 		{
 			const auto offset = memorymap::g_flashLow.contains(_addr)
@@ -778,6 +782,8 @@ namespace md
 
 	void Microcontroller::write8Slow(const uint32_t _addr, const uint8_t _val)
 	{
+		if(m_traceAllAccesses && m_flashAccessTrace)
+			m_flashAccessTrace->push_back({_addr, getPC(), static_cast<uint16_t>(_val), 7});
 		if(memorymap::g_sim.contains(_addr))		{ m_sim.write8(memorymap::g_sim.offset(_addr), _val); return; }
 		if(memorymap::g_dsp1Hdi08.contains(_addr))	{ m_hdi08Dsp1.write8(static_cast<mc68k::PeriphAddress>(memorymap::g_dsp1Hdi08.offset(_addr)), _val); return; }
 		if(memorymap::g_dsp2Hdi08.contains(_addr))	{ m_hdi08Dsp2.write8(static_cast<mc68k::PeriphAddress>(memorymap::g_dsp2Hdi08.offset(_addr)), _val); return; }
@@ -796,6 +802,8 @@ namespace md
 
 	void Microcontroller::write16Slow(const uint32_t _addr, const uint16_t _val)
 	{
+		if(m_traceAllAccesses && m_flashAccessTrace)
+			m_flashAccessTrace->push_back({_addr, getPC(), static_cast<uint16_t>(_val), 8});
 		if(m_model == MachineModel::Machinedrum)
 		{
 			const auto offset = memorymap::g_flashLow.contains(_addr)
