@@ -2938,7 +2938,7 @@ const MdJourneys = (() => {
 			go("sampler"),
 			{ say: "the ROM slots' header gives the memory used and free", act: (u, c) => {
 				const rom = Docs.samples.rom, used = rom.map((x, i) => x.empty ? -1 : i).filter(i => i >= 0);
-				[c.a, c.b] = used; c.lenA = rom[c.a].length; c.lenB = rom[c.b].length; },
+				[c.a, c.b] = used; c.d0 = smpHist.undo?.depth || 0; c.lenA = rom[c.a].length; c.lenB = rom[c.b].length; },
 				screen: () => ok(/s used · [\d.]+ s free \(\d+ %\)/.test($1(".smpmem")?.textContent || ""), "header " + ($1(".smpmem")?.textContent || "none")) },
 			{ say: "select the first slot that holds a sample and click Copy: the clipboard chip names it", act: async (u, c) => {
 				u.click(`.slotk.rom[data-slot="ROM${c.a + 1}"]`); await sleep(300); u.click(`[data-smpcopy="rom:${c.a}"]`); },
@@ -2951,8 +2951,8 @@ const MdJourneys = (() => {
 			{ say: "click Undo sample: the slot holds the sample it held before", act: u => u.click("[data-smpundo]"),
 				machine: c => ok(smpLoad?.state === "done" && smpLoad.file === "Undo" && Docs.samples.rom[c.b].length === c.lenB,
 					`sampleLoad ${smpLoad?.state} ${smpLoad?.file}, the slot holds ${Docs.samples.rom[c.b].length} samples, it held ${c.lenB}`), within: 120000 },
-			{ say: "Undo sample is off again: there is nothing more to undo", act: async () => { await sleep(300); },
-				screen: () => ok($1("[data-smpundo]")?.disabled === true, "Undo sample " + ($1("[data-smpundo]")?.disabled ? "off" : "on")) }
+			{ say: "Undo sample is back where it was: the steps of the paste are gone (a journey before this one, the rename, may have left its own)", act: async () => { await sleep(300); },
+				screen: c => ok((smpHist.undo?.depth || 0) === c.d0 && ($1("[data-smpundo]")?.disabled === true) === (c.d0 === 0), `undo depth ${smpHist.undo?.depth || 0}, was ${c.d0}; Undo sample ${$1("[data-smpundo]")?.disabled ? "off" : "on"}`) }
 		]
 	};
 	/* MD-280, MD-283: rename the current kit (SysEx 0x55), save it (0x59), and put it back */
