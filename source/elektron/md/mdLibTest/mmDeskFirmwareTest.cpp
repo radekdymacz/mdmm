@@ -2197,6 +2197,18 @@ namespace
 					for(size_t k = lastMove > 30 ? lastMove - 30 : 0; k < cpuSamples.size() && k < lastMove + 15; ++k)
 						std::printf("    %s\n", cpuSamples[k].c_str());
 				}
+				// the stack the loop runs on (an exception frame: format/vector word, then the PC)
+				{
+					const uint32_t sp = r.m.hardware().getUC().getAReg(7);
+					std::string st;
+					for(uint32_t k = 0; k < 48; ++k)
+					{
+						const uint32_t a = sp + 4 * k;
+						const uint32_t v = (uint32_t{r.m.read8(a)} << 24) | (uint32_t{r.m.read8(a + 1)} << 16) | (uint32_t{r.m.read8(a + 2)} << 8) | r.m.read8(a + 3);
+						st += (k % 8 ? " " : "\n    ") + hex8(v);
+					}
+					std::printf("  B-195 the stack at %08x:%s\n", sp, st.c_str());
+				}
 				// every memory access of the CPU for a moment, the fast lane off (what the loop it sits in reads)
 				{
 					auto& uc = r.m.hardware().getUC();
