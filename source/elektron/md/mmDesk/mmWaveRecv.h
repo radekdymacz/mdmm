@@ -73,12 +73,7 @@ namespace mmDesk
 		double timeoutMs = 4000;	// a screen that does not come -> EXIT and try again, then give up
 		double settleMs = 300;		// on GLOBAL EDIT this long after the macro's keys: RECEIVE waits (no RAM flag known)
 		double quietMs = 600;		// parked, the last dump this long ago (and the stream quiet) -> [EXIT/NO]
-		double writeMs = 8000;		// WRITING WAVEFORMS (P4 waited 8 s), or the erase's flash work, without flash telemetry
-		// B-195: with flash telemetry (Telemetry::flashKnown) the session leaves once the firmware's flash writes have
-		// started and stayed quiet this long, at most writeMaxMs after [EXIT/NO]. A fixed 8 s cut the firmware's write
-		// short once its flash held more waveforms (it finds its place first): the position then answered nothing.
-		double flashQuietMs = 1500;
-		double writeMaxMs = 60000;
+		double writeMs = 8000;		// WRITING WAVEFORMS (P4 waited 8 s), or the erase's flash work
 		int maxAttempts = 2;
 
 	private:
@@ -102,8 +97,5 @@ namespace mmDesk
 		double m_lastNowMs = -1;
 		double m_lastMachineMs = -1;
 		uint64_t m_lastBlocks = 0;
-		uint64_t m_flashWrites = 0;		// B-195: the firmware's flash writes last seen while writing
-		bool m_flashMoved = false;		// they moved since [EXIT/NO] (or the erase's question)
-		double m_flashAt = 0;			// the machine time they last moved
 	};
 }

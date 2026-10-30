@@ -45,6 +45,13 @@ namespace mdJucePlugin
 
 		static constexpr size_t g_undoSteps = 16;
 		static constexpr size_t g_points = 128;		// a waveform's drawing on the card
+		// B-195: the read-back of a position a job has just sent a waveform to waits this long for its answer (the
+		// emulator's time; the cable's dump time is added over HW MIDI). The firmware answers a 0x5E later the more
+		// waveform records its flash holds (it looks the position up through them): from the 14th record on, measured,
+		// later than the 700 ms a list read waits for a position that may be factory, and the new waveform read as
+		// factory. A position that must hold a user waveform gets the long wait; one that may be factory keeps the short
+		// one, and an answer that comes later still updates the card.
+		static constexpr double g_writtenAnswerMs = 15000.0;
 
 		// ---- the page's commands; false: not one of them
 		bool handle(Adapter& _machine, const Value& _message, const Reply& _reply, const ToPage& _toPage, const std::string& _busy)
@@ -160,7 +167,9 @@ namespace mdJucePlugin
 		// ---- the session's step: the reads, and the read-back once the machine's job ended
 		void step(Adapter& _machine, const double _nowMs, const bool _wire, const ToPage& _toPage)
 		{
-			bool changed = false;
+			// B-195: a position answered after its read had moved on: the card shows it now
+			bool changed = m_late;
+			m_late = false;
 			if(m_waiting)
 			{
 				const auto w = _machine.waveWork();
@@ -208,9 +217,11 @@ namespace mdJucePlugin
 			m_slots[static_cast<size_t>(p)] = Slot{true, _message};
 			if(!m_reads.empty() && m_reads.front() == p)
 				m_answered = true;
+			else
+				m_late = true;
 		}
 
-		bool running() const { return reading() || working(); }
+		bool running() const { return reading() || working() || m_late; }
 		// An import or an export uses the machine: the position being read is asked again when the reads go on.
 		void pause()
 		{
@@ -405,7 +416,7 @@ namespace mdJucePlugin
 			}
 			// as the export's reads (SyxWaveRead): the emulator answers within a few blocks; a 7 KB dump takes about
 			// 2.3 s on a MIDI cable
-			const double timeout = _wire ? 1500.0 + 2.0 * deskCore::DinPacer::wireMs(7100) : 700.0;
+			const double timeout = (m_expectUser.count(p) ? g_writtenAnswerMs : 700.0) + (_wire ? 800.0 + 2.0 * deskCore::DinPacer::wireMs(7100) : 0.0);
 			if(_nowMs - m_askedMs <= timeout)
 				return false;
 			m_slots[p] = Slot{false, {}};
@@ -413,6 +424,7 @@ namespace mdJucePlugin
 		}
 		bool nextRead()
 		{
+			m_expectUser.erase(m_reads.front());
 			m_reads.pop_front();
 			m_asked = false;
 			m_answered = false;
@@ -451,6 +463,9 @@ namespace mdJucePlugin
 			if(auto why = _machine.sendWaves(_dumps); !why.empty())
 				return why;
 			started(_machine, _touched);
+			for(const auto& d : _dumps)
+				if(d.size() > 9)
+					m_expectUser.insert(d[9]);
 			return {};
 		}
 
@@ -554,6 +569,8 @@ namespace mdJucePlugin
 			if(auto why = _machine.eraseWave(_wave); !why.empty())
 				return why;
 			started(_machine, touched);
+			for(const auto t : touched)
+				m_expectUser.erase(t);
 			remember(std::move(step));
 			m_text = _wave < 0 ? "Erasing every user waveform." : "Erasing " + label(_wave) + ".";
 			return {};
@@ -584,6 +601,13 @@ namespace mdJucePlugin
 				if(auto why = _machine.sendWaves(dumps); !why.empty())
 					return why;
 			started(_machine, touched);
+			for(const auto& [p, d] : step)
+			{
+				if(d)
+					m_expectUser.insert(p);
+				else
+					m_expectUser.erase(p);
+			}
 			m_undo.pop_back();
 			m_text = "Undo: " + std::to_string(step.size()) + (step.size() == 1 ? " waveform" : " waveforms") + " back as they were.";
 			return {};
@@ -600,6 +624,8 @@ namespace mdJucePlugin
 		bool m_waiting = false;				// a job of the adapter's runs
 		uint32_t m_gaveUpBase = 0;
 		std::set<uint8_t> m_touched;		// read again once it ends
+		std::set<uint8_t> m_expectUser;		// B-195: of those, the positions sent a waveform: their read-back waits longer
+		bool m_late = false;				// B-195: a position answered after its read moved on (the card is told)
 		std::string m_waitsFor;
 		std::string m_text;
 		double m_newsMs = -1e9;

@@ -82,6 +82,5 @@ namespace hwLib
 		bool m_writeEnable = false;
 		uint32_t m_currentBusCycle = 0;
 		int32_t m_currentCommand = -1;
-		mutable size_t m_unprogrammable = 0;	// B-195: programs that could not set a bit (flash not erased)
 	};
 }

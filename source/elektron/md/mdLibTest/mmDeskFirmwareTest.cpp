@@ -306,8 +306,6 @@ namespace
 			t.songRow = tel.songRow.load();
 			t.songSteps = tel.songSteps.load();
 			t.chainKnown = tel.readChain(t.chain.active, t.chain.next, t.chain.patterns);
-			t.flashKnown = true;
-			t.flashWrites = m.hardware().flashWrites();
 			return t;
 		}
 
@@ -1875,12 +1873,14 @@ namespace
 		// renames of W61 and copies of it to W63, each must end with what it asked, none given up.
 		const auto gaveUpBefore = r.desk->machine().waveWork().gaveUp;
 		int jobsOk = 0;
-		constexpr int jobs = 16;
+		constexpr int jobs = 24;
 		for(int j = 0; j < jobs; ++j)
 		{
 			const bool rename = (j % 4) != 3;
 			const std::string name = "J" + std::to_string(j + 1);
 			std::printf("  job %d of %d: %s\n", j + 1, jobs, rename ? ("rename W61 to " + name).c_str() : "copy W61 to W63");
+			answers.clear();
+			const double jobAt = r.ms();
 			const bool taken = rename ? cmd(R"({"op":"waveRename","wave":60,"name":")" + name + R"(","id":)" + std::to_string(100 + j) + "}")
 				: cmd(R"({"op":"waveCopy","from":60,"to":62,"id":)" + std::to_string(100 + j) + "}");
 			check(taken, "job " + std::to_string(j + 1) + " is taken: " + note);
@@ -1895,10 +1895,14 @@ namespace
 			}
 			else
 				done = done && waves.dumpOf(62) && waves.dumpOf(60) && *waves.dumpOf(62) == ed::mmWavePlaced(*waves.dumpOf(60), 62);
-			std::printf("  job %d took %.0f ms of machine time: %s\n", j + 1, took, done ? "done" : "NOT DONE");
-			if(done)
-				flashMap("after the job");
-			else
+			// B-195: when the read-back's answer came (the machine answers later the more records its flash holds)
+			double answeredAt = -1;
+			for(const auto& [at, pos] : answers)
+				if(pos == (rename ? 60 : 62))
+					answeredAt = at - jobAt;
+			std::printf("  job %d took %.0f ms of machine time: %s (the read-back answered at %.0f ms)\n", j + 1, took, done ? "done" : "NOT DONE",
+				answeredAt);
+			if(!done)
 			{
 				const auto d = waves.dumpOf(60) ? ed::decodeMmWave(*waves.dumpOf(60)) : std::nullopt;
 				std::printf("  W61 reads back as %s\n", d ? ("\"" + ed::mmWaveName(*d) + "\"").c_str() : "nothing (factory)");

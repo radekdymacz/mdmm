@@ -245,8 +245,6 @@ namespace mdJucePlugin
 		if(!m_telemetry)
 			return t;
 		t.machineMs = static_cast<double>(facts.cycles) * 1000.0 / md::g_ucClockHz;
-		t.flashKnown = true;
-		t.flashWrites = facts.flashWrites;
 		t.blocks = m_telemetry->blocks.load(std::memory_order_acquire);
 		t.step = m_telemetry->step.load(std::memory_order_relaxed);
 		const int running = m_telemetry->running.load(std::memory_order_relaxed);

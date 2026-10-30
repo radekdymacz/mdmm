@@ -42,7 +42,6 @@ namespace mdJucePlugin
 		f.firmwareMidiReady = hw.isFirmwareMidiReady();
 		f.stalled = hw.schedulerStalled();
 		f.cycles = hw.hostCurrentCycle();
-		f.flashWrites = hw.flashWrites();
 		f.midiRxConsumed = hw.midiRxConsumedCount();
 		const auto panel = hw.getPanelInputStatus();
 		f.panelDropped = panel.overflowCount + panel.droppedPulsePackets + panel.rejectedPackets;

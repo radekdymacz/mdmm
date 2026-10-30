@@ -184,10 +184,6 @@ namespace hwLib
 				const auto old = mc68k::memoryOps::readU16(m_buffer, _addr);
 				// "A bit cannot be programmed from a 0 back to a 1"
 				const auto v = _data & old;
-				// B-195: a word programmed over flash that was not erased (a 0 asked back to 1): the firmware expected it
-				// erased. Logged (the first ones, then rarely), counted
-				if(v != _data && (m_unprogrammable++ < 16 || (m_unprogrammable & 4095) == 0))
-					MCLOG("Program over unerased flash at " << MCHEX(_addr) << ": old " << MCHEXN(old, 4) << ", data " << MCHEXN(_data, 4) << " (" << m_unprogrammable << " so far)");
 				mc68k::memoryOps::writeU16(m_buffer, _addr, v);
 				m_changedAt = _addr;
 				m_changedSize = 2;
