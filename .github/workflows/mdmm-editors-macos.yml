@@ -14,7 +14,7 @@ name: MD/MM Editors macOS
 #             (doc/release/DEV-CYCLE.md); its own ccache.
 #   installers unsigned .pkg + .dmg from that zip (the release's script): an artifact minutes after the build.
 #   vst3host  the start test's minimal VST3 host (scripts/vst3EditorHost), beside the build.
-#   smoke     on a clean macos-14 and macos-15: starts each standalone and each VST3 (in the host) of that zip with
+#   smoke     on a clean macos-15 (macos-14 retired by GitHub 2026-11-02): starts each standalone and each VST3 (in the host) of that zip with
 #             no ROM, reads "<machine> firmware needed" from the page through the Accessibility API, presses real
 #             keys, runs auval on each AU, keeps screenshots (scripts/macos/smoke_mdmm.sh), then pluginval
 #             (strictness 5, no ROM) on each VST3 and AU.
@@ -268,7 +268,7 @@ jobs:
 
   vst3host:
     name: Minimal VST3 host (scripts/vst3EditorHost)
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -297,7 +297,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, macos-15]
+        os: [macos-15]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
 
