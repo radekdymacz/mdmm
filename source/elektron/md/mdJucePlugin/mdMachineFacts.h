@@ -46,6 +46,7 @@ namespace mdJucePlugin
 		bool stalled = false;
 		uint8_t dspBooted = 0;
 		uint64_t cycles = 0;
+		uint64_t flashWrites = 0;					// B-195: the firmware's writes to its flash (md::Hardware::flashWrites)
 		uint64_t midiRxConsumed = 0;
 		// panel events the machine's panel queue dropped (overflow, dropped pulses, rejected), this Hardware's count
 		uint64_t panelDropped = 0;

@@ -89,5 +89,8 @@ namespace mmDesk
 		bool chainKnown = false;	// MM-P8: the chain is readable (RAM 0x2bc2c4)
 		Chain chain;
 		double machineMs = -1;	// elapsed emulator time; -1 when unavailable (wire engines and simple fakes)
+		// B-195: the firmware's writes to its flash so far (bus writes, commands included), when the engine knows them
+		bool flashKnown = false;
+		uint64_t flashWrites = 0;
 	};
 }

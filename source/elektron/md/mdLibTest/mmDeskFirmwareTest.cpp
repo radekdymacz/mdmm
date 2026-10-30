@@ -306,6 +306,8 @@ namespace
 			t.songRow = tel.songRow.load();
 			t.songSteps = tel.songSteps.load();
 			t.chainKnown = tel.readChain(t.chain.active, t.chain.next, t.chain.patterns);
+			t.flashKnown = true;
+			t.flashWrites = m.hardware().flashWrites();
 			return t;
 		}
 
@@ -1712,9 +1714,19 @@ namespace
 		{
 			const auto t0 = r.ms();
 			std::string state = r.desk->machine().waveWork().state;
+			// B-195: when the firmware wrote its flash in this job (machine time from t0)
+			auto flash = r.m.hardware().flashWrites();
+			double flashFirst = -1, flashLast = -1;
 			do
 			{
 				r.run(10);
+				if(const auto f = r.m.hardware().flashWrites(); f != flash)
+				{
+					flash = f;
+					if(flashFirst < 0)
+						flashFirst = r.ms() - t0;
+					flashLast = r.ms() - t0;
+				}
 				waves.step(r.desk->machine(), r.ms(), false, toPage);
 				// B-195: every state the DIGIPRO MGR session goes through, with the machine's screen and the time
 				const auto w = r.desk->machine().waveWork();
@@ -1726,6 +1738,7 @@ namespace
 				}
 			}
 			while(waves.running() && r.ms() - t0 < _maxMs);
+			std::printf("    flash written from %.0f to %.0f ms\n", flashFirst, flashLast);
 			if(waves.running())
 			{
 				const auto w = r.desk->machine().waveWork();

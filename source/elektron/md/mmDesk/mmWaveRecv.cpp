@@ -144,9 +144,19 @@ namespace mmDesk
 			out.gaveUp = true;
 			go(State::Failed);
 		};
+		// B-195: the flash writes are counted from here: an erase's from its macro (the question's yes may start them),
+		// a receive's from [EXIT/NO]
+		const auto flashFromNow = [&]
+		{
+			m_flashWrites = _t.flashWrites;
+			m_flashMoved = false;
+			m_flashAt = now;
+		};
 		const auto macro = [&]
 		{
 			const auto& j = m_jobs.front();
+			if(j.erase)
+				flashFromNow();
 			press(out, j.erase ? eraseMacro(static_cast<uint8_t>(activeGlobal & 7), j.wave) : receiveMacro(static_cast<uint8_t>(activeGlobal & 7)));
 			go(State::Entering);
 		};
@@ -219,16 +229,33 @@ namespace mmDesk
 			if(now - m_lastActivity > quietMs)
 			{
 				press(out, writeKeys());
+				flashFromNow();
 				go(State::Writing);
 			}
 			break;
 		case State::Writing:
-			if(now - m_since > (m_jobs.front().erase ? writeMs / 2 : writeMs))
+		{
+			bool written;
+			if(_t.flashKnown)
+			{
+				// B-195: the firmware decides how long it writes: wait for its flash writes to start and end
+				if(_t.flashWrites != m_flashWrites)
+				{
+					m_flashWrites = _t.flashWrites;
+					m_flashMoved = true;
+					m_flashAt = now;
+				}
+				written = (keysDone && m_flashMoved && now - m_flashAt > flashQuietMs) || now - m_since > writeMaxMs;
+			}
+			else
+				written = now - m_since > (m_jobs.front().erase ? writeMs / 2 : writeMs);
+			if(written)
 			{
 				press(out, exitKeys());
 				go(State::Leaving);
 			}
 			break;
+		}
 		case State::Leaving:
 			if(keysDone && (onMain || now - m_since > timeoutMs))
 			{
