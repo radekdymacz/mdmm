@@ -2695,9 +2695,12 @@ const MmJourneys = (() => {
 	const dgName = n => (dgKey(n)?.querySelector("b")?.textContent || "").trim();
 	const dgOpen = async u => { if ($1("#globpop").hidden) { u.click("#globkey"); await sleep(400); } };
 	const dgRead = () => $all("#globpop .dpk").length === 64 && !$all("#globpop .dpk.unk").length && !/Reading/.test($1("#globpop .dpnews")?.textContent || "");
+	/* the card's journeys need the page tier's machine (it holds W01 SAW and W04 SQR and a file to Load); the firmware starts with 64
+	   factory waveforms and its Load opens a native file dialog: there the card is proved by mmDigiproManagerFirmwareTest */
+	const dgPageOnly = () => Journey.pageTier() ? null : "the page tier's machine holds the user waveforms and the file; on the firmware mmDigiproManagerFirmwareTest proves the card";
 	const dgTidy = async (u, c) => { if (dlgShown()) u.click(dlgButton("Cancel")); if (!$1("#globpop").hidden) u.key("Escape"); await sleep(200); };
 	const digiproCardJ = {
-		name: "mm-digipro-card", proves: ["MM-010", "MM-310"],
+		name: "mm-digipro-card", proves: ["MM-010", "MM-310"], needs: dgPageOnly,
 		steps: [
 			{ say: "open GLOBAL: the DigiPRO card has the 64 positions, read from the machine: W01 and W04 are user waveforms", act: dgOpen,
 				screen: () => ok(dgRead() && dgUser(0) && dgUser(3) && !dgUser(1) && dgName(0) === "uSAW" && dgName(3) === "uSQR",
@@ -2718,7 +2721,7 @@ const MmJourneys = (() => {
 		tidy: dgTidy
 	};
 	const digiproRenameJ = {
-		name: "mm-digipro-rename", proves: ["MM-310"],
+		name: "mm-digipro-rename", proves: ["MM-310"], needs: dgPageOnly,
 		steps: [
 			{ say: "open GLOBAL, click W01 and Rename, type SAW2, press Enter: W01 is named SAW2", act: async u => { await dgOpen(u); await until(dgRead, 90000); u.click(dgKey(0)); await sleep(200); u.click('#globpop [data-ga="dprename"]'); await sleep(250); u.type("#dpin", "saw2"); await sleep(100); u.key("Enter"); },
 				screen: () => ok(dgName(0) === "uSAW2", "W01 " + dgName(0)), within: 120000 },
@@ -2727,7 +2730,7 @@ const MmJourneys = (() => {
 		tidy: dgTidy
 	};
 	const digiproLoadJ = {
-		name: "mm-digipro-load", proves: ["MM-310", "MM-378"],
+		name: "mm-digipro-load", proves: ["MM-310", "MM-378"], needs: dgPageOnly,
 		steps: [
 			{ say: "open GLOBAL, click W20 and Load…: the file's preview asks before it goes", act: async u => { await dgOpen(u); await until(dgRead, 90000); u.click(dgKey(19)); await sleep(200); u.click('#globpop [data-ga="dpload"]'); },
 				screen: () => ok(dlgShown() && /W20/.test($1("#dlg").textContent) && !!dlgButton("Load"), "question: " + (dlgShown() ? $1("#dlg").textContent : "none")), within: 100000 },

@@ -93,7 +93,7 @@ Click **Live** to record again on every loop. Click **Freeze** to mute the recor
 NOTE: A RAM slot holds only what its recorder records. You cannot load a file into it.
 
 ## RAM TO ROM COPY
-<!-- rows: MD-199 @004a8e -->
+<!-- rows: MD-199 @04ae6c -->
 
 To keep a RAM take when the power is off, copy it to a ROM slot:
 
@@ -135,7 +135,7 @@ Drop several WAV or AIFF files on the window with the **Sampler** open. They go 
 ROM-48 is the last slot. Files past it are not loaded, and a message says how many. Drag and drop works on macOS only. On Windows and Linux, load the files one at a time with **Load sample…**.
 
 ## SEND SAMPLES
-<!-- rows: MD-193 @10ce6b -->
+<!-- rows: MD-193 @a54299 -->
 
 The Machinedrum ignores requests for its samples over MIDI, so the editor does not ask it to send. It reads the samples from the emulated machine and writes them as files instead.
 

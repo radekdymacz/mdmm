@@ -311,19 +311,23 @@ namespace mdJucePlugin
 			const juce::String ext = format == "syx" ? "syx" : "wav";
 			std::string why;
 			const auto files = desk().exportSamples(_request.find("bank")->asString(), slot ? static_cast<int>(slot->asNumber()) : 0, all, format, why);
-			size_t written = 0;
+			size_t written = 0, bytes = 0;
 			if(!files.empty() && (!all || _target.createDirectory().wasOk()))
 				for(const auto& f : files)
 				{
 					const auto out = all ? _target.getNonexistentChildFile(juce::String::fromUTF8(f.name.c_str()).upToLastOccurrenceOf(".wav", false, false).upToLastOccurrenceOf(".syx", false, false), "." + ext, false)
 						: _target.withFileExtension(ext);
 					if(out.replaceWithData(f.data.data(), f.data.size()))
+					{
 						++written;
+						bytes += f.data.size();
+					}
 				}
 			Value m = Value::object();
 			m.set("type", "sampleExport");
 			m.set("ok", !files.empty() && written == files.size());
 			m.set("count", static_cast<int>(written));
+			m.set("bytes", static_cast<int>(bytes));
 			std::string text = why;
 			if(!files.empty() && written != files.size())
 				text = "Could not write " + std::to_string(files.size() - written) + " of " + std::to_string(files.size()) + " files to " + _target.getFullPathName().toStdString() + ".";

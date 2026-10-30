@@ -2931,7 +2931,7 @@ const MdJourneys = (() => {
 	};
 	/* MD-196, MD-198 (0.9, doc/release/0.9/md-sample-manager.md): the memory line, Copy a ROM slot and Paste it into another
 	   (SDS to the machine; the bank read back holds the copy's length), then Undo sample (the slot holds what it held). RAM to ROM
-	   (MD-199) is proved in mdDeskTest (the SDS on the wire) and mdDeskPageTest (the keys): a journey needs a RAM take. alone, as md-sampler-rename: B-133. */
+	   (MD-199) has its own journey, md-sampler-ram-rom; export (MD-193) md-sampler-export. alone, as md-sampler-rename: B-133. */
 	const sampleManager = {
 		name: "md-sampler-manager", alone: true, proves: ["MD-196", "MD-198"],
 		steps: [
@@ -2954,6 +2954,70 @@ const MdJourneys = (() => {
 			{ say: "Undo sample is back where it was: the steps of the paste are gone (a journey before this one, the rename, may have left its own)", act: async () => { await sleep(300); },
 				screen: c => ok((smpHist.undo?.depth || 0) === c.d0 && ($1("[data-smpundo]")?.disabled === true) === (c.d0 === 0), `undo depth ${smpHist.undo?.depth || 0}, was ${c.d0}; Undo sample ${$1("[data-smpundo]")?.disabled ? "off" : "on"}`) }
 		]
+	};
+	/* MD-193 (send samples to a computer): Export WAV, Export SysEx and the two "all" keys on the firmware's own ROM slots. The window's
+	   save dialog and folder chooser are skipped by the run (GEARMULATOR_MDMM_SAMPLE_EXPORT, a diagnostics-only hook of
+	   mdPageEditor.cpp, set by scripts/mdmm-e2e.sh); the session's sampleExport message tells what was written: how many files and
+	   their bytes. A WAV file is the 44-byte header and the slot's samples at 16 bits, so its size is exact; the SysEx file is the SDS dump
+	   (more than that, 7-bit words). Nothing on the machine changes. */
+	const exportNews = [];
+	Bridge.onMessage(m => { if (m.type === "sampleExport") { exportNews.push(m); if (exportNews.length > 20) exportNews.shift(); } });
+	const lastSmpExport = c => exportNews.length > c.n ? exportNews[exportNews.length - 1] : null;
+	const sampleExport = {
+		name: "md-sampler-export", proves: ["MD-193"],
+		needs: async () => {
+			const has = () => !!Docs.samples && (Docs.samples.rom || []).some(s => s && !s.empty);
+			await until(has, 8000);
+			return has() ? null : Docs.samples ? "no UW sample in the ROM slots (a fresh sandbox, B-012)" : "the sample bank was not read in 8 s";
+		},
+		steps: [
+			go("sampler"),
+			{ say: "select a ROM slot that holds a sample and click Export WAV: one file, the header and the slot's 16-bit samples", act: async (u, c) => {
+				const rom = Docs.samples.rom; c.i = rom.findIndex(x => !x.empty); c.len = rom[c.i].length; c.n = exportNews.length; c.used = rom.filter(x => !x.empty).length;
+				u.click(`.slotk.rom[data-slot="ROM${c.i + 1}"]`); await sleep(300); u.click(`[data-smpexport="rom:${c.i}"]`); },
+				machine: c => { const m = lastSmpExport(c); return ok(!!m && m.ok && m.count === 1 && m.bytes === 44 + 2 * c.len, m ? `ok ${m.ok}, ${m.count} files, ${m.bytes} bytes, the slot holds ${c.len} samples (want ${44 + 2 * c.len}); ${m.text}` : "no sampleExport"); }, within: 10000 },
+			{ say: "click Export SysEx: one SDS dump file, bigger than the samples as WAV", act: (u, c) => { c.n = exportNews.length; u.click(`[data-smpexportsyx="${c.i}"]`); },
+				machine: c => { const m = lastSmpExport(c); return ok(!!m && m.ok && m.count === 1 && m.bytes > 2 * c.len, m ? `ok ${m.ok}, ${m.count} files, ${m.bytes} bytes, ${m.text}` : "no sampleExport"); }, within: 10000 },
+			{ say: "click Export all… on the ROM slots: a WAV file for each slot that holds a sample", act: (u, c) => { c.n = exportNews.length; u.click('[data-smpexportall="rom"]'); },
+				machine: c => { const m = lastSmpExport(c); return ok(!!m && m.ok && m.count === c.used && m.bytes >= 44 * c.used, m ? `ok ${m.ok}, ${m.count} files (${c.used} slots hold a sample), ${m.bytes} bytes, ${m.text}` : "no sampleExport"); }, within: 60000 },
+			{ say: "click Export all SysEx…: a SysEx file for each slot that holds a sample", act: (u, c) => { c.n = exportNews.length; u.click("[data-smpexportallsyx]"); },
+				machine: c => { const m = lastSmpExport(c); return ok(!!m && m.ok && m.count === c.used && m.bytes > 0, m ? `ok ${m.ok}, ${m.count} files (${c.used} slots hold a sample), ${m.bytes} bytes, ${m.text}` : "no sampleExport"); }, within: 60000 }
+		]
+	};
+	/* MD-199 (RAM to ROM copy): a RAM take from the firmware's own recorder (Set up sampling on an unused RAM slot, a trig on the recorder's
+	   first step, PLAY: RAM-R records its LEN), then Keep as ROM… into the ROM slot the dialog offers (the first empty one): the bank read
+	   back holds the take in the same length, named RAMn. alone, as md-sampler-rename: a sample sent by SDS leaves the machine's live
+	   recording deaf (B-133), so the recording is made before the copy goes in. The RAM take stays (the other slots stay, as the manual says). */
+	const ramToRom = {
+		name: "md-sampler-ram-rom", alone: true, proves: ["MD-199"],
+		steps: [
+			go("sampler"),
+			{ say: "click an unused RAM slot, Set up sampling, a trig on the recorder's first step, PLAY: RAM-R records", act: async (u, c) => {
+				c.n = [1, 2, 3, 4].find(k => !V.tracks.some(t => t.m === "RAM-R" + k || t.m === "RAM-P" + k) && smpSlotOf("ram", k - 1)?.empty !== false);
+				if (!c.n) throw new Error("every RAM slot is used");
+				c.d0 = smpHist.undo?.depth || 0;
+				u.click(`.slotk[data-slot="RAM${c.n}"]`); await sleep(300); [c.r, c.p] = setupTracks(); c.m0 = [kit().tracks[c.r].machine, kit().tracks[c.p].machine]; c.t0 = trigsOf(c.r);
+				u.click("[data-setupgo]"); await until(() => kit().tracks[c.r].machine === "RAM-R" + c.n && !!$1('[data-rc="0"]'), 8000); await sleep(300);
+				if (!trigsOf(c.r).includes(0)) u.click('[data-rc="0"]');
+				await until(() => trigsOf(c.r).includes(0), 4000);
+				sendParam(c.r, "syn", "LEN", 32); await until(idle, 4000); await sleep(1500);	/* 8 steps, as the firmware test (mdDeskFirmwareTest): the recorder ends inside the pattern */
+				tele.steps = []; u.click("#play"); },
+				machine: c => ok(kit().tracks[c.r].machine === "RAM-R" + c.n && trigsOf(c.r).includes(0) && !!tele.last?.playing, `track ${kit().tracks[c.r].machine}, trigs ${trigsOf(c.r)}, playing ${tele.last?.playing}`), within: 12000 },
+			{ say: "STOP after a few seconds: the take shows in the RAM slot, the machine holds samples in it", act: async u => { await sleep(4000); if (V.playing) u.click("#play"); await until(() => !V.playing, 4000); },
+				machine: c => { const t = smpSlotOf("ram", c.n - 1); if (t && !t.empty && t.length > 0) c.len = t.length; return ok(!!c.len, "RAM " + c.n + " " + JSON.stringify(t && { empty: t.empty, length: t.length })); }, within: 60000 },
+			{ say: "click STOP, select the RAM slot and click Keep as ROM…: the dialog offers a ROM slot", act: async (u, c) => {
+				if (V.playing) { u.click("#play"); await until(() => !V.playing, 4000); }
+				u.click(`.slotk[data-slot="RAM${c.n}"]`); await sleep(300); u.click(`[data-ramrom="${c.n - 1}"]`); await until(() => !!$1("#ramto"), 3000); c.k = +$1("#ramto").value - 1; },
+				screen: c => ok(c.k >= 0 && c.k < 48 && !!dlgButton("Keep"), `ROM slot ${c.k + 1}, Keep ${!!dlgButton("Keep")}`) },
+			{ say: "click Keep: the machine takes the sample by SDS; the ROM slot holds the take's length, named RAMn", act: async (u, c) => { u.click(dlgButton("Keep")); },
+				machine: c => { const r = Docs.samples.rom[c.k]; return ok(smpLoad?.state === "done" && smpLoad.slot === c.k && r && !r.empty && r.length === c.len && (r.name || "").trim() === "RAM" + c.n,
+					`sampleLoad ${smpLoad?.state} slot ${smpLoad?.slot} (want ${c.k}); ROM-${c.k + 1} holds ${r?.length} samples named "${(r?.name || "").trim()}", the take has ${c.len} (RAM${c.n})`); }, within: 120000 },
+			{ say: "the RAM take is still there", act: async () => { await sleep(200); },
+				machine: c => { const t = smpSlotOf("ram", c.n - 1); return ok(t && !t.empty && t.length === c.len, "RAM " + c.n + " " + JSON.stringify(t && { empty: t.empty, length: t.length })); } }
+		],
+		/* the set-up undone, and the copy if it replaced a sample (a full ROM: the dialog's default is then a held slot) */
+		async tidy(u, c) { if (V.playing) u.click("#play"); if (c.m0) await undoUntil(u, () => same([kit().tracks[c.r].machine, kit().tracks[c.p].machine], c.m0) && same(trigsOf(c.r), c.t0), 4);
+			if ((smpHist.undo?.depth || 0) > (c.d0 || 0) && $1("[data-smpundo]") && !$1("[data-smpundo]").disabled) { u.click("[data-smpundo]"); await until(() => smpLoad?.state === "done" && smpLoad.file === "Undo", 60000); } }
 	};
 	/* MD-280, MD-283: rename the current kit (SysEx 0x55), save it (0x59), and put it back */
 	const kitNameSave = {
@@ -3307,7 +3371,7 @@ const MdJourneys = (() => {
 		tidy: songPlayheadTidy
 	};
 	const wave12 = [clipsJ, undoKitJ, stopQueuedJ, lenRepeatJ, songRepeatsJ];
-	const slice5 = [mixHeads, modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, revertTrackJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, sampleManager, kitNameSave, songCommands, playModeJ, pageLeds, railLamps, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
+	const slice5 = [mixHeads, modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, revertTrackJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, sampleManager, sampleExport, ramToRom, kitNameSave, songCommands, playModeJ, pageLeds, railLamps, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
 	/* ---------- the end-to-end pass: factory content as a person uses it (scripts/mdmm-e2e.sh, doc/release/E2E.md) ---------- */
 	/* What the machine plays, as the page can see it: the transport and the step from the telemetry, the song row, the output's
 	   peaks (the plug-in's outputLevel, every 250 ms, since the last one). Not silent where sound is the point. */
