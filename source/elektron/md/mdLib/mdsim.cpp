@@ -1,6 +1,8 @@
 #include "mdsim.h"
 
 #include <algorithm>
+#include <cstdio>
+#include <string>
 #include <utility>
 
 // md::Sim - MCF5206e SIM peripheral model. See mdsim.h for the register map and
@@ -878,5 +880,24 @@ namespace md
 
 		m_interruptCheckNeeded = false;
 		return false;
+	}
+
+	std::string Sim::debugState() const
+	{
+		const auto& u = m_uart[g_uartMidi];
+		const auto& p = m_uart[g_uartPanel];
+		char b[640];
+		std::snprintf(b, sizeof(b),
+			"imr %04x icrUart1 %02x icrUart2 %02x icrT1 %02x icrT2 %02x uimr1 %02x uimr2 %02x | midi paced %u txEn %d hold %d shift %d remain %u backlog %zu "
+			"txArmed %d rxArmed %d rx %zu | panel txEn %d hold %d shift %d remain %u txArmed %d rx %zu | check %d deferred %u untilEvent %u "
+			"t1 run %d cnt %u ref %u ter %02x injected %d | t2 run %d cnt %u ref %u ter %02x injected %d",
+			reg16(g_imr), m_mem[g_icrUart1], m_mem[g_icrUart2], m_mem[g_icrTimer1], m_mem[g_icrTimer2], m_mem[g_uart1Base + g_uartIsr],
+			m_mem[g_uart2Base + g_uartIsr], m_midiTxCharacterCycles, u.txEnabled ? 1 : 0, u.txHoldingFull ? 1 : 0, u.txShiftBusy ? 1 : 0,
+			u.txCyclesRemaining, u.txBacklog.size(), m_uartTxIrqArmed[0] ? 1 : 0, m_uartRxIrqArmed[0] ? 1 : 0, u.rx.size(), p.txEnabled ? 1 : 0,
+			p.txHoldingFull ? 1 : 0, p.txShiftBusy ? 1 : 0, p.txCyclesRemaining, m_uartTxIrqArmed[1] ? 1 : 0, p.rx.size(),
+			m_interruptCheckNeeded ? 1 : 0, m_deferredCycles, m_cyclesUntilEvent, m_timer[0].running ? 1 : 0, m_timer[0].counter,
+			m_timer[0].reference, m_mem[g_timer1Base + g_timerTer], m_timerIrqInjected[0] ? 1 : 0, m_timer[1].running ? 1 : 0,
+			m_timer[1].counter, m_timer[1].reference, m_mem[g_timer2Base + g_timerTer], m_timerIrqInjected[1] ? 1 : 0);
+		return b;
 	}
 }

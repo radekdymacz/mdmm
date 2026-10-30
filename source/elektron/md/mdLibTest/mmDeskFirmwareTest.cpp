@@ -2128,6 +2128,7 @@ namespace
 				answeredAt);
 			std::printf("  B-195 MIDI after job %d: %s; desk status %s\n", j + 1, r.m.hardware().midiIngressState().c_str(),
 				ed::json::write(r.desk->status()).c_str());
+			std::printf("  B-195 cpu after job %d: %s\n", j + 1, r.m.hardware().cpuState().c_str());
 			accesses(("job " + std::to_string(j + 1)).c_str());
 			records(("after job " + std::to_string(j + 1)).c_str());
 			pointers(("after job " + std::to_string(j + 1)).c_str());
@@ -2153,7 +2154,10 @@ namespace
 						drain();
 						++pcs[r.m.hardware().getUC().getPC()];
 						if(++steps == 1 || steps == 10 || steps == 100)
+						{
 							std::printf("  B-195 request W%d: at %.0f ms: %s\n", _p + 1, r.ms() - at, r.m.hardware().midiIngressState().c_str());
+							std::printf("  B-195 request W%d: cpu %s\n", _p + 1, r.m.hardware().cpuState().c_str());
+						}
 					}
 					std::printf("  B-195 request W%d: after: %s\n", _p + 1, r.m.hardware().midiIngressState().c_str());
 					std::vector<std::pair<int, uint32_t>> top;
@@ -2181,6 +2185,11 @@ namespace
 				trace.clear();
 				ask(lost, 3000);
 				pointers("after the requests");
+				// does the machine come back when the MIDI UART sends at once (pacing off, B-010)?
+				r.m.hardware().getUC().setMidiTransmitRate(0);
+				std::printf("  B-195 MIDI pacing off\n");
+				ask(lost, 3000);
+				ask(63, 3000);
 				// the same flash and patch RAM in a machine booted again (a project loaded again); then with a patch RAM
 				// that is empty (the firmware builds its index from the flash alone)
 				traceOn = false;

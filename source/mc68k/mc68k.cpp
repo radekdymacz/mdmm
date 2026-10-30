@@ -196,6 +196,11 @@ namespace mc68k
 		return m68k_get_reg(getCpuState(), M68K_REG_PC);
 	}
 
+	uint32_t Mc68k::getSR() const
+	{
+		return m68k_get_reg(getCpuState(), M68K_REG_SR);
+	}
+
 	uint32_t Mc68k::getAReg(const uint32_t _index) const
 	{
 		return m68k_get_reg(getCpuState(), static_cast<m68k_register_t>(M68K_REG_A0 + _index));
