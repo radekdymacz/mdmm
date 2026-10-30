@@ -60,14 +60,23 @@ import math, struct, sys, wave
 w = wave.open(sys.argv[1], 'wb'); w.setnchannels(1); w.setsampwidth(2); w.setframerate(44100)
 w.writeframes(b''.join(struct.pack('<h', int(12000 * math.sin(2 * math.pi * 220 * i / 44100))) for i in range(44100))); w.close()
 PY
+	# one cycle (300 frames) for the Monomachine's DigiPRO card Load; its name (WVCY) names the waveform
+	python3 - "$OUT/fixtures/wvcy.wav" <<'PY'
+import math, struct, sys, wave
+w = wave.open(sys.argv[1], 'wb'); w.setnchannels(1); w.setsampwidth(2); w.setframerate(44100)
+w.writeframes(b''.join(struct.pack('<h', int(20000 * math.sin(2 * math.pi * i / 300))) for i in range(300))); w.close()
+PY
 	PIDS=""
 	for M in md mm; do
 		[ "$WHICH" = both ] || [ "$WHICH" = $M ] || continue
+		# the DigiPRO card's journeys (mm): the file and the export target are the run's, no dialog (diagnostics builds)
+		DGX=""; [ "$M" = mm ] && DGX="$OUT/fixtures/digipro-export.syx"
 		# the window at the page's design size (1440 x 924, as the page tier and the pictures): the background run's
 		# small window zooms the page below 100 %, where WebKit lays 9 px text out at 15 px (its minimum logical font
 		# size), so every fit check would measure a page no person sees at full size (0.6 e2e: md/mm-screens-fit)
 		GEARMULATOR_MDMM_BACKGROUND_SIZE=${GEARMULATOR_MDMM_BACKGROUND_SIZE:-1440x924} \
 		GEARMULATOR_MDMM_BACKGROUND_METER=1 GEARMULATOR_MDMM_SYX_FILE="$OUT/fixtures/$M.syx" GEARMULATOR_MDMM_WAV_FILE="$OUT/fixtures/e2e.wav" GEARMULATOR_MDMM_SAMPLE_EXPORT="$OUT/fixtures/sample-export" \
+		GEARMULATOR_MDMM_WAVE_FILE="$OUT/fixtures/wvcy.wav" GEARMULATOR_MDMM_SYX_EXPORT="$DGX" \
 		MDMM_JOURNEY_TIMEOUT=${MDMM_JOURNEY_TIMEOUT:-3600} MDMM_JOURNEY_SETTINGS=fresh MDMM_JOURNEY_E2E=1 MDMM_JOURNEY_OUT="$RUN/$M" \
 			scripts/mdmm-journeys.sh --background --jobs "$JOBS" ${TIER:+--tier "$TIER"} ${SHUFFLE:+--shuffle "$SHUFFLE"} $( [ "$ISOLATE" = 1 ] && echo --isolate ) "$M" "$SEL" > "$OUT/journeys-$M.log" 2>&1 &
 		PIDS="$PIDS $!"
