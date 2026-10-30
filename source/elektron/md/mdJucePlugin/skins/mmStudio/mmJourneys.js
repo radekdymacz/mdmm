@@ -2699,7 +2699,8 @@ const MmJourneys = (() => {
 	   factory waveforms and no user waveform, so each journey makes its own: Load takes the run's one-cycle WAV (GEARMULATOR_MDMM_WAVE_FILE,
 	   a diagnostics hook, no file dialog; the page tier's host makes a sine) and the file's name gives the waveform's name. Every step waits
 	   until the card is idle again (the machine's DIGIPRO MGR job done, the list read back) before the next click: a disabled key ignores it. */
-	const dgIdle = () => dgRead();
+	/* idle: read, and the card's Read key enabled (it is disabled while the machine's job runs: the list can show the new waveform before that ends) */
+	const dgIdle = () => dgRead() && !$1('#globpop [data-ga="dpread"]')?.disabled;
 	const dgWait = 170000;
 	const dgTidy = async (u, c) => { if (dlgShown()) u.click(dlgButton("Cancel")); if (!$1("#globpop").hidden) u.key("Escape"); await sleep(200); };
 	const dgLoad = (n, what) => [
@@ -2716,7 +2717,7 @@ const MmJourneys = (() => {
 		name: "mm-digipro-card", proves: ["MM-010", "MM-310"],
 		steps: [
 			...dgLoad(19, "a one-cycle WAV"),
-			{ say: "click Copy, then W30 and Paste: W30 holds the same waveform (nothing asked over a factory position)", act: async u => { u.click('#globpop [data-ga="dpcopy"]'); await sleep(200); u.click(dgKey(29)); await sleep(200); u.click('#globpop [data-ga="dppaste"]'); },
+			{ say: "click Copy, then W30 and Paste: W30 holds the same waveform (nothing asked over a factory position)", act: async (u, c) => { c.nm ??= dgName(19); await until(dgIdle, dgWait); u.click('#globpop [data-ga="dpcopy"]'); await sleep(200); u.click(dgKey(29)); await sleep(200); u.click('#globpop [data-ga="dppaste"]'); },
 				screen: c => ok(!dlgShown() && dgIdle() && dgUser(29) && dgName(29) === c.nm, `asked ${dlgShown()}, W30 user ${dgUser(29)} "${dgName(29)}" for "${c.nm}"`), within: dgWait },
 			dgUndoTo(29, false, "click Undo: W30 is the factory waveform again"),
 			{ say: "click W20, then Erase: it asks", act: async u => { u.click(dgKey(19)); await sleep(200); u.click('#globpop [data-ga="dperase"]'); },
