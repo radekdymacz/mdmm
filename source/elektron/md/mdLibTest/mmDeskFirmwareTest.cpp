@@ -1743,6 +1743,28 @@ namespace
 			return n;
 		};
 
+		// B-195: the user flash per 64 KiB sector: bytes not erased (0xff), and the first and last of them
+		const auto flashMap = [&](const char* _title)
+		{
+			const auto f = r.m.hardware().copyUserFlash();
+			std::printf("  user flash %s (%zu bytes):", _title, f.size());
+			for(size_t sec = 0; sec * 0x10000 < f.size(); ++sec)
+			{
+				size_t used = 0, first = 0, last = 0;
+				for(size_t i = sec * 0x10000; i < std::min(f.size(), (sec + 1) * 0x10000); ++i)
+					if(f[i] != 0xff)
+					{
+						if(!used)
+							first = i;
+						last = i;
+						++used;
+					}
+				if(used)
+					std::printf(" [s%zu %zu bytes %06zx-%06zx]", sec, used, first, last);
+			}
+			std::printf("\n");
+		};
+		flashMap("at the start");
 		check(cmd(R"({"op":"waveList","id":1})"), "waveList is taken");
 		const double listMs = settle(180000);
 		const int before = users();
@@ -1861,6 +1883,15 @@ namespace
 			else
 				done = done && waves.dumpOf(62) && waves.dumpOf(60) && *waves.dumpOf(62) == ed::mmWavePlaced(*waves.dumpOf(60), 62);
 			std::printf("  job %d took %.0f ms of machine time: %s\n", j + 1, took, done ? "done" : "NOT DONE");
+			if(done)
+				flashMap("after the job");
+			else
+			{
+				const auto d = waves.dumpOf(60) ? ed::decodeMmWave(*waves.dumpOf(60)) : std::nullopt;
+				std::printf("  W61 reads back as %s\n", d ? ("\"" + ed::mmWaveName(*d) + "\"").c_str() : "nothing (factory)");
+				flashMap("after the job");
+				printLcd("after the job");
+			}
 			check(done, "job " + std::to_string(j + 1) + " of " + std::to_string(jobs) + " in one session ends with what it asked (B-195)");
 			if(!done)
 				break;
