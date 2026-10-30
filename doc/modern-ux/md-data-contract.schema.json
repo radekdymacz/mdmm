@@ -3323,6 +3323,101 @@
               "type": "string"
             }
           }
+        },
+        {
+          "type": "object",
+          "description": "0.9: the sample manager's clipboard and last undo step (after sampleCopy, samplePaste, ramToRom, sampleUndo, a sample that ended, and a ready): null when there is none.",
+          "required": ["type", "clip", "undo"],
+          "additionalProperties": true,
+          "properties": {
+            "type": {
+              "const": "sampleHistory"
+            },
+            "clip": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "required": ["bank", "slot", "name", "length", "rate"],
+                  "additionalProperties": true,
+                  "properties": {
+                    "bank": {
+                      "enum": ["rom", "ram"]
+                    },
+                    "slot": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 47
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "length": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Samples."
+                    },
+                    "rate": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Hz."
+                    }
+                  }
+                }
+              ]
+            },
+            "undo": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "required": ["slot", "what", "depth"],
+                  "additionalProperties": true,
+                  "properties": {
+                    "slot": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 47
+                    },
+                    "what": {
+                      "type": "string",
+                      "description": "In words: Paste into ROM-05."
+                    },
+                    "depth": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "Steps that can be undone."
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "description": "0.9: the result of a sample export (sampleExport): how many files were written, and a line for the person.",
+          "required": ["type", "ok", "count", "text"],
+          "additionalProperties": true,
+          "properties": {
+            "type": {
+              "const": "sampleExport"
+            },
+            "ok": {
+              "type": "boolean"
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "text": {
+              "type": "string"
+            }
+          }
         }
       ]
     },
@@ -6587,6 +6682,114 @@
         },
         {
           "type": "object",
+          "description": "setup: copy a slot's samples into the sample clipboard (the desk's own; a RAM take is copied as it is now); {\"type\":\"sampleHistory\"} says what it holds",
+          "required": ["op", "bank", "slot"],
+          "properties": {
+            "op": {
+              "const": "sampleCopy"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "bank": {
+              "type": "string",
+              "enum": ["rom", "ram"]
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 47
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "setup: paste the sample clipboard into ROM slot slot: its samples and name sent as SDS (sampleLoad follows); a step to undo it when the slot held a sample",
+          "required": ["op", "slot"],
+          "properties": {
+            "op": {
+              "const": "samplePaste"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 47
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "setup: RAM to ROM copy: RAM slot ram as it is now, sent to ROM slot slot as SDS (the manual's FUNCTION + REC, FUNCTION + STOP; the other RAM slots stay)",
+          "required": ["op", "ram", "slot"],
+          "properties": {
+            "op": {
+              "const": "ramToRom"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "ram": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 47
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "setup: send back the sample the last paste, RAM to ROM copy, rename or load replaced (16 steps, no redo)",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "sampleUndo"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "host: an entry of the engine map (machine.engines)",
           "required": ["op", "kind"],
           "properties": {
@@ -6794,7 +6997,44 @@
         },
         {
           "type": "object",
-          "description": "host: import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\", the slot an item lands in), sent to the machine as they are (the firmware decides what it takes), then read back and reported (syxProgress); no undo step. placeAt (SPECIFIC, 0.6): per kind the first slot its items land in, in slot order ({\"kit\": 4}; the dumps go with that position byte and checksum); checkOnly (VERIFY ONLY): nothing is sent, each item's slot is read and compared with the file; readBack (I-038, default true): false ends the import after the messages are sent, without reading the slots back, and the report says the items were sent, not read back",
+          "description": "host: export UW samples as WAV files (16-bit mono at the slot's own rate, the samples the machine holds): the slot of bank through the window's save dialog, or with all every slot of the bank that holds one into a folder the window asks for; format syx (ROM only) writes the SDS dump the machine's own SEND makes, with the slot's position in it; a sampleExport message follows",
+          "required": ["op", "bank"],
+          "properties": {
+            "op": {
+              "const": "sampleExport"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "bank": {
+              "type": "string",
+              "enum": ["rom", "ram"]
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 47
+            },
+            "all": {
+              "type": ["boolean", "integer"]
+            },
+            "format": {
+              "type": "string",
+              "enum": ["wav", "syx"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\", the slot an item lands in), sent to the machine as they are (the firmware decides what it takes), then read back and reported (syxProgress); one undo step puts back the kits, patterns and songs it overwrote. placeAt (SPECIFIC, 0.6): per kind the first slot its items land in, in slot order ({\"kit\": 4}; the dumps go with that position byte and checksum); checkOnly (VERIFY ONLY): nothing is sent, each item's slot is read and compared with the file; readBack (I-038, default true): false ends the import after the messages are sent, without reading the slots back, and the report says the items were sent, not read back",
           "required": ["op", "kinds"],
           "properties": {
             "op": {
@@ -6923,7 +7163,7 @@
         },
         {
           "type": "object",
-          "description": "host: Reset machine: empty clears every kit, pattern and song (the library's Clear in each slot, sent as dumps; globals and samples stay), factory (the Machinedrum) brings back the factory kits, patterns and songs read from a second machine started from the user's own ROM; both read back and reported as an import (syxPreview with reset, then syxProgress); no undo step: the page asks first",
+          "description": "host: Reset machine: empty clears every kit, pattern and song (the library's Clear in each slot, sent as dumps; globals and samples stay), factory (the Machinedrum) brings back the factory kits, patterns and songs read from a second machine started from the user's own ROM; both read back and reported as an import (syxPreview with reset, then syxProgress); one undo step puts them back; the page asks first",
           "required": ["op", "how"],
           "properties": {
             "op": {

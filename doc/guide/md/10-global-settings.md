@@ -207,7 +207,7 @@ NOTE: On the machine a song send takes its patterns and kits with it. In the edi
 The editor writes the kits it holds. A message at the end says how many of each kind went into the file.
 
 ## GENERAL SYSEX RECEIVE
-<!-- rows: MD-181 @ee3966 -->
+<!-- rows: MD-181 @59fc85 -->
 
 The machine takes SysEx at any time. In the editor you open the file first and choose what to send.
 
@@ -237,7 +237,7 @@ At the end the panel gives a report, slot by slot:
 
 Click **Show problems only** to list only the slots that did not go as in the file. Click **Done** to close the panel.
 
-NOTE: The import has no undo. A kit that plays, and has unsaved edits, can lose them when a dump takes its place.
+NOTE: **Undo** takes an import back in one step. It writes back the kits, patterns and songs the import overwrote, and the kit that plays with the edits it had. A global is not put back. **Redo** brings the import again. Before it sends, the editor reads the slots it has not read yet. If a slot does not answer, the report ends with how many slots cannot be undone. **Export SysEx…** first keeps a copy in a file.
 
 NOTE: **Globals** and **Other** are off until you tick them. A global changes the MIDI channels the machine listens on, and so which tracks the editor can mute, play and edit live. The active global becomes active at once.
 

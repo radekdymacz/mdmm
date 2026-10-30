@@ -241,7 +241,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.66 | Song + pattern (+ kit) sysex send, range | Send songs | ✅ | Export SysEx…: untick All, tick Songs (and Patterns, Kits), each with its own range | The kinds are chosen one by one: a song range does not add its patterns by itself. | 1 | stub-only |
 | p.66 | Pattern (+ kit) sysex send, range | Send patterns | ✅ | Export SysEx…: untick All, tick Patterns (and Kits), each with its own range |  | 1 | stub-only |
 | p.66 | Kit sysex send, range | Send kits | ✅ | Export SysEx…: untick All, tick Kits, set the range |  | 1 | stub-only |
-| p.67 | General sysex receive (any time) | Import | ✅ | Engine menu: IMPORT SYSEX… / drop a .syx: preview by kind and slot, then report |  | 3 | pass (e2e-md-lib-syx-import) |
+| p.67 | General sysex receive (any time) | Import | ✅ | Engine menu: IMPORT SYSEX… / drop a .syx: preview by kind and slot, then report |  | 4 | pass (e2e-md-lib-syx-import) |
 | p.68 | Original place receive (ORIG) | Same slot | ✅ | Import SysEx | Default. | 1 | stub-only |
 | p.68 | Specific place receive (SPEC) | Relocate | ✅ | Import SysEx: PLACE row, Specific place, the first slot per kind; the grid shows where each item lands; Import asks before it lands on a slot that holds data | Each kind has its own first slot; items keep their order and gaps. | 1 | pass (e2e-md-lib-syx-place) |
 | p.69 | Sysex verify (VERF) | Check without writing | ✅ | Import SysEx: Verify only beside Import: nothing is written, each slot is read and compared (= the same, ≠ different, ? no answer) | Works with Specific place too. Beside it, the tick Read back and compare (on by default, kept): off, the import ends after Send and the report says not read back. | 3 | pass (e2e-md-lib-syx-verify) |
@@ -258,13 +258,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.72 | General sample receive (any time) | Receive | ➖ |  | Files only. | – | n/a |
 | p.73 | Specific place receive (choose slot) | Slot | ✅ | Sampler: select ROM slot, Load... |  | 1 | pass (e2e-md-drop-sample) |
 | p.74 | Original place receive (several files in order) | ORG | ✅ | Drop several files; they fill slots after the first |  | 1 | missing |
-| p.74 | Send samples to a computer (one, ALL, RAM) | SEND | ❌ | Disabled with reason | Machine ignores dump requests. | – | n/a |
-| p.75 | Erase one / all samples | ERASE | ❌ | None |  | – | n/a |
+| p.74 | Send samples to a computer (one, ALL, RAM) | SEND | ✅ | Sampler: Export WAV and Export SysEx on a ROM slot, Export WAV on a RAM slot, Export all… and Export all SysEx… for the ROM slots, Export all RAM… | The machine ignores dump requests, so the editor writes the samples it reads from the emulated machine: 16-bit mono WAV, or for ROM slots the SDS SysEx file the machine's own SEND makes, with the slot position in it (a file a slot, in a folder for all). Needs the emulated machine. | – | n/a |
+| p.75 | Erase one / all samples | ERASE | ❌ | None | No SysEx or SDS message frees a slot; the panel route needs a probe. | – | n/a |
 | p.71 | Preview a sample | FUNCTION + ENTER | ✅ | Sampler: audition button | Plays on plug-in output. | 1 | pass (e2e-md-sampler-audition) |
-| p.71 | Slot list with sizes, memory left | POS/SIZE | 🟡 | Sampler: 48 ROM tiles with waveform and length; MEM on LCD | Memory is slot count, not DSP percent. | 1 | n/a |
+| p.71 | Slot list with sizes, memory left | POS/SIZE | ✅ | Sampler: seconds and KB on every tile and key tooltip; the ROM slots header gives used, free and the percentage free | Memory is worked out from the samples the editor reads (ROM slots and the four RAM buffers against the DSP memory): the machine does not report its own figure over MIDI. | 2 | n/a |
 | p.71 | Sample names / rename | Name slot | ✅ | Sampler: Rename (0x73, then the slot's sample again by SDS) | The firmware renames a sample only when it receives it, so Rename sends the name and the slot's own sample again; it needs the slot's audio (the emulated machine). A real machine cannot send it back: the key is off with the reason. | 1 | pass (e2e-md-sampler-rename) |
-| p.71 | Copy / clear / paste / undo in sample manager | Slot clipboard | ❌ | None |  | – | n/a |
-| p.71 | RAM to ROM copy | Keep a take | ❌ | Disabled with reason | The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – | n/a |
+| p.71 | Copy / clear / paste / undo in sample manager | Slot clipboard | 🟡 | Sampler: Copy, Paste and Undo sample on a ROM slot; Copy on a RAM slot | Copy keeps a snapshot; Paste sends it as SDS to the ROM slot; Undo sample sends back what a paste, a RAM to ROM copy, a rename or a load replaced (16 steps, no redo). Loop points are not carried. Needs the emulated machine. | 1 | n/a |
+| p.71 | RAM to ROM copy | Keep a take | ✅ | Sampler, RAM slot: Keep as ROM… | The take as it is now is sent to the chosen ROM slot as SDS, named RAM1 to RAM4 (the manual's copy; the other RAM slots stay, the "reload samples" prompt does not exist). Needs the emulated machine. | – | n/a |
 | p.70 | Sample limits (4-48 kHz, mono, 12-bit playback) | Rules | ✅ | Plug-in converts on load |  | 1 | missing |
 | p.71 | ROM vs RAM machines | Concept | ✅ | Sampler workspace |  | 1 | pass (md-sampler-workspace) |
 
@@ -398,7 +398,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p. | GEN rolls a rhythm | No such function: you set the hits by hand. The editor rolls a rhythm for you from a few settings. | ✅ | GEN bar on Pattern: Random, Defaults, Hits; R | One undo step | 4 | pass (e2e-md-gen-keys-r) |
 | p. | MUTATE changes a sound | No such function. The editor nudges the sound of the tracks at random, within a scope and an amount. | ✅ | GEN bar on Pattern: MUTATE, scope chips, amount | One undo step | 2 | pass (e2e-md-gen-mutate-scope) |
 | p. | Solo | Solo plays one track alone; the mutes you had come back when you let go. | ✅ | Mix: S on the strip; the rail | The machine has mute only | 2 | pass (e2e-md-mix-mute-solo) |
-| p. | Undo and redo | No undo. Every edit of the editor can be taken back and done again, across kits, patterns and songs. | ✅ | UNDO and REDO in the top bar; Cmd+Z, Cmd+Shift+Z | The machine has no undo | 2 | pass (e2e-md-top-undo-redo) |
+| p. | Undo and redo | No undo. Every edit of the editor can be taken back and done again, across kits, patterns and songs. | ✅ | UNDO and REDO in the top bar; Cmd+Z, Cmd+Shift+Z | The machine has no undo | 3 | pass (e2e-md-top-undo-redo) |
 | p. | Typed values | Type a value into a knob instead of turning it. | ✅ | Cmd-click or Enter on a value box; the arrow keys step it | A list takes its names | 2 | pass (e2e-md-sound-type-value) |
 | p. | The step menu | Right-click a step for accent or slide, copy, paste and fill. | ✅ | Right-click a step (MM: in the roll or a trig row) | Keyboard and mouse | 2 | pass (e2e-md-seq-step-menu) |
 | p. | Select, copy and paste steps | Select steps with the mouse, copy, paste and clear them, to one track or several. | ✅ | Cmd-click, Cmd-drag, the top bar's Copy, Paste, Clr; Cmd+C, Cmd+V |  | 4 | pass (e2e-md-seq-select-copy-paste) |
@@ -423,13 +423,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 291 |
+| ✅ Yes | 294 |
 | 🟡 Partial | 9 |
-| ❌ No | 6 |
+| ❌ No | 3 |
 | ➖ Not applicable | 16 |
 | Total | 322 |
 
-Of the 306 applicable rows, 291 are fully covered, 9 partly, 6 not at all.
+Of the 306 applicable rows, 294 are fully covered, 9 partly, 3 not at all.
 
 ### Top gaps (our UI), most important first
 

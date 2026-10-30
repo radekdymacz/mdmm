@@ -123,7 +123,7 @@
 <p>The machine cannot take an edit back. In the editor every edit can be taken back and done again, across kits, patterns and songs.</p>
 <figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-md-top-undo-redo.webp" aria-label="Open the picture full size: The UNDO and REDO keys in the top bar"><img src="/guide/shots/e2e-md-top-undo-redo.webp" width="1440" height="924" alt="The UNDO and REDO keys in the top bar" loading="lazy"></a><figcaption>The UNDO and REDO keys in the top bar</figcaption></figure>
 <ol class="gd-steps"><li>Click an empty step on the <b class="gd-ui">Pattern</b> workspace. It becomes a trig.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>. The trig goes.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[Z]</kbd>. The trig is back.</li><li>Click <b class="gd-ui">UNDO</b> in the top bar to take it back again, and <b class="gd-ui">REDO</b> to put it back.</li></ol>
-<p>A drag, a paint or a run of rotates is one step. Each typed value is one step.</p>
+<p>A drag, a paint or a run of rotates is one step. Each typed value is one step. A SysEx import and the Empty reset are one step each: <b class="gd-ui">Undo</b> writes back the kits, patterns and songs they overwrote. A global is not put back (chapters 10 and 12).</p>
 </div></section>
 <section class="gd-sec" id="typed-values" aria-labelledby="typed-values-h">
 <div class="gd-body gd-prose"><h2 id="typed-values-h">TYPED VALUES <a class="gd-anchor" href="#typed-values" aria-label="Link to TYPED VALUES">#</a></h2>

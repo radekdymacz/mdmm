@@ -488,7 +488,8 @@ where it came from, the setup, what happens, what should happen, status.*
 - **From:** the independent-journeys run, 2026-10-13.
 - **What happens:** an import overwrites kits, patterns and songs and the empty reset clears everything; neither is an undo step, so a journey (or a person) has no way back. The import journeys of whole files and the empty resets are `alone: true` (their own editor); the two-slot imports are kept with the plug-in's clipboard and one undo step (`keepMany`).
 - **Should be:** an undo step, or a copy of what the import is about to overwrite.
-- **Status:** open.
+- **Fix (0.9, wave 4, branch `feat/0.9-import-undo`, spec doc/release/0.9/import-undo.md, both editors):** the kits, patterns and songs an import or an Empty or Factory reset will write are copied first and recorded as one undo step when the job is over; undo and redo deliver them through the desk's own history. Globals and a start from factory memory are not undone. Tests: `deskCoreTest` (bulk), the journeys `md-lib-syx-import-undo`, `mm-lib-syx-import-undo`, the reset journeys' Cmd+Z steps.
+- **Status:** fixed on the branch (CI to confirm); not merged.
 
 ## B-123 · Solo is lost when the project is saved and opened again
 
@@ -1085,7 +1086,8 @@ where it came from, the setup, what happens, what should happen, status.*
 
 - **From:** found by the B-031 work, 2026-10-09.
 - **What happens:** a pattern picked while a SysEx import runs asks "Your edits to K.. are not saved" although nothing was edited. A dump over the current pattern reloads the linked kit before that slot has been read back. Transient: gone once the import finishes.
-- **Status:** open.
+- **Fix (0.9, wave 4, branch `feat/0.9-import-undo`):** the Machinedrum adapter asks no discard question for a pattern pick while an import runs or a slot it wrote is still waiting to be read again (`Machine::importing`, `MdMachine::importSettling`); the question comes back once those slots have arrived.
+- **Status:** fixed on the branch (CI to confirm); not merged.
 
 ## B-044 · Linux CI: synthLibMidiClockTimingTest is still left out
 
@@ -1140,9 +1142,10 @@ where it came from, the setup, what happens, what should happen, status.*
 ## B-038 · Monomachine: a song's LOOP row goes back to row 1
 
 - **From:** found by the song playhead's firmware test, 2026-10-09 (0.3.5 work).
-- **What happens:** in a song written by the Monomachine Editor, a LOOP row goes back to row 1 instead of the row it names. The machine plays it so; the playhead shows it. (The "row before the LOOP is skipped" first noted here was the test's: it sampled only while RAM 0x26b46e, taken as "running", read 1, and that byte reads 0 during some passes; sampled on the step alone, every row plays.)
-- **To check:** where the MM song row stores the loop target (inferred in MM-P1, never probed); probe it on the firmware as the Machinedrum's was. Noted in mm-data-contract.md.
-- **Status:** open (listed under Known in the 0.4.0 notes).
+- **What happened:** in a song written by the Monomachine Editor, a LOOP row went back to row 1 instead of the row it names. (The "row before the LOOP is skipped" first noted here was the test's: it sampled only while RAM 0x26b46e, taken as "running", read 1, and that byte reads 0 during some passes; sampled on the step alone, every row plays.)
+- **Cause (0.9, read from the layouts, to be confirmed by CI):** the codec put the loop's target at row byte 1 ("inferred in MM-P1, never probed"; the song-editor diffs only changed pattern rows). The first four bytes of a Monomachine song row are the Machinedrum row's: pattern, reserved, repeats, target. The firmware reads the target from byte 3, which the codec kept as "unknown" and wrote as 0, so every loop went to row 0 whatever byte 1 said.
+- **Fix:** `mmSongRow::g_target` is 3 and byte 1 is the kept reserved byte (`g_x1`; the JSON keeps the member name `x3` for it so documents and the schema do not change). `mmDataTest` pins the encoding (raw bytes, SysEx, JSON); `mmDeskFirmwareTest songloop` builds a song with a LOOP row to target 2, 1 and 0, plays it on the firmware and checks the patterns of the first nine passes.
+- **Status:** fixed locally, awaiting CI (the firmware test decides; if it fails on the pass sequence, the target byte is not 3 and the log's patterns say where the loop went).
 
 ## B-037 · Windows: MIDI in/out don't work in the standalone
 

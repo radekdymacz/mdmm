@@ -653,6 +653,22 @@ namespace elektronData
 		return b;
 	}
 
+	std::vector<uint8_t> encodeWavMono16(const std::vector<int16_t>& _samples, const uint32_t _rate)
+	{
+		std::vector<uint8_t> b;
+		const auto u32 = [&](const uint32_t _v) { for(int i = 0; i < 4; ++i) b.push_back(static_cast<uint8_t>(_v >> (8 * i))); };
+		const auto u16 = [&](const uint32_t _v) { b.push_back(static_cast<uint8_t>(_v)); b.push_back(static_cast<uint8_t>(_v >> 8)); };
+		const auto text = [&](const char* _t) { b.insert(b.end(), _t, _t + 4); };
+		const auto data = static_cast<uint32_t>(_samples.size() * 2);
+		b.reserve(44 + data);
+		text("RIFF"); u32(36 + data); text("WAVE");
+		text("fmt "); u32(16); u16(1); u16(1); u32(_rate); u32(_rate * 2); u16(2); u16(16);
+		text("data"); u32(data);
+		for(const auto v : _samples)
+			u16(static_cast<uint32_t>(static_cast<int32_t>(v)) & 0xffff);
+		return b;
+	}
+
 	std::string mdSampleNameFrom(const std::string& _fileName)
 	{
 		auto stem = _fileName;

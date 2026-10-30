@@ -8,10 +8,11 @@
    the slots' own waveforms (md-desk/samples, from the emulated machine's memory: ROM slots from flash,
    RAM buffers from the DSP) and a WAV or AIFF into a ROM slot (chooseSample: the plug-in reads the file
    and sends it as SDS; sampleLoad says how it goes). A real Machinedrum cannot send its sample audio
-   (capabilities.sampleAudio). Not possible from here: a file into a RAM slot, RAM to ROM copy. ===== */
+   (capabilities.sampleAudio). Not possible from here: a file into a RAM slot. 0.9, the sample manager (doc/release/0.9/
+   md-sample-manager.md): copy, paste, RAM to ROM and undo of a slot's samples (sampleCopy, samplePaste, ramToRom,
+   sampleUndo; sampleHistory says what the clipboard and the undo hold), export as WAV (sampleExport), the memory
+   line and the sizes. ===== */
 const NA = {
-	send: "Send is not available: the Machinedrum ignores SDS dump requests (measured on OS 1.63). It sends samples only from its own SAMPLE MGR menu.",
-	rom: "Copy RAM to ROM is not available here: the Machinedrum does it only in its SAMPLE MGR menu (FUNCTION + REC, FUNCTION + STOP). Not wired yet.",
 	ramLoad: "A file goes into a ROM slot. A RAM slot holds only what RAM-R records: the Machinedrum does not answer an SDS sample sent to a RAM slot and keeps nothing (measured on OS 1.63).",
 	memory: "Sample memory in use: a real Machinedrum does not report it over MIDI.",
 	names: "Sample names: a real Machinedrum takes a new name (Rename) but never reports names, so only the names sent this session are shown." };
@@ -27,7 +28,41 @@ function smpWhy(at) {
 	return "";
 }
 function smpTime(s) { return s && !s.empty && s.rate ? (s.length / s.rate).toFixed(2) + " s" : ""; }
-function smpInfo(s) { return !s ? "" : s.empty ? "empty" : `${smpTime(s)} · ${s.length} samples · ${s.rate} Hz${s.loop ? " · loops" : ""}`; }
+const smpKb = s => Math.max(1, Math.round(s.length * 2 / 1024));	/* 16-bit mono, as the machine stores a ROM sample */
+function smpInfo(s) { return !s ? "" : s.empty ? "empty" : `${smpTime(s)} · ${smpKb(s)} KB · ${s.length} samples · ${s.rate} Hz${s.loop ? " · loops" : ""}`; }
+/* the memory as the editor counts it: the ROM slots and the four RAM buffers share the DSP's sample memory; free is
+   what is left of it (the machine's own figure is not reported over MIDI) */
+function smpMemory(b) {
+	const ram = b.ramReadable ? b.ram.reduce((n, x) => n + x.length, 0) : 0, used = b.used + ram, free = Math.max(0, b.capacity - used);
+	return { used, free, pct: Math.round(free / b.capacity * 100), text: `${(used / 44100).toFixed(1)} s used · ${(free / 44100).toFixed(1)} s free (${Math.round(free / b.capacity * 100)} %)` };
+}
+/* 0.9: the sample manager's clipboard and last undo step (sampleHistory) and the export's result (sampleExport) */
+let smpHist = { clip: null, undo: null };
+function onSampleHistory(m) { smpHist = m; if (S.ws === "sampler") scheduleRender(); }
+function onSampleExport(m) { toast(m.text); }
+const smpAt = v => { const [bank, slot] = String(v).split(":"); return [bank, +slot]; };
+const smpName = (bank, i) => bank === "ram" ? "RAM " + (i + 1) : romCode(i + 1);
+function smpClipChip() {
+	const c = smpHist.clip; if (!c) return `<span class="note smpclip">Nothing copied</span>`;
+	return `<span class="note smpclip" title="The sample clipboard: a snapshot taken at Copy.">Copied: ${smpName(c.bank, c.slot)}${c.name ? " " + c.name : ""} · ${(c.length / (c.rate || 1)).toFixed(2)} s</span>`;
+}
+/* the manager's keys: each is off with its reason (the engine's, an empty slot, nothing copied, a sample on its way) */
+function smpKey(attr, value, label, tip, why) {
+	return `<button data-${attr}="${value}" ${why ? `disabled title="${why}"` : `title="${tip}"`}>${label}</button>`;
+}
+function smpManagerBar(bank, i, sending) {
+	const s = smpSlotOf(bank, i), name = smpName(bank, i), why = smpWhy([bank, i]), none = why || (!s || s.empty ? name + " holds no sample." : "");
+	const paste = !canDo(V, "sampleLoad") ? "" : sending ? "A sample is on its way." : !smpHist.clip ? "Nothing is copied. Copy a slot first." : "";
+	const u = smpHist.undo;
+	return `<div class="slotbar smpbar">${smpKey("smpcopy", bank + ":" + i, "Copy", `Copy ${name}'s sample to the sample clipboard (a snapshot: a RAM take is copied as it is now).`, none)}`
+		+ (bank === "rom" ? smpKey("smppaste", i, "Paste", `Send the copied sample to ${name}. It replaces what the slot holds (Undo sample brings it back). Loop points are not sent.`, paste) : "")
+		+ (bank === "ram" ? smpKey("ramrom", i, "Keep as ROM…", `Send ${name}'s take to a ROM slot, so it is kept when the power is off. The other RAM slots stay as they are.`, none || (sending ? "A sample is on its way." : "")) : "")
+		+ smpKey("smpexport", bank + ":" + i, "Export WAV", `Save ${name}'s sample as a WAV file (16-bit mono, the slot's own rate).`, none)
+		+ (bank === "rom" ? smpKey("smpexportsyx", i, "Export SysEx", `Save ${name}'s sample as the SysEx file the machine's own SEND makes (SDS), with its slot in it: sent back with ORG it lands in the same slot.`, none) : "")
+		+ (bank === "ram" ? smpKey("smpexportall", "ram", "Export all RAM…", "Save every RAM slot that holds a take as a WAV file, into a folder you choose.", why) : "")
+		+ (bank === "rom" ? smpKey("smpundo", "1", "Undo sample", u ? `Undo: ${u.what}. The sample it replaced is sent back to ${romCode(u.slot + 1)} (${u.depth} step${u.depth === 1 ? "" : "s"}).` : "", !canDo(V, "sampleLoad") ? "" : sending ? "A sample is on its way." : u ? "" : "Nothing to undo: a paste, a RAM to ROM copy, a rename or a load over a sample can be undone.") : "")
+		+ smpClipChip() + `</div>`;
+}
 /* P9: the slots' detail (sampleWave), asked for once per slot and width, dropped with every new bank. */
 const Waves = new Map(), WavesAsked = new Map();
 function waveOf(at, s, cols) {
@@ -288,7 +323,7 @@ const smpCols = () => `var(--srlab) ${cols()}`;
 function romTiles(sel, sending) {
 	const b = smpBank(), why = smpWhy(), inKit = new Set(V.tracks.map(t => t.m));
 	const used = b ? b.rom.filter(s => !s.empty).length : null;
-	return `<section class="card"><header><h3>ROM slots</h3><span>${used != null ? `${used} of 48 hold a sample · ` : ""}lit: used by this kit${why ? " · " + why : ""}</span></header>
+	return `<section class="card"><header><h3>ROM slots</h3><span class="smpmem" title="${b ? "Sample memory as the editor counts it: the ROM slots and the four RAM buffers share it. The machine's own figure is not reported over MIDI." : ""}">${used != null ? `${used} of 48 hold a sample · ${smpMemory(b).text} · ` : ""}lit: used by this kit${why ? " · " + why : ""}</span>${smpKey("smpexportall", "rom", "Export all…", "Save every ROM slot that holds a sample as a WAV file, into a folder you choose.", why)}${smpKey("smpexportallsyx", "rom", "Export all SysEx…", "Save every ROM slot that holds a sample as a SysEx file with its slot in it, into a folder you choose.", why)}</header>
   <div class="romtiles">${Array.from({ length: 48 }, (_, i) => {
 		const k = i + 1, s = b ? b.rom[i] : null, code = romCode(k), name = romName(k), empty = !!(s && s.empty), lit = inKit.has(code);
 		const face = s && !empty ? `<canvas class="tw" data-k="${k}" aria-hidden="true"></canvas>` : empty ? `<span class="twno">empty</span>` : "";
@@ -323,8 +358,9 @@ function renderSampler() {
      <button class="${st === "live" ? "cream" : ""}" data-slotmode="live" aria-pressed="${st === "live"}" title="Record again on every loop (unmutes the recorder track)">Live</button>
      <button class="${st === "frozen" ? "cream" : ""}" data-slotmode="frozen" aria-pressed="${st === "frozen"}" title="Mute the recorder track and keep this take">Freeze</button>
      <button class="rec" data-capture="${n}" title="Record one loop, then freeze">Capture next loop</button>
-     <span class="grow"></span><span class="note ramna" title="${NA.ramLoad} ${NA.rom}">RAM holds only what RAM-R records: no file load, no copy to ROM from here</span>${audBtn(at)}</div>
+     <span class="grow"></span><span class="note ramna" title="${NA.ramLoad}">RAM holds only what RAM-R records: no file load</span>${audBtn(at)}</div>
      <div class="wavecv"><canvas class="ed smpwave" data-ed="slot" data-n="${n}" aria-label="Captured audio with start and end markers"></canvas><i class="audph" aria-hidden="true" hidden></i></div></div></section>
+   <section class="card smpman"><header><h3>Keep and export</h3><span>RAM ${n} · the take as it is now</span></header>${smpManagerBar("ram", n - 1, smpLoad && smpLoad.state === "sending")}</section>
    <section class="card ramsteps"><header><h3>Steps</h3><span class="chophead">${ps.length > 1 ? ps.map(i => `<button class="${i === p ? "cream" : ""}" data-choptrk="${i}">Track ${i + 1}</button>`).join("") : ""}</span></header>
     <div class="seq smpseq"><div class="r" style="grid-template-columns:${smpCols()}"><span></span>${steps().map(s => `<div class="rul ${s % 16 === 0 && s !== vis()[0] ? "gap" : ""}">${s % 4 === 0 ? s + 1 : ""}</div>`).join("")}</div>
      <div class="r" id="recon" data-r="${r}" style="grid-template-columns:${smpCols()}">${smpLab(r, "Record on", "rec")}${steps().map(s => `<button class="${stepCls(r, s)}" data-rc="${s}" aria-pressed="${V.tracks[r].trigs[s]}" aria-label="Record on step ${s + 1}"></button>`).join("")}</div>
@@ -342,7 +378,8 @@ function renderSampler() {
 		h = `<section class="card romsel"><header><h3>${code}${s && s.name ? ` <span class="note">${s.name}</span>` : romName(k) ? ` <span class="note" title="Sent this session with Rename; a real machine cannot report names">sent: ${romName(k)}</span>` : ""}</h3><span title="${s ? "" : NA.names}">${s ? smpInfo(s) : smpWhy() || ""}</span></header>
    <div class="romtop">${waveBox(`<canvas class="ed smpwave" data-ed="rom" data-k="${k}" aria-label="${code} waveform"></canvas>`, ["rom", k - 1])}
     <div class="romside"><div class="slotbar"><span class="note">${users.length ? "Used by " + users.map(i => "track " + (i + 1)).join(", ") : "Not used in this kit"}</span></div>
-     <div class="slotbar"><button class="cream" data-romput="${k}">Put on track ${S.sel + 1}</button><button data-smpload="${k}" ${sending ? "disabled" : ""} title="Choose a WAV or AIFF file for ${code}. The plug-in reads it, makes it mono 16-bit (44.1 kHz at most), cuts it to the memory left and sends it as SDS with a 4-letter name from the file name. It replaces what the slot holds.">Load sample…</button><button data-na="send" disabled title="${NA.send}">Send</button><button data-rename="${k}" title="Rename ${code}: the plug-in sends the new name (4 letters, SysEx 0x73) and then the slot's own sample again, unchanged, because the machine renames a sample only when it receives it. Needs the emulated machine: a real one does not send its samples back.">Rename</button></div>
+     <div class="slotbar"><button class="cream" data-romput="${k}">Put on track ${S.sel + 1}</button><button data-smpload="${k}" ${sending ? "disabled" : ""} title="Choose a WAV or AIFF file for ${code}. The plug-in reads it, makes it mono 16-bit (44.1 kHz at most), cuts it to the memory left and sends it as SDS with a 4-letter name from the file name. It replaces what the slot holds.">Load sample…</button><button data-rename="${k}" title="Rename ${code}: the plug-in sends the new name (4 letters, SysEx 0x73) and then the slot's own sample again, unchanged, because the machine renames a sample only when it receives it. Needs the emulated machine: a real one does not send its samples back.">Rename</button></div>
+     ${smpManagerBar("rom", k - 1, sending)}
      ${u != null ? `<div class="romplay"><div class="cap">Playback · track ${u + 1}</div><div class="ctl four">${SMPL.map(q => pc("syn", q, { t: u })).join("")}</div></div>` : `<div class="romplay"><div class="cap">Playback</div><span class="note">No track in this kit plays ${code}. Put it on a track to set its pitch, decay, start and end here.</span></div>`}</div></div>
    ${smpLoadCard(k)}</section>
    ${romTiles(k, sending)}`;
@@ -404,6 +441,15 @@ function clickSamplerSteps(e) {
 	}
 	return false;
 }
+/* RAM to ROM: which ROM slot (the first empty one to begin with); a slot that holds a sample is replaced, and Undo sample brings it back */
+function askRamToRom(ram) {
+	const b = smpBank(), empty = b ? b.rom.findIndex(x => x.empty) : -1, first = (empty >= 0 ? empty : S.smpRomTarget ?? 0) + 1;
+	ask(`Keep <b>RAM ${ram + 1}</b> as a ROM slot. ROM slot (1-48): <input id="ramto" type="number" min="1" max="48" value="${first}" style="font:16px var(--mono);width:5ch;margin-top:8px"><br>`
+		+ `<span class="note">A slot that holds a sample is replaced. Undo sample brings it back. The other RAM slots stay.</span>`,
+		[["Keep", "cream", () => { const k = Math.round(+($("#ramto")?.value || 0)); if (!(k >= 1 && k <= 48)) { toast("A ROM slot is 1 to 48."); return; }
+			S.smpRomTarget = k - 1; cmd("ramToRom", { ram, slot: k - 1 }); }], ["Cancel", "", () => { }]]);
+	setTimeout(() => $("#ramto")?.focus(), 0);
+}
 function clickSlots(e) {
 	const sk = e.target.closest(".slotk"); if (sk) { S.smpSlot = sk.dataset.slot; render(); return true; }
 	const sm = e.target.closest("[data-slotmode]"); if (sm) { const n = +S.smpSlot.slice(3), r = recTrack(n); if (r >= 0) { userMute(r, sm.dataset.slotmode === "frozen"); delete S.capture[n]; render(); } return true; }
@@ -412,6 +458,14 @@ function clickSlots(e) {
 	const sl = e.target.closest("[data-smpload]"); if (sl) { if (!sl.disabled) cmd("chooseSample", { slot: +sl.dataset.smpload - 1 }); return true; }
 	if (e.target.closest("[data-smpstop]")) { cmd("sampleCancel", {}); return true; }
 	const au = e.target.closest("[data-aud]"); if (au) { if (!au.disabled) toggleAud(au); return true; }
+	const cp = e.target.closest("[data-smpcopy]"); if (cp) { if (!cp.disabled) { const [bank, slot] = smpAt(cp.dataset.smpcopy); cmd("sampleCopy", { bank, slot }, undefined, undefined, r => { if (r.ok) toast(`Copied ${smpName(bank, slot)}. Select a ROM slot and click Paste.`); }); } return true; }
+	const ps = e.target.closest("[data-smppaste]"); if (ps) { if (!ps.disabled) cmd("samplePaste", { slot: +ps.dataset.smppaste }); return true; }
+	const un = e.target.closest("[data-smpundo]"); if (un) { if (!un.disabled) cmd("sampleUndo", {}); return true; }
+	const ex = e.target.closest("[data-smpexport]"); if (ex) { if (!ex.disabled) { const [bank, slot] = smpAt(ex.dataset.smpexport); cmd("sampleExport", { bank, slot }); } return true; }
+	const xs = e.target.closest("[data-smpexportsyx]"); if (xs) { if (!xs.disabled) cmd("sampleExport", { bank: "rom", slot: +xs.dataset.smpexportsyx, format: "syx" }); return true; }
+	const xa = e.target.closest("[data-smpexportallsyx]"); if (xa) { if (!xa.disabled) cmd("sampleExport", { bank: "rom", all: true, format: "syx" }); return true; }
+	const ea = e.target.closest("[data-smpexportall]"); if (ea) { if (!ea.disabled) cmd("sampleExport", { bank: ea.dataset.smpexportall, all: true }); return true; }
+	const rr = e.target.closest("[data-ramrom]"); if (rr) { if (!rr.disabled) askRamToRom(+rr.dataset.ramrom); return true; }
 	const rt = e.target.closest("[data-romtile]"); if (rt) { S.smpSlot = "ROM" + rt.dataset.romtile; render(); return true; }
 	const rp = e.target.closest("[data-romput]"); if (rp) { S.keepFx = true; setMachine(romCode(+rp.dataset.romput)); toast("Track " + (S.sel + 1) + " now plays " + romCode(+rp.dataset.romput) + "."); return true; }
 	return false;

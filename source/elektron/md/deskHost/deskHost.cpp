@@ -81,11 +81,18 @@ namespace deskHost
 				"choose a sample (WAV or AIFF) for UW ROM slot slot: the window's native file chooser; the plug-in reads the file, "
 				"converts it and sends it as SDS (sampleLoad messages follow); the file never passes through the page",
 				Action::ChooseSample, Actor::Window),
+			row("sampleExport", {{"bank", ArgType::Text, 0, 0, false, {"rom", "ram"}}, {"slot", ArgType::Integer, 0, 47, true}, {"all", ArgType::Bool, 0, 0, true},
+					{"format", ArgType::Text, 0, 0, true, {"wav", "syx"}}},
+				"export UW samples as WAV files (16-bit mono at the slot's own rate, the samples the machine holds): the slot of bank "
+				"through the window's save dialog, or with all every slot of the bank that holds one into a folder the window asks for; "
+				"format syx (ROM only) writes the SDS dump the machine's own SEND makes, with the slot's position in it; "
+				"a sampleExport message follows",
+				Action::SampleExport, Actor::Window),
 			row("syxImport", {{"kinds", ArgType::Array}, {"skip", ArgType::Array, 0, 0, true}, {"placeAt", ArgType::Object, 0, 0, true},
 					{"checkOnly", ArgType::Bool, 0, 0, true}, {"readBack", ArgType::Bool, 0, 0, true}},
 				"import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\", the slot "
 				"an item lands in), sent to the machine as they are (the firmware decides what it takes), then read back and reported "
-				"(syxProgress); no undo step. placeAt (SPECIFIC, 0.6): per kind the first slot its items land in, in slot order "
+				"(syxProgress); one undo step puts back the kits, patterns and songs it overwrote. placeAt (SPECIFIC, 0.6): per kind the first slot its items land in, in slot order "
 				"({\"kit\": 4}; the dumps go with that position byte and checksum); checkOnly (VERIFY ONLY): nothing is sent, each item's "
 				"slot is read and compared with the file; readBack (I-038, default true): false ends the import after the messages are sent, "
 				"without reading the slots back, and the report says the items were sent, not read back",
@@ -107,7 +114,7 @@ namespace deskHost
 				"Reset machine: empty clears every kit, pattern and song (the library's Clear in each slot, sent as dumps; globals "
 				"and samples stay), factory (the Machinedrum) brings back the factory kits, patterns and songs read from a second "
 				"machine started from the user's own ROM; both read back and reported as an import (syxPreview with reset, then "
-				"syxProgress); no undo step: the page asks first",
+				"syxProgress); one undo step puts them back; the page asks first",
 				Action::MachineReset),
 			row("midi", {bytes}, "a channel message from the page: [status 0x80-0xef, data, data]", Action::Midi),
 			row("openMenu", {}, "the editor's menu: the window answers with an editorMenu message (its entries as data), the page draws it (I-008)",

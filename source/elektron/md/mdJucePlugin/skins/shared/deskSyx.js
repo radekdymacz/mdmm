@@ -3,8 +3,8 @@
    The host opens, parses and writes the files (the page never reads their bytes). A .syx chosen with
    "Import SysEx…" comes back as a preview, here a panel of the modal layer. The preview informs; it is no gate.
    "Import" sends the chosen messages to the machine as they are, like a MIDI cable (the firmware decides what it
-   takes), then the host reads every document back and reports per item what the machine did. No Undo: Export
-   SysEx… first keeps a way back.
+   takes), then the host reads every document back and reports per item what the machine did. One Undo (0.9, B-130)
+   puts back the kits, patterns and songs it overwrote (not the globals): Export SysEx… first keeps a copy in a file.
    The panel (0.3.5): a tab per kind in the file (Kits, Patterns, Songs, Globals, Other), each with its LED (send this
    kind or not) and its counts; the tab shows the kind as the machine's own slot grid (patterns A-H x 16, kits 4 or
    8 x 16, songs 2 x 16, globals 1-8), a slot that holds data on the machine with a lit dot, the one that plays now
@@ -145,7 +145,7 @@ const Syx = (() => {
 		if (t.over) s.push(`${t.over} slot${t.over > 1 ? "s" : ""} on the machine overwritten${t.plays ? `, ${t.plays} playing now` : ""}.`);
 		else s.push(`${t.n} item${t.n > 1 ? "s" : ""}, into empty slots.`);
 		if (t.globals) s.push("Globals change MIDI channels.");
-		s.push("No undo: Export SysEx… first.");
+		s.push("One Undo puts the kits, patterns and songs back; globals stay.");
 		return s.join(" ");
 	}
 	/* a kind's line while importing, from syxProgress.kinds[kind] {done, total} of the phase: its words and its bar (%) */
@@ -182,7 +182,7 @@ const Syx = (() => {
 		const s = kindsIn().map(([k]) => kindSums(k, last.items[k], skip, on[k]));
 		return { n: s.reduce((a, x) => a + x.n, 0), over: s.reduce((a, x) => a + x.over, 0), plays: s.reduce((a, x) => a + x.plays, 0), globals: !!on.global && kindSums("global", last.items.global || [], skip, true).n > 0 };
 	};
-	const HELP = "Everything goes into the same slots as in the file, as from a MIDI cable: the machine decides what it takes. Afterwards the editor reads every item back and says what happened. ▶ plays now: the machine takes the dump over it, and unsaved edits of the kit that plays may be lost. Globals (MIDI channels, sync, machine settings) and other messages are off unless you tick them; the active global becomes active at once. There is no Undo: Export SysEx… first keeps a way back.";
+	const HELP = "Everything goes into the same slots as in the file, as from a MIDI cable: the machine decides what it takes. Afterwards the editor reads every item back and says what happened. ▶ plays now: the machine takes the dump over it, and unsaved edits of the kit that plays may be lost. Globals (MIDI channels, sync, machine settings) and other messages are off unless you tick them; the active global becomes active at once. One Undo puts the kits, patterns and songs back; globals and other messages cannot be undone. Export SysEx… first keeps a copy in a file.";
 
 	function tip(k, i, out) {
 		const t = [slotLabel(k, i.slot) + (i.name && i.name !== slotLabel(k, i.slot) ? " " + i.name : ""), i.from != null ? "from " + slotLabel(k, i.from) + " in the file" : "",
@@ -503,7 +503,7 @@ const Syx = (() => {
 			/* SPECIFIC onto slots that hold data: the question first (ORIGINAL's footer warns as before) */
 			if (place.specific && t.over && hostHas("ask")) {
 				const over = picked().filter(p => p.overwrites);
-				Syx.host.ask(`Import ${t.n}: ${t.over} item${t.over > 1 ? "s land on slots that hold" : " lands on a slot that holds"} data on the machine (${over.slice(0, 6).map(p => slotLabel(p.kind, p.slot)).join(", ")}${t.over > 6 ? ", …" : ""}). What is there is lost: there is no undo. Export SysEx… first keeps a way back.`,
+				Syx.host.ask(`Import ${t.n}: ${t.over} item${t.over > 1 ? "s land on slots that hold" : " lands on a slot that holds"} data on the machine (${over.slice(0, 6).map(p => slotLabel(p.kind, p.slot)).join(", ")}${t.over > 6 ? ", …" : ""}). One Undo puts the kits, patterns and songs back, as they were in the editor when you started. Export SysEx… first keeps a copy in a file.`,
 					[[`Import ${t.n}`, "danger", () => { if (state === "preview" && !pop.hidden && !placing && JSON.stringify(placeAt()) === asked) start(false); }], ["Cancel", "cream", () => { }]]);
 			}
 			else start(false);
@@ -533,7 +533,7 @@ const Syx = (() => {
 			+ (f ? `<b>Factory reset</b> brings back the factory kits, patterns and songs, read from a second ${name} started from your own ROM; globals and samples stay.<br>`
 				: `Factory reset is not offered: the ${name}'s factory data is not in the editor.<br>`)
 			+ (mem ? `<b>Start from factory memory</b> restarts the ${name} as on a new install: its whole memory (kits, patterns, songs, globals${f ? ", samples" : ""}) is the factory's, and the saved machine memory for new sessions is deleted (seconds).<br>` : "")
-			+ `<br>There is no undo. Export SysEx… first keeps a way back.`,
+			+ `<br>One Undo puts the kits, patterns and songs back after an empty or factory reset; starting from factory memory cannot be undone. Export SysEx… first keeps a copy in a file.`,
 			[["Empty reset…", "danger", () => resetAgain("empty")], ...(f ? [["Factory reset…", "", () => resetAgain("factory")]] : []),
 				...(mem ? [["Start from factory memory…", "", memoryAgain]] : []), ["Export SysEx…", "", openExport], ["Cancel", "cream", () => { }]]);
 	}
@@ -549,7 +549,7 @@ const Syx = (() => {
 		const name = esc(Syx.host.machine || "machine");
 		const what = how === "empty" ? `<b>Empty reset:</b> clear every kit, pattern and song on the ${name} now? Each slot is overwritten with an empty one and read back.`
 			: `<b>Factory reset:</b> replace every kit, pattern and song on the ${name} with the factory ones? A second ${name} starts from your ROM first (seconds), then each slot is overwritten and read back (a few minutes).`;
-		Syx.host.ask(`${what}<br><br>What the machine holds now is lost: there is no undo. Export SysEx… first keeps a way back.`,
+		Syx.host.ask(`${what}<br><br>One Undo puts the kits, patterns and songs back (not the globals or the samples). Export SysEx… first keeps a copy in a file.`,
 			[[how === "empty" ? "Clear everything" : "Factory reset", "danger", () => Syx.host.reset(how)], ["Export SysEx…", "", openExport], ["Cancel", "cream", () => { }]]);
 	}
 	/* an import or a reset at work, its panel hidden (Hide): the engine menu's entries show it again rather than start

@@ -193,6 +193,9 @@ namespace mdJucePlugin
 		virtual void loadSampleFile(uint8_t _slot, const juce::File& _file) { (void)_slot; (void)_file; }
 		// 0.9 wave 2: a file for the DigiPRO manager's Load into position _wave (.syx, WAV, AIFF): its preview (waveFile)
 		virtual void openWaveFile(uint8_t _wave, const juce::File& _file) { (void)_wave; (void)_file; }
+		// 0.9: a slot's samples, or a bank's, written as WAV files (sampleExport): _target is the file, or the folder for all of
+		// a bank's; the page hears {"type":"sampleExport"}. A model without a sampler ignores it.
+		virtual void exportSamples(const juce::File& _target, const elektronData::json::Value& _request) { (void)_target; (void)_request; }
 
 	protected:
 		void reply(const Value& _message, bool _ok, const std::string& _note) const;

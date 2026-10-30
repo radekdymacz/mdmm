@@ -81,6 +81,7 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 | Window fits the screen, remembers its size; top bar fits 1280 px | not testable: the window size is the host's | same |
 | MIDI mapping (Control workspace, LEARN) | skipped: hidden by design until the controller feature exists | same |
 | SysEx import | md-lib-syx-import (with GEARMULATOR_MDMM_SYX_FILE: the file the native chooser would give; kits, as from a cable, read back) | mm-lib-syx-import (the same, on SYSEX RECV) |
+| SysEx import is one undo step (B-130, 0.9): Cmd+Z puts the kits back, Cmd+Shift+Z the file's, Cmd+Z again | md-lib-syx-import-undo | mm-lib-syx-import-undo |
 | SysEx import with globals, then M on the rail and PLAY (the mute holds), then the pattern ‹ › stopped and playing (B-026, B-031) | md-lib-syx-import-mute | mm-lib-syx-import-mute PASS (2026-10-10, the Autechre backup: its global has CHANNEL SPAN 0, so the M is refused, the notice's "Give each track its own channel" taken, then M mutes and holds while playing) |
 | A file dropped on the window (macOS, 2026-10-09): a .syx opens its import window | md-drop-syx (with GEARMULATOR_MDMM_SYX_FILE, dropped through the window's drop path; not run yet) | mm-drop-syx (the same; not run yet) |
 
@@ -319,7 +320,7 @@ empty reset; the two-slot imports of `md-lib-syx-place` and `md-syx-running-reac
 
 Logged in doc/release/BUGS.md as B-130 to B-132.
 
-- **B-130** A SysEx import and the empty reset cannot be undone, and an import of a whole file overwrites more than a clipboard and the undo history can hold: the journeys that run them
+- **B-130 (0.9: undoable, doc/release/0.9/import-undo.md; the journeys stay `alone: true` until Radek decides they may share an editor, a global is not undone)** A SysEx import and the empty reset cannot be undone, and an import of a whole file overwrites more than a clipboard and the undo history can hold: the journeys that run them
   (`md-engine-reset-empty`, `mm-engine-reset-empty`, and on the firmware the import journeys `*-lib-syx-import`, `*-lib-syx-import-mute`, `*-shots-import`) are `alone: true`.
 - **B-131** On the firmware, started alone from factory memory, `md-sound-machine-reference` has the page refuse the second machine it picks on track 1: `tracks[0] lfo.track = 16 is outside 0..15` (the kit as the machine
   reads it back against the contract). In the whole run in order and in the page tier it passes, so it needs the contract or the page's validation to accept what the firmware sends. The journey
@@ -373,6 +374,7 @@ Written 2026-10-12 from doc/features/unproved-md.md: each journey names the rows
 | md-sound-cc-channels | MD-277 |
 | md-lib-syx-original | MD-182 |
 | md-sampler-rename | MD-197 |
+| md-sampler-manager | MD-196, MD-198 |
 | md-lib-kit-name-save | MD-280, MD-283 |
 | md-song-commands | MD-143, MD-152, MD-153, MD-155, MD-156, MD-161, MD-295 |
 | md-top-play-mode | MD-295 |

@@ -50,7 +50,7 @@
 </header>
 <main id="main" class="gd-main gd-book">
 <div class="gd-page">
-<section class="gd-cover"><p class="gd-cnum">MD</p><h1>Machinedrum Editor</h1><p class="gd-cover-sub">User guide · version 0.8.0</p><p class="gd-cover-note">Future Native Audio · mdmm.dev<br>The chapters follow the Machinedrum manual's order. Every sentence is our own.</p></section>
+<section class="gd-cover"><p class="gd-cnum">MD</p><h1>Machinedrum Editor</h1><p class="gd-cover-sub">User guide · version 0.8.1</p><p class="gd-cover-note">Future Native Audio · mdmm.dev<br>The chapters follow the Machinedrum manual's order. Every sentence is our own.</p></section>
 <section class="gd-contents" style="page: contents"><div class="gd-runhead"><span>Contents</span><span>Machinedrum Editor</span></div><h2>Contents</h2><ol class="gd-toc gd-toc-print">
 <li><a href="#c1"><span class="gd-tnum">1</span><span class="gd-ttitle">Introduction, front panel and connectors</span><span class="gd-tsum">The editor's page in place of the front panel: workspaces, the LCD, the transport, the track rail and the connections to your audio and MIDI.</span></a></li>
 <li><a href="#c2"><span class="gd-tnum">2</span><span class="gd-ttitle">LCD user interface and quick start</span><span class="gd-tsum">What each field of the LCD shows, how windows open and close, and a first session: load a kit, place trigs, play and tweak.</span></a></li>
@@ -627,7 +627,6 @@
 <p>The button under <b class="gd-ui">Slot</b> reads <b class="gd-ui">Go</b> while the machine is stopped and <b class="gd-ui">Queue</b> while it plays.</p>
 <p>If the kit has unsaved edits and the new pattern links another kit, the editor asks before it changes.</p>
 <p>On the machine you hold a bank key for two seconds so that you can choose the pattern with a second key. The editor has no such wait: you click the bank and the slot.</p>
-<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>In this version, a pattern chosen while a SysEx import runs can ask about unsaved kit edits that you never made. The question goes away when the import ends. This is a known fault.</p></aside>
 </div></section>
 <section class="gd-sec" id="pattern-chaining">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.37</span></span></aside>
@@ -1116,7 +1115,7 @@
 <p>At the end the panel gives a report, slot by slot:</p>
 <table class="gd-table"><thead><tr><th>Mark</th><th>Meaning</th></tr></thead><tbody><tr><td>✓</td><td>taken as in the file</td></tr><tr><td>≈</td><td>converted</td></tr><tr><td>✕</td><td>ignored</td></tr><tr><td>≠</td><td>different from the file</td></tr><tr><td>→</td><td>sent, not read back</td></tr><tr><td>~</td><td>not comparable</td></tr><tr><td>?</td><td>no answer, or not known</td></tr></tbody></table>
 <p>Click <b class="gd-ui">Show problems only</b> to list only the slots that did not go as in the file. Click <b class="gd-ui">Done</b> to close the panel.</p>
-<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The import has no undo. A kit that plays, and has unsaved edits, can lose them when a dump takes its place.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p><b class="gd-ui">Undo</b> takes an import back in one step. It writes back the kits, patterns and songs the import overwrote, and the kit that plays with the edits it had. A global is not put back. <b class="gd-ui">Redo</b> brings the import again. Before it sends, the editor reads the slots it has not read yet. If a slot does not answer, the report ends with how many slots cannot be undone. <b class="gd-ui">Export SysEx…</b> first keeps a copy in a file.</p></aside>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p><b class="gd-ui">Globals</b> and <b class="gd-ui">Other</b> are off until you tick them. A global changes the MIDI channels the machine listens on, and so which tracks the editor can mute, play and edit live. The active global becomes active at once.</p></aside>
 </div></section>
 <section class="gd-sec" id="original-place-sysex-receive">
@@ -1173,8 +1172,10 @@
 <h4 class="gd-h3">The slots</h4>
 <p>The ROM slots are in the rail as a grid of 48 keys. A key that is lit holds a sample the kit uses. A faint key is an empty slot. Point at a key to see its number, its name, its size and the tracks that play it.</p>
 <p>With a ROM slot selected, the page shows under it every ROM slot as a tile: its waveform, its number and name, and a key to hear it. An empty slot offers <b class="gd-ui">Load…</b>. Click a tile to select the slot.</p>
-<p>Point at the <b class="gd-light">&lt;MEM&gt;</b> field to see the figures behind it.</p>
-<p>The <b class="gd-light">&lt;MEM&gt;</b> percentage is worked out from the samples the editor reads. It is not the machine's own figure of memory left.</p>
+<p>Point at a key or a tile to see the size of the sample: its length in seconds, in kilobytes and in samples, and its rate. A kilobyte count is the sample as the machine stores it, 16-bit and mono.</p>
+<h4 class="gd-h3">Memory left</h4>
+<p>The header of the <b class="gd-ui">ROM slots</b> card gives the sample memory in seconds: how much the samples hold, how much is free, and the free share in per cent. The ROM slots and the four RAM buffers share the memory, so the figure counts both. Point at the <b class="gd-light">&lt;MEM&gt;</b> field for the same figures in samples.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The editor works the figure out from the samples it reads. The Machinedrum does not report its own figure over MIDI, so the share can differ by a few per cent from the one on the machine's SAMPLE MGR screen.</p></aside>
 <h4 class="gd-h3">Hear a sample</h4>
 <p>Click the play key on a tile, or the play key by the waveform of the selected slot. !<a href="shot:e2e-md-sampler-audition">A tile with its play key</a></p>
 <p>The sample plays once, from the start, on the output of the plug-in. Click the key again to stop it. A line moves over the waveform as it plays.</p>
@@ -1188,7 +1189,12 @@
 <h4 class="gd-h3">Limits</h4>
 <p>The editor makes every sample it loads mono and 16-bit, at 44.1 kHz at most, and cuts it to the memory left.</p>
 <p>The editor takes WAV and AIFF files. It does not receive a sample sent over MIDI by another program.</p>
-<p>You cannot copy, clear, paste or undo a sample slot in the editor yet.</p>
+<h4 class="gd-h3">Copy, paste and undo</h4>
+<ol class="gd-steps"><li>Select a slot that holds a sample, ROM or RAM.</li><li>Click <b class="gd-ui">Copy</b>. A line beside the keys names what is copied.</li><li>Select the ROM slot that is to take it.</li><li>Click <b class="gd-ui">Paste</b>. A bar shows the sending, as when you load a file.</li></ol>
+<p>The copy is a snapshot taken when you click <b class="gd-ui">Copy</b>. A RAM take that is recorded over afterwards is still pasted as it was. The paste replaces what the slot holds. The slot takes the name of the copy.</p>
+<p><b class="gd-ui">Undo sample</b> sends back the sample that the last paste, RAM to ROM copy, rename or file load replaced. It goes back 16 steps, one at a time. The editor has no redo for samples. A step that filled an empty slot cannot be undone, because the editor cannot erase a slot.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The loop points of a sample are not sent with a paste or an undo. A sample that does not fit in the memory left is not sent, and a message says by how much.</p></aside>
+<p>You cannot clear a sample slot in the editor yet.</p>
 </div></section>
 <section class="gd-sec" id="the-difference-between-rom-and-ram-machines">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.71</span></span></aside>
@@ -1204,7 +1210,9 @@
 <section class="gd-sec" id="ram-to-rom-copy">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.71</span></span></aside>
 <div class="gd-body gd-prose"><h2>RAM TO ROM COPY</h2>
-<p>You cannot copy a RAM slot to a ROM slot in the editor yet. Do it on the machine.</p>
+<p>To keep a RAM take when the power is off, copy it to a ROM slot:</p>
+<ol class="gd-steps"><li>Select the RAM slot that holds the take.</li><li>Click <b class="gd-ui">Keep as ROM…</b>.</li><li>Type the ROM slot, 1 to 48. The first empty slot is offered.</li><li>Click <b class="gd-ui">Keep</b>. A bar shows the sending.</li></ol>
+<p>The take is sent as it is now. The ROM slot takes the name RAM1 to RAM4 and replaces what it held; <b class="gd-ui">Undo sample</b> brings that back. The other RAM slots stay as they are. On the machine the copy empties them after a prompt, and the editor does not.</p>
 </div></section>
 <section class="gd-sec" id="general-sample-receive">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.72</span></span></aside>
@@ -1229,12 +1237,17 @@
 <section class="gd-sec" id="send-samples">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.74</span></span></aside>
 <div class="gd-body gd-prose"><h2>SEND SAMPLES</h2>
-<p>You cannot send a sample from the machine to a computer. The <b class="gd-ui">Send</b> key is greyed out, with the reason: the Machinedrum ignores requests for its samples.</p>
+<p>The Machinedrum ignores requests for its samples over MIDI, so the editor does not ask it to send. It reads the samples from the emulated machine and writes them as files instead.</p>
+<ol class="gd-steps"><li>Select the slot, ROM or RAM.</li><li>Click <b class="gd-ui">Export WAV</b>.</li><li>Choose where to save the file.</li></ol>
+<p>To save every ROM slot that holds a sample, click <b class="gd-ui">Export all…</b> in the header of the <b class="gd-ui">ROM slots</b> card and choose a folder. A file is written for each slot, named by its slot and its name, such as &quot;ROM-04 SNR&quot;. On a RAM slot, <b class="gd-ui">Export all RAM…</b> does the same for the four RAM slots.</p>
+<p>The files are 16-bit mono WAV at the slot's own rate. They hold exactly the samples the machine holds, with no loop points.</p>
+<p>To get the file the machine's own SEND makes, click <b class="gd-ui">Export SysEx</b> on a ROM slot, or <b class="gd-ui">Export all SysEx…</b> in the header of the <b class="gd-ui">ROM slots</b> card. The file is a MIDI Sample Dump with the slot's position in it. When you send it back with the ORG method, the sample lands in the slot it came from. A RAM slot has no SysEx file: keep it as a ROM slot first, or export it as WAV.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Export works with the emulated machine only. A real Machinedrum does not send its samples back, so the keys are greyed out, with the reason.</p></aside>
 </div></section>
 <section class="gd-sec" id="erase-samples">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.75</span></span></aside>
 <div class="gd-body gd-prose"><h2>ERASE SAMPLES</h2>
-<p>You cannot erase one sample or all samples in the editor yet. Load a new sample into the slot to replace it.</p>
+<p>You cannot erase one sample or all samples in the editor yet. Erase them in SAMPLE MGR on the machine, or load a new sample into the slot to replace it.</p>
 </div></section>
 </article>
 <article class="gd-chapter" id="c12" style="page: c12">
@@ -1255,7 +1268,7 @@
 <ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu (the engine name at the left of the LCD). A question says what each reset clears. <b class="gd-ui">Cancel</b> is the default: <kbd class="gd-key">[ESC]</kbd> answers it. A click beside the question does nothing.</li><li>Click <b class="gd-ui">Empty reset…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Clear everything</b>. The <b class="gd-ui">Empty reset</b> panel opens. The editor writes an empty kit, pattern and song into every slot, then reads each one back.</li><li>Read the report and click <b class="gd-ui">Done</b>.</li></ol>
 <figure class="gd-shot"><img src="/guide/shots/e2e-md-engine-reset-empty.webp" width="1440" height="924" alt="After the Empty reset: an empty kit and an empty pattern"><figcaption>After the Empty reset: an empty kit and an empty pattern</figcaption></figure>
 <p>The globals and the samples stay. A global is reset in its own slot in GLOBAL (chapter 10).</p>
-<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The reset has no undo. Click <b class="gd-ui">Export SysEx…</b> in the question first to keep a way back.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p><b class="gd-ui">Undo</b> takes the Empty reset back in one step. Every kit, pattern and song is written back, and the kit that plays has its edits again. The globals and the samples were not touched. <b class="gd-ui">Redo</b> clears them again. <b class="gd-ui">Export SysEx…</b> in the question keeps a copy in a file.</p></aside>
 </div></section>
 <section class="gd-sec" id="factory-reset">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.79</span></span></aside>
@@ -1263,7 +1276,7 @@
 <p>The factory reset brings back the kits, patterns and songs the machine had when it left the factory. The editor takes them from your own ROM: it starts a second machine with it, in the background, and reads that machine's memory.</p>
 <ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu.</li><li>Click <b class="gd-ui">Factory reset…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Factory reset</b>. Preparing the factory data takes a few seconds. Then the <b class="gd-ui">Factory reset</b> panel sends every kit, pattern and song and reads each one back. This takes a few minutes.</li><li>Read the report and click <b class="gd-ui">Done</b>. Kits 1 to 4 are named TRX UW, EFM UW, E12 UW and P-I UW.</li></ol>
 <figure class="gd-shot"><img src="/guide/shots/e2e-md-engine-reset-factory.webp" width="1440" height="924" alt="After the Factory reset: the factory kit and song are back"><figcaption>After the Factory reset: the factory kit and song are back</figcaption></figure>
-<p>The globals and the samples stay. The reset has no undo: export first.</p>
+<p>The globals and the samples stay. <b class="gd-ui">Undo</b> takes the reset back in one step, as it does for the Empty reset. <b class="gd-ui">Export SysEx…</b> in the question keeps a copy in a file.</p>
 <aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>To bring back the whole factory memory at once, globals and samples too, click <b class="gd-ui">Start from factory memory…</b> in the same question. The machine restarts in a few seconds. See &quot;MACHINE MEMORY&quot; in chapter 17.</p></aside>
 </div></section>
 <section class="gd-sec" id="soft-reset">
@@ -1555,7 +1568,7 @@
 <p>The machine cannot take an edit back. In the editor every edit can be taken back and done again, across kits, patterns and songs.</p>
 <figure class="gd-shot"><img src="/guide/shots/e2e-md-top-undo-redo.webp" width="1440" height="924" alt="The UNDO and REDO keys in the top bar"><figcaption>The UNDO and REDO keys in the top bar</figcaption></figure>
 <ol class="gd-steps"><li>Click an empty step on the <b class="gd-ui">Pattern</b> workspace. It becomes a trig.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>. The trig goes.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[Z]</kbd>. The trig is back.</li><li>Click <b class="gd-ui">UNDO</b> in the top bar to take it back again, and <b class="gd-ui">REDO</b> to put it back.</li></ol>
-<p>A drag, a paint or a run of rotates is one step. Each typed value is one step.</p>
+<p>A drag, a paint or a run of rotates is one step. Each typed value is one step. A SysEx import and the Empty reset are one step each: <b class="gd-ui">Undo</b> writes back the kits, patterns and songs they overwrote. A global is not put back (chapters 10 and 12).</p>
 </div></section>
 <section class="gd-sec" id="typed-values">
 <aside class="gd-margin"></aside>

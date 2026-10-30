@@ -93,8 +93,6 @@ If the kit has unsaved edits and the new pattern links another kit, the editor a
 
 On the machine you hold a bank key for two seconds so that you can choose the pattern with a second key. The editor has no such wait: you click the bank and the slot.
 
-{bug:B-045}NOTE: In this version, a pattern chosen while a SysEx import runs can ask about unsaved kit edits that you never made. The question goes away when the import ends. This is a known fault.{/bug}
-
 ## PATTERN CHAINING
 <!-- rows: MD-098 MD-099 @b9abfb -->
 

@@ -1634,7 +1634,7 @@ const MdJourneys = (() => {
 	};
 	/* B-019: a .syx imported as from a cable. The file is the run's (GEARMULATOR_MDMM_SYX_FILE, diagnostics builds: the
 	   plug-in opens it where the chooser would be). Kits only; afterwards every kit the report does not list (taken as
-	   in the file) has the file's name on the machine. It writes the machine's kits and an import has no Undo: last. */
+	   in the file) has the file's name on the machine. It writes the machine's kits. */
 	const syxKitIds = () => $all('#syxpop button[data-syxitem^="kit:"]');
 	/* the report: the slots of a kind the machine did not take as in the file (every reported item carries its outcome) */
 	const syxNotTaken = kind => new Set($all(`#syxpop [data-syxitem^="${kind}:"][data-syxout]`).filter(d => d.dataset.syxout !== "taken").map(d => +d.dataset.syxitem.split(":")[1]));
@@ -1654,6 +1654,34 @@ const MdJourneys = (() => {
 				return ok(!off.length, off.length + " kits not as in the file: " + off.slice(0, 4).map(([k, n]) => `K${k + 1} "${kitName(k)}" not "${n}"`).join(", "));
 			}, within: 180000 },
 			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") },
+			esc
+		]
+	};
+	/* B-130: an import is one undo step. Kits only: Cmd+Z puts every kit it overwrote back, Cmd+Shift+Z brings the file's
+	   back, Cmd+Z leaves the machine as it was. The kits are copied before it starts, so a journey needs no keepMany. */
+	const syxImportUndoJ = {
+		name: "md-lib-syx-import-undo", alone: true, proves: ["MD-181", "MD-X07"],
+		needs: syxImportJ.needs,
+		steps: [
+			{ say: "choose IMPORT SYSEX… in the engine menu: the file's preview", act: u => u.pick("engsel", "import"), screen: () => ok(!$1("#syxpop").hidden && syxKitIds().length > 0, "no preview with kits"), within: 8000 },
+			{ say: "leave Kits ticked only, click Import: the machine holds the file's kits", act: (u, c) => {
+				for (const b of $all("#syxpop [data-syxkind]")) if (b.checked !== (b.dataset.syxkind === "kit")) u.click(b);
+				c.names = syxKitIds().map(b => [+b.dataset.syxitem.split(":")[1], (b.dataset.syxname || "").trim()]);
+				c.was = c.names.map(([k]) => [k, kitName(k)]);
+				u.click('#syxpop [data-syxgo="start"]');
+			}, screen: () => ok(/imported/.test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxbar span")?.textContent || "")),
+			machine: c => {
+				const notTaken = syxNotTaken("kit");
+				c.taken = c.names.filter(([k, n]) => !notTaken.has(k) && n && (kitName(k) || "").trim() === n);
+				if (/cannot be undone/.test($1("#syxpop .syxsum")?.textContent || "")) return ok(false, "the report: " + $1("#syxpop .syxsum").textContent);
+				return ok(c.taken.length > 0 && c.was.some(([k, n]) => kitName(k) !== n), c.taken.length + " kits as in the file");
+			}, within: 180000 },
+			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") },
+			{ ...undoKey, say: "press Cmd+Z: the import is one undo step, every kit it overwrote is back",
+				machine: c => { const off = c.was.filter(([k, n]) => kitName(k) !== n); return ok(!off.length, off.length + " kits not back: " + off.slice(0, 3).map(([k, n]) => `K${k + 1} "${kitName(k)}" want "${n}"`).join(", ")); }, within: 60000 },
+			{ say: "press Cmd+Shift+Z: the file's kits are back", act: u => u.key("z", { cmd: true, shift: true }),
+				machine: c => ok(c.taken.every(([k, n]) => (kitName(k) || "").trim() === n), "kits not as in the file"), within: 60000 },
+			{ ...undoKey, say: "press Cmd+Z once more: the machine is as it was", machine: c => ok(c.was.every(([k, n]) => kitName(k) === n), "kits not back"), within: 60000 },
 			esc
 		]
 	};
@@ -1773,15 +1801,20 @@ const MdJourneys = (() => {
 			{ say: "choose RESET MACHINE… in the engine menu: what each reset destroys; Cancel is the default", act: u => u.pick("engsel", "reset"),
 				screen: () => ok(dlgShown() && !!dlgButton("Empty reset…") && !!dlgButton("Factory reset…") && !!dlgButton("Export SysEx…") && $1("#dlg .btnrow button:last-child")?.textContent === "Cancel", "the question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
 			{ say: "click Empty reset…: it asks a second time", act: u => u.click(dlgButton("Empty reset…")),
-				screen: () => ok(dlgShown() && !!dlgButton("Clear everything") && /no undo/.test($1("#dlg").textContent), "second question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
-			{ say: "click Clear everything: the reset runs in the SysEx panel and reports", act: (u, c) => { c.g0 = JSON.stringify(Docs.global); u.click(dlgButton("Clear everything")); },
+				screen: () => ok(dlgShown() && !!dlgButton("Clear everything") && /One Undo puts the kits, patterns and songs back/.test($1("#dlg").textContent), "second question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
+			{ say: "click Clear everything: the reset runs in the SysEx panel and reports", act: (u, c) => { c.g0 = JSON.stringify(Docs.global); c.named = [...Array(64).keys()].filter(k => kitName(k)).map(k => [k, kitName(k)]); u.click(dlgButton("Clear everything")); },
 				screen: () => ok(/Empty reset/.test($1("#syxpop .cap")?.textContent || "") && /cleared/.test($1("#syxpop .syxsum")?.textContent || ""), "panel: " + ($1("#syxpop .cap")?.textContent || "") + " " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
 				machine: c => { const named = [...Array(64).keys()].filter(k => kitName(k)), trigs = [...Array(128).keys()].filter(p => (Docs.patterns[p]?.tracks || []).some(t => t.trigs.length)), songs = [...Array(32).keys()].filter(s => (Docs.songs[s]?.rows || []).length > 1);
 					/* the machine's own empty pattern (16 steps, 1x, kit 1, no swing), and the global as it was */
 					const odd = [...Array(128).keys()].filter(p => { const d = Docs.patterns[p]; return !d || d.length !== 16 || ![0, "1X"].includes(d.tempoMultiplier) || d.kit !== 0 || d.swingAmount !== 0; });
 					return ok(!named.length && !trigs.length && !songs.length && !odd.length && JSON.stringify(Docs.global) === c.g0,
 						`${named.length} kits named, ${trigs.length} patterns with trigs, ${songs.length} songs with rows, ${odd.length} patterns not as the machine's empty one (${odd.slice(0, 3).map(p => JSON.stringify([Docs.patterns[p]?.length, Docs.patterns[p]?.tempoMultiplier, Docs.patterns[p]?.kit, Docs.patterns[p]?.swingAmount])).join(" ")}), global ${JSON.stringify(Docs.global) === c.g0 ? "kept" : "changed"}`); }, within: 240000 },
-			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
+			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") },
+			/* B-130: the reset is one undo step: Cmd+Z puts every kit back, Cmd+Shift+Z clears them again */
+			{ ...undoKey, say: "press Cmd+Z: the reset is one undo step, the kits are back",
+				machine: c => { const off = c.named.filter(([k, n]) => kitName(k) !== n); return ok(!off.length, off.length + " of " + c.named.length + " kits not back: " + off.slice(0, 3).map(([k, n]) => `K${k + 1} "${kitName(k)}" want "${n}"`).join(", ")); }, within: 400000 },
+			{ say: "press Cmd+Shift+Z: cleared again", act: u => u.key("z", { cmd: true, shift: true }), machine: c => ok(!c.named.some(([k]) => kitName(k)), "kits still named"), within: 400000 },
+			{ ...undoKey, say: "press Cmd+Z once more: the machine is as it was", machine: c => ok(c.named.every(([k, n]) => kitName(k) === n), "kits not back"), within: 400000 }
 		],
 		async tidy() { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; }
 	};
@@ -2896,6 +2929,32 @@ const MdJourneys = (() => {
 					`results ${results.map(r => r.op + ":" + r.ok).join(",")}; the machine's ROM-${c.slot}: "${Docs.samples?.rom?.[c.slot - 1]?.name ?? "?"}"`), within: 60000 }
 		]
 	};
+	/* MD-196, MD-198 (0.9, doc/release/0.9/md-sample-manager.md): the memory line, Copy a ROM slot and Paste it into another
+	   (SDS to the machine; the bank read back holds the copy's length), then Undo sample (the slot holds what it held). RAM to ROM
+	   (MD-199) is proved in mdDeskTest (the SDS on the wire) and mdDeskPageTest (the keys): a journey needs a RAM take. alone, as md-sampler-rename: B-133. */
+	const sampleManager = {
+		name: "md-sampler-manager", alone: true, proves: ["MD-196", "MD-198"],
+		steps: [
+			go("sampler"),
+			{ say: "the ROM slots' header gives the memory used and free", act: (u, c) => {
+				const rom = Docs.samples.rom, used = rom.map((x, i) => x.empty ? -1 : i).filter(i => i >= 0);
+				[c.a, c.b] = used; c.lenA = rom[c.a].length; c.lenB = rom[c.b].length; },
+				screen: () => ok(/s used · [\d.]+ s free \(\d+ %\)/.test($1(".smpmem")?.textContent || ""), "header " + ($1(".smpmem")?.textContent || "none")) },
+			{ say: "select the first slot that holds a sample and click Copy: the clipboard chip names it", act: async (u, c) => {
+				u.click(`.slotk.rom[data-slot="ROM${c.a + 1}"]`); await sleep(300); u.click(`[data-smpcopy="rom:${c.a}"]`); },
+				screen: c => ok(/Copied: ROM-\d\d/.test($1(".smpclip")?.textContent || ""), "chip " + ($1(".smpclip")?.textContent || "none")),
+				machine: c => ok(smpHist.clip?.slot === c.a && smpHist.clip.length === c.lenA, "clipboard " + JSON.stringify(smpHist.clip)), within: 8000 },
+			{ say: "select the second slot that holds a sample and click Paste: the machine takes the copy and holds its length", act: async (u, c) => {
+				u.click(`.slotk.rom[data-slot="ROM${c.b + 1}"]`); await sleep(300); u.click(`[data-smppaste="${c.b}"]`); },
+				machine: c => ok(smpLoad?.state === "done" && smpLoad.slot === c.b && Docs.samples.rom[c.b].length === c.lenA,
+					`sampleLoad ${smpLoad?.state}, the slot holds ${Docs.samples.rom[c.b].length} samples, the copy has ${c.lenA}`), within: 120000 },
+			{ say: "click Undo sample: the slot holds the sample it held before", act: u => u.click("[data-smpundo]"),
+				machine: c => ok(smpLoad?.state === "done" && smpLoad.file === "Undo" && Docs.samples.rom[c.b].length === c.lenB,
+					`sampleLoad ${smpLoad?.state} ${smpLoad?.file}, the slot holds ${Docs.samples.rom[c.b].length} samples, it held ${c.lenB}`), within: 120000 },
+			{ say: "Undo sample is off again: there is nothing more to undo", act: async () => { await sleep(300); },
+				screen: () => ok($1("[data-smpundo]")?.disabled === true, "Undo sample " + ($1("[data-smpundo]")?.disabled ? "off" : "on")) }
+		]
+	};
 	/* MD-280, MD-283: rename the current kit (SysEx 0x55), save it (0x59), and put it back */
 	const kitNameSave = {
 		name: "md-lib-kit-name-save", proves: ["MD-280", "MD-283"],
@@ -3248,7 +3307,7 @@ const MdJourneys = (() => {
 		tidy: songPlayheadTidy
 	};
 	const wave12 = [clipsJ, undoKitJ, stopQueuedJ, lenRepeatJ, songRepeatsJ];
-	const slice5 = [mixHeads, modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, revertTrackJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ, pageLeds, railLamps, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
+	const slice5 = [mixHeads, modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, revertTrackJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, sampleManager, kitNameSave, songCommands, playModeJ, pageLeds, railLamps, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
 	/* ---------- the end-to-end pass: factory content as a person uses it (scripts/mdmm-e2e.sh, doc/release/E2E.md) ---------- */
 	/* What the machine plays, as the page can see it: the transport and the step from the telemetry, the song row, the output's
 	   peaks (the plug-in's outputLevel, every 250 ms, since the last one). Not silent where sound is the point. */
@@ -3599,7 +3658,7 @@ const MdJourneys = (() => {
 		songArrange, songChain, modeCycle, songPlayhead, songSlots, songKeys, shotsSongSlots, samplerSlots, samplerSetup, audition,
 		libDialog, kitCopy, kitRename, kitClear, patGo, patClear, dialogEsc,
 		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, controlLearn, controlLearnOverrides, controlLearnPaused, controlLearnLeft, controlLearnLfo, controlLearnLimit, controlLearnKnob, controlLearnEsc, controlLearnGlobals, fitMapping, noteLights, followPlayed, audioPanel, romCard, notePlay,
-		lockRamp, pasteMany, mutScope, songInspector, songRowMarks, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
+		lockRamp, pasteMany, mutScope, songInspector, songRowMarks, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ, syxImportUndoJ,
 		syxImportMute, globalReset, shotsGlobal, shotsSound, shotsReview, shots, shotsSong, shotsImport, editorMenuJ, memoryJ, shotsMenu, ...cpuJs, ...volJs,
 		dropSyxJ, dropSampleJ, dropSamplesJ, ...viewJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, modalLock, songFactoryPlay, lockKeysFit, resetFactory, resetEmpty, syxRunningReach];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;

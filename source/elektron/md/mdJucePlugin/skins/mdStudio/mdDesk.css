@@ -1727,7 +1727,7 @@ body.erasing .pc.erasing,body.erasing .fader.erasing{box-shadow:inset 0 0 0 2px 
 /* The Sampler's RAM view fills the workspace: the take grows with the window, the steps, the source and
    the playback keep their size. The slot's bar (state, Live / Freeze / Capture, why there is no file load,
    the audition key) sits on the take, so the key never covers a STRT or END handle. */
-#main>.smpmain.ram{flex:1 1 auto;grid-template-rows:1fr auto auto}
+#main>.smpmain.ram{flex:1 1 auto;grid-template-rows:1fr auto auto auto}
 .smpmain.ram>.ramtop{grid-template-rows:auto minmax(170px,1fr);align-content:stretch}
 .ramwave{display:grid;grid-template-rows:auto minmax(140px,1fr);gap:8px;min-height:0}
 .ramwave .slotbar{flex-wrap:nowrap;min-width:0}
@@ -2385,3 +2385,7 @@ body.learn [data-lgf]{outline:1px dashed var(--print2);outline-offset:2px;cursor
 body.learn [data-lgf].mapped{outline:2px solid var(--led)}
 body.learn [data-lgf].learnt{outline:2px solid var(--cream);box-shadow:0 0 0 4px var(--led)}
 .lgw{display:block;min-width:0}
+
+/* 0.9, the sample manager: the keys of a slot (Copy, Paste, Keep as ROM, Export, Undo) and the clipboard chip on one line that wraps */
+.smpbar .smpclip{margin-left:auto;font:11px var(--mono);color:var(--print3)}
+.smpman .smpbar{padding:0 12px 10px}

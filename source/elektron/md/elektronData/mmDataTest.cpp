@@ -198,6 +198,35 @@ namespace
 		const auto songBack = ed::mmSongFromJson(sdoc, errors);
 		check(songBack && *songBack == s, "song -> JSON -> song");
 
+		// B-038: the loop's target is row byte 3 (the Machinedrum row's order: pattern, reserved, repeats, target)
+		{
+			ed::MmSong l;
+			l.rows[0].bytes[0] = 1;
+			l.rows[1].bytes[0] = 2;
+			l.rows[2].bytes[0] = 3;
+			l.rows[3].bytes[0] = ed::MmSong::g_loop;
+			l.rows[3].bytes[ed::mmSongRow::g_target] = 1;
+			l.rows[3].bytes[ed::mmSongRow::g_repeats] = 3;
+			l.rows[4].bytes[0] = ed::MmSong::g_end;
+			// a valid song: pattern rows need a length and a tempo (keep), as the panel writes them
+			for(size_t i = 0; i < 3; ++i)
+			{
+				l.rows[i].bytes[ed::mmSongRow::g_length] = 16;
+				l.rows[i].bytes[ed::mmSongRow::g_tempo] = l.rows[i].bytes[ed::mmSongRow::g_tempo + 1] = 0xff;
+			}
+			const auto raw = ed::mmSongRaw(l);
+			const size_t at = 16 + 3 * 24;
+			check(raw[at + 3] == 1 && raw[at + 1] == 0 && raw[at + 2] == 3, "a LOOP row: target at row byte 3, count at 2, byte 1 untouched");
+			const auto wire = ed::decodeMmSong(ed::encodeMmSong(l));
+			check(wire && wire->rows[3].bytes[ed::mmSongRow::g_target] == 1, "the loop's target goes through SysEx");
+			errors.clear();
+			const auto loopDoc = ed::mmSongToJson(l);
+			const auto& lr = loopDoc.find("rows")->asArray();
+			check(lr[3].find("kind")->asString() == "loop" && lr[3].find("target")->asNumber() == 1, "and shows as a loop to row 1 in JSON");
+			const auto loopBack = ed::mmSongFromJson(loopDoc, errors);
+			check(loopBack && *loopBack == l, "a loop row: JSON -> song keeps the target at byte 3");
+		}
+
 		ed::MmGlobal g;
 		errors.clear();
 		const auto gBack = ed::mmGlobalFromJson(ed::mmGlobalToJson(g), errors);

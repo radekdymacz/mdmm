@@ -812,10 +812,12 @@ namespace mdDesk
 			o = ask("breakChain", "Picking <b>" + ed::mdPatternName(slot) + "</b> ends the chain <b>" + list + "</b>, as on the machine.",
 				"Pick it, end the chain", std::move(d));
 		}
-		// EXTENDED mode loads the kit a pattern links: another kit loses the edits.
+		// EXTENDED mode loads the kit a pattern links: another kit loses the edits. B-045: not while an import runs or its
+		// slots are read again: a dump over the kit that plays reloads it before the slot the editor holds is current, and
+		// the two differ without an edit.
 		const auto& st = m_session.state();
 		const auto link = st.patternKits.find(slot);
-		if(kitState(_view) == deskCore::KitState::Edited && st.extendedMode == true && st.kit && link != st.patternKits.end()
+		if(!importSettling() && kitState(_view) == deskCore::KitState::Edited && st.extendedMode == true && st.kit && link != st.patternKits.end()
 			&& link->second != *st.kit)
 		{
 			const auto kit = *st.kit;

@@ -13,9 +13,10 @@ namespace elektronData
 	// Found in the song editor with SAVE SONG and a dump diff (MM-P1-RESULT §4).
 	//   header 0x00  14  name (factory empty songs start with 0xff), 0x0e 2 unknown (kept)
 	//   row +0   pattern 0-127, 0xfe LOOP/JUMP/HALT, 0xff END
-	//       +1   loop/jump target row
+	//       +1   unknown (kept; 0 in everything seen)
 	//       +2   repeats: plays repeats + 1 times; loop count (0 = infinite)
-	//       +3   unknown (kept)
+	//       +3   loop/jump target row, 0-based (B-038: the first four bytes are the Machinedrum row's: pattern,
+	//            reserved, repeats, target; the target was taken to be at +1 until the firmware ignored it)
 	//       +4   synth track mutes, bit t
 	//       +5   MIDI track mutes, bit t (inferred)
 	//       +6   offset (start step), +7 length (steps)
@@ -59,7 +60,7 @@ namespace elektronData
 	// Named row fields (offsets above).
 	namespace mmSongRow
 	{
-		constexpr size_t g_pattern = 0, g_target = 1, g_repeats = 2, g_x3 = 3, g_mutes = 4, g_midiMutes = 5,
+		constexpr size_t g_pattern = 0, g_x1 = 1, g_repeats = 2, g_target = 3, g_mutes = 4, g_midiMutes = 5,
 			g_offset = 6, g_length = 7, g_transpose = 8, g_trackTranspose = 9, g_midiTranspose = 15, g_x21 = 21,
 			g_tempo = 22;
 	}

@@ -55,7 +55,7 @@ const src = FILES.map(f => fs.readFileSync(path.join(__dirname, f), "utf8").repl
 const P = new Function("scope", "with (scope) {\n" + src + `
 ;let renders = 0;
 render = () => { renders++; }; syncControls = () => { }; renderTop = () => { }; renderSub = () => { }; redraw = () => { }; refreshAudible = () => { };
-return { overridesText, learnName, progressText, onLearnDoc, learnPaused, learnMax, toggleLearn, kitHit, kitGrab, kitAt, kitNudge, laneAt, slideGrab, slideNext, slideVal, bandLive, bandEsc, drawSlides, endLaneDraw, valueHTML, kitLabelHTML, kitHandleHTML, laneFmt, grp, Gesture, Boot, hostTempoRefused, l2step, onTelemetry, pauseNow, playsText, songLcd, S, Docs, Overlay, Held, PREP, scheduleRender, clickSteps, secAction, selStart, stepMenu, stepMenuItems, Modifiers, selCut, selDuplicate, clearSel, setSel, endSelect, interacting, genEnsure, genSpec, setGenSpec, clickTrackKeys, userMute, soloWrites, muteSel, msSet, prepToggle, unmuteAll, Keys,
+return { overridesText, smpManagerBar, smpMemory, onSampleHistory, learnName, progressText, onLearnDoc, learnPaused, learnMax, toggleLearn, kitHit, kitGrab, kitAt, kitNudge, laneAt, slideGrab, slideNext, slideVal, bandLive, bandEsc, drawSlides, endLaneDraw, valueHTML, kitLabelHTML, kitHandleHTML, laneFmt, grp, Gesture, Boot, hostTempoRefused, l2step, onTelemetry, pauseNow, playsText, songLcd, S, Docs, Overlay, Held, PREP, scheduleRender, clickSteps, secAction, selStart, stepMenu, stepMenuItems, Modifiers, selCut, selDuplicate, clearSel, setSel, endSelect, interacting, genEnsure, genSpec, setGenSpec, clickTrackKeys, userMute, soloWrites, muteSel, msSet, prepToggle, unmuteAll, Keys,
 	get V() { return V; }, setToast(f) { const was = toast; toast = f; return was; }, setV(v) { V = v; }, view, get renders() { return renders; }, get pending() { return pendingRender; } }; }`)(scope);
 
 /* the machine document: its mutes (machine.desk.mutes) as the machine has them */
@@ -899,6 +899,40 @@ return { Bridge, cmd, asked, errors, banners, S, Drop, get V() { return V; }, se
 		P.onLearnDoc(doc([]), doc([], { left: ["c"] }));
 		check(toasts.length === 2 && /^1 mapping left out/.test(toasts[1]), "a later, different list is said again, singular for one: " + toasts.join(" | "));
 	} finally { P.setToast(t0); }
+}
+
+/* ---- 0.9, the sample manager's keys and memory line (mdDeskSampler.js): Copy, Paste, Keep as ROM, Export WAV, Undo
+   sample are on or off with their reasons, the clipboard chip and the undo step come from sampleHistory ---- */
+{
+	const v0 = P.V, rom = Array.from({ length: 48 }, (_, i) => ({ slot: i, empty: i !== 3 && i !== 9, length: i === 3 ? 3000 : i === 9 ? 2000 : 0,
+		rate: i === 3 || i === 9 ? 44100 : 0, peaks: [], name: i === 3 ? "SNR" : null }));
+	const ram = Array.from({ length: 4 }, (_, i) => ({ slot: i, empty: i !== 0, length: i === 0 ? 1500 : 0, rate: i === 0 ? 44100 : 0, peaks: [], name: null }));
+	P.Docs.samples = { capacity: 1441792, used: 721000, ramReadable: true, ramReason: "", rom, ram };
+	const caps = (can, reasons = {}) => P.setV(Object.assign({}, v0, { caps: { can, reasons } }));
+	caps({ sampleAudio: true, sampleLoad: true });
+	const mem = P.smpMemory(P.Docs.samples);
+	check(mem.used === 722500 && mem.free === 1441792 - 722500 && mem.pct === 50, "the memory line counts the ROM slots and the RAM buffers: used " + mem.used + ", free " + mem.free + ", " + mem.pct + " %");
+	let h = P.smpManagerBar("rom", 3, false);
+	check(/data-smpcopy="rom:3" title=/.test(h) && /data-smpexport="rom:3" title=/.test(h), "a ROM slot that holds a sample: Copy and Export WAV are on");
+	check(/data-smppaste="3" disabled title="Nothing is copied/.test(h) && /data-smpundo="1" disabled title="Nothing to undo/.test(h), "nothing copied and nothing to undo: Paste and Undo sample are off, with the reason");
+	check(/Nothing copied/.test(h), "the clipboard chip says so");
+	h = P.smpManagerBar("rom", 4, false);
+	check(/data-smpcopy="rom:4" disabled title="ROM-05 holds no sample\./.test(h) && /data-smpexport="rom:4" disabled/.test(h), "an empty ROM slot: Copy and Export WAV are off, with the reason");
+	P.onSampleHistory({ type: "sampleHistory", clip: { bank: "rom", slot: 3, name: "SNR", length: 3000, rate: 44100 }, undo: { slot: 9, what: "Paste into ROM-10", depth: 1 } });
+	h = P.smpManagerBar("rom", 9, false);
+	check(/data-smppaste="9" title=/.test(h) && /Copied: ROM-04 SNR · 0\.07 s/.test(h), "a clipboard: Paste is on, the chip names the slot, its name and its time");
+	check(/data-smpundo="1" title="Undo: Paste into ROM-10\. The sample it replaced is sent back to ROM-10 \(1 step\)\./.test(h), "an undo step: Undo sample says what it undoes");
+	h = P.smpManagerBar("rom", 9, true);
+	check(/data-smppaste="9" disabled title="A sample is on its way\./.test(h) && /data-smpundo="1" disabled title="A sample is on its way\./.test(h), "while a sample is on its way: Paste and Undo sample wait");
+	h = P.smpManagerBar("ram", 0, false);
+	check(/data-ramrom="0" title=/.test(h) && /data-smpcopy="ram:0" title=/.test(h) && !/data-smppaste/.test(h) && !/data-smpundo/.test(h) && /Copied: ROM-04 SNR/.test(h), "a RAM slot with a take: Copy, Keep as ROM and Export WAV; no Paste, no Undo sample");
+	h = P.smpManagerBar("ram", 1, false);
+	check(/data-ramrom="1" disabled title="RAM 2 holds no sample\./.test(h), "an empty RAM slot: Keep as ROM is off, with the reason");
+	caps({ sampleAudio: false, sampleLoad: true }, { sampleAudio: "A real Machinedrum does not send its samples." });
+	h = P.smpManagerBar("ram", 0, false);
+	check(/data-ramrom="0" disabled title="A real Machinedrum does not send its samples\./.test(h) && /data-smpexport="ram:0" disabled/.test(h), "a real machine: Keep as ROM and Export WAV are off with the engine's reason");
+	P.onSampleHistory({ type: "sampleHistory", clip: null, undo: null });
+	P.setV(v0); delete P.Docs.samples;
 }
 
 console.log(failures ? `${failures} failure(s)` : "mdDeskPageTest: all passed");
