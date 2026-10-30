@@ -62,6 +62,11 @@
      mixMeters(on)                    I-032: the Mix page's output meters: on while the page shows Mix (and the window is
                                       visible), off when it leaves; the host then feeds MMView.mixLevels(message)
      globalSlot(n)                    GLOBAL's slot keys: make global slot n (0-7) the active one (B-051)
+     waveList(again), waveChoose(w), waveLoad(), waveRename(w, name), waveCopy(from, to), waveErase(w | -1), waveUndo(),
+     waveSendNow()                    0.9 wave 2, the GLOBAL page's DigiPRO card (118-digipro.js): the 64 user waveforms
+                                      read (again), a file for a Load into position w (the host's chooser; its preview
+                                      comes back through MMView.setWaveFile), the change asked, the card's undo, HW MIDI's
+                                      Send; the list comes back through MMView.setWaves
      transport(op, args, done)        wave 2, the transport beyond PLAY and STOP: op pause | resume | stop | panic |
                                       playFrom {i} (a song row) | nudge {pct} (the tempo pct % off while held, 0 =
                                       back); done(ok) once the machine answered (128-transport.js). Wave 7: record

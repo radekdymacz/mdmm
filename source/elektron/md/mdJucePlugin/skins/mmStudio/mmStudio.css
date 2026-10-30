@@ -2850,6 +2850,32 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
 /* the scale takes the lane's stretched height (the keys stretch), so 127 and 0 land on the key ends */
 .ws-seq #lane>.lbscale{height:auto!important;align-self:stretch}
 
+/* 0.9 wave 2: the GLOBAL page's DigiPRO card (118-digipro.js): the 64 positions as 8 x 8 keys, the selected one drawn,
+   the manager's keys. A user waveform's key is lit; one not read yet is dim. */
+.globgrid .dpcard{grid-column:1/-1}
+.dpbody{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:18px;align-items:start}
+.dpgrid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:3px}
+.dpk{height:34px;min-width:0;padding:0 3px;display:grid;align-content:center;gap:1px;font:500 10px var(--mono);letter-spacing:0;overflow:hidden;white-space:nowrap}
+.dpk small{font:10px var(--mono);color:var(--keydim)}
+.dpk b{font:600 11px var(--mono);overflow:hidden;text-overflow:clip}
+.dpk.user{background:var(--key2)}
+.dpk.unk{opacity:.5}
+.dpk[aria-pressed=true]{background:var(--cream);color:var(--creamtext)}
+.dpk[aria-pressed=true] small{color:inherit;opacity:.7}
+.dpsel{display:grid;gap:8px;min-width:0}
+.dphead{display:flex;align-items:center;gap:10px;min-height:30px}
+.dphead .mono{font-size:15px}
+.dpname{font:600 15px var(--mono)}
+.dpin{width:7ch;font:600 15px var(--mono);text-transform:uppercase}
+.dpdraw{width:100%;height:96px;background:var(--lcd);border-radius:3px}
+.dpdraw line{stroke:var(--ink);stroke-opacity:.25;stroke-width:.5}
+.dpdraw polyline{fill:none;stroke:var(--ink);stroke-width:1.2;vector-effect:non-scaling-stroke}
+.dpkeys{display:flex;flex-wrap:wrap;gap:4px}
+.dpkeys button{height:28px;padding:0 10px;font:600 11px var(--sans);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+.dpkeys button[disabled]{opacity:.45}
+.dpkeys .danger:hover:not([disabled]){background:var(--rec,var(--red));color:#fff}
+.dpnews{margin:0;font-size:12px;min-height:16px}
+
 /* ===== The real machine's states (not in the mockup) ===== */
 .statusline,.errline{margin:6px 0 0;padding:6px 10px;border-radius:3px;font:12px var(--pix);text-transform:uppercase}
 .statusline{background:var(--lcd);color:var(--ink)}

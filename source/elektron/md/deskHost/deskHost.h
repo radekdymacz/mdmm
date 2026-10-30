@@ -55,7 +55,9 @@ namespace deskHost
 		OutputGain,			// I-021: the editor's volume (the plug-in's output gain, after the emulation)
 		MemoryKeep,			// I-024: KEEP MEMORY on or off (the machine memory file for new sessions)
 		MemoryFactory,		// I-024: RESET MACHINE… > Start from factory memory (the file goes; the page asked the user first)
-		MixMeters			// I-032: the Mix page is shown (on) or left (off): the output pair meters' levels (mixLevels) flow or stop
+		MixMeters,			// I-032: the Mix page is shown (on) or left (off): the output pair meters' levels (mixLevels) flow or stop
+		Waves,				// 0.9 wave 2: the Monomachine's DigiPRO manager (the session's SysEx work, mdSyxWaves.h)
+		ChooseWave			// 0.9 wave 2: the native file chooser for a DigiPRO waveform (.syx, WAV, AIFF) into a position
 	};
 
 	// Who acts on a row: the session (it outlives the window) or the window (the menu and the

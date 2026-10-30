@@ -2658,6 +2658,111 @@
         },
         {
           "type": "object",
+          "description": "0.9 wave 2 (doc/release/0.9/mm-digipro.md): the DigiPRO manager's card: the 64 positions as the editor knows them (known: read from the machine; user: a user waveform, with its name and 128 points of its cycle, -127 to 127), how far a reading is (done of total, running), the manager's undo steps, what the person must do first over HW MIDI (waitsFor) and the news (text).",
+          "required": ["type", "ok", "running", "waves", "text"],
+          "properties": {
+            "type": {
+              "const": "waveList"
+            },
+            "ok": {
+              "type": "boolean"
+            },
+            "running": {
+              "type": "boolean"
+            },
+            "done": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "undo": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "waitsFor": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            },
+            "waves": {
+              "type": "array",
+              "maxItems": 64,
+              "items": {
+                "type": "object",
+                "required": ["wave", "known", "user"],
+                "properties": {
+                  "wave": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 63
+                  },
+                  "known": {
+                    "type": "boolean"
+                  },
+                  "user": {
+                    "type": "boolean"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "points": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": -127,
+                      "maximum": 127
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "description": "0.9 wave 2: a file chosen for the DigiPRO manager's Load (chooseWave): the waveforms it holds and the position each goes to, the user waveform each replaces (\"\": none), or why the file cannot be loaded (ok false).",
+          "required": ["type", "ok", "file", "text", "waves"],
+          "properties": {
+            "type": {
+              "const": "waveFile"
+            },
+            "ok": {
+              "type": "boolean"
+            },
+            "file": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            },
+            "waves": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["wave", "name"],
+                "properties": {
+                  "wave": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 63
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "replaces": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
           "description": "0.6 (wave 6): a factory reset being prepared (the Machinedrum: a second machine started from the user's ROM is read; prepare, with the dumps read of all) or failing (failed, with why). The reset itself follows as a syxPreview with reset and syxProgress.",
           "required": ["type", "phase", "done", "total", "text"],
           "properties": {
@@ -7368,6 +7473,208 @@
               "type": ["boolean", "integer"]
             },
             "on": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: the DigiPRO user waveforms: the 64 positions read from the machine (0x5E, once a session; again with again), a waveList message follows and another as the reading goes on; the Machinedrum refuses",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "waveList"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "again": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: choose a file for DigiPRO position wave: the window's native file chooser (.syx of waveform dumps, or a WAV / AIFF of one cycle); the plug-in reads it and a waveFile preview follows (the file never passes through the page)",
+          "required": ["op", "wave"],
+          "properties": {
+            "op": {
+              "const": "chooseWave"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "wave": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: send the previewed waveform file to the machine (DIGIPRO MGR > RECEIVE > ORG), the positions read again after; the page asked first when the preview says it replaces a user waveform; one step of the manager's undo",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "waveLoad"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: rename user waveform wave (at most four of A-Z 0-9 space - + . / #): its dump sent again with the new name",
+          "required": ["op", "wave", "name"],
+          "properties": {
+            "op": {
+              "const": "waveRename"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "wave": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: copy user waveform from into position to (its dump with the new position); the page asked first when to holds a user waveform",
+          "required": ["op", "from", "to"],
+          "properties": {
+            "op": {
+              "const": "waveCopy"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "from": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            },
+            "to": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: erase user waveform wave, or every one with all: the machine's ERASE on its panel (the emulator only; the factory waveform of that position comes back); the page asked first",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "waveErase"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "wave": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            },
+            "all": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: take back the DigiPRO manager's last change (each position it touched as it was)",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "waveUndo"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: HW MIDI: the Monomachine is on DIGIPRO MGR > RECEIVE > ORG; send the waveforms that wait for it",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "waveSendNow"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
               "type": ["boolean", "integer"]
             }
           },

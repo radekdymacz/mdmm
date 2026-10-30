@@ -187,6 +187,11 @@ namespace mdJucePlugin
 				m_page->send(deskCore::resultMessage(_message, refused.empty() ? std::vector<std::string>{}
 					: std::vector<std::string>{refused}, {}));
 			}
+			else if(row->handler.action == deskHost::Action::ChooseWave)
+			{
+				chooseWave(static_cast<uint8_t>(_message.find("wave")->asNumber()));
+				m_page->send(deskCore::resultMessage(_message, {}, {}));
+			}
 			else if(row->handler.action == deskHost::Action::ChooseSample)
 			{
 				chooseSample(static_cast<uint8_t>(_message.find("slot")->asNumber()));
@@ -308,6 +313,31 @@ namespace mdJucePlugin
 				const auto f = _c.getResult();
 				if(f.existsAsFile() && m_session)
 					m_session->loadSampleFile(_slot, f);
+			});
+	}
+
+	// 0.9 wave 2: a file for the DigiPRO manager's Load; the session reads it, the page hears its preview (waveFile).
+	void PageEditor::chooseWave(const uint8_t _wave)
+	{
+#if MDMM_DIAGNOSTICS
+		// the journeys: the file is the run's (GEARMULATOR_MDMM_WAVE_FILE), no chooser in front of anything
+		if(const auto given = juce::File(juce::SystemStats::getEnvironmentVariable("GEARMULATOR_MDMM_WAVE_FILE", {})); given.existsAsFile() && m_session)
+		{
+			m_session->openWaveFile(_wave, given);
+			return;
+		}
+#endif
+		char title[80];
+		std::snprintf(title, sizeof(title), "Choose a waveform for W%02d (.syx, or a WAV or AIFF of one cycle)", _wave + 1);
+		m_chooser = std::make_unique<juce::FileChooser>(title, juce::File::getSpecialLocation(juce::File::userMusicDirectory),
+			"*.syx;*.wav;*.wave;*.aif;*.aiff;*.aifc");
+		m_chooser->launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+			[this, _wave](const juce::FileChooser& _c)
+			{
+				const genericUI::messageRoute::OwnerScope owner(m_noticeOwner);
+				const auto f = _c.getResult();
+				if(f.existsAsFile() && m_session)
+					m_session->openWaveFile(_wave, f);
 			});
 	}
 

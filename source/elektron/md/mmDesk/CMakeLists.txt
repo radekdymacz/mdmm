@@ -22,6 +22,7 @@ target_sources(mmDesk PRIVATE
 	mmDeskWatch.h
 	mmDeskModel.cpp mmDeskModel.h
 	mmRecv.cpp mmRecv.h
+	mmWaveRecv.cpp mmWaveRecv.h
 )
 target_link_libraries(mmDesk PUBLIC deskCore elektronData deskWire)
 target_include_directories(mmDesk PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)

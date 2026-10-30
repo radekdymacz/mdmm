@@ -8,7 +8,8 @@
    three bytes of the global; a program change is always taken in on the base channel. The MULTI MAP (the MD's map
    editor's counterpart) is on Perform. 0.6: AUDIO › MASTER TUNE (masterTune, 400.0-499.9 Hz as the panel runs it) and
    CONTROL OUT1 (globalMidi sequencerOut, arpOut, keyboardOut: 0 INT, 1 OUT, 2 INT+OUT; PROBES-manual-gaps.md P2),
-   Copy / Paste of the slot (the library's globalCopy, globalPaste). */
+   Copy / Paste of the slot (the library's globalCopy, globalPaste). 0.9 wave 2: the DigiPRO card under the cards
+   (118-digipro.js), the machine's GLOBAL › FILE › DIGIPRO MGR. */
 const GCH=c=>c==null?"OFF":String(c+1);
 const gTrackCh=(g,t)=>g&&g.base!=null&&t<g.span&&g.base+t<=14?g.base+t:null;
 const MM_GTIP={
@@ -60,10 +61,12 @@ function mmGlobalCards(G){const{tog,step,row}=GlobalUi;
    ${row("Master tune",step("tune",G.tune==null?"--":(G.tune/10).toFixed(1)+" Hz",MM_GTIP.tune).replace('class="stepper"','class="stepper'+(globalMaps(1).length?" mapped":"")+(S.learnT&&S.learnT.g===1?" learnt":"")+'" data-lg="1"'))}</section>
   <section class="card"><header><h3>Control out 1</h3><span>notes to the tracks, MIDI out or both</span></header>
    ${OUT1.map(([k,label,what])=>row(label,`<span class="seg" title="${MM_GTIP.out1} (here: ${what})">${["INT","OUT","INT+OUT"].map((n,v)=>`<button data-ga="out1" data-k="${k}" data-v="${v}" aria-pressed="${G[k]===v}">${n}</button>`).join("")}</span>`)).join("")}
-   ${gOutWarn(G)?`<p class="gwarn">${gOutWarn(G)}</p>`:""}</section>`}
+   ${gOutWarn(G)?`<p class="gwarn">${gOutWarn(G)}</p>`:""}</section>
+  ${digiproCard()}`}
 /* a channel stepper: OFF, 1 … 16 */
 const gStep=(c,d)=>{const i=Math.max(0,Math.min(16,(c==null?0:c+1)+d));return i===0?null:i-1};
 function mmGlobalClick(a,G){const f=a.dataset.ga,d=a.dataset.d!=null?+a.dataset.d:0,v=a.dataset.v!=null?+a.dataset.v:null;
+ if(f.startsWith("dp")){digiproClick(a);return}	/* 0.9 wave 2: the DigiPRO card (118-digipro.js) */
  if(f==="routing"){if(S.routing!==a.dataset.r){S.routing=a.dataset.r;edit("routing",{v:S.routing});render();drawGlobal()}return}
  if(f==="tune"){if(G.tune==null)return;const t=Math.max(4000,Math.min(4999,G.tune+d*(GP.shift?10:1)));if(t!==G.tune){G.tune=t;edit("masterTune",{v:t});drawGlobal()}return}
  if(f==="out1"){const k=a.dataset.k;if(G[k]!==v){G[k]=v;edit("globalMidi",{[k]:v});drawGlobal()}return}

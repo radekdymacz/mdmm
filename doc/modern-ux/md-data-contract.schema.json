@@ -7716,6 +7716,208 @@
         },
         {
           "type": "object",
+          "description": "host: the DigiPRO user waveforms: the 64 positions read from the machine (0x5E, once a session; again with again), a waveList message follows and another as the reading goes on; the Machinedrum refuses",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "waveList"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "again": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: choose a file for DigiPRO position wave: the window's native file chooser (.syx of waveform dumps, or a WAV / AIFF of one cycle); the plug-in reads it and a waveFile preview follows (the file never passes through the page)",
+          "required": ["op", "wave"],
+          "properties": {
+            "op": {
+              "const": "chooseWave"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "wave": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: send the previewed waveform file to the machine (DIGIPRO MGR > RECEIVE > ORG), the positions read again after; the page asked first when the preview says it replaces a user waveform; one step of the manager's undo",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "waveLoad"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: rename user waveform wave (at most four of A-Z 0-9 space - + . / #): its dump sent again with the new name",
+          "required": ["op", "wave", "name"],
+          "properties": {
+            "op": {
+              "const": "waveRename"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "wave": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: copy user waveform from into position to (its dump with the new position); the page asked first when to holds a user waveform",
+          "required": ["op", "from", "to"],
+          "properties": {
+            "op": {
+              "const": "waveCopy"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "from": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            },
+            "to": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: erase user waveform wave, or every one with all: the machine's ERASE on its panel (the emulator only; the factory waveform of that position comes back); the page asked first",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "waveErase"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "wave": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            },
+            "all": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: take back the DigiPRO manager's last change (each position it touched as it was)",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "waveUndo"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: HW MIDI: the Monomachine is on DIGIPRO MGR > RECEIVE > ORG; send the waveforms that wait for it",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "waveSendNow"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "host: RESET MACHINE… > Start from factory memory: the machine memory file is deleted and the machine restarts from factory memory (the page asked the user first); a machineMemory message follows",
           "required": ["op"],
           "properties": {

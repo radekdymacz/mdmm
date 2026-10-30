@@ -130,6 +130,10 @@ namespace mmDesk
 		m_backgroundQueued = false;
 		m_recv = {};
 		m_manual.clear();
+		if(!m_waveRecv.quiet() || !m_manualWaves.empty())
+			++m_wavesGaveUp;
+		m_waveRecv = {};
+		m_manualWaves.clear();
 		m_reactivateGlobal = false;
 		m_poly = -1;
 		m_recordReads = {};
@@ -270,6 +274,7 @@ namespace mmDesk
 			sendActiveGlobal(m_chooseGlobal);
 			m_chooseGlobal = -1;
 		}
+		pumpWaves(_now);
 		pumpRecv(_now);
 		// and not while a dump still waits for the macro (telemetry not valid yet: the session stays Idle with it)
 		if(m_activateGlobal >= 0 && (m_profile.wire || (m_recv.state() == RecvSession::State::Idle && m_recv.queued() == 0)))

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "mdSyxSession.h"
+#include "mdSyxWaves.h"
 
 #include "deskCore/deskKinds.h"
 
@@ -368,6 +369,17 @@ namespace mdJucePlugin
 		bool handle(DeskT& _desk, const Value& _message, const Reply& _reply, const ToPage& _toPage)
 		{
 			const auto op = deskCore::opOf(_message);
+			// 0.9 wave 2: the DigiPRO manager's commands (mdSyxWaves.h), not while an import or export runs
+			if constexpr(Traits::waves)
+			{
+				if(m_manager.handle(_desk.machine(), _message, _reply, _toPage, m_job.running() || m_waves.running() ? "An import or export is running." : ""))
+					return true;
+			}
+			else if(op.rfind("wave", 0) == 0)
+			{
+				_reply(_message, false, std::string("The ") + Traits::name + " has no DigiPRO waveforms.");
+				return true;
+			}
 			if(op == "syxImport")
 			{
 				if(const auto* p = _message.find("placeAt"); p && p->isObject() && !m_job.running())
@@ -426,8 +438,8 @@ namespace mdJucePlugin
 		std::string reset(DeskT& _desk, const std::vector<Bytes>& _messages, const std::string& _label, const std::string& _word,
 			const ToPage& _toPage)
 		{
-			if(m_job.running() || m_waves.running())
-				return "An import or export is running.";
+			if(m_job.running() || m_waves.running() || m_manager.working())
+				return "An import, an export or the DigiPRO manager is running.";
 			Bytes file;
 			for(const auto& m : _messages)
 				file.insert(file.end(), m.begin(), m.end());
@@ -450,7 +462,7 @@ namespace mdJucePlugin
 		// False when one runs already.
 		bool exportStart(const DeskT& _desk, const ExportRequest& _r, std::function<void(const Bytes&, const std::string&)> _done)
 		{
-			if(m_waves.running() || m_job.running())
+			if(m_waves.running() || m_job.running() || m_manager.working())
 				return false;
 			m_export = exportBytes(_desk, _r);
 			m_exportWords = _r;
@@ -459,7 +471,7 @@ namespace mdJucePlugin
 			return true;
 		}
 
-		bool running() const { return m_job.running() || m_waves.running(); }
+		bool running() const { return m_job.running() || m_waves.running() || m_manager.running(); }
 		// Work for the session's step: what runs, or the slots an import wrote that the desk is still to read again.
 		bool due() const { return running() || !m_reread.empty() || m_undoOpen; }
 
@@ -468,6 +480,14 @@ namespace mdJucePlugin
 		{
 			if(!undoReady(_desk, _nowMs))
 				return;
+			// the DigiPRO manager's reads wait while an import or an export uses the machine (they are asked again after)
+			if constexpr(Traits::waves)
+			{
+				if(m_job.running() || m_waves.running())
+					m_manager.pause();
+				else
+					m_manager.step(_desk.machine(), _nowMs, _wire, _toPage);
+			}
 			if(m_job.running())
 			{
 				if(auto p = m_job.step(_desk.machine(), _nowMs, _wire))
@@ -520,9 +540,12 @@ namespace mdJucePlugin
 		{
 			m_job.onMachineSysex(_message);
 			m_waves.onMachineSysex(_message);
+			m_manager.onMachineSysex(_message);
 		}
 
 		Job& job() { return m_job; }
+		// 0.9 wave 2: the DigiPRO manager (the Monomachine's; the Machinedrum's refuses its commands)
+		SyxWaves& waves() { return m_manager; }
 
 	private:
 		// B-130: an import or a reset starts (it was accepted, nothing has gone yet). The documents it will write are
@@ -644,6 +667,7 @@ namespace mdJucePlugin
 		std::vector<elektronData::SyxItem> m_reread;	// B-174: the slots the desk reads again at m_rereadAtMs
 		double m_rereadAtMs = 0;
 		SyxWaveRead m_waves;
+		SyxWaves m_manager;
 		Bytes m_export;
 		ExportRequest m_exportWords;
 		std::function<void(const Bytes&, const std::string&)> m_exportDone;

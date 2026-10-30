@@ -32,7 +32,7 @@ namespace mmDesk
 	bool MmMachine::keysOnTheirWay() const
 	{
 		const auto r = m_recv.state();
-		return now() < m_keysUntilMs || (r != RecvSession::State::Idle && r != RecvSession::State::Failed);
+		return now() < m_keysUntilMs || (r != RecvSession::State::Idle && r != RecvSession::State::Failed) || !m_waveRecv.quiet();
 	}
 
 	// MM-P8: chaining as on the machine (manual 1-46): hold BANK, press the TRIG keys (one bank, each

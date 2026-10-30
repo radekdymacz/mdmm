@@ -191,6 +191,8 @@ namespace mdJucePlugin
 		// P9: a sample file (WAV, AIFF) the user chose for UW ROM slot _slot. The Machinedrum's session
 		// sends it (sampleLoad messages follow); a model without a sampler ignores it.
 		virtual void loadSampleFile(uint8_t _slot, const juce::File& _file) { (void)_slot; (void)_file; }
+		// 0.9 wave 2: a file for the DigiPRO manager's Load into position _wave (.syx, WAV, AIFF): its preview (waveFile)
+		virtual void openWaveFile(uint8_t _wave, const juce::File& _file) { (void)_wave; (void)_file; }
 		// 0.9: a slot's samples, or a bank's, written as WAV files (sampleExport): _target is the file, or the folder for all of
 		// a bank's; the page hears {"type":"sampleExport"}. A model without a sampler ignores it.
 		virtual void exportSamples(const juce::File& _target, const elektronData::json::Value& _request) { (void)_target; (void)_request; }
@@ -784,6 +786,20 @@ namespace mdJucePlugin
 			}
 			const auto* d = static_cast<const uint8_t*>(mb.getData());
 			toPage(m_syx.open(*m_desk, std::vector<uint8_t>(d, d + mb.getSize()), _file.getFileName().toStdString()));
+		}
+
+		// 0.9 wave 2: the DigiPRO manager's Load: the file read here, its preview for the page (mdSyxWaves.h)
+		void openWaveFile(const uint8_t _wave, const juce::File& _file) override
+		{
+			const auto name = _file.getFileName().toStdString();
+			juce::MemoryBlock mb;
+			if(_file.getSize() > 64 * 1024 * 1024 || !_file.loadFileAsData(mb))
+			{
+				toPage(m_syx.waves().refusedFile(name, "The file could not be read."));
+				return;
+			}
+			const auto* d = static_cast<const uint8_t*>(mb.getData());
+			toPage(m_syx.waves().openFile(std::vector<uint8_t>(d, d + mb.getSize()), name, _wave));
 		}
 
 		// 0.6: the kinds and ranges the page asked for (none: every document the editor holds); the Monomachine's

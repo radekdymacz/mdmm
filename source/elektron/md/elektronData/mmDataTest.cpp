@@ -10,7 +10,10 @@
 #include "mmPattern.h"
 #include "mmSong.h"
 #include "mmValidate.h"
+#include "mmWave.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <string>
 
@@ -275,6 +278,74 @@ namespace
 		check(ed::mmParamCc(2, 1) == 73 && ed::mmParamCc(6, 7) == 119, "CC map: FILTER 72-79, LFO3 112-119");
 		check((ed::mmSetTempo(120.0) == std::vector<uint8_t>{0xf0, 0, 0x20, 0x3c, 3, 0, 0x61, 0x16, 0x40, 0xf7}), "tempo 120 = 2880");
 	}
+
+	// 0.9 wave 2: the DigiPRO waveform dump (doc/release/0.9/mm-digipro.md 2) and a waveform from audio
+	void waves()
+	{
+		std::puts("DigiPRO waveforms");
+		std::vector<float> saw(600);
+		for(size_t i = 0; i < saw.size(); ++i)
+			saw[i] = static_cast<float>(2.0 * static_cast<double>(i) / static_cast<double>(saw.size()) - 1.0);
+		std::string why;
+		const auto w = ed::mmWaveFromCycle(saw, 9, "saw1", why);
+		check(w.has_value() && why.empty(), "a saw cycle of 600 frames makes a waveform");
+		if(!w)
+			return;
+		check(w->data.size() == ed::g_mmWaveDataSize && w->position == 9 && w->version == 1 && w->revision == 1, "6132 bytes, position 9, 1.1");
+		check(ed::mmWaveName(*w) == "SAW1", "the name in upper case");
+		const auto dump = ed::encodeMmWave(*w);
+		check(dump.size() == ed::g_mmWaveDumpSize && dump[6] == 0x5d && dump[9] == 9 && dump[10] == 'S' && dump.back() == 0xf7,
+			"the dump: 7027 bytes, 0x5D, the position in byte 9, the name from byte 10");
+		const auto back = ed::decodeMmWave(dump);
+		check(back && *back == *w, "decode gives the waveform back");
+		check(back && ed::encodeMmWave(*back) == dump, "and encodes to the same bytes");
+		const size_t n = dump.size();
+		check(((static_cast<size_t>(dump[n - 3]) << 7) | dump[n - 2]) == n - 10, "the length is size - 10");
+		auto broken = dump;
+		broken[2000] ^= 0x01;
+		check(!ed::decodeMmWave(broken), "a changed data byte breaks the sum: refused");
+		auto high = dump;
+		high[3000] |= 0x80;
+		check(!ed::decodeMmWave(high), "a data byte above 7F is refused");
+		check(!ed::decodeMmWave(std::vector<uint8_t>(dump.begin(), dump.end() - 1)), "a short dump is refused");
+		const auto placed = ed::mmWavePlaced(dump, 63);
+		const auto moved = ed::decodeMmWave(placed);
+		check(moved && moved->position == 63 && moved->data == w->data && std::equal(dump.begin() + 10, dump.end(), placed.begin() + 10),
+			"placed at W64: only byte 9 changes, the sum stays valid (it starts at byte 10)");
+
+		const auto l0 = ed::mmWaveLevel(*w, 0);
+		double peak = 0;
+		for(const auto x : l0)
+			peak = std::max(peak, std::abs(x));
+		check(l0.size() == 1024 && std::abs(peak - std::pow(10.0, -0.1 / 20.0)) < 1e-4, "level 0: 1024 points, the peak at full scale less 0.1 dB");
+		double mean = 0;
+		for(const auto x : l0)
+			mean += x;
+		check(std::abs(mean / 1024.0) < 1e-4, "no DC");
+		const auto l8 = ed::mmWaveLevel(*w, 8);
+		check(l8.size() == 4 && std::abs(l8[0] + l8[2]) < 1e-5 && std::abs(l8[1] + l8[3]) < 1e-5, "level 8: 4 points, the fundamental only");
+		const auto l1 = ed::mmWaveLevel(*w, 1);
+		double nyquist = 0;
+		for(size_t i = 0; i < l1.size(); ++i)
+			nyquist += (i & 1 ? -1.0 : 1.0) * l1[i];
+		check(l1.size() == 512 && std::abs(nyquist / 512.0) < 1e-4, "level 1: 512 points, nothing at its half");
+		check(ed::mmWaveLevel(*w, 9).empty(), "there is no level 9");
+		check(ed::mmWavePoints(*w, 128).size() == 128, "128 points for a drawing");
+
+		check(ed::mmWaveNameProblem("ab-1").empty() && !ed::mmWaveNameProblem("ABCDE").empty() && !ed::mmWaveNameProblem("A*").empty(),
+			"names: four of A-Z 0-9 space - + . / #, lower case raised");
+		auto renamed = *w;
+		ed::setMmWaveName(renamed, "ab");
+		check(ed::mmWaveName(renamed) == "AB" && renamed.name[2] == ' ' && renamed.name[3] == ' ', "a short name is padded with spaces");
+		ed::MmWave zero = *w;
+		zero.name = {};
+		check(ed::mmWaveName(zero).empty(), "a name of zeros shows as none");
+
+		check(!ed::mmWaveFromCycle(std::vector<float>(4, 0.5f), 0, "", why) && !why.empty(), "4 frames are too short");
+		check(!ed::mmWaveFromCycle(std::vector<float>(ed::g_mmWaveMaxFrames + 1, 0.f), 0, "", why), "more than 65536 frames are refused");
+		check(!ed::mmWaveFromCycle(std::vector<float>(512, 0.25f), 0, "", why), "DC alone is silent: refused");
+		check(!ed::mmWaveFromCycle(saw, 0, "TOOLONG", why), "a bad name is refused");
+	}
 }
 
 int main()
@@ -284,6 +355,7 @@ int main()
 	json();
 	bounds();
 	machines();
+	waves();
 	std::printf("%s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
 	return g_failures ? 1 : 0;
 }

@@ -165,6 +165,31 @@ namespace deskHost
 				"KEEP MEMORY: on, a session without a project state starts from the machine memory file and every save on the "
 				"machine writes it; off, neither (the file stays); kept in the editor's settings; a machineMemory message follows",
 				Action::MemoryKeep),
+			// 0.9 wave 2 (doc/release/0.9/mm-digipro.md): the Monomachine's DigiPRO manager, the GLOBAL page's DigiPRO card
+			row("waveList", {{"again", ArgType::Bool, 0, 0, true}},
+				"the DigiPRO user waveforms: the 64 positions read from the machine (0x5E, once a session; again with again), a "
+				"waveList message follows and another as the reading goes on; the Machinedrum refuses",
+				Action::Waves),
+			row("chooseWave", {{"wave", ArgType::Integer, 0, 63}},
+				"choose a file for DigiPRO position wave: the window's native file chooser (.syx of waveform dumps, or a WAV / AIFF of "
+				"one cycle); the plug-in reads it and a waveFile preview follows (the file never passes through the page)",
+				Action::ChooseWave, Actor::Window),
+			row("waveLoad", {}, "send the previewed waveform file to the machine (DIGIPRO MGR > RECEIVE > ORG), the positions read "
+				"again after; the page asked first when the preview says it replaces a user waveform; one step of the manager's undo",
+				Action::Waves),
+			row("waveRename", {{"wave", ArgType::Integer, 0, 63}, {"name", ArgType::Text}},
+				"rename user waveform wave (at most four of A-Z 0-9 space - + . / #): its dump sent again with the new name",
+				Action::Waves),
+			row("waveCopy", {{"from", ArgType::Integer, 0, 63}, {"to", ArgType::Integer, 0, 63}},
+				"copy user waveform from into position to (its dump with the new position); the page asked first when to holds a "
+				"user waveform", Action::Waves),
+			row("waveErase", {{"wave", ArgType::Integer, 0, 63, true}, {"all", ArgType::Bool, 0, 0, true}},
+				"erase user waveform wave, or every one with all: the machine's ERASE on its panel (the emulator only; the factory "
+				"waveform of that position comes back); the page asked first",
+				Action::Waves),
+			row("waveUndo", {}, "take back the DigiPRO manager's last change (each position it touched as it was)", Action::Waves),
+			row("waveSendNow", {}, "HW MIDI: the Monomachine is on DIGIPRO MGR > RECEIVE > ORG; send the waveforms that wait for it",
+				Action::Waves),
 			row("memoryFactory", {},
 				"RESET MACHINE… > Start from factory memory: the machine memory file is deleted and the machine restarts from factory memory (the "
 				"page asked the user first); a machineMemory message follows",

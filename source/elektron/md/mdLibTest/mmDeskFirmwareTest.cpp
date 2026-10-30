@@ -15,7 +15,9 @@
 //                                        (B-121: the host's Stop lets go of a held note), reselect (B-122: picking the
 //                                        current pattern again keeps it), emptyreset (B-175: stored K01 and the working
 //                                        kit after Empty Reset; B-176: native machine-init AMP defaults), newkit (B-175, B-176: the
-//                                        firmware's start values of every machine against the editor's tables)
+//                                        firmware's start values of every machine against the editor's tables),
+//                                        digipro (0.9 wave 2: the DigiPRO manager: send, read back, rename, copy, erase,
+//                                        undo; the name's bytes from a rename on the panel)
 //
 // Exits 77 (skip) without arguments.
 
@@ -1652,6 +1654,155 @@ namespace
 
 	// P7: Export SysEx as the session does (writeSyx of every document the desk holds) from a fresh machine, to
 	// SYX_EXPORT_TO: a file of the owner's own, for syximport.
+	// 0.9 wave 2 (doc/release/0.9/mm-digipro.md 7, 8): the DigiPRO manager on the real ROM, through the desk's adapter
+	// (DIGIPRO MGR by its panel keys, mmWaveRecv.h) and the session's manager (mdSyxWaves.h): a waveform made from audio
+	// sent and read back byte for byte, a rename, a copy and its undo (an erase by the panel), erase one and its undo,
+	// erase all. And two of the spec's assumptions measured: how long a 0x5E answer takes, and which dump bytes a rename
+	// on the machine's own panel changes (the name in bytes 10 to 13).
+	void digipro(const Bytes& _rom)
+	{
+		std::puts("DigiPRO manager");
+		Rig r(_rom);
+		mdJucePlugin::SyxWaves waves;
+		std::vector<std::pair<double, int>> answers;	// machine time, position: every waveform dump the machine sent
+		r.tap = [&](const Bytes& _b)
+		{
+			waves.onMachineSysex(_b);
+			if(const auto p = ed::mmWaveDumpSlot(_b); p >= 0)
+				answers.emplace_back(r.ms(), p);
+		};
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		const auto tLoad = r.ms();
+		while(r.desk->loaded() < 288 && r.ms() - tLoad < 60000)
+			r.run(100);
+		r.run(1000);
+		std::string note;
+		bool lastOk = false;
+		const auto toPage = [&](const Value& _v) { g_contract(_v); r.page.push_back(_v); };
+		const auto cmd = [&](const std::string& _json)
+		{
+			const auto m = *ed::json::parse(_json);
+			g_contract.command(m);
+			const bool handled = waves.handle(r.desk->machine(), m, [&](const Value&, const bool _ok, const std::string& _n) { lastOk = _ok; note = _n; }, toPage, "");
+			if(!handled)
+				lastOk = false;
+			return lastOk;
+		};
+		const auto settle = [&](const double _maxMs)
+		{
+			const auto t0 = r.ms();
+			do
+			{
+				r.run(10);
+				waves.step(r.desk->machine(), r.ms(), false, toPage);
+			}
+			while(waves.running() && r.ms() - t0 < _maxMs);
+			return r.ms() - t0;
+		};
+		const auto users = [&]
+		{
+			int n = 0;
+			for(int w = 0; w < 64; ++w)
+				n += waves.dumpOf(w) != nullptr;
+			return n;
+		};
+
+		check(cmd(R"({"op":"waveList","id":1})"), "waveList is taken");
+		const double listMs = settle(180000);
+		const int before = users();
+		std::printf("  the 64 positions read in %.0f ms of machine time: %d user waveforms\n", listMs, before);
+		check(!waves.running(), "the list is read");
+
+		// a waveform from one cycle of audio (a saw), into W61
+		std::vector<float> saw(600);
+		for(size_t i = 0; i < saw.size(); ++i)
+			saw[i] = static_cast<float>(2.0 * static_cast<double>(i) / 600.0 - 1.0) * 0.8f;
+		std::string why;
+		const auto made = ed::mmWaveFromCycle(saw, 60, "TEST", why);
+		require(made.has_value(), "a waveform from a saw cycle");
+		const auto file = waves.openAudio(saw, "Test saw.wav", 60);
+		g_contract(file);
+		check(file.find("ok")->asBool(), "the file's preview: " + file.find("text")->asString());
+		answers.clear();
+		const double asked = r.ms();
+		check(cmd(R"({"op":"waveLoad","id":2})"), "waveLoad is taken: " + note);
+		std::printf("  load, write and read back in %.0f ms\n", settle(120000));
+		const auto* back = waves.dumpOf(60);
+		auto sent = *made;
+		ed::setMmWaveName(sent, "TEST");	// the name the file's preview gives it, from "Test saw.wav"
+		check(back && *back == ed::encodeMmWave(sent), "round trip: W61 comes back byte for byte as sent (DIGIPRO MGR > RECEIVE > ORG)");
+		for(const auto& [at, p] : answers)
+			if(p == 60)
+			{
+				std::printf("  the read-back of W61 answered %.0f ms after the load was asked\n", at - asked);
+				break;
+			}
+
+		check(cmd(R"({"op":"waveRename","wave":60,"name":"ab-1","id":3})"), "waveRename is taken: " + note);
+		settle(120000);
+		const auto renamed = waves.dumpOf(60) ? ed::decodeMmWave(*waves.dumpOf(60)) : std::nullopt;
+		check(renamed && ed::mmWaveName(*renamed) == "AB-1" && renamed->data == made->data, "rename: W61 is named AB-1, its data as it was");
+
+		check(cmd(R"({"op":"waveCopy","from":60,"to":61,"id":4})"), "waveCopy is taken: " + note);
+		settle(120000);
+		check(waves.dumpOf(61) && *waves.dumpOf(61) == ed::mmWavePlaced(*waves.dumpOf(60), 61), "copy: W62 holds W61's waveform");
+		check(cmd(R"({"op":"waveUndo","id":5})"), "waveUndo is taken: " + note);
+		settle(120000);
+		check(!waves.dumpOf(61), "undo of the copy: W62 holds its factory waveform again (the panel's ERASE)");
+
+		check(cmd(R"({"op":"waveErase","wave":60,"id":6})"), "waveErase is taken: " + note);
+		settle(120000);
+		check(!waves.dumpOf(60) && users() == before, "erase: W61 answers no request (factory), the others as before");
+		check(cmd(R"({"op":"waveUndo","id":7})"), "waveUndo is taken: " + note);
+		settle(120000);
+		const auto restored = waves.dumpOf(60) ? ed::decodeMmWave(*waves.dumpOf(60)) : std::nullopt;
+		check(restored && ed::mmWaveName(*restored) == "AB-1", "undo of the erase: W61 is AB-1 again");
+
+		// the name's bytes: a rename on the machine's own panel (RENAME, W64, [ENTER], [UP] on the first character,
+		// [ENTER]), then the dump the machine sends of it
+		{
+			const auto w64 = ed::mmWaveFromCycle(saw, 63, "TEST", why);
+			const auto f64 = waves.openAudio(saw, "Test.wav", 63);
+			check(f64.find("ok")->asBool() && cmd(R"({"op":"waveLoad","id":8})"), "W64 loaded for the panel's rename");
+			settle(120000);
+			const auto* b64 = waves.dumpOf(63);
+			if(b64 && w64)
+			{
+				const Bytes was = *b64;
+				auto keys = mmDesk::RecvSession::enterMacro(static_cast<uint8_t>(std::max(0, r.desk->currentGlobal()) & 7));
+				keys.resize(keys.size() - 4);
+				using K = mmDesk::Key;
+				keys.insert(keys.end(), {K::Down, K::Down, K::Enter, K::Left, K::Up, K::Up, K::Up, K::Up, K::Down, K::Down, K::Down, K::Right});
+				keys.insert(keys.end(), 66, K::Up);
+				keys.insert(keys.end(), 70, K::Down);
+				keys.insert(keys.end(), {K::Enter, K::Up, K::Enter});
+				r.userKeys(keys);
+				r.run(20.0 * static_cast<double>(keys.size()) + 3000);
+				r.userKeys(mmDesk::RecvSession::exitKeys());
+				r.run(4000);
+				check(cmd(R"({"op":"waveList","again":true,"id":9})"), "waveList again");
+				settle(180000);
+				const auto* now64 = waves.dumpOf(63);
+				std::string changed;
+				for(size_t i = 7; now64 && i + 5 < now64->size() && i + 5 < was.size(); ++i)
+					if((*now64)[i] != was[i] && changed.size() < 120)
+						changed += (changed.empty() ? "" : " ") + std::to_string(i);
+				std::printf("  the panel's rename of W64 changed dump bytes [%s]%s\n", changed.c_str(), now64 ? "" : " (W64 answered nothing)");
+				check(now64 && !changed.empty() && changed.find(' ') == std::string::npos && std::atoi(changed.c_str()) >= 10
+					&& std::atoi(changed.c_str()) <= 13, "the name is in bytes 10 to 13 (one byte changed by the panel's rename)");
+			}
+		}
+
+		check(cmd(R"({"op":"waveErase","all":true,"id":10})"), "erase all is taken: " + note);
+		settle(180000);
+		check(users() == 0, "erase all: no position answers a request (" + std::to_string(users()) + " still do)");
+		check(cmd(R"({"op":"waveUndo","id":11})"), "undo of erase all is taken: " + note);
+		settle(240000);
+		check(waves.dumpOf(60) && waves.dumpOf(63), "undo of erase all: W61 and W64 are back");
+	}
+
 	void syxExport(const Bytes& _rom)
 	{
 		std::puts("syx export");
@@ -5563,6 +5714,8 @@ int main(const int _argc, char** _argv)
 		}
 		if(only == "syxexport")
 			syxExport(rom);
+		if(only == "digipro")
+			digipro(rom);
 		if(only.empty() || only == "hostclock")
 			hostClock(rom);
 		if(only == "hoststop")

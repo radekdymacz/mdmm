@@ -56,9 +56,9 @@ This message gives a track a machine, with its start mode. The machine picker se
 This message sets the output bus and the input of a track. The Mix workspace sends it.
 
 ## 0x5D / 0x5E DIGIPRO WAVEFORM DUMP, REQUEST
-<!-- rows: MM-378 @2747eb -->
+<!-- rows: MM-378 @b382cd -->
 
-These messages carry the user waveforms of the DigiPRO. The editor requests them when you tick **Waveforms** in **Export SysEx…** and writes the ones it gets into the file. It does not send waveforms to the machine.
+These messages carry the user waveforms of the DigiPRO. The DigiPRO card of the GLOBAL page requests each position to list them, and **Export SysEx…** requests them for a file. A factory waveform answers nothing. The machine takes a waveform dump only on GLOBAL > FILE > DIGIPRO MGR > RECEIVE: the editor opens that screen with the machine's keys, sends the dumps and writes them. Load, Rename, Paste and Undo on the card send them. Over HW MIDI you open the screen yourself.
 
 ## 0x5E SET GATE BOX PARAMETER
 <!-- rows: MM-379 @11dc71 -->

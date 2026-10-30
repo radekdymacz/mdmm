@@ -602,6 +602,17 @@
 		/* 0.6 (wave 6): the open file's preview placed elsewhere, the export panel's facts, Reset machine… (empty) */
 		syxPlace(placeAt) { send({ op: "syxPlace", placeAt }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); },
 		syxExportInfo() { send({ op: "syxExportInfo" }); },
+		/* 0.9 wave 2: the GLOBAL page's DigiPRO card (mdSyxWaves.h): the list, a Load's file (the window's chooser, its
+		   preview is the waveFile message), the changes (asked by the page first), the card's undo, HW MIDI's Send. A
+		   refusal comes back as a result and is said. */
+		waveList(again) { send(again ? { op: "waveList", again: true } : { op: "waveList" }); },
+		waveChoose(w) { send({ op: "chooseWave", wave: w }); },
+		waveLoad() { send({ op: "waveLoad" }); },
+		waveRename(w, name) { send({ op: "waveRename", wave: w, name }); },
+		waveCopy(from, to) { send({ op: "waveCopy", from, to }); },
+		waveErase(w) { send(w < 0 ? { op: "waveErase", all: true } : { op: "waveErase", wave: w }); },
+		waveUndo() { send({ op: "waveUndo" }); },
+		waveSendNow() { send({ op: "waveSendNow" }); },
 		machineReset(how) { send({ op: "machineReset", how }, { onResult: r => V().toast(r.ok ? r.note : r.errors[0]) }); },
 		revealRom() { send({ op: "revealRomFolder" }); },
 		recheck() { send({ op: "recheckFirmware" }, { onResult: r => V().toast(r.ok ? r.note : r.errors[0]) }); },
@@ -740,6 +751,8 @@
 			else if (m.type === "syxProgress") V().syxProgress(m);
 			else if (m.type === "syxExport") V().syxExported(m);
 			else if (m.type === "syxExportInfo") V().syxExportInfo(m);
+			else if (m.type === "waveList") V().setWaves(m);
+			else if (m.type === "waveFile") V().setWaveFile(m);
 			else if (m.type === "syxReset") V().toast(m.text);
 		else if (m.type === "error") onError(m);
 		else if (m.type === "result" && m.op === "followHost" && !m.ok) {

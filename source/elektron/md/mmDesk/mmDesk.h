@@ -3,6 +3,7 @@
 #include "mmDeskAdapter.h"
 #include "mmDeskModel.h"
 #include "mmRecv.h"
+#include "mmWaveRecv.h"
 
 #include "deskCore/deskDesk.h"
 #include "deskCore/deskMod.h"

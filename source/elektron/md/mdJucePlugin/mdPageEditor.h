@@ -73,6 +73,7 @@ namespace mdJucePlugin
 		// _request: the page's syxExport (its kinds and ranges), handed to the session with the file
 		void chooseSyx(bool _save, const elektronData::json::Value& _request);
 		void chooseSample(uint8_t _slot);
+		void chooseWave(uint8_t _wave);
 		// 0.9: a slot's samples (or a bank's) as WAV files: the save dialog, or a folder for all of them; the session writes
 		void sampleExport(const elektronData::json::Value& _request);
 		// Files dropped on the window (mdDroppedFiles.h): the page hears what they are and answers with dropRom,
