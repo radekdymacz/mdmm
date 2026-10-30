@@ -2734,6 +2734,23 @@ const MmJourneys = (() => {
 		],
 		tidy: dgTidy
 	};
+	/* B-195: many machine jobs in one editor (the firmware's DIGIPRO MGR stalled the eighth): a Load into W40, thirteen renames, an Erase;
+	   each job must end with what it asked. The machine tiers only (the page tier's host has no DIGIPRO MGR) */
+	const dgRename = (n, name) => ({ say: `click Rename, type ${name}, press Enter: W${n + 1} is named ${name.toUpperCase()}`,
+		act: async u => { await until(dgIdle, dgWait); u.click('#globpop [data-ga="dprename"]'); await sleep(250); u.type("#dpin", name); await sleep(100); u.key("Enter"); },
+		screen: () => ok(dgIdle() && dgName(n) === "u" + name.toUpperCase(), `W${n + 1} ${dgName(n)}, news ${$1("#globpop .dpnews")?.textContent}`), within: dgWait });
+	const digiproJobsJ = {
+		name: "mm-digipro-jobs", proves: [], tier: "machine",
+		steps: [
+			...dgLoad(39, "a one-cycle WAV"),
+			...Array.from({ length: 13 }, (_, i) => dgRename(39, "j" + (i + 1))),
+			{ say: "click W40, then Erase: it asks", act: async u => { await until(dgIdle, dgWait); u.click(dgKey(39)); await sleep(200); u.click('#globpop [data-ga="dperase"]'); },
+				screen: () => ok(dlgShown() && /Erase W40/.test($1("#dlg").textContent), "no question"), within: 20000 },
+			{ say: "click Erase in the question: W40 holds the factory waveform (the fifteenth job)", act: u => u.click(dlgButton("Erase")),
+				screen: () => ok(dgIdle() && !dgUser(39), `W40 ${dgName(39)}, news ${$1("#globpop .dpnews")?.textContent}`), within: dgWait }
+		],
+		tidy: dgTidy
+	};
 	const digiproMk1J = {
 		name: "mm-digipro-mk1", proves: ["MM-010"],
 		steps: [
@@ -4593,7 +4610,7 @@ const MmJourneys = (() => {
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, laneDrawSlide, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
 		valueKeys, soundCopy, screenDrag, filterEnv, lfoLocksJ, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
-		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportUndoJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, digiproCardJ, digiproMk1J, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach, ...Object.values(learnJ)];
+		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportUndoJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, digiproCardJ, digiproJobsJ, digiproMk1J, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach, ...Object.values(learnJ)];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
 	   its guard, "left:", names what stays). What back cannot put back, the journey keeps first (keep, keepMany) or is alone: true (doc/modern-ux/JOURNEYS.md, "Independent journeys") */
 	for (const j of all) { const own = j.tidy; j.tidy = async (u, c) => { try { if (own) await own(u, c); } finally { if (c.back0?.state && Journey.stateDiff(c.back0.state, state())) await back(u, c); } }; }

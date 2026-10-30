@@ -1690,15 +1690,49 @@ namespace
 				lastOk = false;
 			return lastOk;
 		};
+		// B-195: the LCD as text art, when a job stalls
+		const auto printLcd = [&](const char* _title)
+		{
+			const auto p = r.m.hardware().getFrontPanelSnapshot();
+			std::printf("  ---- LCD %s\n", _title);
+			for(uint32_t y = 0; y < 64; y += 2)
+			{
+				std::string line;
+				for(uint32_t x = 0; x < 128; ++x)
+				{
+					const bool a = p.getLcdPixel(x, y), b = p.getLcdPixel(x, y + 1);
+					line += a && b ? "\xe2\x96\x88" : a ? "\xe2\x96\x80" : b ? "\xe2\x96\x84" : " ";
+				}
+				while(!line.empty() && line.back() == ' ')
+					line.pop_back();
+				std::printf("  |%s\n", line.c_str());
+			}
+		};
 		const auto settle = [&](const double _maxMs)
 		{
 			const auto t0 = r.ms();
+			std::string state = r.desk->machine().waveWork().state;
 			do
 			{
 				r.run(10);
 				waves.step(r.desk->machine(), r.ms(), false, toPage);
+				// B-195: every state the DIGIPRO MGR session goes through, with the machine's screen and the time
+				const auto w = r.desk->machine().waveWork();
+				if(w.state != state)
+				{
+					state = w.state;
+					std::printf("    %8.0f ms  waves %-8s screen %d queued %zu finished %u gaveUp %u\n", r.ms() - t0, state.c_str(),
+						static_cast<int>(r.desk->machine().telemetry().screen), w.queued, w.finished, w.gaveUp);
+				}
 			}
 			while(waves.running() && r.ms() - t0 < _maxMs);
+			if(waves.running())
+			{
+				const auto w = r.desk->machine().waveWork();
+				std::printf("  STALL after %.0f ms: waves %s, queued %zu, busy %d, screen %d, status %s\n", r.ms() - t0, w.state.c_str(), w.queued,
+					w.busy ? 1 : 0, static_cast<int>(r.desk->machine().telemetry().screen), ed::json::write(r.desk->status()).c_str());
+				printLcd("at the stall");
+			}
 			return r.ms() - t0;
 		};
 		const auto users = [&]
@@ -1801,6 +1835,39 @@ namespace
 		check(cmd(R"({"op":"waveUndo","id":11})"), "undo of erase all is taken: " + note);
 		settle(240000);
 		check(waves.dumpOf(60) && waves.dumpOf(63), "undo of erase all: W61 and W64 are back");
+
+		// B-195: the editor stalled the eighth job of a session (run 41107833994). Many more jobs in this one session:
+		// renames of W61 and copies of it to W63, each must end with what it asked, none given up.
+		const auto gaveUpBefore = r.desk->machine().waveWork().gaveUp;
+		int jobsOk = 0;
+		constexpr int jobs = 16;
+		for(int j = 0; j < jobs; ++j)
+		{
+			const bool rename = (j % 4) != 3;
+			const std::string name = "J" + std::to_string(j + 1);
+			std::printf("  job %d of %d: %s\n", j + 1, jobs, rename ? ("rename W61 to " + name).c_str() : "copy W61 to W63");
+			const bool taken = rename ? cmd(R"({"op":"waveRename","wave":60,"name":")" + name + R"(","id":)" + std::to_string(100 + j) + "}")
+				: cmd(R"({"op":"waveCopy","from":60,"to":62,"id":)" + std::to_string(100 + j) + "}");
+			check(taken, "job " + std::to_string(j + 1) + " is taken: " + note);
+			if(!taken)
+				break;
+			const double took = settle(90000);
+			bool done = !waves.running();
+			if(rename)
+			{
+				const auto d = waves.dumpOf(60) ? ed::decodeMmWave(*waves.dumpOf(60)) : std::nullopt;
+				done = done && d && ed::mmWaveName(*d) == name;
+			}
+			else
+				done = done && waves.dumpOf(62) && waves.dumpOf(60) && *waves.dumpOf(62) == ed::mmWavePlaced(*waves.dumpOf(60), 62);
+			std::printf("  job %d took %.0f ms of machine time: %s\n", j + 1, took, done ? "done" : "NOT DONE");
+			check(done, "job " + std::to_string(j + 1) + " of " + std::to_string(jobs) + " in one session ends with what it asked (B-195)");
+			if(!done)
+				break;
+			++jobsOk;
+		}
+		check(r.desk->machine().waveWork().gaveUp == gaveUpBefore, "no DIGIPRO MGR job given up in the long session (B-195)");
+		std::printf("  B-195: %d of %d more jobs in the same session\n", jobsOk, jobs);
 	}
 
 	void syxExport(const Bytes& _rom)

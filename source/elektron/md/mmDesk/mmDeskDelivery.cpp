@@ -610,6 +610,7 @@ namespace mmDesk
 		w.busy = !m_waveRecv.quiet();
 		w.finished = m_wavesFinished;
 		w.gaveUp = m_wavesGaveUp;
+		w.state = m_waveRecv.stateName();
 		if(!m_manualWaves.empty())
 			w.waitsFor = "Open GLOBAL > FILE > DIGIPRO MGR > RECEIVE > ORG on the Monomachine (it says WAITING), then press Send.";
 		return w;

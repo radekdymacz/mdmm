@@ -443,6 +443,13 @@ namespace mmDesk
 		v.set("loaded", static_cast<int>(knownCount()));
 		v.set("recv", m_recv.stateName());
 		v.set("parked", m_recv.parked());
+		// B-195: what holds the panel sessions (the DigiPRO manager's and SYSEX RECV's), in the log's status lines
+		v.set("recvQueued", static_cast<int>(m_recv.queued()));
+		v.set("waves", m_waveRecv.stateName());
+		v.set("wavesQueued", static_cast<int>(m_waveRecv.queued()));
+		v.set("screen", static_cast<int>(m_tel.screen));
+		v.set("keysWaitMs", std::max(0.0, m_keysUntilMs - now()));
+		v.set("streamSending", m_stream.sending(now()));
 		v.set("roundTripMs", m_lastRoundTripMs);
 		v.set("hostClock", m_hostClock.on);
 		return v;
