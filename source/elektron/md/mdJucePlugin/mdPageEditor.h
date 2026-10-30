@@ -73,6 +73,8 @@ namespace mdJucePlugin
 		// _request: the page's syxExport (its kinds and ranges), handed to the session with the file
 		void chooseSyx(bool _save, const elektronData::json::Value& _request);
 		void chooseSample(uint8_t _slot);
+		// 0.9: a slot's samples (or a bank's) as WAV files: the save dialog, or a folder for all of them; the session writes
+		void sampleExport(const elektronData::json::Value& _request);
 		// Files dropped on the window (mdDroppedFiles.h): the page hears what they are and answers with dropRom,
 		// dropSyx or dropSample, which hand the file to the session as its chooser would. The reason when the
 		// file cannot be used.

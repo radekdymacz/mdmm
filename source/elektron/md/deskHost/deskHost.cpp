@@ -81,6 +81,13 @@ namespace deskHost
 				"choose a sample (WAV or AIFF) for UW ROM slot slot: the window's native file chooser; the plug-in reads the file, "
 				"converts it and sends it as SDS (sampleLoad messages follow); the file never passes through the page",
 				Action::ChooseSample, Actor::Window),
+			row("sampleExport", {{"bank", ArgType::Text, 0, 0, false, {"rom", "ram"}}, {"slot", ArgType::Integer, 0, 47, true}, {"all", ArgType::Bool, 0, 0, true},
+					{"format", ArgType::Text, 0, 0, true, {"wav", "syx"}}},
+				"export UW samples as WAV files (16-bit mono at the slot's own rate, the samples the machine holds): the slot of bank "
+				"through the window's save dialog, or with all every slot of the bank that holds one into a folder the window asks for; "
+				"format syx (ROM only) writes the SDS dump the machine's own SEND makes, with the slot's position in it; "
+				"a sampleExport message follows",
+				Action::SampleExport, Actor::Window),
 			row("syxImport", {{"kinds", ArgType::Array}, {"skip", ArgType::Array, 0, 0, true}, {"placeAt", ArgType::Object, 0, 0, true},
 					{"checkOnly", ArgType::Bool, 0, 0, true}, {"readBack", ArgType::Bool, 0, 0, true}},
 				"import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\", the slot "

@@ -7,6 +7,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdio>
 #include <map>
 
 namespace mdDesk
@@ -59,7 +60,8 @@ namespace mdDesk
 	{
 		static const std::map<std::string, void (Desk::*)(const Value&)> map{
 			{"modSet", &Desk::setModulators}, {"knobs", &Desk::setKnobs}, {"soloSet", &Desk::setSolo}, {"followSet", &Desk::setFollow},
-			{"sampleName", &Desk::renameSample}, {"sampleWave", &Desk::sampleWave}, {"audition", &Desk::audition}, {"auditionStop", &Desk::auditionStop}};
+			{"sampleName", &Desk::renameSample}, {"sampleCopy", &Desk::copySample}, {"samplePaste", &Desk::pasteSample},
+			{"ramToRom", &Desk::ramToRom}, {"sampleUndo", &Desk::undoSample}, {"sampleWave", &Desk::sampleWave}, {"audition", &Desk::audition}, {"auditionStop", &Desk::auditionStop}};
 		return map;
 	}
 
@@ -78,6 +80,7 @@ namespace mdDesk
 			result(_message, {"no such setup"}, {});
 		else
 			(this->*(it->second))(_message);
+		publishSampleHistory(false);
 	}
 
 	// App-only LFO and random sources (deskMod.h): the page sends the whole setup.
@@ -159,6 +162,7 @@ namespace mdDesk
 		publishModulators();
 		publishSamples();
 		publishSampleLoad(true);
+		publishSampleHistory(true);
 		if(m_audition)
 			publishAudition(true);
 	}
@@ -187,6 +191,7 @@ namespace mdDesk
 	void Desk::onStartOver()
 	{
 		m_samples.reset();
+		m_sampleSteps.clear();	// the memory is read anew: what a step would put back may not be what was there
 		publishSetup();	// I-003: the follow option is in it
 		publishSolo();	// the page dropped its solo with the rest: the project's is said again
 	}
@@ -306,6 +311,16 @@ namespace mdDesk
 		publish(m);
 	}
 
+	namespace
+	{
+		std::string romLabel(const uint8_t _slot)
+		{
+			char t[16];
+			std::snprintf(t, sizeof(t), "ROM-%02d", _slot + 1);
+			return t;
+		}
+	}
+
 	// B-128: the firmware takes 0x73 only as the name of the NEXT sample received and renames no slot. So Rename sends the
 	// name, then the slot's own sample again by SDS into the same slot (the samples as the bank read them from memory, so
 	// the audio stays as it was; only the name changes). A machine whose audio cannot be read back (a real one ignores SDS
@@ -343,9 +358,257 @@ namespace mdDesk
 		l.length = static_cast<uint32_t>(upload.samples.size());
 		l.notes = upload.notes;
 		l.notes.insert(l.notes.begin(), "Rename sends the name, then the slot's own sample again: the machine renames a sample only when it receives it.");
+		l.step = sampleStepOf(slot, "Rename " + romLabel(slot));
 		m_sampleLoad = std::move(l);
 		publishSampleLoad(true);
 		result(_message, {}, {});
+	}
+
+	// ---- 0.9: the sample manager (doc/release/0.9/md-sample-manager.md) ----
+
+	uint32_t Desk::sampleRoom(const uint8_t _slot) const
+	{
+		namespace ed = elektronData;
+		constexpr uint32_t reserve = 4 * 44100;
+		uint32_t others = 0;
+		if(m_samples)
+			for(const auto& s : m_samples->rom)
+				if(s.slot != _slot)
+					others += s.length;
+		return ed::g_mdSampleCapacity > others + reserve ? ed::g_mdSampleCapacity - others - reserve : 0;
+	}
+
+	std::optional<Desk::SampleStep> Desk::sampleStepOf(const uint8_t _slot, const std::string& _what) const
+	{
+		if(!m_samples || _slot >= m_samples->rom.size())
+			return std::nullopt;
+		const auto& s = m_samples->rom[_slot];
+		if(s.empty || !s.pcm || s.pcm->empty() || !s.rate)
+			return std::nullopt;
+		SampleStep step;
+		step.slot = _slot;
+		step.what = _what;
+		step.before.slot = _slot;
+		step.before.name = s.name;
+		step.before.rate = s.rate;
+		step.before.loop = s.loop.has_value();
+		step.before.pcm = s.pcm;
+		return step;
+	}
+
+	std::string Desk::sendClip(const uint8_t _slot, const SampleClip& _clip, const std::string& _file, const std::string& _what, const bool _record)
+	{
+		namespace ed = elektronData;
+		if(_slot >= ed::g_mdRomSlots)
+			return "A sample goes into a ROM slot (1-48).";
+		if(!isInputReady())
+			return MdModel::lifecycleText(lifecycle());
+		if(!_clip.pcm || _clip.pcm->empty() || !_clip.rate)
+			return "There is nothing to send.";
+		if(const auto room = sampleRoom(_slot); _clip.length() > room)
+		{
+			char t[200];
+			std::snprintf(t, sizeof(t), "It does not fit: it is %u samples and %s has room for %u with the other slots as they are.",
+				static_cast<unsigned>(_clip.length()), romLabel(_slot).c_str(), static_cast<unsigned>(room));
+			return t;
+		}
+		std::string name = _clip.name;
+		while(!name.empty() && name.back() == ' ')
+			name.pop_back();
+		if(name.size() > 4)
+			name.resize(4);
+		if(ed::mdSetSampleName(_slot, name).empty())
+			name = "SMPL";
+		ed::MdSampleUpload upload;
+		upload.samples = *_clip.pcm;
+		upload.rate = _clip.rate;
+		upload.name = name;
+		if(_clip.loop)
+			upload.notes.push_back("The loop points are not sent.");
+		if(const auto why = machine().sendSample(_slot, upload); !why.empty())
+			return why;
+		SampleLoad l;
+		l.slot = _slot;
+		l.file = _file;
+		l.name = upload.name;
+		l.rate = upload.rate;
+		l.length = static_cast<uint32_t>(upload.samples.size());
+		l.notes = upload.notes;
+		if(_record)
+			l.step = sampleStepOf(_slot, _what);
+		m_sampleLoad = std::move(l);
+		publishSampleLoad(true);
+		return {};
+	}
+
+	// A slot's samples into the clipboard, or why not. A RAM take is copied as it is now.
+	std::string Desk::copyFrom(const std::string& _bank, const size_t _slot)
+	{
+		const auto caps = machine().capabilities();
+		if(!caps.has("sampleAudio"))
+			return caps.reason("sampleAudio");
+		if(!m_samples)
+			return "The samples are not read yet.";
+		const bool ram = _bank == "ram";
+		const auto& list = ram ? m_samples->ram : m_samples->rom;
+		if(_slot >= list.size())
+			return ram ? "There are four RAM slots (1-4)." : "There are 48 ROM slots (1-48).";
+		if(ram && !m_samples->ramReadable)
+			return m_samples->ramReason;
+		const auto& s = list[_slot];
+		if(s.empty || !s.pcm || s.pcm->empty() || !s.rate)
+			return (ram ? "RAM " + std::to_string(_slot + 1) : romLabel(static_cast<uint8_t>(_slot))) + " holds no sample: there is nothing to copy.";
+		SampleClip c;
+		c.ram = ram;
+		c.slot = static_cast<uint8_t>(_slot);
+		c.name = ram ? "RAM" + std::to_string(_slot + 1) : s.name;
+		c.rate = s.rate;
+		c.loop = s.loop.has_value();
+		c.pcm = s.pcm;
+		m_clip = std::move(c);
+		return {};
+	}
+
+	void Desk::copySample(const Value& _message)
+	{
+		const auto why = copyFrom(_message.find("bank")->asString(), static_cast<size_t>(_message.find("slot")->asNumber()));
+		result(_message, why.empty() ? std::vector<std::string>{} : std::vector<std::string>{why}, {});
+	}
+
+	void Desk::pasteSample(const Value& _message)
+	{
+		const auto slot = static_cast<uint8_t>(_message.find("slot")->asNumber());
+		const auto why = !m_clip ? std::string("Nothing is copied. Copy a slot first.")
+			: sendClip(slot, *m_clip, "Paste", "Paste into " + romLabel(slot), true);
+		result(_message, why.empty() ? std::vector<std::string>{} : std::vector<std::string>{why}, {});
+	}
+
+	// RAM to ROM (the manual: copy the RAM machine, paste it into a ROM slot): the take as it is now, sent to the ROM slot.
+	void Desk::ramToRom(const Value& _message)
+	{
+		const auto ram = static_cast<size_t>(_message.find("ram")->asNumber());
+		const auto slot = static_cast<uint8_t>(_message.find("slot")->asNumber());
+		auto why = copyFrom("ram", ram);
+		if(why.empty())
+			why = sendClip(slot, *m_clip, "RAM " + std::to_string(ram + 1), "Copy of RAM " + std::to_string(ram + 1) + " into " + romLabel(slot), true);
+		result(_message, why.empty() ? std::vector<std::string>{} : std::vector<std::string>{why}, {});
+	}
+
+	// Puts back what the last step replaced (no redo). The step goes when the machine has taken the sample.
+	void Desk::undoSample(const Value& _message)
+	{
+		std::string why;
+		if(m_sampleSteps.empty())
+			why = "Nothing to undo.";
+		else
+		{
+			const auto step = m_sampleSteps.back();
+			why = sendClip(step.slot, step.before, "Undo", "", false);
+			if(why.empty() && m_sampleLoad)
+				m_sampleLoad->undoing = true;
+		}
+		result(_message, why.empty() ? std::vector<std::string>{} : std::vector<std::string>{why}, {});
+	}
+
+	// The clipboard and the last step, for the page's keys; when it changed (or _force: after a ready).
+	void Desk::publishSampleHistory(const bool _force)
+	{
+		Value m = Value::object();
+		m.set("type", "sampleHistory");
+		if(m_clip)
+		{
+			Value c = Value::object();
+			c.set("bank", m_clip->ram ? "ram" : "rom");
+			c.set("slot", static_cast<int>(m_clip->slot));
+			c.set("name", m_clip->name);
+			c.set("length", m_clip->length());
+			c.set("rate", m_clip->rate);
+			m.set("clip", c);
+		}
+		else
+			m.set("clip", nullptr);
+		if(!m_sampleSteps.empty())
+		{
+			Value u = Value::object();
+			u.set("slot", static_cast<int>(m_sampleSteps.back().slot));
+			u.set("what", m_sampleSteps.back().what);
+			u.set("depth", static_cast<int>(m_sampleSteps.size()));
+			m.set("undo", u);
+		}
+		else
+			m.set("undo", nullptr);
+		const auto key = elektronData::json::write(m, 0);
+		if(!_force && key == m_historyKey)
+			return;
+		m_historyKey = key;
+		publish(m);
+	}
+
+	std::vector<Desk::ExportFile> Desk::exportSamples(const std::string& _bank, const int _slot, const bool _all, const std::string& _format, std::string& _why) const
+	{
+		namespace ed = elektronData;
+		const auto caps = machine().capabilities();
+		if(!caps.has("sampleAudio"))
+		{
+			_why = caps.reason("sampleAudio");
+			return {};
+		}
+		if(!m_samples)
+		{
+			_why = "The samples are not read yet.";
+			return {};
+		}
+		const bool ram = _bank == "ram";
+		const bool syx = _format == "syx";
+		if(syx && ram)
+		{
+			_why = "A RAM take has no place in a SysEx sample file: keep it as a ROM slot first, or export it as WAV.";
+			return {};
+		}
+		if(ram && !m_samples->ramReadable)
+		{
+			_why = m_samples->ramReason;
+			return {};
+		}
+		const auto& list = ram ? m_samples->ram : m_samples->rom;
+		static const std::string notInFileNames = "/\\:*?\"<>|";
+		std::vector<ExportFile> files;
+		for(const auto& s : list)
+		{
+			if((!_all && s.slot != _slot) || s.empty || !s.pcm || s.pcm->empty() || !s.rate)
+				continue;
+			char number[16];
+			if(ram)
+				std::snprintf(number, sizeof(number), "RAM-%d", s.slot + 1);
+			else
+				std::snprintf(number, sizeof(number), "ROM-%02d", s.slot + 1);
+			std::string name = number;
+			std::string label;
+			for(const char c : s.name)
+				label.push_back(c < 0x20 || c > 0x7e || notInFileNames.find(c) != std::string::npos ? '_' : c);
+			while(!label.empty() && label.back() == ' ')
+				label.pop_back();
+			if(!label.empty())
+				name += " " + label;
+			if(syx)
+			{
+				std::string sdsName = s.name;
+				while(!sdsName.empty() && sdsName.back() == ' ')
+					sdsName.pop_back();
+				if(sdsName.size() > 4)
+					sdsName.resize(4);
+				if(ed::mdSetSampleName(s.slot, sdsName).empty())
+					sdsName = "SMPL";
+				const auto dump = ed::mdSdsDump(s.slot, *s.pcm, s.rate, sdsName);
+				if(dump)
+					files.push_back({name + ".syx", dump->bytes()});
+				continue;
+			}
+			files.push_back({name + ".wav", ed::encodeWavMono16(*s.pcm, s.rate)});
+		}
+		if(files.empty())
+			_why = _all ? "No slot of this bank holds a sample." : "The slot holds no sample.";
+		return files;
 	}
 
 	std::string Desk::loadSample(const uint8_t _slot, const std::string& _fileName, const Bytes& _file)
@@ -374,13 +637,7 @@ namespace mdDesk
 			return refuse(error);
 		// The memory left: the emulated machine's bank says what the other slots hold; a real one does not
 		// say. One second is kept for each RAM buffer (they share the same memory).
-		constexpr uint32_t reserve = 4 * 44100;
-		uint32_t others = 0;
-		if(m_samples)
-			for(const auto& s : m_samples->rom)
-				if(s.slot != _slot)
-					others += s.length;
-		const uint32_t left = ed::g_mdSampleCapacity > others + reserve ? ed::g_mdSampleCapacity - others - reserve : 0;
+		const uint32_t left = sampleRoom(_slot);
 		auto upload = ed::prepareMdSample(*clip, _fileName, left, error);
 		if(!upload)
 			return refuse(error);
@@ -393,6 +650,7 @@ namespace mdDesk
 		l.rate = upload->rate;
 		l.length = static_cast<uint32_t>(upload->samples.size());
 		l.notes = upload->notes;
+		l.step = sampleStepOf(_slot, "Load into " + romLabel(_slot));
 		if(!m_samples)
 			l.notes.push_back("A real Machinedrum does not say how much sample memory is free; if it is full, it keeps the slot as it was.");
 		m_sampleLoad = std::move(l);
@@ -441,7 +699,25 @@ namespace mdDesk
 		l.last = key;
 		publish(m);
 		if(p.state != S::Sending)
+		{
+			// the step to undo it is kept only when the machine took the sample; an undo takes its step off
+			if(p.state == S::Done)
+			{
+				if(l.undoing)
+				{
+					if(!m_sampleSteps.empty())
+						m_sampleSteps.pop_back();
+				}
+				else if(l.step)
+				{
+					m_sampleSteps.push_back(std::move(*l.step));
+					if(m_sampleSteps.size() > g_sampleUndoSteps)
+						m_sampleSteps.erase(m_sampleSteps.begin());
+				}
+			}
 			m_sampleLoad.reset();
+			publishSampleHistory(false);
+		}
 	}
 
 	std::vector<std::string> Desk::loadSetup(const Value& _setup)

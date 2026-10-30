@@ -67,8 +67,10 @@
 <h4 class="gd-h3" id="the-slots">The slots</h4>
 <p>The ROM slots are in the rail as a grid of 48 keys. A key that is lit holds a sample the kit uses. A faint key is an empty slot. Point at a key to see its number, its name, its size and the tracks that play it.</p>
 <p>With a ROM slot selected, the page shows under it every ROM slot as a tile: its waveform, its number and name, and a key to hear it. An empty slot offers <b class="gd-ui">Load…</b>. Click a tile to select the slot.</p>
-<p>Point at the <b class="gd-light">&lt;MEM&gt;</b> field to see the figures behind it.</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> The <b class="gd-light">&lt;MEM&gt;</b> percentage is worked out from the samples the editor reads. It is not the machine's own figure of memory left.</p>
+<p>Point at a key or a tile to see the size of the sample: its length in seconds, in kilobytes and in samples, and its rate. A kilobyte count is the sample as the machine stores it, 16-bit and mono.</p>
+<h4 class="gd-h3" id="memory-left">Memory left</h4>
+<p>The header of the <b class="gd-ui">ROM slots</b> card gives the sample memory in seconds: how much the samples hold, how much is free, and the free share in per cent. The ROM slots and the four RAM buffers share the memory, so the figure counts both. Point at the <b class="gd-light">&lt;MEM&gt;</b> field for the same figures in samples.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The editor works the figure out from the samples it reads. The Machinedrum does not report its own figure over MIDI, so the share can differ by a few per cent from the one on the machine's SAMPLE MGR screen.</p></aside>
 <h4 class="gd-h3" id="hear-a-sample">Hear a sample</h4>
 <p>Click the play key on a tile, or the play key by the waveform of the selected slot. !<a href="shot:e2e-md-sampler-audition">A tile with its play key</a></p>
 <p>The sample plays once, from the start, on the output of the plug-in. Click the key again to stop it. A line moves over the waveform as it plays.</p>
@@ -82,7 +84,12 @@
 <h4 class="gd-h3" id="limits">Limits</h4>
 <p>The editor makes every sample it loads mono and 16-bit, at 44.1 kHz at most, and cuts it to the memory left.</p>
 <p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> The editor takes WAV and AIFF files. It does not receive a sample sent over MIDI by another program.</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot copy, clear, paste or undo a sample slot in the editor yet.</p>
+<h4 class="gd-h3" id="copy-paste-and-undo">Copy, paste and undo</h4>
+<ol class="gd-steps"><li>Select a slot that holds a sample, ROM or RAM.</li><li>Click <b class="gd-ui">Copy</b>. A line beside the keys names what is copied.</li><li>Select the ROM slot that is to take it.</li><li>Click <b class="gd-ui">Paste</b>. A bar shows the sending, as when you load a file.</li></ol>
+<p>The copy is a snapshot taken when you click <b class="gd-ui">Copy</b>. A RAM take that is recorded over afterwards is still pasted as it was. The paste replaces what the slot holds. The slot takes the name of the copy.</p>
+<p><b class="gd-ui">Undo sample</b> sends back the sample that the last paste, RAM to ROM copy, rename or file load replaced. It goes back 16 steps, one at a time. The editor has no redo for samples. A step that filled an empty slot cannot be undone, because the editor cannot erase a slot.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The loop points of a sample are not sent with a paste or an undo. A sample that does not fit in the memory left is not sent, and a message says by how much.</p></aside>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot clear a sample slot in the editor yet.</p>
 </div></section>
 <section class="gd-sec" id="the-difference-between-rom-and-ram-machines" aria-labelledby="the-difference-between-rom-and-ram-machines-h">
 <div class="gd-body gd-prose"><h2 id="the-difference-between-rom-and-ram-machines-h">THE DIFFERENCE BETWEEN ROM AND RAM MACHINES <a class="gd-anchor" href="#the-difference-between-rom-and-ram-machines" aria-label="Link to THE DIFFERENCE BETWEEN ROM AND RAM MACHINES">#</a></h2>
@@ -98,7 +105,9 @@
 <section class="gd-sec" id="ram-to-rom-copy" aria-labelledby="ram-to-rom-copy-h">
 <div class="gd-body gd-prose"><h2 id="ram-to-rom-copy-h">RAM TO ROM COPY <a class="gd-anchor" href="#ram-to-rom-copy" aria-label="Link to RAM TO ROM COPY">#</a></h2>
 <p class="gd-ref">MD manual p.71</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot copy a RAM slot to a ROM slot in the editor yet. Do it on the machine.</p>
+<p>To keep a RAM take when the power is off, copy it to a ROM slot:</p>
+<ol class="gd-steps"><li>Select the RAM slot that holds the take.</li><li>Click <b class="gd-ui">Keep as ROM…</b>.</li><li>Type the ROM slot, 1 to 48. The first empty slot is offered.</li><li>Click <b class="gd-ui">Keep</b>. A bar shows the sending.</li></ol>
+<p>The take is sent as it is now. The ROM slot takes the name RAM1 to RAM4 and replaces what it held; <b class="gd-ui">Undo sample</b> brings that back. The other RAM slots stay as they are. On the machine the copy empties them after a prompt, and the editor does not.</p>
 </div></section>
 <section class="gd-sec" id="general-sample-receive" aria-labelledby="general-sample-receive-h">
 <div class="gd-body gd-prose"><h2 id="general-sample-receive-h">GENERAL SAMPLE RECEIVE <a class="gd-anchor" href="#general-sample-receive" aria-label="Link to GENERAL SAMPLE RECEIVE">#</a></h2>
@@ -123,12 +132,17 @@
 <section class="gd-sec" id="send-samples" aria-labelledby="send-samples-h">
 <div class="gd-body gd-prose"><h2 id="send-samples-h">SEND SAMPLES <a class="gd-anchor" href="#send-samples" aria-label="Link to SEND SAMPLES">#</a></h2>
 <p class="gd-ref">MD manual p.74</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot send a sample from the machine to a computer. The <b class="gd-ui">Send</b> key is greyed out, with the reason: the Machinedrum ignores requests for its samples.</p>
+<p>The Machinedrum ignores requests for its samples over MIDI, so the editor does not ask it to send. It reads the samples from the emulated machine and writes them as files instead.</p>
+<ol class="gd-steps"><li>Select the slot, ROM or RAM.</li><li>Click <b class="gd-ui">Export WAV</b>.</li><li>Choose where to save the file.</li></ol>
+<p>To save every ROM slot that holds a sample, click <b class="gd-ui">Export all…</b> in the header of the <b class="gd-ui">ROM slots</b> card and choose a folder. A file is written for each slot, named by its slot and its name, such as &quot;ROM-04 SNR&quot;. On a RAM slot, <b class="gd-ui">Export all RAM…</b> does the same for the four RAM slots.</p>
+<p>The files are 16-bit mono WAV at the slot's own rate. They hold exactly the samples the machine holds, with no loop points.</p>
+<p>To get the file the machine's own SEND makes, click <b class="gd-ui">Export SysEx</b> on a ROM slot, or <b class="gd-ui">Export all SysEx…</b> in the header of the <b class="gd-ui">ROM slots</b> card. The file is a MIDI Sample Dump with the slot's position in it. When you send it back with the ORG method, the sample lands in the slot it came from. A RAM slot has no SysEx file: keep it as a ROM slot first, or export it as WAV.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Export works with the emulated machine only. A real Machinedrum does not send its samples back, so the keys are greyed out, with the reason.</p></aside>
 </div></section>
 <section class="gd-sec" id="erase-samples" aria-labelledby="erase-samples-h">
 <div class="gd-body gd-prose"><h2 id="erase-samples-h">ERASE SAMPLES <a class="gd-anchor" href="#erase-samples" aria-label="Link to ERASE SAMPLES">#</a></h2>
 <p class="gd-ref">MD manual p.75</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot erase one sample or all samples in the editor yet. Load a new sample into the slot to replace it.</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot erase one sample or all samples in the editor yet. Erase them in SAMPLE MGR on the machine, or load a new sample into the slot to replace it.</p>
 </div></section>
 <nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/md/10-global-settings/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">10. Global settings</span></a><a href="/guide/md/12-early-start-up-menu/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">12. Early start-up menu</span></a></nav>
 </article>

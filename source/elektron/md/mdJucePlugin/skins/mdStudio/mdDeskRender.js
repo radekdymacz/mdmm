@@ -95,6 +95,8 @@ Bridge.onMessage(m => {
 	case "sampleWave": onSampleWave(m); break;
 	case "audition": onAudition(m); break;
 	case "sampleLoad": onSampleLoad(m); break;
+	case "sampleHistory": onSampleHistory(m); break;
+	case "sampleExport": onSampleExport(m); break;
 	case "error": showLastError([m.message]); break;
 	case "learn": { const prev = Docs.learn; Docs.learn = m.doc; applyMapping(m.doc.enabled); if (!S.mapping) break; onLearnDoc(prev, m.doc); } if (!S.mapping) break; if (S.ws === "control") scheduleRender(); else syncControls(); if (!m.doc.learning && S.ctl.learnT) { S.ctl.learnT = null; syncControls(); } break;
 	}

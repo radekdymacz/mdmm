@@ -407,6 +407,14 @@ namespace mdDesk
 			{"audition", Owner::Setup, Gate::None, -1, {{"bank", ArgType::Text, 0, 0, false, {"rom", "ram"}}, {"slot", ArgType::Integer, 0, 47}},
 				"play a slot's sample once from the start on the plug-in's own output (the emulator); another audition stops; {\"type\":\"audition\"} says when it plays and stops"},
 			{"auditionStop", Owner::Setup, Gate::None, -1, {}, "stop the audition"},
+			// ---- 0.9: the sample manager (doc/release/0.9/md-sample-manager.md) ----
+			{"sampleCopy", Owner::Setup, Gate::None, -1, {{"bank", ArgType::Text, 0, 0, false, {"rom", "ram"}}, {"slot", ArgType::Integer, 0, 47}},
+				"copy a slot's samples into the sample clipboard (the desk's own; a RAM take is copied as it is now); {\"type\":\"sampleHistory\"} says what it holds"},
+			{"samplePaste", Owner::Setup, Gate::None, -1, {{"slot", ArgType::Integer, 0, 47}},
+				"paste the sample clipboard into ROM slot slot: its samples and name sent as SDS (sampleLoad follows); a step to undo it when the slot held a sample"},
+			{"ramToRom", Owner::Setup, Gate::None, -1, {{"ram", ArgType::Integer, 0, 3}, {"slot", ArgType::Integer, 0, 47}},
+				"RAM to ROM copy: RAM slot ram as it is now, sent to ROM slot slot as SDS (the manual's FUNCTION + REC, FUNCTION + STOP; the other RAM slots stay)"},
+			{"sampleUndo", Owner::Setup, Gate::None, -1, {}, "send back the sample the last paste, RAM to ROM copy, rename or load replaced (16 steps, no redo)"},
 		});
 		return table;
 	}

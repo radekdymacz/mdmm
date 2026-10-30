@@ -167,6 +167,8 @@ namespace elektronData
 	std::optional<AudioClip> decodeAudioFile(const std::vector<uint8_t>& _bytes, std::string& _error);
 	// A WAV file (16-bit PCM) of _channels: for tests and fixtures.
 	std::vector<uint8_t> encodeWav16(const AudioClip& _clip);
+	// A WAV file (16-bit PCM, one channel) of exactly _samples: a slot's samples as the machine holds them (the export).
+	std::vector<uint8_t> encodeWavMono16(const std::vector<int16_t>& _samples, uint32_t _rate);
 
 	// What goes to the machine: mono 16-bit at a rate it plays, at most _maxSamples long.
 	struct MdSampleUpload

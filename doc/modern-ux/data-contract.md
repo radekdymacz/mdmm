@@ -660,6 +660,21 @@ before anything is sent is `failed` with slot, file and text. `sampleCancel` sto
 gets no answer and nothing is stored, flash or DSP table (measured, `samplemap`). The page shows Load
 sample disabled on a RAM slot with that reason; `loadSample` refuses slots 48-51 the same way.
 
+**The sample manager (0.9, doc/release/0.9/md-sample-manager.md).** The desk's own ops, all on the bank it holds
+(so only on the emulated machine; a real one is refused with the `sampleAudio` reason): `sampleCopy {bank, slot}`
+takes a snapshot of a slot's samples into the desk's clipboard; `samplePaste {slot}` sends it to ROM `slot` as SDS
+(`sampleLoad` follows, `file` "Paste"); `ramToRom {ram, slot}` is a copy of RAM `ram` and a paste in one; `sampleUndo`
+sends back what the last paste, RAM to ROM copy, rename or file load replaced. A step is recorded when the send
+starts, kept when `sampleLoad` says `done`, dropped when it fails or is cancelled; only when the slot held a sample
+(an empty slot cannot be emptied again: the editor cannot erase). Sixteen steps, no redo, forgotten when the machine
+starts over. A sample that does not fit the memory left (`Desk::sampleRoom`: the capacity less the other ROM slots
+and a second for each RAM buffer) is refused with its numbers. Loop points are not sent (the SDS header the sender
+writes has none). `{"type":"sampleHistory", clip, undo}` says what the clipboard and the last step hold (`null`
+when none): on every change and after a ready. The window's op `sampleExport {bank, slot, all}` opens the save
+dialog (one slot) or a folder chooser (`all`: every slot of the bank that holds a sample); the session writes the
+WAV files `Desk::exportSamples` makes (16-bit mono at the slot's rate, named "ROM-04 SNR.wav", "RAM-1.wav") and
+`format` "syx" (ROM only) writes `mdSdsDump(slot, ...).bytes()` instead, a `.syx` the machine takes back with ORG into the same slot; sends `{"type":"sampleExport", ok, count, text}`. Erase is not built: no SysEx or SDS message frees a slot.
+
 ## 5. Hardware limits (`elektronData::validate`)
 
 | Document | Limit |
