@@ -5,6 +5,9 @@
 #include "mmDeskMachineParts.h"
 
 #include "elektronData/mmCommands.h"
+#include "elektronData/syxImport.h"
+
+#include "deskCore/deskPacer.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -209,6 +212,9 @@ namespace mmDesk
 			afterDumps(_message);
 		else
 			m_port.sendSysex(_message);
+		// B-195: a waveform request (0x5E): its dump may be on its way back for as long as a whole one takes on a cable
+		if(_message.size() > 7 && _message[0] == 0xf0 && _message[6] == ed::g_mmWaveRequest)
+			m_waveDumpUntilMs = now() + deskCore::DinPacer::wireMs(g_waveDumpBytes) + g_waveDumpMarginMs;
 		// B-026: a dump of the active global is stored, not applied, until its slot is made active (0x56): without it
 		// the machine keeps its old channels while every document says the new ones. As after the editor's own global
 		// writes, once SYSEX RECV is left.
@@ -258,8 +264,8 @@ namespace mmDesk
 		// are what finds the machine.
 		if(!m_profile.wire && !ready())
 			return;
-		// Status: once a second, four times while a pattern is queued.
-		if(_now - m_lastStatusMs > (m_queuedPattern >= 0 ? 250 : 1000))
+		// Status: once a second, four times while a pattern is queued; not while a waveform's dump may be coming (B-195).
+		if(_now - m_lastStatusMs > (m_queuedPattern >= 0 ? 250 : 1000) && !waveDumpComing(_now))
 		{
 			m_lastStatusMs = _now;
 			requestStatus();
@@ -289,7 +295,8 @@ namespace mmDesk
 		pumpAfterAccept(_now, _view);
 		pumpChain();
 		pumpSongReload(_now);
-		pumpLoads(_now);
+		if(!waveDumpComing(_now))
+			pumpLoads(_now);
 		if(m_restoreKit >= 0)
 			restoreWorkingKit(_view);
 		applyWorkingKit(_now, _view);

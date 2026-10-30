@@ -343,6 +343,14 @@ namespace mmDesk
 		int m_queuedPattern = -1;
 		TelemetryOut m_telemetryOut;	// the transport message last published (telemetryDue)
 		double m_lastStatusMs = -1e9;
+		// B-195: the machine may be sending a waveform's dump (0x5D, about 7 KB, 2.3 s on a cable), the answer to a 0x5E the
+		// editor sent. Until it is in, or the time a whole dump takes is over, the desk asks the machine nothing (its status
+		// polls and its reads): the Monomachine that makes a status reply while it sends the dump can hang for good
+		// (interrupts off, waiting for its MIDI out; mmDigiproManagerFirmwareTest).
+		double m_waveDumpUntilMs = -1e9;
+		static constexpr size_t g_waveDumpBytes = 7100;			// a 0x5D dump, as SyxWaves's read waits for one
+		static constexpr double g_waveDumpMarginMs = 500;
+		bool waveDumpComing(const double _now) const { return _now < m_waveDumpUntilMs; }
 		double m_lastRoundTripMs = -1;
 		deskCore::Sequencer<Act> m_sequence;
 		// MM-P8: the chain (or CLEAR) the page asked for while keys were on their way, sent after them

@@ -17,6 +17,7 @@
 #include "elektronData/mmJson.h"
 #include "elektronData/mmValidate.h"
 #include "elektronData/mmWave.h"
+#include "elektronData/syxImport.h"
 
 #include "elektronData/jsonSchema.h"
 
@@ -478,6 +479,32 @@ namespace
 				run(10);
 			check(d.machine().waveWork().finished == 2 && erased == std::vector<int>{7}, "the panel erased W08");
 			check(!d.machine().eraseWave(64).empty(), "no position 65");
+
+			// B-195: while a waveform's dump may be on its way back (a 0x5E sent), the desk asks the machine nothing: a
+			// Monomachine that makes a status reply while it sends the dump can hang (mmDigiproManagerFirmwareTest)
+			const auto asked = [&](const uint8_t _cmd)
+			{
+				int n = 0;
+				for(const auto& m : wire)
+					n += m.size() > 6 && m[6] == _cmd;
+				return n;
+			};
+			wire.clear();
+			run(1500);
+			check(asked(0x70) > 0, "the desk polls the machine's status");
+			check(d.machine().sendAsIs(ed::mmWaveRequest(7), false).empty() && asked(0x5e) == 1, "a waveform request goes");
+			wire.clear();
+			run(1500);
+			check(asked(0x70) == 0, "no status poll while the waveform's dump may be coming (B-195)");
+			d.onDeviceSysex(dump);
+			run(1500);
+			check(asked(0x70) > 0, "the dump is in: the polls go on");
+			check(d.machine().sendAsIs(ed::mmWaveRequest(9), false).empty(), "a request for a factory waveform (no answer)");
+			wire.clear();
+			run(2000);
+			check(asked(0x70) == 0, "no poll while its dump could still come");
+			run(1500);
+			check(asked(0x70) > 0, "the polls go on once a whole dump's time is over");
 		}
 		{
 			mmDesk::Desk d(port, mmDesk::wireProfile());

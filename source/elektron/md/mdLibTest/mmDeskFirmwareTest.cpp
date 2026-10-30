@@ -2116,7 +2116,7 @@ namespace
 			std::printf("  job %d of %d: %s\n", j + 1, jobs, rename ? ("rename W61 to " + name).c_str() : "copy W61 to W63");
 			answers.clear();
 			const double jobAt = r.ms();
-			std::printf("  B-195 MIDI before job %d: %s\n", j + 1, r.m.hardware().midiIngressState().c_str());
+			trace.clear();
 			const bool taken = rename ? cmd(R"({"op":"waveRename","wave":60,"name":")" + name + R"(","id":)" + std::to_string(100 + j) + "}")
 				: cmd(R"({"op":"waveCopy","from":60,"to":62,"id":)" + std::to_string(100 + j) + "}");
 			check(taken, "job " + std::to_string(j + 1) + " is taken: " + note);
@@ -2138,14 +2138,15 @@ namespace
 					answeredAt = at - jobAt;
 			std::printf("  job %d took %.0f ms of machine time: %s (the read-back answered at %.0f ms)\n", j + 1, took, done ? "done" : "NOT DONE",
 				answeredAt);
-			std::printf("  B-195 MIDI after job %d: %s; desk status %s\n", j + 1, r.m.hardware().midiIngressState().c_str(),
-				ed::json::write(r.desk->status()).c_str());
-			std::printf("  B-195 cpu after job %d: %s\n", j + 1, r.m.hardware().cpuState().c_str());
-			accesses(("job " + std::to_string(j + 1)).c_str());
-			records(("after job " + std::to_string(j + 1)).c_str());
-			pointers(("after job " + std::to_string(j + 1)).c_str());
 			if(!done)
 			{
+				// B-195: what the lost job did (all of it below only when a job is lost)
+				std::printf("  B-195 MIDI after job %d: %s; desk status %s\n", j + 1, r.m.hardware().midiIngressState().c_str(),
+					ed::json::write(r.desk->status()).c_str());
+				std::printf("  B-195 cpu after job %d: %s\n", j + 1, r.m.hardware().cpuState().c_str());
+				accesses(("job " + std::to_string(j + 1)).c_str());
+				records(("after job " + std::to_string(j + 1) + ", since the long session began").c_str());
+				pointers(("after job " + std::to_string(j + 1) + ", since the long session began").c_str());
 				const auto d = waves.dumpOf(60) ? ed::decodeMmWave(*waves.dumpOf(60)) : std::nullopt;
 				std::printf("  W61 reads back as %s\n", d ? ("\"" + ed::mmWaveName(*d) + "\"").c_str() : "nothing (factory)");
 				flashMap("after the job");
