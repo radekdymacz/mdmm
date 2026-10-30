@@ -26,6 +26,11 @@ namespace mdJucePlugin
 
 		void onStateLoaded() override;
 
+		// B-195: a waveform's dump (0x5D) may be on its way back from the Monomachine for _ms (the editor sent a 0x5E):
+		// the status polls wait meanwhile, as the desk's do. A Monomachine that makes a status reply while it sends
+		// the dump can hang for good.
+		void holdStatusPolls(const uint64_t _ms) { m_statusPollsHeldUntilMs.store(milliseconds() + _ms, std::memory_order_release); }
+
 		uint8_t getPartCount() const override;
 
 		bool parseSysexMessage(const pluginLib::SysEx&,
@@ -164,6 +169,8 @@ namespace mdJucePlugin
 		std::atomic<bool> m_haveKit{false};
 		std::atomic<bool> m_automationReady{false};
 		std::atomic<uint64_t> m_lastStatePollMs{0};
+		std::atomic<uint64_t> m_statusPollsHeldUntilMs{0};	// holdStatusPolls
+		bool statusPollsHeld(const uint64_t _now) const { return _now < m_statusPollsHeldUntilMs.load(std::memory_order_acquire); }
 		std::atomic<uint64_t> m_kitDumpRequestRevision{0};
 		std::atomic<bool> m_forceApplyRequestedKitDump{false};
 		// Unfulfilled baseline/reload intent survives retry status barriers and

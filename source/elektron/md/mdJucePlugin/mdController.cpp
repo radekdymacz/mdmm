@@ -312,6 +312,8 @@ namespace mdJucePlugin
 		};
 		recoverTimedOut(m_globalSynchronization, m_haveGlobal);
 		recoverTimedOut(m_kitSynchronization, m_haveKit);
+		if(statusPollsHeld(now))	// B-195: a waveform's dump may be coming
+			return;
 		if(m_globalSynchronization.statusRequestDue(now, 500))
 		{
 			m_globalSynchronization.statusRequestSent(now);
@@ -362,7 +364,7 @@ namespace mdJucePlugin
 			// Firmware Global is authoritative for the MIDI channel, and a front-panel
 			// kit selection bypasses the controller. Poll their tiny status messages;
 			// only a changed kit number causes the much larger Kit dump.
-			if(now - m_lastStatePollMs.load(std::memory_order_acquire) < 5000)
+			if(now - m_lastStatePollMs.load(std::memory_order_acquire) < 5000 || statusPollsHeld(now))	// B-195
 				return;
 			m_lastStatePollMs.store(now, std::memory_order_release);
 			// A controller-facing copy of firmware MIDI is deliberately allowed to
