@@ -1140,9 +1140,10 @@ where it came from, the setup, what happens, what should happen, status.*
 ## B-038 · Monomachine: a song's LOOP row goes back to row 1
 
 - **From:** found by the song playhead's firmware test, 2026-10-09 (0.3.5 work).
-- **What happens:** in a song written by the Monomachine Editor, a LOOP row goes back to row 1 instead of the row it names. The machine plays it so; the playhead shows it. (The "row before the LOOP is skipped" first noted here was the test's: it sampled only while RAM 0x26b46e, taken as "running", read 1, and that byte reads 0 during some passes; sampled on the step alone, every row plays.)
-- **To check:** where the MM song row stores the loop target (inferred in MM-P1, never probed); probe it on the firmware as the Machinedrum's was. Noted in mm-data-contract.md.
-- **Status:** open (listed under Known in the 0.4.0 notes).
+- **What happened:** in a song written by the Monomachine Editor, a LOOP row went back to row 1 instead of the row it names. (The "row before the LOOP is skipped" first noted here was the test's: it sampled only while RAM 0x26b46e, taken as "running", read 1, and that byte reads 0 during some passes; sampled on the step alone, every row plays.)
+- **Cause (0.9, read from the layouts, to be confirmed by CI):** the codec put the loop's target at row byte 1 ("inferred in MM-P1, never probed"; the song-editor diffs only changed pattern rows). The first four bytes of a Monomachine song row are the Machinedrum row's: pattern, reserved, repeats, target. The firmware reads the target from byte 3, which the codec kept as "unknown" and wrote as 0, so every loop went to row 0 whatever byte 1 said.
+- **Fix:** `mmSongRow::g_target` is 3 and byte 1 is the kept reserved byte (`g_x1`; the JSON keeps the member name `x3` for it so documents and the schema do not change). `mmDataTest` pins the encoding (raw bytes, SysEx, JSON); `mmDeskFirmwareTest songloop` builds a song with a LOOP row to target 2, 1 and 0, plays it on the firmware and checks the patterns of the first nine passes.
+- **Status:** fixed locally, awaiting CI (the firmware test decides; if it fails on the pass sequence, the target byte is not 3 and the log's patterns say where the loop went).
 
 ## B-037 · Windows: MIDI in/out don't work in the standalone
 

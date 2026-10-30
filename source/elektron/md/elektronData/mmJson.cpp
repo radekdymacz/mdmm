@@ -895,7 +895,7 @@ namespace elektronData
 			o.set("trackTranspose", std::move(tt));
 			o.set("midiTranspose", std::move(mt));
 			o.set("tempo", r.tempo() == MmSong::g_keepTempo ? Value() : Value(static_cast<int>(r.tempo())));
-			o.set("x3", b[mmSongRow::g_x3]);
+			o.set("x3", b[mmSongRow::g_x1]);	// the JSON keeps the name x3 (B-038: row byte 1)
 			o.set("x21", b[mmSongRow::g_x21]);
 			rows.push(std::move(o));
 		}
@@ -962,7 +962,7 @@ namespace elektronData
 					r.integer("tempo", tempo, 0, 0xfffe);
 			b[mmSongRow::g_tempo] = static_cast<uint8_t>(tempo >> 8);
 			b[mmSongRow::g_tempo + 1] = static_cast<uint8_t>(tempo);
-			r.integer("x3", b[mmSongRow::g_x3], 0, 255);
+			r.integer("x3", b[mmSongRow::g_x1], 0, 255);
 			r.integer("x21", b[mmSongRow::g_x21], 0, 255);
 		}
 		const auto hidden = in.child("hidden");
