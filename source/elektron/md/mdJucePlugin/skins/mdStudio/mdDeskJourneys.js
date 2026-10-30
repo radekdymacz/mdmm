@@ -2999,9 +2999,11 @@ const MdJourneys = (() => {
 				u.click(`.slotk[data-slot="RAM${c.n}"]`); await sleep(300); [c.r, c.p] = setupTracks(); c.m0 = [kit().tracks[c.r].machine, kit().tracks[c.p].machine]; c.t0 = trigsOf(c.r);
 				u.click("[data-setupgo]"); await until(() => kit().tracks[c.r].machine === "RAM-R" + c.n && !!$1('[data-rc="0"]'), 8000); await sleep(300);
 				if (!trigsOf(c.r).includes(0)) u.click('[data-rc="0"]');
-				await until(() => trigsOf(c.r).includes(0), 4000); tele.steps = []; u.click("#play"); },
+				await until(() => trigsOf(c.r).includes(0), 4000);
+				sendParam(c.r, "syn", "LEN", 32); await until(idle, 4000); await sleep(1500);	/* 8 steps, as the firmware test (mdDeskFirmwareTest): the recorder ends inside the pattern */
+				tele.steps = []; u.click("#play"); },
 				machine: c => ok(kit().tracks[c.r].machine === "RAM-R" + c.n && trigsOf(c.r).includes(0) && !!tele.last?.playing, `track ${kit().tracks[c.r].machine}, trigs ${trigsOf(c.r)}, playing ${tele.last?.playing}`), within: 12000 },
-			{ say: "the take shows in the RAM slot: the machine holds samples in it", act: async () => { },
+			{ say: "STOP after a few seconds: the take shows in the RAM slot, the machine holds samples in it", act: async u => { await sleep(4000); if (V.playing) u.click("#play"); await until(() => !V.playing, 4000); },
 				machine: c => { const t = smpSlotOf("ram", c.n - 1); if (t && !t.empty && t.length > 0) c.len = t.length; return ok(!!c.len, "RAM " + c.n + " " + JSON.stringify(t && { empty: t.empty, length: t.length })); }, within: 60000 },
 			{ say: "click STOP, select the RAM slot and click Keep as ROM…: the dialog offers a ROM slot", act: async (u, c) => {
 				if (V.playing) { u.click("#play"); await until(() => !V.playing, 4000); }
