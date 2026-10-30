@@ -72,8 +72,9 @@ namespace mdFirmwareSession
 		// _flash / _factoryCache: start from an initialized UW flash (a later start with the editor's factory cache, as
 		// the plug-in restarts the machine after its first-run preparation, B-003) instead of the blank one
 		Machine(const Bytes& _rom, const std::string& _romName, const Bytes& _patchRam = {}, const bool _waitSplash = true,
-			const md::MachineModel _model = md::MachineModel::Machinedrum, const Bytes& _flash = {}, const Bytes& _factoryCache = {})
-			: m_hw(_rom, _romName, _model, _patchRam, {}, _flash, _factoryCache)
+			const md::MachineModel _model = md::MachineModel::Machinedrum, const Bytes& _flash = {}, const Bytes& _factoryCache = {},
+			const Bytes& _userFlash = {})
+			: m_hw(_rom, _romName, _model, _patchRam, {}, _flash, _factoryCache, {}, _userFlash)
 		{
 			require(m_hw.isValid(), "firmware did not construct a valid machine");
 			for(auto& o : m_out)

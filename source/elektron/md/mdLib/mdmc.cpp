@@ -745,6 +745,7 @@ namespace md
 		const auto r = resolve(_addr);
 		if(r.peripheral)					{ logPeripheral(_addr, 0, 1, false); return 0; }
 		if(!r.data || r.offset >= r.size)	return 0;
+		traceFlash(_addr, r.data[r.offset], 0);
 		return r.data[r.offset];
 	}
 
@@ -770,6 +771,7 @@ namespace md
 		const auto r = resolve(_addr);
 		if(r.peripheral)						{ logPeripheral(_addr, 0, 2, false); return 0; }
 		if(!r.data || (r.offset + 1) >= r.size)	return 0;
+		traceFlash(_addr, loadBe16(r.data + r.offset), 1);
 		return loadBe16(r.data + r.offset);
 	}
 
@@ -784,6 +786,7 @@ namespace md
 			patchLock.lock();
 		const auto r = resolve(_addr);
 		if(r.peripheral)								{ logPeripheral(_addr, _val, 1, true); return; }
+		traceFlash(_addr, _val, 2);
 		if(!r.writable || !r.data || r.offset >= r.size)	return;
 		r.data[r.offset] = _val;
 		if(patchRam)
@@ -852,6 +855,7 @@ namespace md
 				: memorymap::g_flashLow.offset(_addr);
 			std::unique_lock flashLock(m_flashMutex);
 			m_monomachineFlash->write(offset, _val);
+			traceFlash(_addr, _val, m_monomachineFlash->changedSize() ? 3 : 4);
 			m_flashDirty = true;
 			m_lastFlashWriteCycle = getCycles();
 			++m_flashWrites;

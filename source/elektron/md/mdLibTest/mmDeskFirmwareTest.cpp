@@ -1708,6 +1708,19 @@ namespace
 				std::printf("  |%s\n", line.c_str());
 			}
 		};
+		// B-195: the CPU's flash accesses (user flash reads, every flash write) with the machine time, while traceOn
+		using Access = md::Microcontroller::FlashAccess;
+		std::vector<Access> traceRaw;
+		std::vector<std::pair<double, Access>> trace;
+		bool traceOn = false;
+		const auto drain = [&]
+		{
+			for(const auto& a : traceRaw)
+				if(traceOn)
+					trace.emplace_back(r.ms(), a);
+			traceRaw.clear();
+		};
+		r.m.hardware().getUC().setFlashAccessTrace(&traceRaw);
 		const auto settle = [&](const double _maxMs)
 		{
 			const auto t0 = r.ms();
@@ -1718,6 +1731,7 @@ namespace
 			do
 			{
 				r.run(10);
+				drain();
 				if(const auto f = r.m.hardware().flashWrites(); f != flash)
 				{
 					flash = f;
@@ -1869,6 +1883,215 @@ namespace
 		settle(240000);
 		check(waves.dumpOf(60) && waves.dumpOf(63), "undo of erase all: W61 and W64 are back");
 
+		// B-195 diagnostics. The user flash as runs of bytes that are not erased (0xff), each with its first bytes; only
+		// the runs that are new or changed since the last call
+		std::map<size_t, std::pair<size_t, uint64_t>> lastRuns;	// start: length, hash
+		const auto hex = [](const uint8_t* _p, const size_t _n)
+		{
+			std::string h;
+			char b[4];
+			for(size_t i = 0; i < _n; ++i)
+			{
+				std::snprintf(b, sizeof(b), "%02x", _p[i]);
+				h += b;
+			}
+			return h;
+		};
+		const auto hex8 = [](const uint32_t _v)
+		{
+			char b[12];
+			std::snprintf(b, sizeof(b), "%08x", _v);
+			return std::string(b);
+		};
+		const auto records = [&](const char* _title)
+		{
+			const auto f = r.m.hardware().copyUserFlash();
+			std::map<size_t, std::pair<size_t, uint64_t>> runs;
+			for(size_t i = 0; i < f.size();)
+			{
+				if(f[i] == 0xff)
+				{
+					++i;
+					continue;
+				}
+				size_t end = i, gap = 0;
+				for(size_t j = i; j < f.size() && gap < 32; ++j)
+				{
+					if(f[j] != 0xff) { end = j + 1; gap = 0; }
+					else ++gap;
+				}
+				uint64_t h = 1469598103934665603ull;
+				for(size_t j = i; j < end; ++j)
+					h = (h ^ f[j]) * 1099511628211ull;
+				runs[i] = {end - i, h};
+				i = end;
+			}
+			std::printf("  B-195 records %s: %zu runs\n", _title, runs.size());
+			std::string small;
+			for(const auto& [at, lh] : runs)
+			{
+				const auto it = lastRuns.find(at);
+				if(it != lastRuns.end() && it->second == lh)
+					continue;
+				if(lh.first < 32)
+				{
+					small += " " + std::to_string(at) + ":" + hex(&f[at], lh.first);
+					continue;
+				}
+				std::printf("    run %06zx len %5zu%s: %s .. %s\n", at, lh.first, it == lastRuns.end() ? " new" : " changed",
+					hex(&f[at], 40).c_str(), hex(&f[at + lh.first - 16], 16).c_str());
+			}
+			for(const auto& [at, lh] : lastRuns)
+				if(!runs.count(at))
+					std::printf("    run %06zx len %5zu gone\n", at, lh.first);
+			if(!small.empty())
+				std::printf("    small runs (offset:bytes):%s\n", small.c_str());
+			lastRuns = std::move(runs);
+		};
+		// pointers into the user flash (0x10200000..0x103fffff, big endian, at even addresses) in the RAMs; only the
+		// ones that are new or changed since the last call
+		std::map<uint32_t, uint32_t> lastPtrs;
+		Bytes lastPatch;
+		const auto pointers = [&](const char* _title)
+		{
+			std::map<uint32_t, uint32_t> ptrs;
+			const auto scan = [&](const uint32_t _from, const uint32_t _to)
+			{
+				for(uint32_t a = _from; a + 3 < _to; a += 2)
+				{
+					const uint32_t v = (uint32_t{r.m.read8(a)} << 24) | (uint32_t{r.m.read8(a + 1)} << 16)
+						| (uint32_t{r.m.read8(a + 2)} << 8) | r.m.read8(a + 3);
+					if(v >= 0x10200000u && v < 0x10400000u)
+						ptrs[a] = v;
+				}
+			};
+			scan(0x00200000, 0x00300000);	// main RAM
+			scan(0x00310000, 0x00400000);	// loader RAM
+			scan(0x01000000, 0x01002000);	// internal SRAM
+			const auto patch = r.m.hardware().copyPatchRam();
+			for(uint32_t o = 0; o + 3 < patch.size(); o += 2)
+			{
+				const uint32_t v = (uint32_t{patch[o]} << 24) | (uint32_t{patch[o + 1]} << 16) | (uint32_t{patch[o + 2]} << 8) | patch[o + 3];
+				if(v >= 0x10200000u && v < 0x10400000u)
+					ptrs[0x00100000u + o] = v;
+			}
+			std::printf("  B-195 pointers into the user flash %s: %zu\n", _title, ptrs.size());
+			int lines = 0;
+			for(const auto& [a, v] : ptrs)
+			{
+				const auto it = lastPtrs.find(a);
+				if(it != lastPtrs.end() && it->second == v)
+					continue;
+				if(++lines <= 80)
+					std::printf("    ptr @%08x = %08x%s\n", a, v, it == lastPtrs.end() ? " new" : (" was " + hex8(it->second)).c_str());
+			}
+			for(const auto& [a, v] : lastPtrs)
+				if(!ptrs.count(a) && ++lines <= 80)
+					std::printf("    ptr @%08x gone (was %08x)\n", a, v);
+			lastPtrs = std::move(ptrs);
+			// the patch RAM's bytes that changed since the last call (offsets; the OS sees them at 0x700000 + offset)
+			if(lastPatch.size() == patch.size())
+			{
+				std::string ch;
+				int ranges = 0;
+				for(size_t o = 0; o < patch.size(); ++o)
+				{
+					if(patch[o] == lastPatch[o])
+						continue;
+					size_t last = o;
+					for(size_t k = o + 1; k < patch.size() && k <= last + 8; ++k)
+						if(patch[k] != lastPatch[k])
+							last = k;
+					const size_t e = last + 1;
+					if(++ranges <= 40)
+						ch += " " + hex8(static_cast<uint32_t>(o)) + "[" + std::to_string(e - o) + "]:" + hex(&lastPatch[o], std::min<size_t>(e - o, 24))
+							+ ">" + hex(&patch[o], std::min<size_t>(e - o, 24));
+					o = e;
+				}
+				std::printf("    patch RAM changed in %d ranges:%s\n", ranges, ch.c_str());
+			}
+			lastPatch = patch;
+		};
+		// the trace since the last call, as bursts (gaps over 30 ms): user-flash reads as address ranges and the PCs
+		// that read them; flash writes: commands, programmed words as ranges, every byte write
+		const auto accesses = [&](const char* _title)
+		{
+			std::printf("  B-195 flash accesses %s: %zu\n", _title, trace.size());
+			size_t i = 0;
+			while(i < trace.size())
+			{
+				size_t j = i + 1;
+				while(j < trace.size() && trace[j].first - trace[j - 1].first <= 30.0)
+					++j;
+				std::map<uint32_t, size_t> pcs;
+				std::vector<std::pair<uint32_t, uint32_t>> reads, writes;
+				size_t nRead = 0, nWrite = 0, nCmd = 0;
+				std::string bytes;
+				const auto add = [](std::vector<std::pair<uint32_t, uint32_t>>& _v, const uint32_t _a, const uint32_t _n)
+				{
+					if(!_v.empty() && _a >= _v.back().first && _a <= _v.back().second + 64)
+						_v.back().second = std::max(_v.back().second, _a + _n);
+					else
+						_v.emplace_back(_a, _a + _n);
+				};
+				for(size_t k = i; k < j; ++k)
+				{
+					const auto& a = trace[k].second;
+					if(a.kind < 2)
+					{
+						++nRead;
+						++pcs[a.pc];
+						add(reads, a.addr, a.kind ? 2 : 1);
+						continue;
+					}
+					if(a.kind == 2)
+					{
+						if(bytes.size() < 400)
+							bytes += " " + hex8(a.addr) + "=" + std::to_string(a.value) + "@pc" + hex8(a.pc);
+						continue;
+					}
+					if(a.kind == 4)
+					{
+						++nCmd;
+						if(md::memorymap::g_mmUserFlash.contains(a.addr) && bytes.size() < 400)
+							bytes += " not-programmed " + hex8(a.addr) + "=" + std::to_string(a.value) + "@pc" + hex8(a.pc);
+						continue;
+					}
+					++nWrite;
+					++pcs[a.pc | 0x80000000u];
+					add(writes, a.addr, 2);
+				}
+				std::printf("   burst %.0f..%.0f ms: %zu reads, %zu programmed words, %zu command writes\n", trace[i].first, trace[j - 1].first, nRead,
+					nWrite, nCmd);
+				std::string rs;
+				for(size_t k = 0; k < reads.size() && k < 24; ++k)
+					rs += " " + hex8(reads[k].first) + "-" + hex8(reads[k].second);
+				if(reads.size() > 24)
+					rs += " ... (" + std::to_string(reads.size()) + " ranges, last " + hex8(reads.back().first) + "-" + hex8(reads.back().second) + ")";
+				if(!rs.empty())
+					std::printf("     reads:%s\n", rs.c_str());
+				std::string ws;
+				for(size_t k = 0; k < writes.size() && k < 24; ++k)
+					ws += " " + hex8(writes[k].first) + "-" + hex8(writes[k].second);
+				if(!ws.empty())
+					std::printf("     programmed:%s\n", ws.c_str());
+				if(!bytes.empty())
+					std::printf("     BYTE WRITES to the flash (dropped) or user-flash writes not programmed:%s\n", bytes.c_str());
+				std::string ps;
+				int n = 0;
+				for(const auto& [pc, c] : pcs)
+					if(++n <= 16)
+						ps += " " + std::string(pc & 0x80000000u ? "w" : "r") + hex8(pc & 0x7fffffffu) + "x" + std::to_string(c);
+				std::printf("     pcs:%s\n", ps.c_str());
+				i = j;
+			}
+			trace.clear();
+		};
+		records("before the long session");
+		pointers("before the long session");
+		trace.clear();
+		traceOn = true;
+
 		// B-195: the editor stalled the eighth job of a session (run 41107833994). Many more jobs in this one session:
 		// renames of W61 and copies of it to W63, each must end with what it asked, none given up.
 		const auto gaveUpBefore = r.desk->machine().waveWork().gaveUp;
@@ -1902,12 +2125,60 @@ namespace
 					answeredAt = at - jobAt;
 			std::printf("  job %d took %.0f ms of machine time: %s (the read-back answered at %.0f ms)\n", j + 1, took, done ? "done" : "NOT DONE",
 				answeredAt);
+			accesses(("job " + std::to_string(j + 1)).c_str());
+			records(("after job " + std::to_string(j + 1)).c_str());
+			pointers(("after job " + std::to_string(j + 1)).c_str());
 			if(!done)
 			{
 				const auto d = waves.dumpOf(60) ? ed::decodeMmWave(*waves.dumpOf(60)) : std::nullopt;
 				std::printf("  W61 reads back as %s\n", d ? ("\"" + ed::mmWaveName(*d) + "\"").c_str() : "nothing (factory)");
 				flashMap("after the job");
 				printLcd("after the job");
+				// B-195: what the machine does with requests now: the lost position, one that answers (W64), the lost one
+				// again after 30 s
+				const auto ask = [&](const int _p, const double _ms)
+				{
+					answers.clear();
+					const double at = r.ms();
+					r.out.push_back(ed::mmWaveRequest(static_cast<uint8_t>(_p)));
+					while(r.ms() - at < _ms)
+					{
+						r.run(10);
+						drain();
+					}
+					double ans = -1;
+					for(const auto& [t, pos] : answers)
+						if(pos == _p)
+							ans = t - at;
+					std::printf("  B-195 request W%d: answered at %.0f ms\n", _p + 1, ans);
+					accesses(("request W" + std::to_string(_p + 1)).c_str());
+				};
+				const int lost = rename ? 60 : 62;
+				const int other = rename ? 62 : 60;
+				ask(lost, 3000);
+				ask(63, 3000);
+				ask(other, 3000);
+				r.run(30000);
+				drain();
+				trace.clear();
+				ask(lost, 3000);
+				pointers("after the requests");
+				// the same flash and patch RAM in a machine booted again (a project loaded again); then with a patch RAM
+				// that is empty (the firmware builds its index from the flash alone)
+				traceOn = false;
+				r.m.hardware().getUC().setFlashAccessTrace(nullptr);
+				for(const bool keepPatch : {true, false})
+				{
+					Machine m2(_rom, "mm", keepPatch ? r.m.hardware().copyPatchRam() : Bytes{}, true, g_mm, {}, {}, r.m.hardware().copyUserFlash());
+					m2.run(2000);
+					for(const int p : {lost, 63, other})
+					{
+						const auto a = m2.request(ed::mmWaveRequest(static_cast<uint8_t>(p)), ed::g_mmWaveDump);
+						const auto d = a.empty() ? std::nullopt : ed::decodeMmWave(a);
+						std::printf("  B-195 rebooted (%s patch RAM): W%d %s\n", keepPatch ? "its" : "an empty", p + 1,
+							a.empty() ? "answers nothing" : ("answers, name \"" + (d ? ed::mmWaveName(*d) : std::string("?")) + "\"").c_str());
+					}
+				}
 			}
 			check(done, "job " + std::to_string(j + 1) + " of " + std::to_string(jobs) + " in one session ends with what it asked (B-195)");
 			if(!done)
