@@ -164,6 +164,7 @@ namespace md
 					m_midiTxOverflow.fetch_add(1, std::memory_order_relaxed);
 				}
 			}
+			m_midiTxBytes.fetch_add(1, std::memory_order_relaxed);
 			if(m_midiTransmitTap)
 				m_midiTransmitTap(_b);
 		});

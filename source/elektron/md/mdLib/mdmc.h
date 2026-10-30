@@ -174,6 +174,8 @@ namespace md
 		{
 			return m_midiTxOverflow.load(std::memory_order_relaxed);
 		}
+		// Every byte the firmware has sent on UART1 (B-195 diagnostics)
+		uint64_t midiTxBytes() const { return m_midiTxBytes.load(std::memory_order_relaxed); }
 		// Observe raw UART1 TX bytes without consuming normal plug-in MIDI output.
 		// The callback runs synchronously on the emulation scheduler thread.
 		void setMidiTransmitTap(std::function<void(uint8_t)> _tap)
@@ -345,6 +347,7 @@ namespace md
 		size_t m_midiTxDrainIndex = 1;
 		bool m_midiTxDiscontinuity = false;
 		std::atomic<uint64_t> m_midiTxOverflow{0};
+		std::atomic<uint64_t> m_midiTxBytes{0};
 		std::function<void(uint8_t)> m_midiTransmitTap;
 		synthLib::MidiBufferParser m_midiTxParser{synthLib::MidiEventSource::Device};
 

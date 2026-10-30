@@ -2104,6 +2104,7 @@ namespace
 			std::printf("  job %d of %d: %s\n", j + 1, jobs, rename ? ("rename W61 to " + name).c_str() : "copy W61 to W63");
 			answers.clear();
 			const double jobAt = r.ms();
+			std::printf("  B-195 MIDI before job %d: %s\n", j + 1, r.m.hardware().midiIngressState().c_str());
 			const bool taken = rename ? cmd(R"({"op":"waveRename","wave":60,"name":")" + name + R"(","id":)" + std::to_string(100 + j) + "}")
 				: cmd(R"({"op":"waveCopy","from":60,"to":62,"id":)" + std::to_string(100 + j) + "}");
 			check(taken, "job " + std::to_string(j + 1) + " is taken: " + note);
@@ -2125,6 +2126,8 @@ namespace
 					answeredAt = at - jobAt;
 			std::printf("  job %d took %.0f ms of machine time: %s (the read-back answered at %.0f ms)\n", j + 1, took, done ? "done" : "NOT DONE",
 				answeredAt);
+			std::printf("  B-195 MIDI after job %d: %s; desk status %s\n", j + 1, r.m.hardware().midiIngressState().c_str(),
+				ed::json::write(r.desk->status()).c_str());
 			accesses(("job " + std::to_string(j + 1)).c_str());
 			records(("after job " + std::to_string(j + 1)).c_str());
 			pointers(("after job " + std::to_string(j + 1)).c_str());
@@ -2140,12 +2143,27 @@ namespace
 				{
 					answers.clear();
 					const double at = r.ms();
+					std::printf("  B-195 request W%d: before: %s\n", _p + 1, r.m.hardware().midiIngressState().c_str());
 					r.out.push_back(ed::mmWaveRequest(static_cast<uint8_t>(_p)));
+					std::map<uint32_t, int> pcs;
+					int steps = 0;
 					while(r.ms() - at < _ms)
 					{
 						r.run(10);
 						drain();
+						++pcs[r.m.hardware().getUC().getPC()];
+						if(++steps == 1 || steps == 10 || steps == 100)
+							std::printf("  B-195 request W%d: at %.0f ms: %s\n", _p + 1, r.ms() - at, r.m.hardware().midiIngressState().c_str());
 					}
+					std::printf("  B-195 request W%d: after: %s\n", _p + 1, r.m.hardware().midiIngressState().c_str());
+					std::vector<std::pair<int, uint32_t>> top;
+					for(const auto& [pc, n] : pcs)
+						top.emplace_back(n, pc);
+					std::sort(top.rbegin(), top.rend());
+					std::string ts;
+					for(size_t k = 0; k < top.size() && k < 12; ++k)
+						ts += " " + hex8(top[k].second) + "x" + std::to_string(top[k].first);
+					std::printf("  B-195 request W%d: the PC every 10 ms (%zu places):%s\n", _p + 1, top.size(), ts.c_str());
 					double ans = -1;
 					for(const auto& [t, pos] : answers)
 						if(pos == _p)
