@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-195 · Monomachine: DigiPRO MGR jobs stall after about seven in one editor (open)
+
+- **From:** firmware E2E run 41107833994 (`release/0.0.0-ci-test`, 2026-10-30), journeys `mm-digipro-rename` and `mm-digipro-load` (since merged into `mm-digipro-card`); not reported by a tester.
+- **What happens:** after the card's journey had done six jobs (Load, Paste, Undo, Erase, two Undos) and the next journey's Load a seventh, the Rename stayed on "Renaming W21." for 170 s and W21 ended as a factory waveform; the next Load said "The Monomachine did not open GLOBAL > FILE > DIGIPRO MGR, so not everything was done." Run 41105670781 did seven jobs in a row without a stall (the card failed early there, for another reason).
+- **Should:** every job finishes or says why.
+- **Status:** open. Look at what the machine's DIGIPRO MGR screen holds after an Undo (the session's `waveWork`, `gaveUp`) and at a possible job count or state leak; `mmDigiproManagerFirmwareTest` runs one fresh machine. The journey now uses six jobs.
+
 ## B-194 · Monomachine: follow played track, HW MIDI step, left on track 2 after a key-split toast (open)
 
 - **From:** firmware E2E run 40782521940 (release/0.8.1), 2026-10-29, journey `mm-follow-played-track` step 13: "a note for track 3 leaves the selection": screen track 2; toast "Split the range up to 23". Passed in the other runs of the same commit.

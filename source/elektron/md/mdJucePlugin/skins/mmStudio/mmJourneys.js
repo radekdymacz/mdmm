@@ -2711,42 +2711,26 @@ const MmJourneys = (() => {
 		{ say: `click Load: W${n + 1} holds the cycle from the file, a user waveform with a name`, act: u => u.click(dlgButton("Load")),
 			screen: c => { const nm = dgName(n); if (dgUser(n) && nm.length > 1) c.nm = nm; return ok(dgIdle() && dgUser(n) && nm.length > 1 && !!$1("#globpop .dpdraw polyline"), `W${n + 1} user ${dgUser(n)} "${nm}", news ${$1("#globpop .dpnews")?.textContent}`); }, within: dgWait }
 	];
-	const dgUndoTo = (n, user, say) => ({ say, act: u => u.click('#globpop [data-ga="dpundo"]'),
-		screen: c => ok(dgIdle() && dgUser(n) === user && (!user || dgName(n) === c.nm), `W${n + 1} user ${dgUser(n)} "${dgName(n)}", news ${$1("#globpop .dpnews")?.textContent}`), within: dgWait });
+	/* One journey, six machine jobs (Load, Rename, Paste, two Undos, Erase) and it ends on a factory W20: run 41107833994 (firmware) did seven
+	   jobs fine and stalled the eighth in the same editor ("Renaming W21." for 170 s, then "did not open DIGIPRO MGR"), so the card is proved with few jobs (B-195) */
 	const digiproCardJ = {
-		name: "mm-digipro-card", proves: ["MM-010", "MM-310"],
+		name: "mm-digipro-card", proves: ["MM-010", "MM-310", "MM-378"],
 		steps: [
 			...dgLoad(19, "a one-cycle WAV"),
-			{ say: "click Copy, then W30 and Paste: W30 holds the same waveform (nothing asked over a factory position)", act: async (u, c) => { c.nm ??= dgName(19); await until(dgIdle, dgWait); u.click('#globpop [data-ga="dpcopy"]'); await sleep(200); u.click(dgKey(29)); await sleep(200); u.click('#globpop [data-ga="dppaste"]'); },
-				screen: c => ok(!dlgShown() && dgIdle() && dgUser(29) && dgName(29) === c.nm, `asked ${dlgShown()}, W30 user ${dgUser(29)} "${dgName(29)}" for "${c.nm}"`), within: dgWait },
-			dgUndoTo(29, false, "click Undo: W30 is the factory waveform again"),
+			{ say: "click Save .syx\u2026: the waveform is written to a file", act: (u, c) => { c.n = syxNews.length; u.click('#globpop [data-ga="dpsave"]'); },
+				screen: c => { const m = syxNews.length > c.n && lastExport(); return ok(!!m && m.ok && /1 waveform\.$/.test(m.text), m ? m.text : "no export yet"); }, within: dgWait },
+			{ say: "click Rename, type AB, press Enter: W20 is named AB", act: async (u, c) => { c.nm ??= dgName(19); await until(dgIdle, dgWait); u.click('#globpop [data-ga="dprename"]'); await sleep(250); u.type("#dpin", "ab"); await sleep(100); u.key("Enter"); },
+				screen: () => ok(dgIdle() && dgName(19) === "uAB", "W20 " + dgName(19)), within: dgWait },
+			{ say: "click Copy, then W30 and Paste: W30 holds the same waveform (nothing asked over a factory position)", act: async u => { await until(dgIdle, dgWait); u.click('#globpop [data-ga="dpcopy"]'); await sleep(200); u.click(dgKey(29)); await sleep(200); u.click('#globpop [data-ga="dppaste"]'); },
+				screen: () => ok(!dlgShown() && dgIdle() && dgUser(29) && dgName(29) === "uAB", `asked ${dlgShown()}, W30 user ${dgUser(29)} "${dgName(29)}"`), within: dgWait },
+			{ say: "click Undo: W30 is the factory waveform again", act: u => u.click('#globpop [data-ga="dpundo"]'),
+				screen: () => ok(dgIdle() && !dgUser(29), `W30 user ${dgUser(29)} "${dgName(29)}"`), within: dgWait },
+			{ say: "click Undo: W20 has the file's name again", act: u => u.click('#globpop [data-ga="dpundo"]'),
+				screen: c => ok(dgIdle() && dgUser(19) && dgName(19) === c.nm, `W20 user ${dgUser(19)} "${dgName(19)}" for "${c.nm}"`), within: dgWait },
 			{ say: "click W20, then Erase: it asks", act: async u => { u.click(dgKey(19)); await sleep(200); u.click('#globpop [data-ga="dperase"]'); },
 				screen: () => ok(dlgShown() && /Erase W20/.test($1("#dlg").textContent), "no question"), within: 20000 },
 			{ say: "click Erase in the question: W20 holds the factory waveform", act: u => u.click(dlgButton("Erase")),
-				screen: () => ok(dgIdle() && !dgUser(19), "W20 " + dgName(19)), within: dgWait },
-			dgUndoTo(19, true, "click Undo: W20 is the loaded waveform again"),
-			dgUndoTo(19, false, "click Undo: the Load is taken back, W20 is the factory waveform")
-		],
-		tidy: dgTidy
-	};
-	const digiproRenameJ = {
-		name: "mm-digipro-rename", proves: ["MM-310"],
-		steps: [
-			...dgLoad(20, "a one-cycle WAV"),
-			{ say: "click Rename, type AB, press Enter: W21 is named AB", act: async u => { u.click('#globpop [data-ga="dprename"]'); await sleep(250); u.type("#dpin", "ab"); await sleep(100); u.key("Enter"); },
-				screen: () => ok(dgIdle() && dgName(20) === "uAB", "W21 " + dgName(20)), within: dgWait },
-			dgUndoTo(20, true, "click Undo: the name is the file's again"),
-			dgUndoTo(20, false, "click Undo: the Load is taken back, W21 is the factory waveform")
-		],
-		tidy: dgTidy
-	};
-	const digiproLoadJ = {
-		name: "mm-digipro-load", proves: ["MM-310", "MM-378"],
-		steps: [
-			...dgLoad(21, "a one-cycle WAV"),
-			{ say: "click Save .syx…: the waveform is written to a file", act: (u, c) => { c.n = syxNews.length; u.click('#globpop [data-ga="dpsave"]'); },
-				screen: c => { const m = syxNews.length > c.n && lastExport(); return ok(!!m && m.ok && /1 waveform\.$/.test(m.text), m ? m.text : "no export yet"); }, within: dgWait },
-			dgUndoTo(21, false, "click Undo: W22 is the factory waveform again")
+				screen: () => ok(dgIdle() && !dgUser(19), "W20 " + dgName(19)), within: dgWait }
 		],
 		tidy: dgTidy
 	};
@@ -4609,7 +4593,7 @@ const MmJourneys = (() => {
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, laneDrawSlide, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
 		valueKeys, soundCopy, screenDrag, filterEnv, lfoLocksJ, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
-		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportUndoJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, digiproCardJ, digiproRenameJ, digiproLoadJ, digiproMk1J, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach, ...Object.values(learnJ)];
+		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportUndoJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, digiproCardJ, digiproMk1J, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach, ...Object.values(learnJ)];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
 	   its guard, "left:", names what stays). What back cannot put back, the journey keeps first (keep, keepMany) or is alone: true (doc/modern-ux/JOURNEYS.md, "Independent journeys") */
 	for (const j of all) { const own = j.tidy; j.tidy = async (u, c) => { try { if (own) await own(u, c); } finally { if (c.back0?.state && Journey.stateDiff(c.back0.state, state())) await back(u, c); } }; }
