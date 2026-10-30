@@ -171,7 +171,7 @@ The **Place** row under the grid has two keys. **Original place**, the default, 
 The Monomachine takes a dump only on its SysEx receive screen. The editor opens it for you. With a real Monomachine over MIDI, the sync field on the second line of the LCD reads SEND and the number of waiting edits. Click it and follow the steps.
 
 ## DIGIPRO MANAGER
-<!-- rows: MM-310 @ccdbb0 -->
+<!-- rows: MM-310 @1c6cf7 -->
 
 The DigiPRO manager of an MKII sends, receives, renames and erases user waveforms. In the editor it is the **DigiPRO** card at the bottom of the GLOBAL page. Click **GLOBAL** in the top bar to open it.
 
