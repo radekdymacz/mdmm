@@ -92,7 +92,7 @@ namespace deskHost
 					{"checkOnly", ArgType::Bool, 0, 0, true}, {"readBack", ArgType::Bool, 0, 0, true}},
 				"import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\", the slot "
 				"an item lands in), sent to the machine as they are (the firmware decides what it takes), then read back and reported "
-				"(syxProgress); no undo step. placeAt (SPECIFIC, 0.6): per kind the first slot its items land in, in slot order "
+				"(syxProgress); one undo step puts back the kits, patterns and songs it overwrote. placeAt (SPECIFIC, 0.6): per kind the first slot its items land in, in slot order "
 				"({\"kit\": 4}; the dumps go with that position byte and checksum); checkOnly (VERIFY ONLY): nothing is sent, each item's "
 				"slot is read and compared with the file; readBack (I-038, default true): false ends the import after the messages are sent, "
 				"without reading the slots back, and the report says the items were sent, not read back",
@@ -114,7 +114,7 @@ namespace deskHost
 				"Reset machine: empty clears every kit, pattern and song (the library's Clear in each slot, sent as dumps; globals "
 				"and samples stay), factory (the Machinedrum) brings back the factory kits, patterns and songs read from a second "
 				"machine started from the user's own ROM; both read back and reported as an import (syxPreview with reset, then "
-				"syxProgress); no undo step: the page asks first",
+				"syxProgress); one undo step puts them back; the page asks first",
 				Action::MachineReset),
 			row("midi", {bytes}, "a channel message from the page: [status 0x80-0xef, data, data]", Action::Midi),
 			row("openMenu", {}, "the editor's menu: the window answers with an editorMenu message (its entries as data), the page draws it (I-008)",

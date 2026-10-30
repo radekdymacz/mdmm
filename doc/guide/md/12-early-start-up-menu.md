@@ -22,7 +22,7 @@ The empty reset clears the memory of the machine. In the editor it is in the eng
 
 The globals and the samples stay. A global is reset in its own slot in GLOBAL (chapter 10).
 
-NOTE: The reset has no undo. Click **Export SysEx…** in the question first to keep a way back.
+NOTE: **Undo** takes the Empty reset back in one step. Every kit, pattern and song is written back, and the kit that plays has its edits again. The globals and the samples were not touched. **Redo** clears them again. **Export SysEx…** in the question keeps a copy in a file.
 
 ## FACTORY RESET
 <!-- rows: MD-204 @8da2d4 -->
@@ -36,7 +36,7 @@ The factory reset brings back the kits, patterns and songs the machine had when 
 
 ![After the Factory reset: the factory kit and song are back](shot:e2e-md-engine-reset-factory)
 
-The globals and the samples stay. The reset has no undo: export first.
+The globals and the samples stay. **Undo** takes the reset back in one step, as it does for the Empty reset. **Export SysEx…** in the question keeps a copy in a file.
 
 TIP: To bring back the whole factory memory at once, globals and samples too, click **Start from factory memory…** in the same question. The machine restarts in a few seconds. See "MACHINE MEMORY" in chapter 17.
 

@@ -135,6 +135,8 @@ namespace deskCore
 		const Adapter& machine() const { return *m_machine; }
 		const Core<Model>& coreState() const { return m_core; }
 		const Documents& documents() const { return m_core.view(); }
+		// B-130: the SysEx work copies the documents an import overwrites and records them as one undo step.
+		Core<Model>& core() { return m_core; }
 		Lifecycle lifecycle() const { return m_machine->lifecycle(); }
 		bool isInputReady() const { return takesInput(lifecycle()); }
 		// What the adapter is doing, for the diagnostics line.
@@ -192,7 +194,6 @@ namespace deskCore
 			m_core.result(_message, _errors, _note);
 		}
 		double now() const { return m_nowMs(); }
-		Core<Model>& core() { return m_core; }
 
 	private:
 		void onReady(const Value& _message)

@@ -45,7 +45,7 @@ check(M.slotLabel("song", 4) === "S05" && M.slotLabel("global", 7) === "G8", "so
 	const off = M.kindSums("kit", list, skip, false);
 	check(off.n === 0 && off.out === 10, "a kind not ticked sends nothing");
 	check(M.footLine({ n: 0 }) === "Nothing chosen.", "nothing chosen");
-	check(/^3 slots on the machine overwritten, 1 playing now\. .*No undo: Export SysEx… first\.$/.test(M.footLine({ n: 8, over: 3, plays: 1 })), "overwrites: how many, what plays, no undo");
+	check(/^3 slots on the machine overwritten, 1 playing now\. .*One Undo puts the kits, patterns and songs back; globals stay\.$/.test(M.footLine({ n: 8, over: 3, plays: 1 })), "overwrites: how many, what plays, what Undo puts back");
 	check(/into empty slots/.test(M.footLine({ n: 5, over: 0 })), "into empty slots only");
 	check(/Globals change MIDI channels/.test(M.footLine({ n: 1, over: 1, globals: true })), "B-026: globals chosen, the footer says MIDI channels change");
 	check(M.OFF.global && M.OFF.other && !M.OFF.kit, "globals and other messages are off unless ticked (B-026)");

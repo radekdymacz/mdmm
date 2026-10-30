@@ -324,6 +324,9 @@ namespace deskCore
 		// B-174: a document the person's import sent as it is and did not read back: what the editor holds of it may not
 		// be the machine's any more. Read it again in the background, as a slot not known yet is read.
 		virtual void reread(const Ref& _ref) { (void)_ref; }
+		// B-045: a SysEx import is at work, or its slots are not read again yet: what the editor holds of a slot may not
+		// be what the machine holds, so the adapter asks no question about edits it cannot tell from that.
+		virtual void importing(const bool _on) { (void)_on; }
 	};
 
 	// The engine-neutral core (P6): documents as observed + pending, pure edits (the
@@ -389,6 +392,33 @@ namespace deskCore
 			result(_message, {}, undone ? "Back as it was" : "");
 		}
 		uint64_t openTrial() const { return m_trial; }
+
+		// B-130: a SysEx import or an empty reset overwrites documents without an edit. snapshot() copies the documents
+		// of _refs the view holds now (before it starts: only the slots it touches), recordBulk() makes them one undo
+		// step once it has written. Undo delivers them like any edit (each from what the page shows then), redo
+		// delivers what undo replaced. A ref the view does not hold has no document to put back and is left out.
+		using Snapshot = std::vector<Doc>;
+		Snapshot snapshot(const std::vector<Ref>& _refs) const
+		{
+			Snapshot s;
+			for(const auto& r : _refs)
+				if(auto d = Model::get(m_view, r))
+					s.push_back(std::move(*d));
+			return s;
+		}
+		void recordBulk(const Snapshot& _before)
+		{
+			std::vector<Change> changes;
+			for(const auto& d : _before)
+				changes.push_back(Change{d, d});
+			if(changes.empty())
+				return;
+			m_history.record(changes, 0);
+			m_history.limitChanges(g_historyChanges);
+			m_trial = 0;
+		}
+		// The most changes the undo list keeps in all (an empty reset is about 300).
+		static constexpr size_t g_historyChanges = 1000;
 
 		// A pure edit (the table's CoreOp::Edit).
 		void edit(const Value& _message) { run(_message, Model::apply(m_view, _message, m_clipboard, context())); }

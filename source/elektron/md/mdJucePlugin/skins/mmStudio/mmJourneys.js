@@ -2264,6 +2264,34 @@ const MmJourneys = (() => {
 			{ say: "press Escape", act: u => u.key("Escape"), screen: () => ok($1("#libpop").hidden, "open") }
 		]
 	};
+	/* B-130: an import is one undo step. Kits only: Cmd+Z puts every kit it overwrote back, Cmd+Shift+Z brings the file's
+	   back, Cmd+Z leaves the machine as it was. */
+	const syxImportUndoJ = {
+		name: "mm-lib-syx-import-undo", alone: true, proves: ["MM-308", "MM-X07"],
+		needs: syxImportJ.needs,
+		steps: [
+			{ say: "choose IMPORT SYSEX… in the engine menu: the file's preview", act: u => u.pick("engsel", "import"), screen: () => ok(!$1("#syxpop").hidden && syxKitIds().length > 0, "no preview with kits"), within: 8000 },
+			{ say: "leave Kits ticked only, click Import: the machine holds the file's kits", act: (u, c) => {
+				for (const b of $all("#syxpop [data-syxkind]")) if (b.checked !== (b.dataset.syxkind === "kit")) u.click(b);
+				c.names = syxKitIds().map(b => [+b.dataset.syxitem.split(":")[1], (b.dataset.syxname || "").trim()]);
+				c.was = c.names.map(([k]) => [k, (kitName(k) || "").trim()]);
+				u.click('#syxpop [data-syxgo="start"]');
+			}, screen: () => ok(/imported/.test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxbar span")?.textContent || "")),
+			machine: c => {
+				const notTaken = syxNotTaken("kit");
+				c.taken = c.names.filter(([k, n]) => !notTaken.has(k) && n && (kitName(k) || "").trim() === n);
+				if (/cannot be undone/.test($1("#syxpop .syxsum")?.textContent || "")) return ok(false, "the report: " + $1("#syxpop .syxsum").textContent);
+				return ok(c.taken.length > 0 && c.was.some(([k, n]) => (kitName(k) || "").trim() !== n), c.taken.length + " kits as in the file");
+			}, within: 240000 },
+			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") },
+			{ ...undoKey, say: "press Cmd+Z: the import is one undo step, every kit it overwrote is back",
+				machine: c => { const off = c.was.filter(([k, n]) => (kitName(k) || "").trim() !== n); return ok(!off.length, off.length + " kits not back: " + off.slice(0, 3).map(([k, n]) => `K${k + 1} "${kitName(k)}" want "${n}"`).join(", ")); }, within: 120000 },
+			{ say: "press Cmd+Shift+Z: the file's kits are back", act: u => u.key("z", { cmd: true, shift: true }),
+				machine: c => ok(c.taken.every(([k, n]) => (kitName(k) || "").trim() === n), "kits not as in the file"), within: 120000 },
+			{ ...undoKey, say: "press Cmd+Z once more: the machine is as it was", machine: c => ok(c.was.every(([k, n]) => (kitName(k) || "").trim() === n), "kits not back"), within: 120000 },
+			{ say: "press Escape", act: u => u.key("Escape"), screen: () => ok($1("#libpop").hidden, "open") }
+		]
+	};
 	/* ---------- wave 6: SysEx kinds and ranges (DigiPRO waveforms too), SPECIFIC place, VERIFY ONLY, Reset machine… ---------- */
 	const syxNews = [];
 	Bridge.onMessage(m => { if (m.type === "syxExport") { syxNews.push(m); if (syxNews.length > 20) syxNews.shift(); } });
@@ -2369,7 +2397,7 @@ const MmJourneys = (() => {
 				screen: () => ok(dlgShown() && !!dlgButton("Empty reset…") && !dlgButton("Factory reset…") && /factory data is not in the editor/.test($1("#dlg").textContent) && $1("#dlg .btnrow button:last-child")?.textContent === "Cancel", "the question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
 			{ say: "click Empty reset…: it asks a second time", act: u => u.click(dlgButton("Empty reset…")),
 				screen: () => ok(dlgShown() && !!dlgButton("Clear everything"), "second question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
-			{ say: "click Clear everything: the reset runs in the SysEx panel and reports", act: (u, c) => { c.g0 = JSON.stringify(I().doc("global", machine().global?.current ?? 0)); u.click(dlgButton("Clear everything")); },
+			{ say: "click Clear everything: the reset runs in the SysEx panel and reports", act: (u, c) => { c.g0 = JSON.stringify(I().doc("global", machine().global?.current ?? 0)); c.named = [...Array(128).keys()].map(k => [k, (kitName(k) || "").trim()]).filter(([, n]) => n); u.click(dlgButton("Clear everything")); },
 				screen: () => ok(/Empty reset/.test($1("#syxpop .cap")?.textContent || "") && /cleared/.test($1("#syxpop .syxsum")?.textContent || ""), "panel: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
 				machine: c => { const named = [...Array(128).keys()].filter(k => (kitName(k) || "").trim()), trigs = [...Array(128).keys()].filter(p => (I().doc("pattern", p)?.tracks || []).some(t => (t.trig || []).length)),
 					songs = [...Array(24).keys()].filter(s => (songOf(s)?.rows || []).length > 1);
@@ -2378,7 +2406,10 @@ const MmJourneys = (() => {
 					const g = JSON.stringify(I().doc("global", machine().global?.current ?? 0));
 					return ok(!named.length && !trigs.length && !songs.length && !odd.length && g === c.g0,
 						`${named.length} kits named, ${trigs.length} patterns with trigs, ${songs.length} songs with rows, ${odd.length} patterns not as the machine's empty one (${odd.slice(0, 2).map(p => { const d = I().doc("pattern", p); return JSON.stringify([d?.length, d?.multiplier, d?.kit, d?.swingAmount]); }).join(" ")}), global ${g === c.g0 ? "kept" : "changed"}`); }, within: 400000 },
-			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
+			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") },
+			/* B-130: the reset is one undo step: Cmd+Z puts every kit back */
+			{ ...undoKey, say: "press Cmd+Z: the reset is one undo step, the kits are back",
+				machine: c => { const off = c.named.filter(([k, n]) => (kitName(k) || "").trim() !== n); return ok(!off.length, off.length + " of " + c.named.length + " kits not back: " + off.slice(0, 3).map(([k, n]) => `K${k + 1} "${kitName(k)}" want "${n}"`).join(", ")); }, within: 400000 }
 		],
 		async tidy() { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; }
 	};
@@ -4504,7 +4535,7 @@ const MmJourneys = (() => {
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, laneDrawSlide, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
 		valueKeys, soundCopy, screenDrag, filterEnv, lfoLocksJ, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
-		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach, ...Object.values(learnJ)];
+		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportUndoJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach, ...Object.values(learnJ)];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
 	   its guard, "left:", names what stays). What back cannot put back, the journey keeps first (keep, keepMany) or is alone: true (doc/modern-ux/JOURNEYS.md, "Independent journeys") */
 	for (const j of all) { const own = j.tidy; j.tidy = async (u, c) => { try { if (own) await own(u, c); } finally { if (c.back0?.state && Journey.stateDiff(c.back0.state, state())) await back(u, c); } }; }

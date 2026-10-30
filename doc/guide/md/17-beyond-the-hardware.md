@@ -125,7 +125,7 @@ Solo plays one track alone. The mutes you had come back when you let go.
 The solo is saved with the project, in the DAW and in the standalone editor. Open the project again and the solo is on, the other tracks are muted, and the mutes you had before the solo come back when you end it.
 
 ## UNDO AND REDO
-<!-- rows: MD-X07 @4bfdaf -->
+<!-- rows: MD-X07 @afa099 -->
 
 The machine cannot take an edit back. In the editor every edit can be taken back and done again, across kits, patterns and songs.
 
@@ -136,7 +136,7 @@ The machine cannot take an edit back. In the editor every edit can be taken back
 3. Press {key:redo}. The trig is back.
 4. Click **UNDO** in the top bar to take it back again, and **REDO** to put it back.
 
-A drag, a paint or a run of rotates is one step. Each typed value is one step.
+A drag, a paint or a run of rotates is one step. Each typed value is one step. A SysEx import and the Empty reset are one step each: **Undo** writes back the kits, patterns and songs they overwrote. A global is not put back (chapters 10 and 12).
 
 ## TYPED VALUES
 <!-- rows: MD-X08 @76814e -->

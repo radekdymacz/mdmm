@@ -126,7 +126,7 @@
 <div class="gd-body gd-prose"><h2 id="undo-and-redo-h">UNDO AND REDO <a class="gd-anchor" href="#undo-and-redo" aria-label="Link to UNDO AND REDO">#</a></h2>
 <p>The machine has no undo. Every edit of the editor can be taken back and done again, across kits, patterns and songs.</p>
 <ol class="gd-steps"><li>Make an edit, for example click an empty cell of the piano roll.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>, or click <b class="gd-ui">UNDO</b> in the top bar. The edit is gone.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[Z]</kbd>, or click <b class="gd-ui">REDO</b>. It is back.</li></ol>
-<p>A drag, a paint or a run of rotates is one undo step. A kit you leave without saving is kept as the machine's UNDO KIT: choose it in the kit library to get the edited kit back, still unsaved, in its own slot.</p>
+<p>A drag, a paint or a run of rotates is one undo step. A SysEx import and the Empty reset are one step each: <b class="gd-ui">Undo</b> writes back the kits, patterns and songs they overwrote. A global is not put back (chapters 19 and 20). A kit you leave without saving is kept as the machine's UNDO KIT: choose it in the kit library to get the edited kit back, still unsaved, in its own slot.</p>
 </div></section>
 <section class="gd-sec" id="typed-values" aria-labelledby="typed-values-h">
 <div class="gd-body gd-prose"><h2 id="typed-values-h">TYPED VALUES <a class="gd-anchor" href="#typed-values" aria-label="Link to TYPED VALUES">#</a></h2>
