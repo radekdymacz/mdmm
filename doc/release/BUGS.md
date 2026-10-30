@@ -38,6 +38,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **What happens:** the kit that plays is renamed (KIT, Rename) and the rename undone; the page shows the old name but the LCD says "edited" for good.
 - **Cause:** the editor sent the kit's live name (SysEx 0x55) as a string of its non-NUL bytes. A stored kit name keeps bytes after its NUL (`ed::MmKit::name` is the 11 raw bytes; the page's hash calls them `nameTail`). The undo therefore sent a name that dropped the NULs and shifted the tail, the machine's memory held different bytes, and the working kit (memory) no longer equalled the stored slot byte for byte (`MmMachine::kitState`).
 - **Fix:** `mmSetKitNameBytes` sends the 11 bytes exactly (`MmMachine::sendKitLive`). Test: `mmDeskTest` kitRenameUndoSendsStoredNameBytes (the bytes the undo sends). The journey `mm-kit-parts` now asserts "clean" after its undo; its tidy is a plain undo. Not verified on the firmware; CI pending.
+- **Again:** main 5588a0e5c, firmware E2E run 41088452237: `mm-kit-parts` step 6 ended "kit state edited, working SUPERWAVES" for good (71 s) and `mm-lcd-boxes` then read "edited"; the run before (41068275632, same machine code) passed. A residual race, not the name bytes alone. The journey's failure now lists the fields of the working kit that differ from the stored slot (`kitVsStored`); fix when that names the field.
 
 ## B-189 · Monomachine: OJMP may reach the firmware at about twice the value set (open)
 

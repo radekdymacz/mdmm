@@ -2688,57 +2688,64 @@ const MmJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.o0 != null && gDoc()?.controlOut?.sequencer !== c.o0) { if ($1("#globpop").hidden) { u.click("#globkey"); await sleep(300); } u.click(`#globpop [data-ga="out1"][data-k="sequencerOut"][data-v="${c.o0}"]`); await until(() => gDoc()?.controlOut?.sequencer === c.o0, 15000); } if (!$1("#globpop").hidden) u.key("Escape"); }
 	};
-	/* 0.9 wave 2: the GLOBAL page's DigiPRO card (118-digipro.js, mdSyxWaves.h; the page tier's machine holds W01 SAW and W04
-	   SQR at start): the list, copy and paste, erase, the card's undo, rename, a Load from a file, Save .syx, the MKI plate */
+	/* 0.9 wave 2: the GLOBAL page's DigiPRO card (118-digipro.js, mdSyxWaves.h): the list, a Load from a file, copy and paste, erase, the card's undo,
+	   rename, Save .syx, the MKI plate */
 	const dgKey = n => $1(`#globpop .dpk[data-v="${n}"]`);
 	const dgUser = n => !!dgKey(n)?.classList.contains("user");
 	const dgName = n => (dgKey(n)?.querySelector("b")?.textContent || "").trim();
 	const dgOpen = async u => { if ($1("#globpop").hidden) { u.click("#globkey"); await sleep(400); } };
 	const dgRead = () => $all("#globpop .dpk").length === 64 && !$all("#globpop .dpk.unk").length && !/Reading/.test($1("#globpop .dpnews")?.textContent || "");
-	/* the card's journeys need the page tier's machine (it holds W01 SAW and W04 SQR and a file to Load); the firmware starts with 64
-	   factory waveforms and its Load opens a native file dialog: there the card is proved by mmDigiproManagerFirmwareTest */
-	const dgPageOnly = () => Journey.pageTier() ? null : "the page tier's machine holds the user waveforms and the file; on the firmware mmDigiproManagerFirmwareTest proves the card";
+	/* The card's journeys run on the firmware too (rule: a done row is proved by a journey on the firmware). The firmware starts with 64
+	   factory waveforms and no user waveform, so each journey makes its own: Load takes the run's one-cycle WAV (GEARMULATOR_MDMM_WAVE_FILE,
+	   a diagnostics hook, no file dialog; the page tier's host makes a sine) and the file's name gives the waveform's name. Every step waits
+	   until the card is idle again (the machine's DIGIPRO MGR job done, the list read back) before the next click: a disabled key ignores it. */
+	const dgIdle = () => dgRead();
+	const dgWait = 170000;
 	const dgTidy = async (u, c) => { if (dlgShown()) u.click(dlgButton("Cancel")); if (!$1("#globpop").hidden) u.key("Escape"); await sleep(200); };
+	const dgLoad = (n, what) => [
+		{ say: `open GLOBAL, click W${n + 1}: the card has read the 64 positions, W${n + 1} holds a factory waveform`, act: async (u, c) => { await dgOpen(u); await until(dgIdle, dgWait); u.click(dgKey(n)); },
+			screen: () => ok(dgIdle() && pressed(`#globpop .dpk[data-v="${n}"]`) && !dgUser(n) && /factory/.test($1("#globpop .dphead")?.textContent || ""), `${$all("#globpop .dpk").length} keys, ${$all("#globpop .dpk.unk").length} not read, W${n + 1} user ${dgUser(n)}, news ${$1("#globpop .dpnews")?.textContent}`), within: dgWait },
+		{ say: `click Load…: the file's preview asks before it goes (${what})`, act: u => u.click('#globpop [data-ga="dpload"]'),
+			screen: () => ok(dlgShown() && new RegExp("W" + String(n + 1).padStart(2, "0")).test($1("#dlg").textContent) && !!dlgButton("Load"), "question: " + (dlgShown() ? $1("#dlg").textContent : "none")), within: 30000 },
+		{ say: `click Load: W${n + 1} holds the cycle from the file, a user waveform with a name`, act: u => u.click(dlgButton("Load")),
+			screen: c => { const nm = dgName(n); if (dgUser(n) && nm.length > 1) c.nm = nm; return ok(dgIdle() && dgUser(n) && nm.length > 1 && !!$1("#globpop .dpdraw polyline"), `W${n + 1} user ${dgUser(n)} "${nm}", news ${$1("#globpop .dpnews")?.textContent}`); }, within: dgWait }
+	];
+	const dgUndoTo = (n, user, say) => ({ say, act: u => u.click('#globpop [data-ga="dpundo"]'),
+		screen: c => ok(dgIdle() && dgUser(n) === user && (!user || dgName(n) === c.nm), `W${n + 1} user ${dgUser(n)} "${dgName(n)}", news ${$1("#globpop .dpnews")?.textContent}`), within: dgWait });
 	const digiproCardJ = {
-		name: "mm-digipro-card", proves: ["MM-010", "MM-310"], needs: dgPageOnly,
+		name: "mm-digipro-card", proves: ["MM-010", "MM-310"],
 		steps: [
-			{ say: "open GLOBAL: the DigiPRO card has the 64 positions, read from the machine: W01 and W04 are user waveforms", act: dgOpen,
-				screen: () => ok(dgRead() && dgUser(0) && dgUser(3) && !dgUser(1) && dgName(0) === "uSAW" && dgName(3) === "uSQR",
-					`${$all("#globpop .dpk").length} keys, ${$all("#globpop .dpk.unk").length} not read, W01 ${dgName(0)}, W04 ${dgName(3)}, news ${$1("#globpop .dpnews")?.textContent}`), within: 90000 },
-			{ say: "click W04: it is drawn, named uSQR", act: u => u.click(dgKey(3)),
-				screen: () => ok(pressed('#globpop .dpk[data-v="3"]') && !!$1("#globpop .dpdraw polyline") && /uSQR/.test($1("#globpop .dphead")?.textContent || ""), $1("#globpop .dphead")?.textContent) },
-			{ say: "click Copy, then W10 and Paste: W10 holds SQR (nothing asked over a factory position)", act: async u => { u.click('#globpop [data-ga="dpcopy"]'); await sleep(200); u.click(dgKey(9)); await sleep(200); u.click('#globpop [data-ga="dppaste"]'); },
-				screen: () => ok(!dlgShown() && dgUser(9) && dgName(9) === "uSQR", `asked ${dlgShown()}, W10 ${dgName(9)}`), within: 40000 },
-			{ say: "click Undo: W10 is the factory waveform again", act: u => u.click('#globpop [data-ga="dpundo"]'),
-				screen: () => ok(!dgUser(9), "W10 " + dgName(9)), within: 40000 },
-			{ say: "click W04, then Erase: it asks", act: async u => { u.click(dgKey(3)); await sleep(200); u.click('#globpop [data-ga="dperase"]'); },
-				screen: () => ok(dlgShown() && /Erase W04/.test($1("#dlg").textContent), "no question"), within: 6000 },
-			{ say: "click Erase in the question: W04 holds the factory waveform", act: u => u.click(dlgButton("Erase")),
-				screen: () => ok(!dgUser(3), "W04 " + dgName(3)), within: 40000 },
-			{ say: "click Undo: W04 is SQR again", act: u => u.click('#globpop [data-ga="dpundo"]'),
-				screen: () => ok(dgUser(3) && dgName(3) === "uSQR", "W04 " + dgName(3)), within: 40000 }
+			...dgLoad(19, "a one-cycle WAV"),
+			{ say: "click Copy, then W30 and Paste: W30 holds the same waveform (nothing asked over a factory position)", act: async u => { u.click('#globpop [data-ga="dpcopy"]'); await sleep(200); u.click(dgKey(29)); await sleep(200); u.click('#globpop [data-ga="dppaste"]'); },
+				screen: c => ok(!dlgShown() && dgIdle() && dgUser(29) && dgName(29) === c.nm, `asked ${dlgShown()}, W30 user ${dgUser(29)} "${dgName(29)}" for "${c.nm}"`), within: dgWait },
+			dgUndoTo(29, false, "click Undo: W30 is the factory waveform again"),
+			{ say: "click W20, then Erase: it asks", act: async u => { u.click(dgKey(19)); await sleep(200); u.click('#globpop [data-ga="dperase"]'); },
+				screen: () => ok(dlgShown() && /Erase W20/.test($1("#dlg").textContent), "no question"), within: 20000 },
+			{ say: "click Erase in the question: W20 holds the factory waveform", act: u => u.click(dlgButton("Erase")),
+				screen: () => ok(dgIdle() && !dgUser(19), "W20 " + dgName(19)), within: dgWait },
+			dgUndoTo(19, true, "click Undo: W20 is the loaded waveform again"),
+			dgUndoTo(19, false, "click Undo: the Load is taken back, W20 is the factory waveform")
 		],
 		tidy: dgTidy
 	};
 	const digiproRenameJ = {
-		name: "mm-digipro-rename", proves: ["MM-310"], needs: dgPageOnly,
+		name: "mm-digipro-rename", proves: ["MM-310"],
 		steps: [
-			{ say: "open GLOBAL, click W01 and Rename, type SAW2, press Enter: W01 is named SAW2", act: async u => { await dgOpen(u); await until(dgRead, 90000); u.click(dgKey(0)); await sleep(200); u.click('#globpop [data-ga="dprename"]'); await sleep(250); u.type("#dpin", "saw2"); await sleep(100); u.key("Enter"); },
-				screen: () => ok(dgName(0) === "uSAW2", "W01 " + dgName(0)), within: 120000 },
-			{ say: "click Undo: SAW again", act: u => u.click('#globpop [data-ga="dpundo"]'), screen: () => ok(dgName(0) === "uSAW", "W01 " + dgName(0)), within: 40000 }
+			...dgLoad(20, "a one-cycle WAV"),
+			{ say: "click Rename, type AB, press Enter: W21 is named AB", act: async u => { u.click('#globpop [data-ga="dprename"]'); await sleep(250); u.type("#dpin", "ab"); await sleep(100); u.key("Enter"); },
+				screen: () => ok(dgIdle() && dgName(20) === "uAB", "W21 " + dgName(20)), within: dgWait },
+			dgUndoTo(20, true, "click Undo: the name is the file's again"),
+			dgUndoTo(20, false, "click Undo: the Load is taken back, W21 is the factory waveform")
 		],
 		tidy: dgTidy
 	};
 	const digiproLoadJ = {
-		name: "mm-digipro-load", proves: ["MM-310", "MM-378"], needs: dgPageOnly,
+		name: "mm-digipro-load", proves: ["MM-310", "MM-378"],
 		steps: [
-			{ say: "open GLOBAL, click W20 and Load…: the file's preview asks before it goes", act: async u => { await dgOpen(u); await until(dgRead, 90000); u.click(dgKey(19)); await sleep(200); u.click('#globpop [data-ga="dpload"]'); },
-				screen: () => ok(dlgShown() && /W20/.test($1("#dlg").textContent) && !!dlgButton("Load"), "question: " + (dlgShown() ? $1("#dlg").textContent : "none")), within: 100000 },
-			{ say: "click Load: W20 holds the cycle from the file, named PAGE", act: u => u.click(dlgButton("Load")),
-				screen: () => ok(dgUser(19) && dgName(19) === "uPAGE", "W20 " + dgName(19)), within: 40000 },
+			...dgLoad(21, "a one-cycle WAV"),
 			{ say: "click Save .syx…: the waveform is written to a file", act: (u, c) => { c.n = syxNews.length; u.click('#globpop [data-ga="dpsave"]'); },
-				screen: c => { const m = syxNews.length > c.n && lastExport(); return ok(!!m && m.ok && /1 waveform\.$/.test(m.text), m ? m.text : "no export yet"); }, within: 30000 },
-			{ say: "click Undo: W20 is the factory waveform again", act: u => u.click('#globpop [data-ga="dpundo"]'), screen: () => ok(!dgUser(19), "W20 " + dgName(19)), within: 40000 }
+				screen: c => { const m = syxNews.length > c.n && lastExport(); return ok(!!m && m.ok && /1 waveform\.$/.test(m.text), m ? m.text : "no export yet"); }, within: dgWait },
+			dgUndoTo(21, false, "click Undo: W22 is the factory waveform again")
 		],
 		tidy: dgTidy
 	};
@@ -3915,7 +3922,7 @@ const MmJourneys = (() => {
 			{ say: "rename the kit that plays (KIT, Rename, JOURNEY): the machine gets the live name SysEx 0x55 and the working kit has the name", act: async (u, c) => { u.click("#kitf"); await sleep(400); c.cur = machine().kit.current; u.click(ksq(c.cur), { alt: true }); await sleep(200); const w0 = wireSeq; u.click('#libpop [data-la="rename"]'); await sleep(250); u.type("#lsin", "JOURNEY"); await sleep(100); u.key("Enter"); await answer(u, c); await until(() => wk().name === "JOURNEY", 20000); await sleep(600); c.syx = wireLog.filter(w => w.seq > w0 && w.kind === "sysex" && w.b[6] === 0x55).map(w => w.b); u.key("Escape"); },
 				machine: c => ok(wk().name === "JOURNEY" && (Journey.noWire() || c.syx.length >= 1 && c.syx[0].slice(0, 6).join() === "240,0,32,60,3,0"), `name ${wk().name}, 0x55 sysex ${JSON.stringify(c.syx)}`), within: 30000 },
 			{ say: "undo every edit of the journey (the rename too): the kit that plays is the stored kit again, and says clean (B-190)", act: async (u, c) => { if (!$1("#libpop").hidden) u.key("Escape"); if ($1('[data-dock="trig"]')) u.click('[data-dock="locks"]'); if (S().side === "midi") u.click('[data-side="int"]'); await back(u, c); await until(() => kitEdited() === false, 15000); },
-				machine: () => ok(!kitEdited(), `kit state ${machine().kit?.working}, working ${workName()}`), within: 40000 }
+				machine: () => ok(!kitEdited(), `kit state ${machine().kit?.working}, working ${workName()}; differs: ${kitVsStored()}`), within: 40000 }
 		],
 		async tidy(u, c) { if (!$1("#libpop").hidden) u.key("Escape"); if ($1('[data-dock="trig"]')) u.click('[data-dock="locks"]'); if (S().side === "midi") u.click('[data-side="int"]'); await back(u, c); }
 	};
@@ -4066,6 +4073,10 @@ const MmJourneys = (() => {
 	/* MM-102: the machine's UNDO KIT from the kit library (KIT > LOAD KIT > UNDO KIT with the machine's keys) */
 	const workName = () => MmConvert.kitName(wk() || {});
 	const kitEdited = () => machine().kit?.working === "edited";
+	/* B-190 (seen once more in run 41088452237): which fields of the working kit differ from the stored slot it came from (a failure's words) */
+	const kitVsStored = () => { const w = wk(), k = machine().kit?.current, st = k != null ? I().doc("kit", k) : null; if (!w || !st) return "no working or stored kit"; const out = [];
+		const walk = (x, y, path) => { if (out.length >= 8) return; if (x && y && typeof x === "object" && typeof y === "object") { for (const key of new Set([...Object.keys(x), ...Object.keys(y)])) walk(x[key], y[key], path + "." + key); } else if (x !== y) out.push(`${path} ${JSON.stringify(x)} vs stored ${JSON.stringify(y)}`); };
+		walk(w, st, "kit"); return out.length ? out.join("; ") : "working kit equals the stored slot in the page's copy"; };
 	const undoKitJ = {
 		name: "mm-lib-undo-kit", proves: ["MM-102", "MM-X07"],
 		steps: [
