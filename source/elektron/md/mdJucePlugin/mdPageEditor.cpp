@@ -351,6 +351,15 @@ namespace mdJucePlugin
 		const auto* fmt = _request.find("format");
 		const bool syx = fmt && fmt->isString() && fmt->asString() == "syx";
 		const auto number = slot ? static_cast<int>(slot->asNumber()) + 1 : 1;
+#if MDMM_DIAGNOSTICS
+		// the firmware E2E's export journeys (MD-193): the target is the run's (GEARMULATOR_MDMM_SAMPLE_EXPORT: the file's
+		// name without its extension, or the folder for "all"), no dialog. Tests only: the product always asks.
+		if(const auto out = juce::SystemStats::getEnvironmentVariable("GEARMULATOR_MDMM_SAMPLE_EXPORT", {}); out.isNotEmpty() && m_session)
+		{
+			m_session->exportSamples(juce::File(out), _request);
+			return;
+		}
+#endif
 		const auto dir = juce::File::getSpecialLocation(juce::File::userMusicDirectory);
 		char name[32];
 		std::snprintf(name, sizeof(name), syx ? "ROM-%02d.syx" : ram ? "RAM-%d.wav" : "ROM-%02d.wav", number);

@@ -3414,6 +3414,11 @@
               "type": "integer",
               "minimum": 0
             },
+            "bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "the size of the files written, together (the firmware E2E checks it)"
+            },
             "text": {
               "type": "string"
             }

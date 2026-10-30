@@ -71,7 +71,7 @@ A step is recorded when a send starts and kept when `sampleLoad` says `done` (dr
 
 - `mdDeskTest` (no ROM): clipboard copy / paste / RAM to ROM / undo through the Desk with a recording adapter; refusals (empty, real machine, no room, busy); `exportSamples` names and the WAV bytes; `sampleHistory` published; contract schema.
 - Page tier (`mdDeskPageTest.js`): the keys' enabled states, the history message, the memory line.
-- Journey `md-sampler-manager` (E2E on the firmware): the memory line, copy a ROM slot, paste it into another, the target reads the same length; undo, it reads its old length. Proves MD-196 and MD-198. RAM to ROM (MD-199) and export (MD-193) have no journey: the first needs a RAM take, the second a native file dialog; mdDeskTest covers their bytes.
+- Journey `md-sampler-manager` (E2E on the firmware): the memory line, copy a ROM slot, paste it into another, the target reads the same length; undo, it reads its old length. Proves MD-196 and MD-198. Journey `md-sampler-export` (MD-193): Export WAV, Export SysEx and both "all" keys on ROM slots, the dialog skipped by the diagnostics hook `GEARMULATOR_MDMM_SAMPLE_EXPORT` (mdPageEditor.cpp, set by scripts/mdmm-e2e.sh), the `sampleExport` message's `count` and `bytes` checked. Journey `md-sampler-ram-rom` (MD-199): RAM-R records a take (Set up sampling, a trig, PLAY), Keep as ROM…, the ROM slot reads back the take's length named RAMn. mdDeskTest covers the bytes.
 - Not built here and so not tested: erase.
 - State when this was written: nothing was run locally (the rule). The branch goes through `mdmm-ci.yml` by hand; the firmware workflow (the journey) reaches the ROMs only from main or a release branch.
 
