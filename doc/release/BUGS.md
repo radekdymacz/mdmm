@@ -4,6 +4,25 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-198 · Monomachine: two factory patterns did not play in the real-factory journey (open, seen once)
+
+- **From:** full CI run 41179644105 (main a31053d99), firmware journey `mm-real-factory-patterns`: "pattern 49: did not start (pressed twice); pattern 57: only 2 steps moved". Patterns 1 to 41 played as always, 41 took 6 s instead of 3; the desk's status lines show the pattern selected and SYSEX RECV idle throughout. Not reported by a tester.
+- **Not B-195:** the journey runs third, before any DigiPRO work: no 0x5E was sent, so neither the held status polls nor the SYSEX RECV change take part. It passed in the five full runs before and after the B-195 changes (nightlies 40992417929, 41160387303, CI 41120339777, the branch's 41144045158 and 41174130427).
+- **Status:** open, a flake for now: the transport telemetry or the emulator stood still for about 20 s. Look again if it comes back.
+
+## B-197 · Monomachine: the multi trig journey dragged the split marker after a late kit read-back took it away (fixed in the journey)
+
+- **From:** full CI run 41179644105, journey `mm-perform-multi-setup` step 3: "not on the page: #splitm"; it passed in every run before (nightlies 40992417929, 41160387303, 41120339777, 41144045158, 41174130427).
+- **Cause:** the step before writes all four MULTI TRIG modes, each a kit dump on SYSEX RECV with its read-back. SPLIT KEY was clicked while those were still on their way (SYSEX RECV parked, the stream sending, 7:47:13); the marker and the Upper from stepper were there for 300 ms, then a late read-back put the page on another mode and the drag found no marker. The journey's race (the page follows the kit as the machine confirms it; a person waits for the page), not the B-195 changes (no 0x5E in that part of the run).
+- **Fix:** the step waits until SYSEX RECV is idle and nothing is sent before it clicks SPLIT KEY, and checks the marker again before the drag (with what it found in the failure).
+
+## B-196 · Monomachine: LIVE RECORDING started while SYSEX RECV was still open from an edit recorded no lock (fixed, awaiting CI)
+
+- **From:** firmware journey `mm-seq-record-locks` step 5 ("locks [], value turned 67") in the three full runs with the B-195 changes (41144045158, 41174130427, 41179644105); it passed in the runs before (40992417929, 41120339777, 41160387303) and alone after `mm-seq-locks` (41178825349). Not reported by a tester.
+- **What happens:** the journey before (`mm-seq-locks`) leaves SYSEX RECV parked (its tidy's dumps, 30 s). Alt+Space (LIVE RECORDING) was pressed on SYSEX RECV, since keys work there once the dump is taken; AMP DEC was turned while the machine recorded there; then the session left SYSEX RECV with six EXITs. The machine's pattern held no lock and no trig (in the passing runs the recording leaves a trig on step 2 or 3). Either the firmware does not lock a value while it records on SYSEX RECV, or the EXITs, which are LIVE RECORDING's erase while it records (manual 1-49), took the step: both need the recording on the main screen. Every firmware test of recording waits for SYSEX RECV to be left first (`mmDeskFirmwareTest` reclock, steprec), so this was never measured. Whether a run passes depends on whether the session's idle time (3 s) ran out before Alt+Space: timing, not the B-195 code (no 0x5E in that part of the run, so the held polls and `onPanel` do not act there).
+- **Fix:** LIVE RECORDING waits for the main screen: parked on SYSEX RECV, RECORD waits as for a dump (the page says it follows in a moment) and the session leaves as soon as the machine took what it was sent (`RecvSession::leaveSoon`, 300 ms quiet instead of 3 s), then RECORD + PLAY is pressed. Test: `mmDeskTest` (live record while parked: no key, SYSEX RECV left at once, EXIT ×6 then RECORD + PLAY, no EXIT after it; it fails without the fix). The journey's failure now says the SYSEX RECV state when the value was turned and T1's trigs.
+- **Left:** an edit made while LIVE RECORDING plays still opens SYSEX RECV, whose EXIT keys may erase what passes on the track in focus. Not measured; not seen in a run.
+
 ## B-195 · Monomachine: a DigiPRO MGR job now and then leaves its position empty (open)
 
 - **From:** firmware E2E run 41107833994 (`release/0.0.0-ci-test`, 2026-10-30), journeys `mm-digipro-rename` and `mm-digipro-load` (since merged into `mm-digipro-card`); not reported by a tester.

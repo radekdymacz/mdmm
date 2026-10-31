@@ -3456,10 +3456,10 @@ const MmJourneys = (() => {
 			go("sound"), sel(0),
 			{ say: "press Alt+Space: live recording, playing", act: (u, c) => { c.p0 = pat0(); c.l0 = lockList().length; blur(); results.length = 0; u.key(" ", { alt: true }, "Space"); },
 				machine: () => ok(tele.last?.record === "live" && tele.last?.playing, `record ${tele.last?.record}, playing ${tele.last?.playing}`), within: 8000 },
-			{ say: "turn AMP's DEC on Kit: the CC goes to the machine on track 1's channel, the page says which step it locks", act: async (u, c) => { c.r = await nudgeBox(u, 0, "AMP", 2); await sleep(300); c.toast = $1("#toast")?.textContent || ""; c.cell = c.r.v1; },
+			{ say: "turn AMP's DEC on Kit: the CC goes to the machine on track 1's channel, the page says which step it locks", act: async (u, c) => { c.recv4 = I().machine?.recv?.state; c.r = await nudgeBox(u, 0, "AMP", 2); await sleep(300); c.toast = $1("#toast")?.textContent || ""; c.cell = c.r.v1; },
 				machine: c => ok(!checkBox(c.r, 0, "AMP", 2) && /Locks T1 AMP DEC on step \d+/.test(c.toast), `${checkBox(c.r, 0, "AMP", 2) || ""} toast "${c.toast}"`), within: 6000 },
 			{ say: "click RECORD off, then STOP: the pattern holds a lock of AMP DEC, with the value turned, on a step of track 1", act: async (u, c) => { u.click("#rec"); await sleep(800); if (S().playing) u.click("#play"); await sleep(1500); },
-				machine: c => { const l = lockVals(0, 1, 2); return ok(l.length >= 1 && l.some(([, v]) => v === c.cell), `locks ${JSON.stringify(l)}, value turned ${c.cell}`); }, within: 10000 },
+				machine: c => { const l = lockVals(0, 1, 2); return ok(l.length >= 1 && l.some(([, v]) => v === c.cell), `locks ${JSON.stringify(l)}, value turned ${c.cell}, SYSEX RECV ${c.recv4} when it was turned, T1 trigs ${trigsOf(0)}`); }, within: 10000 },
 			go("seq"),
 			{ say: "on Pattern the lane picker counts the lock the recording made on AMP DEC; the lane's clear key takes it away", act: async (u, c) => { if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await sleep(200); u.click('[data-lpage="AMP"]'); await sleep(60); u.click('.pk[data-lane="AMP.2"]'); await sleep(300); c.has = $1('.pk[data-lane="AMP.2"]')?.classList.contains("has") && +$1('.pk[data-lane="AMP.2"] i')?.textContent >= 1; u.click("#clearLane"); await sleep(600); },
 				screen: c => ok(c.has, "AMP DEC in the picker has no locked step"), machine: () => ok(lockVals(0, 1, 2).length === 0, "locks " + JSON.stringify(lockVals(0, 1, 2))), within: 8000 }
@@ -3631,9 +3631,13 @@ const MmJourneys = (() => {
 					   (a dump of the previous journey's kit can still be on its way and put the page back on another mode; nightly CI
 					   runs 2026-10-26 and -28: no [data-strk="1"]): press the key again until mode, marker and stepper hold for 300 ms */
 					const split = () => wk().multiTrig.mode === 1 && S().multi.mode === 1 && !!$1("#splitm") && !!$1('[data-strk="1"]');
+					/* the step before wrote four modes, each a kit dump on SYSEX RECV and its read-back: those are in first, so no late
+					   one puts the page on another mode between the stepper and the drag (the full CI run 41179644105: the marker gone) */
+					await until(() => I().machine?.recv?.state === "idle" && !I().machine?.recv?.sending, 15000);
 					let settled = false;
 					for (let t = 0; t < 4 && !settled; t++) { u.click('[data-set="mtmode"] button[data-v="1"]'); if (await until(split, 8000)) { await sleep(300); settled = split(); } }
 					if (!settled) { c.bad.push(`SPLIT KEY not taken: kit ${wk().multiTrig.mode}, page ${S().multi.mode}, marker ${!!$1("#splitm")}, stepper ${!!$1('[data-strk="1"]')}`); return; } c.st0 = wk().multiTrig.splitTrack; const wantTrack = c.st0 < 5 ? c.st0 + 1 : 4; u.click(c.st0 < 5 ? '[data-strk="1"]' : '[data-strk="-1"]'); if (!await until(() => wk().multiTrig.splitTrack === wantTrack, 4000)) c.bad.push(`upper from ${wk().multiTrig.splitTrack} for ${wantTrack}`);
+					if (!await until(split, 8000)) { c.bad.push(`the marker went after Upper from: kit ${wk().multiTrig.mode}, page ${S().multi.mode}, marker ${!!$1("#splitm")}`); return; }
 					c.k0 = wk().multiTrig.splitKey; await u.drag("#splitm", [[-60, 0], [-120, 0]]); await sleep(500); c.k1 = wk().multiTrig.splitKey; if (c.k1 >= c.k0) c.bad.push(`split key ${c.k0} -> ${c.k1}`); c.hint = $1(".kbhint")?.textContent || ""; },
 				screen: c => ok(!c.bad.length && /^.*Keys from .* play T\d-T6, keys below play T1-T\d/.test(c.hint), c.bad.join(" | ") + " hint " + c.hint), within: 1000 },
 			{ say: "SEQ START and SEQ TRNSP have a Timing stepper: from DIRECT through 1/16, 2/16, 4/16, 8/16, 16/16 to 32/16, the kit's timing", act: async (u, c) => { c.bad = []; u.click('[data-set="mtmode"] button[data-v="2"]'); if (!await until(() => wk().multiTrig.mode === 2 && S().multi.mode === 2, 15000)) { c.bad.push(`SEQ START not taken: kit ${wk().multiTrig.mode}, page ${S().multi.mode}`); return; } await sleep(300); const names = ["DIRECT", "1/16", "2/16", "4/16", "8/16", "16/16", "32/16"];
