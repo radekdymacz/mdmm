@@ -64,6 +64,10 @@ namespace mmDesk
 		void want(std::vector<uint8_t> _dump, const uint32_t _tag = 0) { m_queue.push_back({std::move(_dump), _tag, -1}); }
 		// Keeps the session parked a while longer (an edit is coming).
 		void touch() { m_lastActivity = m_clock; }
+		// Parked: leave as soon as nothing is left to take (leaveSoonMs quiet instead of idleMs). LIVE RECORDING
+		// starts on the main screen: a value the machine got while it recorded on SYSEX RECV was not locked, and the
+		// EXIT keys that leave it are LIVE RECORDING's erase (the full firmware E2E, mm-seq-record-locks).
+		void leaveSoon() { if(parked()) m_leaveSoon = true; }
 		Out tick(double _now, const Telemetry& _t);
 
 		State state() const { return m_state; }
@@ -84,9 +88,16 @@ namespace mmDesk
 		int maxFailures = 2;		// failed tries (each three attempts, then a pause) before the queue is given up
 		double maxWaitMs = 45000;	// a dump queued this long and not sent is given up, whatever the screen says
 		double settleMs = 60;		// after the machine's RECV count moved, keys wait this long (B-099)
+		double leaveSoonMs = 300;	// leaveSoon: parked and quiet this long -> leave
 
 	private:
-		void go(State _s, double _now) { m_state = _s; m_since = _now; }
+		void go(State _s, double _now)
+		{
+			m_state = _s;
+			m_since = _now;
+			if(_s != State::Parked)
+				m_leaveSoon = false;
+		}
 		void park(double _now, const Telemetry& _t);
 		void failed(Out& _out, double _now);
 		void giveUp(Out& _out, double _now);
@@ -106,5 +117,6 @@ namespace mmDesk
 		uint32_t m_taken = 0;		// that count now
 		uint32_t m_sentParked = 0;	// dumps sent since the session parked
 		double m_takenMs = -1e9;	// machine time the RECV count last moved while parked
+		bool m_leaveSoon = false;	// leaveSoon
 	};
 }
