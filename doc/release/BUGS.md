@@ -4,6 +4,25 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-198 · Monomachine: two factory patterns did not play in the real-factory journey (open, seen once)
+
+- **From:** full CI run 41179644105 (main a31053d99), firmware journey `mm-real-factory-patterns`: "pattern 49: did not start (pressed twice); pattern 57: only 2 steps moved". Patterns 1 to 41 played as always, 41 took 6 s instead of 3; the desk's status lines show the pattern selected and SYSEX RECV idle throughout. Not reported by a tester.
+- **Not B-195:** the journey runs third, before any DigiPRO work: no 0x5E was sent, so neither the held status polls nor the SYSEX RECV change take part. It passed in the five full runs before and after the B-195 changes (nightlies 40992417929, 41160387303, CI 41120339777, the branch's 41144045158 and 41174130427).
+- **Status:** open, a flake for now: the transport telemetry or the emulator stood still for about 20 s. Look again if it comes back.
+
+## B-197 · Monomachine: the multi trig journey dragged the split marker after a late kit read-back took it away (fixed in the journey)
+
+- **From:** full CI run 41179644105, journey `mm-perform-multi-setup` step 3: "not on the page: #splitm"; it passed in every run before (nightlies 40992417929, 41160387303, 41120339777, 41144045158, 41174130427).
+- **Cause:** the step before writes all four MULTI TRIG modes, each a kit dump on SYSEX RECV with its read-back. SPLIT KEY was clicked while those were still on their way (SYSEX RECV parked, the stream sending, 7:47:13); the marker and the Upper from stepper were there for 300 ms, then a late read-back put the page on another mode and the drag found no marker. The journey's race (the page follows the kit as the machine confirms it; a person waits for the page), not the B-195 changes (no 0x5E in that part of the run).
+- **Fix:** the step waits until SYSEX RECV is idle and nothing is sent before it clicks SPLIT KEY, and checks the marker again before the drag (with what it found in the failure).
+
+## B-196 · Monomachine: LIVE RECORDING records no lock for a value turned in the full E2E (open)
+
+- **From:** firmware journey `mm-seq-record-locks` step 5 ("locks [], value turned 67") in the full runs 41144045158, 41174130427, 41179644105, 41187311583 and 41193553307, and in the short run 41192356519 (the first 13 MM journeys); it passed in the runs before (40992417929, 41120339777, 41160387303) and alone after `mm-seq-locks` (41178825349). Not reported by a tester.
+- **Not B-195:** no 0x5E is sent in that part of the run, so the held status polls and `onPanel` do not act there; the rest of the B-195 merge does not touch that path.
+- **What the traces show** (the journey now logs the page's view every 25 ms from Alt+Space to the read-back): run 41192356519, with SYSEX RECV left before RECORD (a trial fix, taken back): recording on at 704 ms, the value sent at 880 ms on step 0, RECORD off at 1402 ms: no lock. Run 41193553307, with the journey waiting for step 1 but SYSEX RECV still parked from `mm-seq-locks`: the value sent on step 1 (the desk named step 2), no lock either; the pattern the page holds never changed while it recorded. In the passing runs the lock landed on step 2 or 3 (the trig the recording leaves). So each of two conditions lost it: the value in the start's step, and the recording on SYSEX RECV. Neither is measured on the firmware (`mmDeskFirmwareTest` reclock waits for SYSEX RECV to be left and for the playhead).
+- **Next:** measure in reclock (the value right after RECORD + PLAY; RECORD pressed while parked). Likely fix: LIVE RECORDING leaves SYSEX RECV first (the trial `RecvSession::leaveSoon`, commit b9eb729cf, with its mmDeskTest case) and the journey turns the value after step 0 (in the journey now), both together; not run together yet.
+
 ## B-195 · Monomachine: a DigiPRO MGR job now and then leaves its position empty (open)
 
 - **From:** firmware E2E run 41107833994 (`release/0.0.0-ci-test`, 2026-10-30), journeys `mm-digipro-rename` and `mm-digipro-load` (since merged into `mm-digipro-card`); not reported by a tester.
