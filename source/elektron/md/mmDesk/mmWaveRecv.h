@@ -66,6 +66,8 @@ namespace mmDesk
 		bool idle() const { return m_state == State::Idle && m_jobs.empty(); }
 		// nothing asked and the panel left alone (idle, or the pause after a failure with nothing left)
 		bool quiet() const { return m_jobs.empty() && (m_state == State::Idle || m_state == State::Failed); }
+		// on its way to, on or back from DIGIPRO MGR: the panel is this session's (a job only queued is not: B-195)
+		bool onPanel() const { return m_state != State::Idle && m_state != State::Failed; }
 		size_t queued() const;
 		double machineClock() const { return m_clock; }
 
