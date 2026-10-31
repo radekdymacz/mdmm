@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cstdio>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -368,6 +369,38 @@ namespace md
 				&& m_midiInByteCursor == 0 && m_midiIn.empty() && m_midiClockBypass.empty()
 				&& m_realtimeMidiIn.size() == 0
 				&& m_uc.queuedMidiRxBytes() == 0;
+		}
+		// B-195 diagnostics: where the host's MIDI to the firmware is (same serialization as isMidiIngressIdle)
+		std::string midiIngressState() const
+		{
+			return "midiIn " + std::to_string(m_midiIn.size()) + " cursor " + std::to_string(m_midiInByteCursor)
+				+ (m_midiIn.empty() ? std::string() : " front " + std::to_string(m_midiIn.front().sysex.size()) + "B a=" + std::to_string(m_midiIn.front().a))
+				+ " bypass " + std::to_string(m_midiClockBypass.size()) + " realtime " + std::to_string(m_realtimeMidiIn.size())
+				+ " transfer " + std::to_string(m_midiSysexTransfer.ownsMidiWire() ? 1 : 0) + " scheduled " + std::to_string(m_scheduledMidi.empty() ? 0 : 1)
+				+ " ucRx " + std::to_string(m_uc.queuedMidiRxBytes()) + " ucRxConsumed " + std::to_string(m_uc.midiRxConsumedCount())
+				+ " ucRxOverflow " + std::to_string(m_uc.midiRxOverflowCount()) + " ucTx " + std::to_string(m_uc.midiTxBytes())
+				+ " ucTxOverflow " + std::to_string(m_uc.midiTxOverflowCount()) + " rxIrqEnabled "
+				+ std::to_string(m_uc.getSim().isReceiveInterruptEnabled(Sim::g_uartMidi) ? 1 : 0) + " pc " + std::to_string(m_uc.getPC());
+		}
+		// B-195 diagnostics: the CPU's status register, its pending interrupts per level, its registers, the SIM's state
+		std::string cpuState()
+		{
+			char b[96];
+			std::snprintf(b, sizeof(b), "pc %08x sr %04x pending", m_uc.getPC(), m_uc.getSR());
+			std::string s = b;
+			for(uint8_t l = 1; l < 8; ++l)
+				s += " " + std::to_string(m_uc.pendingInterruptCount(l));
+			for(uint32_t i = 0; i < 8; ++i)
+			{
+				std::snprintf(b, sizeof(b), " d%u %08x", i, m_uc.getDReg(i));
+				s += b;
+			}
+			for(uint32_t i = 0; i < 8; ++i)
+			{
+				std::snprintf(b, sizeof(b), " a%u %08x", i, m_uc.getAReg(i));
+				s += b;
+			}
+			return s + " | " + m_uc.getSim().debugState();
 		}
 		// Queue a front-panel button/encoder event ([row][mask]). trySendPanelEvent is bounded,
 		// thread-safe, allocation-free, and never waits; false reports that the FIFO

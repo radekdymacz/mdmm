@@ -109,6 +109,7 @@ namespace mmDesk
 			std::string waitsFor;	// HW MIDI: what the person must do first ("" = nothing)
 			uint32_t finished = 0;	// jobs ended
 			uint32_t gaveUp = 0;	// jobs given up (the screen never came)
+			std::string state;		// B-195: the panel session's state (WaveRecv::stateName), for diagnostics
 		};
 		virtual std::string sendWaves(const std::vector<Bytes>& _dumps) { (void)_dumps; return "This engine cannot send waveforms to the machine."; }
 		virtual std::string eraseWave(int _wave) { (void)_wave; return "This engine cannot erase the machine's waveforms."; }

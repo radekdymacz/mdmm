@@ -17,6 +17,7 @@
 #include "hardwareLib/am29f.h"
 
 #include "mdflash.h"
+#include "mdmemorymap.h"
 #include "mdsim.h"
 #include "mdturbomidi.h"
 #include "mdtypes.h"
@@ -173,6 +174,8 @@ namespace md
 		{
 			return m_midiTxOverflow.load(std::memory_order_relaxed);
 		}
+		// Every byte the firmware has sent on UART1 (B-195 diagnostics)
+		uint64_t midiTxBytes() const { return m_midiTxBytes.load(std::memory_order_relaxed); }
 		// Observe raw UART1 TX bytes without consuming normal plug-in MIDI output.
 		// The callback runs synchronously on the emulation scheduler thread.
 		void setMidiTransmitTap(std::function<void(uint8_t)> _tap)
@@ -227,6 +230,19 @@ namespace md
 		// runs synchronously under the flash lock and must not reenter this device.
 		using FlashOperationObserver = std::function<void(const FlashCommandDecoder::Operation&, uint64_t)>;
 		void setFlashOperationObserver(FlashOperationObserver observer) { m_flashOperationObserver = std::move(observer); }
+		// B-195 diagnostics (tests only): every access of the CPU to the flash that the trace covers, while one is set
+		// (null: none, the default): reads of the Monomachine's user flash, every write to the flash (commands too)
+		struct FlashAccess
+		{
+			uint32_t addr;
+			uint32_t pc;
+			uint16_t value;
+			uint8_t kind;	// 0 read8, 1 read16, 2 write8 (dropped), 3 write16 that programmed or erased, 4 write16 that did not
+		};
+		void setFlashAccessTrace(std::vector<FlashAccess>* _trace) { m_flashAccessTrace = _trace; }
+		// and with this set, every access that takes the slow path (kinds 5 read8, 6 read16, 7 write8, 8 write16; the
+		// fast lane off sends RAM there too)
+		void setTraceAllAccesses(const bool _all) { m_traceAllAccesses = _all; }
 		bool replaceFlashData(const std::vector<uint8_t>& _data, bool _dirty);
 		enum class StateImagePublishResult
 		{
@@ -280,6 +296,17 @@ namespace md
 		const Rom& m_rom;
 		FlashCommandDecoder m_flashCommands;
 		FlashOperationObserver m_flashOperationObserver;
+		std::vector<FlashAccess>* m_flashAccessTrace = nullptr;
+		bool m_traceAllAccesses = false;
+		void traceFlash(const uint32_t _addr, const uint16_t _value, const uint8_t _kind)
+		{
+			if(!m_flashAccessTrace)
+				return;
+			const bool user = memorymap::g_mmUserFlash.contains(_addr);
+			if(_kind < 2 ? !user : !(user || memorymap::g_flashFull.contains(_addr) || memorymap::g_flashLow.contains(_addr)))
+				return;
+			m_flashAccessTrace->push_back({_addr, getPC(), _value, _kind});
+		}
 		// Each emulated machine owns a private flash image. Firmware may program this
 		// copy without changing the user's ROM file or another plug-in instance.
 		std::vector<uint8_t> m_flashData;
@@ -324,6 +351,7 @@ namespace md
 		size_t m_midiTxDrainIndex = 1;
 		bool m_midiTxDiscontinuity = false;
 		std::atomic<uint64_t> m_midiTxOverflow{0};
+		std::atomic<uint64_t> m_midiTxBytes{0};
 		std::function<void(uint8_t)> m_midiTransmitTap;
 		synthLib::MidiBufferParser m_midiTxParser{synthLib::MidiEventSource::Device};
 

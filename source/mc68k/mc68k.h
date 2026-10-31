@@ -85,6 +85,8 @@ namespace mc68k
 
 		void setPC(uint32_t _pc);
 		uint32_t getPC() const;
+		uint32_t getSR() const;
+		size_t pendingInterruptCount(uint8_t _level) const { return _level < m_pendingInterrupts.size() ? m_pendingInterrupts[_level].size() : 0; }
 		
 		uint32_t getAReg(uint32_t _index) const;
 		uint32_t getDReg(uint32_t _index) const;

@@ -5,6 +5,7 @@
 #include "elektronData/mmCommands.h"
 #include "elektronData/mmDump.h"
 #include "elektronData/mmMachines.h"
+#include "elektronData/syxImport.h"
 
 #include "deskCore/deskPacer.h"
 
@@ -77,6 +78,8 @@ namespace mmDesk
 			return;
 		m_wire.heard(now());
 		const auto cmd = _m[6];
+		if(cmd == ed::g_mmWaveDump)	// B-195: the waveform's dump is in, the desk may ask the machine again
+			m_waveDumpUntilMs = -1e9;
 		if(cmd == 0x72)
 		{
 			if(const auto s = ed::parseMmStatusResponse(_m))

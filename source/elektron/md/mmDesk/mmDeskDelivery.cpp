@@ -503,8 +503,10 @@ namespace mmDesk
 	{
 		if(m_profile.wire)
 			return;
-		// 0.9 wave 2: DIGIPRO MGR has the panel; SYSEX RECV's dumps wait (its clock waits with them)
-		if(!m_waveRecv.quiet())
+		// 0.9 wave 2: DIGIPRO MGR has the panel; SYSEX RECV's dumps wait (its clock waits with them). A waveform job only
+		// queued waits for SYSEX RECV instead (pumpWaves), so the session here goes on and leaves: waiting for the queued
+		// job too held a parked SYSEX RECV for good, and the job with it (B-195, the full firmware E2E run 41144045158).
+		if(m_waveRecv.onPanel())
 			return;
 		// Parked, with the person's keys still on their way (pressKeys): the next dump waits, since a key the machine
 		// gets while it takes a dump is lost (mmDeskFirmwareTest parked).
@@ -610,6 +612,7 @@ namespace mmDesk
 		w.busy = !m_waveRecv.quiet();
 		w.finished = m_wavesFinished;
 		w.gaveUp = m_wavesGaveUp;
+		w.state = m_waveRecv.stateName();
 		if(!m_manualWaves.empty())
 			w.waitsFor = "Open GLOBAL > FILE > DIGIPRO MGR > RECEIVE > ORG on the Monomachine (it says WAITING), then press Send.";
 		return w;

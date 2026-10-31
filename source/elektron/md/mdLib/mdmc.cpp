@@ -164,6 +164,7 @@ namespace md
 					m_midiTxOverflow.fetch_add(1, std::memory_order_relaxed);
 				}
 			}
+			m_midiTxBytes.fetch_add(1, std::memory_order_relaxed);
 			if(m_midiTransmitTap)
 				m_midiTransmitTap(_b);
 		});
@@ -725,6 +726,8 @@ namespace md
 
 	uint8_t Microcontroller::read8Slow(const uint32_t _addr)
 	{
+		if(m_traceAllAccesses && m_flashAccessTrace)
+			m_flashAccessTrace->push_back({_addr, getPC(), static_cast<uint16_t>(0), 5});
 		if(m_model == MachineModel::Machinedrum)
 		{
 			const auto offset = memorymap::g_flashLow.contains(_addr)
@@ -745,11 +748,14 @@ namespace md
 		const auto r = resolve(_addr);
 		if(r.peripheral)					{ logPeripheral(_addr, 0, 1, false); return 0; }
 		if(!r.data || r.offset >= r.size)	return 0;
+		traceFlash(_addr, r.data[r.offset], 0);
 		return r.data[r.offset];
 	}
 
 	uint16_t Microcontroller::read16Slow(const uint32_t _addr)
 	{
+		if(m_traceAllAccesses && m_flashAccessTrace)
+			m_flashAccessTrace->push_back({_addr, getPC(), static_cast<uint16_t>(0), 6});
 		if(m_model == MachineModel::Machinedrum)
 		{
 			const auto offset = memorymap::g_flashLow.contains(_addr)
@@ -770,11 +776,14 @@ namespace md
 		const auto r = resolve(_addr);
 		if(r.peripheral)						{ logPeripheral(_addr, 0, 2, false); return 0; }
 		if(!r.data || (r.offset + 1) >= r.size)	return 0;
+		traceFlash(_addr, loadBe16(r.data + r.offset), 1);
 		return loadBe16(r.data + r.offset);
 	}
 
 	void Microcontroller::write8Slow(const uint32_t _addr, const uint8_t _val)
 	{
+		if(m_traceAllAccesses && m_flashAccessTrace)
+			m_flashAccessTrace->push_back({_addr, getPC(), static_cast<uint16_t>(_val), 7});
 		if(memorymap::g_sim.contains(_addr))		{ m_sim.write8(memorymap::g_sim.offset(_addr), _val); return; }
 		if(memorymap::g_dsp1Hdi08.contains(_addr))	{ m_hdi08Dsp1.write8(static_cast<mc68k::PeriphAddress>(memorymap::g_dsp1Hdi08.offset(_addr)), _val); return; }
 		if(memorymap::g_dsp2Hdi08.contains(_addr))	{ m_hdi08Dsp2.write8(static_cast<mc68k::PeriphAddress>(memorymap::g_dsp2Hdi08.offset(_addr)), _val); return; }
@@ -784,6 +793,7 @@ namespace md
 			patchLock.lock();
 		const auto r = resolve(_addr);
 		if(r.peripheral)								{ logPeripheral(_addr, _val, 1, true); return; }
+		traceFlash(_addr, _val, 2);
 		if(!r.writable || !r.data || r.offset >= r.size)	return;
 		r.data[r.offset] = _val;
 		if(patchRam)
@@ -792,6 +802,8 @@ namespace md
 
 	void Microcontroller::write16Slow(const uint32_t _addr, const uint16_t _val)
 	{
+		if(m_traceAllAccesses && m_flashAccessTrace)
+			m_flashAccessTrace->push_back({_addr, getPC(), static_cast<uint16_t>(_val), 8});
 		if(m_model == MachineModel::Machinedrum)
 		{
 			const auto offset = memorymap::g_flashLow.contains(_addr)
@@ -852,6 +864,7 @@ namespace md
 				: memorymap::g_flashLow.offset(_addr);
 			std::unique_lock flashLock(m_flashMutex);
 			m_monomachineFlash->write(offset, _val);
+			traceFlash(_addr, _val, m_monomachineFlash->changedSize() ? 3 : 4);
 			m_flashDirty = true;
 			m_lastFlashWriteCycle = getCycles();
 			++m_flashWrites;

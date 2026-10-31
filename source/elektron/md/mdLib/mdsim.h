@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <string>
 
 namespace md
 {
@@ -234,6 +235,8 @@ namespace md
 		void setDeferStepping(bool _defer);
 		bool deferStepping() const { return m_deferStepping; }
 		bool needsInterruptCheck() const { return m_interruptCheckNeeded; }
+		// B-195 diagnostics: the interrupt and MIDI UART state, as text (reads nothing the firmware sees)
+		std::string debugState() const;
 		bool externalIrq4Asserted() const { return m_extIrq4Level; }
 
 		// Number of master-clock cycles until exec() can first make a new, currently

@@ -7,6 +7,8 @@
 
 #include "deskWire/mmWire.h"
 
+#include "elektronData/syxImport.h"
+
 #include "mdLib/mdhardware.h"
 #include "mdLib/mdpanelsequence.h"
 
@@ -110,6 +112,10 @@ namespace mdJucePlugin
 	void MmStudioLink::sendSysex(const Bytes& _message) const
 	{
 		editFlow::sysexOut(_message);
+		// B-195: a waveform request (0x5E): the controller's status polls wait while its dump may come back (a whole
+		// dump's time on a cable, 2.3 s of machine time; wall time here, so twice that for an emulator behind)
+		if(_message.size() > 7 && _message[0] == 0xf0 && _message[6] == elektronData::g_mmWaveRequest)
+			m_controller.holdStatusPolls(6000);
 		synthLib::SMidiEvent event(synthLib::MidiEventSource::Editor);
 		event.sysex.assign(_message.begin(), _message.end());
 		m_processor.addMidiEvent(event);
