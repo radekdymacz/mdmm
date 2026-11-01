@@ -1,7 +1,16 @@
-# Handoff: 0.9 in progress (2026-10-31)
+# Handoff: 0.9 in progress (2026-11-01)
 
 Read this first in a new session. The plan is [PLAN-0.9.md](PLAN-0.9.md); each feature's spec is in doc/release/0.9/.
 Bugs named here are in [BUGS.md](BUGS.md).
+
+## Update 2026-11-01 (main 29ff9e2aa)
+
+- **Merged:** B-189 fixed (OJMP is bits 3-6 of the arpeggiator's play byte; proved by the new firmware ctest `mmOjmpLayoutFirmwareTest`). B-201 Linux blank web view (WebKit DMA-BUF and compositing off in the helper, a native card when the page never paints; not yet proved on Fedora, waiting for the user). B-176 verified by `mmNewKitDefaultsFirmwareTest`. B-175 not reproduced (the reset clears K01 in `mmEmptyResetFirmwareTest`); open question for Radek: ask the reporter for the version, or close.
+- **B-196 parked after 0.9 (Radek):** the bisect found `mm-wire-cc`'s GLOBAL base channel step; `mmRecLockGlobalFirmwareTest` (the same round trip through the desk, no plug-in) gets its lock, so the cause is in the plug-in path. `mm-wire-cc` runs `alone: true`.
+- **Full CI 41305887640** (ed56c4105): everything green except one MM journey, `mm-song-row-settings` (B-202, seen once). MD E2E PASS 191/191. All firmware ctests pass.
+- **New bugs:** B-199 (one 10.4 ms lock hold, nightly), B-200 (md-top-tempo-release, once), B-202.
+- **Next:** read main's next nightly (B-202 again?). Then step 3 below (the MD sample erase probe on a `release/*` branch), then waves 6 to 10. Wave 5 is done apart from the B-175 question.
+- **Working rule (Radek, 2026-11-01):** CI logs, user logs and analysis go to subagents; the main session only reads short summaries.
 
 ## Where things stand
 
