@@ -392,7 +392,7 @@ namespace mmDesk
 			switch(d.a)
 			{
 			case 0: return a.playOjmp[i] & 7;
-			case 1: return a.playOjmp[i] >> 4;
+			case 1: return (a.playOjmp[i] >> 3) & 15;
 			case 2: return a.mode[i];
 			case 3: return a.range[i];
 			case 4: return a.speed[i];

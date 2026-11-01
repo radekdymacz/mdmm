@@ -1478,7 +1478,7 @@ namespace
 			_p.midiTranspose.key[t] = static_cast<uint8_t>(_r.in(0, 11));
 			for(auto* a : {&_p.arp, &_p.midiArp})
 			{
-				a->playOjmp[t] = static_cast<uint8_t>(_r.in(0, 4) | (_r.in(0, 3) << 4));
+				a->playOjmp[t] = static_cast<uint8_t>(_r.in(0, 4) | (_r.in(0, 3) << 3));
 				a->mode[t] = static_cast<uint8_t>(_r.in(0, 3));
 				a->range[t] = static_cast<uint8_t>(_r.in(0, 3));
 				a->speed[t] = static_cast<uint8_t>(_r.in(0, 23));

@@ -71,7 +71,7 @@ One pattern holds the six synth tracks and the six MIDI sequencer tracks.
 | `tracks[t].chord` + `chordNotes` | chord steps; the extra notes are `[track, step, note]` entries (the base note stays in `notes`) | MIDI |
 | `tracks[t].slide` / `swing` | slide and swing tracks (default swing: every 2nd 16th) | panel |
 | `tracks[t].transpose` / `scale` / `key` | TRANSPOSE: semitones, 0 --- 1 FIX 2 MAJ 3 MIN, key 0-11 | panel |
-| `tracks[t].arp` | ARPEGGIATOR: `play` (TRUE UP DOWN CYCLE RND), `ojmp`, `mode` (OFF KEY SID ADD), `range`, `speed`, `trigs` (bit 0 AMP, 1 FLT, 2 LFO), `length`, 16 rhythm/offset `steps`. `flag` is bit 3 of the play byte (set in 6 factory tracks, meaning unknown) | panel |
+| `tracks[t].arp` | ARPEGGIATOR: `play` (TRUE UP DOWN CYCLE RND), `ojmp` (bits 3-6 of the play byte, as the firmware reads it), `mode` (OFF KEY SID ADD), `range`, `speed`, `trigs` (bit 0 AMP, 1 FLT, 2 LFO), `length`, 16 rhythm/offset `steps`. | panel |
 | `midiTracks[t]` | the MIDI sequencer: `trig`, `note` (steps with notes), `noteOff`, `slide`, `swing`, transpose, `arp` (no trig switches) | panel, MIDI |
 | `midiNotes` | `[track, step, note]`, one entry per note: a chord is several entries on the same step. Up to 400. The firmware keeps them in (step, track) order | panel, MIDI |
 | `locks` | `{track, page, param, steps: [[step, value]]}`. Page 0-7 = SYN AMP FLT EFX LF1 LF2 LF3 MIDI (a MIDI track's LEN and VEL are page 7 of the same track number). **At most 62 per pattern, pooled over all tracks.** In (track, page, param) order: the firmware keeps its rows sorted that way | panel |

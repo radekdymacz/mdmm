@@ -97,19 +97,13 @@
     },
     "arp": {
       "type": "object",
-      "required": ["play", "flag", "ojmp", "mode", "range", "speed", "length", "steps"],
+      "required": ["play", "ojmp", "mode", "range", "speed", "length", "steps"],
       "properties": {
         "play": {
           "type": "integer",
           "minimum": 0,
           "maximum": 4,
           "description": "0 TRUE 1 UP 2 DOWN 3 CYCLE 4 RND"
-        },
-        "flag": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 1,
-          "description": "bit 3 of the play byte, meaning unknown, kept"
         },
         "ojmp": {
           "type": "integer",
