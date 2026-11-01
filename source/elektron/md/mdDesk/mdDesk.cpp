@@ -597,6 +597,15 @@ namespace mdDesk
 		m.set("step", m_erase ? static_cast<int>(m_erase->job.position()) : 0);
 		m.set("steps", m_erase ? static_cast<int>(m_erase->job.size()) : 0);
 		m.set("text", _text);
+		// a step that did not find its screen: what it saw, hashes and picture (the page logs them; the next run shows the screen)
+		if(m_erase && !m_erase->job.seen().empty())
+		{
+			m.set("seen", m_erase->job.seen());
+			Value rows = Value::array();
+			for(const auto& row : m_erase->lcd)
+				rows.push(row);
+			m.set("lcd", rows);
+		}
 		publish(m);
 	}
 
@@ -621,6 +630,8 @@ namespace mdDesk
 			if(machine().readScreen(lcd))
 				screen = erase::screenOf(lcd);
 			const auto state = r.job.step(now, screen, [this](const std::string& _key) { return machine().pressPanel(_key); });
+			if(!r.job.seen().empty() && r.lcd.empty())
+				r.lcd = erase::textOf(lcd);	// the screen the step did not expect, read this tick
 			if(state == erase::Job::State::Running)
 				return;
 			if(state == erase::Job::State::Stopped && !r.job.erasing())

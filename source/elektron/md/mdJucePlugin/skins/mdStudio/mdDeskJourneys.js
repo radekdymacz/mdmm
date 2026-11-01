@@ -3049,7 +3049,12 @@ const MdJourneys = (() => {
 				tele.steps = []; u.click("#play"); },
 				machine: c => ok(kit().tracks[c.r].machine === "RAM-R" + c.n && trigsOf(c.r).includes(0) && !!tele.last?.playing, `track ${kit().tracks[c.r].machine}, trigs ${trigsOf(c.r)}, playing ${tele.last?.playing}`), within: 12000 },
 			{ say: "STOP after a few seconds: the take shows in the RAM slot, the machine holds samples in it", act: async u => { await sleep(4000); if (V.playing) u.click("#play"); await until(() => !V.playing, 4000); },
-				machine: c => { const t = smpSlotOf("ram", c.n - 1); if (t && !t.empty && t.length > 0) c.len = t.length; return ok(!!c.len, "RAM " + c.n + " " + JSON.stringify(t && { empty: t.empty, length: t.length })); }, within: 60000 },
+				/* the take is the length that holds still for 3 s after STOP: the bank read in the middle of the take gives a shorter one
+				   (CI run 41336239454: 0.21 s here, 0.57 s by step 6; main's runs read the whole take, 1.00 s) */
+				machine: c => { const t = smpSlotOf("ram", c.n - 1), len = t && !t.empty ? t.length : 0, now = performance.now();
+					if (len !== c.seenLen) { c.seenLen = len; c.seenAt = now; }
+					if (len > 0 && !V.playing && now - c.seenAt >= 3000) c.len = len;
+					return ok(!!c.len, "RAM " + c.n + " " + JSON.stringify(t && { empty: t.empty, length: t.length }) + (len ? `, the same for ${Math.round(now - c.seenAt)} ms` : "")); }, within: 60000 },
 			{ say: "click STOP, select the RAM slot and click Keep as ROM…: the dialog offers a ROM slot", act: async (u, c) => {
 				if (V.playing) { u.click("#play"); await until(() => !V.playing, 4000); }
 				u.click(`.slotk[data-slot="RAM${c.n}"]`); await sleep(300); u.click(`[data-ramrom="${c.n - 1}"]`); await until(() => !!$1("#ramto"), 3000); c.k = +$1("#ramto").value - 1; },

@@ -27,10 +27,15 @@ namespace mdDesk::erase
 		uint64_t full = 0;		// every pixel
 		uint64_t header = 0;	// the top 20 pixel rows
 		uint64_t mode = 0;		// the MODE column and what is under it, x < 33, y >= 20
+		uint64_t window = 0;	// the GLOBAL SLOT window, x 18..107, y 7..56 (see g_globalSlot)
 		uint32_t prompt = 0;	// lit pixels at x 90..121, y 34..61
 		bool asked() const { return prompt > 100; }
 	};
 	Screen screenOf(const std::vector<uint8_t>& _lcd);
+	// The hashes of a screen and the screen as text, two pixel rows to a character (' ' none, '\'' upper, ',' lower, '#' both: the
+	// probe's LCD dump), for the log when a step did not find the screen it expected.
+	std::string describe(const Screen& _screen);
+	std::vector<std::string> textOf(const std::vector<uint8_t>& _lcd);
 
 	// The screen a key must lead to; zero (or Any) is not looked at.
 	struct Expect
@@ -39,6 +44,7 @@ namespace mdDesk::erase
 		uint64_t full = 0;
 		uint64_t header = 0;
 		uint64_t mode = 0;
+		uint64_t window = 0;
 		Prompt prompt = Prompt::Any;
 		bool changes = false;	// the screen is not the one before the key
 		bool matches(const Screen& _screen, const Screen& _before) const;
@@ -50,7 +56,11 @@ namespace mdDesk::erase
 	};
 
 	// The screens (CI run 41320779646). ROM-01's list is the first line; the list has 53 lines (48 ROM slots, four RAM, ALL) and wraps.
-	constexpr uint64_t g_globalSlot = 0x8f0127d987a97ffeull;	// FUNCTION + PATTERN/SONG
+	// FUNCTION + PATTERN/SONG opens GLOBAL SLOT as a window over the main screen: around it the main screen stays (the kit, the
+	// pattern, the tempo, the knobs), so the whole picture is the probe's (8f0127d987a97ffe) only on a machine in the probe's state
+	// (CI run 41336239454: the editor's machine after 200 journeys never showed it). The window itself (opaque, x 18..107, y 7..56:
+	// its title, the picture, SLOT and the eight slots, the model and OS 1.63) is looked at. The screens after ENTER fill the LCD.
+	constexpr uint64_t g_globalSlot = 0x81b5251c69b0fea3ull;	// the window of FUNCTION + PATTERN/SONG
 	constexpr uint64_t g_sampleMgrHeader = 0x80e88139dbf35073ull;	// FILE / SAMPLE MGR, whatever the list holds
 	constexpr uint64_t g_modeReceive = 0x0d177bc64aa2bbdfull;	// the MODE column's cursor on RECEIVE, SEND, RENAME, ERASE ...
 	constexpr uint64_t g_modeSend = 0xa73cfcb9e7a04a1dull;
@@ -94,6 +104,8 @@ namespace mdDesk::erase
 		State state() const { return m_state; }
 		// Why it stopped, in words for the person ("" while it runs or after it finished).
 		const std::string& why() const { return m_why; }
+		// When a step did not find its screen: what it saw and what it expected (hashes), for the log; "" otherwise.
+		const std::string& seen() const { return m_seen; }
 		// The last key of the script (the one that erases) has been pressed: the bank must be looked at, whatever the job says.
 		bool erasing() const { return m_erasing; }
 		size_t position() const { return m_next; }
@@ -113,6 +125,7 @@ namespace mdDesk::erase
 		bool m_settled = false;			// the script is through, the leaving keys follow after g_settleMs
 		State m_state = State::Running;
 		std::string m_why;
+		std::string m_seen;
 		bool m_leaving = false;
 		std::vector<std::string> m_leave;
 		size_t m_leaveNext = 0;

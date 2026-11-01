@@ -3076,9 +3076,10 @@ namespace
 					shown.full = e.full ? e.full : ++unique;
 					shown.header = e.header ? e.header : 7;
 					shown.mode = e.mode ? e.mode : 9;
+					shown.window = e.window ? e.window : 11;
 					shown.prompt = e.prompt == er::Expect::Prompt::Asked ? 200 : 0;
 					if(static_cast<int>(at) == _wrongAt)
-						{ shown.mode = 12345; shown.full = 1; }
+						{ shown.mode = 12345; shown.full = 1; shown.window = 1; }
 				}
 				return true;
 			};
@@ -3088,6 +3089,25 @@ namespace
 				state = job.step(now, shown, press);
 			return std::make_pair(state, job.why());
 		};
+
+		// GLOBAL SLOT is a window over the main screen (CI run 41336239454): its keys look at the window, not the whole picture,
+		// so the kit, pattern and knobs around it do not matter; a pixel inside the window does
+		{
+			const auto route = er::routeToList();
+			check(route[4].key == "patternSong" && route[4].expect.window == er::g_globalSlot && !route[4].expect.full
+				&& route[5].key == "release:function" && route[5].expect.window == er::g_globalSlot, "GLOBAL SLOT: the window is looked at, not the whole screen");
+			std::vector<uint8_t> lcd(er::g_lcdBytes, 0);
+			const auto a = er::screenOf(lcd);
+			lcd[60 * 16 + 1] = 0xff;	// the main screen below the window (y 60)
+			lcd[3 * 16 + 14] = 0x0f;	// and right of it (x 116..119)
+			const auto b = er::screenOf(lcd);
+			lcd[30 * 16 + 6] = 0x10;	// inside the window (x 51, y 30)
+			const auto c = er::screenOf(lcd);
+			check(a.full != b.full && a.window == b.window && b.window != c.window, "the window's hash: the main screen around it is not in it");
+			const auto rows = er::textOf(lcd);
+			check(rows.size() == 32 && rows[30].size() == 16 && rows[30].substr(8) == std::string(8, '\'') && rows[15][51] == '\'' && rows[1].size() == 120,
+				"the screen as text: two pixel rows to a character, trailing blanks cut");
+		}
 
 		const auto one = er::scriptOne(5);
 		check(one.size() == er::routeToList().size() + 5 + 2, "erase one: the route, DOWN to the slot, ENTER, ENTER");
@@ -3192,6 +3212,9 @@ namespace
 		}
 		check(erased() && erased()->find("state")->asString() == "stopped", "a wrong screen: the page hears it stopped");
 		check(erased()->find("text")->asString().find("Nothing was erased") != std::string::npos, "the text says nothing was erased");
+		check(erased()->find("seen") && erased()->find("seen")->asString().find("patternSong") != std::string::npos
+			&& erased()->find("seen")->asString().find("window") != std::string::npos && erased()->find("lcd") && erased()->find("lcd")->asArray().size() == 32,
+			"the stop says what the screen was (hashes and the picture, for the log)");
 		for(int i = 0; i < 100; ++i)
 		{
 			now += 20;
