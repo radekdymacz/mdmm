@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-201 · Linux: Machinedrum Editor on Fedora, report without a visible fault (open)
+
+- **From:** a user report on Fedora (latest), 2026-11-01, with the standalone's console output.
+- **Setup:** Fedora (version not given), NVIDIA GeForce RTX 4060 Ti (OpenGL 4.6, not software), WebKitGTK 4.1 runtime found (`libwebkit2gtk-4.1.so.0`), standalone, audio opened with no error. Editor version, session type (X11 or Wayland), desktop and WebKitGTK package version are not known.
+- **What happens:** the user says the editor does not work, but not how. The console log runs from the machine boot to "Window 1268x1379 fitted to the screen" and ends there; it holds no error. The start-up log (`editor-*.log`), which shows the page and the bridge, was not sent.
+- **Likely cause:** unknown. The runtime loaded, so missing packages are ruled out. Open: the web view on XWayland (the build forces the X11 GDK backend), the NVIDIA driver with WebKitGTK, or only the missing ROM page. Same family as B-172 and B-033. CI never starts the packages on Fedora, Wayland or NVIDIA.
+- **Status:** open. Needed from the user: what they see, `editor-*.log` and `-previous.log`, Fedora version, desktop, session type, NVIDIA driver, `rpm -q webkit2gtk4.1 gtk3`, standalone or VST3. Try `WEBKIT_DISABLE_DMABUF_RENDERER=1` and `GDK_BACKEND=x11`.
+
 ## B-200 · Machinedrum: the tempo release journey saw no tempo change after the panic toast (open, seen once)
 
 - **From:** firmware E2E run 41282380534 (`release/0.0.0-ci-test`, 97cc9abfb, MM-only desk changes), journey `md-top-tempo-release` step 1: "the LCD follows, the tempo goes once, at the release": LCD 125.0, machine tempo 125; the toast "Every voice off: STOP twice." from the journey before (`md-top-panic`) was still shown. MD 190 passed. Not reported by a tester.
