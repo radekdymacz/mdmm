@@ -4,6 +4,11 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-200 · Machinedrum: the tempo release journey saw no tempo change after the panic toast (open, seen once)
+
+- **From:** firmware E2E run 41282380534 (`release/0.0.0-ci-test`, 97cc9abfb, MM-only desk changes), journey `md-top-tempo-release` step 1: "the LCD follows, the tempo goes once, at the release": LCD 125.0, machine tempo 125; the toast "Every voice off: STOP twice." from the journey before (`md-top-panic`) was still shown. MD 190 passed. Not reported by a tester.
+- **Status:** open, a flake for now: the panic's double STOP may still have been on its way when the drag began. Look again if it comes back.
+
 ## B-199 · Machinedrum: one device-lock hold of 10.4 ms in the machine-memory firmware test (open, seen once)
 
 - **From:** main's nightly firmware run 41265534347 (9560c35a1, 2026-11-01), ctest `mdMachineMemoryFirmwareTest_md`: "the work under the device lock off the audio thread under 10.0 ms a hold (worst 10.445 ms, mdPluginProcessor.cpp:717)". Every other check of the test passed; the MM test passed. Not reported by a tester.
