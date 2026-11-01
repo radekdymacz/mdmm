@@ -18,6 +18,7 @@ What is in here
   Standalone/libgtk-3.so           web view shim, keep beside the app
   VST3/@PRODUCT@.vst3/             the VST3 plug-in (a folder, keep it whole)
   LICENSE.md                       GPL-3.0
+  THIRD-PARTY-NOTICES.md           the licences of the code and fonts inside
 
 Install
 -------

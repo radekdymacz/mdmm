@@ -35,6 +35,8 @@ as a standalone app, VST3 and AU on macOS (Windows x64 and Linux x64 builds exis
   (`source/dsp56300`, `source/mc68k`, `source/JUCE`, `source/3rdparty/RmlUi`, each with a README naming
   its origin), the other synths are removed, and useful upstream fixes are copied one commit at a time
   ([doc/ROADMAP.md](doc/ROADMAP.md)). Their original README is kept as [README.upstream.md](README.upstream.md).
+- **Third-party notices:** [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) lists the code and fonts inside the editors with
+  their licences; it ships in every package and the About box points to it.
 - **Third-party code in the editors:** [Monocypher](https://monocypher.org) 4.0.2 (Loup Vaillant, Michael Savage,
   Fabio Scotoni; BSD-2-Clause or CC0-1.0) verifies update signatures
   ([source/elektron/md/mdmmUpdate/monocypher/](source/elektron/md/mdmmUpdate/monocypher/LICENCE.md)).
