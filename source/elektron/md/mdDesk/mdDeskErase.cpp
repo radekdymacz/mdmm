@@ -232,16 +232,16 @@ namespace mdDesk::erase
 			return m_state;
 		}
 		const auto& next = m_script[m_next];
+		m_before = _screen;	// the screen the key leaves (a key may change what _screen refers to)
 		if(!pressKey(next.key, _press))
 		{
 			stop("The machine took no panel key (" + next.key + ").");
 			return m_state;
 		}
+		m_erasing = m_next + 1 >= m_script.size();
 		++m_next;
-		m_erasing = m_next >= m_script.size();
 		m_waiting = true;
 		m_pressedAt = _nowMs;
-		m_before = _screen;
 		return m_state;
 	}
 }
