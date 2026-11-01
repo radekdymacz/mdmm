@@ -65,14 +65,7 @@ namespace mmDesk
 		}
 		if(keys.empty())
 			return ok();
-		// LIVE RECORDING starts on the main screen: parked on SYSEX RECV, the session leaves first (as soon as the
-		// machine took what it was sent) and RECORD waits for it. Pressed there, the machine recorded on SYSEX RECV: the
-		// value turned next was not locked, and the EXIT keys that left it are LIVE RECORDING's erase (the full firmware
-		// E2E after B-195, mm-seq-record-locks: no lock, three runs in a row).
-		const bool leaveFirst = want == 2 && cur != 2 && m_recv.parked();
-		if(leaveFirst)
-			m_recv.leaveSoon();
-		if(leaveFirst || !pressTransportKeys(keys))
+		if(!pressTransportKeys(keys))
 		{
 			// the panel is busy taking an edit (SYSEX RECV): RECORD goes once it is free, as PLAY does
 			m_recordWaiting = true;
