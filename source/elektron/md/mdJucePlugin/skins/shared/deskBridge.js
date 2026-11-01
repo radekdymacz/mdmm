@@ -165,6 +165,8 @@ const Bridge = (() => {
 			}
 		}
 	});
+	/* B-201: the first frame the web view draws, told to the plug-in (Linux: a page that runs but is never shown gets a native card). */
+	if (T.up() && typeof requestAnimationFrame === "function") requestAnimationFrame(() => log("painted"));
 	window.addEventListener("error", e => log("page error: " + e.message + " @" + e.lineno + " " + (e.error && e.error.stack || "")));
 	return {
 		send, log, onMessage: h => handlers.push(h),

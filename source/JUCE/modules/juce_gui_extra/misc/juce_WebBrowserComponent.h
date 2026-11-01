@@ -269,6 +269,11 @@ public:
     /** @internal */
     void focusGainedWithDirection (FocusChangeType, FocusChangeDirection) override;
 
+  #if JUCE_LINUX || JUCE_BSD
+    /** The X11 state (map state, size) of the helper's embedded window, as text, for diagnostics (B-201). */
+    String getEmbeddedWindowState() const;
+  #endif
+
     /** @internal */
     class Pimpl;
 

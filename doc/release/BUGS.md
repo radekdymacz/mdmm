@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-201 · Linux: Machinedrum Editor on Fedora KDE shows an empty window, no page (open)
+
+- **From:** a user report on Fedora, 2026-11-01.
+- **Setup:** Fedora, KDE Plasma (probably a Wayland session, so the editor runs through XWayland), NVIDIA RTX 4060 Ti, the Linux standalone, WebKitGTK 4.1 loaded, audio works.
+- **What happens:** the window shows its menu bar and an empty dark grey area: no page and no failure card. The console log has no error.
+- **Likely cause:** the page runs (its script answers the bridge, so the start check passes) but WebKitGTK paints nothing into the embedded GtkPlug; the DMA-BUF renderer / accelerated compositing do not work there. Not reproduced.
+- **Status:** open. Fix (2026-11-01, branch fix/0.9-linux-blank-webview), not yet verified on Fedora: the web view's helper sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` and `WEBKIT_DISABLE_COMPOSITING_MODE=1` unless already set (juce_WebBrowserComponent_linux.cpp); the page reports its first frame (`painted`, deskBridge.js) and, if none arrives within 15 s of the page being up and showing, the window draws its native failure card with a hint (X11 session or the two variables) (`WebPageHost::checkPainted`); the start-up log lists the session variables, the two WebKit variables and the embedded window's X11 map state.
+
 ## B-198 · Monomachine: two factory patterns did not play in the real-factory journey (open, seen once)
 
 - **From:** full CI run 41179644105 (main a31053d99), firmware journey `mm-real-factory-patterns`: "pattern 49: did not start (pressed twice); pattern 57: only 2 steps moved". Patterns 1 to 41 played as always, 41 took 6 s instead of 3; the desk's status lines show the pattern selected and SYSEX RECV idle throughout. Not reported by a tester.
