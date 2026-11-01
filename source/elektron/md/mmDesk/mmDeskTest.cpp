@@ -1636,6 +1636,13 @@ void songReadBackOlder()
 	check(held() == 1 && older == 0, "the first +: the dump taken, its read-back answered with the song before it");
 	check(errors() == 0, "asked again: no \"did not read back\" (the push is confirmed, not timed out)");
 	check(shown() == 1, "the page keeps the transpose sent (+1)");
+	{
+		const auto st = d.status();
+		const auto* n = st.find("olderReplies");
+		const auto* what = st.find("olderReply");
+		check(n && n->asNumber() == 1 && what && what->asString().find("song 1: ") == 0 && what->asString().find("bytes differ at 0x") != std::string::npos,
+			"the status line names the older reply (the log's evidence)");
+	}
 	plus();
 	run(12000);
 	check(held() == 2 && shown() == 2 && errors() == 0, "the second +: the machine holds 2 and the read-back confirms it");
