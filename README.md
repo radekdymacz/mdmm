@@ -5,6 +5,7 @@ chains, mutes, a sampler view, and a beta HW MIDI mode for a real machine). They
 as a standalone app, VST3 and AU on macOS (Windows x64 and Linux x64 builds exist, not tested).
 
 - **Site, screenshots, download:** https://mdmm.dev
+- **Why and shape:** [VISION.md](VISION.md) and [DESIGN.md](DESIGN.md).
 - **Releases:** https://github.com/radekdymacz/mdmm/releases
   (latest: [0.8.1 notes](doc/release/v0.8.1.md); all release notes are in [doc/release/](doc/release/))
 - **User guide** (install, ROM, DAW use, workspaces, every keyboard shortcut): https://mdmm.dev/guide/
