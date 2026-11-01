@@ -15,6 +15,11 @@ project restore. It is off by default and never uploads a report.
    the problem. Panel actions are recorded automatically. If there were several
    incidents, approximate audible-problem times still help identify which one.
 
+**Save Diagnostics...** (the same menu, native, so it also works when the page does not start) writes one zip instead:
+the newest `editor-*.log` and `-previous.log`, the last `performance-*.jsonl`, the versions, the system and web view
+(on Linux the session type and WebKitGTK version, on Windows the WebView2 version), the audio and MIDI setup and the
+editor's settings. It never holds a ROM, machine memory, a project or a sample (`mdDiagnosticsZipTest`).
+
 The folder is `logs/` beside the product's `roms/` and `config/` folders, beneath
 its public data directory. This also respects `GEARMULATOR_DATA_ROOT`.
 Each plugin instance and each capture gets a separate filename. Existing reports

@@ -846,11 +846,12 @@ namespace mdJucePlugin
 #elif JUCE_LINUX || JUCE_BSD
 				text += "What to do: check GTK 3 and WebKitGTK 4.1 or 4.0 in the host's runtime, and X11/XWayland. "
 					"Flatpak hosts use separate libraries. Close and reopen the editor, then include the host's "
-					"terminal output with your report.\n\n";
+					"terminal output with your report. Right-click the window and choose Save Diagnostics... to make one zip to send.\n\n";
 #else
-				text += "What to do: open the editor again; if it stays like this, send the log.\n\n";
+				text += "What to do: open the editor again; if it stays like this, right-click the window, choose Save Diagnostics... "
+					"and send the zip.\n\n";
 #endif
-				text += "If it still does not work, please send the log: " + (_log != juce::File() ? _log.getFullPathName() : juce::String("(none could be written)"));
+				text += "If it still does not work, please send the diagnostics zip (right-click, Save Diagnostics...) or the log: " + (_log != juce::File() ? _log.getFullPathName() : juce::String("(none could be written)"));
 				m_text.setText(text, juce::dontSendNotification);
 				m_text.setJustificationType(juce::Justification::topLeft);
 				m_text.setColour(juce::Label::textColourId, juce::Colours::white);

@@ -42,6 +42,9 @@ namespace mdJucePlugin
 		// there. Logged with the runtime's version at each start; an older runtime is said in the window.
 		static constexpr const char* g_minimumRuntime = "86.0.616.0";
 
+		// M5: the installed Evergreen Runtime's version, or empty when there is none (Save Diagnostics).
+		static juce::String installedRuntimeVersion();
+
 		WebView2Page(juce::File _userDataFolder, Callbacks _callbacks);
 		~WebView2Page() override;
 
