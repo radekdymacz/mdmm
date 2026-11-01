@@ -67,7 +67,6 @@ namespace mdJucePlugin::diagnosticsSave
 		line(t, "product", juce::String(_processor.getProductName()));
 		line(t, "machine", _processor.getModel() == md::MachineModel::Monomachine ? "Monomachine" : "Machinedrum");
 		line(t, "editor version", mdmm::editorVersion());
-		line(t, "plug-in version", JucePlugin_VersionString);
 		line(t, "build revision", MDMM_DIAGNOSTICS_REVISION);
 		line(t, "format", juce::AudioProcessor::getWrapperTypeDescription(_processor.wrapperType));
 		line(t, "host", juce::PluginHostType().getHostDescription());
