@@ -164,3 +164,11 @@ F12 standalone projects and a song library (the most-asked standalone wish), F9,
 3. **What 1.0 claims for Windows and Linux.** "Not tested" stays on the page until a tester with logs exists; or a tester is found for each before the tag. The claim decides M4 and M10.
 4. **The CI lock budget.** Keep 10 ms (and say the check is for freezes, not for the 1 ms design), or lower it after B-199 and let the nightlies tell.
 5. **GitHub issues.** Keep them off (Discord and contact, BUGS.md as the record) or open them at 1.0 as a GPL project usually does, with the ROM rule in the template.
+
+## Decisions (Radek, 2026-11-01)
+
+1. Apple account: get it now; 0.9 is signed if it is ready in time, otherwise unsigned like 0.8. 1.0 is signed and notarised.
+2. Hardware MIDI: labelled beta in 0.9; tested on a real Machinedrum and Monomachine before 1.0.
+3. Windows and Linux in 1.0: "supported, community-tested" until tester reports prove the stability gate.
+4. CI lock budget: stays 10 ms; a week of nightly numbers decides the 1.0 budget (M6).
+5. GitHub issues: on at 1.0.
