@@ -103,6 +103,7 @@ where it came from, the setup, what happens, what should happen, status.*
 
 - **From:** found in code review for B-179, 2026-10-28; no tester report.
 - **What happens:** the page writes OJMP to bits 4 to 7 of the play byte (`mmDeskEdit.cpp`, `mmJson.cpp`), but the knob was measured setting bits 3 to 6 (doc mm-manual-mapping.md, note 6). A page OJMP of n would then reach the firmware as about 2n.
+- **Probe (2026-11-01):** `ojmpLayout` found no OJMP knob on CI run 41300417248 because it turned the knobs by single encoder pulses (a step is 4 pulses, `g_knobPulses`) and never looked at the LCD; it now turns whole steps, prints the LCD after FUNCTION + BANK A and fails early if the screen did not change.
 - **Should:** OJMP on the page and on the machine agree.
 - **Status:** open. Needs a firmware check of the bit layout before the encoding changes.
 - **Probe (2026-11-01):** `mmOjmpLayoutFirmwareTest` (`mmDeskFirmwareTest --env ojmp`) finds the OJMP knob in FUNCTION + BANK A's arpeggiator window, pulses it from its start to its end and prints the play byte after each pulse, then sends the editor's OJMP 0 to 15 (the desk's arp command, read back from the machine's own pattern dump) and prints the value the firmware's layout reads from each byte; it fails where they differ. Not run yet; the encoding stays as it is until its CI result is read.

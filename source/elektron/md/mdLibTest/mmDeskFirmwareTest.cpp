@@ -5601,7 +5601,7 @@ namespace
 
 	// B-189: where OJMP lives in the arpeggiator's play byte. The editor writes OJMP n to bits 4-7 (play | ojmp << 4);
 	// the knob of FUNCTION + BANK A's arpeggiator window was measured setting bits 3-6 (mm-manual-mapping.md note 6).
-	// 1. The window's knobs one after the other, two pulses up, until one changes the play byte above PLAY's bits.
+	// 1. The window's knobs one after the other, two steps up, until one changes the play byte above PLAY's bits.
 	// 2. That knob from 0, pulse by pulse: the byte after each (the step it adds says which bit is its lowest), up to its end.
 	// 3. The editor's OJMP n (the desk's arp command, the machine's own dump of the pattern): the value the firmware's
 	//    layout reads from that byte must be n. Then one knob pulse from the editor's value: the step must be one OJMP.
@@ -5639,22 +5639,54 @@ namespace
 			r.panel.emplace_back(t + g_rate / 100, md::PanelPacket{k.row, 0});
 			r.run(300);
 		};
-		const auto knob = [&](const int _knob, const int _pulses)
+		// one knob step is mmDesk::g_knobPulses encoder pulses, 10 ms apart (as the desk and the transpose probes turn it);
+		// a single pulse is a quarter of a step and changes nothing (CI run 41300417248: two pulses, no knob moved)
+		const auto knob = [&](const int _knob, const int _steps)
 		{
 			const auto cmd = *md::panelEncoderCommand(g_mm, static_cast<md::PanelEncoder>(_knob));
 			uint64_t t = at();
-			for(int i = 0; i < std::abs(_pulses); ++i)
+			for(int i = 0; i < mmDesk::g_knobPulses * std::abs(_steps); ++i)
 			{
-				r.panel.emplace_back(t, md::PanelPacket{cmd, static_cast<uint8_t>(_pulses > 0 ? 0x01 : 0xff)});
-				t += g_rate / 50;
+				r.panel.emplace_back(t, md::PanelPacket{cmd, static_cast<uint8_t>(_steps > 0 ? 0x01 : 0xff)});
+				t += g_rate / 100;
 			}
-			r.run(150 + 20 * std::abs(_pulses));
+			r.run(150 + 45 * std::abs(_steps));
 		};
-		const auto openWindow = [&]
+		const auto lcdPixels = [&]
+		{
+			const auto p = r.m.hardware().getFrontPanelSnapshot();
+			std::string px;
+			for(uint32_t y = 0; y < 64; ++y)
+				for(uint32_t x = 0; x < 128; ++x)
+					px += p.getLcdPixel(x, y) ? '#' : '.';
+			return px;
+		};
+		const auto printLcd = [&](const char* _title)
+		{
+			const auto px = lcdPixels();
+			std::printf("  ---- LCD %s\n", _title);
+			for(size_t y = 0; y < 64; y += 2)
+			{
+				std::string line;
+				for(size_t x = 0; x < 128; ++x)
+				{
+					const bool a = px[y * 128 + x] == '#', b = px[(y + 1) * 128 + x] == '#';
+					line += a && b ? "\xe2\x96\x88" : a ? "\xe2\x96\x80" : b ? "\xe2\x96\x84" : " ";
+				}
+				while(!line.empty() && line.back() == ' ')
+					line.pop_back();
+				std::printf("  |%s\n", line.c_str());
+			}
+		};
+		// FUNCTION + BANK A opens the arpeggiator window of the track in focus (T1); the LCD must change and be shown
+		const auto openWindow = [&](const char* _title)
 		{
 			key(md::PanelControl::Track1);
+			const auto before = lcdPixels();
 			chord(md::PanelControl::Function, md::PanelControl::BankA);
-			key(md::PanelControl::Track1);
+			r.run(300);
+			printLcd(_title);
+			return lcdPixels() != before;
 		};
 		const auto stored = [&]() -> std::optional<ed::MmPattern> { return patternInMemory(r, slot); };
 		const auto byteOf = [&]() -> int { const auto p = stored(); return p ? p->arp.playOjmp[0] : -1; };
@@ -5666,7 +5698,10 @@ namespace
 
 		// 1. which knob is OJMP
 		editorOjmp(0);
-		openWindow();
+		const bool shown = openWindow("after FUNCTION + BANK A on T1 (the arpeggiator window)");
+		check(shown, "FUNCTION + BANK A changes the LCD (the arpeggiator window opens)");
+		if(!shown)
+			return;
 		int ojmpKnob = -1;
 		for(int k = 0; k < 8 && ojmpKnob < 0; ++k)
 		{
@@ -5677,7 +5712,7 @@ namespace
 				continue;
 			const auto& b = before->arp;
 			const auto& a = after->arp;
-			std::printf("  OJMP knob %d, two pulses up: play byte 0x%02x -> 0x%02x, mode %d -> %d, range %d -> %d, speed %d -> %d, length %d -> %d\n", k,
+			std::printf("  OJMP knob %d, two steps up: play byte 0x%02x -> 0x%02x, mode %d -> %d, range %d -> %d, speed %d -> %d, length %d -> %d\n", k,
 				b.playOjmp[0], a.playOjmp[0], b.mode[0], a.mode[0], b.range[0], a.range[0], b.speed[0], a.speed[0], b.length[0], a.length[0]);
 			if((b.playOjmp[0] ^ a.playOjmp[0]) & 0xf8)
 				ojmpKnob = k;
@@ -5700,12 +5735,12 @@ namespace
 		}
 		int shift = 0;
 		for(int p = 0; p < static_cast<int>(bytes.size()); ++p)
-			std::printf("  FIRMWARE knob %2d pulses: play byte 0x%02x  (bits 3-6: %2d, bits 4-7: %2d)\n", p, bytes[static_cast<size_t>(p)],
+			std::printf("  FIRMWARE knob %2d steps: play byte 0x%02x  (bits 3-6: %2d, bits 4-7: %2d)\n", p, bytes[static_cast<size_t>(p)],
 				(bytes[static_cast<size_t>(p)] >> 3) & 15, (bytes[static_cast<size_t>(p)] >> 4) & 15);
 		if(bytes[0] >= 0 && bytes[1] > bytes[0])
 			shift = (bytes[1] - bytes[0]) == 8 ? 3 : (bytes[1] - bytes[0]) == 16 ? 4 : 0;
-		std::printf("  FIRMWARE OJMP: first pulse adds 0x%02x (lowest bit %d), end of the knob 0x%02x\n", bytes[1] - bytes[0], shift, bytes.back());
-		check(shift != 0, "the OJMP knob's first pulse adds one bit of the play byte");
+		std::printf("  FIRMWARE OJMP: first step adds 0x%02x (lowest bit %d), end of the knob 0x%02x\n", bytes[1] - bytes[0], shift, bytes.back());
+		check(shift != 0, "the OJMP knob's first step adds one bit of the play byte");
 		key(md::PanelControl::Exit);
 		if(!shift)
 			return;
@@ -5723,7 +5758,8 @@ namespace
 		{
 			editorOjmp(n);
 			const int before = byteOf();
-			openWindow();
+			if(!openWindow("arpeggiator window again"))
+				check(false, "the arpeggiator window opens again");
 			knob(ojmpKnob, 1);
 			key(md::PanelControl::Exit);
 			const int after = byteOf();
