@@ -26,6 +26,8 @@
 
 #include "elektronData/factoryGlobals.h"
 #include "elektronData/mmCommands.h"
+#include "elektronData/mmDump.h"
+#include "elektronData/mmGlobal.h"
 #include "elektronData/mmJson.h"
 #include "elektronData/mmKit.h"
 #include "elektronData/mmMachines.h"
@@ -5069,15 +5071,34 @@ namespace
 	// steps 1-6 of a pattern with trigs on 1, 5, 9, 13). The desk names that step (machine.desk.recLock) and the
 	// machine's pattern then holds the lock there. MM_RECLOCK="step page index" moves it (default "2 2 1": FILTER's
 	// second value on step 3).
-	void recLock(const Bytes& _rom)
+	// The active global's 264 bytes as the machine sends them now (its own 0x50 to a 0x51), not the desk's read-back.
+	std::optional<Bytes> globalRawInMachine(Rig& _r, const uint8_t _slot)
 	{
-		std::puts("recLock (live recording)");
+		std::optional<Bytes> got;
+		_r.tap = [&](const Bytes& _b)
+		{
+			if(!got && _b.size() > 9 && _b[6] == ed::g_mmGlobalDump && (_b[9] & 7) == _slot)
+				if(const auto g = ed::decodeMmGlobal(_b))
+					got = ed::mmGlobalRaw(*g);
+		};
+		_r.out.push_back(ed::mmGlobalRequest(_slot));
+		for(int i = 0; i < 150 && !got; ++i)
+			_r.run(20);
+		_r.tap = nullptr;
+		return got;
+	}
+
+	void recLock(const Bytes& _rom, const std::function<void(Rig&)>& _before = {}, const char* _name = "recLock (live recording)")
+	{
+		std::puts(_name);
 		Rig r(_rom);
 		r.msg(R"({"op":"ready"})");
 		r.desk->setProbe(mmDesk::Desk::Probe::Running);
 		r.run(600);
 		while(r.desk->loaded() < 288)
 			r.run(100);
+		if(_before)
+			_before(r);
 		const uint8_t slot = static_cast<uint8_t>(r.desk->currentPattern());
 		auto p = *r.desk->pattern(slot);
 		p.length = 16;
@@ -5180,6 +5201,63 @@ namespace
 			if(q->lockRows[static_cast<size_t>(row)][st] == v)
 				landed = static_cast<int>(st);
 		check(said && landed == said->second, "the machine locked the step the desk named (step " + std::to_string(landed + 1) + ")");
+	}
+
+	// B-196: the full firmware E2E's mm-seq-record-locks records no lock after mm-wire-cc, and of mm-wire-cc only its GLOBAL
+	// step is needed for that (CI probes 41298514603, 41299313408): the base channel +1, OFF, then back (the page's GLOBAL
+	// popup, op globalMidi, each through SYSEX RECV and made active with 0x56). Here the same round trip through the
+	// desk, then recLock's live recording of a CC on T1 (the CCs go on the wire as the plug-in's wire engine encodes them,
+	// no parameter layer). The machine's own active global (its 0x50) is printed before and after, with the bytes that
+	// differ. MM_RECGLOBAL="1,off,0" (the default): the base channels in order, 0-based, off for OFF.
+	void recLockAfterGlobal(const Bytes& _rom)
+	{
+		const std::string spec = std::getenv("MM_RECGLOBAL") ? std::getenv("MM_RECGLOBAL") : "1,off,0";
+		recLock(_rom, [&](Rig& _r)
+		{
+			const auto cur = static_cast<uint8_t>(_r.desk->currentGlobal() & 7);
+			const auto raw0 = globalRawInMachine(_r, cur);
+			check(raw0.has_value(), "recglobal: the machine sends its active global before");
+			int gesture = 9600;
+			std::istringstream in(spec);
+			for(std::string b; std::getline(in, b, ',');)
+			{
+				const bool off = b == "off";
+				_r.msg("{\"op\":\"globalMidi\",\"g\":" + std::to_string(++gesture) + ",\"base\":" + (off ? std::string("null") : b) + "}");
+				const auto t0 = _r.ms();
+				_r.run(500);
+				// written, read back, SYSEX RECV left and the slot made active again (0x56), as the page waits
+				while(_r.desk->recvState() != "idle" && _r.ms() - t0 < 30000)
+					_r.run(100);
+				_r.run(3000);
+				const auto& gs = _r.desk->documents().globals;
+				const auto gi = gs.find(cur);
+				std::printf("  base %s: desk's global %d base %d, recv %s, %.0f ms\n", b.c_str(), cur + 1, gi != gs.end() ? gi->second.baseChannel : -1,
+					_r.desk->recvState().c_str(), _r.ms() - t0);
+			}
+			const auto raw1 = globalRawInMachine(_r, cur);
+			check(raw1.has_value(), "recglobal: the machine sends its active global after");
+			if(raw0 && raw1)
+			{
+				std::string diff;
+				for(size_t i = 0; i < std::min(raw0->size(), raw1->size()); ++i)
+					if((*raw0)[i] != (*raw1)[i])
+					{
+						char t[32];
+						std::snprintf(t, sizeof(t), " %03zx:%02x>%02x", i, (*raw0)[i], (*raw1)[i]);
+						diff += t;
+					}
+				std::printf("  the machine's global before and after: %s\n", diff.empty() ? "the same bytes" : diff.c_str());
+				std::string head;
+				for(size_t i = 0; i < std::min<size_t>(raw1->size(), 64); ++i)
+				{
+					char t[4];
+					std::snprintf(t, sizeof(t), "%02x", (*raw1)[i]);
+					head += t;
+				}
+				std::printf("  after, bytes 0-63: %s\n", head.c_str());
+				check(*raw0 == *raw1, "recglobal: the round trip leaves the machine's global as it was");
+			}
+		}, "recLock after the base channel round trip (B-196)");
 	}
 
 	// DEV-CYCLE (doc/release/DEV-CYCLE.md): the intent cases (doc/modern-ux/intent-cases.json) on the firmware, table
@@ -6242,6 +6320,8 @@ int main(const int _argc, char** _argv)
 			kitLink(rom);
 		if(only.empty() || only == "reclock")
 			recLock(rom);
+		if(only == "recglobal")
+			recLockAfterGlobal(rom);
 		if(only == "lenprobe")
 			midiLenProbe(rom);
 		if(only == "trnprobe")
