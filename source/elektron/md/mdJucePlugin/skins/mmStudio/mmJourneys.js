@@ -3270,7 +3270,7 @@ const MmJourneys = (() => {
 	/* a GLOBAL edit: written, read back and made active (SysEx 0x50, 0x51, 0x56); only then does the core and the wire use it */
 	const globalSettled = async n0 => { if (!Journey.pageTier()) { await sleep(3000); return; } await until(() => wireLog.some(w => w.seq > n0 && w.kind === "sysex" && w.b[6] === 0x56), 10000); await sleep(2000); };
 	const wireCc = {
-		name: "mm-wire-cc", proves: ["MM-353", "MM-354", "MM-355", "MM-356", "MM-357", "MM-358", "MM-359", "MM-360", "MM-362", "MM-289"],
+		name: "mm-wire-cc", alone: true /* B-196: after its GLOBAL base channel round trip the plug-in no longer gets a live-recorded CC locked (mm-seq-record-locks); parked for 0.9, so it runs in an editor of its own */, proves: ["MM-353", "MM-354", "MM-355", "MM-356", "MM-357", "MM-358", "MM-359", "MM-360", "MM-362", "MM-289"],
 		steps: [
 			go("sound"), sel(0),
 			{ say: "a machine with all eight SYN values (DPRO-DDRW, MKII): each value of the page sends its own CC, 48 to 55, on the track's channel with the value the kit holds", act: async (u, c) => { c.n0 = histN(); c.bad = []; c.focus = [machine().focus]; c.plate0 = document.documentElement.dataset.plate; if (c.plate0 !== "mk2") await platePick(u); await sleep(200);

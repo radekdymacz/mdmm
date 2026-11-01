@@ -27,6 +27,7 @@ where it came from, the setup, what happens, what should happen, status.*
 ## B-198 · Monomachine: two factory patterns did not play in the real-factory journey (open, seen once)
 
 - **From:** full CI run 41179644105 (main a31053d99), firmware journey `mm-real-factory-patterns`: "pattern 49: did not start (pressed twice); pattern 57: only 2 steps moved". Patterns 1 to 41 played as always, 41 took 6 s instead of 3; the desk's status lines show the pattern selected and SYSEX RECV idle throughout. Not reported by a tester.
+- **Parked (Radek, 2026-11-01):** after 0.9. Found by bisect: `mm-wire-cc` before it is the cause, and in it the GLOBAL base channel step alone (1, OFF, back to 0). The machine then takes the CC on T1 (the kit is edited) but records no lock. `mmRecLockGlobalFirmwareTest` does the same round trip through the desk without the plug-in and gets its lock (run 41300417248), so the cause is in the plug-in path (MmStudioLink, the Controller). A user meets it only by changing the base channel and then live-recording locks in the same session. `mm-wire-cc` now runs `alone: true` so the full E2E stays a proof of the rest.
 - **Not B-195:** the journey runs third, before any DigiPRO work: no 0x5E was sent, so neither the held status polls nor the SYSEX RECV change take part. It passed in the five full runs before and after the B-195 changes (nightlies 40992417929, 41160387303, CI 41120339777, the branch's 41144045158 and 41174130427).
 - **Status:** open, a flake for now: the transport telemetry or the emulator stood still for about 20 s. Look again if it comes back.
 
@@ -36,7 +37,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Cause:** the step before writes all four MULTI TRIG modes, each a kit dump on SYSEX RECV with its read-back. SPLIT KEY was clicked while those were still on their way (SYSEX RECV parked, the stream sending, 7:47:13); the marker and the Upper from stepper were there for 300 ms, then a late read-back put the page on another mode and the drag found no marker. The journey's race (the page follows the kit as the machine confirms it; a person waits for the page), not the B-195 changes (no 0x5E in that part of the run).
 - **Fix:** the step waits until SYSEX RECV is idle and nothing is sent before it clicks SPLIT KEY, and checks the marker again before the drag (with what it found in the failure).
 
-## B-196 · Monomachine: LIVE RECORDING records no lock for a value turned in the full E2E (open)
+## B-196 · Monomachine: LIVE RECORDING records no lock after a GLOBAL base channel change (open, parked after 0.9)
 
 - **From:** firmware journey `mm-seq-record-locks` step 5 ("locks [], value turned 67") in the full runs 41144045158, 41174130427, 41179644105, 41187311583 and 41193553307, and in the short run 41192356519 (the first 13 MM journeys); it passed in the runs before (40992417929, 41120339777, 41160387303) and alone after `mm-seq-locks` (41178825349). Not reported by a tester.
 - **Not B-195:** no 0x5E is sent in that part of the run, so the held status polls and `onPanel` do not act there; the rest of the B-195 merge does not touch that path.
