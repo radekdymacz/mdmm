@@ -134,7 +134,6 @@ Each editor has five workspaces. Switch with the tabs, or with the keys [1] to [
 
 ### Known limits
 
-- A Machinedrum kit that has a CTR-AL machine cannot be edited yet.
 - Over HW MIDI you can send a WAV or AIFF to a sample slot when the MIDI port can send SysEx. Samples cannot be read back, so there are no waveforms and no audition. Live recording and chains need the emulator.
 
 ## Uninstall
