@@ -3179,9 +3179,9 @@ namespace
 		}
 		check(!pressed.empty() && std::count(pressed.begin(), pressed.end(), "enter") == 0 && pressed.back() == "exit"
 			&& std::find(pressed.begin(), pressed.end(), "release:function") != pressed.end(), "only EXIT, no ENTER, and FUNCTION let go");
-		lcdOn = false;
 		desk.onPageMessage(cmd(R"({"op":"sampleErase","slot":3,"id":7})"));
 		check(ok(7), "after the stop a new erase can start");
+		lcdOn = false;
 		for(int i = 0; i < 400; ++i)
 		{
 			now += 20;

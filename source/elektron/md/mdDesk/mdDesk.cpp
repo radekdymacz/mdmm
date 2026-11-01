@@ -541,7 +541,8 @@ namespace mdDesk
 	std::string Desk::startErase(std::vector<erase::Step> _script, const int _slot)
 	{
 		const auto caps = machine().capabilities();
-		if(!m_device.pressKey || !m_device.lcd || !caps.has("panelKeys"))
+		Bytes probe;
+		if(!caps.has("panelKeys") || !machine().readScreen(probe))
 			return "The editor erases a sample by pressing the machine's keys and watching its screen, and this engine has neither (a real "
 				"Machinedrum). Erase it in SAMPLE MGR on the machine: FUNCTION + PATTERN/SONG, FILE, SAMPLE MGR, ERASE.";
 		if(!caps.has("sampleAudio"))
@@ -617,9 +618,9 @@ namespace mdDesk
 		{
 			erase::Screen screen;
 			Bytes lcd;
-			if(m_device.lcd && m_device.lcd(lcd))
+			if(machine().readScreen(lcd))
 				screen = erase::screenOf(lcd);
-			const auto state = r.job.step(now, screen, m_device.pressKey);
+			const auto state = r.job.step(now, screen, [this](const std::string& _key) { return machine().pressPanel(_key); });
 			if(state == erase::Job::State::Running)
 				return;
 			if(state == erase::Job::State::Stopped && !r.job.erasing())

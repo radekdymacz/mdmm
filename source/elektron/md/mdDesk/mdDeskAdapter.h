@@ -118,5 +118,9 @@ namespace mdDesk
 		// engine cannot. The status of the latest request (another id: it is gone, e.g. a new device).
 		virtual uint64_t audition(const elektronData::AuditionClip&) { return 0; }
 		virtual elektronData::AuditionStatus auditionStatus() const { return {}; }
+		// 0.9, Erase (mdDeskErase.h): a panel key pressed and the machine's screen as it is now (128 x 64, one bit a pixel); the
+		// adapter owns the device edge, so the desk asks it. Not possible here: false.
+		virtual bool pressPanel(const std::string&) { return false; }
+		virtual bool readScreen(Bytes&) { return false; }
 	};
 }
