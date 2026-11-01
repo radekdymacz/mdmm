@@ -42,11 +42,34 @@ namespace
 		uint64_t screen;
 	};
 
-	// Filled from the first run's dumps. g_eraseOne: from a cold start to "slot g_eraseSlot erased" (the menu keys, then
-	// ERASE, the slot, ENTER, ENTER); g_eraseAll: the ALL entry. The slot is 0-based.
-	const std::vector<Step> g_eraseOne;
-	const std::vector<Step> g_eraseAll;
-	constexpr uint8_t g_eraseSlot = 5;
+	constexpr uint8_t g_eraseSlot = 5;	// 0-based
+
+	// From GLOBAL SLOT (the screen the menu keys end on) to the SAMPLE MGR screen with the cursor on ERASE, the hashes
+	// read from runs 41319125019 and 41320060784: ENTER (GLOBAL 1 EDIT), DOWN x2 (the third icon), RIGHT (its list), DOWN x2
+	// (SAMPLE MGR), ENTER, then in the MODE column DOWN x3 (RECEIVE, SEND, RENAME, ERASE). Then RIGHT to the NAME/SIZE column.
+	std::vector<Step> eraseRoute()
+	{
+		return {{"enter", 0x3b2b98d365761c6cull}, {"down", 0x30d97f2d652ec45full}, {"down", 0xdc8b47903cd13bc3ull},
+			{"right", 0x14660a6e19a622f1ull}, {"down", 0x05db12553f74517dull}, {"down", 0xb035a8f846ff3715ull},
+			{"enter", 0xc5e9ab440782c66dull}, {"down", 0x84a39dfb266ca5edull}, {"down", 0x66ea18fe53a3068dull},
+			{"down", 0x54e986f1d484ca65ull}, {"right", 0}};
+	}
+
+	// Run 5 (the first that erases; screens after RIGHT are not known yet, so unchecked): one slot = DOWN to it in the
+	// NAME/SIZE column, ENTER, ENTER. All = DOWN far enough to reach the ALL entry at the bottom (the list stops there),
+	// ENTER, ENTER.
+	std::vector<Step> eraseScript(const bool _all)
+	{
+		auto script = eraseRoute();
+		for(int i = 0; i < (_all ? 60 : g_eraseSlot); ++i)
+			script.push_back({"down", 0});
+		script.push_back({"enter", 0});
+		script.push_back({"enter", 0});
+		return script;
+	}
+
+	const std::vector<Step> g_eraseOne = eraseScript(false);
+	const std::vector<Step> g_eraseAll = eraseScript(true);
 	// ctest prints a test's output only when it fails: true makes the probe end with a failure so the CI log shows the
 	// dumps; false once the scripts are filled and the probe is a plain measurement.
 	constexpr bool g_failToShowLog = true;
