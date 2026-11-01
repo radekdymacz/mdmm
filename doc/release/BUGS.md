@@ -4,6 +4,11 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-202 · Monomachine: the song row transpose journey saw no read-back of the song (open, seen once)
+
+- **From:** full CI run 41305887640 (`release/0.0.0-ci-test`, ed56c4105), journey `mm-song-row-settings` step 3: "Transpose + twice on the row": the cell showed +1, the machine held 1, and the toast said "The machine did not read back the song that was sent. Showing what it holds." The branch changed no song code (B-189 arpeggiator bits, B-201 Linux web view, journey order). Not reported by a tester.
+- **Status:** open, a flake for now. Look again if it comes back.
+
 ## B-201 · Linux: Machinedrum Editor on Fedora KDE shows an empty window, no page (open)
 
 - **From:** a user report on Fedora (latest), 2026-11-01, with the standalone's console output.
