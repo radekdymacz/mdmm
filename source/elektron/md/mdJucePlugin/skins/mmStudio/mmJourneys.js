@@ -3273,14 +3273,14 @@ const MmJourneys = (() => {
 		name: "mm-wire-cc", proves: ["MM-353", "MM-354", "MM-355", "MM-356", "MM-357", "MM-358", "MM-359", "MM-360", "MM-362", "MM-289"],
 		steps: [
 			go("sound"), sel(0),
-			{ say: "a machine with all eight SYN values (DPRO-DDRW, MKII): each value of the page sends its own CC, 48 to 55, on the track's channel with the value the kit holds", pageOnly: "B-196 probe", act: async (u, c) => { c.n0 = histN(); c.bad = []; c.focus = [machine().focus]; c.plate0 = document.documentElement.dataset.plate; if (c.plate0 !== "mk2") await platePick(u); await sleep(200);
+			{ say: "a machine with all eight SYN values (DPRO-DDRW, MKII): each value of the page sends its own CC, 48 to 55, on the track's channel with the value the kit holds", act: async (u, c) => { c.n0 = histN(); c.bad = []; c.focus = [machine().focus]; c.plate0 = document.documentElement.dataset.plate; if (c.plate0 !== "mk2") await platePick(u); await sleep(200);
 					u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500); u.click('#machpop .mf[data-fam="DPRO"]'); await sleep(50); u.click('#machpop .mk[data-mach="DPRO-DDRW"]'); await until(() => wk().tracks[0].machineName === "DPRO-DDRW", 4000); await sleep(300);
 					for (let i = 0; i < 8; i++) { const e = checkBox(await nudgeBox(u, 0, "SYN", i), 0, "SYN", i); if (e) c.bad.push(e); } },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
-			{ say: "AMP 56-63, FLT 72-79, EFX 80-87: every value of each page, on track 6's channel (base + 5)", pageOnly: "B-196 probe", act: async (u, c) => { c.bad = []; u.click(rail(5)); await sleep(300);
+			{ say: "AMP 56-63, FLT 72-79, EFX 80-87: every value of each page, on track 6's channel (base + 5)", act: async (u, c) => { c.bad = []; u.click(rail(5)); await sleep(300);
 					for (const g of ["AMP", "FLT", "EFX"]) for (let i = 0; i < 8; i++) { const e = checkBox(await nudgeBox(u, 5, g, i), 5, g, i); if (e) c.bad.push(e); } },
 				screen: c => ok(!c.bad.length, c.bad.slice(0, 5).join(" | ")), within: 1000 },
-			{ say: "the three LFOs: all eight values of each (the PAGE and DEST lists, the TRIG and WAVE keys, MULT, SPD, INTL, DPTH) go as CC 88-95, 104-111 and 112-119", pageOnly: "B-196 probe", act: async (u, c) => { c.bad = []; u.click(rail(1)); await sleep(300);
+			{ say: "the three LFOs: all eight values of each (the PAGE and DEST lists, the TRIG and WAVE keys, MULT, SPD, INTL, DPTH) go as CC 88-95, 104-111 and 112-119", act: async (u, c) => { c.bad = []; u.click(rail(1)); await sleep(300);
 					const t = 1, expect = (k, i, v, cc) => Journey.noWire() || cc.some(b => b[0] === (0xb0 | (baseCh() + t)) && b[1] === CC_BASE["LF" + k] + i && b[2] === v);
 					for (const k of [1, 2, 3]) {
 						const g = "LF" + k, pg = 3 + k, base = lfoCell(t, k, 0) === 0 ? 1 : 0;
