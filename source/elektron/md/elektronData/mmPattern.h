@@ -41,7 +41,7 @@ namespace elektronData
 	// 0x427   1  pattern transpose, signed
 	// 0x428  18  synth track transpose (signed), scale (0 --- 1 FIX 2 MAJ 3 MIN), key, 6 each
 	// 0x43a  18  MIDI track transpose, scale, key
-	// 0x44c 132  synth arpeggiators, 6 each: play | ojmp<<4, mode, range, speed, trigs (bit 0 AMP,
+	// 0x44c 132  synth arpeggiators, 6 each: play (bits 0-2) | ojmp<<3 (bits 3-6), mode, range, speed, trigs (bit 0 AMP,
 	//            1 FLT, 2 LFO), length; then 6 x 16 rhythm/offset steps (0x40 = offset 0, 0xff = muted)
 	// 0x4d0 126  MIDI arpeggiators: the same without trigs
 	// 0x54e   4  unknown (kept)

@@ -351,8 +351,7 @@ namespace elektronData
 		{
 			Value v = Value::object();
 			v.set("play", _a.playOjmp[_t] & 7);
-			v.set("flag", (_a.playOjmp[_t] >> 3) & 1);
-			v.set("ojmp", _a.playOjmp[_t] >> 4);
+			v.set("ojmp", (_a.playOjmp[_t] >> 3) & 15);
 			v.set("mode", _a.mode[_t]);
 			v.set("range", _a.range[_t]);
 			v.set("speed", _a.speed[_t]);
@@ -365,11 +364,10 @@ namespace elektronData
 
 		void arpFromJson(const In& _in, MmArpBlock& _a, const size_t _t, const bool _synth)
 		{
-			unsigned play = 0, flag = 0, ojmp = 0;
+			unsigned play = 0, ojmp = 0;
 			_in.integer("play", play, 0, 7);
-			_in.integer("flag", flag, 0, 1);
 			_in.integer("ojmp", ojmp, 0, 15);
-			_a.playOjmp[_t] = static_cast<uint8_t>(play | (flag << 3) | (ojmp << 4));
+			_a.playOjmp[_t] = static_cast<uint8_t>(play | (ojmp << 3));
 			_in.integer("mode", _a.mode[_t], 0, 255);
 			_in.integer("range", _a.range[_t], 0, 255);
 			_in.integer("speed", _a.speed[_t], 0, 255);

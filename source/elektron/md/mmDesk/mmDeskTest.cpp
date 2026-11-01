@@ -675,6 +675,14 @@ namespace
 			check(d.pattern(3)->midiArp.speed[0] == 127, "a MIDI track's arpeggiator is its own block");
 			pick("T1 ARP LENGTH", 0);
 			check(d.pattern(3)->arp.length[0] == 1, "LENGTH starts at 1");
+			// B-189: OJMP is bits 3-6 of the play byte, as the firmware reads it (one step is 0x08 above PLAY's bits)
+			pick("T1 ARP PLAY", 127);
+			pick("T1 ARP OJMP", 0);
+			const auto playOnly = d.pattern(3)->arp.playOjmp[0];
+			pick("T1 ARP OJMP", 127);
+			check(d.pattern(3)->arp.playOjmp[0] == (playOnly | 0x78), "the top of OJMP (15) is bits 3-6 of the play byte, PLAY's bits stay");
+			pick("T1 ARP OJMP", 0);
+			check(d.pattern(3)->arp.playOjmp[0] == playOnly, "OJMP 0 clears them");
 		}
 
 		// Edit pattern 3: add a trig. It goes out on SYSEX RECV and is confirmed.

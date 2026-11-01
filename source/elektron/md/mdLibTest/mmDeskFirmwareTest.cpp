@@ -15,7 +15,8 @@
 //                                        (B-121: the host's Stop lets go of a held note), reselect (B-122: picking the
 //                                        current pattern again keeps it), emptyreset (B-175: stored K01 and the working
 //                                        kit after Empty Reset; B-176: native machine-init AMP defaults), newkit (B-175, B-176: the
-//                                        firmware's start values of every machine against the editor's tables),
+//                                        firmware's start values of every machine against the editor's tables), ojmp (B-189:
+//                                        where OJMP lives in the arpeggiator's play byte: the knob against the editor),
 //                                        digipro (0.9 wave 2: the DigiPRO manager: send, read back, rename, copy, erase,
 //                                        undo; the name's bytes from a rename on the panel)
 //
@@ -26,6 +27,8 @@
 
 #include "elektronData/factoryGlobals.h"
 #include "elektronData/mmCommands.h"
+#include "elektronData/mmDump.h"
+#include "elektronData/mmGlobal.h"
 #include "elektronData/mmJson.h"
 #include "elektronData/mmKit.h"
 #include "elektronData/mmMachines.h"
@@ -5069,15 +5072,34 @@ namespace
 	// steps 1-6 of a pattern with trigs on 1, 5, 9, 13). The desk names that step (machine.desk.recLock) and the
 	// machine's pattern then holds the lock there. MM_RECLOCK="step page index" moves it (default "2 2 1": FILTER's
 	// second value on step 3).
-	void recLock(const Bytes& _rom)
+	// The active global's 264 bytes as the machine sends them now (its own 0x50 to a 0x51), not the desk's read-back.
+	std::optional<Bytes> globalRawInMachine(Rig& _r, const uint8_t _slot)
 	{
-		std::puts("recLock (live recording)");
+		std::optional<Bytes> got;
+		_r.tap = [&](const Bytes& _b)
+		{
+			if(!got && _b.size() > 9 && _b[6] == ed::g_mmGlobalDump && (_b[9] & 7) == _slot)
+				if(const auto g = ed::decodeMmGlobal(_b))
+					got = ed::mmGlobalRaw(*g);
+		};
+		_r.out.push_back(ed::mmGlobalRequest(_slot));
+		for(int i = 0; i < 150 && !got; ++i)
+			_r.run(20);
+		_r.tap = nullptr;
+		return got;
+	}
+
+	void recLock(const Bytes& _rom, const std::function<void(Rig&)>& _before = {}, const char* _name = "recLock (live recording)")
+	{
+		std::puts(_name);
 		Rig r(_rom);
 		r.msg(R"({"op":"ready"})");
 		r.desk->setProbe(mmDesk::Desk::Probe::Running);
 		r.run(600);
 		while(r.desk->loaded() < 288)
 			r.run(100);
+		if(_before)
+			_before(r);
 		const uint8_t slot = static_cast<uint8_t>(r.desk->currentPattern());
 		auto p = *r.desk->pattern(slot);
 		p.length = 16;
@@ -5180,6 +5202,63 @@ namespace
 			if(q->lockRows[static_cast<size_t>(row)][st] == v)
 				landed = static_cast<int>(st);
 		check(said && landed == said->second, "the machine locked the step the desk named (step " + std::to_string(landed + 1) + ")");
+	}
+
+	// B-196: the full firmware E2E's mm-seq-record-locks records no lock after mm-wire-cc, and of mm-wire-cc only its GLOBAL
+	// step is needed for that (CI probes 41298514603, 41299313408): the base channel +1, OFF, then back (the page's GLOBAL
+	// popup, op globalMidi, each through SYSEX RECV and made active with 0x56). Here the same round trip through the
+	// desk, then recLock's live recording of a CC on T1 (the CCs go on the wire as the plug-in's wire engine encodes them,
+	// no parameter layer). The machine's own active global (its 0x50) is printed before and after, with the bytes that
+	// differ. MM_RECGLOBAL="1,off,0" (the default): the base channels in order, 0-based, off for OFF.
+	void recLockAfterGlobal(const Bytes& _rom)
+	{
+		const std::string spec = std::getenv("MM_RECGLOBAL") ? std::getenv("MM_RECGLOBAL") : "1,off,0";
+		recLock(_rom, [&](Rig& _r)
+		{
+			const auto cur = static_cast<uint8_t>(_r.desk->currentGlobal() & 7);
+			const auto raw0 = globalRawInMachine(_r, cur);
+			check(raw0.has_value(), "recglobal: the machine sends its active global before");
+			int gesture = 9600;
+			std::istringstream in(spec);
+			for(std::string b; std::getline(in, b, ',');)
+			{
+				const bool off = b == "off";
+				_r.msg("{\"op\":\"globalMidi\",\"g\":" + std::to_string(++gesture) + ",\"base\":" + (off ? std::string("null") : b) + "}");
+				const auto t0 = _r.ms();
+				_r.run(500);
+				// written, read back, SYSEX RECV left and the slot made active again (0x56), as the page waits
+				while(_r.desk->recvState() != "idle" && _r.ms() - t0 < 30000)
+					_r.run(100);
+				_r.run(3000);
+				const auto& gs = _r.desk->documents().globals;
+				const auto gi = gs.find(cur);
+				std::printf("  base %s: desk's global %d base %d, recv %s, %.0f ms\n", b.c_str(), cur + 1, gi != gs.end() ? gi->second.baseChannel : -1,
+					_r.desk->recvState().c_str(), _r.ms() - t0);
+			}
+			const auto raw1 = globalRawInMachine(_r, cur);
+			check(raw1.has_value(), "recglobal: the machine sends its active global after");
+			if(raw0 && raw1)
+			{
+				std::string diff;
+				for(size_t i = 0; i < std::min(raw0->size(), raw1->size()); ++i)
+					if((*raw0)[i] != (*raw1)[i])
+					{
+						char t[32];
+						std::snprintf(t, sizeof(t), " %03zx:%02x>%02x", i, (*raw0)[i], (*raw1)[i]);
+						diff += t;
+					}
+				std::printf("  the machine's global before and after: %s\n", diff.empty() ? "the same bytes" : diff.c_str());
+				std::string head;
+				for(size_t i = 0; i < std::min<size_t>(raw1->size(), 64); ++i)
+				{
+					char t[4];
+					std::snprintf(t, sizeof(t), "%02x", (*raw1)[i]);
+					head += t;
+				}
+				std::printf("  after, bytes 0-63: %s\n", head.c_str());
+				check(*raw0 == *raw1, "recglobal: the round trip leaves the machine's global as it was");
+			}
+		}, "recLock after the base channel round trip (B-196)");
 	}
 
 	// DEV-CYCLE (doc/release/DEV-CYCLE.md): the intent cases (doc/modern-ux/intent-cases.json) on the firmware, table
@@ -5518,6 +5597,175 @@ namespace
 				+ ", M1 " + std::to_string(mem->midiTranspose.track[0]) + ", M2 " + std::to_string(mem->midiTranspose.track[1]) + ", T2 " + std::to_string(mem->transpose.track[1])
 				+ ", PAT " + std::to_string(mem->patternTranspose) : std::string("not read")) + ")");
 		r.m.onMidi = nullptr;
+	}
+
+	// B-189: where OJMP lives in the arpeggiator's play byte. The editor writes OJMP n to bits 4-7 (play | ojmp << 4);
+	// the knob of FUNCTION + BANK A's arpeggiator window was measured setting bits 3-6 (mm-manual-mapping.md note 6).
+	// 1. The window's knobs one after the other, two steps up, until one changes the play byte above PLAY's bits.
+	// 2. That knob from 0, pulse by pulse: the byte after each (the step it adds says which bit is its lowest), up to its end.
+	// 3. The editor's OJMP n (the desk's arp command, the machine's own dump of the pattern): the value the firmware's
+	//    layout reads from that byte must be n. Then one knob pulse from the editor's value: the step must be one OJMP.
+	// Prints one line per value; fails where the editor and the firmware disagree.
+	void ojmpLayout(const Bytes& _rom)
+	{
+		std::puts("OJMP bit layout (B-189)");
+		Rig r(_rom);
+		int g = 9700;
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		r.run(1500);
+		const int slot = r.desk->currentPattern();
+		const auto at = [&] { return std::max(r.m.now(), r.panel.empty() ? 0 : r.panel.back().first) + 64; };
+		const auto chord = [&](const md::PanelControl _held, const md::PanelControl _key)
+		{
+			md::PanelRowState rows;
+			const auto h = *md::panelPacket(g_mm, _held), k = *md::panelPacket(g_mm, _key);
+			uint64_t t = at();
+			for(const auto x : {rows.press(h), rows.press(k), rows.release(k), rows.release(h)})
+			{
+				r.panel.emplace_back(t, x);
+				t += g_rate / 100;
+			}
+			r.run(300);
+		};
+		const auto key = [&](const md::PanelControl _key)
+		{
+			const auto k = *md::panelPacket(g_mm, _key);
+			const uint64_t t = at();
+			r.panel.emplace_back(t, k);
+			r.panel.emplace_back(t + g_rate / 100, md::PanelPacket{k.row, 0});
+			r.run(300);
+		};
+		// one knob step is mmDesk::g_knobPulses encoder pulses, 10 ms apart (as the desk and the transpose probes turn it);
+		// a single pulse is a quarter of a step and changes nothing (CI run 41300417248: two pulses, no knob moved)
+		const auto knob = [&](const int _knob, const int _steps)
+		{
+			const auto cmd = *md::panelEncoderCommand(g_mm, static_cast<md::PanelEncoder>(_knob));
+			uint64_t t = at();
+			for(int i = 0; i < mmDesk::g_knobPulses * std::abs(_steps); ++i)
+			{
+				r.panel.emplace_back(t, md::PanelPacket{cmd, static_cast<uint8_t>(_steps > 0 ? 0x01 : 0xff)});
+				t += g_rate / 100;
+			}
+			r.run(150 + 45 * std::abs(_steps));
+		};
+		const auto lcdPixels = [&]
+		{
+			const auto p = r.m.hardware().getFrontPanelSnapshot();
+			std::string px;
+			for(uint32_t y = 0; y < 64; ++y)
+				for(uint32_t x = 0; x < 128; ++x)
+					px += p.getLcdPixel(x, y) ? '#' : '.';
+			return px;
+		};
+		const auto printLcd = [&](const char* _title)
+		{
+			const auto px = lcdPixels();
+			std::printf("  ---- LCD %s\n", _title);
+			for(size_t y = 0; y < 64; y += 2)
+			{
+				std::string line;
+				for(size_t x = 0; x < 128; ++x)
+				{
+					const bool a = px[y * 128 + x] == '#', b = px[(y + 1) * 128 + x] == '#';
+					line += a && b ? "\xe2\x96\x88" : a ? "\xe2\x96\x80" : b ? "\xe2\x96\x84" : " ";
+				}
+				while(!line.empty() && line.back() == ' ')
+					line.pop_back();
+				std::printf("  |%s\n", line.c_str());
+			}
+		};
+		// FUNCTION + BANK A opens the arpeggiator window of the track in focus (T1); the LCD must change and be shown
+		const auto openWindow = [&](const char* _title)
+		{
+			key(md::PanelControl::Track1);
+			const auto before = lcdPixels();
+			chord(md::PanelControl::Function, md::PanelControl::BankA);
+			r.run(300);
+			printLcd(_title);
+			return lcdPixels() != before;
+		};
+		const auto stored = [&]() -> std::optional<ed::MmPattern> { return patternInMemory(r, slot); };
+		const auto byteOf = [&]() -> int { const auto p = stored(); return p ? p->arp.playOjmp[0] : -1; };
+		const auto editorOjmp = [&](const int _n)
+		{
+			r.msg("{\"op\":\"arp\",\"g\":" + std::to_string(++g) + ",\"p\":" + std::to_string(slot) + ",\"t\":0,\"field\":\"ojmp\",\"v\":" + std::to_string(_n) + "}");
+			r.run(2500);
+		};
+
+		// 1. which knob is OJMP
+		editorOjmp(0);
+		const bool shown = openWindow("after FUNCTION + BANK A on T1 (the arpeggiator window)");
+		check(shown, "FUNCTION + BANK A changes the LCD (the arpeggiator window opens)");
+		if(!shown)
+			return;
+		int ojmpKnob = -1;
+		for(int k = 0; k < 8 && ojmpKnob < 0; ++k)
+		{
+			const auto before = stored();
+			knob(k, 2);
+			const auto after = stored();
+			if(!before || !after)
+				continue;
+			const auto& b = before->arp;
+			const auto& a = after->arp;
+			std::printf("  OJMP knob %d, two steps up: play byte 0x%02x -> 0x%02x, mode %d -> %d, range %d -> %d, speed %d -> %d, length %d -> %d\n", k,
+				b.playOjmp[0], a.playOjmp[0], b.mode[0], a.mode[0], b.range[0], a.range[0], b.speed[0], a.speed[0], b.length[0], a.length[0]);
+			if((b.playOjmp[0] ^ a.playOjmp[0]) & 0xf8)
+				ojmpKnob = k;
+		}
+		check(ojmpKnob >= 0, "one of the arpeggiator window's knobs changes the play byte above PLAY's bits (OJMP)");
+		if(ojmpKnob < 0)
+		{
+			key(md::PanelControl::Exit);
+			return;
+		}
+
+		// 2. the knob from its start to its end
+		knob(ojmpKnob, -40);
+		std::vector<int> bytes;
+		bytes.push_back(byteOf());
+		for(int p = 1; p <= 17; ++p)
+		{
+			knob(ojmpKnob, 1);
+			bytes.push_back(byteOf());
+		}
+		int shift = 0;
+		for(int p = 0; p < static_cast<int>(bytes.size()); ++p)
+			std::printf("  FIRMWARE knob %2d steps: play byte 0x%02x  (bits 3-6: %2d, bits 4-7: %2d)\n", p, bytes[static_cast<size_t>(p)],
+				(bytes[static_cast<size_t>(p)] >> 3) & 15, (bytes[static_cast<size_t>(p)] >> 4) & 15);
+		if(bytes[0] >= 0 && bytes[1] > bytes[0])
+			shift = (bytes[1] - bytes[0]) == 8 ? 3 : (bytes[1] - bytes[0]) == 16 ? 4 : 0;
+		std::printf("  FIRMWARE OJMP: first step adds 0x%02x (lowest bit %d), end of the knob 0x%02x\n", bytes[1] - bytes[0], shift, bytes.back());
+		check(shift != 0, "the OJMP knob's first step adds one bit of the play byte");
+		key(md::PanelControl::Exit);
+		if(!shift)
+			return;
+
+		// 3. the editor's OJMP n against what the firmware reads from that byte
+		for(int n = 0; n <= 15; ++n)
+		{
+			editorOjmp(n);
+			const int b = byteOf();
+			const int fw = b < 0 ? -1 : (b >> shift) & 15;
+			std::printf("  EDITOR OJMP %2d -> play byte 0x%02x -> the firmware reads %2d%s\n", n, b, fw, fw == n ? "" : "  <- DISAGREES");
+			check(fw == n, "the editor's OJMP " + std::to_string(n) + " is OJMP " + std::to_string(fw) + " to the firmware (byte " + std::to_string(b) + ")");
+		}
+		for(const int n : {1, 3})
+		{
+			editorOjmp(n);
+			const int before = byteOf();
+			if(!openWindow("arpeggiator window again"))
+				check(false, "the arpeggiator window opens again");
+			knob(ojmpKnob, 1);
+			key(md::PanelControl::Exit);
+			const int after = byteOf();
+			std::printf("  EDITOR OJMP %d, then one knob pulse: 0x%02x -> 0x%02x (adds 0x%02x; the knob's step is 0x%02x)\n", n, before, after, after - before, bytes[1] - bytes[0]);
+			check(after - before == bytes[1] - bytes[0], "one knob pulse from the editor's OJMP " + std::to_string(n) + " adds one OJMP step");
+		}
 	}
 
 	// B-060 probe (prints, checks nothing): what makes the machine play a transpose a dump stored while the pattern plays.
@@ -6185,6 +6433,12 @@ int main(const int _argc, char** _argv)
 			std::printf("%s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;
 		}
+		if(only == "ojmp")
+		{
+			ojmpLayout(rom);
+			std::printf("%s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
 		if(only == "syxexport")
 			syxExport(rom);
 		if(only == "digipro")
@@ -6242,6 +6496,8 @@ int main(const int _argc, char** _argv)
 			kitLink(rom);
 		if(only.empty() || only == "reclock")
 			recLock(rom);
+		if(only == "recglobal")
+			recLockAfterGlobal(rom);
 		if(only == "lenprobe")
 			midiLenProbe(rom);
 		if(only == "trnprobe")

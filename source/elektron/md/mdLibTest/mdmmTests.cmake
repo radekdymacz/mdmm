@@ -168,6 +168,9 @@ function(mdmm_add_lib_tests _dir)
 	# B-175, B-176: the firmware's own start values of every machine (0x5B with init) against the editor's tables.
 	add_test(NAME mmNewKitDefaultsFirmwareTest COMMAND mmDeskFirmwareTest --env newkit)
 	set_tests_properties(mmNewKitDefaultsFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
+	# B-189: the arpeggiator's OJMP bits in the play byte, the firmware's own knob against the editor's encoding.
+	add_test(NAME mmOjmpLayoutFirmwareTest COMMAND mmDeskFirmwareTest --env ojmp)
+	set_tests_properties(mmOjmpLayoutFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 900)
 	# B-049: the amp envelope the editor draws against the firmware's (one note per value, the output's level).
 	# B-027 and B-050: a kit's unsaved edits stay over a step or a piano-roll note (a dump of the pattern that plays).
 	if(TRUE)
@@ -202,6 +205,9 @@ function(mdmm_add_lib_tests _dir)
 	# review 1 (B-093): LIVE RECORDING's erase leaves chord notes without a trig; the pattern stays editable
 	add_test(NAME mmChordEraseFirmwareTest COMMAND mmDeskFirmwareTest --env chorderase)
 	set_tests_properties(mmChordEraseFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+	# B-196: the base channel's round trip through the GLOBAL page (1, OFF, 0), then a CC live-recorded on T1 must lock
+	add_test(NAME mmRecLockGlobalFirmwareTest COMMAND mmDeskFirmwareTest --env recglobal)
+	set_tests_properties(mmRecLockGlobalFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 	add_test(NAME mmSyxPickFirmwareTest COMMAND mmDeskFirmwareTest --env syxpick)
 	set_tests_properties(mmSyxPickFirmwareTest PROPERTIES
 		LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1200)
