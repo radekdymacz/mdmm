@@ -1547,6 +1547,7 @@ void songReadBackOlder()
 		ed::MmSong so;
 		so.position = 0;
 		so.rows[0].bytes[ed::mmSongRow::g_pattern] = 2;
+		so.rows[0].bytes[ed::mmSongRow::g_length] = 16;	// a row plays 1-64 steps (mmValidate): length 0 refuses the edit
 		so.rows[0].bytes[ed::mmSongRow::g_tempo] = so.rows[0].bytes[ed::mmSongRow::g_tempo + 1] = 0xff;
 		so.rows[1].bytes[0] = 0xff;
 		so.rows[1].bytes[ed::mmSongRow::g_tempo] = so.rows[1].bytes[ed::mmSongRow::g_tempo + 1] = 0xff;
