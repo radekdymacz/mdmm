@@ -9,6 +9,7 @@
 
 #include "deskCore/deskPacer.h"
 
+#include <algorithm>
 #include <cstdio>
 
 namespace mmDesk
