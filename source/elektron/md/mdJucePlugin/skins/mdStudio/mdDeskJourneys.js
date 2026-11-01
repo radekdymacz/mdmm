@@ -2563,8 +2563,15 @@ const MdJourneys = (() => {
 				screen: c => ok(+$1(c.q + " b")?.textContent === c.v0 + c.d, `shows ${$1(c.q + " b")?.textContent}, expected ${c.v0 + c.d} from ${c.v0}`), machine: c => ok(idle() && kitVals(c.t)[c.i] === c.v0 + c.d, "kit " + kitVals(c.t)[c.i]), within: 8000 },
 			{ say: "scroll one notch with Shift held: ten steps", act: (u, c) => { c.v1 = kitVals(c.t)[c.i]; u.wheel(c.q, c.d, { shift: true }); },
 				screen: c => ok(+$1(c.q + " b")?.textContent === c.v1 + 10 * c.d, `shows ${$1(c.q + " b")?.textContent}, expected ${c.v1 + 10 * c.d} from ${c.v1}`), machine: c => ok(idle() && kitVals(c.t)[c.i] === c.v1 + 10 * c.d, "kit " + kitVals(c.t)[c.i]), within: 8000 },
-			{ say: "drag the value 8 pixels sideways, then again with Shift held: the second is a quarter as far", act: async (u, c) => { c.v2 = kitVals(c.t)[c.i]; await u.drag(c.q, [[c.d * 4, 0], [c.d * 8, 0]]); /* the drag is through when the desk is idle and the kit holds still (nightly CI 2026-10-26: v3 read mid-way, plain 72 -> 61, then 82) */ await settled(); c.v3 = kitVals(c.t)[c.i]; await u.drag(c.q, [[c.d * 4, 0], [c.d * 8, 0]], { shift: true }); Journey.snapshot("md-sound-knob-steps"); },
-				screen: c => ok(Math.abs(c.v3 - c.v2) === 8 && Math.abs(+$1(c.q + " b")?.textContent - c.v3) === 2, `plain ${c.v2} -> ${c.v3}, fine ${$1(c.q + " b")?.textContent}`), machine: c => ok(Math.abs(kitVals(c.t)[c.i] - c.v3) === 2, "kit " + kitVals(c.t)[c.i]), within: 5000 }
+			/* B-193 (open): in the runs that failed, plain 72 -> 61 is the value back where step 3 found it (61 + 1 + 10 = 72):
+			   the two wheel edits were undone during the plain drag, not a drag of the wrong length. The trace says when the
+			   kit's value moved and what the desk was doing (tx, loading, the toast), each change with its ms */
+			{ say: "drag the value 8 pixels sideways, then again with Shift held: the second is a quarter as far", act: async (u, c) => { c.v2 = kitVals(c.t)[c.i];
+					const t0 = performance.now(); let was = ""; c.trace = []; const look = () => { const s = `${kitVals(c.t)[c.i]} shows ${$1(c.q + " b")?.textContent} tx ${!!desk().tx} loading ${desk().loading} kit ${currentKitSlot()}${$1("#toast") && !$1("#toast").hidden ? " toast " + $1("#toast").textContent.trim().slice(0, 40) : ""}`; if (s !== was) { was = s; c.trace.push(`${Math.round(performance.now() - t0)} ms ${s}`); } };
+					look(); const tick = setInterval(look, 25);
+					try { await u.drag(c.q, [[c.d * 4, 0], [c.d * 8, 0]]); look(); /* the drag is through when the desk is idle and the kit holds still (nightly CI 2026-10-26: v3 read mid-way) */ await settled(); c.v3 = kitVals(c.t)[c.i]; await u.drag(c.q, [[c.d * 4, 0], [c.d * 8, 0]], { shift: true }); look(); } finally { clearInterval(tick); }
+					Journey.snapshot("md-sound-knob-steps"); },
+				screen: c => ok(Math.abs(c.v3 - c.v2) === 8 && Math.abs(+$1(c.q + " b")?.textContent - c.v3) === 2, `plain ${c.v2} -> ${c.v3} (step 3 began at ${c.v0}), fine ${$1(c.q + " b")?.textContent}; trace ${c.trace.slice(-16).join(" | ")}`), machine: c => ok(Math.abs(kitVals(c.t)[c.i] - c.v3) === 2, "kit " + kitVals(c.t)[c.i]), within: 5000 }
 		],
 		async tidy(u, c) { for (let k = 0; k < 6 && c.v0 != null && kitVals(c.t)[c.i] !== c.v0; k++) { u.click("#undo"); await sleep(600); } }
 	};
@@ -4351,8 +4358,11 @@ const MdJourneys = (() => {
 		/* PATTERN mode: a journey that left the machine in SONG mode made the next one that plays play a song row (and its
 		   HALT) instead of the pattern (md-song-commands, then md-seq-page-leds) */
 		if (machineState().songMode === true) await act("the machine in SONG mode", async () => { cmd("seqMode", { song: false }); await until(() => machineState().songMode === false && V.songMode === false, 4000); });
-		await until(idle, 4000); await sleep(500);
-		return left.length ? `left ${left.join(", ")}${fix ? " (after a failure: put right)" : ""}` : "";
+		/* the journey before's late answers in (Journey.settle): nothing on its way (tx) and no read pending (loading: a kit load's
+		   read-back, B-193; the TEMPO nudge's read of the global, which answered after the next drag's tempo on a slow runner, B-200) */
+		const calm = await Journey.settle(() => idle() && !(desk().loading > 0), 500, Journey.pageTier() ? 4000 : 15000);
+		const busy = calm ? "" : `the machine still busy (tx ${!!desk().tx}, loading ${desk().loading})`;
+		return [left.length ? `left ${left.join(", ")}${fix ? " (after a failure: put right)" : ""}` : "", busy].filter(Boolean).join("; ");
 	}
 	/* what the guard compares before and after each journey (shared/deskJourney.js, page.state): the machine's documents and modes.
 	   A document is its JSON (a slot loaded only in one of the two is not compared; the log says where one differs) */
