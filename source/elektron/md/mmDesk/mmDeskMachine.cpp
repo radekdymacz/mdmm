@@ -459,6 +459,13 @@ namespace mmDesk
 		v.set("streamSending", m_stream.sending(now()));
 		v.set("roundTripMs", m_lastRoundTripMs);
 		v.set("hostClock", m_hostClock.on);
+		// B-202: SYSEX RECV's counts (a dump the firmware refused is an error) and the last read-back answered with an
+		// older document, with how long ago
+		v.set("recvTaken", static_cast<int>(m_tel.recvCount));
+		v.set("recvErrors", static_cast<int>(m_tel.recvErrors));
+		v.set("olderReplies", m_olderReplies);
+		if(!m_olderReply.empty())
+			v.set("olderReply", m_olderReply + ", " + std::to_string(static_cast<int>(now() - m_olderReplyMs)) + " ms ago");
 		return v;
 	}
 }

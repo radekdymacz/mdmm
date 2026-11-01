@@ -289,6 +289,10 @@ namespace mmDesk
 		uint32_t m_nextRecvTag = 1;
 		std::map<uint32_t, Ref> m_recvRefs;		// a dump on the RECV session -> the push it is
 		Pushes m_pushes;
+		void noteOlderReply(const Ref& _r, const Bytes& _sent, const Bytes& _got);
+		std::string m_olderReply;				// B-202: the last older reply to a read-back, for the status line
+		double m_olderReplyMs = -1;
+		int m_olderReplies = 0;
 		std::map<Ref, int> m_readBackAgain;		// B-202: a push's read-back asked again after an older reply (onDump)
 		std::set<Ref> m_loadAfter;				// kit slots to LOAD KIT once their waiting dump goes
 		bool m_kitDumpHold = false;				// kit delivery (a dump or live edits) held the last memory image

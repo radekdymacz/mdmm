@@ -9,6 +9,8 @@
 
 #include "deskCore/deskPacer.h"
 
+#include <cstdio>
+
 namespace mmDesk
 {
 	using namespace parts;
@@ -132,6 +134,7 @@ namespace mmDesk
 				// (the machine answered before it stored it); nothing else would ask, so the push timed out with the
 				// machine holding the edit and the page went back to the older document (the next + then built on
 				// that). Asked again, a bounded number of times, while nothing newer waits.
+				noteOlderReply(_r, *push.slot.inFlight(), _sysex);
 				if(push.slot.asked() && !push.slot.next() && m_readBackAgain[_r]++ < g_readBackAgain)
 					m_loads.wantFresh(_r);
 				return;
@@ -160,6 +163,23 @@ namespace mmDesk
 			if(seed)
 				observe(WorkingKit{*seed}, Source::Dump);
 		}
+	}
+
+	// B-202: what an older reply to a push's read-back held, against the dump sent: for the desk's status line (the log),
+	// so a failed read-back tells a whole older document (many bytes) from one byte the firmware keeps otherwise.
+	void MmMachine::noteOlderReply(const Ref& _r, const Bytes& _sent, const Bytes& _got)
+	{
+		size_t differ = 0, first = 0;
+		const auto n = std::min(_sent.size(), _got.size());
+		for(size_t i = 0; i < n; ++i)
+			if(_sent[i] != _got[i] && differ++ == 0)
+				first = i;
+		char at[96];
+		std::snprintf(at, sizeof(at), " at 0x%zx (sent %02x, got %02x)", first, differ ? _sent[first] : 0, differ ? _got[first] : 0);
+		m_olderReply = std::string(kindName(_r.kind)) + " " + std::to_string(_r.slot + 1) + ": " + std::to_string(differ) + " of "
+			+ std::to_string(_sent.size()) + " bytes differ" + (differ ? at : "") + (_sent.size() != _got.size() ? ", " + std::to_string(_got.size()) + " bytes came" : "");
+		m_olderReplyMs = now();
+		++m_olderReplies;
 	}
 
 	void MmMachine::kitSwitched(const int _from, const int _to)

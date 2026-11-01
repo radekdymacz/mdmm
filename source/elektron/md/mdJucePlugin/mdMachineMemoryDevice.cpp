@@ -14,16 +14,34 @@
 #include "mdLib/mdmemorymap.h"
 #include "mdLib/mdstate.h"
 
+#include "synthLib/realtimeInstrumentation.h"
+
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <exception>
+
+#if defined(__APPLE__) || defined(__linux__)
+#include <sys/resource.h>
+#endif
 
 namespace mdJucePlugin
 {
 	namespace
 	{
 		constexpr double g_longStepMs = 5;	// a copy step that takes longer is logged (B-203)
+
+		// The process's page faults (minor + major) so far: a copy step that waits for the kernel to bring its pages in
+		// counts that as its thread's CPU time (B-203)
+		long pageFaults()
+		{
+#if defined(__APPLE__) || defined(__linux__)
+			rusage u{};
+			if(getrusage(RUSAGE_SELF, &u) == 0)
+				return u.ru_minflt + u.ru_majflt;
+#endif
+			return 0;
+		}
 
 		double msBetween(const std::chrono::steady_clock::time_point _from, const std::chrono::steady_clock::time_point _to)
 		{
@@ -74,7 +92,8 @@ namespace mdJucePlugin
 		for(;;)
 		{
 			auto result = md::OneMomentCopy::Step::Failed;
-			double longStepMs = 0;
+			double longStepMs = 0, longStepCpuMs = 0;
+			long longStepFaults = 0;
 			const bool ok = m_processor.getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
 			{
 				const auto held = std::chrono::steady_clock::now();
@@ -93,21 +112,30 @@ namespace mdJucePlugin
 				_machine = machine;
 				if(_check && !_check(*device))
 					return false;
+				const auto faults0 = pageFaults();
+				const auto cpu0 = synthLib::RealtimeInstrumentation::threadCpuNanoseconds();
 				const auto t0 = std::chrono::steady_clock::now();
 				result = copy.step(device->getHardware());
 				const auto stepMs = msBetween(t0, std::chrono::steady_clock::now());
 				_copyMs = std::max(_copyMs, stepMs);
 				if(stepMs > g_longStepMs)
-					longStepMs = stepMs;	// logged after the hold, not in it
+				{
+					// logged after the hold, not in it
+					longStepMs = stepMs;
+					longStepCpuMs = static_cast<double>(synthLib::RealtimeInstrumentation::threadCpuNanoseconds() - cpu0) / 1e6;
+					longStepFaults = pageFaults() - faults0;
+				}
 				if(result == md::OneMomentCopy::Step::Done && _last)
 					_last(*device);
 				return true;
 			});
-			// B-203 (CI run 41336239454, session 5b): one step's work took 13.4 ms of the 10 ms budget. The bytes tell a
-			// copy too big for one hold (at most g_restLimit) from a thread the runner did not run meanwhile.
+			// B-203: steps of at most 64 KB (a memcpy of microseconds) took 5 to 26 ms on CI, 13.4 ms of it the thread's own
+			// CPU time. The CPU time and the page faults meanwhile tell a copy that waits for its source pages (paged in or
+			// decompressed by the kernel, counted as thread time) from a thread the runner did not run (wall time only).
 			if(longStepMs > 0)
-				std::fprintf(stderr, "[MD] machine memory: a copy step took %.2f ms under the device lock"
-					" (step %u, at most %zu bytes a step)\n", longStepMs, copy.steps(), copy.maxStepBytes());
+				std::fprintf(stderr, "[MD] machine memory: a copy step took %.2f ms under the device lock (%.2f ms CPU, %ld page"
+					" faults; step %u, at most %zu bytes a step)\n", longStepMs, longStepCpuMs, longStepFaults, copy.steps(),
+					copy.maxStepBytes());
 			if(!ok || result == md::OneMomentCopy::Step::Failed)
 				return false;
 			if(result == md::OneMomentCopy::Step::Done)
