@@ -28,6 +28,7 @@ namespace mdDesk::erase
 		uint64_t header = 0;	// the top 20 pixel rows
 		uint64_t mode = 0;		// the MODE column and what is under it, x < 33, y >= 20
 		uint64_t window = 0;	// the GLOBAL SLOT window, x 18..107, y 7..56 (see g_globalSlot)
+		uint64_t lastLine = 0;	// the list's bottom line, x 34..82, y 53..59 (see g_allLine)
 		uint32_t prompt = 0;	// lit pixels at x 90..121, y 34..61
 		bool asked() const { return prompt > 100; }
 	};
@@ -45,6 +46,9 @@ namespace mdDesk::erase
 		uint64_t header = 0;
 		uint64_t mode = 0;
 		uint64_t window = 0;
+		uint64_t lastLine = 0;
+		std::vector<uint64_t> alsoFull;	// other whole pictures that will do (full set)
+		std::vector<uint64_t> alsoMode;	// other MODE columns that will do (mode set)
 		Prompt prompt = Prompt::Any;
 		bool changes = false;	// the screen is not the one before the key
 		bool matches(const Screen& _screen, const Screen& _before) const;
@@ -53,6 +57,14 @@ namespace mdDesk::erase
 	{
 		std::string key;	// md::panelKeySequence's names
 		Expect expect;
+		// The machine keeps its menus' cursors from the last visit (CI run 41351441000: after an erase, ENTER on GLOBAL SLOT went
+		// straight back to SAMPLE MGR in the third icon's list). A skippable step is not pressed when the screen already shows what it,
+		// or a skippable step right after it, leads to: the job goes on after the furthest one shown.
+		bool skippable = false;
+		// > 0: the key is pressed until the screen shows until (looked at before the first press too), each press checked against
+		// expect, at most repeat times; then the job stops.
+		int repeat = 0;
+		Expect until;
 	};
 
 	// The screens (CI run 41320779646). ROM-01's list is the first line; the list has 53 lines (48 ROM slots, four RAM, ALL) and wraps.
@@ -67,15 +79,22 @@ namespace mdDesk::erase
 	constexpr uint64_t g_modeRename = 0x079f66ca4b909da7ull;
 	constexpr uint64_t g_modeErase = 0x49bec92e1e8394b5ull;
 	constexpr uint64_t g_modeList = 0xdd6517ab81991727ull;	// ... and with the cursor in the NAME/SIZE list
+	// The list's bottom line with the cursor on ALL (the probe's 703dd3e87cc7b997: the inverted bar reads ALL). ALL is the last line,
+	// and the cursor reaches it only by UP from ROM-01 (the list wraps), so it is shown at the bottom then. Any other line there
+	// (a RAM slot, a ROM slot's number, name and size, or no cursor) gives another hash.
+	constexpr uint64_t g_allLine = 0x745627c74dd742d3ull;
+	constexpr int g_listLines = 53;
 
-	// From the main screen to the list of ERASE (the cursor on ROM-01): EXIT x3, FUNCTION + PATTERN/SONG (GLOBAL SLOT), ENTER (GLOBAL 1 EDIT),
-	// DOWN x2 (the third icon), RIGHT (its list), DOWN x2 (SAMPLE MGR), ENTER, DOWN x3 in the MODE column, RIGHT.
+	// From the main screen to the list of ERASE, the cursor on ALL: EXIT x3, FUNCTION + PATTERN/SONG (GLOBAL SLOT), ENTER (GLOBAL 1 EDIT),
+	// DOWN x2 (the third icon), RIGHT (its list), DOWN x2 (SAMPLE MGR), ENTER, DOWN x3 in the MODE column (DOWN stays on ERASE), RIGHT,
+	// UP until ALL. The steps after the first ENTER of GLOBAL 1 EDIT and of SAMPLE MGR are skipped when the machine shows their screen
+	// already (it keeps its cursors); the list's cursor is wherever the last visit left it, so it is brought to ALL, never assumed.
 	std::vector<Step> routeToList();
-	// ... then DOWN to ROM slot _slot (0-47), ENTER (the question), ENTER (erases). Each key is checked on the screen it leaves.
+	// ... then DOWN (the list wraps to ROM-01), DOWN to ROM slot _slot (0-47), ENTER (the question), ENTER (erases).
 	std::vector<Step> scriptOne(uint8_t _slot);
-	// ... then UP once (the list wraps to its last line, ALL), ENTER, ENTER. Proven on the firmware (CI run 41321610226: every ROM slot 0,
-	// samples used 0; the RAM slots were empty in that run, so whether ALL touches them is not known). No undo: 32 slots are more than
-	// the 16 steps the editor keeps, so the person is told before.
+	// ... then ENTER, ENTER on ALL. Proven on the firmware (CI run 41321610226: every ROM slot 0, samples used 0; the RAM slots were
+	// empty in that run, so whether ALL touches them is not known). No undo: 32 slots are more than the 16 steps the editor keeps, so
+	// the person is told before.
 	std::vector<Step> scriptAll();
 	constexpr bool g_eraseAllProven = true;
 
@@ -126,6 +145,7 @@ namespace mdDesk::erase
 		State m_state = State::Running;
 		std::string m_why;
 		std::string m_seen;
+		int m_repeated = 0;				// presses of the repeat step under way
 		bool m_leaving = false;
 		std::vector<std::string> m_leave;
 		size_t m_leaveNext = 0;

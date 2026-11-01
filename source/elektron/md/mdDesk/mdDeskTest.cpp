@@ -3059,27 +3059,37 @@ namespace
 	void testSampleErase()
 	{
 		namespace er = mdDesk::erase;
-		// A machine that shows what a script expects after each key (_wrongAt: a step that shows a menu column nobody expects).
-		const auto run = [](const std::vector<er::Step>& _script, const int _wrongAt, std::vector<std::string>& _keys)
+		// A machine that shows what a script expects after each key (_wrongAt: a step that shows a menu column nobody expects). A repeat
+		// step reaches its screen at the _upsToAll-th press (0: never); _remember changes what a step shows (a machine that kept its cursors).
+		using Remember = std::function<void(size_t _step, er::Screen& _shown)>;
+		const auto run = [](const std::vector<er::Step>& _script, const int _wrongAt, std::vector<std::string>& _keys, const int _upsToAll = 1,
+			const Remember& _remember = {})
 		{
 			er::Job job(_script);
 			er::Screen shown;
 			shown.valid = true;
 			uint64_t unique = 1000;
+			int ups = 0;
 			const er::Job::Press press = [&](const std::string& _key)
 			{
-				const size_t at = _keys.size();
+				const size_t at = job.position();	// the step being pressed
 				_keys.push_back(_key);
-				if(at < _script.size())
+				if(job.why().empty() && at < _script.size())
 				{
-					const auto& e = _script[at].expect;
+					const auto& step = _script[at];
+					const auto& e = step.expect;
 					shown.full = e.full ? e.full : ++unique;
 					shown.header = e.header ? e.header : 7;
 					shown.mode = e.mode ? e.mode : 9;
 					shown.window = e.window ? e.window : 11;
+					shown.lastLine = 13;
+					if(step.repeat > 0 && ++ups == _upsToAll)
+						shown.lastLine = step.until.lastLine;
 					shown.prompt = e.prompt == er::Expect::Prompt::Asked ? 200 : 0;
 					if(static_cast<int>(at) == _wrongAt)
 						{ shown.mode = 12345; shown.full = 1; shown.window = 1; }
+					if(_remember)
+						_remember(at, shown);
 				}
 				return true;
 			};
@@ -3110,7 +3120,8 @@ namespace
 		}
 
 		const auto one = er::scriptOne(5);
-		check(one.size() == er::routeToList().size() + 5 + 2, "erase one: the route, DOWN to the slot, ENTER, ENTER");
+		check(one.size() == er::routeToList().size() + 1 + 5 + 2 && one[er::routeToList().size() - 1].repeat > 0 && one[er::routeToList().size()].key == "down",
+			"erase one: the route (ending on ALL), DOWN round to ROM-01, DOWN to the slot, ENTER, ENTER");
 		check(one[one.size() - 1].key == "enter" && one[one.size() - 2].key == "enter" && one[one.size() - 3].key == "down", "erase one: ends with the two ENTERs");
 		std::vector<std::string> keys;
 		auto outcome = run(one, -1, keys);
@@ -3120,7 +3131,7 @@ namespace
 
 		// a wrong screen after the first DOWN of the list: the job stops, leaves with EXIT and presses no ENTER after the route's own
 		keys.clear();
-		const size_t wrong = er::routeToList().size();
+		const size_t wrong = er::routeToList().size() + 1;
 		outcome = run(one, int(wrong), keys);
 		size_t enters = 0;
 		for(const auto& k : keys)
@@ -3147,7 +3158,42 @@ namespace
 				st = job.step(now, none, press);
 			check(st == er::Job::State::Stopped && pressed.size() == size_t(er::g_leaveExits) && !job.erasing(), "an unreadable screen stops before any key");
 		}
-		check(er::scriptAll().size() == er::routeToList().size() + 3 && er::scriptAll()[er::routeToList().size()].key == "up", "erase all: UP to the ALL line, ENTER, ENTER");
+		check(er::scriptAll().size() == er::routeToList().size() + 2 && er::routeToList().back().key == "up" && er::routeToList().back().until.lastLine == er::g_allLine,
+			"erase all: the route ends with UP until the ALL line, then ENTER, ENTER");
+
+		// CI run 41351441000: after an erase the machine kept its cursors. ENTER on GLOBAL SLOT shows SAMPLE MGR picked in the third icon's
+		// list, ENTER there shows the MODE column on ERASE, and the list's cursor is on ROM-11. The job skips what is shown and brings the
+		// list's cursor up to ALL before anything else
+		{
+			const auto all = er::scriptAll();
+			std::vector<size_t> enters;
+			for(size_t i = 0; i < all.size(); ++i)
+				if(all[i].key == "enter")
+					enters.push_back(i);
+			const Remember remember = [&](const size_t _step, er::Screen& _shown)
+			{
+				if(_step == enters[0])
+					_shown.full = 0xb035a8f846ff3715ull;	// SAMPLE MGR in the third icon's list
+				else if(_step == enters[1])
+					_shown.mode = er::g_modeErase;
+			};
+			keys.clear();
+			outcome = run(all, -1, keys, 11, remember);
+			const auto first = std::find(keys.begin(), keys.end(), "enter");
+			const auto second = std::find(first + 1, keys.end(), "enter");
+			const auto third = second == keys.end() ? keys.end() : std::find(second + 1, keys.end(), "enter");
+			check(outcome.first == er::Job::State::Finished && second == first + 1 && third != keys.end() && *(second + 1) == "right"
+				&& std::count(second + 2, third, std::string("up")) == 11 && third - second == 13,
+				"kept cursors: the GLOBAL list's and MODE's keys are skipped, UP x11 to ALL, then the ENTERs");
+		}
+		// the list never shows ALL: the job stops after a list's worth of UP, and no ENTER of the erase is pressed
+		{
+			keys.clear();
+			outcome = run(er::scriptAll(), -1, keys, 0);
+			check(outcome.first == er::Job::State::Stopped && std::count(keys.begin(), keys.end(), std::string("up")) == er::g_listLines
+				&& std::count(keys.begin(), keys.end(), std::string("enter")) == 2 && outcome.second.find("up") != std::string::npos,
+				"no ALL line: stopped after 53 UPs, the route's two ENTERs only");
+		}
 
 		// through the desk
 		std::vector<std::string> pressed;

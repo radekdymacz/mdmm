@@ -3048,7 +3048,11 @@ const MdJourneys = (() => {
 				sendParam(c.r, "syn", "LEN", 32); await until(idle, 4000); await sleep(1500);	/* 8 steps, as the firmware test (mdDeskFirmwareTest): the recorder ends inside the pattern */
 				tele.steps = []; u.click("#play"); },
 				machine: c => ok(kit().tracks[c.r].machine === "RAM-R" + c.n && trigsOf(c.r).includes(0) && !!tele.last?.playing, `track ${kit().tracks[c.r].machine}, trigs ${trigsOf(c.r)}, playing ${tele.last?.playing}`), within: 12000 },
-			{ say: "STOP after a few seconds: the take shows in the RAM slot, the machine holds samples in it", act: async u => { await sleep(4000); if (V.playing) u.click("#play"); await until(() => !V.playing, 4000); },
+			/* STOP once the machine has played the take's 8 steps (its own steps, not wall time: CI run 41351441000 stopped after 4 s inside
+			   the take on a slow runner; the bank showed 0.09 s, the copy sent that, and the whole take, 0.96 s, came after) */
+			{ say: "STOP once the take's steps have played: the take shows in the RAM slot, the machine holds samples in it", act: async u => {
+				const past = () => { const s = tele.steps, i = s.indexOf(0); return i >= 0 && s.slice(i).some(x => x >= 9); };
+				await sleep(1000); await until(past, 30000); if (V.playing) u.click("#play"); await until(() => !V.playing, 4000); },
 				/* the take is the length that holds still for 3 s after STOP: the bank read in the middle of the take gives a shorter one
 				   (CI run 41336239454: 0.21 s here, 0.57 s by step 6; main's runs read the whole take, 1.00 s) */
 				machine: c => { const t = smpSlotOf("ram", c.n - 1), len = t && !t.empty ? t.length : 0, now = performance.now();
@@ -3405,7 +3409,8 @@ const MdJourneys = (() => {
 			{ say: "Arrange: pad A01, then Repeat + twice (the row plays three times), then pad A02", act: async (u, c) => {
 				u.click('[data-set="songpick"] button[data-v="song"]'); await until(() => V.songMode === true && !!$1('[data-addpat="0"]'), 8000); await sleep(300); u.click('[data-addpat="0"]'); await until(() => songRows().length === 2, 4000);
 				/* the row's inspector (with Repeat) is drawn after the machine's song comes back: wait for it */
-				for (let i = 0; i < 2; i++) { await until(() => !!$1('[data-step="rep"][data-d="1"]'), 6000); const r = songRows()[0].repeats; u.click('[data-step="rep"][data-d="1"]'); await until(() => songRows()[0].repeats === r + 1, 4000); }
+				/* CI run 41351441000 (once; it passed in 41336239454 with the same page and journey): no Repeat key in 6 s. Say what the page held */
+				for (let i = 0; i < 2; i++) { if (!await until(() => !!$1('[data-step="rep"][data-d="1"]'), 6000)) throw new Error(`no Repeat key (+ ${i + 1}): rows ${JSON.stringify(songRows().map(r => [r.pattern, r.repeats]))}, song ${V.songSlot + 1}, songMode ${V.songMode}, reload ${V.songReload}, tx ${!!desk().tx}, loading ${desk().loading}, row picked ${!!$1("#tl .scell.sel")}`); const r = songRows()[0].repeats; u.click('[data-step="rep"][data-d="1"]'); await until(() => songRows()[0].repeats === r + 1, 4000); }
 				u.click('[data-addpat="1"]'); },
 				machine: () => ok(songRows().length === 3 && songRows()[0].repeats === 2 && songRows()[1].pattern === 1, "rows " + JSON.stringify(songRows().map(r => [r.pattern, r.repeats]))), within: 8000 },
 			{ say: "PATTERN, then SONG: the machine takes the edited song", act: async u => { u.click('[data-set="songpick"] button[data-v="pattern"]'); await until(() => V.songMode === false, 4000); await sleep(300);

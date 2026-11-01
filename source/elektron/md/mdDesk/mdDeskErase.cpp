@@ -1,5 +1,6 @@
 #include "mdDeskErase.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <utility>
 
@@ -26,7 +27,7 @@ namespace mdDesk::erase
 
 		bool unchecked(const Expect& _e)
 		{
-			return !_e.full && !_e.header && !_e.mode && !_e.window && _e.prompt == Expect::Prompt::Any && !_e.changes;
+			return !_e.full && !_e.header && !_e.mode && !_e.window && !_e.lastLine && _e.prompt == Expect::Prompt::Any && !_e.changes;
 		}
 
 		Expect keyed(const uint64_t _full)
@@ -61,6 +62,12 @@ namespace mdDesk::erase
 				s += " mode " + hex(_e.mode);
 			if(_e.window)
 				s += " window " + hex(_e.window);
+			if(_e.lastLine)
+				s += " lastLine " + hex(_e.lastLine);
+			for(const auto f : _e.alsoFull)
+				s += " or full " + hex(f);
+			for(const auto m : _e.alsoMode)
+				s += " or mode " + hex(m);
 			if(_e.prompt != Expect::Prompt::Any)
 				s += _e.prompt == Expect::Prompt::Asked ? " prompt asked" : " prompt list";
 			if(_e.changes)
@@ -89,6 +96,7 @@ namespace mdDesk::erase
 		s.header = hashOf(_lcd, [](uint32_t, const uint32_t _y) { return _y < 20; });
 		s.mode = hashOf(_lcd, [](const uint32_t _x, const uint32_t _y) { return _y >= 20 && _x < 33; });
 		s.window = hashOf(_lcd, [](const uint32_t _x, const uint32_t _y) { return _x >= 18 && _x <= 107 && _y >= 7 && _y <= 56; });
+		s.lastLine = hashOf(_lcd, [](const uint32_t _x, const uint32_t _y) { return _x >= 34 && _x <= 82 && _y >= 53 && _y <= 59; });
 		for(uint32_t y = 34; y < 62; ++y)
 			for(uint32_t x = 90; x < 122; ++x)
 				s.prompt += lit(_lcd, x, y) ? 1u : 0u;
@@ -100,7 +108,7 @@ namespace mdDesk::erase
 		if(!_screen.valid)
 			return "no screen";
 		return "full " + hex(_screen.full) + " header " + hex(_screen.header) + " mode " + hex(_screen.mode) + " window " + hex(_screen.window)
-			+ " prompt " + std::to_string(_screen.prompt);
+			+ " lastLine " + hex(_screen.lastLine) + " prompt " + std::to_string(_screen.prompt);
 	}
 
 	std::vector<std::string> textOf(const std::vector<uint8_t>& _lcd)
@@ -127,13 +135,19 @@ namespace mdDesk::erase
 	{
 		if(!_screen.valid)
 			return false;
-		if(full && _screen.full != full)
+		const auto either = [](const uint64_t _v, const uint64_t _want, const std::vector<uint64_t>& _also)
+		{
+			return _v == _want || std::find(_also.begin(), _also.end(), _v) != _also.end();
+		};
+		if(full && !either(_screen.full, full, alsoFull))
 			return false;
 		if(header && _screen.header != header)
 			return false;
-		if(mode && _screen.mode != mode)
+		if(mode && !either(_screen.mode, mode, alsoMode))
 			return false;
 		if(window && _screen.window != window)
+			return false;
+		if(lastLine && _screen.lastLine != lastLine)
 			return false;
 		if(prompt == Prompt::List && _screen.asked())
 			return false;
@@ -152,23 +166,42 @@ namespace mdDesk::erase
 		s.push_back({"hold:function", {}});
 		s.push_back({"patternSong", windowed(g_globalSlot)});
 		s.push_back({"release:function", windowed(g_globalSlot)});
-		s.push_back({"enter", keyed(0x3b2b98d365761c6cull)});		// GLOBAL 1 EDIT
-		s.push_back({"down", keyed(0x30d97f2d652ec45full)});
-		s.push_back({"down", keyed(0xdc8b47903cd13bc3ull)});		// the third icon
-		s.push_back({"right", keyed(0x14660a6e19a622f1ull)});		// its list
-		s.push_back({"down", keyed(0x05db12553f74517dull)});
-		s.push_back({"down", keyed(0xb035a8f846ff3715ull)});		// SAMPLE MGR
-		s.push_back({"enter", inSampleMgr(g_modeReceive)});
-		s.push_back({"down", inSampleMgr(g_modeSend)});
-		s.push_back({"down", inSampleMgr(g_modeRename)});
-		s.push_back({"down", inSampleMgr(g_modeErase)});
-		s.push_back({"right", inSampleMgr(g_modeList, Expect::Prompt::List)});	// the list, on ROM-01
+		// GLOBAL 1 EDIT, on its first icon on a fresh machine, else where the last visit left it (one of the route's screens)
+		const std::vector<uint64_t> global = {0x3b2b98d365761c6cull, 0x30d97f2d652ec45full, 0xdc8b47903cd13bc3ull, 0x14660a6e19a622f1ull,
+			0x05db12553f74517dull, 0xb035a8f846ff3715ull};
+		Expect edit = keyed(global[0]);
+		edit.alsoFull.assign(global.begin() + 1, global.end());
+		s.push_back({"enter", edit});
+		const char* keys[] = {"down", "down", "right", "down", "down"};	// the third icon, its list, SAMPLE MGR
+		for(size_t i = 0; i < 5; ++i)
+		{
+			Step k{keys[i], keyed(global[i + 1])};
+			k.skippable = true;
+			s.push_back(k);
+		}
+		// SAMPLE MGR: the MODE column's cursor on RECEIVE on a fresh machine, else where it was left
+		Expect sampleMgr = inSampleMgr(g_modeReceive);
+		sampleMgr.alsoMode = {g_modeSend, g_modeRename, g_modeErase};
+		s.push_back({"enter", sampleMgr});
+		for(const auto m : {g_modeSend, g_modeRename, g_modeErase})
+		{
+			Step k{"down", inSampleMgr(m)};
+			k.skippable = true;
+			s.push_back(k);
+		}
+		s.push_back({"right", inSampleMgr(g_modeList, Expect::Prompt::List)});	// the list, on the line last left (ROM-01 when fresh)
+		Step all{"up", inSampleMgr(g_modeList, Expect::Prompt::List, true)};
+		all.repeat = g_listLines;
+		all.until = inSampleMgr(g_modeList, Expect::Prompt::List);
+		all.until.lastLine = g_allLine;
+		s.push_back(all);	// UP until ALL (the list wraps from ROM-01 to ALL)
 		return s;
 	}
 
 	std::vector<Step> scriptOne(const uint8_t _slot)
 	{
 		auto s = routeToList();
+		s.push_back({"down", inSampleMgr(g_modeList, Expect::Prompt::List, true)});	// from ALL round to ROM-01
 		for(uint8_t i = 0; i < _slot; ++i)
 			s.push_back({"down", inSampleMgr(g_modeList, Expect::Prompt::List, true)});
 		s.push_back({"enter", inSampleMgr(g_modeList, Expect::Prompt::Asked, true)});	// the question
@@ -178,8 +211,7 @@ namespace mdDesk::erase
 
 	std::vector<Step> scriptAll()
 	{
-		auto s = routeToList();
-		s.push_back({"up", inSampleMgr(g_modeList, Expect::Prompt::List, true)});	// the list wraps to ALL
+		auto s = routeToList();	// the cursor on ALL
 		s.push_back({"enter", inSampleMgr(g_modeList, Expect::Prompt::Asked, true)});
 		s.push_back({"enter", inSampleMgr(g_modeList, Expect::Prompt::Asked, true)});
 		return s;
@@ -282,6 +314,23 @@ namespace mdDesk::erase
 				}
 			}
 			m_waiting = false;
+			if(done.repeat > 0)
+			{
+				if(!done.until.matches(_screen, m_before))
+				{
+					if(m_repeated >= done.repeat)
+					{
+						m_seen = "step " + std::to_string(m_next) + " " + done.key + " x" + std::to_string(m_repeated) + ": saw " + describe(_screen)
+							+ "; expected" + describeExpect(done.until);
+						stop("The machine's screen did not show what " + std::to_string(m_repeated) + " presses of " + done.key + " lead to (step "
+							+ std::to_string(m_next) + " of " + std::to_string(m_script.size()) + ").");
+						return m_state;
+					}
+					--m_next;	// the same key again
+				}
+				else
+					m_repeated = 0;
+			}
 			if(m_next >= m_script.size())
 			{
 				m_settled = true;
@@ -289,6 +338,20 @@ namespace mdDesk::erase
 				return m_state;
 			}
 		}
+
+		// the machine already shows what the next skippable steps lead to: on after the furthest one shown
+		if(m_next < m_script.size() && m_script[m_next].skippable)
+		{
+			size_t shown = m_script.size();
+			for(size_t k = m_next; k < m_script.size() && m_script[k].skippable; ++k)
+				if(m_script[k].expect.matches(_screen, _screen))
+					shown = k;
+			if(shown < m_script.size())
+				m_next = shown + 1;
+		}
+		// a repeat step whose screen is there before its first press is done
+		if(m_next < m_script.size() && m_script[m_next].repeat > 0 && m_repeated == 0 && m_script[m_next].until.matches(_screen, _screen))
+			++m_next;
 
 		if(m_next >= m_script.size())
 		{
@@ -304,6 +367,8 @@ namespace mdDesk::erase
 			return m_state;
 		}
 		m_erasing = m_next + 1 >= m_script.size();
+		if(next.repeat > 0)
+			++m_repeated;
 		++m_next;
 		m_waiting = true;
 		m_pressedAt = _nowMs;
