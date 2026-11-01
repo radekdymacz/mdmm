@@ -260,7 +260,7 @@ At the right end of the LCD, two bars show the level of the left and right outpu
 ## THE EDITOR'S MENU
 <!-- rows: MM-X17 @bea6bb -->
 
-Right-click the empty part of the header, or the track rail. The editor's menu opens, with the editor and its version as its title. It holds the zoom of the page, the updates, the log folder and the **Developer** switches.
+Right-click the empty part of the header, or the track rail. The editor's menu opens, with the editor and its version as its title. It holds the zoom of the page, the updates, the log folder, **Save Diagnostics…** and the **Developer** switches. **Save Diagnostics…** asks where to save and writes one zip: the editor's log, its version and your system, your audio and MIDI setup, the editor's settings and the last performance capture, never a ROM, the machine's memory, a project or a sample. Send that zip with a bug report. It also works when the page does not start: right-click the empty window.
 
 1. Right-click the header. The menu opens.
 2. Move to **Zoom** and press the right arrow. Its steps open, with the first one focused. Click a step. The menu closes and the page zooms.

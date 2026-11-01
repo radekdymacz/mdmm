@@ -473,6 +473,14 @@ namespace mdJucePlugin
 		bool comInitialised = false;
 	};
 
+	juce::String WebView2Page::installedRuntimeVersion()
+	{
+		LPWSTR version = nullptr;
+		if(FAILED(GetAvailableCoreWebView2BrowserVersionString(nullptr, &version)))
+			return {};
+		return takeString(version);
+	}
+
 	WebView2Page::WebView2Page(juce::File _userDataFolder, Callbacks _callbacks)
 	{
 		setOpaque(true);

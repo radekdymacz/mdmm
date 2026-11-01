@@ -36,6 +36,7 @@ list(APPEND SOURCES
 	mdEditorPages.cpp mdEditorPages.h
 	mdDeskHost.cpp mdDeskHost.h
 	mdStandaloneApp.cpp
+	mdDiagnosticsZip.cpp mdDiagnosticsZip.h mdDiagnosticsSave.cpp mdDiagnosticsSave.h
 	mdBootDiagnostics.cpp mdBootDiagnostics.h mdCpuLoad.h mdOutputLevel.h mdMixMeters.h mdMidiIn.h mdMachineMemory.h
 	mdMachineMemoryService.cpp mdMachineMemoryService.h mdMachineMemoryDevice.cpp mdMachineMemoryDevice.h
 	mdMachineFacts.cpp mdMachineFacts.h
@@ -473,6 +474,16 @@ function(mdmm_plugin_targets)
 	add_test(NAME mdRomInstallTest COMMAND mdRomInstallTest)
 	set_tests_properties(mdRomInstallTest PROPERTIES LABELS "UnitTest")
 	set_property(TARGET mdRomInstallTest PROPERTY FOLDER "Elektron/test")
+
+	# 1.0 review M5 (Save Diagnostics): the zip a user sends (mdDiagnosticsZip.h, pure over juce_core): the logs, the
+	# text and the settings go in; a fake ROM and a fake machine-memory file beside them do not. No ROM.
+	add_executable(mdDiagnosticsZipTest mdDiagnosticsZipTest.cpp mdDiagnosticsZip.cpp mdDiagnosticsZip.h)
+	target_include_directories(mdDiagnosticsZipTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+	target_link_libraries(mdDiagnosticsZipTest PRIVATE juce::juce_core)
+	target_compile_definitions(mdDiagnosticsZipTest PRIVATE JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1 JUCE_STANDALONE_APPLICATION=1 JUCE_USE_CURL=0)
+	add_test(NAME mdDiagnosticsZipTest COMMAND mdDiagnosticsZipTest)
+	set_tests_properties(mdDiagnosticsZipTest PROPERTIES LABELS "UnitTest")
+	set_property(TARGET mdDiagnosticsZipTest PROPERTY FOLDER "Elektron/test")
 
 	# The editors' own settings files: the one-time copy from upstream's names (mdSettingsMigration.h).
 	add_executable(mdSettingsMigrationTest mdSettingsMigrationTest.cpp mdSettingsMigration.cpp)

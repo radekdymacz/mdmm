@@ -1,6 +1,7 @@
 #include "mdPluginEditorState.h"
 
 #include "mdAbout.h"
+#include "mdDiagnosticsSave.h"
 
 #include "mdEditorPages.h"
 #include "mdPageEditor.h"
@@ -75,6 +76,15 @@ namespace mdJucePlugin
 			{
 				if(folder.createDirectory().wasOk())
 					folder.revealToUser();
+			});
+		}));
+		// 1.0 review M5: one zip to send with a report (the logs, versions, system, audio and MIDI setup, settings, the last
+		// performance capture; never a ROM or the machine's memory). Native, so it works when the page failed (B-201).
+		m.items.push_back(action("save-diagnostics", "Save Diagnostics...", [&processor]
+		{
+			juce::MessageManager::callAsync([&processor]	// after the menu closed
+			{
+				diagnosticsSave::run(processor);
 			});
 		}));
 		if(juce::JUCEApplicationBase::isStandaloneApp())
