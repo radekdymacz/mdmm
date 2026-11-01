@@ -28,6 +28,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **From:** main's nightly firmware run 41265534347 (9560c35a1, 2026-11-01), ctest `mdMachineMemoryFirmwareTest_md`: "the work under the device lock off the audio thread under 10.0 ms a hold (worst 10.445 ms, mdPluginProcessor.cpp:717)". Every other check of the test passed; the MM test passed. Not reported by a tester.
 - **Where:** the factory-flash reboot check in `mdPluginProcessor.cpp` takes the lock and, when the cache is ready, copies the factory flash (`captureFactoryFlashCachePersistence`) inside it. Once per boot, so a loaded runner can push one copy over the budget.
 - **Next:** if it comes back, take the copy out of the lock (a snapshot pointer under the lock, the copy after it), as the state capture does (DESIGN-audio-lock.md step 1). The budget stays 10 ms.
+- **Fix:** `Device::captureFactoryFlashCachePersistence` now shares the flash (`Hardware::shareFactoryFlashSnapshot`: two reference counts, the cache and image are replaced, never changed) and the processor copies it after the lock (`SharedFactoryFlashSnapshot::copyTo`) in both the reboot check and the deferred-state commit. Needs the nightly firmware run to confirm. Per-site numbers: the test prints `lock hold file:line: N holds, mean, max`; read that line from each nightly's `gh run view <id> --log` for a week.
 
 ## B-198 · Monomachine: two factory patterns did not play in the real-factory journey (open, seen once)
 
