@@ -25,7 +25,7 @@ for machine in md mm; do
 	else
 		product="${MDMM_PRODUCT_NAME_MM}"; editor="Monomachine Editor"; asset="Monomachine-Editor"
 	fi
-	for need in "${work}/all/${product}.exe" "${work}/all/${product}.vst3" "${work}/all/LICENSE.md"; do
+	for need in "${work}/all/${product}.exe" "${work}/all/${product}.vst3" "${work}/all/LICENSE.md" "${work}/all/THIRD-PARTY-NOTICES.md"; do
 		if [[ ! -e "${need}" ]]; then
 			echo "Not in the Windows package: $(basename "${need}")" >&2
 			exit 1
@@ -33,7 +33,7 @@ for machine in md mm; do
 	done
 	dir="${work}/${asset}-Windows-x64"
 	mkdir -p "${dir}"
-	cp -R "${work}/all/${product}.exe" "${work}/all/${product}.vst3" "${work}/all/LICENSE.md" "${dir}/"
+	cp -R "${work}/all/${product}.exe" "${work}/all/${product}.vst3" "${work}/all/LICENSE.md" "${work}/all/THIRD-PARTY-NOTICES.md" "${dir}/"
 	# The WebView2 loader is linked into both binaries (mdmmWindowsWebView.cmake); its licence asks for the notice.
 	sed 's/$/\r/' "${script_dir}/WebView2-LICENSE.txt" > "${dir}/WebView2-LICENSE.txt"
 	sed -e "s/@EDITOR@/${editor}/g" -e "s/@PRODUCT@/${product}/g" -e "s/@VERSION@/${version}/g" \

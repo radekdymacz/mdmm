@@ -35,6 +35,7 @@ keychain="${MDMM_SIGN_KEYCHAIN:-}"
 install_template="${script_dir}/pkg-resources/dmg-install.txt"
 license_preamble="${script_dir}/pkg-resources/license-preamble.txt"
 license_md="${script_dir}/../../LICENSE.md"
+notices_md="${script_dir}/../../THIRD-PARTY-NOTICES.md"
 
 if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   echo "VERSION must be MAJOR.MINOR.PATCH, got: ${version}" >&2
@@ -101,6 +102,7 @@ for row in "${machines[@]}"; do
       "${install_template}" > "${staging}/Install.txt"
   # GPL-3: the licence travels with the binaries, preamble first, as in the package
   { cat "${license_preamble}"; echo; cat "${license_md}"; } > "${staging}/LICENSE.txt"
+  cp "${notices_md}" "${staging}/THIRD-PARTY-NOTICES.txt"
   for bundle in "${staging}/${app_name}.app" "${staging}/${app_name}.vst3" "${staging}/${app_name}.component"; do
     codesign --verify --strict --deep "${bundle}"
   done
@@ -125,7 +127,8 @@ for row in "${machines[@]}"; do
   hdiutil attach -quiet -readonly -nobrowse -noautoopen -mountpoint "${mount_point}" "${dmg}"
   for expected in "${app_name}.app/Contents/MacOS/${app_name}" \
       "${app_name}.vst3/Contents/MacOS/${app_name}" \
-      "${app_name}.component/Contents/MacOS/${app_name}" "Install.txt" "LICENSE.txt"; do
+      "${app_name}.component/Contents/MacOS/${app_name}" "Install.txt" "LICENSE.txt" \
+      "THIRD-PARTY-NOTICES.txt"; do
     if [[ ! -f "${mount_point}/${expected}" ]]; then
       echo "Disk image self-check failed, missing: ${expected}" >&2
       exit 6

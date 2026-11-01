@@ -322,7 +322,7 @@ try {
         }
     }
     Copy-Item -LiteralPath $mdStandalone.FullName, $mmStandalone.FullName,
-        (Join-Path $SourceDir 'LICENSE.md') -Destination $packageStage
+        (Join-Path $SourceDir 'LICENSE.md'), (Join-Path $SourceDir 'THIRD-PARTY-NOTICES.md') -Destination $packageStage
     Compress-Archive -LiteralPath @(Get-ChildItem -LiteralPath $packageStage |
         ForEach-Object FullName) -DestinationPath $zipPath -CompressionLevel Optimal
 } finally {

@@ -126,6 +126,8 @@ for row in "Machinedrum-Editor-macOS|${MDMM_PRODUCT_NAME_MD}|md|com.nativekloud.
   [[ -f "${mount_point}/Install.txt" ]] || fail "Install.txt missing from ${dmg}"
   grep -q "GNU GENERAL PUBLIC LICENSE" "${mount_point}/LICENSE.txt" 2>/dev/null \
     || fail "LICENSE.txt (GPL) missing from ${dmg}"
+  grep -q "Third-party notices" "${mount_point}/THIRD-PARTY-NOTICES.txt" 2>/dev/null \
+    || fail "THIRD-PARTY-NOTICES.txt missing from ${dmg}"
   [[ "$(readlink "${mount_point}/Applications")" == "/Applications" ]] \
     || fail "Applications link missing from ${dmg}"
   check_bundle "${mount_point}/${app_name}.app" app

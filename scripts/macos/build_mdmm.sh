@@ -392,6 +392,7 @@ mkdir -p "${package_dir}"
 /usr/bin/ditto "${md_au}" "${package_dir}/${md_name}.component"
 /usr/bin/ditto "${mm_au}" "${package_dir}/${mm_name}.component"
 /usr/bin/ditto "${source_dir}/LICENSE.md" "${package_dir}/LICENSE.md"
+/usr/bin/ditto "${source_dir}/THIRD-PARTY-NOTICES.md" "${package_dir}/THIRD-PARTY-NOTICES.md"
 # The setup command and the notes, with the product names filled in.
 render_product_names() {
   sed -e "s|{{PRODUCT_NAME_MD}}|${MDMM_PRODUCT_NAME_MD}|g" \

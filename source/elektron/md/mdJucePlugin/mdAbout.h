@@ -32,7 +32,9 @@ namespace mdJucePlugin::about
 	inline std::string text()
 	{
 		return std::string("Version ") + mdmm::editorVersion() + "\n" + MDMM_VENDOR + " \xc2\xb7 " + MDMM_WEBSITE + "\n\n"
-			"Free software under the GNU General Public License, version 3.\n\n"
+			"Free software under the GNU General Public License, version 3.\n"
+			"The third-party code and fonts inside, and their licences: THIRD-PARTY-NOTICES.md in the download, or "
+			"https://github.com/radekdymacz/mdmm/blob/main/THIRD-PARTY-NOTICES.md\n\n"
 			"Built on gearmulator-md-mm by joelanders (the Machinedrum and Monomachine emulation) and Gearmulator by "
 			"The Usual Suspects (dsp56300) and its contributors. Thanks to Elektron for the instruments.";
 	}
