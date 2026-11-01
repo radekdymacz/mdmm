@@ -4,10 +4,12 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
-## B-202 · Monomachine: the song row transpose journey saw no read-back of the song (open, seen once)
+## B-202 · Monomachine: the song row transpose journey saw no read-back of the song (fixed on the branch, awaiting CI)
 
 - **From:** full CI run 41305887640 (`release/0.0.0-ci-test`, ed56c4105), journey `mm-song-row-settings` step 3: "Transpose + twice on the row": the cell showed +1, the machine held 1, and the toast said "The machine did not read back the song that was sent. Showing what it holds." The branch changed no song code (B-189 arpeggiator bits, B-201 Linux web view, journey order). Not reported by a tester.
-- **Status:** open, a flake for now. Look again if it comes back.
+- **Cause (read from the report and the code, 2026-11-01):** the song's read-back was never asked. The row added in step 2 is a song dump with its read-back (a read of song 1 through the load queue); step 3's first + sent the next dump while that read was still on its way. When that dump was on the wire the push asked for its read-back (`MmMachine::pumpPushes`, AskBack: `request` -> `LoadQueue::want`), and `want` drops a request for a document already in flight. The read in flight was asked before the dump: its reply held the song before the +, the push took it as an older reply and waited (`ReadBackAction::Wait`) for a read-back that was never sent, and after 8 s gave up with the toast; the machine held transpose 1 (the dump had landed). The desk's status lines show no read-back answered between 13:22:00 and 13:22:19 (`roundTripMs` unchanged). A product bug: a person who edits a song row twice quickly meets it too.
+- **Fix (product, branch `fix/0.9-e2e-flakes`):** `LoadQueue::wantFresh`: a read wanted while the same document's read is in flight is asked again once that one is answered (a resend after a timeout counts as fresh). The MM's read-backs (AskBack, and HW MIDI's Send) use it. Test: `deskCoreTest` load queue (wanted fresh while in flight; nothing in flight; a resend). The journey is unchanged, so it proves the fix: one full MM firmware E2E on CI.
+- **Status:** fixed on the branch, awaiting CI. The second + of the failed run changed nothing after the toast; look at that if the journey fails again with the fix.
 
 ## B-201 · Linux: Machinedrum Editor on Fedora KDE shows an empty window, no page (open)
 
@@ -19,10 +21,12 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Status:** open. Fix (2026-11-01, branch fix/0.9-linux-blank-webview), not yet verified on Fedora: the web view's helper sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` and `WEBKIT_DISABLE_COMPOSITING_MODE=1` unless already set (juce_WebBrowserComponent_linux.cpp); the page reports its first frame (`painted`, deskBridge.js) and, if none arrives within 15 s of the page being up and showing, the window draws its native failure card with a hint (X11 session or the two variables) (`WebPageHost::checkPainted`); the start-up log lists the session variables, the two WebKit variables and the embedded window's X11 map state. Still needed from the user: what they see with it, `editor-*.log` and `-previous.log`, Fedora version, session type, NVIDIA driver.
 - **Embed handshake (2026-11-01, branch fix/0.9-linux-embed-handshake), unproven on Fedora:** the helper now sets a 640x480 size request, realizes, shows and (if needed) maps the plug before it sends the window id; the host sends its size in X11 pixels (scale factor applied, as XEmbedComponent does) with every resize, and the helper sets the plug and web view size and queues a redraw; the helper logs the GTK and WebKitGTK runtime versions once and the plug's allocation 0.5 s after the first size; the host maps the embedded window with XMapWindow if it is not viewable 2 s after the embed, and logs it (juce_WebBrowserComponent_linux.cpp, Linux only). CI proof: the Linux start tests on Ubuntu 22.04/24.04 and SteamOS stay green.
 
-## B-200 · Machinedrum: the tempo release journey saw no tempo change after the panic toast (open, seen once)
+## B-200 · Machinedrum: the tempo release journey saw no tempo change after the panic toast (fixed on the branch, awaiting CI)
 
 - **From:** firmware E2E run 41282380534 (`release/0.0.0-ci-test`, 97cc9abfb, MM-only desk changes), journey `md-top-tempo-release` step 1: "the LCD follows, the tempo goes once, at the release": LCD 125.0, machine tempo 125; the toast "Every voice off: STOP twice." from the journey before (`md-top-panic`) was still shown. MD 190 passed. Not reported by a tester.
-- **Status:** open, a flake for now: the panic's double STOP may still have been on its way when the drag began. Look again if it comes back.
+- **Cause (read from the report and the code, 2026-11-01):** not the panic (its toast simply stays until the next one). The journey before, `md-top-tempo-window`, ends with the = key's nudge; its release asks for the global again (`cmdNudge`, `load(Global)`). On the runner (the machine at 0.4x real time) that read answered 3.4 s later, at 7:42:48, after this journey's drag had sent the new tempo. `MdMachine::onGlobal` took any global dump that arrives while a global push is busy as its read-back: it settled the old tempo (125), so the page and the global document went back to 125 while the machine had the new one. A product bug (a tempo change right after a nudge on a slow machine shows the old tempo), and a journey that started on the previous journey's read.
+- **Fix (product and journey, branch `fix/0.9-e2e-flakes`):** `onGlobal` no longer takes a dump whose tempo differs from the tempo still in flight as the read-back: the push waits for its own read-back (or its timeout fails it and reads again) and the page keeps the tempo sent. Test: `mdDeskTest` transport (an older reply with the old tempo after a tempo change: the global keeps the tempo sent; its own read-back confirms it). The MD journeys' guard (`between`) now waits through `Journey.settle` until nothing is on its way and no read is pending (`desk.tx`, `desk.loading`) for 500 ms, so a journey does not start on the answers of the one before.
+- **Status:** fixed on the branch, awaiting CI (one full MD firmware E2E).
 
 ## B-199 · Machinedrum: one device-lock hold of 10.4 ms in the machine-memory firmware test (open, seen once)
 
@@ -34,9 +38,9 @@ where it came from, the setup, what happens, what should happen, status.*
 ## B-198 · Monomachine: two factory patterns did not play in the real-factory journey (open, seen once)
 
 - **From:** full CI run 41179644105 (main a31053d99), firmware journey `mm-real-factory-patterns`: "pattern 49: did not start (pressed twice); pattern 57: only 2 steps moved". Patterns 1 to 41 played as always, 41 took 6 s instead of 3; the desk's status lines show the pattern selected and SYSEX RECV idle throughout. Not reported by a tester.
-- **Parked (Radek, 2026-11-01):** after 0.9. Found by bisect: `mm-wire-cc` before it is the cause, and in it the GLOBAL base channel step alone (1, OFF, back to 0). The machine then takes the CC on T1 (the kit is edited) but records no lock. `mmRecLockGlobalFirmwareTest` does the same round trip through the desk without the plug-in and gets its lock (run 41300417248), so the cause is in the plug-in path (MmStudioLink, the Controller). A user meets it only by changing the base channel and then live-recording locks in the same session. `mm-wire-cc` now runs `alone: true` so the full E2E stays a proof of the rest.
 - **Not B-195:** the journey runs third, before any DigiPRO work: no 0x5E was sent, so neither the held status polls nor the SYSEX RECV change take part. It passed in the five full runs before and after the B-195 changes (nightlies 40992417929, 41160387303, CI 41120339777, the branch's 41144045158 and 41174130427).
-- **Status:** open, a flake for now: the transport telemetry or the emulator stood still for about 20 s. Look again if it comes back.
+- **Status:** open, a flake for now: the transport telemetry or the emulator stood still for about 20 s. Look again if it comes back. Not quarantined: one failure in the full runs since, and the journey runs third, before any journey whose answers could still be on their way. The MM guard now waits for SYSEX RECV and the pushes to be quiet before each journey (`Journey.settle`, branch `fix/0.9-e2e-flakes`); that changes nothing here (SYSEX RECV was idle throughout). Next if it comes back: log the telemetry's step and `playing` with their times in `playFor`, and the emulator's speed (the boot card's "runs at 0.4x real time"), with the failure.
+- (2026-11-01: a paragraph about B-196's bisect that stood here is moved to B-196.)
 
 ## B-197 · Monomachine: the multi trig journey dragged the split marker after a late kit read-back took it away (fixed in the journey)
 
@@ -47,6 +51,7 @@ where it came from, the setup, what happens, what should happen, status.*
 ## B-196 · Monomachine: LIVE RECORDING records no lock after a GLOBAL base channel change (open, parked after 0.9)
 
 - **From:** firmware journey `mm-seq-record-locks` step 5 ("locks [], value turned 67") in the full runs 41144045158, 41174130427, 41179644105, 41187311583 and 41193553307, and in the short run 41192356519 (the first 13 MM journeys); it passed in the runs before (40992417929, 41120339777, 41160387303) and alone after `mm-seq-locks` (41178825349). Not reported by a tester.
+- **Parked (Radek, 2026-11-01):** after 0.9. Found by bisect: `mm-wire-cc` before it is the cause, and in it the GLOBAL base channel step alone (1, OFF, back to 0). The machine then takes the CC on T1 (the kit is edited) but records no lock. `mmRecLockGlobalFirmwareTest` does the same round trip through the desk without the plug-in and gets its lock (run 41300417248), so the cause is in the plug-in path (MmStudioLink, the Controller). A user meets it only by changing the base channel and then live-recording locks in the same session. `mm-wire-cc` now runs `alone: true` so the full E2E stays a proof of the rest.
 - **Not B-195:** no 0x5E is sent in that part of the run, so the held status polls and `onPanel` do not act there; the rest of the B-195 merge does not touch that path.
 - **What the traces show** (the journey now logs the page's view every 25 ms from Alt+Space to the read-back): run 41192356519, with SYSEX RECV left before RECORD (a trial fix, taken back): recording on at 704 ms, the value sent at 880 ms on step 0, RECORD off at 1402 ms: no lock. Run 41193553307, with the journey waiting for step 1 but SYSEX RECV still parked from `mm-seq-locks`: the value sent on step 1 (the desk named step 2), no lock either; the pattern the page holds never changed while it recorded. In the passing runs the lock landed on step 2 or 3 (the trig the recording leaves). So each of two conditions lost it: the value in the start's step, and the recording on SYSEX RECV. Neither is measured on the firmware (`mmDeskFirmwareTest` reclock waits for SYSEX RECV to be left and for the playhead).
 - **Again (2026-10-31):** main's full CI run 41198483344 (41f5d6594): step 5 failed, the value turned on step 2 (the page named step 3), SYSEX RECV parked the whole time, no lock. So a value after step 0 is not enough on its own; the recording on SYSEX RECV loses it.
@@ -71,10 +76,12 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Status:** fixed on `fix/0.9-b195-digipro-stall`. Verified in the full firmware E2E run 41174130427 (`release/0.0.0-ci-test`, b9208fde1): MM 223 passed, 1 failed, 7 skipped; `mm-digipro-card` and `mm-digipro-jobs` passed, no cascade (the SysEx imports and Control learn journeys after them passed). `mmDigiproManagerFirmwareTest` passed in run 41174132336.
 - **Left in that run, not this bug:** `mm-seq-record-locks` step 5 (no lock recorded; the CC was turned while SYSEX RECV was still parked from `mm-seq-locks`), in both full runs on this branch (41144045158, 41174130427) but not in main's nightlies 40992417929 and 41160387303; it passes after `mm-seq-locks` alone (run 41178825349). No DigiPRO job or 0x5E runs there, so the branch's changes do not reach it: an order or timing case of its own, still open. MD: `md-sampler-ram-rom` failed once (main's nightly 41160387303 failed another MD journey, `md-mix-heads-trigs`): flaky, MM changes only.
 
-## B-194 · Monomachine: follow played track, HW MIDI step, left on track 2 after a key-split toast (open)
+## B-194 · Monomachine: follow played track, HW MIDI step, left on track 2 after a key-split toast (fixed in the journey, awaiting CI)
 
 - **From:** firmware E2E run 40782521940 (release/0.8.1), 2026-10-29, journey `mm-follow-played-track` step 13: "a note for track 3 leaves the selection": screen track 2; toast "Split the range up to 23". Passed in the other runs of the same commit.
-- **Status:** open. A key-split gesture or toast from the step before seems to take the note. Not a tester report.
+- **Cause (read from the code, 2026-11-01):** the journey's race, not the key split (its toast is `mm-perform-multi-map`'s, three journeys before, still shown). The step puts a HW MIDI machine document in front of the page, waits 100 ms, then sends the note: the plug-in sends its own machine document often (each status or SYSEX RECV change), and once one came in those 100 ms, so the note met the emulator engine again and FOLLOW PLAYED TRACK selected track 3 (index 2, "track 2" in the log), as it should on the emulator (`mmAdapter.js` followPlayed).
+- **Fix (journey, branch `fix/0.9-e2e-flakes`):** the HW document and the note go in one batch (`gm.recv` handles a batch in order, at once), so nothing comes between them.
+- **Status:** fixed on the branch, awaiting CI.
 
 ## B-193 · Machinedrum: the fine (Shift) knob drag test was disturbed by a late kit load (open)
 
@@ -83,7 +90,9 @@ where it came from, the setup, what happens, what should happen, status.*
 - **From:** firmware E2E run 40758434327, journey `md-sound-knob-steps` step 5 (plain 72 -> 61, fine 63); the toast "Loaded kit 1" appeared during the drag. The same journey passed on the same commit in CI run 40758431456; not reported by a tester.
 - **What happens:** the drag ended at 63 instead of the expected fine value.
 - **Likely cause:** a kit load from an earlier journey landed during the drag.
-- **Status:** open. Look at whether a late kit dump should overwrite a value that is being dragged.
+- **Read again (2026-11-01, report of run 40758434327):** the drag is not too long: plain 72 -> 61 is the value back where step 3 found it (61, then +1 and +10 by the wheel = 72), in all three failed runs. So the two wheel edits were undone during the plain drag; the fine drag then moved 2 from there, as it should. The desk said `loading 0` at 20:02:30 and 20:02:36 (no kit read pending), and the toast "Loaded kit 1" is the one `md-quick-start`'s tidy left (a toast stays until the next), so a late kit load is not shown. Not explained: what put the kit's value back (the working kit's expectation giving up and memory showing the old value, or a dump of the kit slot).
+- **Journey (branch `fix/0.9-e2e-flakes`):** the MD guard now waits until nothing is on its way and no read is pending before each journey (`Journey.settle`), and step 5 logs a trace of the kit's value, what the page shows, `tx`, `loading`, the kit slot and the toast every 25 ms through both drags; the failure prints it. The assertion is unchanged.
+- **Status:** open. Next: read the trace of the next failure; if the value goes back while `tx` and `loading` are quiet, measure in `mdDeskFirmwareTest` a kit reload followed by two CC edits on the kit that plays and a read of memory 3 s later.
 
 ## B-192 · Monomachine: a global change made while the editor still reads the machine may not be saved to the memory file (open)
 
@@ -91,6 +100,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **What happens:** after a DAW project opens, a GLOBAL change (MIDI base channel) made while the editor is still reading the machine (116 of 288 slots) reached the machine, but the machine-memory file was not written within 15 s.
 - **Should:** the change is saved, read or not.
 - **Status:** open. The test now waits until the editor has finished reading before it changes the global; the product case is not explained yet. Look at `MachineMemoryService::rebase` and `Watch::look`.
+- **Looked at (2026-11-01, branch `fix/0.9-e2e-flakes`):** not changed. It is a firmware ctest, not a journey, so the journeys' guard does not touch it. The second failure is at 'another global change is' with "The machine memory file is busy (another editor holds it)" retries (`MachineMemoryService::write`: the file lock not held), right after the test's standalone session closed. Next: log which instance holds the lock and when each retry runs, to tell a lock the closed standalone still held from one the plug-in's own read holds.
 
 ## B-191 · Machinedrum: M, M, Alt+M in a row left one track unmuted (fixed, awaiting CI)
 
@@ -386,7 +396,8 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Setup:** origin/main at 39cafd4cc, `scripts/mdmm-journeys.sh --background --tier machine mm`. In two full runs out of two three journeys fail: `mm-real-factory-songs` ("no factory song holds rows", also when run alone), `mm-real-sequence-plays` (peak 0.0002, toast "the machine loaded no kit when it was picked"; passes alone) and `mm-old-webkit` ("no piano roll for track 3" at the step menu; passes alone).
 - **What happens:** a journey passes or fails depending on what ran before it, so the machine state it starts from is not known.
 - **What should happen:** each journey starts from a known machine state.
-- **Status:** open.
+- **Since (2026-11-01, branch `fix/0.9-e2e-flakes`):** both editors' guards (`between`) now wait, before each journey, until the machine's answers to the journey before are in (`Journey.settle` in skins/shared/deskJourney.js: MD nothing on its way and no read pending, MM SYSEX RECV idle and no push waiting, for 500 or 600 ms, at most 15 s on the firmware; a guard that never got quiet says so in its "before:" line). That covers the late read-backs (B-193, B-197, B-200, B-202), not state a journey leaves on purpose (its tidy, `alone: true`).
+- **Status:** open: the three journeys named here are not proved in order since; the next full machine-tier run tells.
 
 ## B-159 · The download flow shows a "price" (site)
 

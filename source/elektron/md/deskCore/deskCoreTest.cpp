@@ -185,6 +185,33 @@ namespace
 		check(!q.next(1810, 800, true, p).send, "the gap between requests");
 		check(!q.next(1900, 800, false, p).send, "held while busy");
 		check(q.next(1900, 800, true, p).send.has_value(), "then it goes");
+
+		// B-202: a push's read-back while a read of the same document asked before its dump is in flight: that
+		// reply holds the document as it was, so the read-back is asked once it is answered (not swallowed)
+		LoadQueue<R> f;
+		f.want({0, 5}, true);
+		n = f.next(0, 800, true, p);
+		check(n.send && n.send->slot == 5, "a read in flight");
+		f.wantFresh({0, 5});
+		check(!f.next(100, 800, true, p).send && f.pending() == 1, "wanted fresh while in flight: not sent twice at once");
+		f.arrived({0, 5});
+		check(f.pending() == 1, "the older reply came: the fresh read is queued");
+		n = f.next(200, 800, true, p);
+		check(n.send && n.send->slot == 5, "and asked");
+		f.arrived({0, 5});
+		check(f.idle(), "its reply ends it");
+		f.wantFresh({0, 6});
+		n = f.next(300, 800, true, p);
+		check(n.send && n.send->slot == 6, "nothing in flight: wanted fresh is an urgent read");
+		f.arrived({0, 6});
+		check(f.idle(), "one read, no second");
+		f.want({0, 7}, true);
+		f.next(400, 800, true, p);
+		f.wantFresh({0, 7});
+		n = f.next(1300, 800, true, p);
+		check(n.send && n.send->slot == 7, "resent after its timeout: the resend is asked after the dump");
+		f.arrived({0, 7});
+		check(f.idle(), "so its reply is the fresh one: nothing asked again");
 	}
 
 	// A2: a request without a reply goes back into the queue with a backoff, a bounded number of

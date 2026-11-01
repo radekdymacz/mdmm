@@ -2451,6 +2451,26 @@ namespace
 			desk.tick();
 			check(ok() && std::any_of(wire.begin(), wire.end(), [&](const std::vector<uint8_t>& _b) { return _b == ed::mdSetTempo(tempo); })
 				&& desk.documents().global->tempo == tempo, "let go: back to the stored tempo, the global document unchanged");
+
+			// B-200: the tempo changed while a read of the global asked before it (the nudge's at the release) is still on
+			// its way: that reply holds the old tempo and is not the read-back; the global keeps the tempo sent until its own
+			serve(desk);
+			desk.onPageMessage(cmd(R"({"op":"tempo","bpm":137,"id":11})"));
+			const auto sentTempo = desk.documents().global->tempo;
+			check(sentTempo != tempo, "a new tempo");
+			now += 200;
+			desk.tick();
+			{
+				auto older = *desk.documents().global;
+				older.tempo = tempo;
+				desk.onDeviceSysex(ed::encodeMdGlobal(older));
+			}
+			check(desk.documents().global->tempo == sentTempo, "an older reply with the old tempo: the global keeps the tempo sent");
+			const auto global0 = global;
+			global = *desk.documents().global;
+			serve(desk);
+			check(desk.documents().global->tempo == sentTempo && !desk.isBusy(), "its own read-back confirms it");
+			global = global0;
 		}
 
 		// A wire: Stop and Continue; no panic (no MIDI message silences the MD); CTRL IN off refuses.
