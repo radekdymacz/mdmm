@@ -47,6 +47,9 @@ namespace
 	const std::vector<Step> g_eraseOne;
 	const std::vector<Step> g_eraseAll;
 	constexpr uint8_t g_eraseSlot = 5;
+	// ctest prints a test's output only when it fails: true makes the probe end with a failure so the CI log shows the
+	// dumps; false once the scripts are filled and the probe is a plain measurement.
+	constexpr bool g_failToShowLog = true;
 
 	uint64_t lcdHash(Machine& _m)
 	{
@@ -256,6 +259,11 @@ int main()
 			runScript(rom, path, g_eraseAll, "erase-all");
 		}
 		std::puts("DONE (the probe asserts nothing about the menu)");
+		if(g_failToShowLog)
+		{
+			std::puts("FAIL on purpose (g_failToShowLog): ctest prints the output of a failed test only");
+			return 1;
+		}
 		return 0;
 	}
 	catch(const std::exception& e)
