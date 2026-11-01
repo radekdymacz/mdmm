@@ -68,8 +68,8 @@ namespace
 		if(_all)
 		{
 			script.push_back({"up", 0x703dd3e87cc7b997ull});
-			script.push_back({"enter", 0});
-			script.push_back({"enter", 0});
+			script.push_back({"enter", 0xb5e6695664f6e917ull});
+			script.push_back({"enter", 0x36309db8cda920c0ull});
 			return script;
 		}
 		for(const uint64_t screen : {0x0cd5bcd0b79464f5ull, 0xa4463127fe3615c1ull, 0x3f3a251e73e48931ull, 0x6af9c064e70dd426ull,
@@ -84,7 +84,7 @@ namespace
 	const std::vector<Step> g_eraseAll = eraseScript(true);
 	// ctest prints a test's output only when it fails: true makes the probe end with a failure so the CI log shows the
 	// dumps; false once the scripts are filled and the probe is a plain measurement.
-	constexpr bool g_failToShowLog = true;
+	constexpr bool g_failToShowLog = false;
 
 	uint64_t lcdHash(Machine& _m)
 	{
@@ -298,7 +298,11 @@ int main()
 		if(!g_eraseAll.empty())
 		{
 			std::puts("== probe: erase all");
-			runScript(rom, path, g_eraseAll, "erase-all");
+			ed::MdSampleBank first, second;
+			const bool a = runScript(rom, path, g_eraseAll, "erase-all", &first);
+			const bool b = runScript(rom, path, g_eraseAll, "erase-all (second machine)", &second);
+			std::printf("PROBE repeat-all: scripts %s, the two banks are %s\n", a && b ? "ran to the end" : "STOPPED",
+				first == second ? "equal" : "DIFFERENT");
 		}
 		std::puts("DONE (the probe asserts nothing about the menu)");
 		if(g_failToShowLog)
