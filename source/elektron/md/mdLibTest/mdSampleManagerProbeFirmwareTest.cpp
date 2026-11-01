@@ -213,17 +213,26 @@ namespace
 		dumpLcd(m, "cold start");
 		last = lcdHash(m);
 		reachMenu(m, last);
-		// each arrow a few times, the screens show which keys move the cursor and where FILE, SAMPLE MGR, MODE and NAME/SIZE are
-		for(const char* key : {"right", "right", "right", "right", "left", "left", "left", "left", "down", "down", "down", "down",
-			   "up", "up", "up", "up"})
-			press(m, key, last);
-		// ENTER once on each of a few positions is the next run's work, with the dumps above in hand; here one ENTER only
+		// First run (run 41318238184): FUNCTION + PATTERN/SONG shows GLOBAL SLOT (screen 8f0127d987a97ffe; left, right, up and
+		// down only move between slots and screens that look alike); ENTER shows GLOBAL 1 EDIT (3b2b98d365761c6c), a menu
+		// with a column of icons on the left and a list (BASE CHANNEL, PAD EDITOR, LOCAL CTRL, PRG CHANGE, MECH SETTINGS,
+		// SYNC) on the right. The route is GLOBAL EDIT > FILE > SAMPLE MGR, so now: walk the icon column and the list.
 		press(m, "enter", last);
-		for(const char* key : {"right", "down", "up", "left"})
-			press(m, key, last);
+		for(int i = 0; i < 8; ++i)
+			press(m, "down", last);
+		for(int i = 0; i < 8; ++i)
+			press(m, "up", last);
+		press(m, "right", last);
+		for(int i = 0; i < 12; ++i)
+			press(m, "down", last);
+		for(int i = 0; i < 12; ++i)
+			press(m, "up", last);
+		press(m, "left", last);
+		for(int i = 0; i < 4; ++i)
+			press(m, "right", last);
 		leaveMenu(m, last);
 		const auto after = readBank(m);
-		std::printf("PROBE explore: the bank after the sweep is %s the one before (an ENTER was pressed once)\n",
+		std::printf("PROBE explore: the bank after the sweep is %s the one before (one ENTER, into GLOBAL 1 EDIT)\n",
 			after == bank ? "equal to" : "DIFFERENT from");
 	}
 }
