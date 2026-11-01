@@ -63,6 +63,8 @@ namespace mdJucePlugin
 		void note(const juce::String& _line) const;
 		// The page has not said it is up in time: the window says what failed and what to do (the editor's timer).
 		void checkStarted();
+		void checkPainted();	// B-201
+		juce::String paintState() const;	// B-201: what X11 says about the web view window (Linux)
 		// I-008: what a right-click on that message does (the editor's menu as a native menu: no page draws it).
 		void setFallbackMenu(std::function<void()> _open) { m_fallbackMenu = std::move(_open); }
 		// The page started again with batches already sent (Linux: it says a/0 when it starts, mdPageBridge.h; Windows,
@@ -108,6 +110,11 @@ namespace mdJucePlugin
 		juce::File m_file;
 		juce::String m_selfTest;
 		bool m_pageReady = false;
+		// B-201 (Linux): the page said it painted a frame (skins/shared/deskBridge.js); the card for a page that is up
+		// but never shown goes when it does.
+		bool m_pagePainted = false;
+		bool m_paintFailure = false;
+		double m_shownSinceMs = 0;	// when the page was up and its window showing, 0 if not
 		// Linux: plug-in -> page as script files beside the page file (mdPageBridge.h), not javascript: URLs.
 		const bool m_fileRecv;
 		// Windows (WebView2, mdWebView2Page.h): plug-in -> page as executed scripts, not javascript: URLs.
