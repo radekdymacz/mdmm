@@ -1,4 +1,5 @@
 #include "mdDeskSession.h"
+#include "mdController.h"
 #include "synthLib/romLoader.h"
 #include "mdLib/mdromcheck.h"
 
@@ -87,6 +88,19 @@ namespace mdJucePlugin
 		const auto& arch = processArch::current();
 		m.set("translated", arch.translated);
 		m.set("arch", processArch::describe(arch));
+		// B-196 (diagnostics): the plug-in's parameter layer, which the emulator's kit values (CCs) go through: whether it
+		// holds them (not synchronized), the base channel it puts them on (0x7f OFF) and how many it has sent
+		if(auto* c = dynamic_cast<Controller*>(&_processor.getController()))
+		{
+			auto a = Value::object();
+			a.set("ready", c->isAutomationSynchronized());
+			a.set("haveGlobal", c->hasAutomationGlobalSnapshot());
+			a.set("haveKit", c->hasAutomationKitSnapshot());
+			a.set("base", static_cast<int>(c->getAutomationBaseChannel()));
+			a.set("sent", static_cast<double>(c->getTransmittedAutomationChangeCount()));
+			a.set("requests", static_cast<double>(c->getSynchronizationRequestCount()));
+			m.set("automation", std::move(a));
+		}
 		return m;
 	}
 

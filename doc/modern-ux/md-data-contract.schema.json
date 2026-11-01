@@ -2070,6 +2070,18 @@
               "type": "boolean",
               "description": "1.0: the machine stopped moving and the scheduler's watchdog muted it (md::Hardware::schedulerStalled); the meter says STALLED until a new machine replaces it (the project loaded again, or the plug-in removed and added again). Absent: false."
             },
+            "automation": {
+              "type": "object",
+              "description": "B-196 (diagnostics; the page does not read it): the plug-in's parameter layer, which the emulator's kit values (CCs) go through: ready (synchronized: false holds them), haveGlobal and haveKit (its snapshots), base (the base channel it sends them on, 127 OFF), sent (how many it has sent), requests (its synchronization requests). Absent before the controller exists.",
+              "properties": {
+                "ready": {"type": "boolean"},
+                "haveGlobal": {"type": "boolean"},
+                "haveKit": {"type": "boolean"},
+                "base": {"type": "integer", "minimum": 0, "maximum": 127},
+                "sent": {"type": "number", "minimum": 0},
+                "requests": {"type": "number", "minimum": 0}
+              }
+            },
             "translated": {
               "type": "boolean"
             },

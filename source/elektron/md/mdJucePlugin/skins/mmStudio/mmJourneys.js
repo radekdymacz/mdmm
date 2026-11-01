@@ -29,7 +29,7 @@ const MmJourneys = (() => {
 	const dlgShown = () => !$1("#dlg").hidden;
 	const dlgButton = text => [...$1("#dlg").querySelectorAll("[data-dlg]")].find(b => b.textContent.trim() === text);
 	const rail = t => `#rail .th[data-sel="${t}"] .nm`;
-	const tele = { last: null, steps: [] }, results = [], sent = Journey.recent(50);
+	const tele = { last: null, steps: [] }, results = [], sent = Journey.recent(50), ctl = { last: null };
 	/* what the page hands the plug-in (for what has no read-back: live notes) */
 	const notesOn = [];	/* the pitches the keyboard sent (noteOn), newest last */
 	const midiSent = [];	/* the raw MIDI the keyboard and the joystick sent (op midi), newest last */
@@ -49,6 +49,7 @@ const MmJourneys = (() => {
 		if (m.type === "wire") { m.seq = ++wireSeq; wireLog.push(m); if (wireLog.length > 600) wireLog.shift(); }
 		if (m.type === "telemetry") { tele.last = m; if (m.playing) { tele.steps.push(m.step); if (tele.steps.length > 64) tele.steps.shift(); } }
 		if (m.type === "result") { results.push(m); if (results.length > 50) results.shift(); }
+		if (m.type === "cpuLoad" && m.automation) ctl.last = m.automation;	/* B-196: the plug-in's parameter layer (the emulator's CCs go through it), every 250 ms */
 	});
 	const PAGES = ["SYN", "AMP", "FLT", "EFX", "LF1", "LF2", "LF3"];
 	const go = ws => ({ say: `click the ${{ seq: "Pattern", sound: "Kit", mix: "Mix", perform: "Perform", song: "Song" }[ws]} tab`, act: u => u.click(tab(ws)), screen: () => onTab(ws) });
@@ -3451,9 +3452,14 @@ const MmJourneys = (() => {
 	};
 	/* LIVE RECORDING: a value turned while the pattern plays is locked on the step that plays (the firmware does it; the page names it) */
 	/* B-196 diagnostics: what the page saw from Alt+Space to the read-back (SYSEX RECV, the recording, the playhead, the pattern's AMP DEC locks and T1's trigs, the results), each change with its ms */
+	/* B-196: AMP DEC of the six synth tracks in the page's working kit (memory shows what the machine took: on T1, on another track, or nowhere),
+	   and the plug-in's parameter layer: ready (r) or holding (HOLD), the base channel it sends on, how many values it has sent */
+	const decs = () => [0, 1, 2, 3, 4, 5].map(t => wk()?.tracks[t]?.pages[1][2]).join("/");
+	const ctlSay = () => { const a = ctl.last; return a ? `ctl ${a.ready ? "r" : "HOLD"}${a.haveGlobal ? "" : " noGlobal"}${a.haveKit ? "" : " noKit"} b${a.base} sent ${a.sent}` : "ctl ?"; };
+	const recFacts = () => { const g = gDoc()?.channels || {}; return `T1 ${wk()?.tracks[0]?.machineName}, plate ${document.documentElement.dataset.plate}, side ${S().side}, global ${machine().global?.current} base ${g.base} span ${g.span} auto ${g.auto}, kit ${machine().kit?.current} ${machine().kit?.working}, recv ${I().machine?.recv?.state}, ${ctlSay()}`; };
 	const recTrace = c => { c.trace = []; const t0 = performance.now(); let last = "", nr = 0; c.sampler = setInterval(() => { const m = I().machine || {}; if (results.length < nr) nr = 0;
 		const r = results.slice(nr).map(x => `${x.op}${x.ok === false ? "!" : ""}`).join(","); nr = results.length;
-		const st = `recv ${m.recv?.state} rec ${tele.last?.record} play ${!!tele.last?.playing} step ${tele.last?.step} dec ${JSON.stringify(lockVals(0, 1, 2))} n ${lockList().length} T1 ${trigsOf(0)}`;
+		const st = `recv ${m.recv?.state} rec ${tele.last?.record} play ${!!tele.last?.playing} step ${tele.last?.step} dec ${JSON.stringify(lockVals(0, 1, 2))} n ${lockList().length} T1 ${trigsOf(0)} kitDEC ${decs()} ${ctlSay()}`;
 		if (st !== last || r) { last = st; c.trace.push(`${Math.round(performance.now() - t0)} ${st}${r ? " res " + r : ""}`); } }, 25); };
 	const recLocks = {
 		name: "mm-seq-record-locks", proves: ["MM-082", "MM-207"],
@@ -3461,10 +3467,10 @@ const MmJourneys = (() => {
 			go("sound"), sel(0),
 			{ say: "press Alt+Space: live recording, playing", act: (u, c) => { c.p0 = pat0(); c.l0 = lockList().length; recTrace(c); blur(); results.length = 0; u.key(" ", { alt: true }, "Space"); },
 				machine: () => ok(tele.last?.record === "live" && tele.last?.playing, `record ${tele.last?.record}, playing ${tele.last?.playing}`), within: 8000 },
-			{ say: "turn AMP's DEC on Kit: the CC goes to the machine on track 1's channel, the page says which step it locks", act: async (u, c) => { /* B-196: as a person turns it, once the pattern plays on: a value in the first step after RECORD + PLAY is not locked on the firmware (run 41192356519: sent on step 0, 176 ms after the start, no lock) */ await until(() => tele.last?.playing && tele.last.step >= 1, 4000); c.recv4 = I().machine?.recv?.state; c.r = await nudgeBox(u, 0, "AMP", 2); await sleep(300); c.toast = $1("#toast")?.textContent || ""; c.cell = c.r.v1; },
+			{ say: "turn AMP's DEC on Kit: the CC goes to the machine on track 1's channel, the page says which step it locks", act: async (u, c) => { /* B-196: as a person turns it, once the pattern plays on: a value in the first step after RECORD + PLAY is not locked on the firmware (run 41192356519: sent on step 0, 176 ms after the start, no lock) */ await until(() => tele.last?.playing && tele.last.step >= 1, 4000); c.recv4 = I().machine?.recv?.state; c.f0 = recFacts(); c.d0 = decs(); c.r = await nudgeBox(u, 0, "AMP", 2); await sleep(300); c.toast = $1("#toast")?.textContent || ""; c.cell = c.r.v1; c.f1 = ctlSay(); },
 				machine: c => ok(!checkBox(c.r, 0, "AMP", 2) && /Locks T1 AMP DEC on step \d+/.test(c.toast), `${checkBox(c.r, 0, "AMP", 2) || ""} toast "${c.toast}"`), within: 6000 },
 			{ say: "click RECORD off, then STOP: the pattern holds a lock of AMP DEC, with the value turned, on a step of track 1", act: async (u, c) => { u.click("#rec"); await sleep(800); if (S().playing) u.click("#play"); await sleep(1500); },
-				machine: c => { const l = lockVals(0, 1, 2); return ok(l.length >= 1 && l.some(([, v]) => v === c.cell), `locks ${JSON.stringify(l)}, value turned ${c.cell}, base channel ${baseCh()}, SYSEX RECV ${c.recv4} when it was turned, T1 trigs ${trigsOf(0)}, toast at the turn "${c.toast}", trace ${c.trace.slice(-30).join(" | ")}`); }, within: 10000 },
+				machine: c => { const l = lockVals(0, 1, 2); return ok(l.length >= 1 && l.some(([, v]) => v === c.cell), `locks ${JSON.stringify(l)}, value turned ${c.cell}, base channel ${baseCh()}, SYSEX RECV ${c.recv4} when it was turned, T1 trigs ${trigsOf(0)}, toast at the turn "${c.toast}", before the turn: ${c.f0}, AMP DEC T1-T6 ${c.d0}; 300 ms after: ${c.f1}; now: AMP DEC T1-T6 ${decs()}, ${recFacts()}, trace ${c.trace.slice(-30).join(" | ")}`); }, within: 10000 },
 			go("seq"),
 			{ say: "on Pattern the lane picker counts the lock the recording made on AMP DEC; the lane's clear key takes it away", act: async (u, c) => { if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await sleep(200); u.click('[data-lpage="AMP"]'); await sleep(60); u.click('.pk[data-lane="AMP.2"]'); await sleep(300); c.has = $1('.pk[data-lane="AMP.2"]')?.classList.contains("has") && +$1('.pk[data-lane="AMP.2"] i')?.textContent >= 1; u.click("#clearLane"); await sleep(600); },
 				screen: c => ok(c.has, "AMP DEC in the picker has no locked step"), machine: () => ok(lockVals(0, 1, 2).length === 0, "locks " + JSON.stringify(lockVals(0, 1, 2))), within: 8000 }
