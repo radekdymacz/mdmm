@@ -102,6 +102,34 @@ public:
     JUCE_GENERATE_FUNCTION_WITH_DEFAULT (gtk_plug_get_id, juce_gtk_plug_get_id,
                                          (GtkPlug*), ::Window)
 
+    // B-201 embed handshake: realise, map, size and redraw the plug.
+    JUCE_GENERATE_FUNCTION_WITH_DEFAULT (gtk_widget_realize, juce_gtk_widget_realize,
+                                         (GtkWidget*), void)
+
+    JUCE_GENERATE_FUNCTION_WITH_DEFAULT (gtk_widget_map, juce_gtk_widget_map,
+                                         (GtkWidget*), void)
+
+    JUCE_GENERATE_FUNCTION_WITH_DEFAULT (gtk_widget_get_mapped, juce_gtk_widget_get_mapped,
+                                         (GtkWidget*), gboolean)
+
+    JUCE_GENERATE_FUNCTION_WITH_DEFAULT (gtk_widget_set_size_request, juce_gtk_widget_set_size_request,
+                                         (GtkWidget*, gint, gint), void)
+
+    JUCE_GENERATE_FUNCTION_WITH_DEFAULT (gtk_window_resize, juce_gtk_window_resize,
+                                         (GtkWindow*, gint, gint), void)
+
+    JUCE_GENERATE_FUNCTION_WITH_DEFAULT (gtk_widget_queue_draw, juce_gtk_widget_queue_draw,
+                                         (GtkWidget*), void)
+
+    JUCE_GENERATE_FUNCTION_WITH_DEFAULT (gtk_widget_get_allocated_width, juce_gtk_widget_get_allocated_width,
+                                         (GtkWidget*), gint)
+
+    JUCE_GENERATE_FUNCTION_WITH_DEFAULT (gtk_widget_get_allocated_height, juce_gtk_widget_get_allocated_height,
+                                         (GtkWidget*), gint)
+
+    JUCE_GENERATE_FUNCTION_WITH_DEFAULT (g_timeout_add, juce_g_timeout_add,
+                                         (guint, GSourceFunc, gpointer), guint)
+
     JUCE_GENERATE_FUNCTION_WITH_DEFAULT (gtk_main, juce_gtk_main,
                                          (), void)
 
@@ -126,6 +154,27 @@ public:
 
     //==============================================================================
     JUCE_DECLARE_SINGLETON_SINGLETHREADED_MINIMAL (WebKitSymbols)
+
+    // "major.minor.micro" from the loaded runtime, or "unknown" when a library (our packaged shim, for WebKit)
+    // does not export the version functions. Only for the start-up log.
+    String describeRuntimeVersions()
+    {
+        const auto triple = [] (DynamicLibrary& lib, const char* major, const char* minor, const char* micro) -> String
+        {
+            using VersionFn = unsigned int (*)();
+            auto* a = reinterpret_cast<VersionFn> (lib.getFunction (major));
+            auto* b = reinterpret_cast<VersionFn> (lib.getFunction (minor));
+            auto* c = reinterpret_cast<VersionFn> (lib.getFunction (micro));
+
+            if (a == nullptr || b == nullptr || c == nullptr)
+                return "unknown";
+
+            return String (a()) + "." + String (b()) + "." + String (c());
+        };
+
+        return "GTK " + triple (gtkLib, "gtk_get_major_version", "gtk_get_minor_version", "gtk_get_micro_version")
+             + ", WebKitGTK " + triple (webkitLib, "webkit_get_major_version", "webkit_get_minor_version", "webkit_get_micro_version");
+    }
 
 private:
     WebKitSymbols()
@@ -224,6 +273,15 @@ private:
                             makeSymbolBinding (juce_gtk_container_add,        "gtk_container_add"),
                             makeSymbolBinding (juce_gtk_widget_show_all,      "gtk_widget_show_all"),
                             makeSymbolBinding (juce_gtk_plug_get_id,          "gtk_plug_get_id"),
+                            makeSymbolBinding (juce_gtk_widget_realize,       "gtk_widget_realize"),
+                            makeSymbolBinding (juce_gtk_widget_map,           "gtk_widget_map"),
+                            makeSymbolBinding (juce_gtk_widget_get_mapped,    "gtk_widget_get_mapped"),
+                            makeSymbolBinding (juce_gtk_widget_set_size_request, "gtk_widget_set_size_request"),
+                            makeSymbolBinding (juce_gtk_window_resize,        "gtk_window_resize"),
+                            makeSymbolBinding (juce_gtk_widget_queue_draw,    "gtk_widget_queue_draw"),
+                            makeSymbolBinding (juce_gtk_widget_get_allocated_width,  "gtk_widget_get_allocated_width"),
+                            makeSymbolBinding (juce_gtk_widget_get_allocated_height, "gtk_widget_get_allocated_height"),
+                            makeSymbolBinding (juce_g_timeout_add,            "g_timeout_add"),
                             makeSymbolBinding (juce_gtk_main,                 "gtk_main"),
                             makeSymbolBinding (juce_gtk_main_quit,            "gtk_main_quit"),
                             makeSymbolBinding (juce_g_unix_fd_add,            "g_unix_fd_add"),
@@ -449,7 +507,23 @@ public:
         juce_g_signal_connect (webview, "web-process-terminated",
                                (GCallback) webProcessTerminatedCallback, this);
 
+        plugWidget = plug;
+
+        // B-201 embed handshake: give the plug a real size, realise and map it before its id goes out, so the
+        // host never embeds a window that is still unmapped or 1x1. The host's size replaces this default.
+        WebKitSymbols::getInstance()->juce_gtk_widget_set_size_request (plug, 640, 480);
+        WebKitSymbols::getInstance()->juce_gtk_widget_realize (plug);
         WebKitSymbols::getInstance()->juce_gtk_widget_show_all (plug);
+
+        if (! WebKitSymbols::getInstance()->juce_gtk_widget_get_mapped (plug))
+            WebKitSymbols::getInstance()->juce_gtk_widget_map (plug);
+
+        std::fprintf (stderr, "WebKitGTK helper: %s\n", WebKitSymbols::getInstance()->describeRuntimeVersions().toRawUTF8());
+        std::fprintf (stderr, "WebKitGTK helper: plug mapped=%d, allocation %dx%d\n",
+                      (int) WebKitSymbols::getInstance()->juce_gtk_widget_get_mapped (plug),
+                      (int) WebKitSymbols::getInstance()->juce_gtk_widget_get_allocated_width (plug),
+                      (int) WebKitSymbols::getInstance()->juce_gtk_widget_get_allocated_height (plug));
+
         auto wID = (unsigned long) WebKitSymbols::getInstance()->juce_gtk_plug_get_id ((GtkPlug*) plug);
 
         ssize_t ret;
@@ -506,6 +580,44 @@ public:
         else if (cmd == "refresh")   WebKitSymbols::getInstance()->juce_webkit_web_view_reload       (webview);
         else if (cmd == "stop")      WebKitSymbols::getInstance()->juce_webkit_web_view_stop_loading (webview);
         else if (cmd == "decision")  handleDecisionResponse (params);
+        else if (cmd == "resize")    resizePlug (params);
+    }
+
+    // B-201 embed handshake: the host's size in X11 pixels (scale factor already applied). A GtkPlug follows its
+    // embedder by itself, but a size request makes the first allocation correct, and the redraw makes WebKit paint.
+    void resizePlug (const var& params)
+    {
+        const int width  = jmax (1, (int) params.getProperty ("width",  var (0)));
+        const int height = jmax (1, (int) params.getProperty ("height", var (0)));
+
+        if (plugWidget == nullptr || (width <= 1 && height <= 1))
+            return;
+
+        auto* symbols = WebKitSymbols::getInstance();
+        symbols->juce_gtk_widget_set_size_request (plugWidget, width, height);
+        symbols->juce_gtk_window_resize ((GtkWindow*) plugWidget, width, height);
+        symbols->juce_gtk_widget_set_size_request ((GtkWidget*) webview, width, height);
+        symbols->juce_gtk_widget_queue_draw (plugWidget);
+        symbols->juce_gtk_widget_queue_draw ((GtkWidget*) webview);
+
+        if (! loggedFirstSize)
+        {
+            loggedFirstSize = true;
+            symbols->juce_g_timeout_add (500, logAllocationStatic, this);
+        }
+    }
+
+    static gboolean logAllocationStatic (gpointer user)
+    {
+        auto& owner = *reinterpret_cast<GtkChildProcess*> (user);
+        auto* symbols = WebKitSymbols::getInstance();
+        std::fprintf (stderr, "WebKitGTK helper: after the first size, plug allocation %dx%d, web view %dx%d, mapped=%d\n",
+                      (int) symbols->juce_gtk_widget_get_allocated_width (owner.plugWidget),
+                      (int) symbols->juce_gtk_widget_get_allocated_height (owner.plugWidget),
+                      (int) symbols->juce_gtk_widget_get_allocated_width ((GtkWidget*) owner.webview),
+                      (int) symbols->juce_gtk_widget_get_allocated_height ((GtkWidget*) owner.webview),
+                      (int) symbols->juce_gtk_widget_get_mapped (owner.plugWidget));
+        return FALSE;
     }
 
     void receiverHadError() override
@@ -683,6 +795,8 @@ private:
     CommandReceiver receiver;
     String userAgent;
     WebKitWebView* webview = nullptr;
+    GtkWidget* plugWidget = nullptr;
+    bool loggedFirstSize = false;
     Array<WebKitPolicyDecision*> decisions;
 };
 
@@ -773,6 +887,63 @@ public:
         embeddedWindow = windowHandle;
         xembed.reset (new XEmbedComponent (windowHandle));
         owner.addAndMakeVisible (xembed.get());
+        sendSizeToHelper();
+
+        // B-201 embed handshake: a client that is still not viewable 2 s after the embed (seen on Wayland with
+        // NVIDIA) is mapped by hand.
+        Timer::callAfterDelay (2000, [liveness = std::weak_ptr (livenessProbe), this]
+        {
+            if (liveness.lock() != nullptr)
+                mapEmbeddedWindowIfHidden();
+        });
+    }
+
+    // The embedded window's size in X11 pixels: the same conversion XEmbedComponent applies to its client.
+    Rectangle<int> getEmbeddedPixelBounds() const
+    {
+        if (auto* peer = owner.getPeer())
+            return (peer->getComponent().getLocalArea (&owner, owner.getLocalBounds())
+                    * peer->getPlatformScaleFactor() * peer->getComponent().getDesktopScaleFactor());
+
+        return owner.getLocalBounds();
+    }
+
+    void sendSizeToHelper()
+    {
+        if (xembed == nullptr || outChannel < 0)
+            return;
+
+        const auto bounds = getEmbeddedPixelBounds();
+
+        if (bounds.isEmpty())
+            return;
+
+        DynamicObject::Ptr params = new DynamicObject;
+        params->setProperty ("width",  bounds.getWidth());
+        params->setProperty ("height", bounds.getHeight());
+        CommandReceiver::sendCommand (outChannel, "resize", var (params.get()));
+    }
+
+    void mapEmbeddedWindowIfHidden()
+    {
+        if (xembed == nullptr || embeddedWindow == 0 || ! owner.isShowing())
+            return;
+
+        auto* display = XWindowSystem::getInstance()->getDisplay();
+
+        if (display == nullptr)
+            return;
+
+        XWindowAttributes attributes {};
+
+        if (! X11Symbols::getInstance()->xGetWindowAttributes (display, (::Window) embeddedWindow, &attributes)
+            || attributes.map_state == IsViewable)
+            return;
+
+        Logger::writeToLog ("WebKitGTK: the embedded " + describeEmbeddedWindow() + " 2 s after the embed; mapping it");
+        X11Symbols::getInstance()->xMapWindow (display, (::Window) embeddedWindow);
+        X11Symbols::getInstance()->xSync (display, False);
+        Logger::writeToLog ("WebKitGTK: after XMapWindow, " + describeEmbeddedWindow());
     }
 
     // B-201: what X11 says about the helper's window (map state and size), for the start-up log.
@@ -859,7 +1030,10 @@ public:
     void resized()
     {
         if (xembed != nullptr)
+        {
             xembed->setBounds (owner.getLocalBounds());
+            sendSizeToHelper();
+        }
     }
 
     void checkWindowAssociation()
