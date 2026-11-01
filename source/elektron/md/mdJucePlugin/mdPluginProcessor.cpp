@@ -698,6 +698,7 @@ namespace mdJucePlugin
 		uint64_t liveEpoch = 0;
 		std::vector<uint8_t> originalState;
 		std::string cacheFilename;
+		md::SharedFactoryFlashSnapshot sharedFlash;
 		md::FactoryFlashSnapshot factoryFlash;
 		std::string cacheError;
 		std::shared_ptr<const md::Device::PreparationContext> preparationContext;
@@ -738,7 +739,7 @@ namespace mdJucePlugin
 				preparationContext = device->getPreparationContext();
 				if(hardware.isFactoryFlashCacheReady())
 					(void)device->captureFactoryFlashCachePersistence(cacheFilename,
-						factoryFlash, cacheError);
+						sharedFlash, cacheError);
 			});
 		}
 		// The machine's state taken a part per hold (DESIGN-audio-lock.md step 1), encoded after the lock, with the
@@ -762,7 +763,9 @@ namespace mdJucePlugin
 		}
 
 		// Full-image cache encoding, filesystem promotion, and replacement
-		// construction stay outside synthLib::Plugin's process/device lock.
+		// construction stay outside synthLib::Plugin's process/device lock, the copy of the shared flash too (B-199):
+		// it is immutable once ready, so no epoch check can see a torn copy.
+		sharedFlash.copyTo(factoryFlash);
 		if(!md::Device::materializeFactoryFlashCache(factoryFlash,
 			preparationContext, cacheError))
 			std::fprintf(stderr, "[MD] %s\n", cacheError.c_str());
@@ -852,6 +855,7 @@ namespace mdJucePlugin
 		}
 
 		std::string cacheFilename;
+		md::SharedFactoryFlashSnapshot sharedFlash;
 		md::FactoryFlashSnapshot factoryFlash;
 		std::string cacheError;
 		std::shared_ptr<const md::Device::PreparationContext> preparationContext;
@@ -867,13 +871,14 @@ namespace mdJucePlugin
 					return false;
 				preparationContext = device->getPreparationContext();
 				(void)device->captureFactoryFlashCachePersistence(cacheFilename,
-					factoryFlash, cacheError);
+					sharedFlash, cacheError);
 				return true;
 			});
 		prepared.reset();
 		validated.reset();
 		if(!committed)
 			return false;
+		sharedFlash.copyTo(factoryFlash);
 		if(!md::Device::materializeFactoryFlashCache(factoryFlash,
 			preparationContext, cacheError))
 			std::fprintf(stderr, "[MD] %s\n", cacheError.c_str());

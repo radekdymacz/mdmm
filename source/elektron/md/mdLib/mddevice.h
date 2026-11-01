@@ -134,8 +134,9 @@ namespace md
 		bool rejectDeferredStateRestore(uint64_t _generation, std::string _error);
 		ProjectStateRestoreStatus projectStateRestoreStatus() const { return m_restoreStatus; }
 		const std::string& projectStateRestoreError() const { return m_restoreError; }
+		// Shares the factory flash (two reference counts), the caller copies it off the lock (SharedFactoryFlashSnapshot::copyTo)
 		bool captureFactoryFlashCachePersistence(std::string& _filename,
-			FactoryFlashSnapshot& _snapshot, std::string& _error);
+			SharedFactoryFlashSnapshot& _snapshot, std::string& _error);
 		static bool materializeFactoryFlashCache(FactoryFlashSnapshot& _snapshot,
 			const std::shared_ptr<const PreparationContext>& _context,
 			std::string& _error);
