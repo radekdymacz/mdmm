@@ -453,6 +453,7 @@ namespace mmDesk
 				// The gesture is quiet: one read-back confirms the last dump. B-202: asked from now on; a read of the
 				// document already in flight was asked before the dump (its reply is an older one), so the read-back
 				// goes once that one is answered, not never (the push then timed out with the machine holding the edit).
+				m_readBackAgain.erase(e.ref);
 				m_loads.wantFresh(e.ref);
 				break;
 			case K::TimedOut:
@@ -491,6 +492,7 @@ namespace mmDesk
 			{
 				push->parked = false;
 				push->slot.askedBack(now());
+				m_readBackAgain.erase(*w.ref);
 				m_loads.wantFresh(*w.ref);	// B-202: a reply asked for after the dump
 			}
 			if(w.ref->kind == Kind::Pattern && static_cast<int>(w.ref->slot) == m_curPattern)

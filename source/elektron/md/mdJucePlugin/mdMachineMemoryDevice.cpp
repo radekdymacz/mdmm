@@ -16,12 +16,15 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstdio>
 #include <exception>
 
 namespace mdJucePlugin
 {
 	namespace
 	{
+		constexpr double g_longStepMs = 5;	// a copy step that takes longer is logged (B-203)
+
 		double msBetween(const std::chrono::steady_clock::time_point _from, const std::chrono::steady_clock::time_point _to)
 		{
 			return std::chrono::duration<double, std::milli>(_to - _from).count();
@@ -71,6 +74,7 @@ namespace mdJucePlugin
 		for(;;)
 		{
 			auto result = md::OneMomentCopy::Step::Failed;
+			double longStepMs = 0;
 			const bool ok = m_processor.getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
 			{
 				const auto held = std::chrono::steady_clock::now();
@@ -91,11 +95,19 @@ namespace mdJucePlugin
 					return false;
 				const auto t0 = std::chrono::steady_clock::now();
 				result = copy.step(device->getHardware());
-				_copyMs = std::max(_copyMs, msBetween(t0, std::chrono::steady_clock::now()));
+				const auto stepMs = msBetween(t0, std::chrono::steady_clock::now());
+				_copyMs = std::max(_copyMs, stepMs);
+				if(stepMs > g_longStepMs)
+					longStepMs = stepMs;	// logged after the hold, not in it
 				if(result == md::OneMomentCopy::Step::Done && _last)
 					_last(*device);
 				return true;
 			});
+			// B-203 (CI run 41336239454, session 5b): one step's work took 13.4 ms of the 10 ms budget. The bytes tell a
+			// copy too big for one hold (at most g_restLimit) from a thread the runner did not run meanwhile.
+			if(longStepMs > 0)
+				std::fprintf(stderr, "[MD] machine memory: a copy step took %.2f ms under the device lock"
+					" (step %u, at most %zu bytes a step)\n", longStepMs, copy.steps(), copy.maxStepBytes());
 			if(!ok || result == md::OneMomentCopy::Step::Failed)
 				return false;
 			if(result == md::OneMomentCopy::Step::Done)

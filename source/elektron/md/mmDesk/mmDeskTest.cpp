@@ -1510,6 +1510,146 @@ void transposeWhilePlaying()
 	check(ed::decodeMmPattern(m.slots[{0x67, 3}])->transpose.track[1] == -7 && transposeKeys.size() == 2, "stopped: no keys (PLAY takes the stored transposes)");
 }
 
+// B-202 (CI run 41336239454, mm-song-row-settings step 3): the read-back of a song row's transpose + was answered with
+// the song as it was before the dump. The push waited for a read-back that was never asked again, timed out after 8 s
+// with the machine holding the edit (the toast), the page went back to the older song, and the second + then sent 1
+// instead of 2. A read-back answered with an older document is asked again (bounded): both edits land and the
+// read-back confirms the last.
+void songReadBackOlder()
+{
+	std::puts("B-202: a song read-back answered with the song before the dump is asked again");
+	FakeMachine m;
+	for(uint8_t s = 0; s < 128; ++s)
+	{
+		m.slots[{0x67, s}] = ed::encodeMmPattern(emptyPattern(s));
+		ed::MmKit k;
+		k.position = s;
+		k.machines.fill(1);
+		k.trigPos.fill(0xff);
+		m.slots[{0x52, s}] = ed::encodeMmKit(k);
+	}
+	for(uint8_t s = 0; s < 24; ++s)
+	{
+		ed::MmSong so;
+		so.position = s;
+		so.rows[0].bytes[0] = 0xff;
+		so.rows[0].bytes[ed::mmSongRow::g_tempo] = so.rows[0].bytes[ed::mmSongRow::g_tempo + 1] = 0xff;
+		m.slots[{0x69, s}] = ed::encodeMmSong(so);
+	}
+	for(uint8_t s = 0; s < 8; ++s)
+	{
+		ed::MmGlobal g;
+		g.position = s;
+		m.slots[{0x50, s}] = ed::encodeMmGlobal(g);
+	}
+	// song 1: a row of A03, then END
+	{
+		ed::MmSong so;
+		so.position = 0;
+		so.rows[0].bytes[ed::mmSongRow::g_pattern] = 2;
+		so.rows[0].bytes[ed::mmSongRow::g_tempo] = so.rows[0].bytes[ed::mmSongRow::g_tempo + 1] = 0xff;
+		so.rows[1].bytes[0] = 0xff;
+		so.rows[1].bytes[ed::mmSongRow::g_tempo] = so.rows[1].bytes[ed::mmSongRow::g_tempo + 1] = 0xff;
+		m.slots[{0x69, 0}] = ed::encodeMmSong(so);
+	}
+	double now = 0;
+	std::vector<Value> page;
+	Bytes before;		// what song 1's slot held before the dump: the older reply
+	int older = 0;		// requests of song 1 still answered with it once the dump is taken
+	int asked = 0;		// requests of song 1
+	mmDesk::Desk::Port port;
+	port.device.sendSysex = [&](const Bytes& _b)
+	{
+		if(_b.size() > 7 && _b[6] == 0x6a && _b[7] == 0)
+		{
+			++asked;
+			if(older > 0 && m.slots[{0x69, 0}] != before)
+			{
+				--older;
+				m.replies.push_back(before);
+				return;
+			}
+		}
+		m.take(_b);
+	};
+	port.device.sendParam = [](uint8_t, uint8_t, uint8_t, uint8_t) {};
+	port.device.sendNrpn = [](uint8_t, uint8_t, uint8_t) {};
+	port.device.pressKeys = [&](const std::vector<mmDesk::Key>& _k)
+	{
+		if(mmDesk::RecvSession::isEnterMacro(_k))
+			m.screenWord = mmDesk::Screen::GlobalEdit;
+		else if(_k == mmDesk::RecvSession::exitKeys())
+			m.screenWord = mmDesk::Screen::Main;
+		return true;
+	};
+	port.toPage = [&](const Value& _v) { page.push_back(_v); g_published.push_back(_v); };
+	port.device.nowMs = [&] { return now; };
+	mmDesk::Desk d(port);
+	const auto run = [&](const double _ms)
+	{
+		for(double t = 0; t < _ms; t += 10)
+		{
+			now += 10;
+			mmDesk::Telemetry tel = screen(m.screenWord);
+			tel.recvCount = m.recvTaken;
+			d.onTelemetry(tel);
+			d.tick();
+			auto replies = std::move(m.replies);
+			m.replies.clear();
+			for(const auto& r : replies)
+				d.onDeviceSysex(r);
+		}
+	};
+	const auto msg = [&](const std::string& _json) { d.onPageMessage(*ed::json::parse(_json)); };
+	const auto errors = [&]
+	{
+		size_t n = 0;
+		for(const auto& v : page)
+			n += v.find("type")->asString() == "error" && v.find("message")->asString().find("did not read back the song") != std::string::npos;
+		return n;
+	};
+	const auto transposeOf = [](const ed::MmSong& _s) { return static_cast<int>(static_cast<int8_t>(_s.rows[0].bytes[ed::mmSongRow::g_transpose])); };
+	const auto shown = [&] { const auto s = d.song(0); return s ? transposeOf(*s) : -99; };
+	const auto held = [&] { const auto s = ed::decodeMmSong(m.slots[{0x69, 0}]); return s ? transposeOf(*s) : -99; };
+	// Transpose + on the row: the page sends the song it shows, the row's transpose one higher.
+	int id = 1;
+	const auto plus = [&]
+	{
+		auto s = *d.song(0);
+		s.rows[0].bytes[ed::mmSongRow::g_transpose] = static_cast<uint8_t>(shown() + 1);
+		msg(R"({"op":"set","id":)" + std::to_string(id++) + R"(,"kind":"song","doc":)" + ed::json::write(ed::mmSongToJson(s)) + "}");
+	};
+	msg(R"({"op":"ready"})");
+	d.setProbe(mmDesk::Desk::Probe::Running);
+	run(600);
+	for(int i = 0; i < 2000 && !d.song(0); ++i)
+		run(10);
+	check(d.song(0).has_value() && shown() == 0, "song 1 read, its row at transpose 0");
+	if(!d.song(0))
+		return;
+
+	before = m.slots[{0x69, 0}];
+	older = 1;
+	plus();
+	run(12000);
+	check(held() == 1 && older == 0, "the first +: the dump taken, its read-back answered with the song before it");
+	check(errors() == 0, "asked again: no \"did not read back\" (the push is confirmed, not timed out)");
+	check(shown() == 1, "the page keeps the transpose sent (+1)");
+	plus();
+	run(12000);
+	check(held() == 2 && shown() == 2 && errors() == 0, "the second +: the machine holds 2 and the read-back confirms it");
+
+	// A machine that only ever answers with the older song: asked again a bounded number of times, then the push
+	// fails as before (the toast) and the song is read again.
+	before = m.slots[{0x69, 0}];
+	older = 100;
+	asked = 0;
+	plus();
+	run(15000);
+	check(errors() == 1, "always the older song: the push times out once, with the toast");
+	check(asked >= 2 && asked <= 6, ("asked again a bounded number of times (" + std::to_string(asked) + " requests)").c_str());
+}
+
 // LOAD KIT of a never-written slot (name byte 0 is 0xff) plays it as NEW KIT (measured, mmDeskFirmwareTest p4).
 void kitAsLoaded()
 {
@@ -2884,6 +3024,7 @@ int main(const int _argc, char** _argv)
 	kitPickRules();
 	transposeRules();
 	transposeWhilePlaying();
+	songReadBackOlder();
 	modulators();
 	asksAndErrors();
 	stuckDelivery();

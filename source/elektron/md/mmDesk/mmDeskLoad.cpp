@@ -126,7 +126,16 @@ namespace mmDesk
 			const auto askedMs = push.slot.asked() ? push.slot.askedMs() : push.slot.sentMs();
 			action = deskCore::readBack(push.slot, _sysex);
 			if(action == deskCore::ReadBackAction::Wait)
-				return;	// an older reply: the read-back at quiet confirms, or its timeout fails the push
+			{
+				// An older reply: the read-back at quiet confirms, or its timeout fails the push. B-202 (again in CI
+				// run 41336239454): the reply to the read-back itself can hold the document as it was before the dump
+				// (the machine answered before it stored it); nothing else would ask, so the push timed out with the
+				// machine holding the edit and the page went back to the older document (the next + then built on
+				// that). Asked again, a bounded number of times, while nothing newer waits.
+				if(push.slot.asked() && !push.slot.next() && m_readBackAgain[_r]++ < g_readBackAgain)
+					m_loads.wantFresh(_r);
+				return;
+			}
 			m_lastRoundTripMs = now() - askedMs;
 		}
 		if(action == deskCore::ReadBackAction::Settle)
