@@ -3438,6 +3438,17 @@
             },
             "text": {
               "type": "string"
+            },
+            "seen": {
+              "type": "string",
+              "description": "Only when a step did not find its screen: the step, the key, the hashes seen and expected (for the log)."
+            },
+            "lcd": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "With seen: the screen that step found, 32 text rows, two pixel rows to a character (the firmware probe's LCD dump)."
             }
           }
         },
