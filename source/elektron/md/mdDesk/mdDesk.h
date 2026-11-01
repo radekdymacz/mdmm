@@ -1,6 +1,7 @@
 #pragma once
 
 #include "mdDeskAdapter.h"
+#include "mdDeskErase.h"
 #include "mdDeskModel.h"
 #include "mdDeskSetup.h"
 #include "mdDeskTelemetry.h"
@@ -146,6 +147,15 @@ namespace mdDesk
 		void pasteSample(const Value& _message);
 		void ramToRom(const Value& _message);
 		void undoSample(const Value& _message);
+		// 0.9, Erase (mdDeskErase.h): the machine's SAMPLE MGR > ERASE driven from the panel, the screen checked at every key, the
+		// bank read back to confirm. Setup ops sampleErase {slot} and sampleEraseAll; the page hears {"type":"sampleErase"}.
+		void eraseSample(const Value& _message);
+		void eraseAllSamples(const Value& _message);
+		std::string startErase(std::vector<erase::Step> _script, int _slot);
+		void stepErase();
+		void finishErase(const std::string& _state, const std::string& _text);
+		void publishErase(const std::string& _state, const std::string& _text);
+		std::string eraseBusy() const;
 		void sampleWave(const Value& _message);
 		void audition(const Value& _message);
 		void auditionStop(const Value& _message);
@@ -170,6 +180,9 @@ namespace mdDesk
 			std::string what;
 			SampleClip before;
 		};
+		// The step that puts back what a slot of a bank held, or none (empty slot).
+		static std::optional<SampleStep> sampleStepFrom(const elektronData::MdSampleSlot& _slot, uint8_t _index, const std::string& _what);
+		void recordStep(SampleStep _step);
 		static constexpr size_t g_sampleUndoSteps = 16;
 		// The memory ROM slot _slot may fill (the other slots and a second for each RAM buffer kept), in samples.
 		uint32_t sampleRoom(uint8_t _slot) const;
@@ -206,6 +219,21 @@ namespace mdDesk
 		};
 		std::optional<Audition> m_audition;
 		std::function<void(const Value&)> m_saveSetup;
+		DevicePort m_device;
+		// The erase on its way: the panel job, then the bank looked at until the slot is empty.
+		struct EraseRun
+		{
+			explicit EraseRun(std::vector<erase::Step> _script) : job(std::move(_script)) {}
+			erase::Job job;
+			int slot = -1;				// the ROM slot (0-47), -1: all
+			std::optional<SampleStep> step;	// kept for the undo when the bank shows the slot empty
+			elektronData::MdSampleBank before;
+			bool verifying = false;
+			double verifyUntil = 0;
+			std::string stopped;		// why the keys stopped, when they stopped at the last one
+		};
+		static constexpr double g_eraseVerifyMs = 10000;
+		std::optional<EraseRun> m_erase;
 		DeskSetup m_setup;
 		ModEngine m_mods;
 	};

@@ -2955,6 +2955,44 @@ const MdJourneys = (() => {
 				screen: c => ok((smpHist.undo?.depth || 0) === c.d0 && ($1("[data-smpundo]")?.disabled === true) === (c.d0 === 0), `undo depth ${smpHist.undo?.depth || 0}, was ${c.d0}; Undo sample ${$1("[data-smpundo]")?.disabled ? "off" : "on"}`) }
 		]
 	};
+	/* MD-194, MD-198 (0.9, doc/release/0.9/md-sample-manager.md, "Erase"): Erase on a ROM slot. The plug-in presses the machine's own
+	   SAMPLE MGR keys (FUNCTION + PATTERN/SONG, GLOBAL 1 EDIT, SAMPLE MGR, ERASE, the slot, ENTER, ENTER), looking at the screen after
+	   each, and the bank read back is the proof: the slot is empty, every other slot holds what it held. Then Undo sample sends the
+	   erased sample back (SDS), and the slot holds its old length. alone, as md-sampler-manager: a sample sent by SDS (B-133). */
+	const sampleErase = {
+		name: "md-sampler-erase", alone: true, proves: ["MD-194", "MD-198"],
+		steps: [
+			go("sampler"),
+			{ say: "select the last ROM slot that holds a sample and click Erase: the question names it", act: async (u, c) => {
+				const rom = Docs.samples.rom; c.i = rom.map((x, k) => x.empty ? -1 : k).filter(k => k >= 0).pop(); c.len = rom[c.i].length; c.name = (rom[c.i].name || "").trim();
+				c.others = rom.map(x => x.empty ? 0 : x.length); c.d0 = smpHist.undo?.depth || 0;
+				u.click(`.slotk.rom[data-slot="ROM${c.i + 1}"]`); await sleep(300); u.click(`[data-smperase="${c.i}"]`); await until(() => !!dlgButton("Erase"), 3000); },
+				screen: c => ok(!!dlgButton("Erase") && ($1("#dlg")?.textContent || "").includes("ROM-" + String(c.i + 1).padStart(2, "0")), "dialog " + ($1("#dlg")?.textContent || "none")) },
+			{ say: "click Erase: the plug-in presses the machine's keys; the bank reads the slot empty and every other slot as it was", act: u => u.click(dlgButton("Erase")),
+				machine: c => { const rom = Docs.samples.rom; const same = rom.every((x, k) => k === c.i || (x.empty ? 0 : x.length) === c.others[k]);
+					return ok(smpErase?.state === "done" && rom[c.i].empty && same, `sampleErase ${smpErase?.state} "${smpErase?.text}"; ROM-${c.i + 1} ${rom[c.i].empty ? "empty" : rom[c.i].length + " samples"}; the others ${same ? "unchanged" : "CHANGED"}`); }, within: 120000 },
+			{ say: "Undo sample names the erase and is on", act: async () => { await sleep(300); },
+				screen: c => ok(smpHist.undo?.slot === c.i && /Erase ROM-/.test(smpHist.undo?.what || "") && $1("[data-smpundo]")?.disabled === false, "undo " + JSON.stringify(smpHist.undo)) },
+			{ say: "click Undo sample: the machine takes the sample back, the slot holds its old length and name", act: u => u.click("[data-smpundo]"),
+				machine: c => { const r = Docs.samples.rom[c.i]; return ok(smpLoad?.state === "done" && smpLoad.file === "Undo" && !r.empty && r.length === c.len && (r.name || "").trim() === c.name,
+					`sampleLoad ${smpLoad?.state} ${smpLoad?.file}; ROM-${c.i + 1} ${r.empty ? "empty" : r.length + " samples named " + (r.name || "").trim()}, it held ${c.len} named ${c.name}`); }, within: 120000 },
+			{ say: "the undo step is gone", act: async () => { await sleep(300); },
+				screen: c => ok((smpHist.undo?.depth || 0) === c.d0, `undo depth ${smpHist.undo?.depth || 0}, was ${c.d0}`) }
+		]
+	};
+	/* MD-194 (Erase all): Erase all… in the ROM slots' header, the strong question, then the plug-in presses the keys of the ALL line.
+	   alone, and the last of the sampler journeys: it empties the ROM slots of its own editor (fresh factory memory), and nothing undoes it. */
+	const sampleEraseAll = {
+		name: "md-sampler-erase-all", alone: true, proves: ["MD-194"],
+		steps: [
+			go("sampler"),
+			{ say: "click Erase all…: the question says every ROM slot and that it cannot be undone", act: async (u, c) => {
+				c.used = Docs.samples.rom.filter(x => !x.empty).length; u.click('[data-smperaseall="rom"]'); await until(() => !!dlgButton("Erase every ROM slot"), 3000); },
+				screen: c => ok(!!dlgButton("Erase every ROM slot") && /cannot be undone/.test($1("#dlg")?.textContent || ""), "dialog " + ($1("#dlg")?.textContent || "none")) },
+			{ say: "click Erase every ROM slot: the bank reads every ROM slot empty", act: u => u.click(dlgButton("Erase every ROM slot")),
+				machine: c => { const rom = Docs.samples.rom; return ok(smpErase?.state === "done" && rom.every(x => x.empty), `sampleErase ${smpErase?.state} "${smpErase?.text}"; ${rom.filter(x => !x.empty).length} of ${c.used} slots still hold a sample`); }, within: 120000 }
+		]
+	};
 	/* MD-193 (send samples to a computer): Export WAV, Export SysEx and the two "all" keys on the firmware's own ROM slots. The window's
 	   save dialog and folder chooser are skipped by the run (GEARMULATOR_MDMM_SAMPLE_EXPORT, a diagnostics-only hook of
 	   mdPageEditor.cpp, set by scripts/mdmm-e2e.sh); the session's sampleExport message tells what was written: how many files and
@@ -3371,7 +3409,7 @@ const MdJourneys = (() => {
 		tidy: songPlayheadTidy
 	};
 	const wave12 = [clipsJ, undoKitJ, stopQueuedJ, lenRepeatJ, songRepeatsJ];
-	const slice5 = [mixHeads, modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, revertTrackJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, sampleManager, sampleExport, ramToRom, kitNameSave, songCommands, playModeJ, pageLeds, railLamps, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
+	const slice5 = [mixHeads, modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, revertTrackJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, sampleManager, sampleErase, sampleEraseAll, sampleExport, ramToRom, kitNameSave, songCommands, playModeJ, pageLeds, railLamps, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
 	/* ---------- the end-to-end pass: factory content as a person uses it (scripts/mdmm-e2e.sh, doc/release/E2E.md) ---------- */
 	/* What the machine plays, as the page can see it: the transport and the step from the telemetry, the song row, the output's
 	   peaks (the plug-in's outputLevel, every 250 ms, since the last one). Not silent where sound is the point. */

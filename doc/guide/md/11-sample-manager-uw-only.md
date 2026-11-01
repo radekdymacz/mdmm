@@ -65,11 +65,11 @@ The editor makes every sample it loads mono and 16-bit, at 44.1 kHz at most, and
 
 The copy is a snapshot taken when you click **Copy**. A RAM take that is recorded over afterwards is still pasted as it was. The paste replaces what the slot holds. The slot takes the name of the copy.
 
-**Undo sample** sends back the sample that the last paste, RAM to ROM copy, rename or file load replaced. It goes back 16 steps, one at a time. The editor has no redo for samples. A step that filled an empty slot cannot be undone, because the editor cannot erase a slot.
+**Undo sample** sends back the sample that the last paste, RAM to ROM copy, rename or file load replaced. It goes back 16 steps, one at a time. The editor has no redo for samples. An erase of one slot can be undone the same way. A step that filled an empty slot cannot be undone yet.
 
 NOTE: The loop points of a sample are not sent with a paste or an undo. A sample that does not fit in the memory left is not sent, and a message says by how much.
 
-{gap:MD-198}You cannot clear a sample slot in the editor yet.{/gap}
+To clear a sample slot, use **Erase** on it.
 
 ## THE DIFFERENCE BETWEEN ROM AND RAM MACHINES
 <!-- rows: MD-201 @0c7158 -->
@@ -154,4 +154,8 @@ NOTE: Export works with the emulated machine only. A real Machinedrum does not s
 ## ERASE SAMPLES
 <!-- rows: MD-194 @364503 -->
 
-{gap:MD-194}You cannot erase one sample or all samples in the editor yet. Erase them in SAMPLE MGR on the machine, or load a new sample into the slot to replace it.{/gap}
+Click **Erase** on a ROM slot to empty it. The editor asks first, then presses the machine's own keys for you: FUNCTION + PATTERN/SONG, the third icon of GLOBAL 1 EDIT, SAMPLE MGR, ERASE, the slot, and ENTER twice. It looks at the machine's screen after every key. If the screen is not the one it expects, it stops, leaves the menu with EXIT and tells you that nothing was erased. When the keys are through, the editor reads the sample memory again and says so once the slot is empty. Leave the machine alone while this runs. Undo sample sends the erased sample back.
+
+Click **Erase all…** in the header of the ROM slots to empty every ROM slot the same way. The editor asks twice as plainly, because this cannot be undone with Undo sample: export what you want to keep first.
+
+NOTE: Erase works with the emulated machine only. A real Machinedrum has no keys the editor can press, so the keys are greyed out. Erase the slot in SAMPLE MGR on the machine.

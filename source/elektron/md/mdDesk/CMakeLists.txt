@@ -13,6 +13,7 @@ target_sources(mdDesk PRIVATE
 	mdDeskChain.cpp mdDeskChain.h
 	mdDeskKeys.h
 	mdDeskDelivery.cpp mdDeskDelivery.h
+	mdDeskErase.cpp mdDeskErase.h
 	mdDeskEdit.cpp mdDeskEdit.h
 	mdDeskHistory.h
 	mdDeskLibrary.cpp mdDeskLibrary.h

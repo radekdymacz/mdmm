@@ -40,6 +40,10 @@ function smpMemory(b) {
 let smpHist = { clip: null, undo: null };
 function onSampleHistory(m) { smpHist = m; if (S.ws === "sampler") scheduleRender(); }
 function onSampleExport(m) { toast(m.text); }
+/* 0.9: Erase (sampleErase): the machine's own keys pressed by the plug-in; running until done, stopped (nothing erased) or failed */
+let smpErase = null;
+function onSampleErase(m) { smpErase = m; if (m.state !== "running") toast(m.text); if (S.ws === "sampler") scheduleRender(); }
+const smpErasing = () => !!smpErase && smpErase.state === "running";
 const smpAt = v => { const [bank, slot] = String(v).split(":"); return [bank, +slot]; };
 const smpName = (bank, i) => bank === "ram" ? "RAM " + (i + 1) : romCode(i + 1);
 function smpClipChip() {
@@ -61,6 +65,7 @@ function smpManagerBar(bank, i, sending) {
 		+ (bank === "rom" ? smpKey("smpexportsyx", i, "Export SysEx", `Save ${name}'s sample as the SysEx file the machine's own SEND makes (SDS), with its slot in it: sent back with ORG it lands in the same slot.`, none) : "")
 		+ (bank === "ram" ? smpKey("smpexportall", "ram", "Export all RAM…", "Save every RAM slot that holds a take as a WAV file, into a folder you choose.", why) : "")
 		+ (bank === "rom" ? smpKey("smpundo", "1", "Undo sample", u ? `Undo: ${u.what}. The sample it replaced is sent back to ${romCode(u.slot + 1)} (${u.depth} step${u.depth === 1 ? "" : "s"}).` : "", !canDo(V, "sampleLoad") ? "" : sending ? "A sample is on its way." : u ? "" : "Nothing to undo: a paste, a RAM to ROM copy, a rename or a load over a sample can be undone.") : "")
+		+ (bank === "rom" ? smpKey("smperase", i, smpErasing() ? "Erasing…" : "Erase", `Erase ${name} on the machine: the editor presses its SAMPLE MGR keys, so leave the machine alone meanwhile. Undo sample brings the sample back.`, none || (smpErasing() ? "An erase is on its way." : sending ? "A sample is on its way." : "")) : "")
 		+ smpClipChip() + `</div>`;
 }
 /* P9: the slots' detail (sampleWave), asked for once per slot and width, dropped with every new bank. */
@@ -323,7 +328,7 @@ const smpCols = () => `var(--srlab) ${cols()}`;
 function romTiles(sel, sending) {
 	const b = smpBank(), why = smpWhy(), inKit = new Set(V.tracks.map(t => t.m));
 	const used = b ? b.rom.filter(s => !s.empty).length : null;
-	return `<section class="card"><header><h3>ROM slots</h3><span class="smpmem" title="${b ? "Sample memory as the editor counts it: the ROM slots and the four RAM buffers share it. The machine's own figure is not reported over MIDI." : ""}">${used != null ? `${used} of 48 hold a sample · ${smpMemory(b).text} · ` : ""}lit: used by this kit${why ? " · " + why : ""}</span>${smpKey("smpexportall", "rom", "Export all…", "Save every ROM slot that holds a sample as a WAV file, into a folder you choose.", why)}${smpKey("smpexportallsyx", "rom", "Export all SysEx…", "Save every ROM slot that holds a sample as a SysEx file with its slot in it, into a folder you choose.", why)}</header>
+	return `<section class="card"><header><h3>ROM slots</h3><span class="smpmem" title="${b ? "Sample memory as the editor counts it: the ROM slots and the four RAM buffers share it. The machine's own figure is not reported over MIDI." : ""}">${used != null ? `${used} of 48 hold a sample · ${smpMemory(b).text} · ` : ""}lit: used by this kit${why ? " · " + why : ""}</span>${smpKey("smpexportall", "rom", "Export all…", "Save every ROM slot that holds a sample as a WAV file, into a folder you choose.", why)}${smpKey("smpexportallsyx", "rom", "Export all SysEx…", "Save every ROM slot that holds a sample as a SysEx file with its slot in it, into a folder you choose.", why)}${smpKey("smperaseall", "rom", "Erase all…", "Erase every ROM slot on the machine with its own SAMPLE MGR keys. It cannot be undone: export what you want to keep first.", why || (smpErasing() ? "An erase is on its way." : b && !b.rom.some(x => !x.empty) ? "Every ROM slot is empty." : ""))}</header>
   <div class="romtiles">${Array.from({ length: 48 }, (_, i) => {
 		const k = i + 1, s = b ? b.rom[i] : null, code = romCode(k), name = romName(k), empty = !!(s && s.empty), lit = inKit.has(code);
 		const face = s && !empty ? `<canvas class="tw" data-k="${k}" aria-hidden="true"></canvas>` : empty ? `<span class="twno">empty</span>` : "";
@@ -450,6 +455,19 @@ function askRamToRom(ram) {
 			S.smpRomTarget = k - 1; cmd("ramToRom", { ram, slot: k - 1 }); }], ["Cancel", "", () => { }]]);
 	setTimeout(() => $("#ramto")?.focus(), 0);
 }
+/* Erase asks first: the machine's keys are pressed for a while, and the slot is gone from it (Undo sample sends it back) */
+function askErase(i) {
+	const s = smpSlotOf("rom", i), name = romCode(i + 1);
+	ask(`Erase <b>${name}${s && s.name ? " " + s.name.trim() : ""}</b> on the machine? The editor presses the machine's SAMPLE MGR keys for you, so leave the machine alone until it says it is done.<br>`
+		+ `<span class="note">Undo sample sends the sample back.</span>`,
+		[["Erase", "danger", () => cmd("sampleErase", { slot: i })], ["Cancel", "", () => { }]]);
+}
+function askEraseAll() {
+	const b = smpBank(), n = b ? b.rom.filter(x => !x.empty).length : 0;
+	ask(`Erase <b>every ROM slot</b> (${n} hold a sample) on the machine? The editor presses the machine's SAMPLE MGR keys for you.<br>`
+		+ `<span class="note">This cannot be undone with Undo sample. Export what you want to keep first.</span>`,
+		[["Erase every ROM slot", "danger", () => cmd("sampleEraseAll", {})], ["Cancel", "", () => { }]]);
+}
 function clickSlots(e) {
 	const sk = e.target.closest(".slotk"); if (sk) { S.smpSlot = sk.dataset.slot; render(); return true; }
 	const sm = e.target.closest("[data-slotmode]"); if (sm) { const n = +S.smpSlot.slice(3), r = recTrack(n); if (r >= 0) { userMute(r, sm.dataset.slotmode === "frozen"); delete S.capture[n]; render(); } return true; }
@@ -461,6 +479,8 @@ function clickSlots(e) {
 	const cp = e.target.closest("[data-smpcopy]"); if (cp) { if (!cp.disabled) { const [bank, slot] = smpAt(cp.dataset.smpcopy); cmd("sampleCopy", { bank, slot }, undefined, undefined, r => { if (r.ok) toast(`Copied ${smpName(bank, slot)}. Select a ROM slot and click Paste.`); }); } return true; }
 	const ps = e.target.closest("[data-smppaste]"); if (ps) { if (!ps.disabled) cmd("samplePaste", { slot: +ps.dataset.smppaste }); return true; }
 	const un = e.target.closest("[data-smpundo]"); if (un) { if (!un.disabled) cmd("sampleUndo", {}); return true; }
+	const er = e.target.closest("[data-smperase]"); if (er) { if (!er.disabled) askErase(+er.dataset.smperase); return true; }
+	const ea2 = e.target.closest("[data-smperaseall]"); if (ea2) { if (!ea2.disabled) askEraseAll(); return true; }
 	const ex = e.target.closest("[data-smpexport]"); if (ex) { if (!ex.disabled) { const [bank, slot] = smpAt(ex.dataset.smpexport); cmd("sampleExport", { bank, slot }); } return true; }
 	const xs = e.target.closest("[data-smpexportsyx]"); if (xs) { if (!xs.disabled) cmd("sampleExport", { bank: "rom", slot: +xs.dataset.smpexportsyx, format: "syx" }); return true; }
 	const xa = e.target.closest("[data-smpexportallsyx]"); if (xa) { if (!xa.disabled) cmd("sampleExport", { bank: "rom", all: true, format: "syx" }); return true; }

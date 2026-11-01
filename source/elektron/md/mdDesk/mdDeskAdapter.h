@@ -64,6 +64,10 @@ namespace mdDesk
 		// A panel key press and release; false when not possible here. Keys: "play", "stop",
 		// "record", "recordPlay", "page", "trig1".."trig16". Unset: no panel.
 		std::function<bool(const std::string& _key)> pressKey;
+		// The machine's own screen, 128 x 64, one bit a pixel (16 bytes a row, bit 7 the left pixel), as it is now; false when it
+		// cannot be read. The sample manager's Erase looks at it between panel keys (mdDeskErase.h). Unset: no screen (a real
+		// Machinedrum), so no Erase.
+		std::function<bool(Bytes& _lcd)> lcd;
 		// A short MIDI message straight into the machine (1 to 3 bytes: MIDI Stop, Continue, a Song Position Pointer, a
 		// channel mode CC), after what was sent before it: the pause and the play from a song row over MIDI, the panic
 		// (doc/modern-ux/PROBES-manual-gaps.md P1, P5). Unset: this engine cannot.

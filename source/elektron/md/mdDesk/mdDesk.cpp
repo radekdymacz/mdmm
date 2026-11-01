@@ -21,6 +21,7 @@ namespace mdDesk
 	Desk::Desk(std::unique_ptr<MdAdapter> _adapter, Port _port)
 		: deskCore::Desk<MdModel, MdAdapter>(std::move(_adapter), _port.toPage, _port.device.nowMs, _port.ready)
 		, m_saveSetup(std::move(_port.saveSetup))
+		, m_device(_port.device)
 	{
 	}
 
@@ -61,7 +62,7 @@ namespace mdDesk
 		static const std::map<std::string, void (Desk::*)(const Value&)> map{
 			{"modSet", &Desk::setModulators}, {"knobs", &Desk::setKnobs}, {"soloSet", &Desk::setSolo}, {"followSet", &Desk::setFollow},
 			{"sampleName", &Desk::renameSample}, {"sampleCopy", &Desk::copySample}, {"samplePaste", &Desk::pasteSample},
-			{"ramToRom", &Desk::ramToRom}, {"sampleUndo", &Desk::undoSample}, {"sampleWave", &Desk::sampleWave}, {"audition", &Desk::audition}, {"auditionStop", &Desk::auditionStop}};
+			{"ramToRom", &Desk::ramToRom}, {"sampleUndo", &Desk::undoSample}, {"sampleErase", &Desk::eraseSample}, {"sampleEraseAll", &Desk::eraseAllSamples}, {"sampleWave", &Desk::sampleWave}, {"audition", &Desk::audition}, {"auditionStop", &Desk::auditionStop}};
 		return map;
 	}
 
@@ -174,6 +175,7 @@ namespace mdDesk
 		deskCore::Desk<MdModel, MdAdapter>::tick();
 		publishSampleLoad();
 		pollAudition();
+		stepErase();
 		flush();
 	}
 
@@ -191,6 +193,7 @@ namespace mdDesk
 	void Desk::onStartOver()
 	{
 		m_samples.reset();
+		m_erase.reset();	// the keys it pressed belong to the machine that went
 		m_sampleSteps.clear();	// the memory is read anew: what a step would put back may not be what was there
 		publishSetup();	// I-003: the follow option is in it
 		publishSolo();	// the page dropped its solo with the rest: the project's is said again
@@ -335,6 +338,8 @@ namespace mdDesk
 			return refuse("A sample name is 1-4 letters (A-Z, 0-9, space, punctuation) for ROM slot 1-48");
 		if(!isInputReady())
 			return refuse(MdModel::lifecycleText(lifecycle()));
+		if(const auto busy = eraseBusy(); !busy.empty())
+			return refuse(busy);
 		if(!m_samples)
 			return refuse("Rename needs the slot's audio, and this machine cannot send it back over MIDI (it ignores SDS dump requests): "
 				"the Machinedrum renames a sample only when it receives the sample again. Rename it in SAMPLE MGR on the machine, "
@@ -382,18 +387,29 @@ namespace mdDesk
 	{
 		if(!m_samples || _slot >= m_samples->rom.size())
 			return std::nullopt;
-		const auto& s = m_samples->rom[_slot];
-		if(s.empty || !s.pcm || s.pcm->empty() || !s.rate)
+		return sampleStepFrom(m_samples->rom[_slot], _slot, _what);
+	}
+
+	std::optional<Desk::SampleStep> Desk::sampleStepFrom(const elektronData::MdSampleSlot& _s, const uint8_t _slot, const std::string& _what)
+	{
+		if(_s.empty || !_s.pcm || _s.pcm->empty() || !_s.rate)
 			return std::nullopt;
 		SampleStep step;
 		step.slot = _slot;
 		step.what = _what;
 		step.before.slot = _slot;
-		step.before.name = s.name;
-		step.before.rate = s.rate;
-		step.before.loop = s.loop.has_value();
-		step.before.pcm = s.pcm;
+		step.before.name = _s.name;
+		step.before.rate = _s.rate;
+		step.before.loop = _s.loop.has_value();
+		step.before.pcm = _s.pcm;
 		return step;
+	}
+
+	void Desk::recordStep(SampleStep _step)
+	{
+		m_sampleSteps.push_back(std::move(_step));
+		if(m_sampleSteps.size() > g_sampleUndoSteps)
+			m_sampleSteps.erase(m_sampleSteps.begin());
 	}
 
 	std::string Desk::sendClip(const uint8_t _slot, const SampleClip& _clip, const std::string& _file, const std::string& _what, const bool _record)
@@ -403,6 +419,8 @@ namespace mdDesk
 			return "A sample goes into a ROM slot (1-48).";
 		if(!isInputReady())
 			return MdModel::lifecycleText(lifecycle());
+		if(const auto busy = eraseBusy(); !busy.empty())
+			return busy;
 		if(!_clip.pcm || _clip.pcm->empty() || !_clip.rate)
 			return "There is nothing to send.";
 		if(const auto room = sampleRoom(_slot); _clip.length() > room)
@@ -508,6 +526,159 @@ namespace mdDesk
 				m_sampleLoad->undoing = true;
 		}
 		result(_message, why.empty() ? std::vector<std::string>{} : std::vector<std::string>{why}, {});
+	}
+
+	// ---- 0.9: Erase (mdDeskErase.h; doc/release/0.9/md-sample-manager.md, "Erase") ----
+	// The machine frees a slot only from its panel. The desk presses the keys of SAMPLE MGR > ERASE one at a time, looks at the
+	// screen after each, and stops with EXIT when it is not the one measured on the firmware. When the last ENTER is through, the
+	// bank the machine's memory gives is read until the slot is empty (the proof; the step to undo it is kept then).
+
+	std::string Desk::eraseBusy() const
+	{
+		return m_erase ? "The machine is erasing a sample from its panel: wait until it is done." : std::string();
+	}
+
+	std::string Desk::startErase(std::vector<erase::Step> _script, const int _slot)
+	{
+		const auto caps = machine().capabilities();
+		if(!m_device.pressKey || !m_device.lcd || !caps.has("panelKeys"))
+			return "The editor erases a sample by pressing the machine's keys and watching its screen, and this engine has neither (a real "
+				"Machinedrum). Erase it in SAMPLE MGR on the machine: FUNCTION + PATTERN/SONG, FILE, SAMPLE MGR, ERASE.";
+		if(!caps.has("sampleAudio"))
+			return caps.reason("sampleAudio");
+		if(!isInputReady())
+			return MdModel::lifecycleText(lifecycle());
+		if(m_erase)
+			return eraseBusy();
+		if(m_sampleLoad)
+			return "A sample is on its way to the machine: wait until it is in.";
+		if(!m_samples)
+			return "The samples are not read yet.";
+		EraseRun run(std::move(_script));
+		run.slot = _slot;
+		run.before = *m_samples;
+		if(_slot >= 0)
+		{
+			if(static_cast<size_t>(_slot) >= m_samples->rom.size())
+				return "There are 48 ROM slots (1-48).";
+			const auto slot = static_cast<uint8_t>(_slot);
+			run.step = sampleStepOf(slot, "Erase " + romLabel(slot));
+			if(!run.step)
+				return romLabel(slot) + " holds no sample: there is nothing to erase.";
+		}
+		m_erase.emplace(std::move(run));
+		publishErase("running", _slot >= 0 ? "Erasing " + romLabel(static_cast<uint8_t>(_slot)) + " with the machine's own keys. Leave the machine alone until it is done."
+			: "Erasing every ROM slot with the machine's own keys. Leave the machine alone until it is done.");
+		return {};
+	}
+
+	void Desk::eraseSample(const Value& _message)
+	{
+		const auto why = startErase(erase::scriptOne(static_cast<uint8_t>(_message.find("slot")->asNumber())), static_cast<int>(_message.find("slot")->asNumber()));
+		result(_message, why.empty() ? std::vector<std::string>{} : std::vector<std::string>{why}, {});
+	}
+
+	void Desk::eraseAllSamples(const Value& _message)
+	{
+		// scriptAll is UP once from ROM-01 to the ALL line, ENTER, ENTER (proven, run 41321610226). It has no undo step.
+		const auto why = !erase::g_eraseAllProven
+			? std::string("Erase all is not ready: its keys are not yet proven on the firmware. Erase the slots one at a time.")
+			: startErase(erase::scriptAll(), -1);
+		result(_message, why.empty() ? std::vector<std::string>{} : std::vector<std::string>{why}, {});
+	}
+
+	void Desk::publishErase(const std::string& _state, const std::string& _text)
+	{
+		Value m = Value::object();
+		m.set("type", "sampleErase");
+		m.set("state", _state);
+		m.set("slot", m_erase ? m_erase->slot : -1);
+		m.set("step", m_erase ? static_cast<int>(m_erase->job.position()) : 0);
+		m.set("steps", m_erase ? static_cast<int>(m_erase->job.size()) : 0);
+		m.set("text", _text);
+		publish(m);
+	}
+
+	void Desk::finishErase(const std::string& _state, const std::string& _text)
+	{
+		publishErase(_state, _text);
+		m_erase.reset();
+		publishSampleHistory(false);
+	}
+
+	void Desk::stepErase()
+	{
+		if(!m_erase)
+			return;
+		auto& r = *m_erase;
+		const double now = m_device.nowMs ? m_device.nowMs() : 0;
+		const std::string label = r.slot >= 0 ? romLabel(static_cast<uint8_t>(r.slot)) : "every ROM slot";
+		if(!r.verifying)
+		{
+			erase::Screen screen;
+			Bytes lcd;
+			if(m_device.lcd && m_device.lcd(lcd))
+				screen = erase::screenOf(lcd);
+			const auto state = r.job.step(now, screen, m_device.pressKey);
+			if(state == erase::Job::State::Running)
+				return;
+			if(state == erase::Job::State::Stopped && !r.job.erasing())
+			{
+				finishErase("stopped", "Nothing was erased: " + r.job.why() + " The machine's menu was left with EXIT.");
+				return;
+			}
+			// the keys are through (or the last one was pressed and the screen did not follow): the bank has the last word
+			r.verifying = true;
+			r.verifyUntil = now + g_eraseVerifyMs;
+			r.stopped = r.job.why();
+			return;
+		}
+		bool gone = m_samples.has_value();
+		if(gone)
+		{
+			if(r.slot >= 0)
+				gone = r.slot < static_cast<int>(m_samples->rom.size()) && m_samples->rom[static_cast<size_t>(r.slot)].empty;
+			else
+				for(const auto& s : m_samples->rom)
+					gone = gone && s.empty;
+		}
+		if(!gone)
+		{
+			if(now >= r.verifyUntil)
+				finishErase("failed", "The keys ran, but " + label + " still holds a sample. " + (r.stopped.empty() ? std::string() : r.stopped + " ")
+					+ "Look at the machine's screen: it may still be in SAMPLE MGR.");
+			return;
+		}
+		// Erased. Any other slot that changed (the keys are proven, but the bank is the proof) is recorded as a step too, before this one.
+		std::string also;
+		if(r.slot >= 0)
+		{
+			for(size_t i = 0; i < r.before.rom.size() && i < m_samples->rom.size(); ++i)
+			{
+				const auto& was = r.before.rom[i];
+				const auto& now2 = m_samples->rom[i];
+				if(static_cast<int>(i) == r.slot || was.empty || (!now2.empty && now2.length == was.length))
+					continue;
+				if(auto step = sampleStepFrom(was, static_cast<uint8_t>(i), "Erase " + romLabel(static_cast<uint8_t>(i)) + " (by mistake)"))
+					recordStep(std::move(*step));
+				also += " " + romLabel(static_cast<uint8_t>(i)) + " changed too.";
+			}
+			if(r.step)
+				recordStep(std::move(*r.step));
+		}
+		char t[200];
+		if(r.slot >= 0)
+		{
+			const auto& was = r.before.rom[static_cast<size_t>(r.slot)];
+			std::string name = was.name;
+			while(!name.empty() && name.back() == ' ')
+				name.pop_back();
+			std::snprintf(t, sizeof(t), "Erased %s%s%s, %.2f s freed. Undo sample brings it back.", label.c_str(), name.empty() ? "" : " ",
+				name.c_str(), was.length / double(was.rate ? was.rate : 1));
+		}
+		else
+			std::snprintf(t, sizeof(t), "Erased %s. This cannot be undone with Undo sample.", label.c_str());
+		finishErase("done", std::string(t) + also);
 	}
 
 	// The clipboard and the last step, for the page's keys; when it changed (or _force: after a ready).
@@ -631,6 +802,8 @@ namespace mdDesk
 				"the machine does not answer an SDS sample for them (measured on OS 1.63).");
 		if(!isInputReady())
 			return refuse(MdModel::lifecycleText(lifecycle()));
+		if(const auto busy = eraseBusy(); !busy.empty())
+			return refuse(busy);
 		std::string error;
 		const auto clip = ed::decodeAudioFile(_file, error);
 		if(!clip)
@@ -709,11 +882,7 @@ namespace mdDesk
 						m_sampleSteps.pop_back();
 				}
 				else if(l.step)
-				{
-					m_sampleSteps.push_back(std::move(*l.step));
-					if(m_sampleSteps.size() > g_sampleUndoSteps)
-						m_sampleSteps.erase(m_sampleSteps.begin());
-				}
+					recordStep(std::move(*l.step));
 			}
 			m_sampleLoad.reset();
 			publishSampleHistory(false);

@@ -1192,9 +1192,9 @@
 <h4 class="gd-h3">Copy, paste and undo</h4>
 <ol class="gd-steps"><li>Select a slot that holds a sample, ROM or RAM.</li><li>Click <b class="gd-ui">Copy</b>. A line beside the keys names what is copied.</li><li>Select the ROM slot that is to take it.</li><li>Click <b class="gd-ui">Paste</b>. A bar shows the sending, as when you load a file.</li></ol>
 <p>The copy is a snapshot taken when you click <b class="gd-ui">Copy</b>. A RAM take that is recorded over afterwards is still pasted as it was. The paste replaces what the slot holds. The slot takes the name of the copy.</p>
-<p><b class="gd-ui">Undo sample</b> sends back the sample that the last paste, RAM to ROM copy, rename or file load replaced. It goes back 16 steps, one at a time. The editor has no redo for samples. A step that filled an empty slot cannot be undone, because the editor cannot erase a slot.</p>
+<p><b class="gd-ui">Undo sample</b> sends back the sample that the last paste, RAM to ROM copy, rename or file load replaced. It goes back 16 steps, one at a time. The editor has no redo for samples. An erase of one slot can be undone the same way. A step that filled an empty slot cannot be undone yet.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The loop points of a sample are not sent with a paste or an undo. A sample that does not fit in the memory left is not sent, and a message says by how much.</p></aside>
-<p>You cannot clear a sample slot in the editor yet.</p>
+<p>To clear a sample slot, use <b class="gd-ui">Erase</b> on it.</p>
 </div></section>
 <section class="gd-sec" id="the-difference-between-rom-and-ram-machines">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.71</span></span></aside>
@@ -1247,7 +1247,9 @@
 <section class="gd-sec" id="erase-samples">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.75</span></span></aside>
 <div class="gd-body gd-prose"><h2>ERASE SAMPLES</h2>
-<p>You cannot erase one sample or all samples in the editor yet. Erase them in SAMPLE MGR on the machine, or load a new sample into the slot to replace it.</p>
+<p>Click <b class="gd-ui">Erase</b> on a ROM slot to empty it. The editor asks first, then presses the machine's own keys for you: FUNCTION + PATTERN/SONG, the third icon of GLOBAL 1 EDIT, SAMPLE MGR, ERASE, the slot, and ENTER twice. It looks at the machine's screen after every key. If the screen is not the one it expects, it stops, leaves the menu with EXIT and tells you that nothing was erased. When the keys are through, the editor reads the sample memory again and says so once the slot is empty. Leave the machine alone while this runs. Undo sample sends the erased sample back.</p>
+<p>Click <b class="gd-ui">Erase all…</b> in the header of the ROM slots to empty every ROM slot the same way. The editor asks twice as plainly, because this cannot be undone with Undo sample: export what you want to keep first.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Erase works with the emulated machine only. A real Machinedrum has no keys the editor can press, so the keys are greyed out. Erase the slot in SAMPLE MGR on the machine.</p></aside>
 </div></section>
 </article>
 <article class="gd-chapter" id="c12" style="page: c12">

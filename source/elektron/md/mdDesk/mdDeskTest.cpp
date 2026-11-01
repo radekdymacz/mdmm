@@ -8,6 +8,7 @@
 #include "elektronData/mdNames.h"
 #include "mdDeskLibrary.h"
 #include "mdDeskKeys.h"
+#include "mdDeskErase.h"
 #include "mdDeskMachine.h"
 #include "mdDeskTransport.h"
 #include "mdIntentCases.h"
@@ -3032,6 +3033,163 @@ namespace
 		check(files.empty() && why.find("real Machinedrum") != std::string::npos, "HW MIDI: export refused with the sampleAudio reason");
 	}
 
+	// 0.9, Erase (mdDeskErase.h): the key script and its stop on a wrong screen (the job alone), then the desk's refusals and its
+	// stop with the menu left by EXIT. The success path needs the firmware's own screens: the journey md-sampler-erase and
+	// mdSampleManagerProbeFirmwareTest prove it.
+	void testSampleErase()
+	{
+		namespace er = mdDesk::erase;
+		// A machine that shows what a script expects after each key (_wrongAt: a step that shows a menu column nobody expects).
+		const auto run = [](const std::vector<er::Step>& _script, const int _wrongAt, std::vector<std::string>& _keys)
+		{
+			er::Job job(_script);
+			er::Screen shown;
+			shown.valid = true;
+			uint64_t unique = 1000;
+			const er::Job::Press press = [&](const std::string& _key)
+			{
+				const size_t at = _keys.size();
+				_keys.push_back(_key);
+				if(at < _script.size())
+				{
+					const auto& e = _script[at].expect;
+					shown.full = e.full ? e.full : ++unique;
+					shown.header = e.header ? e.header : 7;
+					shown.mode = e.mode ? e.mode : 9;
+					shown.prompt = e.prompt == er::Expect::Prompt::Asked ? 200 : 0;
+					if(static_cast<int>(at) == _wrongAt)
+						{ shown.mode = 12345; shown.full = 1; }
+				}
+				return true;
+			};
+			double now = 0;
+			er::Job::State state = er::Job::State::Running;
+			for(int i = 0; i < 100000 && state == er::Job::State::Running; ++i, now += 20)
+				state = job.step(now, shown, press);
+			return std::make_pair(state, job.why());
+		};
+
+		const auto one = er::scriptOne(5);
+		check(one.size() == er::routeToList().size() + 5 + 2, "erase one: the route, DOWN to the slot, ENTER, ENTER");
+		check(one[one.size() - 1].key == "enter" && one[one.size() - 2].key == "enter" && one[one.size() - 3].key == "down", "erase one: ends with the two ENTERs");
+		std::vector<std::string> keys;
+		auto outcome = run(one, -1, keys);
+		check(outcome.first == er::Job::State::Finished && outcome.second.empty(), "erase one: the script runs to its end when every screen is the expected one");
+		check(keys.size() == one.size() + size_t(er::g_leaveExits) && keys[0] == "exit" && keys[3] == "hold:function" && keys[4] == "patternSong"
+			&& keys[5] == "release:function" && keys[one.size() - 1] == "enter" && keys.back() == "exit", "erase one: the keys, then EXIT out of the menu");
+
+		// a wrong screen after the first DOWN of the list: the job stops, leaves with EXIT and presses no ENTER after the route's own
+		keys.clear();
+		const size_t wrong = er::routeToList().size();
+		outcome = run(one, int(wrong), keys);
+		size_t enters = 0;
+		for(const auto& k : keys)
+			enters += k == "enter";
+		check(outcome.first == er::Job::State::Stopped && !outcome.second.empty() && outcome.second.find("down") != std::string::npos, "erase one: a wrong screen stops the script, and says at which key");
+		check(keys.size() == wrong + 1 + size_t(er::g_leaveExits) && keys.back() == "exit" && enters == 2,
+			"erase one: after the stop only EXIT is pressed (the route's two ENTERs, none of the erase)");
+
+		// stopped while FUNCTION is held: it is let go first
+		keys.clear();
+		outcome = run(one, 4, keys);
+		check(outcome.first == er::Job::State::Stopped && keys.size() == 5 + 1 + size_t(er::g_leaveExits) && keys[5] == "release:function" && keys[6] == "exit",
+			"erase one: stopped with FUNCTION held, it is released before the EXITs");
+
+		// the screen cannot be read
+		{
+			er::Job job(one);
+			er::Screen none;
+			std::vector<std::string> pressed;
+			const er::Job::Press press = [&](const std::string& _k) { pressed.push_back(_k); return true; };
+			double now = 0;
+			er::Job::State st = er::Job::State::Running;
+			for(int i = 0; i < 1000 && st == er::Job::State::Running; ++i, now += 20)
+				st = job.step(now, none, press);
+			check(st == er::Job::State::Stopped && pressed.size() == size_t(er::g_leaveExits) && !job.erasing(), "an unreadable screen stops before any key");
+		}
+		check(er::scriptAll().size() == er::routeToList().size() + 3 && er::scriptAll()[er::routeToList().size()].key == "up", "erase all: UP to the ALL line, ENTER, ENTER");
+
+		// through the desk
+		std::vector<std::string> pressed;
+		std::vector<Value> page;
+		double now = 0;
+		bool lcdOn = true;
+		Desk::Port port;
+		port.device.sendSysex = [&](const std::vector<uint8_t>&) {};
+		port.device.pressKey = [&](const std::string& _k) { pressed.push_back(_k); return true; };
+		port.device.lcd = [&](std::vector<uint8_t>& _bits) { _bits.assign(er::g_lcdBytes, 0); return lcdOn; };
+		port.toPage = [&](const Value& _m) { page.push_back(_m); g_published.push_back(_m); };
+		port.device.nowMs = [&] { return now; };
+		auto profile = wireProfile();
+		profile.memory = true;
+		profile.panel = true;
+		Desk desk(port);
+		desk.setEngine(Desk::defaultAdapter(profile, port.device));
+		desk.onTelemetry(Telemetry{});
+		desk.onPageMessage(cmd(R"({"op":"ready"})"));
+		desk.onDeviceSysex({0xf0, 0x00, 0x20, 0x3c, 0x02, 0x00, 0x72, 0x04, 0x00, 0xf7});
+		desk.tick();
+		const auto ok = [&](const int _id)
+		{
+			for(auto it = page.rbegin(); it != page.rend(); ++it)
+				if(it->find("type")->asString() == "result" && it->find("id") && it->find("id")->asNumber() == _id)
+					return it->find("ok")->asBool();
+			return false;
+		};
+		const auto erased = [&]() -> const Value*
+		{
+			for(auto it = page.rbegin(); it != page.rend(); ++it)
+				if(it->find("type")->asString() == "sampleErase")
+					return &*it;
+			return nullptr;
+		};
+		desk.onPageMessage(cmd(R"({"op":"sampleErase","slot":3,"id":1})"));
+		check(!ok(1), "erase before the samples are read: refused");
+		ed::MdSampleBank bank;
+		for(uint8_t s = 0; s < 48; ++s) { ed::MdSampleSlot x; x.slot = s; bank.rom.push_back(x); }
+		for(uint8_t s = 0; s < 4; ++s) { ed::MdSampleSlot x; x.ram = true; x.slot = s; bank.ram.push_back(x); }
+		bank.ramReadable = true;
+		auto& s3 = bank.rom[3];
+		s3.empty = false;
+		s3.length = 1000;
+		s3.rate = 44100;
+		s3.name = "SNR";
+		s3.pcm = std::make_shared<const std::vector<int16_t>>(std::vector<int16_t>(1000, 100));
+		desk.onSampleBank(bank);
+		desk.onPageMessage(cmd(R"({"op":"sampleErase","slot":4,"id":2})"));
+		check(!ok(2) && pressed.empty(), "erase of an empty slot: refused, no key pressed");
+		desk.onPageMessage(cmd(R"({"op":"sampleErase","slot":3,"id":3})"));
+		check(ok(3) && erased() && erased()->find("state")->asString() == "running", "erase of ROM-04: started");
+		desk.onPageMessage(cmd(R"({"op":"sampleErase","slot":3,"id":4})"));
+		check(!ok(4), "a second erase while one runs: refused");
+		desk.onPageMessage(cmd(R"({"op":"samplePaste","slot":3,"id":5})"));
+		check(!ok(5), "paste: refused");
+		// the screen never shows GLOBAL SLOT: the script stops there, FUNCTION is let go, EXIT out, nothing else
+		for(int i = 0; i < 2000 && (!erased() || erased()->find("state")->asString() == "running"); ++i)
+		{
+			now += 20;
+			desk.tick();
+		}
+		check(erased() && erased()->find("state")->asString() == "stopped", "a wrong screen: the page hears it stopped");
+		check(erased()->find("text")->asString().find("Nothing was erased") != std::string::npos, "the text says nothing was erased");
+		for(int i = 0; i < 100; ++i)
+		{
+			now += 20;
+			desk.tick();
+		}
+		check(!pressed.empty() && std::count(pressed.begin(), pressed.end(), "enter") == 0 && pressed.back() == "exit"
+			&& std::find(pressed.begin(), pressed.end(), "release:function") != pressed.end(), "only EXIT, no ENTER, and FUNCTION let go");
+		lcdOn = false;
+		desk.onPageMessage(cmd(R"({"op":"sampleErase","slot":3,"id":7})"));
+		check(ok(7), "after the stop a new erase can start");
+		for(int i = 0; i < 400; ++i)
+		{
+			now += 20;
+			desk.tick();
+		}
+		check(erased()->find("state")->asString() == "stopped", "an unreadable screen stops the erase too");
+	}
+
 	// P9: a slot's detail and its audition through the desk.
 	void testSampleWaveAndAudition()
 	{
@@ -3829,6 +3987,7 @@ int main(const int _argc, char** _argv)
 	testAuditionMixer();
 	testSampleWaveAndAudition();
 	testSampleManager();
+	testSampleErase();
 	testModulators();
 	testKeyMapping();
 	testNotes();

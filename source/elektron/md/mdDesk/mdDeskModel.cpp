@@ -415,6 +415,8 @@ namespace mdDesk
 			{"ramToRom", Owner::Setup, Gate::None, -1, {{"ram", ArgType::Integer, 0, 3}, {"slot", ArgType::Integer, 0, 47}},
 				"RAM to ROM copy: RAM slot ram as it is now, sent to ROM slot slot as SDS (the manual's FUNCTION + REC, FUNCTION + STOP; the other RAM slots stay)"},
 			{"sampleUndo", Owner::Setup, Gate::None, -1, {}, "send back the sample the last paste, RAM to ROM copy, rename or load replaced (16 steps, no redo)"},
+			{"sampleErase", Owner::Setup, Gate::None, -1, {{"slot", ArgType::Integer, 0, 47}}, "erase ROM slot slot from the machine's panel (SAMPLE MGR > ERASE, the screen checked at every key, the bank read back); {\"type\":\"sampleErase\"} says how it goes; a step to undo it"},
+			{"sampleEraseAll", Owner::Setup, Gate::None, -1, {}, "erase every ROM slot from the machine's panel (SAMPLE MGR > ERASE > ALL); {\"type\":\"sampleErase\"} says how it goes; no undo"},
 		});
 		return table;
 	}

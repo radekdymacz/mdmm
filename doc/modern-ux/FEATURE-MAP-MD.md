@@ -259,11 +259,11 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.73 | Specific place receive (choose slot) | Slot | ✅ | Sampler: select ROM slot, Load... |  | 1 | pass (e2e-md-drop-sample) |
 | p.74 | Original place receive (several files in order) | ORG | ✅ | Drop several files; they fill slots after the first |  | 1 | missing |
 | p.74 | Send samples to a computer (one, ALL, RAM) | SEND | ✅ | Sampler: Export WAV and Export SysEx on a ROM slot, Export WAV on a RAM slot, Export all… and Export all SysEx… for the ROM slots, Export all RAM… | The machine ignores dump requests, so the editor writes the samples it reads from the emulated machine: 16-bit mono WAV, or for ROM slots the SDS SysEx file the machine's own SEND makes, with the slot position in it (a file a slot, in a folder for all). Needs the emulated machine. | 1 | n/a |
-| p.75 | Erase one / all samples | ERASE | ❌ | None | No SysEx or SDS message frees a slot; the panel route needs a probe. | – | n/a |
+| p.75 | Erase one / all samples | ERASE | 🟡 | Sampler: Erase on a ROM slot, Erase all… in the ROM slots header | No SysEx or SDS message frees a slot, so the editor presses the machine's own SAMPLE MGR > ERASE keys, checks its screen at every key, stops with EXIT on a surprise, then reads the sample memory to confirm. Erase all cannot be undone. Needs the emulated machine. | 2 | n/a |
 | p.71 | Preview a sample | FUNCTION + ENTER | ✅ | Sampler: audition button | Plays on plug-in output. | 1 | pass (e2e-md-sampler-audition) |
 | p.71 | Slot list with sizes, memory left | POS/SIZE | ✅ | Sampler: seconds and KB on every tile and key tooltip; the ROM slots header gives used, free and the percentage free | Memory is worked out from the samples the editor reads (ROM slots and the four RAM buffers against the DSP memory): the machine does not report its own figure over MIDI. | 2 | n/a |
 | p.71 | Sample names / rename | Name slot | ✅ | Sampler: Rename (0x73, then the slot's sample again by SDS) | The firmware renames a sample only when it receives it, so Rename sends the name and the slot's own sample again; it needs the slot's audio (the emulated machine). A real machine cannot send it back: the key is off with the reason. | 1 | pass (e2e-md-sampler-rename) |
-| p.71 | Copy / clear / paste / undo in sample manager | Slot clipboard | 🟡 | Sampler: Copy, Paste and Undo sample on a ROM slot; Copy on a RAM slot | Copy keeps a snapshot; Paste sends it as SDS to the ROM slot; Undo sample sends back what a paste, a RAM to ROM copy, a rename or a load replaced (16 steps, no redo). Loop points are not carried. Needs the emulated machine. | 1 | n/a |
+| p.71 | Copy / clear / paste / undo in sample manager | Slot clipboard | 🟡 | Sampler: Copy, Paste, Erase and Undo sample on a ROM slot; Copy on a RAM slot | Copy keeps a snapshot; Paste sends it as SDS to the ROM slot; Undo sample sends back what a paste, a RAM to ROM copy, a rename or a load replaced (16 steps, no redo). Loop points are not carried. Needs the emulated machine. | 2 | n/a |
 | p.71 | RAM to ROM copy | Keep a take | ✅ | Sampler, RAM slot: Keep as ROM… | The take as it is now is sent to the chosen ROM slot as SDS, named RAM1 to RAM4 (the manual's copy; the other RAM slots stay, the "reload samples" prompt does not exist). Needs the emulated machine. | 1 | n/a |
 | p.70 | Sample limits (4-48 kHz, mono, 12-bit playback) | Rules | ✅ | Plug-in converts on load |  | 1 | missing |
 | p.71 | ROM vs RAM machines | Concept | ✅ | Sampler workspace |  | 1 | pass (md-sampler-workspace) |
@@ -424,12 +424,12 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | Status | Rows |
 |---|---|
 | ✅ Yes | 294 |
-| 🟡 Partial | 9 |
-| ❌ No | 3 |
+| 🟡 Partial | 10 |
+| ❌ No | 2 |
 | ➖ Not applicable | 16 |
 | Total | 322 |
 
-Of the 306 applicable rows, 294 are fully covered, 9 partly, 3 not at all.
+Of the 306 applicable rows, 294 are fully covered, 10 partly, 2 not at all.
 
 ### Top gaps (our UI), most important first
 
