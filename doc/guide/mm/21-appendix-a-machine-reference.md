@@ -1,7 +1,7 @@
 # 21. Appendix A: machine reference
 <!-- summary: Every machine you can put on a track, with the knobs of its synthesis page. -->
 
-This appendix lists the machines of the Monomachine and the knobs each one gives the SYN page. You choose a machine in the machine picker of the **Kit** workspace (chapter 6, "ASSIGNING A MACHINE"); the picker shows the same names, in families, and the pointer over a machine names its eight knobs. Every machine also has the AMP, FLT, EFX and the three LFO pages, which are the same for all of them. Two of the machines exist only on the MKII.
+The Monomachine has 22 machines: 15 for a synth track, GND-GND among them, which is silent, and 7 FX machines. This appendix lists them and the knobs each one gives the SYN page. You choose a machine in the machine picker of the **Kit** workspace (chapter 6, "ASSIGNING A MACHINE"); the picker shows the same names, in families, and the pointer over a machine names its eight knobs. Every machine also has the AMP, FLT, EFX and the three LFO pages, which are the same for all of them. Two of the machines exist only on the MKII.
 
 ![The machine picker](shot:mm-machine-picker)
 

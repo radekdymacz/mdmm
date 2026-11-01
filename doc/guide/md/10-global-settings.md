@@ -55,7 +55,7 @@ In the **Control** card, click **−** or **+** beside **Base channel**. The val
 
 The machine takes notes, program changes and controllers on these four channels only. A DAW drum track on another channel, for example channel 10, plays nothing until the base channel puts that channel among the four or the notes are sent on channels 1 to 4.
 
-NOTE: When the global holds a base channel of OFF, the card reads OFF. The machine then takes no notes, mutes or sound values over MIDI, and the editor cannot play it.
+NOTE: When the global holds a base channel of OFF, the card reads OFF. The machine then takes no notes, mutes or sound values over MIDI, and the editor cannot play it. The editor cannot set OFF. Click **+** on OFF to return to 1 to 4.
 
 ## MAP EDITOR
 <!-- rows: MD-165 MD-166 MD-167 MD-168 MD-169 MD-289 @4fcdd1 -->

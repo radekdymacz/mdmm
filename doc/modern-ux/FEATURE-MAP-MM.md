@@ -28,7 +28,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Conventions 1-1 | Key, knob, LED conventions | How the manual writes controls | ➖ | – | Documentation only | – | n/a |
 | Highlights 1-2 | 6 track internal sequencer with synthesis | Six sequenced mono synth tracks | ✅ | Pattern, Kit | `mmDesk` kit + pattern documents | 1 | pass (e2e-mm-seq-six-tracks) |
 | Highlights 1-2 | 6 track external MIDI sequencer | Six MIDI tracks per pattern | ✅ | Pattern, SYNTH / MIDI switch in the rail | Edits `p` tracks 6-11 | 1 | pass (mm-midi-roll) |
-| Highlights 1-2 | 5 Monosynths (SuperWave, SID, DigiPRO, FM+, VO) | Machine families | ✅ | Kit > machine picker | All 14 sound machines, see section 21 | 2 | pass (e2e-mm-sound-machine-pick-undo) |
+| Highlights 1-2 | 5 Monosynths (SuperWave, SID, DigiPRO, FM+, VO) | Machine families | ✅ | Kit > machine picker | All 22 machines: 15 for a synth track (GND-GND is silent) and 7 FX, see section 21 | 2 | pass (e2e-mm-sound-machine-pick-undo) |
 | Highlights 1-2 | Dynamically controlled stereo effects (FX machines) | Four FX machines plus reverb, chorus etc. | ✅ | Kit > machine picker, Mix > INPUT | See section 21 | 1 | pass (mm-mix-routing) |
 | Highlights 1-2 | 6 tape style tempo synced delays | One delay per track | ✅ | Kit > Effects (DTIM DSND DFB DBAS DWID) |  | 1 | pass (e2e-mm-seq-six-tracks) |
 | Highlights 1-2 | 18 tempo synced LFOs | 3 per track | ✅ | Kit > LFO 1-3 |  | 1 | pass (mm-sound-lfos) |
