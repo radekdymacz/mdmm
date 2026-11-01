@@ -15,7 +15,8 @@
 //                                        (B-121: the host's Stop lets go of a held note), reselect (B-122: picking the
 //                                        current pattern again keeps it), emptyreset (B-175: stored K01 and the working
 //                                        kit after Empty Reset; B-176: native machine-init AMP defaults), newkit (B-175, B-176: the
-//                                        firmware's start values of every machine against the editor's tables),
+//                                        firmware's start values of every machine against the editor's tables), ojmp (B-189:
+//                                        where OJMP lives in the arpeggiator's play byte: the knob against the editor),
 //                                        digipro (0.9 wave 2: the DigiPRO manager: send, read back, rename, copy, erase,
 //                                        undo; the name's bytes from a rename on the panel)
 //
@@ -5598,6 +5599,139 @@ namespace
 		r.m.onMidi = nullptr;
 	}
 
+	// B-189: where OJMP lives in the arpeggiator's play byte. The editor writes OJMP n to bits 4-7 (play | ojmp << 4);
+	// the knob of FUNCTION + BANK A's arpeggiator window was measured setting bits 3-6 (mm-manual-mapping.md note 6).
+	// 1. The window's knobs one after the other, two pulses up, until one changes the play byte above PLAY's bits.
+	// 2. That knob from 0, pulse by pulse: the byte after each (the step it adds says which bit is its lowest), up to its end.
+	// 3. The editor's OJMP n (the desk's arp command, the machine's own dump of the pattern): the value the firmware's
+	//    layout reads from that byte must be n. Then one knob pulse from the editor's value: the step must be one OJMP.
+	// Prints one line per value; fails where the editor and the firmware disagree.
+	void ojmpLayout(const Bytes& _rom)
+	{
+		std::puts("OJMP bit layout (B-189)");
+		Rig r(_rom);
+		int g = 9700;
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		r.run(1500);
+		const int slot = r.desk->currentPattern();
+		const auto at = [&] { return std::max(r.m.now(), r.panel.empty() ? 0 : r.panel.back().first) + 64; };
+		const auto chord = [&](const md::PanelControl _held, const md::PanelControl _key)
+		{
+			md::PanelRowState rows;
+			const auto h = *md::panelPacket(g_mm, _held), k = *md::panelPacket(g_mm, _key);
+			uint64_t t = at();
+			for(const auto x : {rows.press(h), rows.press(k), rows.release(k), rows.release(h)})
+			{
+				r.panel.emplace_back(t, x);
+				t += g_rate / 100;
+			}
+			r.run(300);
+		};
+		const auto key = [&](const md::PanelControl _key)
+		{
+			const auto k = *md::panelPacket(g_mm, _key);
+			const uint64_t t = at();
+			r.panel.emplace_back(t, k);
+			r.panel.emplace_back(t + g_rate / 100, md::PanelPacket{k.row, 0});
+			r.run(300);
+		};
+		const auto knob = [&](const int _knob, const int _pulses)
+		{
+			const auto cmd = *md::panelEncoderCommand(g_mm, static_cast<md::PanelEncoder>(_knob));
+			uint64_t t = at();
+			for(int i = 0; i < std::abs(_pulses); ++i)
+			{
+				r.panel.emplace_back(t, md::PanelPacket{cmd, static_cast<uint8_t>(_pulses > 0 ? 0x01 : 0xff)});
+				t += g_rate / 50;
+			}
+			r.run(150 + 20 * std::abs(_pulses));
+		};
+		const auto openWindow = [&]
+		{
+			key(md::PanelControl::Track1);
+			chord(md::PanelControl::Function, md::PanelControl::BankA);
+			key(md::PanelControl::Track1);
+		};
+		const auto stored = [&]() -> std::optional<ed::MmPattern> { return patternInMemory(r, slot); };
+		const auto byteOf = [&]() -> int { const auto p = stored(); return p ? p->arp.playOjmp[0] : -1; };
+		const auto editorOjmp = [&](const int _n)
+		{
+			r.msg("{\"op\":\"arp\",\"g\":" + std::to_string(++g) + ",\"p\":" + std::to_string(slot) + ",\"t\":0,\"field\":\"ojmp\",\"v\":" + std::to_string(_n) + "}");
+			r.run(2500);
+		};
+
+		// 1. which knob is OJMP
+		editorOjmp(0);
+		openWindow();
+		int ojmpKnob = -1;
+		for(int k = 0; k < 8 && ojmpKnob < 0; ++k)
+		{
+			const auto before = stored();
+			knob(k, 2);
+			const auto after = stored();
+			if(!before || !after)
+				continue;
+			const auto& b = before->arp;
+			const auto& a = after->arp;
+			std::printf("  OJMP knob %d, two pulses up: play byte 0x%02x -> 0x%02x, mode %d -> %d, range %d -> %d, speed %d -> %d, length %d -> %d\n", k,
+				b.playOjmp[0], a.playOjmp[0], b.mode[0], a.mode[0], b.range[0], a.range[0], b.speed[0], a.speed[0], b.length[0], a.length[0]);
+			if((b.playOjmp[0] ^ a.playOjmp[0]) & 0xf8)
+				ojmpKnob = k;
+		}
+		check(ojmpKnob >= 0, "one of the arpeggiator window's knobs changes the play byte above PLAY's bits (OJMP)");
+		if(ojmpKnob < 0)
+		{
+			key(md::PanelControl::Exit);
+			return;
+		}
+
+		// 2. the knob from its start to its end
+		knob(ojmpKnob, -40);
+		std::vector<int> bytes;
+		bytes.push_back(byteOf());
+		for(int p = 1; p <= 17; ++p)
+		{
+			knob(ojmpKnob, 1);
+			bytes.push_back(byteOf());
+		}
+		int shift = 0;
+		for(int p = 0; p < static_cast<int>(bytes.size()); ++p)
+			std::printf("  FIRMWARE knob %2d pulses: play byte 0x%02x  (bits 3-6: %2d, bits 4-7: %2d)\n", p, bytes[static_cast<size_t>(p)],
+				(bytes[static_cast<size_t>(p)] >> 3) & 15, (bytes[static_cast<size_t>(p)] >> 4) & 15);
+		if(bytes[0] >= 0 && bytes[1] > bytes[0])
+			shift = (bytes[1] - bytes[0]) == 8 ? 3 : (bytes[1] - bytes[0]) == 16 ? 4 : 0;
+		std::printf("  FIRMWARE OJMP: first pulse adds 0x%02x (lowest bit %d), end of the knob 0x%02x\n", bytes[1] - bytes[0], shift, bytes.back());
+		check(shift != 0, "the OJMP knob's first pulse adds one bit of the play byte");
+		key(md::PanelControl::Exit);
+		if(!shift)
+			return;
+
+		// 3. the editor's OJMP n against what the firmware reads from that byte
+		for(int n = 0; n <= 15; ++n)
+		{
+			editorOjmp(n);
+			const int b = byteOf();
+			const int fw = b < 0 ? -1 : (b >> shift) & 15;
+			std::printf("  EDITOR OJMP %2d -> play byte 0x%02x -> the firmware reads %2d%s\n", n, b, fw, fw == n ? "" : "  <- DISAGREES");
+			check(fw == n, "the editor's OJMP " + std::to_string(n) + " is OJMP " + std::to_string(fw) + " to the firmware (byte " + std::to_string(b) + ")");
+		}
+		for(const int n : {1, 3})
+		{
+			editorOjmp(n);
+			const int before = byteOf();
+			openWindow();
+			knob(ojmpKnob, 1);
+			key(md::PanelControl::Exit);
+			const int after = byteOf();
+			std::printf("  EDITOR OJMP %d, then one knob pulse: 0x%02x -> 0x%02x (adds 0x%02x; the knob's step is 0x%02x)\n", n, before, after, after - before, bytes[1] - bytes[0]);
+			check(after - before == bytes[1] - bytes[0], "one knob pulse from the editor's OJMP " + std::to_string(n) + " adds one OJMP step");
+		}
+	}
+
 	// B-060 probe (prints, checks nothing): what makes the machine play a transpose a dump stored while the pattern plays.
 	// T<MM_TRN_T + 1> a held sine (default T2; its pitch from the output), M1 and M2 notes on the MIDI out, after each
 	// step the track in focus (status 0x22). E1-E6: the TRANSPOSE knob one step and back on the track in focus, with a
@@ -6260,6 +6394,12 @@ int main(const int _argc, char** _argv)
 		if(only == "newkit")
 		{
 			newKitDefaults(rom);
+			std::printf("%s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(only == "ojmp")
+		{
+			ojmpLayout(rom);
 			std::printf("%s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;
 		}
