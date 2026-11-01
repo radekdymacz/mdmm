@@ -3273,7 +3273,7 @@ const MmJourneys = (() => {
 		name: "mm-wire-cc", proves: ["MM-353", "MM-354", "MM-355", "MM-356", "MM-357", "MM-358", "MM-359", "MM-360", "MM-362", "MM-289"],
 		steps: [
 			go("sound"), sel(0),
-			{ say: "a machine with all eight SYN values (DPRO-DDRW, MKII): each value of the page sends its own CC, 48 to 55, on the track's channel with the value the kit holds", act: async (u, c) => { c.n0 = histN(); c.bad = []; c.plate0 = document.documentElement.dataset.plate; if (c.plate0 !== "mk2") await platePick(u); await sleep(200);
+			{ say: "a machine with all eight SYN values (DPRO-DDRW, MKII): each value of the page sends its own CC, 48 to 55, on the track's channel with the value the kit holds", act: async (u, c) => { c.n0 = histN(); c.bad = []; c.focus = [machine().focus]; c.plate0 = document.documentElement.dataset.plate; if (c.plate0 !== "mk2") await platePick(u); await sleep(200);
 					u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500); u.click('#machpop .mf[data-fam="DPRO"]'); await sleep(50); u.click('#machpop .mk[data-mach="DPRO-DDRW"]'); await until(() => wk().tracks[0].machineName === "DPRO-DDRW", 4000); await sleep(300);
 					for (let i = 0; i < 8; i++) { const e = checkBox(await nudgeBox(u, 0, "SYN", i), 0, "SYN", i); if (e) c.bad.push(e); } },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
@@ -3316,6 +3316,8 @@ const MmJourneys = (() => {
 			if (S().side === "midi") u.click('[data-side="int"]');
 			await back(u, c);
 			if (c.plate0 && document.documentElement.dataset.plate !== c.plate0) await platePick(u);
+			/* B-196: the machine's track in focus (status 0x22) before the journey and after its tidy (LIVE RECORDING may lock only that track's values) */
+			if (c.focus) { await sleep(1200); c.focus.push(machine().focus); Bridge.log(`mm-wire-cc B-196: focus ${c.focus.join(" -> ")}, poly ${machine().poly}, plate ${document.documentElement.dataset.plate}`); }
 		}
 	};
 	/* ---- Sequence: the envelope trigs, pitch and the keys (the sequencer chapters) ---- */
@@ -3456,7 +3458,7 @@ const MmJourneys = (() => {
 	   and the plug-in's parameter layer: ready (r) or holding (HOLD), the base channel it sends on, how many values it has sent */
 	const decs = () => [0, 1, 2, 3, 4, 5].map(t => wk()?.tracks[t]?.pages[1][2]).join("/");
 	const ctlSay = () => { const a = ctl.last; return a ? `ctl ${a.ready ? "r" : "HOLD"}${a.haveGlobal ? "" : " noGlobal"}${a.haveKit ? "" : " noKit"} b${a.base} sent ${a.sent}` : "ctl ?"; };
-	const recFacts = () => { const g = gDoc()?.channels || {}; return `T1 ${wk()?.tracks[0]?.machineName}, plate ${document.documentElement.dataset.plate}, side ${S().side}, global ${machine().global?.current} base ${g.base} span ${g.span} auto ${g.auto}, kit ${machine().kit?.current} ${machine().kit?.working}, recv ${I().machine?.recv?.state}, ${ctlSay()}`; };
+	const recFacts = () => { const g = gDoc()?.channels || {}; return `T1 ${wk()?.tracks[0]?.machineName}, plate ${document.documentElement.dataset.plate}, side ${S().side}, global ${machine().global?.current} base ${g.base} span ${g.span} auto ${g.auto}, kit ${machine().kit?.current} ${machine().kit?.working}, recv ${I().machine?.recv?.state}, focus ${machine().focus} poly ${machine().poly}, ${ctlSay()}`; };
 	const recTrace = c => { c.trace = []; const t0 = performance.now(); let last = "", nr = 0; c.sampler = setInterval(() => { const m = I().machine || {}; if (results.length < nr) nr = 0;
 		const r = results.slice(nr).map(x => `${x.op}${x.ok === false ? "!" : ""}`).join(","); nr = results.length;
 		const st = `recv ${m.recv?.state} rec ${tele.last?.record} play ${!!tele.last?.playing} step ${tele.last?.step} dec ${JSON.stringify(lockVals(0, 1, 2))} n ${lockList().length} T1 ${trigsOf(0)} kitDEC ${decs()} ${ctlSay()}`;
