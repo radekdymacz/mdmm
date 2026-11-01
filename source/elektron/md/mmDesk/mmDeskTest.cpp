@@ -732,6 +732,31 @@ namespace
 			run(3500);
 		}
 
+		// LIVE RECORDING starts on the main screen (the full firmware E2E, mm-seq-record-locks): pressed while SYSEX RECV was
+		// still parked from an edit, the machine recorded there, the value turned next was not locked and the EXIT keys that
+		// left SYSEX RECV are LIVE RECORDING's erase. RECORD waits, the session leaves as soon as the dump is taken.
+		{
+			using K = mmDesk::Key;
+			m.recording = 0;
+			p.notes[0][0] = 64;
+			msg(R"({"op":"set","id":9,"kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(p)) + "}");
+			for(int i = 0; i < 300 && !d.recvParked(); ++i)
+				run(10);
+			run(400);
+			check(d.recvParked(), "live record: parked after the edit, its idle time not over");
+			m.keyLog.clear();
+			msg(R"({"op":"record","mode":"live"})");
+			check(lastResult().find("ok")->asBool() && lastResult().find("note")->asString() == "The machine is taking an edit (SYSEX RECV): it follows in a moment."
+				&& m.keyLog.empty(), "live record while parked: accepted, waits (no key yet)");
+			run(1200);
+			check(!d.recvParked() && m.screenWord == mmDesk::Screen::Main, "live record: SYSEX RECV left at once, not after its idle time");
+			const auto lr = std::find(m.keyLog.begin(), m.keyLog.end(), K::LiveRecord);
+			check(lr != m.keyLog.end() && std::count(m.keyLog.begin(), lr, K::Exit) == 6 && std::find(lr, m.keyLog.end(), K::Exit) == m.keyLog.end(),
+				"live record: EXIT to the main screen, then RECORD + PLAY, no EXIT after it");
+			m.recording = -1;
+			run(200);
+		}
+
 		// 0.6 wave 7: STEP RECORDING (STOP held + RECORD) with TRACK t in focus, its keys, and LIVE RECORDING's erase
 		// (EXIT held), as the machine's keys from the mode it is in (mmEditorProbeFirmwareTest recording).
 		{

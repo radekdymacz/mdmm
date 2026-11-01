@@ -4,6 +4,12 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-199 · Machinedrum: one device-lock hold of 10.4 ms in the machine-memory firmware test (open, seen once)
+
+- **From:** main's nightly firmware run 41265534347 (9560c35a1, 2026-11-01), ctest `mdMachineMemoryFirmwareTest_md`: "the work under the device lock off the audio thread under 10.0 ms a hold (worst 10.445 ms, mdPluginProcessor.cpp:717)". Every other check of the test passed; the MM test passed. Not reported by a tester.
+- **Where:** the factory-flash reboot check in `mdPluginProcessor.cpp` takes the lock and, when the cache is ready, copies the factory flash (`captureFactoryFlashCachePersistence`) inside it. Once per boot, so a loaded runner can push one copy over the budget.
+- **Next:** if it comes back, take the copy out of the lock (a snapshot pointer under the lock, the copy after it), as the state capture does (DESIGN-audio-lock.md step 1). The budget stays 10 ms.
+
 ## B-198 · Monomachine: two factory patterns did not play in the real-factory journey (open, seen once)
 
 - **From:** full CI run 41179644105 (main a31053d99), firmware journey `mm-real-factory-patterns`: "pattern 49: did not start (pressed twice); pattern 57: only 2 steps moved". Patterns 1 to 41 played as always, 41 took 6 s instead of 3; the desk's status lines show the pattern selected and SYSEX RECV idle throughout. Not reported by a tester.
@@ -21,7 +27,9 @@ where it came from, the setup, what happens, what should happen, status.*
 - **From:** firmware journey `mm-seq-record-locks` step 5 ("locks [], value turned 67") in the full runs 41144045158, 41174130427, 41179644105, 41187311583 and 41193553307, and in the short run 41192356519 (the first 13 MM journeys); it passed in the runs before (40992417929, 41120339777, 41160387303) and alone after `mm-seq-locks` (41178825349). Not reported by a tester.
 - **Not B-195:** no 0x5E is sent in that part of the run, so the held status polls and `onPanel` do not act there; the rest of the B-195 merge does not touch that path.
 - **What the traces show** (the journey now logs the page's view every 25 ms from Alt+Space to the read-back): run 41192356519, with SYSEX RECV left before RECORD (a trial fix, taken back): recording on at 704 ms, the value sent at 880 ms on step 0, RECORD off at 1402 ms: no lock. Run 41193553307, with the journey waiting for step 1 but SYSEX RECV still parked from `mm-seq-locks`: the value sent on step 1 (the desk named step 2), no lock either; the pattern the page holds never changed while it recorded. In the passing runs the lock landed on step 2 or 3 (the trig the recording leaves). So each of two conditions lost it: the value in the start's step, and the recording on SYSEX RECV. Neither is measured on the firmware (`mmDeskFirmwareTest` reclock waits for SYSEX RECV to be left and for the playhead).
-- **Next:** measure in reclock (the value right after RECORD + PLAY; RECORD pressed while parked). Likely fix: LIVE RECORDING leaves SYSEX RECV first (the trial `RecvSession::leaveSoon`, commit b9eb729cf, with its mmDeskTest case) and the journey turns the value after step 0 (in the journey now), both together; not run together yet.
+- **Again (2026-10-31):** main's full CI run 41198483344 (41f5d6594): step 5 failed, the value turned on step 2 (the page named step 3), SYSEX RECV parked the whole time, no lock. So a value after step 0 is not enough on its own; the recording on SYSEX RECV loses it.
+- **Trial (2026-11-01, `fix/0.9-b196-record-locks`):** the leave before LIVE RECORDING (b9eb729cf) put back, with the journey's turn after step 0; the two together, first time. Proof: one full MM firmware E2E.
+- **Next (older):** measure in reclock (the value right after RECORD + PLAY; RECORD pressed while parked). Likely fix: LIVE RECORDING leaves SYSEX RECV first (the trial `RecvSession::leaveSoon`, commit b9eb729cf, with its mmDeskTest case) and the journey turns the value after step 0 (in the journey now), both together; not run together yet.
 
 ## B-195 · Monomachine: a DigiPRO MGR job now and then leaves its position empty (fixed in 0.9, main a31053d99)
 

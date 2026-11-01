@@ -195,7 +195,7 @@ namespace mmDesk
 				m_lastActivity = now;
 				++m_sentParked;
 			}
-			if(now - m_lastActivity > idleMs)
+			if(now - m_lastActivity > (m_leaveSoon && !taking() ? leaveSoonMs : idleMs))
 			{
 				out.keys = exitKeys();
 				go(State::Leaving, now);
