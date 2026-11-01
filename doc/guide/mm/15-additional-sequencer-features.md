@@ -145,6 +145,8 @@ To change several mutes together:
 
 NOTE: A mute acts on notes. A sound that already plays rings out.
 
+NOTE: Only the emulator can set the mutes of the MIDI tracks M1 to M6. It presses the machine's MUTE window for you. With the HW MIDI engine the editor refuses them and says so, because the Monomachine has no MIDI message for them. Press the keys on the machine.
+
 NOTE: A MIDI track needs a MIDI channel of its own to be muted over MIDI. If it has none, the page says so and offers **Give each track its own channel**. That sets the channel span of the global to 6.
 
 ### MINIMISING THE MUTE WINDOW

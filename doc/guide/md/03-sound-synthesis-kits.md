@@ -190,6 +190,6 @@ Machines without a picture, such as MIDI out, show only boxes and a line about w
 
 To change a value with the keyboard, focus a box and press [↑] or [↓]. Each press moves it one step.
 
-Hold [⌥] and drag a value to move the same knob on every track. This is Control All. MIDI and control machines are left out.
+Hold [⌥] and drag a value to move the same knob on every track. This is Control All. MIDI and control machines are left out. {key:undo} takes the whole move back in one step.
 
 TIP: To set an exact value, hold [⌘] and click the box, type the value and press [ENTER]. A box that shows a sign, such as **PAN**, takes -64 to +63. A value past the ends is refused: the field turns red and says the range, and stays open until you correct it or press [ESC]. Each typed value is one undo step.

@@ -133,7 +133,7 @@ for machine in md mm; do
 	# The bundle as built, without runtime files a plug-in load may have left in it.
 	cp -R "${vst3}" "${dir}/VST3/"
 	find "${dir}/VST3" -type f ! -name '*.so' ! -name 'moduleinfo.json' -delete
-	cp "${source_dir}/LICENSE.md" "${dir}/"
+	cp "${source_dir}/LICENSE.md" "${source_dir}/THIRD-PARTY-NOTICES.md" "${dir}/"
 	sed -e "s/@EDITOR@/${editor}/g" -e "s/@PRODUCT@/${product}/g" -e "s/@VERSION@/${version}/g" \
 		"${script_dir}/README-Linux.txt" > "${dir}/README.txt"
 	if find "${dir}" -type f | grep -E -i '\.(bin|rom|nvram|syx|wav)$'; then

@@ -22,7 +22,7 @@ Point at a key or a tile to see the size of the sample: its length in seconds, i
 
 ### Memory left
 
-The header of the **ROM slots** card gives the sample memory in seconds: how much the samples hold, how much is free, and the free share in per cent. The ROM slots and the four RAM buffers share the memory, so the figure counts both. Point at the <MEM> field for the same figures in samples.
+The header of the **ROM slots** card gives the sample memory in seconds: how much the samples hold, how much is free, and the free share in per cent. The ROM slots and the four RAM buffers share the memory, so the figure counts both. Point at the <MEM> field for the same figures in samples. The machine does not report its own figure over MIDI, so the editor works it out from the samples it reads.
 
 NOTE: The editor works the figure out from the samples it reads. The Machinedrum does not report its own figure over MIDI, so the share can differ by a few per cent from the one on the machine's SAMPLE MGR screen.
 

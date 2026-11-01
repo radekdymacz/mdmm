@@ -141,7 +141,7 @@ namespace md
 	}
 
 	bool Device::captureFactoryFlashCachePersistence(std::string& _filename,
-		FactoryFlashSnapshot& _snapshot, std::string& _error)
+		SharedFactoryFlashSnapshot& _snapshot, std::string& _error)
 	{
 		_error.clear();
 		_filename.clear();
@@ -156,7 +156,7 @@ namespace md
 			_error = "factory cache is not ready";
 			return false;
 		}
-		if(!m_hardware->copyFactoryFlashSnapshot(_snapshot))
+		if(!m_hardware->shareFactoryFlashSnapshot(_snapshot))
 		{
 			_error = "validated factory cache could not be captured";
 			return false;

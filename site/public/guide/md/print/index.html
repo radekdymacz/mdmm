@@ -159,7 +159,7 @@
 <div class="gd-body gd-prose"><h2>REAR CONNECTORS</h2>
 <p>The editor has no power switch or power input. It runs as a plug-in in your DAW, or as a standalone program. It has no rack mount, no battery and nothing to care for.</p>
 <h4 class="gd-h3">MIDI</h4>
-<p>In a DAW the plug-in takes MIDI from the host. In the standalone, open the <b class="gd-ui">AUDIO / MIDI</b> settings with <kbd class="gd-key">[,]</kbd>. The <b class="gd-ui">MIDI</b> card lists the MIDI inputs, the output and Bluetooth devices. No MIDI input is on until you switch it on. The list follows the system: a device plugged in or out appears or goes at once, and an input or output you had chosen comes back when its device returns. The <b class="gd-ui">Monitor</b> row counts what came in and went out. A red line under the output warns when a virtual bus, such as an IAC bus, is both an input and the output: switch the input off or send to another bus. See &quot;MIDI and sync&quot; in the installation guide.</p>
+<p>In a DAW the plug-in takes MIDI from the host, and the <b class="gd-ui">AUDIO / MIDI</b> panel only tells you that the host owns audio and MIDI. In the standalone, open the <b class="gd-ui">AUDIO / MIDI</b> settings with <kbd class="gd-key">[,]</kbd>. The <b class="gd-ui">MIDI</b> card lists the MIDI inputs, the output and Bluetooth devices. No MIDI input is on until you switch it on. The list follows the system: a device plugged in or out appears or goes at once, and an input or output you had chosen comes back when its device returns. The <b class="gd-ui">Monitor</b> row counts what came in and went out. A red line under the output warns when a virtual bus, such as an IAC bus, is both an input and the output: switch the input off or send to another bus. See &quot;MIDI and sync&quot; in the installation guide.</p>
 <p>The machine's own MIDI out reaches your DAW through the plug-in's MIDI output, and the standalone's MIDI output. It carries notes, controllers, program changes, pitch bend, pressure, clock, start, stop and continue. It never carries SysEx.</p>
 <p>The machine's MIDI channels, sync and the rest of its global settings are on the GLOBAL panel. Click <b class="gd-ui">GLOBAL</b> in the top bar, or choose <b class="gd-ui">GLOBAL…</b> in the engine menu of the LCD.</p>
 <p>MIDI Thru has no meaning in the editor.</p>
@@ -351,7 +351,7 @@
 <p>Machines without a picture, such as MIDI out, show only boxes and a line about what the machine does.</p>
 <figure class="gd-shot"><img src="/guide/shots/md-sound-groups.webp" width="1440" height="924" alt="A machine's groups"><figcaption>A machine's groups</figcaption></figure>
 <p>To change a value with the keyboard, focus a box and press <kbd class="gd-key">[↑]</kbd> or <kbd class="gd-key">[↓]</kbd>. Each press moves it one step.</p>
-<p>Hold <kbd class="gd-key">[⌥]</kbd> and drag a value to move the same knob on every track. This is Control All. MIDI and control machines are left out.</p>
+<p>Hold <kbd class="gd-key">[⌥]</kbd> and drag a value to move the same knob on every track. This is Control All. MIDI and control machines are left out. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes the whole move back in one step.</p>
 <aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>To set an exact value, hold <kbd class="gd-key">[⌘]</kbd> and click the box, type the value and press <kbd class="gd-key">[ENTER]</kbd>. A box that shows a sign, such as <b class="gd-ui">PAN</b>, takes -64 to +63. A value past the ends is refused: the field turns red and says the range, and stays open until you correct it or press <kbd class="gd-key">[ESC]</kbd>. Each typed value is one undo step.</p></aside>
 </div></section>
 </article>
@@ -650,7 +650,6 @@
 <ol class="gd-steps"><li>Click the kit name in the <b class="gd-light">&lt;KIT&gt;</b> field of the LCD. The kit library opens.</li><li>Click <b class="gd-ui">Reload</b> under <b class="gd-ui">Current</b>. The button is available only when the kit has unsaved edits. The edits are lost and the kit is as stored.</li></ol>
 <figure class="gd-shot"><img src="/guide/shots/md-kit-reload.webp" width="1440" height="924" alt="The kit library with Reload"><figcaption>The kit library with Reload</figcaption></figure>
 <p>The machine keeps the edits you lose in its UNDO KIT.</p>
-<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Click <b class="gd-ui">FN</b> in the top bar if your system or host takes <kbd class="gd-key">[⌥]</kbd> for itself. The next click, drag or key then counts as if <kbd class="gd-key">[⌥]</kbd> were held. Double-click <b class="gd-ui">FN</b> to keep it on.</p></aside>
 </div></section>
 <section class="gd-sec" id="scale-setup">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.38</span></span></aside>
@@ -794,7 +793,7 @@
 <p>With <b class="gd-ui">All tracks</b> the swing row is shared: a mark on a step swings that step on every track. With <b class="gd-ui">This track</b> each track has its own swing steps. Every track uses the same <b class="gd-light">&lt;SWG&gt;</b> amount.</p>
 <aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>Swing only the hi-hats for a feel apart from the rest of the pattern.</p></aside>
 <figure class="gd-shot"><img src="/guide/shots/md-seq-swing-accent.webp" width="1440" height="924" alt="The LCD with the accent and swing amounts, and the trig types under the grid"><figcaption>The LCD with the accent and swing amounts, and the trig types under the grid</figcaption></figure>
-<p>Tick <b class="gd-ui">Swing</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu to copy, paste or clear the swing steps of a track (see &quot;Track copy&quot;).</p>
+<p>Tick <b class="gd-ui">Swing</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu to copy, paste or clear the swing steps of a track (see &quot;Track copy&quot;). A selection copy also takes the swing steps with the steps.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>With <b class="gd-ui">All tracks</b> the swing row is the pattern's, so a paste or a clear of <b class="gd-ui">Swing</b> changes it for every track.</p></aside>
 </div></section>
 <section class="gd-sec" id="parameter-locks">
@@ -1012,7 +1011,7 @@
 <p>The base channel is the first of four MIDI channels the machine listens and sends on: channel n to channel n+3.</p>
 <p>In the <b class="gd-ui">Control</b> card, click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Base channel</b>. The value reads the four channels, for example 1 to 4. It steps one channel at a time, up to 13 to 16.</p>
 <p>The machine takes notes, program changes and controllers on these four channels only. A DAW drum track on another channel, for example channel 10, plays nothing until the base channel puts that channel among the four or the notes are sent on channels 1 to 4.</p>
-<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>When the global holds a base channel of OFF, the card reads OFF. The machine then takes no notes, mutes or sound values over MIDI, and the editor cannot play it.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>When the global holds a base channel of OFF, the card reads OFF. The machine then takes no notes, mutes or sound values over MIDI, and the editor cannot play it. The editor cannot set OFF. Click <b class="gd-ui">+</b> on OFF to return to 1 to 4.</p></aside>
 </div></section>
 <section class="gd-sec" id="map-editor">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.59,</span> <span>60,</span> <span>C-3</span></span></aside>
@@ -1174,7 +1173,7 @@
 <p>With a ROM slot selected, the page shows under it every ROM slot as a tile: its waveform, its number and name, and a key to hear it. An empty slot offers <b class="gd-ui">Load…</b>. Click a tile to select the slot.</p>
 <p>Point at a key or a tile to see the size of the sample: its length in seconds, in kilobytes and in samples, and its rate. A kilobyte count is the sample as the machine stores it, 16-bit and mono.</p>
 <h4 class="gd-h3">Memory left</h4>
-<p>The header of the <b class="gd-ui">ROM slots</b> card gives the sample memory in seconds: how much the samples hold, how much is free, and the free share in per cent. The ROM slots and the four RAM buffers share the memory, so the figure counts both. Point at the <b class="gd-light">&lt;MEM&gt;</b> field for the same figures in samples.</p>
+<p>The header of the <b class="gd-ui">ROM slots</b> card gives the sample memory in seconds: how much the samples hold, how much is free, and the free share in per cent. The ROM slots and the four RAM buffers share the memory, so the figure counts both. Point at the <b class="gd-light">&lt;MEM&gt;</b> field for the same figures in samples. The machine does not report its own figure over MIDI, so the editor works it out from the samples it reads.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The editor works the figure out from the samples it reads. The Machinedrum does not report its own figure over MIDI, so the share can differ by a few per cent from the one on the machine's SAMPLE MGR screen.</p></aside>
 <h4 class="gd-h3">Hear a sample</h4>
 <p>Click the play key on a tile, or the play key by the waveform of the selected slot. !<a href="shot:e2e-md-sampler-audition">A tile with its play key</a></p>
@@ -1301,7 +1300,7 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.82</span></span></aside>
 <div class="gd-body gd-prose"><h2>SPECIFICATIONS</h2>
 <p>The editor keeps to the limits of the machine. It refuses what the machine cannot hold, and says why.</p>
-<table class="gd-table"><thead><tr><th>Item</th><th>Limit</th></tr></thead><tbody><tr><td>Tracks</td><td>16</td></tr><tr><td>Patterns</td><td>128, in 8 banks of 16</td></tr><tr><td>Pattern length</td><td>16, 32, 48 or 64 steps</td></tr><tr><td>Kits</td><td>64</td></tr><tr><td>Songs</td><td>32, of up to 256 rows each</td></tr><tr><td>Globals</td><td>8</td></tr><tr><td>Parameter locks</td><td>64 locked parameters in a pattern</td></tr><tr><td>Sample slots</td><td>48 ROM slots and 4 RAM slots</td></tr></tbody></table>
+<table class="gd-table"><thead><tr><th>Item</th><th>Limit</th></tr></thead><tbody><tr><td>Tracks</td><td>16</td></tr><tr><td>Patterns</td><td>128, in 8 banks of 16</td></tr><tr><td>Pattern length</td><td>16, 32, 48 or 64 steps</td></tr><tr><td>Kits</td><td>64</td></tr><tr><td>Songs</td><td>32, of up to 256 rows each</td></tr><tr><td>Globals</td><td>8</td></tr><tr><td>Parameter locks</td><td>64 locked parameters in a pattern</td></tr><tr><td>Control change messages</td><td>384, which is 24 for each of the 16 tracks</td></tr><tr><td>Sample slots</td><td>48 ROM slots and 4 RAM slots</td></tr></tbody></table>
 <figure class="gd-shot"><img src="/guide/shots/e2e-md-limits.webp" width="1440" height="924" alt="The limits as the editor shows them"><figcaption>The limits as the editor shows them</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="differences-between-the-mki-and-mkii-models">

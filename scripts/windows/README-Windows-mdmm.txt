@@ -20,6 +20,7 @@ What is in here
   @PRODUCT@.exe    the standalone app (run it from anywhere)
   @PRODUCT@.vst3\  the VST3 plug-in (a folder, keep it whole)
   LICENSE.md       GPL-3.0
+  THIRD-PARTY-NOTICES.md   the licences of the code and fonts inside
   WebView2-LICENSE.txt   the licence of Microsoft's WebView2 loader, which
                    is built into the editor
 

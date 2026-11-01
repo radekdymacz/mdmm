@@ -235,7 +235,9 @@ for row in "${machines[@]}"; do
     "${machine}" "${app_name}" "${data_folder}" "${old_name}"
   render "${resources_src}/readme.html" "${resources}/readme.html" \
     "${machine}" "${app_name}" "${data_folder}" "${old_name}"
-  { cat "${resources_src}/license-preamble.txt"; echo; cat "${source_dir}/LICENSE.md"; } \
+  { cat "${resources_src}/license-preamble.txt"; echo; cat "${source_dir}/LICENSE.md"; echo; echo; \
+    echo "Third-party notices: the full list with versions is THIRD-PARTY-NOTICES.md in the disk image and the archive."; \
+    echo; sed -n '/^## Licence texts/,$p' "${source_dir}/THIRD-PARTY-NOTICES.md" | grep -v '^```'; } \
     > "${resources}/license.txt"
 
   cat > "${machine_dir}/distribution.xml" <<XML

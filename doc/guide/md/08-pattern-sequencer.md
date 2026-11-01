@@ -136,8 +136,6 @@ To drop the tweaks of a kit and load its stored sound again:
 
 The machine keeps the edits you lose in its UNDO KIT.
 
-NOTE: Click **FN** in the top bar if your system or host takes [⌥] for itself. The next click, drag or key then counts as if [⌥] were held. Double-click **FN** to keep it on.
-
 ## SCALE SETUP
 <!-- rows: MD-103 MD-104 MD-105 MD-106 @dec5f1 -->
 
@@ -394,7 +392,7 @@ TIP: Swing only the hi-hats for a feel apart from the rest of the pattern.
 
 ![The LCD with the accent and swing amounts, and the trig types under the grid](shot:md-seq-swing-accent)
 
-Tick **Swing** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu to copy, paste or clear the swing steps of a track (see "Track copy").
+Tick **Swing** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu to copy, paste or clear the swing steps of a track (see "Track copy"). A selection copy also takes the swing steps with the steps.
 
 NOTE: With **All tracks** the swing row is the pattern's, so a paste or a clear of **Swing** changes it for every track.
 

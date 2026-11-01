@@ -35,8 +35,8 @@ Keys.bind({ id: "zoom-in", short: "Zoom +", scope: "any", keys: ["="], mod: "cmd
 Keys.bind({ id: "zoom-reset", short: "Zoom 100 %", scope: "any", keys: ["0"], mod: "cmd", group: "Anywhere", does: "Page zoom: back to 100 %" });
 /* tips: the view's short list (a tip is an entry without keys) */
 [
-	["tip-hold-alt", "Hold ⌥ (or click FN in the top bar): the keys and buttons it changes say what they do then (Clr becomes All)."],
-	["tip-fn", "No ⌥ to hand (a touch screen, a DAW or desktop that takes Alt)? Click FN: the next click, drag or key gets ⌥; double-click it to keep it on."],
+	["tip-hold-alt", "Hold ⌥: the keys and buttons it changes say what they do then (Clr becomes All)."],
+	["tip-fn", "The ⌥ layer is held, not latched. To see what it does without holding it, click the ⌥ / FN layer in the keyboard view (?)."],
 	["tip-step-menu", "Right-click a step: everything a step can do, with its key (Ctrl-click on a Mac)."],
 	["tip-select", "⌘-click or ⌘-drag steps to select them; the LCD's Copy, Clr and Paste then act on the selection."],
 	["tip-undo", "A drag, a paint or a run of rotates is one undo step: ⌘Z takes it back whole."],

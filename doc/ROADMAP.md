@@ -164,18 +164,18 @@ reached at all.
 |---|---|---|---|---|
 | F1 | HW MIDI proven on a real MD **and** a real MM, separately: connect/reconnect, edits both ways, mutes, transport, transfers, imported globals; Windows MIDI (B-037); a host that suspends processing (stopped transport with "suspend when idle", an offline bounce): what the editor sends to the machine leaves only inside an audio block (`ExternalMidi::flushOut`), so it waits while the host calls none, and the desk's pacing, read-backs and time-outs with it. FR-09 is the MD demo only | both | L | before 1.0 |
 | F2 | Stability: MM crackle (B-036), Windows blank window/freeze (B-029, B-035), Linux blank window (B-033), CPU in Live (B-005), save/autosave stalls (B-034). Gate in §7 | both | L | before 1.0 |
-| F3 | GLOBAL page: done in 0.5.0 (B-051): the MD's panel, shared: the 8 slots, MIDI channels, program change, sync in and out, routing mode, Clear. 0.6 (wave 5): a page under the header, Copy · Paste · Clear, MM master tune and CONTROL OUT1 (0x07-0x09, P2), MD TRIG IN A / B editable, LEARN and Reset map. Left: the global's still undecoded bytes (0x0d-0x11, 0x30-0x35, the six CONTROL bytes 0x36-0x3b: no MIDI effect found) | MM | S | before 1.0 |
+| F3 | GLOBAL page: done in 0.5.0 (B-051): the MD's panel, shared: the 8 slots, MIDI channels, program change, sync in and out, routing mode, Clear. 0.6 (wave 5): a page under the header, Copy · Paste · Clear, MM master tune and CONTROL OUT1 (0x07-0x09, P2), MD TRIG IN A / B editable, LEARN and Reset map. Left: the global's still undecoded bytes (0x0d-0x11, 0x30-0x35, the six CONTROL bytes 0x36-0x3b: no MIDI effect found) | MM | S | done 0.5.0, 0.6.0 |
 | F4 | ~~Step selection, step menu and keyboard shortcuts, as in the MD editor (I-001)~~ done in 0.5.0 | MM | L | done |
-| F5 | Song management: names, copy, clear, save-as, a song library (I-011); the MM song LOOP target (B-038) | both | M | B-038 before 1.0, the rest 1.x |
-| F6 | CTR-AL kits: the guide lists a limit no code enforces; test on the firmware, then fix or drop it | MD | S-M | before 1.0 |
-| F7 | Per-step swing trigs; EDIT ALL toggles for accent, slide and swing | MD | S-M | 1.x |
-| F8 | Sample manager: RAM→ROM copy, erase a slot, export a sample to WAV | MD | M | 1.x |
+| F5 | Song management: names, copy, clear, save-as, a song library (I-011); the MM song LOOP target (B-038). Song slots (load, rename, copy, paste, drag, Save to, clear) shipped in 0.6.0; B-038 is built on main for 0.9 | both | M | B-038 in 0.9, a song library 1.x |
+| F6 | ~~CTR-AL kits: the guide lists a limit no code enforces~~ done in 0.6.0: tested on the firmware (B-131: the machine leaves the track's LFO track at 16, now a valid value; `mdCtrLfoFirmwareTest`), a kit with a CTR machine edits like any other (row MD-265) | MD | S-M | done 0.6.0 |
+| F7 | ~~Per-step swing trigs; EDIT ALL toggles for accent, slide and swing~~ done in 0.6.0: Accent, Swing and Slide in the trig types under the grid, All tracks or This track, copy and clear "what" (rows MD-128, 131 to 133) | MD | S-M | done 0.6.0 |
+| F8 | Sample manager: RAM→ROM copy, erase a slot, export a sample to WAV. Built on main for 0.9: copy, paste, RAM to ROM, rename, undo, WAV and SDS export. Erase one, erase all and Clear are not built: the machine has no SysEx for it, so the LCD probe (spec in release/0.9/md-sample-manager.md) is in progress | MD | M | 0.9 |
 | F9 | Sync and control not needed by F1: the rest of CONTROL IN/OUT, clock, program change (MM); trig in A/B editable (MD); pattern change and master FX from the DAW | both | M | 1.x |
-| F10 | ~~Piano roll: a clear note-length handle (I-010), draw mode and box select (I-007)~~ done in 0.5.0 | MM | M | done |
-| F11 | Track copy, super copy, melody copy | MM | M | 1.x |
+| F10 | ~~Piano roll: a clear note-length handle (I-010), draw mode and box select (I-007)~~ done in 0.5.0 (0.6.0 dropped the draw mode: a click adds a note, Ctrl/⌘ selects) | MM | M | done |
+| F11 | ~~Track copy, super copy, melody copy~~ done in 0.6.0: the ▾ beside COPY, CLR and PASTE picks what goes (notes, melody, slide, swing, locks, arp, transpose, machine + sound); rows MM-187, MM-191, MM-192 | MM | M | done 0.6.0 |
 | F12 | Projects: save and load a whole set in the standalone (the +Drive equivalent) | both | M | 1.x |
-| F13 | The Control / MIDI Learn workspace: done in 0.8 (DESIGN-learn-0.8.md): CC learn into the project, a mapped CC overrides the machine's own CC, the router on the audio thread, the Control tab and LEARN on both pages, off in the HW MIDI engine. Not built: a toggle mode, MIDI feedback to the controller, a default set for new instances (added if testers ask) | both | M-L | done 0.8 |
-| F14 | DigiPRO user waveforms (MKII) | MM | L | later |
+| F13 | The Control / MIDI Learn workspace: done in 0.8.0 (DESIGN-learn-0.8.md): CC learn into the project, a mapped CC overrides the machine's own CC, the router on the audio thread, the Control tab and LEARN on both pages, off in the HW MIDI engine. Not built: a toggle mode, MIDI feedback to the controller, a default set for new instances (added if testers ask) | both | M-L | done 0.8.0 |
+| F14 | DigiPRO user waveforms (MKII): the manager card on the GLOBAL page is built on main for 0.9 (send, receive, rename, erase; `mmDigiproManagerFirmwareTest`) | MM | L | 0.9 |
 | F15 | TurboMIDI for bulk transfers to a real machine | both | L | later |
 | F16 | Small wishes: turn off the unsaved-kit warning (I-009), show incoming notes (I-002), follow the last-played track (I-003) | both | S each | later |
 
@@ -185,9 +185,18 @@ The grid features stay equal on both sides by copying code and ideas both ways, 
 shipped here updates its row in `audio/xox-plocks/PARITY.md`.
 It may copy only page and deskCore files Radek wrote alone (its VENDOR.md), never the GPL code of this repo.
 
+### 0.9 state (2026-11-01)
+
+Plan: [release/PLAN-0.9.md](release/PLAN-0.9.md); state: [release/HANDOFF-0.9.md](release/HANDOFF-0.9.md).
+
+- Waves 1 to 5 are done on main: the MD sample manager (erase still open), the MM DigiPRO manager, the MM song loop (B-038), undo for SysEx import and Empty Reset (B-130, B-045), and the MM encoding fixes. B-189 (OJMP is bits 3 to 6 of the arpeggiator's play byte) and B-201 (Linux blank web view; not yet proved on Fedora) are fixed.
+- B-196 (`mm-seq-record-locks` in full runs) is parked after 0.9: the cause is in the plug-in path, and `mm-wire-cc` runs alone.
+- Full CI 41305887640: all green except one MM journey seen once (B-202); firmware ctests pass.
+- Left for 0.9: the MD sample erase probe, then waves 6 to 10 (stability on Windows and Linux, hardware MIDI, signing, fresh E2E evidence, housekeeping).
+- Not in 0.9: F9, F12, F15 and the other ideas in IDEAS.md. No auto-update install.
+
 ### To verify
 
-- CTR-AL (F6): no code refuses it; needs a firmware test.
 - HW MIDI has only run against the emulator; local control and trig in A/B are marked "not verified" in the editor.
 - [mm-manual-mapping.md](modern-ux/mm-manual-mapping.md) is stale: rotate, chains and live recording are built.
 
@@ -199,7 +208,7 @@ It may copy only page and deskCore files Radek wrote alone (its VENDOR.md), neve
 |---|---|
 | Stability (F2) | No callback overrun or audible drop-out while: playing, editing (lock drags, kit loads), saving/restoring a project, closing and reopening the window, and running several instances. Checked with the existing diagnostics ([md_mm_performance_diagnostics.md](md_mm_performance_diagnostics.md), `scripts/mdmm-rt-check.sh`, core capacity) on macOS (Apple silicon and Intel), Windows and Linux, at 64, 128 and 512 frames, 44.1 and 48 kHz |
 | HW MIDI (F1) | The F1 checklist passes on a real MD and a real MM; anything that does not is labelled beta or hidden |
-| Parity (F3, F4, F5 LOOP, F6) | Done, each with a journey test |
+| Parity (F3, F4, F5 LOOP, F6) | Done, each with a journey test. F3, F4, F6 shipped; F5 LOOP is built for 0.9 |
 | Regression | Firmware suite, journeys, pluginval and auval green on the shipped files |
 | Signing | Signed and notarised macOS build (LAUNCH-CHECKLIST §1) |
 

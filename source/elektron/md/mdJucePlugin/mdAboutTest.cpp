@@ -27,6 +27,7 @@ int main()
 	check(text.find("Version " + version) != std::string::npos, "the About box gives the version");
 	check(text.find(MDMM_VENDOR) != std::string::npos, "the maker");
 	check(text.find("GNU General Public License, version 3") != std::string::npos, "the licence");
+	check(text.find("THIRD-PARTY-NOTICES.md") != std::string::npos, "the third-party notices");
 	check(text.find("joelanders") != std::string::npos && text.find("Gearmulator") != std::string::npos, "the credits");
 	std::printf("mdAboutTest: %s\n", g_failures ? "FAIL" : "PASS");
 	return g_failures ? 1 : 0;
