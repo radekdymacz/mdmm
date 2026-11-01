@@ -55,16 +55,28 @@ namespace
 			{"down", 0x54e986f1d484ca65ull}, {"right", 0}};
 	}
 
-	// Run 5 (the first that erases; screens after RIGHT are not known yet, so unchecked): one slot = DOWN to it in the
-	// NAME/SIZE column, ENTER, ENTER. All = DOWN far enough to reach the ALL entry at the bottom (the list stops there),
-	// ENTER, ENTER.
+	// Run 41320779646 (the first that erased): the NAME/SIZE list opens on ROM-01 (f315c30f50d46c39), has 53 lines (48 ROM
+	// slots, four RAM, the last one the ALL entry, 703dd3e87cc7b997) and WRAPS: 60 DOWNs came round to ROM-08 and erased it.
+	// One slot = DOWN to it (ROM-06: 0cd5bcd0b79464f5, a4463127fe3615c1, 3f3a251e73e48931, 6af9c064e70dd426,
+	// 0dcb98d854c50316), ENTER (c5477c171abe7795), ENTER (f76012e0c0d67a01): ROM-06 was gone, the others untouched, the same
+	// on two machines. All = UP once from ROM-01 (wraps to the ALL entry), ENTER, ENTER (the hashes after those two are
+	// from the ROM-06 run; the ALL run's own are printed by the next run).
 	std::vector<Step> eraseScript(const bool _all)
 	{
 		auto script = eraseRoute();
-		for(int i = 0; i < (_all ? 60 : g_eraseSlot); ++i)
-			script.push_back({"down", 0});
-		script.push_back({"enter", 0});
-		script.push_back({"enter", 0});
+		script.back().screen = 0xf315c30f50d46c39ull;
+		if(_all)
+		{
+			script.push_back({"up", 0x703dd3e87cc7b997ull});
+			script.push_back({"enter", 0});
+			script.push_back({"enter", 0});
+			return script;
+		}
+		for(const uint64_t screen : {0x0cd5bcd0b79464f5ull, 0xa4463127fe3615c1ull, 0x3f3a251e73e48931ull, 0x6af9c064e70dd426ull,
+				0x0dcb98d854c50316ull})
+			script.push_back({"down", screen});
+		script.push_back({"enter", 0xc5477c171abe7795ull});
+		script.push_back({"enter", 0xf76012e0c0d67a01ull});
 		return script;
 	}
 
