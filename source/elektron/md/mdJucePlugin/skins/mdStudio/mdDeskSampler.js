@@ -42,7 +42,12 @@ function onSampleHistory(m) { smpHist = m; if (S.ws === "sampler") scheduleRende
 function onSampleExport(m) { toast(m.text); }
 /* 0.9: Erase (sampleErase): the machine's own keys pressed by the plug-in; running until done, stopped (nothing erased) or failed */
 let smpErase = null;
-function onSampleErase(m) { smpErase = m; if (m.state !== "running") toast(m.text); if (S.ws === "sampler") scheduleRender(); }
+function onSampleErase(m) {
+	smpErase = m; if (m.state !== "running") toast(m.text);
+	/* a step that did not find its screen: what the plug-in saw (hashes, then the LCD as the firmware probe dumps it) into the log */
+	if (m.seen) { Bridge.log("sampleErase " + m.state + ": " + m.seen); (m.lcd || []).forEach(r => Bridge.log("sampleErase LCD |" + r)); }
+	if (S.ws === "sampler") scheduleRender();
+}
 const smpErasing = () => !!smpErase && smpErase.state === "running";
 const smpAt = v => { const [bank, slot] = String(v).split(":"); return [bank, +slot]; };
 const smpName = (bank, i) => bank === "ram" ? "RAM " + (i + 1) : romCode(i + 1);

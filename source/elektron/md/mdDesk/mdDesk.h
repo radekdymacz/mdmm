@@ -231,6 +231,7 @@ namespace mdDesk
 			bool verifying = false;
 			double verifyUntil = 0;
 			std::string stopped;		// why the keys stopped, when they stopped at the last one
+			std::vector<std::string> lcd;	// the screen a step did not expect (erase::textOf), for the log
 		};
 		static constexpr double g_eraseVerifyMs = 10000;
 		std::optional<EraseRun> m_erase;
