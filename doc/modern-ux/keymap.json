@@ -140,7 +140,7 @@
 			"keys": [],
 			"mod": "",
 			"group": "Tips",
-			"does": "Hold ⌥ (or click FN in the top bar): the keys and buttons it changes say what they do then (Clr becomes All).",
+			"does": "Hold ⌥: the keys and buttons it changes say what they do then (Clr becomes All).",
 			"tip": true
 		},
 		{
@@ -149,7 +149,7 @@
 			"keys": [],
 			"mod": "",
 			"group": "Tips",
-			"does": "No ⌥ to hand (a touch screen, a DAW or desktop that takes Alt)? Click FN: the next click, drag or key gets ⌥; double-click it to keep it on.",
+			"does": "The ⌥ layer is held, not latched. To see what it does without holding it, click the ⌥ / FN layer in the keyboard view (?).",
 			"tip": true
 		},
 		{
