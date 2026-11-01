@@ -63,6 +63,8 @@ The scale of a pattern is its length and its speed. Both are on the second line 
 - Hold [⇧] and click for the page before.
 - Scroll the wheel over it to change the length one step at a time.
 
+**LEN** changes the length and copies nothing. Steps past the old length hold what the pattern stored there. To fill a longer pattern, use **×2**.
+
 The key beside it, **×2**, doubles the pattern. The new half is a copy of the first half, with every track's steps, slides, swing steps and locks. A pattern of more than 32 steps cannot double, and the page says so. {key:undo} takes the doubling back in one step.
 
 A page is 16 steps. The **Page** key on the bar above the lock lane steps through the pages. The keys [ and ] go to the page before and after. The four lights beside **Page** show how many pages the pattern has and which one you see. **All** shows every step at once. **Fol** makes the page follow the play position.

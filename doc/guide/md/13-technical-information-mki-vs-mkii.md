@@ -15,6 +15,7 @@ The editor keeps to the limits of the machine. It refuses what the machine canno
 | Songs | 32, of up to 256 rows each |
 | Globals | 8 |
 | Parameter locks | 64 locked parameters in a pattern |
+| Control change messages | 384, which is 24 for each of the 16 tracks |
 | Sample slots | 48 ROM slots and 4 RAM slots |
 
 ![The limits as the editor shows them](shot:e2e-md-limits)

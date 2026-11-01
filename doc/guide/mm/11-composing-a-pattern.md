@@ -62,7 +62,7 @@ Rotates made while [⌥] stays down are one undo step. Let go of [⌥] and the n
 
 The LCD keys **Copy**, **Clr** and **Paste** act on the selected track. With no steps selected they act on the page shown (see "Track page copy"). With steps selected they act on the selection (see "Note copy").
 
-NOTE: The machine also has a GRID RECORDING state. When the machine is stopped, **●** on the LCD turns it on, and the machine's own trig keys write steps. The editor reads the steps back. You do not need it to write notes.
+NOTE: The machine also has a GRID RECORDING state. When the machine is stopped, **●** on the LCD turns it on, and the machine's own trig keys write steps. The editor reads the steps back. You do not need it to write notes. With the HW MIDI engine the editor cannot switch the recording modes, because the Monomachine has no MIDI message for RECORD. Press RECORD on the machine.
 
 ## LIVE RECORDING
 <!-- rows: MM-179 MM-180 MM-181 @ef0b73 -->
@@ -125,7 +125,7 @@ Notes, NOTE OFFs, envelope trigs, slides and locks go along. Other keys on a sel
 
 Drag the selection with [⌘] held to drop a copy where you let go. A dashed frame shows where it lands. With **Draw** dark, drag the selected notes in the roll without [⌘] to move them.
 
-Select a step or steps and click the small ⋯ on the selection for the step menu (a right-click on a step opens it too): note on or off, NOTE OFF, a trigless trig, the envelopes (Amp, Filter, LFO), slide, swing, a chord note, copy, cut, paste here, duplicate, clear, and fill every 2nd or 4th step from the one you clicked. Synth steps paste onto synth tracks, MIDI steps onto MIDI tracks.
+Select a step or steps and click the small ⋯ on the selection for the step menu (a right-click on a step opens it too): note on or off, NOTE OFF, a trigless trig, the envelopes (Amp, Filter, LFO), slide, swing, a chord note, copy, cut, paste here, duplicate, clear, and fill every 2nd or 4th step from the one you clicked. **Clear** takes the notes, the slide and the locks of the steps. To keep the notes, choose **Clear locks (keep the notes)**. Synth steps paste onto synth tracks, MIDI steps onto MIDI tracks.
 
 NOTE: [⌘] is [CTRL] on Windows and Linux.
 
@@ -180,6 +180,8 @@ To copy only the notes with the step ruler:
 2. Press {key:copy}.
 3. Click the target track in the rail, then click the first step of the ruler.
 4. Press {key:paste}.
+
+A track copy takes all 64 steps of the track, whatever the length of the pattern.
 
 Press {key:select-all} to select the six tracks shown, and paste them as a block. To copy the machine of a track, use **Copy** and **Paste** on the **Kit** workspace.
 
