@@ -10,7 +10,7 @@ The rail on the left lists the slots: four RAM slots and 48 ROM slots. The page 
 NOTE: The Sampler needs the UW's ROM and RAM machines. With other firmware, or while the machine has not started, the page says so.
 
 ## SAMPLE MANAGER
-<!-- rows: MD-189 MD-195 MD-196 MD-197 MD-198 MD-200 @ee7467 -->
+<!-- rows: MD-189 MD-195 MD-196 MD-197 MD-198 MD-200 @4d47ed -->
 
 ### The slots
 
@@ -152,7 +152,7 @@ To get the file the machine's own SEND makes, click **Export SysEx** on a ROM sl
 NOTE: Export works with the emulated machine only. A real Machinedrum does not send its samples back, so the keys are greyed out, with the reason.
 
 ## ERASE SAMPLES
-<!-- rows: MD-194 @364503 -->
+<!-- rows: MD-194 @e2877c -->
 
 Click **Erase** on a ROM slot to empty it. The editor asks first, then presses the machine's own keys for you: FUNCTION + PATTERN/SONG, the third icon of GLOBAL 1 EDIT, SAMPLE MGR, ERASE, the slot, and ENTER twice. It looks at the machine's screen after every key. If the screen is not the one it expects, it stops, leaves the menu with EXIT and tells you that nothing was erased. When the keys are through, the editor reads the sample memory again and says so once the slot is empty. Leave the machine alone while this runs. Undo sample sends the erased sample back.
 
