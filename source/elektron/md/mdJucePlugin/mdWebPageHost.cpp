@@ -74,6 +74,9 @@ namespace mdJucePlugin
 		const juce::String g_failed = "FAILED: ";
 		// The page says it is up (its first message) within this, or the window says what failed
 		constexpr double g_pageUpTimeoutMs = 30000.0;
+		// B-201 (Linux): the page is up and its window showing, but it has painted nothing within this (generous: a
+		// loaded CI runner or a slow first frame must not trigger it)
+		constexpr double g_pagePaintTimeoutMs = 15000.0;
 
 		// Replaces every "<open>NAME<close>" with _make(NAME).
 		std::string replaceAll(const std::string& _text, const std::string& _open, const std::string& _close,
@@ -240,6 +243,7 @@ namespace mdJucePlugin
 		{
 		}
 		void goToURL(const juce::String&) {}
+		juce::String getEmbeddedWindowState() const { return {}; }
 	};
 #endif
 
@@ -451,6 +455,18 @@ namespace mdJucePlugin
 		{
 			const auto line = juce::URL::removeEscapeChars(juce::String(_url.substr(std::strlen(bridge::g_log))));
 			log("page: " + line);
+			if(line == "painted" && !m_pagePainted)
+			{
+				m_pagePainted = true;
+				note("page painted its first frame" + paintState());
+				if(m_paintFailure && m_failure)
+				{
+					note("the page painted after all: the failure message goes");
+					m_failure.reset();
+					m_paintFailure = false;
+					m_web->setVisible(true);
+				}
+			}
 #if JUCE_MAC && MDMM_DIAGNOSTICS
 			// A journey's keys through the operating system's way in (mdOsKeys.h), after this navigation's callback.
 			if(line.startsWith("oskeys "))
@@ -693,6 +709,8 @@ namespace mdJucePlugin
 	{
 		note("the page loads again in a new web view (the window it was in was closed or made again)");
 		m_pageReady = false;
+		m_pagePainted = false;
+		m_shownSinceMs = 0;
 		m_loadMs = juce::Time::getMillisecondCounterHiRes();
 		m_recvSeq = 1;
 		m_cssZoom = 1.0;
@@ -741,6 +759,10 @@ namespace mdJucePlugin
 			note(juce::String("Linux web view: ") + name + "="
 				+ juce::SystemStats::getEnvironmentVariable(name, "(unset)").substring(0, 160)
 					.replaceCharacters("\r\n", "  "));
+		// the web view's helper sets the two WebKit variables unless the user did (B-201); these are the host's values
+		for(const auto* name : {"WEBKIT_DISABLE_DMABUF_RENDERER", "WEBKIT_DISABLE_COMPOSITING_MODE"})
+			note(juce::String("Linux web view: ") + name + "="
+				+ juce::SystemStats::getEnvironmentVariable(name, "(unset in the host, the helper sets 1)"));
 		note("Linux web view: GTK uses X11/XEmbed; WebKit hardware acceleration is disabled; temporary folder="
 			+ juce::File::getSpecialLocation(juce::File::tempDirectory).getFullPathName());
 #endif
@@ -764,9 +786,48 @@ namespace mdJucePlugin
 	void WebPageHost::checkStarted()
 	{
 		const double timeout = m_noStartTest ? 3000.0 : g_pageUpTimeoutMs;
+		checkPainted();
 		if(m_pageReady || m_failure || m_loadMs <= 0 || juce::Time::getMillisecondCounterHiRes() - m_loadMs < timeout)
 			return;
 		fail("the page did not start within " + juce::String(static_cast<int>(timeout / 1000)) + " s (it loaded, or is still loading, but its script never answered)");
+	}
+
+	// What X11 says about the web view's window (Linux), for the start-up log; empty elsewhere.
+	juce::String WebPageHost::paintState() const
+	{
+#if JUCE_LINUX || JUCE_BSD
+		return " (" + m_web->getEmbeddedWindowState() + ")";
+#else
+		return {};
+#endif
+	}
+
+	// B-201 (Linux, Fedora KDE / XWayland / NVIDIA): the page's script ran (the bridge answers) but nothing was painted
+	// into the embedded window. The page reports a frame (requestAnimationFrame); without one the window says so.
+	void WebPageHost::checkPainted()
+	{
+#if JUCE_LINUX || JUCE_BSD
+		if(!m_pageReady || m_pagePainted || m_failure || m_noStartTest)
+			return;
+		const auto now = juce::Time::getMillisecondCounterHiRes();
+		if(!m_web->isShowing())
+		{
+			m_shownSinceMs = 0;	// a hidden window paints nothing: counted only while it shows
+			return;
+		}
+		if(m_shownSinceMs <= 0)
+		{
+			m_shownSinceMs = now;
+			return;
+		}
+		if(now - m_shownSinceMs < g_pagePaintTimeoutMs)
+			return;
+		note("page up but no frame painted after " + juce::String(static_cast<int>(g_pagePaintTimeoutMs / 1000)) + " s" + paintState());
+		m_paintFailure = true;
+		fail("the page is running but could not be shown (nothing was painted into the window). "
+			"On Linux this happens on some Wayland sessions with NVIDIA graphics. Try a Plasma or GNOME X11 session, "
+			"or start the host with WEBKIT_DISABLE_DMABUF_RENDERER=1 and WEBKIT_DISABLE_COMPOSITING_MODE=1 set.");
+#endif
 	}
 
 	namespace

@@ -406,6 +406,15 @@ public:
             return 1;
         }
 
+        // B-201 (Fedora KDE, Wayland session through XWayland, NVIDIA): the page ran but nothing was painted into
+        // the embedded window. WebKitGTK's DMA-BUF renderer and accelerated compositing do not paint into a GtkPlug
+        // on that stack, so both are switched off unless the user already chose (setenv without overwrite). The web
+        // process started by this helper inherits them.
+        ::setenv ("WEBKIT_DISABLE_DMABUF_RENDERER", "1", 0);
+        ::setenv ("WEBKIT_DISABLE_COMPOSITING_MODE", "1", 0);
+        std::fprintf (stderr, "WebKitGTK helper: WEBKIT_DISABLE_DMABUF_RENDERER=%s WEBKIT_DISABLE_COMPOSITING_MODE=%s\n",
+                      std::getenv ("WEBKIT_DISABLE_DMABUF_RENDERER"), std::getenv ("WEBKIT_DISABLE_COMPOSITING_MODE"));
+
         // webkit2gtk crashes when using the wayland backend embedded into an x11 window
         WebKitSymbols::getInstance()->juce_gdk_set_allowed_backends ("x11");
 
@@ -761,8 +770,33 @@ public:
 
         startThread();
 
+        embeddedWindow = windowHandle;
         xembed.reset (new XEmbedComponent (windowHandle));
         owner.addAndMakeVisible (xembed.get());
+    }
+
+    // B-201: what X11 says about the helper's window (map state and size), for the start-up log.
+    String describeEmbeddedWindow() const
+    {
+        if (embeddedWindow == 0)
+            return "no X11 window yet";
+
+        auto* display = XWindowSystem::getInstance()->getDisplay();
+
+        if (display == nullptr)
+            return "no X11 display";
+
+        XWindowAttributes attributes {};
+
+        if (! X11Symbols::getInstance()->xGetWindowAttributes (display, (::Window) embeddedWindow, &attributes))
+            return "X11 window " + String::toHexString ((int64) embeddedWindow) + " is gone";
+
+        const char* state = attributes.map_state == IsViewable   ? "viewable"
+                          : attributes.map_state == IsUnviewable ? "mapped but not viewable"
+                                                                 : "not mapped";
+
+        return "X11 window " + String::toHexString ((int64) embeddedWindow) + " " + state + ", "
+             + String (attributes.width) + "x" + String (attributes.height);
     }
 
     void quit()
@@ -1095,6 +1129,7 @@ private:
     int childProcess = 0, inChannel = -1, outChannel = -1;
     int threadControl[2] { -1, -1 };
     std::unique_ptr<XEmbedComponent> xembed;
+    unsigned long embeddedWindow = 0;
     std::shared_ptr<int> livenessProbe = std::make_shared<int> (0);
     std::vector<pollfd> pfds;
     std::optional<TemporaryFile> subprocessFile;
@@ -1139,6 +1174,11 @@ void WebBrowserComponent::goToURL (const String& url,
 void WebBrowserComponent::stop()
 {
     browser->stop();
+}
+
+String WebBrowserComponent::getEmbeddedWindowState() const
+{
+    return browser->describeEmbeddedWindow();
 }
 
 void WebBrowserComponent::goBack()
