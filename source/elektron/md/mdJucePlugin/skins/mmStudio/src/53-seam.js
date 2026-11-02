@@ -8,7 +8,7 @@ const MM_SEAM={
  "host":[
   "ownsClock","engineLabels","notes","start","commit","intent","library","undo","redo","history","togglePlay",
   "selectPattern","kit","tempo","mutes","keyMode","record","chain","chainClear","seqMode","loadSong","saveSong","waiting",
-  "sendNow","playKey","keyUp","transport","noteOn","noteOff","joy","learning","learnTarget","learnBind","learnAdd","learnInvert","learnRemove","modulators",
+  "sendNow","playKey","keyUp","transport","noteOn","noteOff","joy","learning","learnTarget","learnBind","learnAdd","learnInvert","learnRemove","knobTurn","modulators",
   "engine","chooseRom","removeRom","romManage","syxChoose","syxExport","syxStart","syxStop","syxPlace","syxExportInfo","machineReset","revealRom",
   "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","mixMeters","globalSlot","memory","follow",
   "waveList","waveChoose","waveLoad","waveRename","waveCopy","waveErase","waveUndo","waveSendNow"],

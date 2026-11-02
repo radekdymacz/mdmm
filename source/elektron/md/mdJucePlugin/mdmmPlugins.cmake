@@ -44,6 +44,7 @@ list(APPEND SOURCES
 	mdDeskSession.cpp mdDeskSession.h
 	mdMidiLearnCommands.cpp mdMidiLearnCommands.h
 	mdLearnRouter.cpp mdLearnRouter.h mdLearnTable.h
+	mdControlKnobs.cpp mdControlKnobs.h
 	mdPageEditor.cpp mdPageEditor.h mdPageZoom.h mdEditorMenu.h mdNoticeBook.h mdDroppedFiles.h
 	mdRomInstall.cpp mdRomInstall.h
 	mdSettingsMigration.cpp mdSettingsMigration.h

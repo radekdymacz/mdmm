@@ -29,6 +29,7 @@ namespace deskHost
 		LearnCancel,
 		LearnRemove,
 		LearnInvert,
+		KnobTurn,			// B-205 (0.9.1): a knob row dragged on the page: the host parameter Knob k + 1 follows
 		AudioPublish,		// the standalone's audio and MIDI devices
 		AudioSet,
 		AudioMeter,

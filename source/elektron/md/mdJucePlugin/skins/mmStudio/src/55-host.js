@@ -42,6 +42,8 @@
      learnAdd({cc, ch, t, pg, i}), learnInvert(index), learnRemove(index)
                                       the CC rows' Add target, Inv and x: the plug-in's mappings, by index in the learn
                                       document; the document comes back through MMView.setLearn
+     knobTurn(k, v)                   knob row k (0-7) dragged to v on the Control page: the plug-in's host parameter
+                                      Knob k+1 shows it (a DAW maps or records it); the page moves the targets itself
      modulators(setup)                the Control workspace's app sources or links changed: the
                                       host's engine runs them ({sources, links}, ctlSetup()); it
                                       shows their moving values with MMView.setModulation

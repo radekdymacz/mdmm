@@ -7569,6 +7569,37 @@
         },
         {
           "type": "object",
+          "description": "host: knob row k (0-7) dragged on the page to v: the host parameter Knob k + 1 shows it (a DAW records or maps it); the page moves the row's targets itself",
+          "required": ["op", "k", "v"],
+          "properties": {
+            "op": {
+              "const": "knobTurn"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "k": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 7
+            },
+            "v": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "host: the standalone's audio and MIDI devices",
           "required": ["op"],
           "properties": {

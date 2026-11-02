@@ -406,6 +406,11 @@ namespace mdJucePlugin
 		return _processor.learnRouter();
 	}
 
+	ControlKnob* controlKnobOf(AudioPluginAudioProcessor& _processor, const size_t _index)
+	{
+		return _processor.controlKnobs().knob(_index);
+	}
+
 	MidiLearnCommands::Model learnModelOf(AudioPluginAudioProcessor& _processor, MidiLearnCommands::Model _model)
 	{
 		return MidiLearnCommands::onlyRealtime(std::move(_model), _processor.getController());

@@ -266,6 +266,10 @@ You cannot learn names, or a machine, a mute group or an output.
 
 Select a row of the matrix. Under **Add** choose a track and a parameter, then click **Add target**. The same row can move several targets. A knob row listens on any channel. A CC learned from a controller listens on the channel it came on, and its row says which. The stepper on a knob row changes the CC that knob sends. Its targets follow in the same edit.
 
+### Knob 1 to 8 in a DAW
+
+The plug-in has eight host parameters, **Knob 1** to **Knob 8**, after the tracks' parameters. Each is one knob row. Map one to a Rack macro or a control surface such as Push 2, or draw its automation: it moves the row's targets as the knob's CC would. A CC on a knob row moves the host parameter too, so the DAW can learn it from a turn and record it. The value of a knob is not saved with the project. Its targets are.
+
 ### When a mapping hides the machine's own CC
 
 The machine answers many CCs on the four channels from its base channel. A mapping on the same channel and CC wins: the machine no longer hears that CC. The inspector says so under the mapping, for example: Overrides the machine's CC 21 on channel 1: T1 DEC. Remove the mapping and the machine's CC works again. A mapping on a channel the machine does not use hides nothing.

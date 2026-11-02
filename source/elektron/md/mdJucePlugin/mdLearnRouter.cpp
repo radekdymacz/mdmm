@@ -163,7 +163,33 @@ namespace mdJucePlugin
 		const auto channel = static_cast<size_t>(_status & 0x0f);
 		const bool onChannel = runChain(m_table.head[channel][_data1], _data2);
 		const bool anyChannel = runChain(m_table.head[LearnTable::AnyChannel][_data1], _data2);
+		// B-205: a knob row moved by a CC: the host parameter Knob N follows (the session step tells the host)
+		if(anyChannel)
+		{
+			for(size_t k = 0; k < LearnTable::Knobs; ++k)
+			{
+				if(m_table.knobCc[k] != _data1)
+					continue;
+				m_knobValue[k].store(static_cast<uint8_t>(_data2 & 0x7f), std::memory_order_relaxed);
+				m_knobTouched.fetch_or(1u << k, std::memory_order_release);
+			}
+		}
 		return onChannel || anyChannel;
+	}
+
+	bool LearnRouter::driveKnob(const size_t _knob, const uint8_t _value) noexcept
+	{
+		if(_knob >= LearnTable::Knobs)
+			return false;
+		if(!onAudioThread())
+		{
+			m_notOnAudioThread.fetch_add(1, std::memory_order_relaxed);
+			return false;
+		}
+		const auto cc = m_table.knobCc[_knob];
+		if(cc > 127)
+			return false;
+		return runChain(m_table.head[LearnTable::AnyChannel][cc], static_cast<uint8_t>(_value & 0x7f));
 	}
 
 	bool LearnRouter::runChain(uint8_t _head, const uint8_t _value) noexcept

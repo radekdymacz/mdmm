@@ -521,6 +521,8 @@ namespace mdJucePlugin
 		}
 
 		getController();
+		// B-205 (0.9.1): Knob 1-8, after the controller's parameters (their own group "Control")
+		m_controlKnobs.addTo(*this);
 		// B-121: the Monomachine holds notes (and arpeggiates them): the host's Stop lets them go too
 		getPlugin().setNotesOffOnHostStop(m_model == md::MachineModel::Monomachine);
 		// B-037: the machine's own MIDI out to the host (mdMachineMidiOut.h)
@@ -1028,6 +1030,25 @@ namespace mdJucePlugin
 		}
 		m_boot.counters.onBlock(_frames, isNonRealtime());
 		m_blockStartNs = cpuClockNs();
+		driveControlKnobs();
+	}
+
+	// B-205: the knobs the host moved since the last block drive their knob rows, before this block's MIDI (no lock, no
+	// allocation). With the HW MIDI engine nothing is translated, so nothing is driven either.
+	void AudioPluginAudioProcessor::driveControlKnobs() noexcept
+	{
+		if constexpr (deskHost::midiMappingEnabled)
+		{
+			std::array<uint8_t, ControlKnobs::Count> values{};
+			const auto moved = m_controlKnobs.takeHostMoves(values);
+			if(!moved || getExternalMidi().isOn())
+				return;
+			for(size_t k = 0; k < ControlKnobs::Count; ++k)
+			{
+				if(moved >> k & 1u)
+					m_learnRouter.driveKnob(k, values[k]);
+			}
+		}
 	}
 
 	// I-018: the block's time against its budget (mdCpuLoad.h): two clock reads and a few relaxed atomic adds

@@ -148,6 +148,9 @@ namespace deskHost
 			row("learnCancel", {}, "", Action::LearnCancel),
 			row("learnRemove", {index}, "", Action::LearnRemove),
 			row("learnInvert", {index}, "", Action::LearnInvert),
+			row("knobTurn", {{"k", ArgType::Integer, 0, 7}, {"v", ArgType::Integer, 0, 127}},
+				"knob row k (0-7) dragged on the page to v: the host parameter Knob k + 1 shows it (a DAW records or maps it); "
+				"the page moves the row's targets itself", Action::KnobTurn),
 			row("audio", {}, "the standalone's audio and MIDI devices", Action::AudioPublish, Actor::Window),
 			row("audioSet", {set, act, device, on, channel, value}, "change one audio or MIDI setting (set), or do something (do)",
 				Action::AudioSet, Actor::Window),
