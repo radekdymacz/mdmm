@@ -1141,7 +1141,8 @@ namespace
 			bool needed = false;
 			for(int i = 0; i < 100 && !needed; ++i) { r.run(20); needed = reloadNeeded(); }
 			bool reloaded = false;
-			for(int i = 0; i < 400 && !reloaded; ++i) { r.run(25); reloaded = !reloadNeeded(); }
+			// B-202: the desk loads it once SYSEX RECV has left the panel alone for 3 s (pumpSongReload)
+			for(int i = 0; i < 800 && !reloaded; ++i) { r.run(25); reloaded = !reloadNeeded(); }
 			check(needed && reloaded, "stopped in SONG mode: the edited song is loaded again by the desk (LOAD SONG)");
 			r.msg(R"({"op":"play"})");
 			// the Monomachine goes on from the row where it stopped (STOP and LOAD SONG keep its place, measured): the

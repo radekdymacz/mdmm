@@ -41,6 +41,8 @@ namespace mmDesk
 		if(!step.send)
 			return;
 		const auto& r = *step.send;
+		if(const auto t = m_readBackTrace.find(r); t != m_readBackTrace.end())
+			++t->second.requests;
 		m_port.sendSysex(r.kind == Kind::Pattern ? ed::mmPatternRequest(r.slot) : r.kind == Kind::Kit ? ed::mmKitRequest(r.slot)
 			: r.kind == Kind::Song ? ed::mmSongRequest(r.slot) : ed::mmGlobalRequest(r.slot));
 	}
@@ -117,6 +119,8 @@ namespace mmDesk
 		case Kind::WorkingKit: break;
 		}
 		m_loads.arrived(_r);
+		if(const auto t = m_readBackTrace.find(_r); t != m_readBackTrace.end())
+			++t->second.replies;
 		auto* found = m_pushes.find(_r);
 		// B-202: what became of a reply while its document's push waits (the status line's lastReply)
 		if(found && found->slot.busy() && (!doc || found->parked))

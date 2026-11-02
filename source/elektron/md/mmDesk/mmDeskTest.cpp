@@ -1555,23 +1555,18 @@ Bytes otherwiseEncoded(const Bytes& _dump)
 	return m;
 }
 
-// B-202 (CI run 41336239454, mm-song-row-settings step 3): the read-back of a song row's transpose + was answered with
-// the song as it was before the dump. The push waited for a read-back that was never asked again, timed out after 8 s
-// with the machine holding the edit (the toast), the page went back to the older song, and the second + then sent 1
-// instead of 2. A read-back answered with an older document is asked again (bounded): both edits land and the
-// read-back confirms the last.
-void songReadBackOlder()
+// Every slot written (empty patterns, kits of machine 1, empty songs, factory globals), song 1 a row of A03 then END:
+// the machine the B-202 song tests edit.
+void fillSongMachine(FakeMachine& _m)
 {
-	std::puts("B-202: a song read-back answered with the song before the dump is asked again");
-	FakeMachine m;
 	for(uint8_t s = 0; s < 128; ++s)
 	{
-		m.slots[{0x67, s}] = ed::encodeMmPattern(emptyPattern(s));
+		_m.slots[{0x67, s}] = ed::encodeMmPattern(emptyPattern(s));
 		ed::MmKit k;
 		k.position = s;
 		k.machines.fill(1);
 		k.trigPos.fill(0xff);
-		m.slots[{0x52, s}] = ed::encodeMmKit(k);
+		_m.slots[{0x52, s}] = ed::encodeMmKit(k);
 	}
 	for(uint8_t s = 0; s < 24; ++s)
 	{
@@ -1579,13 +1574,13 @@ void songReadBackOlder()
 		so.position = s;
 		so.rows[0].bytes[0] = 0xff;
 		so.rows[0].bytes[ed::mmSongRow::g_tempo] = so.rows[0].bytes[ed::mmSongRow::g_tempo + 1] = 0xff;
-		m.slots[{0x69, s}] = ed::encodeMmSong(so);
+		_m.slots[{0x69, s}] = ed::encodeMmSong(so);
 	}
 	for(uint8_t s = 0; s < 8; ++s)
 	{
 		ed::MmGlobal g;
 		g.position = s;
-		m.slots[{0x50, s}] = ed::encodeMmGlobal(g);
+		_m.slots[{0x50, s}] = ed::encodeMmGlobal(g);
 	}
 	// song 1: a row of A03, then END
 	{
@@ -1596,8 +1591,20 @@ void songReadBackOlder()
 		so.rows[0].bytes[ed::mmSongRow::g_tempo] = so.rows[0].bytes[ed::mmSongRow::g_tempo + 1] = 0xff;
 		so.rows[1].bytes[0] = 0xff;
 		so.rows[1].bytes[ed::mmSongRow::g_tempo] = so.rows[1].bytes[ed::mmSongRow::g_tempo + 1] = 0xff;
-		m.slots[{0x69, 0}] = ed::encodeMmSong(so);
+		_m.slots[{0x69, 0}] = ed::encodeMmSong(so);
 	}
+}
+
+// B-202 (CI run 41336239454, mm-song-row-settings step 3): the read-back of a song row's transpose + was answered with
+// the song as it was before the dump. The push waited for a read-back that was never asked again, timed out after 8 s
+// with the machine holding the edit (the toast), the page went back to the older song, and the second + then sent 1
+// instead of 2. A read-back answered with an older document is asked again (bounded): both edits land and the
+// read-back confirms the last.
+void songReadBackOlder()
+{
+	std::puts("B-202: a song read-back answered with the song before the dump is asked again");
+	FakeMachine m;
+	fillSongMachine(m);
 	double now = 0;
 	std::vector<Value> page;
 	Bytes before;		// what song 1's slot held before the dump: the older reply
@@ -1715,6 +1722,135 @@ void songReadBackOlder()
 	plus();
 	run(12000);
 	check(held() == shown() && errors() == 1, "the same song encoded otherwise: confirmed, no second toast");
+}
+
+// B-202 (CI run 41475648487, mm-song-row-settings step 3): two + on a row of the song that plays, stopped in SONG mode,
+// the second one 600 ms after SYSEX RECV left (the journey's pace, a person's too). The first was read back on SYSEX RECV;
+// the moment the session left, the desk sent LOAD SONG (pumpSongReload), and the second dump's read-back got no reply at
+// all for its 8 s (no request of the song answered until about 10 s after the LOAD SONG): the push failed with the edit
+// on the machine. The fake answers no song request for 10 s after a LOAD SONG. Both edits are sent and confirmed, no
+// LOAD SONG comes between them, and the song is loaded once SYSEX RECV has been left alone.
+void songEditsBackToBack()
+{
+	std::puts("B-202: two song edits back to back: the second is sent and confirmed, LOAD SONG waits");
+	FakeMachine m;
+	fillSongMachine(m);
+	m.songMode = 1;
+	double now = 0;
+	double deafUntil = -1;	// no song request answered until then (after a LOAD SONG)
+	int loads = 0;			// LOAD SONG taken
+	int unanswered = 0;		// song requests not answered
+	std::vector<Value> page;
+	mmDesk::Desk::Port port;
+	port.device.sendSysex = [&](const Bytes& _b)
+	{
+		if(_b.size() > 7 && _b[6] == 0x6c)
+		{
+			++loads;
+			deafUntil = now + 10000;
+		}
+		if(_b.size() > 7 && _b[6] == 0x6a && now < deafUntil)
+		{
+			++unanswered;
+			return;
+		}
+		m.take(_b);
+	};
+	port.device.sendParam = [](uint8_t, uint8_t, uint8_t, uint8_t) {};
+	port.device.sendNrpn = [](uint8_t, uint8_t, uint8_t) {};
+	port.device.pressKeys = [&](const std::vector<mmDesk::Key>& _k)
+	{
+		if(mmDesk::RecvSession::isEnterMacro(_k))
+			m.screenWord = mmDesk::Screen::GlobalEdit;
+		else if(_k == mmDesk::RecvSession::exitKeys())
+			m.screenWord = mmDesk::Screen::Main;
+		return true;
+	};
+	port.toPage = [&](const Value& _v) { page.push_back(_v); g_published.push_back(_v); };
+	port.device.nowMs = [&] { return now; };
+	mmDesk::Desk d(port);
+	const auto run = [&](const double _ms)
+	{
+		for(double t = 0; t < _ms; t += 10)
+		{
+			now += 10;
+			mmDesk::Telemetry tel = screen(m.screenWord);
+			tel.recvCount = m.recvTaken;
+			d.onTelemetry(tel);
+			d.tick();
+			auto replies = std::move(m.replies);
+			m.replies.clear();
+			for(const auto& r : replies)
+				d.onDeviceSysex(r);
+		}
+	};
+	const auto msg = [&](const std::string& _json) { d.onPageMessage(*ed::json::parse(_json)); };
+	const auto errors = [&]
+	{
+		size_t n = 0;
+		for(const auto& v : page)
+			n += v.find("type")->asString() == "error" && v.find("message")->asString().find("did not read back the song") != std::string::npos;
+		return n;
+	};
+	const auto transposeOf = [](const ed::MmSong& _s) { return static_cast<int>(static_cast<int8_t>(_s.rows[0].bytes[ed::mmSongRow::g_transpose])); };
+	const auto shown = [&] { const auto s = d.song(0); return s ? transposeOf(*s) : -99; };
+	const auto held = [&] { const auto s = ed::decodeMmSong(m.slots[{0x69, 0}]); return s ? transposeOf(*s) : -99; };
+	const auto statusField = [&](const char* _name)
+	{
+		const auto st = d.status();
+		const auto* f = st.find(_name);
+		return f && f->isString() ? f->asString() : std::string();
+	};
+	// the journey's songSettled: SYSEX RECV idle again, then 600 ms
+	const auto settled = [&]
+	{
+		run(200);
+		for(int i = 0; i < 3000 && statusField("recv") != "idle"; ++i)
+			run(10);
+		run(600);
+	};
+	int id = 1;
+	const auto plus = [&]
+	{
+		auto s = *d.song(0);
+		s.rows[0].bytes[ed::mmSongRow::g_transpose] = static_cast<uint8_t>(shown() + 1);
+		msg(R"({"op":"set","id":)" + std::to_string(id++) + R"(,"kind":"song","doc":)" + ed::json::write(ed::mmSongToJson(s)) + "}");
+	};
+	msg(R"({"op":"ready"})");
+	d.setProbe(mmDesk::Desk::Probe::Running);
+	run(600);
+	for(int i = 0; i < 2000 && !d.song(0); ++i)
+		run(10);
+	check(d.song(0).has_value() && shown() == 0, "song 1 read, its row at transpose 0");
+	if(!d.song(0))
+		return;
+
+	plus();
+	settled();
+	check(held() == 1 && shown() == 1, "the first +: on the machine and on the page");
+	const int loadsBetween = loads;
+	plus();
+	settled();
+	run(9000);
+	check(loadsBetween == 0, "no LOAD SONG between the two edits (SYSEX RECV had just left)");
+	check(held() == 2 && shown() == 2 && errors() == 0 && unanswered == 0,
+		("the second +: sent, read back and confirmed (" + std::to_string(unanswered) + " requests unanswered, "
+			+ std::to_string(errors()) + " toasts)").c_str());
+	check(loads == 1, ("once SYSEX RECV was left alone the desk loads the song: " + std::to_string(loads) + " LOAD SONG").c_str());
+	{
+		const auto st = d.status();
+		const auto* ago = st.find("songLoadMsAgo");
+		check(ago && ago->asNumber() > 0, "the status line says when the desk sent LOAD SONG");
+	}
+
+	// The read-back still waiting is on the status line with its requests and replies (the log's evidence): a third + while
+	// the machine answers no song request (a LOAD SONG just taken)
+	deafUntil = now + 60000;
+	plus();
+	run(3000);
+	const auto waiting = statusField("readBack");
+	check(waiting.find("song 1: ") == 0 && waiting.find(" 0 replies in ") != std::string::npos && waiting.find(" 0 requests") == std::string::npos,
+		("the status line names the read-back waiting: " + waiting).c_str());
 }
 
 // LOAD KIT of a never-written slot (name byte 0 is 0xff) plays it as NEW KIT (measured, mmDeskFirmwareTest p4).
@@ -3092,6 +3228,7 @@ int main(const int _argc, char** _argv)
 	transposeRules();
 	transposeWhilePlaying();
 	songReadBackOlder();
+	songEditsBackToBack();
 	modulators();
 	asksAndErrors();
 	stuckDelivery();

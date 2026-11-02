@@ -454,6 +454,7 @@ namespace mmDesk
 				// document already in flight was asked before the dump (its reply is an older one), so the read-back
 				// goes once that one is answered, not never (the push then timed out with the machine holding the edit).
 				m_readBackAgain.erase(e.ref);
+				m_readBackTrace[e.ref] = {_now, 0, 0};
 				m_loads.wantFresh(e.ref);
 				break;
 			case K::TimedOut:
