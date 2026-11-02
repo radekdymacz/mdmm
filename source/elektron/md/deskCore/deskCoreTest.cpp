@@ -778,7 +778,22 @@ namespace
 		r = fromImage(held, Kit{2, 9}, 3, std::optional<int>(3), &shown, 175, true, reflects);
 		check(r.next.image == Kit({2, 9}) && r.take == Kit({2, 9}) && !r.settles && r.next.expect.any(),
 			"knob turns on their way: the image is observed as it is, the edit stays pending");
-		const auto sw = switched(r.next);
+		// B-193: an image that came in before the latest edit and does not show it is dropped, however late it is taken
+		auto stale = r.next;
+		stale.region = std::vector<uint8_t>{1};
+		stale.regionMs = 100;
+		stale.expect.sent(Kit{2, 9}, Kit{8, 9}, 170);
+		r = fromImage(stale, Kit{2, 9}, 3, std::optional<int>(3), &shown, 175, true, reflects);
+		check(!r.take && !r.next.region && r.next.expect.any(), "an image older than the latest edit is dropped while knob turns hold");
+		r = fromImage(stale, Kit{2, 9}, 3, std::optional<int>(3), &shown, 5000, false, reflects);
+		check(!r.take && !r.next.region, "... and after the expectation ran out: the page's value stays");
+		stale.regionMs = 171;
+		r = fromImage(stale, Kit{2, 9}, 3, std::optional<int>(3), &shown, 5000, false, reflects);
+		check(r.take == Kit({2, 9}), "an image that came in after the edit is the machine's word");
+		stale.regionMs = 100;
+		r = fromImage(stale, Kit{8, 9}, 3, std::optional<int>(3), &shown, 175, false, reflects);
+		check(r.settles && r.take == Kit({8, 9}), "an older image that shows the edit settles it");
+		const auto sw = switched(held);
 		check(sw.seed && !sw.image && !sw.expect.any(), "another kit plays: nothing of the old one holds");
 	}
 

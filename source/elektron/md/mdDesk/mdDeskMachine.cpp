@@ -1915,6 +1915,7 @@ namespace mdDesk
 	void MdMachine::onWorkingKitMemory(const Bytes& _region, const Documents& _view)
 	{
 		m_working.region = _region;
+		m_working.regionMs = now();
 		m_memoryKit = ed::mdWorkingKitFromMemory(_region);
 		takeWorkingKit(&_view);
 	}
