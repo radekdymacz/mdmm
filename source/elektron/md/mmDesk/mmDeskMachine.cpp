@@ -466,6 +466,8 @@ namespace mmDesk
 		v.set("olderReplies", m_olderReplies);
 		if(!m_olderReply.empty())
 			v.set("olderReply", m_olderReply + ", " + std::to_string(static_cast<int>(now() - m_olderReplyMs)) + " ms ago");
+		if(!m_lastReply.empty())
+			v.set("lastReply", m_lastReply + ", " + std::to_string(static_cast<int>(now() - m_lastReplyMs)) + " ms ago");
 		return v;
 	}
 }

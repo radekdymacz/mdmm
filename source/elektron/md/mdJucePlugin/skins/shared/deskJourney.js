@@ -686,7 +686,10 @@ const Journey = (() => {
 							const key = id.slice("speedup-".length);
 							for (const on of [false, true]) {
 								await speed.pick(hands, id, true);
-								const machineOk = await until(() => speed.leverOff(key) === !on && speed.savedLeverOff(key) === !on, 4000);
+								/* the reading comes with the cpuLoad message, from facts the audio thread publishes; with a lever
+								   off the emulator runs slower, and on a loaded runner (CI run 41362123236: every "off" late, the
+								   reading right by the step's end) that took over 4 s */
+								const machineOk = await until(() => speed.leverOff(key) === !on && speed.savedLeverOff(key) === !on, 8000);
 								await speed.open(hands, true); const t = speed.ticked(id), en = speed.enabled(id); closeDeskMenu();
 								if (!machineOk || t !== on || !en) c.bad.push(`${key} ${on ? "on" : "off"}: tick ${t}, enabled ${en}, machine ${machineOk ? "ok" : "levers off " + (CpuMeter.last.leversOff || []).join("+") + ", saved " + ((CpuMeter.last.saved || {}).leversOff || []).join("+")}`);
 							}

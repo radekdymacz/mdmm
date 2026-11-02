@@ -13,6 +13,7 @@
 
 #include "elektronData/mmCommands.h"
 #include "elektronData/mmDump.h"
+#include "elektronData/sysex7bit.h"
 #include "elektronData/factoryGlobals.h"
 #include "elektronData/mmJson.h"
 #include "elektronData/mmValidate.h"
@@ -1510,6 +1511,50 @@ void transposeWhilePlaying()
 	check(ed::decodeMmPattern(m.slots[{0x67, 3}])->transpose.track[1] == -7 && transposeKeys.size() == 2, "stopped: no keys (PLAY takes the stored transposes)");
 }
 
+// A dump with the same document, run-length encoded otherwise than the editor encodes (each run of four or more split
+// in two), as a firmware's encoder may (B-202)
+Bytes otherwiseEncoded(const Bytes& _dump)
+{
+	const auto d = ed::unpackMmDump(_dump);
+	if(!d)
+		return _dump;
+	std::vector<uint8_t> stream;
+	const auto& raw = d->raw;
+	for(size_t i = 0; i < raw.size();)
+	{
+		size_t j = i;
+		while(j < raw.size() && raw[j] == raw[i] && j - i < 127)
+			++j;
+		const auto n = j - i;
+		const auto run = [&](const size_t _n)
+		{
+			if(_n >= 2 || (raw[i] & 0x80))
+			{
+				stream.push_back(static_cast<uint8_t>(0x80 | _n));
+				stream.push_back(raw[i]);
+			}
+			else
+				stream.push_back(raw[i]);
+		};
+		if(n >= 4)
+		{
+			run(n / 2);
+			run(n - n / 2);
+		}
+		else
+			run(n);
+		i = j;
+	}
+	Bytes m(_dump.begin(), _dump.begin() + 10);
+	const auto packed = ed::encode7Bit(stream.data(), stream.size());
+	m.insert(m.end(), packed.begin(), packed.end());
+	if(stream.size() % 7 == 0)
+		m.push_back(0);
+	m.resize(m.size() + 5);
+	ed::writeDumpTrailer(m);
+	return m;
+}
+
 // B-202 (CI run 41336239454, mm-song-row-settings step 3): the read-back of a song row's transpose + was answered with
 // the song as it was before the dump. The push waited for a read-back that was never asked again, timed out after 8 s
 // with the machine holding the edit (the toast), the page went back to the older song, and the second + then sent 1
@@ -1558,6 +1603,7 @@ void songReadBackOlder()
 	Bytes before;		// what song 1's slot held before the dump: the older reply
 	int older = 0;		// requests of song 1 still answered with it once the dump is taken
 	int asked = 0;		// requests of song 1
+	bool otherEncoding = false;	// the machine answers with the song's bytes encoded otherwise (runs split in two)
 	mmDesk::Desk::Port port;
 	port.device.sendSysex = [&](const Bytes& _b)
 	{
@@ -1568,6 +1614,11 @@ void songReadBackOlder()
 			{
 				--older;
 				m.replies.push_back(before);
+				return;
+			}
+			if(otherEncoding)
+			{
+				m.replies.push_back(otherwiseEncoded(m.slots[{0x69, 0}]));
 				return;
 			}
 		}
@@ -1640,7 +1691,7 @@ void songReadBackOlder()
 		const auto st = d.status();
 		const auto* n = st.find("olderReplies");
 		const auto* what = st.find("olderReply");
-		check(n && n->asNumber() == 1 && what && what->asString().find("song 1: ") == 0 && what->asString().find("bytes differ at 0x") != std::string::npos,
+		check(n && n->asNumber() == 1 && what && what->asString().find("song 1: ") == 0 && what->asString().find("bytes differ at raw 0x") != std::string::npos,
 			"the status line names the older reply (the log's evidence)");
 	}
 	plus();
@@ -1656,6 +1707,14 @@ void songReadBackOlder()
 	run(15000);
 	check(errors() == 1, "always the older song: the push times out once, with the toast");
 	check(asked >= 2 && asked <= 6, ("asked again a bounded number of times (" + std::to_string(asked) + " requests)").c_str());
+
+	// CI run 41362123236: the firmware's run-length encoding of the same song can differ from the editor's (a reply of
+	// 1771 bytes for a dump of 1772). The same document, encoded otherwise, confirms the push.
+	older = 0;
+	otherEncoding = true;
+	plus();
+	run(12000);
+	check(held() == shown() && errors() == 1, "the same song encoded otherwise: confirmed, no second toast");
 }
 
 // LOAD KIT of a never-written slot (name byte 0 is 0xff) plays it as NEW KIT (measured, mmDeskFirmwareTest p4).
