@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cmath>
 #include <limits>
+#include <thread>
 
 #include "baseLib/os.h"
 
@@ -150,6 +151,7 @@ namespace synthLib
 		if(!m_device->isValid())
 		{
 			m_callbackDeviceInvalid(m_device);
+			runBlockEndJob();
 			if(instrument)
 				m_realtimeInstrumentation.recordSynthProcess(
 					nowNanoseconds() - processStart);
@@ -190,6 +192,7 @@ namespace synthLib
 				++m_realtimeAllocationFallbackCount;
 
 		m_midiIn.clear();
+		runBlockEndJob();	// in the block's time
 		if(instrument)
 			m_realtimeInstrumentation.recordSynthProcess(
 				nowNanoseconds() - processStart);
@@ -247,6 +250,68 @@ namespace synthLib
 		m_commandRead.store(read, std::memory_order_release);
 		if(dropped)
 			m_droppedCommands.fetch_add(dropped, std::memory_order_relaxed);
+	}
+
+	void Plugin::runBlockEndJob()
+	{
+		m_blockEnds.fetch_add(1, std::memory_order_release);
+		if(!m_blockEndJob.load(std::memory_order_relaxed))
+			return;
+		auto* const job = m_blockEndJob.exchange(nullptr, std::memory_order_acq_rel);
+		if(!job)
+			return;
+		job->run(m_device);
+		job->m_done.store(true, std::memory_order_release);
+	}
+
+	bool Plugin::runAtBlockEnd(BlockEndJob& _job, const std::chrono::milliseconds _idle, const char* const _file,
+		const uint32_t _line) const
+	{
+		const std::lock_guard turn(m_lockBlockEndJob);
+		const auto runHere = [&]
+		{
+			const LockScope lock(*this, _file, _line);
+			const PublishOnExit publish(*this);
+			_job.run(m_device);
+		};
+		auto ends = m_blockEnds.load(std::memory_order_acquire);
+		// the last job found no blocks and none ended since: the host runs no audio, no wait for a block again
+		if(ends == m_blockEndsIdle)
+		{
+			runHere();
+			return false;
+		}
+		_job.m_done.store(false, std::memory_order_relaxed);
+		m_blockEndJob.store(&_job, std::memory_order_release);
+		auto since = std::chrono::steady_clock::now();
+		for(;;)
+		{
+			std::this_thread::sleep_for(std::chrono::microseconds(200));
+			if(_job.m_done.load(std::memory_order_acquire))
+				return true;
+			const auto now = std::chrono::steady_clock::now();
+			// a block ended: the next one takes the job at the latest
+			const auto ended = m_blockEnds.load(std::memory_order_acquire);
+			if(ended != ends)
+			{
+				ends = ended;
+				since = now;
+				continue;
+			}
+			if(now - since < _idle)
+				continue;
+			// no block for _idle: take the job back and run it here, unless the audio thread took it meanwhile
+			BlockEndJob* posted = &_job;
+			if(m_blockEndJob.compare_exchange_strong(posted, nullptr, std::memory_order_acq_rel))
+			{
+				m_blockEndsIdle = ends;
+				runHere();
+				return false;
+			}
+			while(!_job.m_done.load(std::memory_order_acquire))
+				std::this_thread::yield();
+			return true;
+		}
 	}
 
 	bool Plugin::isValid() const
