@@ -117,8 +117,9 @@ int main(const int _argc, char** const _argv)
 
 		std::printf("%s: the host parameter list\n", mm ? "mm" : "md");
 		const auto& params = ap.getParameters();
+		const auto count = static_cast<size_t>(params.size());
 		const size_t expected = mm ? 6u * 58u : 16u * 26u;
-		check(params.size() == expected, "parameter count " + std::to_string(params.size()) + " (expected " + std::to_string(expected) + ")");
+		check(count == expected, "parameter count " + std::to_string(count) + " (expected " + std::to_string(expected) + ")");
 		std::set<juce::String> ids, names;
 		size_t automatable = 0, meta = 0;
 		for(auto* p : params)
@@ -129,13 +130,13 @@ int main(const int _argc, char** const _argv)
 			automatable += p->isAutomatable() ? 1u : 0u;
 			meta += p->isMetaParameter() ? 1u : 0u;
 		}
-		check(ids.size() == params.size(), "every parameter has its own string id (" + std::to_string(ids.size()) + ")");
-		check(names.size() == params.size(), "every parameter has its own name (" + std::to_string(names.size()) + ")");
-		check(automatable == params.size(), "every parameter is automatable (" + std::to_string(automatable) + ")");
+		check(ids.size() == count, "every parameter has its own string id (" + std::to_string(ids.size()) + ")");
+		check(names.size() == count, "every parameter has its own name (" + std::to_string(names.size()) + ")");
+		check(automatable == count, "every parameter is automatable (" + std::to_string(automatable) + ")");
 		check(meta == 0, "no meta parameter (" + std::to_string(meta) + ")");
-		if(!params.empty())
+		if(!params.isEmpty())
 			std::printf("  first: \"%s\", last: \"%s\" (Ableton lists none of them until Configure: more than 128)\n",
-				params.front()->getName(64).toRawUTF8(), params.back()->getName(64).toRawUTF8());
+				params.getFirst()->getName(64).toRawUTF8(), params.getLast()->getName(64).toRawUTF8());
 
 		HostListener host;
 		ap.addListener(&host);
