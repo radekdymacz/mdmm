@@ -126,6 +126,7 @@ namespace mmDesk
 	{
 		m_working = {};
 		m_pushes.clear();
+		m_readBackTrace.clear();
 		m_stream.clear();
 		m_reloadsPending = 0;
 		m_restoreKit = -1;
@@ -309,12 +310,18 @@ namespace mmDesk
 	// is stopped in SONG mode, the desk loads the song again by itself; a playing machine gets it at its next stop.
 	void MmMachine::pumpSongReload(const double _now)
 	{
+		if(m_recv.state() != RecvSession::State::Idle || m_recv.queued() > 0)
+			m_recvHeldMs = _now;
 		if(!m_songReloadNeeded || m_curSong < 0)
 			return;
 		if(m_playing || m_songMode != 1 || _now - m_songEditedMs < g_songReloadQuietMs || busy() || !m_stream.open()
 			|| m_recv.state() != RecvSession::State::Idle || m_stream.waiting() > 0 || m_recv.queued() > 0)
 			return;
+		// B-202: not between two edits: the next one comes soon after SYSEX RECV left (a row's + pressed again)
+		if(_now - m_recvHeldMs < g_songReloadRecvIdleMs)
+			return;
 		m_port.sendSysex(ed::mmLoadSong(static_cast<uint8_t>(m_curSong)));
+		m_songLoadSentMs = _now;
 		m_songReloadNeeded = false;
 		requestStatus();
 		m_lastStatusMs = _now;
@@ -468,6 +475,24 @@ namespace mmDesk
 			v.set("olderReply", m_olderReply + ", " + std::to_string(static_cast<int>(now() - m_olderReplyMs)) + " ms ago");
 		if(!m_lastReply.empty())
 			v.set("lastReply", m_lastReply + ", " + std::to_string(static_cast<int>(now() - m_lastReplyMs)) + " ms ago");
+		// B-202 (CI run 41475648487: a read-back with no reply at all): each read-back still waiting, with the requests
+		// sent for it and the replies of its document since it was asked; the read in flight; the desk's last LOAD SONG
+		std::string waiting;
+		for(const auto& [ref, t] : m_readBackTrace)
+		{
+			const auto* push = m_pushes.find(ref);
+			if(!push || !push->slot.busy() || !push->slot.asked())
+				continue;
+			waiting += (waiting.empty() ? "" : "; ") + std::string(kindName(ref.kind)) + " " + std::to_string(ref.slot + 1) + ": "
+				+ std::to_string(t.requests) + " requests, " + std::to_string(t.replies) + " replies in "
+				+ std::to_string(static_cast<int>(now() - t.askedMs)) + " ms";
+		}
+		if(!waiting.empty())
+			v.set("readBack", waiting);
+		if(const auto& l = m_loads.loading())
+			v.set("reading", std::string(kindName(l->kind)) + " " + std::to_string(l->slot + 1));
+		if(m_songLoadSentMs >= 0)
+			v.set("songLoadMsAgo", static_cast<int>(now() - m_songLoadSentMs));
 		return v;
 	}
 }
