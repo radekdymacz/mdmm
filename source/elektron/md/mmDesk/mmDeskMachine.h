@@ -290,6 +290,10 @@ namespace mmDesk
 		std::map<uint32_t, Ref> m_recvRefs;		// a dump on the RECV session -> the push it is
 		Pushes m_pushes;
 		void noteOlderReply(const Ref& _r, const Bytes& _sent, const Bytes& _got);
+		void noteReply(const Ref& _r, const char* _outcome, size_t _bytes);
+		static bool sameDocument(const Bytes& _a, const Bytes& _b);
+		std::string m_lastReply;				// B-202: what became of the last reply while its push waited
+		double m_lastReplyMs = -1;
 		std::string m_olderReply;				// B-202: the last older reply to a read-back, for the status line
 		double m_olderReplyMs = -1;
 		int m_olderReplies = 0;
