@@ -3412,6 +3412,48 @@
         },
         {
           "type": "object",
+          "description": "0.9: the sample manager's Erase (sampleErase, sampleEraseAll): running when the keys start, then done (the bank shows the slot empty), stopped (the screen was not the expected one; the menu was left with EXIT, nothing erased) or failed (the keys ran, the slot still holds a sample).",
+          "required": ["type", "state", "slot", "step", "steps", "text"],
+          "additionalProperties": true,
+          "properties": {
+            "type": {
+              "const": "sampleErase"
+            },
+            "state": {
+              "enum": ["running", "done", "stopped", "failed"]
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": -1,
+              "maximum": 47,
+              "description": "The ROM slot, -1 for all."
+            },
+            "step": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "steps": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "text": {
+              "type": "string"
+            },
+            "seen": {
+              "type": "string",
+              "description": "Only when a step did not find its screen: the step, the key, the hashes seen and expected (for the log)."
+            },
+            "lcd": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "With seen: the screen that step found, 32 text rows, two pixel rows to a character (the firmware probe's LCD dump)."
+            }
+          }
+        },
+        {
+          "type": "object",
           "description": "0.9: the result of a sample export (sampleExport): how many files were written, and a line for the person.",
           "required": ["type", "ok", "count", "text"],
           "additionalProperties": true,
@@ -6791,6 +6833,53 @@
           "properties": {
             "op": {
               "const": "sampleUndo"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "setup: erase ROM slot slot from the machine's panel (SAMPLE MGR > ERASE, the screen checked at every key, the bank read back); {\"type\":\"sampleErase\"} says how it goes; a step to undo it",
+          "required": ["op", "slot"],
+          "properties": {
+            "op": {
+              "const": "sampleErase"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 47
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "setup: erase every ROM slot from the machine's panel (SAMPLE MGR > ERASE > ALL); {\"type\":\"sampleErase\"} says how it goes; no undo",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "sampleEraseAll"
             },
             "id": {
               "type": "integer"

@@ -106,6 +106,8 @@ namespace elektronData
 	MdSampleIndex indexMdSamples(const MdSampleMemory& _memory);
 	// Just the signature (cheap: sector heads, names, the RAM entries).
 	uint64_t mdSampleSignature(const MdSampleMemory& _memory);
+	// The part of it that lives in flash and the patch RAM (sector heads, names), without the RAM buffers' entries.
+	uint64_t mdSampleFlashSignature(const MdSampleMemory& _memory);
 
 	MdSampleSlot readMdRomSample(const MdSampleMemory& _memory, const MdSampleIndex& _index, uint8_t _slot, size_t _bins = g_mdSampleBins);
 	MdSampleSlot readMdRamSample(const MdSampleMemory& _memory, const MdSampleIndex& _index, uint8_t _slot, size_t _bins = g_mdSampleBins);

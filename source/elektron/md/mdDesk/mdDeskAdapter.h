@@ -64,6 +64,10 @@ namespace mdDesk
 		// A panel key press and release; false when not possible here. Keys: "play", "stop",
 		// "record", "recordPlay", "page", "trig1".."trig16". Unset: no panel.
 		std::function<bool(const std::string& _key)> pressKey;
+		// The machine's own screen, 128 x 64, one bit a pixel (16 bytes a row, bit 7 the left pixel), as it is now; false when it
+		// cannot be read. The sample manager's Erase looks at it between panel keys (mdDeskErase.h). Unset: no screen (a real
+		// Machinedrum), so no Erase.
+		std::function<bool(Bytes& _lcd)> lcd;
 		// A short MIDI message straight into the machine (1 to 3 bytes: MIDI Stop, Continue, a Song Position Pointer, a
 		// channel mode CC), after what was sent before it: the pause and the play from a song row over MIDI, the panic
 		// (doc/modern-ux/PROBES-manual-gaps.md P1, P5). Unset: this engine cannot.
@@ -114,5 +118,9 @@ namespace mdDesk
 		// engine cannot. The status of the latest request (another id: it is gone, e.g. a new device).
 		virtual uint64_t audition(const elektronData::AuditionClip&) { return 0; }
 		virtual elektronData::AuditionStatus auditionStatus() const { return {}; }
+		// 0.9, Erase (mdDeskErase.h): a panel key pressed and the machine's screen as it is now (128 x 64, one bit a pixel); the
+		// adapter owns the device edge, so the desk asks it. Not possible here: false.
+		virtual bool pressPanel(const std::string&) { return false; }
+		virtual bool readScreen(Bytes&) { return false; }
 	};
 }

@@ -947,8 +947,10 @@ const MmJourneys = (() => {
 				screen: () => ok(S().sel === 0, "track " + S().sel), within: 2000 },
 			{ say: "LEARN waiting for a note: a note for track 3 leaves the selection", act: async (u, c) => { window.GP.learn = 2; window.gm.recv([{ type: "midiIn", ch: c.base + 2, note: 60, vel: 100 }]); await sleep(300); window.GP.learn = null; },
 				screen: () => ok(S().sel === 0, "track " + S().sel) },
+			/* B-194: the HW machine document and the note in one batch: the plug-in's next machine document (the emulator's) came
+			   between the two once (the 100 ms gap the step had) and the note found the emulator engine again */
 			{ say: "the HW MIDI engine (the port carries the machine's own MIDI out): a note for track 3 leaves the selection", act: async (u, c) => { const m0 = machine(), hw = { ...m0, capabilities: { ...m0.capabilities, engine: "hw" } };
-					window.gm.recv([{ type: "machine", doc: hw }]); await sleep(100); window.gm.recv([{ type: "midiIn", ch: c.base + 2, note: 60, vel: 100 }]); await sleep(300); window.gm.recv([{ type: "machine", doc: m0 }]); },
+					window.gm.recv([{ type: "machine", doc: hw }, { type: "midiIn", ch: c.base + 2, note: 60, vel: 100 }]); await sleep(300); window.gm.recv([{ type: "machine", doc: m0 }]); },
 				screen: () => ok(S().sel === 0, "track " + S().sel) },
 			{ say: "a note on track 2's channel selects track 2", act: (u, c) => window.gm.recv([{ type: "midiIn", ch: c.base + 1, note: 60, vel: 100 }]),
 				screen: () => ok(S().sel === 1, "track " + S().sel), within: 2000 },
@@ -4648,8 +4650,12 @@ const MmJourneys = (() => {
 		if (S().mode && S().mode !== "normal" && S().ws === "perform") await act("Perform in the mode " + S().mode, async () => { u.click('[data-pmode="normal"]'); });
 		/* PATTERN mode: a journey that left the machine in SONG mode left the LCD's pattern keys under the song row for the next one (mm-song-play-from, then mm-top-pattern-next) */
 		if (machine().song?.songMode === true) await act("the machine in SONG mode", async () => { Bridge.send({ op: "seqMode", song: false }); await until(() => machine().song?.songMode === false, 4000); });
-		await sleep(600);
-		return left.length ? `left ${left.join(", ")}${fix ? " (after a failure: put right)" : ""}` : "";
+		/* the journey before's late answers in (Journey.settle): SYSEX RECV idle and no push waiting for its dump or read-back
+		   (machine.recv; B-197 waited for the same in one step). No recv, or HW MIDI's dumps waiting for the person's SEND: nothing to wait for */
+		const recvQuiet = () => { const r = machine().recv; return !r || r.state === "waitingUser" || (r.state === "idle" && !r.sending); };
+		const calm = await Journey.settle(recvQuiet, 600, Journey.pageTier() ? 2000 : 15000);
+		const busy = calm ? "" : `the machine still busy (SYSEX RECV ${machine().recv?.state}, ${machine().recv?.sending} sending)`;
+		return [left.length ? `left ${left.join(", ")}${fix ? " (after a failure: put right)" : ""}` : "", busy].filter(Boolean).join("; ");
 	}
 	/* what the guard compares before and after each journey (shared/deskJourney.js, page.state): the machine's documents and modes
 	   (as mdDeskJourneys.js state); a document is a short hash of its JSON, a slot loaded only in one of the two is not compared */

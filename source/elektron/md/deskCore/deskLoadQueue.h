@@ -5,6 +5,7 @@
 #include <deque>
 #include <map>
 #include <optional>
+#include <set>
 
 namespace deskCore
 {
@@ -56,6 +57,19 @@ namespace deskCore
 				m_queue.push_back(e);
 		}
 
+		// Read _ref with a request sent from now on (a push's read-back, B-202): one already in flight was asked
+		// before, so its reply may hold the document as it was before the dump that is to be confirmed. That
+		// request is not sent twice at once (one in flight): _ref is asked again, first, once it is answered.
+		void wantFresh(const Ref& _ref)
+		{
+			if(m_loading == _ref)
+			{
+				m_again.insert(_ref);
+				return;
+			}
+			want(_ref, true);
+		}
+
 		bool contains(const Ref& _ref) const
 		{
 			return m_loading == _ref
@@ -66,10 +80,14 @@ namespace deskCore
 		// backoff too: it is not asked for again).
 		void arrived(const Ref& _ref)
 		{
-			if(m_loading == _ref)
+			const bool inFlight = m_loading == _ref;
+			if(inFlight)
 				m_loading.reset();
 			if(m_rounds.erase(_ref))
 				m_queue.erase(std::remove_if(m_queue.begin(), m_queue.end(), [&](const Entry& _e) { return _e.ref == _ref; }), m_queue.end());
+			// the reply to the request asked before wantFresh: now the fresh one
+			if(inFlight && m_again.erase(_ref))
+				m_queue.push_front({_ref, 0});
 		}
 
 		// The request to send now, if any: the one in flight again after _timeoutMs without
@@ -84,12 +102,14 @@ namespace deskCore
 					return step;
 				if(m_retries++ < _policy.retries)
 				{
+					m_again.erase(*m_loading);	// sent again now: its reply is a fresh one
 					m_sentMs = m_lastRequestMs = _nowMs;
 					step.send = m_loading;
 					return step;
 				}
 				const auto ref = *m_loading;
 				m_loading.reset();
+				m_again.erase(ref);	// asked again later (its round) or given up: either way no older reply is waited for
 				if(++m_rounds[ref] <= _policy.rounds)
 					m_queue.push_front({ref, _nowMs + _policy.backoffMs});	// first once its backoff is over
 				else
@@ -126,6 +146,7 @@ namespace deskCore
 		std::deque<Entry> m_queue;
 		std::optional<Ref> m_loading;
 		std::map<Ref, int> m_rounds;	// rounds a request without a reply has had so far
+		std::set<Ref> m_again;			// in flight, wanted fresh: asked again once answered (wantFresh)
 		double m_sentMs = 0;
 		double m_lastRequestMs = -1e9;
 		int m_retries = 0;

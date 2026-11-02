@@ -1782,6 +1782,14 @@ namespace mdDesk
 		if(m_nudgeFrom)
 			g.tempo = *m_nudgeFrom;
 		const ed::MdGlobal& _g = g;
+		// B-200: a tempo sent and not yet read back, and a dump with another tempo: the reply to a read asked before the
+		// tempo went (measured on CI: the nudge's read at its release answered 3.4 s later, after the next drag's tempo,
+		// and the page and the global went back to the old tempo while the machine had the new one). Not the read-back:
+		// the push waits for its own (pumpPushes asks for it at quiet; its timeout fails the push and reads again), and
+		// the page keeps the tempo sent.
+		if(const auto* push = m_pushes.find(ref); push && push->slot.busy() && push->slot.inFlight())
+			if(const auto* sent = std::get_if<ed::MdGlobal>(&*push->slot.inFlight()); sent && sent->tempo != _g.tempo)
+				return;
 		observe(_g, Source::Dump);
 		setBaseChannel(_g);
 		// The read-back after a global edit: what the firmware stored, whatever it normalised.
@@ -1907,6 +1915,7 @@ namespace mdDesk
 	void MdMachine::onWorkingKitMemory(const Bytes& _region, const Documents& _view)
 	{
 		m_working.region = _region;
+		m_working.regionMs = now();
 		m_memoryKit = ed::mdWorkingKitFromMemory(_region);
 		takeWorkingKit(&_view);
 	}

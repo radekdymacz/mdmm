@@ -375,6 +375,8 @@ Written 2026-10-12 from doc/features/unproved-md.md: each journey names the rows
 | md-lib-syx-original | MD-182 |
 | md-sampler-rename | MD-197 |
 | md-sampler-manager | MD-196, MD-198 |
+| md-sampler-erase | MD-194, MD-198 |
+| md-sampler-erase-all | MD-194 |
 | md-lib-kit-name-save | MD-280, MD-283 |
 | md-song-commands | MD-143, MD-152, MD-153, MD-155, MD-156, MD-161, MD-295 |
 | md-top-play-mode | MD-295 |

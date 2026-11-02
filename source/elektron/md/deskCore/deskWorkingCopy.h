@@ -25,6 +25,7 @@ namespace deskCore
 	{
 		bool seed = true;
 		std::optional<std::vector<uint8_t>> region;
+		double regionMs = -1;			// when the region came in (-1: not known, nothing is judged by its age)
 		Expectation<Kit> expect;
 		std::optional<Kit> image;
 		HeldOverrides held;
@@ -73,6 +74,16 @@ namespace deskCore
 		if(!_currentKit || *_currentKit != _imageKit)
 		{
 			r.askStatus = true;
+			r.next = std::move(_w);
+			return r;
+		}
+		// B-193: an image that came in before the latest live edit went out, and does not show it, is older than
+		// the page's value: it is dropped, not taken once the expectation ran out or while knob turns hold it
+		// (it put the value of seconds before over a drag).
+		if(_w.expect.to && _w.expect.from && _w.regionMs >= 0 && _w.regionMs < _w.expect.atMs
+			&& !_reflects(_image, *_w.expect.from, *_w.expect.to))
+		{
+			_w.region.reset();
 			r.next = std::move(_w);
 			return r;
 		}
