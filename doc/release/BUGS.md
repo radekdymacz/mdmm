@@ -112,7 +112,11 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Fix (journey, branch `fix/0.9-e2e-flakes`):** the HW document and the note go in one batch (`gm.recv` handles a batch in order, at once), so nothing comes between them.
 - **Status:** fixed on the branch, awaiting CI.
 
-## B-193 · Machinedrum: the fine (Shift) knob drag test was disturbed by a late kit load (open)
+## B-193 · Machinedrum: the fine (Shift) knob drag test was disturbed by a late kit load (fixed on branch fix/0.9-md-round5, awaiting CI)
+
+- **Full CI run 41475648487 (2026-11-02), trace of step 5:** the kit's value 72, 76, 80 (the drag, as it should), then 61 at 947 ms, with `tx` false, `loading` 0 and the same toast all through. 61 is the value from before the two wheel edits of steps 3 and 4, so it is a memory image older than the edits, not a kit load (nothing loaded) and not a drag of the wrong length.
+- **Cause (real bug, read from the code):** the working kit follows the machine's memory (`deskCore::fromImage`). An image that did not show the pending edits waited in `region` and was taken once the expectation ran out (1 s after the latest edit, the machine "wins") or while knob turns held it (observed over the edit), however old it was. An image that came in before the latest edit was sent is older than the page's value and must never win.
+- **Fix:** `WorkingCopy::regionMs` (when the image came in; `MdMachine::onWorkingKitMemory` sets it); `fromImage` drops an image that came in before the latest live edit went out and does not show it. A fresh image after the edit is still the machine's word. Unit test in `deskCoreTest` (workingCopy). The Monomachine does not set the time yet (unchanged). The journey is unchanged.
 
 - **Also:** CI run 40782388827 (release/0.8.1) with the same numbers (plain 72 -> 61); the nightly of 2026-10-26 on main had them too, so it is older than 0.8.1.
 
