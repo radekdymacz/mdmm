@@ -4,6 +4,16 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-205 · Ableton Live and Push 2: a Control page knob row cannot be mapped to a Rack macro (open, a design gap)
+
+- **From:** a user report, 2026-11-02 (Ableton Live with Push 2, AU on macOS): "I can't get the new Control matrix to map a knob lane to a macro in Ableton for my Push 2." Whether it fails silently is not known.
+- **What the Control matrix is:** MIDI Learn. Its eight knob rows are MIDI CC routes (CC 21-28 by default, any channel, the setup's `knobCcs`), not host parameters. A DAW can map only host parameters: MD 16 tracks x 26 (`Track N Machine Parameter 1` .. `Mute`, 416), MM 6 x 58 (348), all automatable, not meta, string ids (`page_track_index`, stable AU ids). The values that belong to no track (the FX column: master effects, tempo, swing, accent, LFO page, MM arp, assign, MIDI tracks) are no host parameters at all.
+- **Path of a page edit (checked):** the desk session -> `StudioLink::setKitParam` / `setMute` (mdStudioLink.cpp) or `MmStudioLink::setParam` (mmStudioLink.cpp) -> `Parameter::setUnnormalizedValueNotifyingHost(…, Origin::Ui)` -> `ScopedChangeGesture` (begin), value, `notifyHost`, end, on the message thread (parameter.cpp). So Ableton's Configure picks up a kit value turned on the page. Dragging an MM knob row moves its targets through the same call (each target its own parameter); the MD knob rows cannot be turned on the page. Exception: `MmStudioLink::setParam` with an unchanged value tells the machine only, not the host.
+- **Likely cause:** no bug in the notification; a knob row has no host parameter, so there is nothing for a macro to map. With more than 128 parameters Ableton lists none until Configure, so a user sees nothing.
+- **Workaround to tell the user:** press Configure on the plug-in device, turn the value itself on the page (for example DEC on the Kit page): it appears as `Track 1 Machine Parameter 3` and can be mapped to a macro and to Push 2. Global values cannot.
+- **Fix to decide (Radek):** eight host parameters `Knob 1`..`Knob 8` in a new parameter group (the existing ids unchanged), each driving its knob row's mappings as a CC on that row does (the learn router's realtime path). Open: names, whether the knob rows' values are saved, and a DAW in write mode then records both the knob and its targets.
+- **Test:** `mdAutomationHostGestureTest_md` / `_mm` (no ROM): the parameter list and begin, value, end of a page edit on the message thread.
+
 ## B-202 · Monomachine: the song row transpose journey saw no read-back of the song (open, seen once)
 
 - **From:** full CI run 41305887640 (`release/0.0.0-ci-test`, ed56c4105), journey `mm-song-row-settings` step 3: "Transpose + twice on the row": the cell showed +1, the machine held 1, and the toast said "The machine did not read back the song that was sent. Showing what it holds." The branch changed no song code (B-189 arpeggiator bits, B-201 Linux web view, journey order). Not reported by a tester.
