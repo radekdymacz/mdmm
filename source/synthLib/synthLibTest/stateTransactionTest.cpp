@@ -274,6 +274,7 @@ int main()
 
 		// blocks run: the job runs on the audio thread, and the caller holds no lock
 		std::atomic<bool> run{true};
+		std::atomic<uint32_t> blocks{0};
 		std::thread::id audioThread;
 		std::thread audio([&]
 		{
@@ -283,9 +284,13 @@ int main()
 			while(run)
 			{
 				jobPlugin.process(inputs, outputs, 64, 120.0, 0.0, false);
+				++blocks;
 				std::this_thread::sleep_for(1ms);
 			}
 		});
+		// until a block has ended, a job runs at once in a hold of its own (no block since the last found none)
+		while(!blocks)
+			std::this_thread::sleep_for(1ms);
 		bool allAtBlockEnd = true;
 		bool allOnAudio = true;
 		const uint32_t blockLine = __LINE__ + 4;
