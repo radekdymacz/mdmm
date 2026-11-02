@@ -157,7 +157,9 @@ namespace md
 			uint32_t stable = 0;		// looks it has been the same
 			bool published = false;		// a copy was handed over
 			uint64_t publishedSignature = 0;
+			uint64_t publishedFlash = 0;	// its flash part (mdSampleFlashSignature)
 			uint64_t copying = 0;		// the signature of the copy in progress
+			uint64_t copyingFlash = 0;
 			uint32_t refresh = 0;		// the refresh requests done
 		} m_samples;
 		SampleCopy m_sampleCopy;

@@ -150,19 +150,26 @@ namespace md
 			m_sampleCopy.reset();
 			s.published = true;
 			s.publishedSignature = s.copying;
+			s.publishedFlash = s.copyingFlash;
 			return;
 		}
 		// Look at the memory about 10 times a second (64-frame blocks); copy it once it is the same twice
-		// and flash has been quiet for 0.3 s, or when asked.
+		// and flash has been quiet for 0.3 s, or when asked. The quiet is for a flash being written (an SDS
+		// import, an erase): a change of the RAM buffers alone (a RAM-R take), with the flash part as it was
+		// copied last, is copied without it (B-204: on CI a take of 1.00 s stayed 0.07-0.21 s, the copy made in
+		// the middle of the take, for seconds after the take ended, until a later copy).
 		if(s.blocks++ % 64)
 			return;
-		const auto signature = elektronData::mdSampleSignature(sampleMemoryOf(hardware));
+		const auto memory = sampleMemoryOf(hardware);
+		const auto signature = elektronData::mdSampleSignature(memory);
+		const auto flashSignature = elektronData::mdSampleFlashSignature(memory);
 		s.stable = signature == s.seen ? s.stable + 1 : 0;
 		s.seen = signature;
 		const auto refresh = m_sampleRefresh.load(std::memory_order_relaxed);
 		const bool asked = refresh != s.refresh;
 		auto& uc = hardware.getUC();
-		const bool quiet = !uc.flashDirty() || uc.flashIdleCycles() > 12'000'000;
+		const bool flashSame = s.published && flashSignature == s.publishedFlash;
+		const bool quiet = flashSame || !uc.flashDirty() || uc.flashIdleCycles() > 12'000'000;
 		if(!asked && (s.stable < 1 || !quiet || (s.published && signature == s.publishedSignature)))
 			return;
 		if(!m_sampleBuffer)
@@ -171,6 +178,7 @@ namespace md
 			return;	// the reader still has it: next look
 		s.refresh = refresh;
 		s.copying = signature;
+		s.copyingFlash = flashSignature;
 		m_sampleCopy.begin(*m_sampleBuffer);
 	}
 

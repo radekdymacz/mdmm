@@ -2711,6 +2711,15 @@ namespace
 		check(ed::mdSampleSignature(m) == sig, "the signature follows heads, names and RAM entries, not every sample");
 		patch[ed::g_mdSampleNamesAddress + 10] = 'X';
 		check(ed::mdSampleSignature(m) != sig, "a new name changes it");
+		{
+			// B-204: a RAM take changes the signature, not its flash part (the RAM copy does not wait for the flash to be quiet)
+			const auto all0 = ed::mdSampleSignature(m), flash0 = ed::mdSampleFlashSignature(m);
+			dsp[ed::g_mdDspSampleTable + 4 * ed::g_mdDspRamEntry + 1] += 2;
+			check(ed::mdSampleSignature(m) != all0 && ed::mdSampleFlashSignature(m) == flash0, "a RAM entry: the signature changes, its flash part does not");
+			dsp[ed::g_mdDspSampleTable + 4 * ed::g_mdDspRamEntry + 1] -= 2;
+			patch[ed::g_mdSampleNamesAddress + 11] = 'Y';
+			check(ed::mdSampleFlashSignature(m) != flash0, "a name: the flash part changes");
+		}
 		dsp[ed::g_mdDspExpander + 5] = 0;
 		check(!ed::indexMdSamples(m).ramReadable, "an expander that is not the firmware's: RAM not read");
 		const auto j = ed::mdSampleBankToJson(bank);
@@ -3162,19 +3171,26 @@ namespace
 			"erase all: the route ends with UP until the ALL line, then ENTER, ENTER");
 
 		// CI run 41351441000: after an erase the machine kept its cursors. ENTER on GLOBAL SLOT shows SAMPLE MGR picked in the third icon's
-		// list, ENTER there shows the MODE column on ERASE, and the list's cursor is on ROM-11. The job skips what is shown and brings the
-		// list's cursor up to ALL before anything else
+		// list, LEFT in SAMPLE MGR shows the MODE column on ERASE, and the list's cursor is on ROM-11. The job skips what is shown and
+		// brings the list's cursor up to ALL before anything else
 		{
 			const auto all = er::scriptAll();
 			std::vector<size_t> enters;
+			size_t left = 0;
 			for(size_t i = 0; i < all.size(); ++i)
+			{
 				if(all[i].key == "enter")
 					enters.push_back(i);
+				if(all[i].key == "left" && !left)
+					left = i;
+			}
+			check(left == enters[1] + 1 && all[enters[1]].timeoutMs == er::g_sampleMgrMs && !all[enters[1]].expect.notMode.empty(),
+				"SAMPLE MGR: its body is waited for (not the blank one), then LEFT into the MODE column");
 			const Remember remember = [&](const size_t _step, er::Screen& _shown)
 			{
 				if(_step == enters[0])
 					_shown.full = 0xb035a8f846ff3715ull;	// SAMPLE MGR in the third icon's list
-				else if(_step == enters[1])
+				else if(_step == left)
 					_shown.mode = er::g_modeErase;
 			};
 			keys.clear();
@@ -3182,8 +3198,8 @@ namespace
 			const auto first = std::find(keys.begin(), keys.end(), "enter");
 			const auto second = std::find(first + 1, keys.end(), "enter");
 			const auto third = second == keys.end() ? keys.end() : std::find(second + 1, keys.end(), "enter");
-			check(outcome.first == er::Job::State::Finished && second == first + 1 && third != keys.end() && *(second + 1) == "right"
-				&& std::count(second + 2, third, std::string("up")) == 11 && third - second == 13,
+			check(outcome.first == er::Job::State::Finished && second == first + 1 && third != keys.end() && *(second + 1) == "left"
+				&& *(second + 2) == "right" && std::count(second + 3, third, std::string("up")) == 11 && third - second == 14,
 				"kept cursors: the GLOBAL list's and MODE's keys are skipped, UP x11 to ALL, then the ENTERs");
 		}
 		// the list never shows ALL: the job stops after a list's worth of UP, and no ENTER of the erase is pressed

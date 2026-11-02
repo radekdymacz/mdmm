@@ -68,6 +68,8 @@ namespace mdDesk::erase
 				s += " or full " + hex(f);
 			for(const auto m : _e.alsoMode)
 				s += " or mode " + hex(m);
+			for(const auto m : _e.notMode)
+				s += " not mode " + hex(m);
 			if(_e.prompt != Expect::Prompt::Any)
 				s += _e.prompt == Expect::Prompt::Asked ? " prompt asked" : " prompt list";
 			if(_e.changes)
@@ -145,6 +147,8 @@ namespace mdDesk::erase
 			return false;
 		if(mode && !either(_screen.mode, mode, alsoMode))
 			return false;
+		if(std::find(notMode.begin(), notMode.end(), _screen.mode) != notMode.end())
+			return false;
 		if(window && _screen.window != window)
 			return false;
 		if(lastLine && _screen.lastLine != lastLine)
@@ -179,10 +183,17 @@ namespace mdDesk::erase
 			k.skippable = true;
 			s.push_back(k);
 		}
-		// SAMPLE MGR: the MODE column's cursor on RECEIVE on a fresh machine, else where it was left
+		// SAMPLE MGR, its body drawn: the MODE column's cursor on RECEIVE on a fresh machine, else where it was left, maybe in the list
+		// (CI run 41362123236: SEND picked, the cursor on the list's second line). LEFT puts it in the MODE column, on the mode picked
+		Expect body;
+		body.header = g_sampleMgrHeader;
+		body.notMode = {g_modeBlank};
+		Step enter{"enter", body};
+		enter.timeoutMs = g_sampleMgrMs;
+		s.push_back(enter);
 		Expect sampleMgr = inSampleMgr(g_modeReceive);
 		sampleMgr.alsoMode = {g_modeSend, g_modeRename, g_modeErase};
-		s.push_back({"enter", sampleMgr});
+		s.push_back({"left", sampleMgr});
 		for(const auto m : {g_modeSend, g_modeRename, g_modeErase})
 		{
 			Step k{"down", inSampleMgr(m)};
@@ -305,7 +316,7 @@ namespace mdDesk::erase
 					return m_state;
 				if(!done.expect.matches(_screen, m_before))
 				{
-					if(since < g_timeoutMs)
+					if(since < (done.timeoutMs > 0 ? done.timeoutMs : g_timeoutMs))
 						return m_state;
 					m_seen = "step " + std::to_string(m_next) + " " + done.key + ": saw " + describe(_screen) + "; expected" + describeExpect(done.expect);
 					stop("The machine's screen was not the one expected after the key " + done.key + " (step " + std::to_string(m_next) + " of "
