@@ -1853,10 +1853,10 @@ void songEditsBackToBack()
 		("the status line names the read-back waiting: " + waiting).c_str());
 	// B-202 (full CI run 41593074249: readsQueued 1, nothing in flight, no request for 13 s): the status line says what holds
 	// the reads while one waits
-	const auto held = statusField("readsHeld");
-	const bool justSent = held.empty() && !statusField("reading").empty();	// the last tick sent one: nothing held then
-	check(justSent || ((held.find("in flight") == 0 || held.find("backoff") == 0) && held.find("loads pumped") != std::string::npos),
-		("the status line says what holds the reads: " + held).c_str());
+	const auto readsHeld = statusField("readsHeld");
+	const bool justSent = readsHeld.empty() && !statusField("reading").empty();	// the last tick sent one: nothing held then
+	check(justSent || ((readsHeld.find("in flight") == 0 || readsHeld.find("backoff") == 0) && readsHeld.find("loads pumped") != std::string::npos),
+		("the status line says what holds the reads: " + readsHeld).c_str());
 }
 
 // LOAD KIT of a never-written slot (name byte 0 is 0xff) plays it as NEW KIT (measured, mmDeskFirmwareTest p4).
