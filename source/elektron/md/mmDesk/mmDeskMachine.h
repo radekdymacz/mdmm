@@ -310,6 +310,7 @@ namespace mmDesk
 			double askedMs = 0;
 			int requests = 0;
 			int replies = 0;
+			int lost = 0;	// times its read was found neither in flight nor queued, and asked again (pumpPushes)
 		};
 		std::map<Ref, ReadBackTrace> m_readBackTrace;
 		std::set<Ref> m_loadAfter;				// kit slots to LOAD KIT once their waiting dump goes

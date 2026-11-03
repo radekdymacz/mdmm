@@ -464,6 +464,18 @@ namespace mmDesk
 				break;
 			}
 		}
+		// B-202 (full CI run 41572548038: "song 1: 0 requests, 0 replies in 5833 ms", nothing in flight, then the toast; the
+		// green run 41504120399 had "0 requests ... in 4250 ms" and a toast too): a read-back asked and still waiting, with no
+		// reply of its document since, whose read is neither in flight nor queued (given up with an older read of the same
+		// document) is asked again. The push's timeout still bounds it.
+		for(auto& [ref, t] : m_readBackTrace)
+		{
+			const auto* push = m_pushes.find(ref);
+			if(!push || !push->slot.busy() || !push->slot.asked() || push->parked || t.replies > 0 || m_loads.contains(ref))
+				continue;
+			++t.lost;
+			m_loads.wantFresh(ref);
+		}
 	}
 
 	void MmMachine::afterDumps(Bytes _message)

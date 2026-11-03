@@ -60,6 +60,8 @@ namespace deskCore
 		// Read _ref with a request sent from now on (a push's read-back, B-202): one already in flight was asked
 		// before, so its reply may hold the document as it was before the dump that is to be confirmed. That
 		// request is not sent twice at once (one in flight): _ref is asked again, first, once it is answered.
+		// A request of _ref waiting out its backoff is a new request from now on (B-202, full CI run 41572548038): a late
+		// reply to the older one does not end it (arrived), and it has rounds of its own.
 		void wantFresh(const Ref& _ref)
 		{
 			if(m_loading == _ref)
@@ -67,6 +69,7 @@ namespace deskCore
 				m_again.insert(_ref);
 				return;
 			}
+			m_rounds.erase(_ref);
 			want(_ref, true);
 		}
 
@@ -102,15 +105,25 @@ namespace deskCore
 					return step;
 				if(m_retries++ < _policy.retries)
 				{
-					m_again.erase(*m_loading);	// sent again now: its reply is a fresh one
+					// sent again now: its reply is a fresh one, and the rounds from here are the fresh request's own
+					if(m_again.erase(*m_loading))
+						m_rounds.erase(*m_loading);
 					m_sentMs = m_lastRequestMs = _nowMs;
 					step.send = m_loading;
 					return step;
 				}
 				const auto ref = *m_loading;
 				m_loading.reset();
-				m_again.erase(ref);	// asked again later (its round) or given up: either way no older reply is waited for
-				if(++m_rounds[ref] <= _policy.rounds)
+				// B-202 (full CI run 41572548038): wanted fresh while its older request was in flight, after that one's last
+				// send (a push's read-back asked while the machine had answered nothing for seconds): asked now as a request of
+				// its own, with rounds of its own, not given up with the older one (the read-back was never sent, the push
+				// timed out)
+				if(m_again.erase(ref))
+				{
+					m_rounds.erase(ref);
+					m_queue.push_front({ref, 0});
+				}
+				else if(++m_rounds[ref] <= _policy.rounds)
 					m_queue.push_front({ref, _nowMs + _policy.backoffMs});	// first once its backoff is over
 				else
 				{

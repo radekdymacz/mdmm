@@ -1,4 +1,6 @@
 #include "mdAutomationTestSupport.h"
+#include "mdStudioLink.h"
+#include "mmStudioLink.h"
 
 #include "mdLib/mdsysexautomation.h"
 #include "synthLib/midiTypes.h"
@@ -1038,6 +1040,43 @@ namespace
 		require(_harness.synchronize(), "full plugin state recovery timed out");
 	}
 
+	// B-193 (full CI run 41572548038, md-sound-knob-steps step 3): the page's edit of a kit value equal to the value the
+	// parameter caches. The cache is the last value sent or read, not what the machine holds: a kit loaded, reloaded or
+	// cleared by SysEx leaves it behind, and Parameter::sendToSynth dropped the edit as unchanged (the wheel's 62 never
+	// reached a machine back at 61). The link sends it anyway, on both editors (the Monomachine since B-027).
+	void verifyDeskEditOfCachedValue(const md::MachineModel _model)
+	{
+		Harness harness(_model);
+		auto& controller = harness.controller;
+		mdJucePlugin::ControllerAutomationTestAccess::useSyntheticFirmware(controller);
+		primeSyntheticSnapshot(harness);
+		const bool mm = _model == md::MachineModel::Monomachine;
+		auto* const probe = mm
+			? controller.getParameter(mdJucePlugin::MmStudioLink::parameterName(1, 2), 0)
+			: controller.getParameter(mdJucePlugin::StudioLink::parameterName(2), 0);
+		require(probe != nullptr, "desk edit probe: no parameter");
+		const auto cached = static_cast<uint8_t>(probe->getUnnormalizedValue());
+		const auto send = [&](const uint8_t _value)
+		{
+			if(mm)
+			{
+				const mdJucePlugin::MmStudioLink link(harness.processor, controller);
+				return link.setParam(0, 1, 2, _value);
+			}
+			const mdJucePlugin::StudioLink link(harness.processor, controller);
+			return link.setKitParam(0, 2, _value);
+		};
+		const auto before = controller.getTransmittedAutomationChangeCount();
+		require(send(cached), "desk edit of the cached value: the link refused it");
+		require(controller.getTransmittedAutomationChangeCount() == before + 1,
+			"a desk edit equal to the parameter's cached value was not sent to the machine (B-193)");
+		const auto other = static_cast<uint8_t>(cached == 64 ? 65 : 64);
+		require(send(other) && controller.getTransmittedAutomationChangeCount() == before + 2
+			&& probe->getUnnormalizedValue() == other, "a desk edit of another value was not sent once");
+		require(send(other) && controller.getTransmittedAutomationChangeCount() == before + 3,
+			"the same desk edit again was not sent (the machine may have been reloaded meanwhile)");
+	}
+
 	void verifyPendingStateBeforeSynchronization(const md::MachineModel _model)
 	{
 		Harness source(_model);
@@ -1244,6 +1283,7 @@ namespace
 		if(_model == md::MachineModel::Machinedrum)
 			verifyRamRecordingModeState();
 		verifyPendingStateBeforeSynchronization(_model);
+		verifyDeskEditOfCachedValue(_model);
 		Harness harness(_model);
 		mdJucePlugin::ControllerAutomationTestAccess::useSyntheticFirmware(
 			harness.controller);

@@ -107,6 +107,15 @@ namespace mdJucePlugin
 		auto* p = parameter(_track, _index);
 		if(!p || _index > 24)
 			return false;
+		// B-193 (full CI run 41572548038, md-sound-knob-steps step 3: the wheel's 62 never reached the machine, which kept
+		// 61 for 9 s): the parameter caches the last value it sent or read, not what the machine holds. A kit loaded,
+		// reloaded or cleared by SysEx changes the machine's values and not the cache, and Parameter::sendToSynth drops a
+		// value equal to the cache as unchanged. The page's edit is sent anyway (the Monomachine does the same: B-027).
+		if(p->getUnnormalizedValue() == _value)
+		{
+			m_controller.sendParameterChange(*p, _value, pluginLib::Parameter::Origin::Ui);
+			return true;
+		}
 		p->setUnnormalizedValueNotifyingHost(static_cast<int>(_value), pluginLib::Parameter::Origin::Ui);
 		return true;
 	}

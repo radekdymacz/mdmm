@@ -485,12 +485,15 @@ namespace mmDesk
 				continue;
 			waiting += (waiting.empty() ? "" : "; ") + std::string(kindName(ref.kind)) + " " + std::to_string(ref.slot + 1) + ": "
 				+ std::to_string(t.requests) + " requests, " + std::to_string(t.replies) + " replies in "
-				+ std::to_string(static_cast<int>(now() - t.askedMs)) + " ms";
+				+ std::to_string(static_cast<int>(now() - t.askedMs)) + " ms" + (t.lost ? ", asked again " + std::to_string(t.lost) + "x" : "");
 		}
 		if(!waiting.empty())
 			v.set("readBack", waiting);
 		if(const auto& l = m_loads.loading())
 			v.set("reading", std::string(kindName(l->kind)) + " " + std::to_string(l->slot + 1));
+		// B-202: the reads waiting their turn (a read-back's among them, or not)
+		if(const auto queued = m_loads.pending() - (m_loads.loading() ? 1 : 0))
+			v.set("readsQueued", static_cast<int>(queued));
 		if(m_songLoadSentMs >= 0)
 			v.set("songLoadMsAgo", static_cast<int>(now() - m_songLoadSentMs));
 		return v;

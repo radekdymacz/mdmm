@@ -277,6 +277,56 @@ namespace
 		for(double u = 1600; u < 20000; u += 10)
 			asked = asked || l.next(u, 800, true, p).send.has_value();
 		check(!asked, "and it is not asked for again");
+
+		// B-202 (full CI run 41572548038, "song 1: 0 requests, 0 replies in 5833 ms"): a push's read-back wanted fresh while
+		// the older read of its document was on its last send of its last round. It was given up with that one, the
+		// read-back was never sent and the push timed out. Now it is asked at that one's timeout, with rounds of its own.
+		LoadQueue<R> g;
+		g.want({0, 8}, true);
+		int sent = 0;
+		double u = 0;
+		for(; u < 60000 && sent < 6; u += 10)
+			sent += g.next(u, 800, true, p).send.has_value();
+		check(sent == 6, "a read unanswered up to its last send");
+		g.wantFresh({0, 8});
+		bool given = false;
+		std::optional<double> freshAt;
+		for(const double from = u; u < from + 5000 && !freshAt; u += 10)
+		{
+			const auto st = g.next(u, 800, true, p);
+			given = given || st.gaveUp.has_value();
+			if(st.send && st.send->slot == 8)
+				freshAt = u;
+		}
+		check(!given && freshAt.has_value(), "wanted fresh on the older read's last send: asked at its timeout, not given up");
+		sent = 1;
+		given = false;
+		for(; u < 120000 && !given; u += 10)
+		{
+			const auto st = g.next(u, 800, true, p);
+			sent += st.send.has_value();
+			given = st.gaveUp.has_value();
+		}
+		const auto rounds = "the fresh read has rounds of its own: " + std::to_string(sent) + " sends, then given up";
+		check(given && sent == 6, rounds.c_str());
+
+		// ... and wanted fresh while the older read waits out its backoff: a late reply to the older one does not end it
+		LoadQueue<R> b;
+		b.want({0, 9}, false);
+		b.next(0, 800, true, p);
+		b.next(800, 800, true, p);
+		b.next(1600, 800, true, p);
+		check(b.pending() == 1 && !b.loading(), "an older read waiting out its backoff");
+		b.wantFresh({0, 9});
+		b.arrived({0, 9});
+		check(b.pending() == 1, "the older read's late reply: the fresh read is still queued");
+		bool freshSent = false;
+		for(double v = 1600; v < 20000 && !freshSent; v += 10)
+		{
+			const auto st = b.next(v, 800, true, p);
+			freshSent = st.send && st.send->slot == 9;
+		}
+		check(freshSent, "and asked");
 	}
 
 	void lifecycle()
