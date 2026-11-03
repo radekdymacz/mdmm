@@ -14,7 +14,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Fix to decide (Radek):** eight host parameters `Knob 1`..`Knob 8` in a new parameter group (the existing ids unchanged), each driving its knob row's mappings as a CC on that row does (the learn router's realtime path). Open: names, whether the knob rows' values are saved, and a DAW in write mode then records both the knob and its targets.
 - **Test:** `mdAutomationHostGestureTest_md` / `_mm` (no ROM): the parameter list and begin, value, end of a page edit on the message thread.
 
-## B-204 · Machinedrum: Erase stopped at GLOBAL SLOT in the editor; the RAM to ROM journey kept a take read mid-way (fixed on the branch, awaiting CI)
+## B-204 · Machinedrum: Erase stopped at GLOBAL SLOT in the editor; the RAM to ROM journey kept a take read mid-way (fixed on the branch)
 
 - **From:** full CI run 41336239454 (`integ/0.9-erase-flakes`, cb70ef97b), MD firmware E2E. `md-sampler-erase` and `md-sampler-erase-all` step 3: "Nothing was erased: The machine's screen was not the one expected after the key patternSong (step 5 of 50/20)." `md-sampler-ram-rom` step 6 "the RAM take is still there": RAM 1 held 6451 samples, the copy sent to ROM-33 0.21 s (2366). Not reported by a tester.
 - **Cause, Erase:** FUNCTION + PATTERN/SONG opens GLOBAL SLOT as a window over the main screen (the probe's dump, run 41321610226: outside x 16..110, y 4..59 the main screen's pixels are unchanged; inside, every main-screen pixel is drawn over). The job checked the whole picture against the probe's hash (8f0127d987a97ffe), which holds the probe's cold-start main screen around the window: the kit, the pattern, the tempo, the knob rings. The editor's machine after 200 journeys shows another main screen, so the hash could never match. The firmware probe passes because its machines start cold.
@@ -40,7 +40,8 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Test:** `synthLibStateTransactionTest` (no ROM): with no audio the job runs in the caller's own hold, named by its site; with an audio thread running blocks, 20 jobs all run on the audio thread and the caller's site records no hold; after the audio stops, a hold of its own again.
 - **Cost:** a look's pieces now wait a block each: on the CI emulator (about 0.4x real time) a look took 175 ms (MD, 17 pieces) and 961 ms (MM, 49 pieces) instead of 7 ms; the product looks every 1 s, so a save reaches the file a look or two later at most. Session 3p ("a save under way while a look is taken in pieces") counted more than 50 looks in a fixed 12 s at a look every 50 ms; it now runs at least 12 s and until 50 looks (at most 90 s).
 - **Focused run 1 (41548922987, 14443ba56):** no hold over 1 ms at any site in either test (worst work 0.797 ms, `plugin.cpp:379`); no hold at the copy's site at all while audio ran. Both tests failed only 3p's count (34 and 14 looks in 12 s): the change above.
-- **Status:** fixed on the branch, awaiting the focused firmware runs (`mdMachineMemory`, three in a row).
+- **Focused runs 2 to 4 (c4a1f82ab: 41555397505, 41561303100, 41566801892):** `mdMachineMemoryFirmwareTest_md` and `_mm` passed in all three, every lock-hold check under 10 ms (ctest prints a passing test's holds only on failure). Branch CI 41545997728 green.
+- **Status:** fixed on the branch `fix/0.9-b203-lock-hold`, to be merged.
 
 ## B-202 · Monomachine: the song row transpose journey saw no read-back of the song (fixed again on the branch, awaiting CI)
 
