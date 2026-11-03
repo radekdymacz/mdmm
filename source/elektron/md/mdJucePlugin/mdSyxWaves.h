@@ -389,6 +389,9 @@ namespace mdJucePlugin
 				return nextRead();
 			if(!m_asked)
 			{
+				// B-202: the desk's own reads first (a push's read-back among them): the request holds them while its dump may come
+				if(_machine.asIs().reads)
+					return false;
 				if(!_machine.sendAsIs(elektronData::mmWaveRequest(p), false).empty())
 				{
 					m_slots[p].reset();

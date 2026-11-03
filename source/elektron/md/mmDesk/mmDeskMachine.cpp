@@ -229,6 +229,10 @@ namespace mmDesk
 		AsIs a;
 		a.queued = m_stream.waiting() + m_recv.queued() + m_manual.size();
 		a.busy = a.queued > 0 || m_stream.sending(clock()) || m_recv.taking();
+		// B-202 (full CI run 41613472074: readsHeld "wave dump coming ... for 16357 ms"): each waveform request holds the desk's
+		// reads for as long as its dump may take on a cable (B-195); the DigiPRO card's read of the 64 positions asked one after
+		// another, so a push's read-back waited for all of them and timed out. A waveform request waits for the desk's reads.
+		a.reads = !m_loads.idle();
 		if(!m_manual.empty())
 			a.waitsFor = "The Monomachine takes dumps only on GLOBAL > FILE > SYSEX RECV: open it on the machine, then press SEND "
 				"in the editor.";

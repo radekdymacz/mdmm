@@ -319,6 +319,7 @@ namespace deskCore
 			size_t queued = 0;		// messages not on the wire yet (the stream's queue, SYSEX RECV's)
 			bool busy = false;		// something is still on its way, or the machine still reads or applies it
 			std::string waitsFor;	// the person must act first (HW MIDI: open SYSEX RECV, press SEND); "" = nothing
+			bool reads = false;		// the desk's own reads are queued or in flight: a waveform request waits for them (B-202)
 		};
 		virtual AsIs asIs() const { return {}; }
 		// B-174: a document the person's import sent as it is and did not read back: what the editor holds of it may not
