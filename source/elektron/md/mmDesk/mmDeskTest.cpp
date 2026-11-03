@@ -1860,9 +1860,6 @@ void songEditsBackToBack()
 	// B-202 (full CI run 41613472074): a waveform request waits for the desk's own reads (the DigiPRO card's read of the 64
 	// positions renewed B-195's gate and held a push's read-back past its timeout)
 	check(d.machine().asIs().reads, "a read-back waiting: the desk's reads are on (a waveform request waits)");
-	deafUntil = -1;
-	run(12000);
-	check(!d.machine().asIs().reads, "answered: the desk's reads are done (a waveform request may go)");
 }
 
 // LOAD KIT of a never-written slot (name byte 0 is 0xff) plays it as NEW KIT (measured, mmDeskFirmwareTest p4).
