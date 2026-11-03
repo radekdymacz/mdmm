@@ -372,6 +372,13 @@ namespace mmDesk
 		// polls and its reads): the Monomachine that makes a status reply while it sends the dump can hang for good
 		// (interrupts off, waiting for its MIDI out; mmDigiproManagerFirmwareTest).
 		double m_waveDumpUntilMs = -1e9;
+		// B-202: what held the load queue while reads waited (LoadQueue::held, the wave dump gate, not ready), since when,
+		// how much longer it said; and when pumpLoads last ran (the status line's readsHeld)
+		std::string m_readsHeldWhy;
+		double m_readsHeldSinceMs = -1;
+		double m_readsHeldMoreMs = 0;
+		double m_loadsPumpedMs = -1;
+		void noteReadsHeld(double _now, const std::string& _why, double _moreMs);
 		static constexpr size_t g_waveDumpBytes = 7100;			// a 0x5D dump, as SyxWaves's read waits for one
 		static constexpr double g_waveDumpMarginMs = 500;
 		bool waveDumpComing(const double _now) const { return _now < m_waveDumpUntilMs; }

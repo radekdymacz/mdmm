@@ -35,16 +35,30 @@ namespace mmDesk
 	{
 		const auto& inFlight = m_loads.loading();
 		const double timeout = g_loadTimeoutMs + (m_profile.wire && inFlight ? 1.5 * deskCore::DinPacer::wireMs(replyBytes(inFlight->kind)) : 0);
+		m_loadsPumpedMs = _now;
 		const auto step = m_loads.next(_now, timeout, true, g_loadPolicy);
 		if(step.gaveUp)
 			gaveUpLoad(*step.gaveUp);
 		if(!step.send)
+		{
+			const auto held = m_loads.held(_now, g_loadPolicy);
+			noteReadsHeld(_now, held && !m_loads.idle() ? held->why : "", held ? held->ms : 0);
 			return;
+		}
+		noteReadsHeld(_now, "", 0);
 		const auto& r = *step.send;
 		if(const auto t = m_readBackTrace.find(r); t != m_readBackTrace.end())
 			++t->second.requests;
 		m_port.sendSysex(r.kind == Kind::Pattern ? ed::mmPatternRequest(r.slot) : r.kind == Kind::Kit ? ed::mmKitRequest(r.slot)
 			: r.kind == Kind::Song ? ed::mmSongRequest(r.slot) : ed::mmGlobalRequest(r.slot));
+	}
+
+	void MmMachine::noteReadsHeld(const double _now, const std::string& _why, const double _moreMs)
+	{
+		if(_why != m_readsHeldWhy)
+			m_readsHeldSinceMs = _now;
+		m_readsHeldWhy = _why;
+		m_readsHeldMoreMs = _moreMs;
 	}
 
 	// A read with no reply after every resend and round (a slow wire, a cable pulled): the queue gave

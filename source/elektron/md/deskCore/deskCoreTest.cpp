@@ -327,6 +327,21 @@ namespace
 			freshSent = st.send && st.send->slot == 9;
 		}
 		check(freshSent, "and asked");
+
+		// held(): why next() sends nothing (the status line's readsHeld); hurry(): a queued read's backoff dropped
+		LoadQueue<R> h;
+		check(h.held(0, p) && std::string(h.held(0, p)->why) == "nothing queued", "held: nothing queued");
+		h.want({0, 3}, false);
+		h.next(0, 800, true, p);
+		check(std::string(h.held(100, p)->why) == "in flight", "held: one in flight");
+		h.next(800, 800, true, p);
+		h.next(1600, 800, true, p);
+		const auto backoff = h.held(1700, p);
+		check(backoff && std::string(backoff->why) == "backoff" && backoff->ms > 1800, "held: a read waiting out its backoff, with the ms left");
+		h.hurry({0, 3});
+		check(!h.held(1700, p), "hurried: next() would send it now");
+		const auto now = h.next(1700, 800, true, p);
+		check(now.send && now.send->slot == 3, "and does");
 	}
 
 	void lifecycle()

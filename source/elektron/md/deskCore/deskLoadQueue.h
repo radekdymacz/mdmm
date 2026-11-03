@@ -144,6 +144,37 @@ namespace deskCore
 			return step;
 		}
 
+		// Why next() sends nothing at _nowMs (a status line's evidence, B-202): what holds the queue and for how much longer
+		// (ms; for one in flight: how long it has been on its way). Null when next() would send.
+		struct Held
+		{
+			const char* why = "";
+			double ms = 0;
+		};
+		std::optional<Held> held(const double _nowMs, const Policy& _policy) const
+		{
+			if(m_loading)
+				return Held{"in flight", _nowMs - m_sentMs};
+			if(m_queue.empty())
+				return Held{"nothing queued", 0};
+			if(_nowMs - m_lastRequestMs < _policy.gapMs)
+				return Held{"gap", _policy.gapMs - (_nowMs - m_lastRequestMs)};
+			double soonest = m_queue.front().notBeforeMs;
+			for(const auto& e : m_queue)
+				soonest = std::min(soonest, e.notBeforeMs);
+			if(soonest > _nowMs)
+				return Held{"backoff", soonest - _nowMs};
+			return std::nullopt;
+		}
+
+		// A queued read goes at once, its backoff dropped (a push's read-back that has waited long enough)
+		void hurry(const Ref& _ref)
+		{
+			for(auto& e : m_queue)
+				if(e.ref == _ref)
+					e.notBeforeMs = 0;
+		}
+
 		const std::optional<Ref>& loading() const { return m_loading; }
 		// Queued plus in flight.
 		size_t pending() const { return m_queue.size() + (m_loading ? 1 : 0); }

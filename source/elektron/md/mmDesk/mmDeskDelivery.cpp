@@ -471,10 +471,16 @@ namespace mmDesk
 		for(auto& [ref, t] : m_readBackTrace)
 		{
 			const auto* push = m_pushes.find(ref);
-			if(!push || !push->slot.busy() || !push->slot.asked() || push->parked || t.replies > 0 || m_loads.contains(ref))
+			if(!push || !push->slot.busy() || !push->slot.asked() || push->parked || t.replies > 0)
 				continue;
-			++t.lost;
-			m_loads.wantFresh(ref);
+			if(!m_loads.contains(ref))
+			{
+				++t.lost;
+				m_loads.wantFresh(ref);
+			}
+			// queued and not asked for a second (an older read's backoff): it goes now
+			else if(t.requests == 0 && m_loads.loading() != ref && _now - t.askedMs > 1000)
+				m_loads.hurry(ref);
 		}
 	}
 

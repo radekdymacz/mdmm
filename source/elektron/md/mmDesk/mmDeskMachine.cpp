@@ -264,7 +264,10 @@ namespace mmDesk
 		// The emulator takes requests once its start screen is gone; over HW MIDI the status polls
 		// are what finds the machine.
 		if(!m_profile.wire && !ready())
+		{
+			noteReadsHeld(_now, m_loads.idle() ? "" : "machine not ready", 0);
 			return;
+		}
 		// Status: once a second, four times while a pattern is queued; not while a waveform's dump may be coming (B-195).
 		if(_now - m_lastStatusMs > (m_queuedPattern >= 0 ? 250 : 1000) && !waveDumpComing(_now))
 		{
@@ -298,6 +301,8 @@ namespace mmDesk
 		pumpSongReload(_now);
 		if(!waveDumpComing(_now))
 			pumpLoads(_now);
+		else
+			noteReadsHeld(_now, m_loads.idle() ? "" : "wave dump coming", m_waveDumpUntilMs - _now);
 		if(m_restoreKit >= 0)
 			restoreWorkingKit(_view);
 		applyWorkingKit(_now, _view);
@@ -496,6 +501,11 @@ namespace mmDesk
 			v.set("readsQueued", static_cast<int>(queued));
 		if(m_songLoadSentMs >= 0)
 			v.set("songLoadMsAgo", static_cast<int>(now() - m_songLoadSentMs));
+		// B-202 (full CI run 41593074249: readsQueued 1, nothing in flight, no request for 13 s): why the queue sends nothing
+		if(!m_readsHeldWhy.empty() && !m_loads.idle())
+			v.set("readsHeld", m_readsHeldWhy + " (" + std::to_string(static_cast<int>(m_readsHeldMoreMs)) + " ms more) for "
+				+ std::to_string(static_cast<int>(now() - m_readsHeldSinceMs)) + " ms, loads pumped "
+				+ std::to_string(static_cast<int>(now() - m_loadsPumpedMs)) + " ms ago");
 		return v;
 	}
 }
