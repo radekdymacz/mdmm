@@ -1295,8 +1295,11 @@ int main(const int _argc, char** _argv)
 			});
 			on = true;
 			s.processor->setKeepMachineMemory(true);	// a write at the next look, changed or not
-			const auto end = juce::Time::getMillisecondCounterHiRes() + 12000;
-			while(juce::Time::getMillisecondCounterHiRes() < end)
+			// at least 12 s and 50 looks: a look's pieces are taken one per audio block (B-203), so a look on the emulator
+			// at about 0.4x real time takes 0.2 s (MD) to 1 s (MM); at most 90 s
+			const auto start = juce::Time::getMillisecondCounterHiRes();
+			while(juce::Time::getMillisecondCounterHiRes() < start + 90000
+				&& (juce::Time::getMillisecondCounterHiRes() < start + 12000 || value <= 50))
 			{
 				pump(100);
 				torn = torn || tornIn(readFile(memoryFile()));

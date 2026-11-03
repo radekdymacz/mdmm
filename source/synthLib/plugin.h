@@ -5,6 +5,7 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
+#include <limits>
 #include <tuple>
 #include <utility>
 
@@ -93,6 +94,44 @@ namespace synthLib
 			const LockScope lock(*this, _file, _line);
 			const PublishOnExit publish(*this);
 			return std::forward<Callback>(_callback)(m_device);
+		}
+
+		// B-203: a short job for the device under the lock, run by the audio thread at the end of its next block (it holds
+		// the lock then anyway), so the thread that asks never holds the lock while blocks run: that thread being
+		// preempted (a busy machine, a CI runner's VM) can neither make the audio thread wait nor stretch a hold.
+		// run() is on the audio thread: it must not block, allocate or take long.
+		class BlockEndJob
+		{
+		public:
+			virtual ~BlockEndJob() = default;
+			virtual void run(Device* _device) = 0;
+		private:
+			friend class Plugin;
+			std::atomic<bool> m_done{false};
+		};
+		// How long runAtBlockEnd waits for a block to end before it takes the lock itself (the host runs no audio)
+		static constexpr std::chrono::milliseconds g_blockEndIdle{100};
+
+		// Runs _job under the device lock and returns when it ran. True: at the end of an audio block, on the audio thread.
+		// False: no block ended for _idle (the host runs no audio, or none yet), so it ran in a hold of its own on this
+		// thread (named _file:_line, as withDeviceLocked); while no block ends after that, the next job runs so at once.
+		// Any thread but the audio thread, holding no device lock; one job at a time, other callers wait their turn.
+		bool runAtBlockEnd(BlockEndJob& _job, std::chrono::milliseconds _idle = g_blockEndIdle,
+			const char* _file = __builtin_FILE(), uint32_t _line = __builtin_LINE()) const;
+
+		// runAtBlockEnd with _callback(Device*) as the job; its results go out through what it captures
+		template<typename Callback>
+		bool withDeviceAtBlockEnd(Callback&& _callback, const std::chrono::milliseconds _idle = g_blockEndIdle,
+			const char* _file = __builtin_FILE(), const uint32_t _line = __builtin_LINE()) const
+		{
+			struct Job final : BlockEndJob
+			{
+				explicit Job(Callback& _c) : callback(_c) {}
+				void run(Device* const _device) override { callback(_device); }
+				Callback& callback;
+			};
+			Job job(_callback);
+			return runAtBlockEnd(job, _idle, _file, _line);
 		}
 
 		// DESIGN-audio-lock.md step 3: queues _count commands for the device (Device::applyCommand), applied in this
@@ -186,6 +225,8 @@ namespace synthLib
 		void processMidiInEvents();
 		// Under m_lock: applies the queued commands (sendCommands)
 		void applyCommands();
+		// The audio thread under m_lock at a block's end: counts the block and runs the job runAtBlockEnd posted, if any
+		void runBlockEndJob();
 		void processMidiInEvent(const SMidiEvent& _ev, bool _realtime);
 #if !SYNTHLIB_DEMO_MODE
 		// setState's header and dispatch for a device nobody else can reach yet (setDevice's new one): no lock
@@ -215,6 +256,13 @@ namespace synthLib
 		std::atomic<uint64_t> m_commandRead{0};
 		std::mutex m_lockCommands;
 		std::atomic<uint64_t> m_droppedCommands{0};
+
+		// runAtBlockEnd's one slot: the job posted (or null), the blocks ended so far, the callers' turn. Lock order:
+		// m_lockBlockEndJob before m_lock, never the other way round (nothing under m_lock calls runAtBlockEnd)
+		mutable std::atomic<BlockEndJob*> m_blockEndJob{nullptr};
+		std::atomic<uint64_t> m_blockEnds{0};
+		mutable std::mutex m_lockBlockEndJob;
+		mutable uint64_t m_blockEndsIdle = std::numeric_limits<uint64_t>::max();	// m_blockEnds when a job last found no blocks
 
 		std::vector<float> m_silentInputBuffer;
 		std::array<std::vector<float>, std::tuple_size_v<TAudioOutputs>>
