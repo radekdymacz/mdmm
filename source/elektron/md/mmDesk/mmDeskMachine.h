@@ -258,6 +258,12 @@ namespace mmDesk
 		bool m_songReloadNeeded = false;
 		double m_songEditedMs = -1;
 		static constexpr double g_songReloadQuietMs = 300;
+		// B-202 (CI run 41475648487): LOAD SONG only once SYSEX RECV has left the panel alone this long. Sent the moment
+		// the session left, it came between two edits of a row (the next one 600 ms later), and the machine answered no
+		// request of the song for the next one's whole read-back (8 s): the push failed with the edit on the machine.
+		static constexpr double g_songReloadRecvIdleMs = 3000;
+		double m_recvHeldMs = 0;		// the last time SYSEX RECV held the panel (or had a dump queued)
+		double m_songLoadSentMs = -1;	// the desk's own LOAD SONG (pumpSongReload), for the status line
 		// BANK (+ BANK GROUP from the half the machine is in) and the TRIG keys of _patterns (one bank).
 		bool pressBankTrigs(const std::vector<int>& _patterns);
 		// Panel keys the desk pressed are still on their way (their own hold times), or the panel is
@@ -289,6 +295,23 @@ namespace mmDesk
 		uint32_t m_nextRecvTag = 1;
 		std::map<uint32_t, Ref> m_recvRefs;		// a dump on the RECV session -> the push it is
 		Pushes m_pushes;
+		void noteOlderReply(const Ref& _r, const Bytes& _sent, const Bytes& _got);
+		void noteReply(const Ref& _r, const char* _outcome, size_t _bytes);
+		static bool sameDocument(const Bytes& _a, const Bytes& _b);
+		std::string m_lastReply;				// B-202: what became of the last reply while its push waited
+		double m_lastReplyMs = -1;
+		std::string m_olderReply;				// B-202: the last older reply to a read-back, for the status line
+		double m_olderReplyMs = -1;
+		int m_olderReplies = 0;
+		std::map<Ref, int> m_readBackAgain;		// B-202: a push's read-back asked again after an older reply (onDump)
+		// B-202: what a push's read-back got since it was asked: the requests sent for it and the replies of its document
+		struct ReadBackTrace
+		{
+			double askedMs = 0;
+			int requests = 0;
+			int replies = 0;
+		};
+		std::map<Ref, ReadBackTrace> m_readBackTrace;
 		std::set<Ref> m_loadAfter;				// kit slots to LOAD KIT once their waiting dump goes
 		bool m_kitDumpHold = false;				// kit delivery (a dump or live edits) held the last memory image
 		double m_portHeldSinceMs = -1;			// B-027: since when the port's parameter layer holds its values (-1: it does not)

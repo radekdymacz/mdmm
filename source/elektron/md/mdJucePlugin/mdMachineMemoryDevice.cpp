@@ -14,14 +14,19 @@
 #include "mdLib/mdmemorymap.h"
 #include "mdLib/mdstate.h"
 
+#include "synthLib/plugin.h"
+
 #include <algorithm>
 #include <chrono>
+#include <cstdio>
 #include <exception>
 
 namespace mdJucePlugin
 {
 	namespace
 	{
+		constexpr double g_longStepMs = 5;	// a copy step that takes longer is logged (B-203)
+
 		double msBetween(const std::chrono::steady_clock::time_point _from, const std::chrono::steady_clock::time_point _to)
 		{
 			return std::chrono::duration<double, std::milli>(_to - _from).count();
@@ -56,6 +61,11 @@ namespace mdJucePlugin
 		return true;
 	}
 
+	// B-203: each step is a job the audio thread runs at the end of a block (synthLib::Plugin::withDeviceAtBlockEnd), under
+	// the device lock it holds then anyway. This thread never holds the lock while blocks run: when it is preempted (the
+	// runner's VM or a busy computer stops it for 10 to 30 ms) the audio thread does not wait for it and no hold of the
+	// lock off the audio thread grows by it. Only when no block ends for g_blockEndIdle (the host runs no audio) does a
+	// step run in a hold of this thread's own, as before.
 	bool MachineMemoryDevice::copyAtOneMoment(std::vector<md::OneMomentCopy::Area> _areas, std::optional<MachineId>& _machine,
 		double& _heldMs, double& _copyMs, const std::function<bool(md::Device&)>& _check,
 		const std::function<void(md::Device&)>& _last)
@@ -71,31 +81,42 @@ namespace mdJucePlugin
 		for(;;)
 		{
 			auto result = md::OneMomentCopy::Step::Failed;
-			const bool ok = m_processor.getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
+			bool ok = false;
+			double stepMs = 0, jobMs = 0;
+			// the job: no allocation, no blocking call, no print (it may run on the audio thread)
+			const auto job = [&](synthLib::Device* const _device)
 			{
 				const auto held = std::chrono::steady_clock::now();
 				struct Released
 				{
 					std::chrono::steady_clock::time_point from;
-					double& max;
-					~Released() { max = std::max(max, msBetween(from, std::chrono::steady_clock::now())); }
-				} released{held, _heldMs};
+					double& ms;
+					~Released() { ms = msBetween(from, std::chrono::steady_clock::now()); }
+				} released{held, jobMs};
 				auto* const device = dynamic_cast<md::Device*>(_device);
 				if(!device || !device->isValid())
-					return false;
+					return;
 				const auto machine = machineOf(*device);
 				if(_machine && *_machine != machine)
-					return false;
+					return;
 				_machine = machine;
 				if(_check && !_check(*device))
-					return false;
+					return;
 				const auto t0 = std::chrono::steady_clock::now();
 				result = copy.step(device->getHardware());
-				_copyMs = std::max(_copyMs, msBetween(t0, std::chrono::steady_clock::now()));
+				stepMs = msBetween(t0, std::chrono::steady_clock::now());
 				if(result == md::OneMomentCopy::Step::Done && _last)
 					_last(*device);
-				return true;
-			});
+				ok = true;
+			};
+			const bool atBlockEnd = m_processor.getPlugin().withDeviceAtBlockEnd(job);
+			_heldMs = std::max(_heldMs, jobMs);
+			_copyMs = std::max(_copyMs, stepMs);
+			// B-203's log: a step that took long, and where it ran (logged after it, never in it)
+			if(stepMs > g_longStepMs)
+				std::fprintf(stderr, "[MD] machine memory: a copy step took %.2f ms under the device lock (%s; step %u, at most"
+					" %zu bytes a step)\n", stepMs, atBlockEnd ? "the audio thread at a block's end" : "a hold of its own, no audio",
+					copy.steps(), copy.maxStepBytes());
 			if(!ok || result == md::OneMomentCopy::Step::Failed)
 				return false;
 			if(result == md::OneMomentCopy::Step::Done)
@@ -122,8 +143,9 @@ namespace mdJucePlugin
 			auto& hw = _device.getHardware();
 			if(!hw.isFirmwareMidiReady())
 				return false;
-			// whether there is a factory baseline, without making one (that copies the factory cache): every hold
-			if(_piece.flashMark && (!hw.hasFactoryFlashBaseline() || hw.isFactoryFlashInitializationExpected()))
+			// whether there is a factory baseline, without making one (that copies the factory cache) and never waiting for
+			// the factory flash lock (the check may run on the audio thread: B-203)
+			if(_piece.flashMark && (!hw.hasFactoryFlashBaselineRealtime() || hw.isFactoryFlashInitializationExpected()))
 				return false;
 			if(_piece.userFlash)
 			{

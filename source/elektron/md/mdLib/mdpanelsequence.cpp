@@ -105,6 +105,12 @@ namespace md
 			control = PanelControl::Up;
 		else if(_key == "down")
 			control = PanelControl::Down;
+		else if(_key == "left")
+			control = PanelControl::Left;
+		else if(_key == "right")
+			control = PanelControl::Right;
+		else if(_key == "patternSong")
+			control = PanelControl::PatternSong;
 		else if(_key.size() > 4 && _key.compare(0, 4, "trig") == 0)
 		{
 			int n = 0;

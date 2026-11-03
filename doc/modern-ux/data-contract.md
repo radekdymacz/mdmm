@@ -666,10 +666,10 @@ takes a snapshot of a slot's samples into the desk's clipboard; `samplePaste {sl
 (`sampleLoad` follows, `file` "Paste"); `ramToRom {ram, slot}` is a copy of RAM `ram` and a paste in one; `sampleUndo`
 sends back what the last paste, RAM to ROM copy, rename or file load replaced. A step is recorded when the send
 starts, kept when `sampleLoad` says `done`, dropped when it fails or is cancelled; only when the slot held a sample
-(an empty slot cannot be emptied again: the editor cannot erase). Sixteen steps, no redo, forgotten when the machine
+(an erase records one too; a slot that was empty has nothing to put back). Sixteen steps, no redo, forgotten when the machine
 starts over. A sample that does not fit the memory left (`Desk::sampleRoom`: the capacity less the other ROM slots
 and a second for each RAM buffer) is refused with its numbers. Loop points are not sent (the SDS header the sender
-writes has none). `{"type":"sampleHistory", clip, undo}` says what the clipboard and the last step hold (`null`
+writes has none). `sampleErase {slot}` and `sampleEraseAll` erase from the machine's panel: the desk presses the keys of SAMPLE MGR > ERASE one at a time (`mdDesk/mdDeskErase.h`: a script of key names with the screen each must show, compared as hashes of the LCD's regions), stops with EXIT on any other screen and never presses ENTER after that, then reads the bank until the slot (every ROM slot) is empty. Only the emulated machine has the panel and the screen (`DevicePort::lcd`); a real one is refused with the way to do it on the machine. `{"type":"sampleErase", state, slot, step, steps, text}` says `running`, then `done`, `stopped` (nothing erased) or `failed` (the keys ran, the slot still holds a sample); when a step did not find its screen it also carries `seen` (the step, the key, the hashes seen and expected) and `lcd` (that screen as 32 text rows, the firmware probe's dump), which the page writes to the log; `sampleEraseAll` has no undo step, `sampleErase` has one. `{"type":"sampleHistory", clip, undo}` says what the clipboard and the last step hold (`null`
 when none): on every change and after a ready. The window's op `sampleExport {bank, slot, all}` opens the save
 dialog (one slot) or a folder chooser (`all`: every slot of the bank that holds a sample); the session writes the
 WAV files `Desk::exportSamples` makes (16-bit mono at the slot's rate, named "ROM-04 SNR.wav", "RAM-1.wav") and

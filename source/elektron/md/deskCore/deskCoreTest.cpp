@@ -185,6 +185,33 @@ namespace
 		check(!q.next(1810, 800, true, p).send, "the gap between requests");
 		check(!q.next(1900, 800, false, p).send, "held while busy");
 		check(q.next(1900, 800, true, p).send.has_value(), "then it goes");
+
+		// B-202: a push's read-back while a read of the same document asked before its dump is in flight: that
+		// reply holds the document as it was, so the read-back is asked once it is answered (not swallowed)
+		LoadQueue<R> f;
+		f.want({0, 5}, true);
+		n = f.next(0, 800, true, p);
+		check(n.send && n.send->slot == 5, "a read in flight");
+		f.wantFresh({0, 5});
+		check(!f.next(100, 800, true, p).send && f.pending() == 1, "wanted fresh while in flight: not sent twice at once");
+		f.arrived({0, 5});
+		check(f.pending() == 1, "the older reply came: the fresh read is queued");
+		n = f.next(200, 800, true, p);
+		check(n.send && n.send->slot == 5, "and asked");
+		f.arrived({0, 5});
+		check(f.idle(), "its reply ends it");
+		f.wantFresh({0, 6});
+		n = f.next(300, 800, true, p);
+		check(n.send && n.send->slot == 6, "nothing in flight: wanted fresh is an urgent read");
+		f.arrived({0, 6});
+		check(f.idle(), "one read, no second");
+		f.want({0, 7}, true);
+		f.next(400, 800, true, p);
+		f.wantFresh({0, 7});
+		n = f.next(1300, 800, true, p);
+		check(n.send && n.send->slot == 7, "resent after its timeout: the resend is asked after the dump");
+		f.arrived({0, 7});
+		check(f.idle(), "so its reply is the fresh one: nothing asked again");
 	}
 
 	// A2: a request without a reply goes back into the queue with a backoff, a bounded number of
@@ -751,7 +778,22 @@ namespace
 		r = fromImage(held, Kit{2, 9}, 3, std::optional<int>(3), &shown, 175, true, reflects);
 		check(r.next.image == Kit({2, 9}) && r.take == Kit({2, 9}) && !r.settles && r.next.expect.any(),
 			"knob turns on their way: the image is observed as it is, the edit stays pending");
-		const auto sw = switched(r.next);
+		// B-193: an image that came in before the latest edit and does not show it is dropped, however late it is taken
+		auto stale = r.next;
+		stale.region = std::vector<uint8_t>{1};
+		stale.regionMs = 100;
+		stale.expect.sent(Kit{2, 9}, Kit{8, 9}, 170);
+		r = fromImage(stale, Kit{2, 9}, 3, std::optional<int>(3), &shown, 175, true, reflects);
+		check(!r.take && !r.next.region && r.next.expect.any(), "an image older than the latest edit is dropped while knob turns hold");
+		r = fromImage(stale, Kit{2, 9}, 3, std::optional<int>(3), &shown, 5000, false, reflects);
+		check(!r.take && !r.next.region, "... and after the expectation ran out: the page's value stays");
+		stale.regionMs = 171;
+		r = fromImage(stale, Kit{2, 9}, 3, std::optional<int>(3), &shown, 5000, false, reflects);
+		check(r.take == Kit({2, 9}), "an image that came in after the edit is the machine's word");
+		stale.regionMs = 100;
+		r = fromImage(stale, Kit{8, 9}, 3, std::optional<int>(3), &shown, 175, false, reflects);
+		check(r.settles && r.take == Kit({8, 9}), "an older image that shows the edit settles it");
+		const auto sw = switched(held);
 		check(sw.seed && !sw.image && !sw.expect.any(), "another kit plays: nothing of the old one holds");
 	}
 

@@ -2563,8 +2563,15 @@ const MdJourneys = (() => {
 				screen: c => ok(+$1(c.q + " b")?.textContent === c.v0 + c.d, `shows ${$1(c.q + " b")?.textContent}, expected ${c.v0 + c.d} from ${c.v0}`), machine: c => ok(idle() && kitVals(c.t)[c.i] === c.v0 + c.d, "kit " + kitVals(c.t)[c.i]), within: 8000 },
 			{ say: "scroll one notch with Shift held: ten steps", act: (u, c) => { c.v1 = kitVals(c.t)[c.i]; u.wheel(c.q, c.d, { shift: true }); },
 				screen: c => ok(+$1(c.q + " b")?.textContent === c.v1 + 10 * c.d, `shows ${$1(c.q + " b")?.textContent}, expected ${c.v1 + 10 * c.d} from ${c.v1}`), machine: c => ok(idle() && kitVals(c.t)[c.i] === c.v1 + 10 * c.d, "kit " + kitVals(c.t)[c.i]), within: 8000 },
-			{ say: "drag the value 8 pixels sideways, then again with Shift held: the second is a quarter as far", act: async (u, c) => { c.v2 = kitVals(c.t)[c.i]; await u.drag(c.q, [[c.d * 4, 0], [c.d * 8, 0]]); /* the drag is through when the desk is idle and the kit holds still (nightly CI 2026-10-26: v3 read mid-way, plain 72 -> 61, then 82) */ await settled(); c.v3 = kitVals(c.t)[c.i]; await u.drag(c.q, [[c.d * 4, 0], [c.d * 8, 0]], { shift: true }); Journey.snapshot("md-sound-knob-steps"); },
-				screen: c => ok(Math.abs(c.v3 - c.v2) === 8 && Math.abs(+$1(c.q + " b")?.textContent - c.v3) === 2, `plain ${c.v2} -> ${c.v3}, fine ${$1(c.q + " b")?.textContent}`), machine: c => ok(Math.abs(kitVals(c.t)[c.i] - c.v3) === 2, "kit " + kitVals(c.t)[c.i]), within: 5000 }
+			/* B-193 (open): in the runs that failed, plain 72 -> 61 is the value back where step 3 found it (61 + 1 + 10 = 72):
+			   the two wheel edits were undone during the plain drag, not a drag of the wrong length. The trace says when the
+			   kit's value moved and what the desk was doing (tx, loading, the toast), each change with its ms */
+			{ say: "drag the value 8 pixels sideways, then again with Shift held: the second is a quarter as far", act: async (u, c) => { c.v2 = kitVals(c.t)[c.i];
+					const t0 = performance.now(); let was = ""; c.trace = []; const look = () => { const s = `${kitVals(c.t)[c.i]} shows ${$1(c.q + " b")?.textContent} tx ${!!desk().tx} loading ${desk().loading} kit ${currentKitSlot()}${$1("#toast") && !$1("#toast").hidden ? " toast " + $1("#toast").textContent.trim().slice(0, 40) : ""}`; if (s !== was) { was = s; c.trace.push(`${Math.round(performance.now() - t0)} ms ${s}`); } };
+					look(); const tick = setInterval(look, 25);
+					try { await u.drag(c.q, [[c.d * 4, 0], [c.d * 8, 0]]); look(); /* the drag is through when the desk is idle and the kit holds still (nightly CI 2026-10-26: v3 read mid-way) */ await settled(); c.v3 = kitVals(c.t)[c.i]; await u.drag(c.q, [[c.d * 4, 0], [c.d * 8, 0]], { shift: true }); look(); } finally { clearInterval(tick); }
+					Journey.snapshot("md-sound-knob-steps"); },
+				screen: c => ok(Math.abs(c.v3 - c.v2) === 8 && Math.abs(+$1(c.q + " b")?.textContent - c.v3) === 2, `plain ${c.v2} -> ${c.v3} (step 3 began at ${c.v0}), fine ${$1(c.q + " b")?.textContent}; trace ${c.trace.slice(-16).join(" | ")}`), machine: c => ok(Math.abs(kitVals(c.t)[c.i] - c.v3) === 2, "kit " + kitVals(c.t)[c.i]), within: 5000 }
 		],
 		async tidy(u, c) { for (let k = 0; k < 6 && c.v0 != null && kitVals(c.t)[c.i] !== c.v0; k++) { u.click("#undo"); await sleep(600); } }
 	};
@@ -2955,6 +2962,44 @@ const MdJourneys = (() => {
 				screen: c => ok((smpHist.undo?.depth || 0) === c.d0 && ($1("[data-smpundo]")?.disabled === true) === (c.d0 === 0), `undo depth ${smpHist.undo?.depth || 0}, was ${c.d0}; Undo sample ${$1("[data-smpundo]")?.disabled ? "off" : "on"}`) }
 		]
 	};
+	/* MD-194, MD-198 (0.9, doc/release/0.9/md-sample-manager.md, "Erase"): Erase on a ROM slot. The plug-in presses the machine's own
+	   SAMPLE MGR keys (FUNCTION + PATTERN/SONG, GLOBAL 1 EDIT, SAMPLE MGR, ERASE, the slot, ENTER, ENTER), looking at the screen after
+	   each, and the bank read back is the proof: the slot is empty, every other slot holds what it held. Then Undo sample sends the
+	   erased sample back (SDS), and the slot holds its old length. alone, as md-sampler-manager: a sample sent by SDS (B-133). */
+	const sampleErase = {
+		name: "md-sampler-erase", alone: true, proves: ["MD-194", "MD-198"],
+		steps: [
+			go("sampler"),
+			{ say: "select the last ROM slot that holds a sample and click Erase: the question names it", act: async (u, c) => {
+				const rom = Docs.samples.rom; c.i = rom.map((x, k) => x.empty ? -1 : k).filter(k => k >= 0).pop(); c.len = rom[c.i].length; c.name = (rom[c.i].name || "").trim();
+				c.others = rom.map(x => x.empty ? 0 : x.length); c.d0 = smpHist.undo?.depth || 0;
+				u.click(`.slotk.rom[data-slot="ROM${c.i + 1}"]`); await sleep(300); u.click(`[data-smperase="${c.i}"]`); await until(() => !!dlgButton("Erase"), 3000); },
+				screen: c => ok(!!dlgButton("Erase") && ($1("#dlg")?.textContent || "").includes("ROM-" + String(c.i + 1).padStart(2, "0")), "dialog " + ($1("#dlg")?.textContent || "none")) },
+			{ say: "click Erase: the plug-in presses the machine's keys; the bank reads the slot empty and every other slot as it was", act: u => u.click(dlgButton("Erase")),
+				machine: c => { const rom = Docs.samples.rom; const same = rom.every((x, k) => k === c.i || (x.empty ? 0 : x.length) === c.others[k]);
+					return ok(smpErase?.state === "done" && rom[c.i].empty && same, `sampleErase ${smpErase?.state} "${smpErase?.text}"; ROM-${c.i + 1} ${rom[c.i].empty ? "empty" : rom[c.i].length + " samples"}; the others ${same ? "unchanged" : "CHANGED"}`); }, within: 120000 },
+			{ say: "Undo sample names the erase and is on", act: async () => { await sleep(300); },
+				screen: c => ok(smpHist.undo?.slot === c.i && /Erase ROM-/.test(smpHist.undo?.what || "") && $1("[data-smpundo]")?.disabled === false, "undo " + JSON.stringify(smpHist.undo)) },
+			{ say: "click Undo sample: the machine takes the sample back, the slot holds its old length and name", act: u => u.click("[data-smpundo]"),
+				machine: c => { const r = Docs.samples.rom[c.i]; return ok(smpLoad?.state === "done" && smpLoad.file === "Undo" && !r.empty && r.length === c.len && (r.name || "").trim() === c.name,
+					`sampleLoad ${smpLoad?.state} ${smpLoad?.file}; ROM-${c.i + 1} ${r.empty ? "empty" : r.length + " samples named " + (r.name || "").trim()}, it held ${c.len} named ${c.name}`); }, within: 120000 },
+			{ say: "the undo step is gone", act: async () => { await sleep(300); },
+				screen: c => ok((smpHist.undo?.depth || 0) === c.d0, `undo depth ${smpHist.undo?.depth || 0}, was ${c.d0}`) }
+		]
+	};
+	/* MD-194 (Erase all): Erase all… in the ROM slots' header, the strong question, then the plug-in presses the keys of the ALL line.
+	   alone, and the last of the sampler journeys: it empties the ROM slots of its own editor (fresh factory memory), and nothing undoes it. */
+	const sampleEraseAll = {
+		name: "md-sampler-erase-all", alone: true, proves: ["MD-194"],
+		steps: [
+			go("sampler"),
+			{ say: "click Erase all…: the question says every ROM slot and that it cannot be undone", act: async (u, c) => {
+				c.used = Docs.samples.rom.filter(x => !x.empty).length; u.click('[data-smperaseall="rom"]'); await until(() => !!dlgButton("Erase every ROM slot"), 3000); },
+				screen: c => ok(!!dlgButton("Erase every ROM slot") && /cannot be undone/.test($1("#dlg")?.textContent || ""), "dialog " + ($1("#dlg")?.textContent || "none")) },
+			{ say: "click Erase every ROM slot: the bank reads every ROM slot empty", act: u => u.click(dlgButton("Erase every ROM slot")),
+				machine: c => { const rom = Docs.samples.rom; return ok(smpErase?.state === "done" && rom.every(x => x.empty), `sampleErase ${smpErase?.state} "${smpErase?.text}"; ${rom.filter(x => !x.empty).length} of ${c.used} slots still hold a sample`); }, within: 120000 }
+		]
+	};
 	/* MD-193 (send samples to a computer): Export WAV, Export SysEx and the two "all" keys on the firmware's own ROM slots. The window's
 	   save dialog and folder chooser are skipped by the run (GEARMULATOR_MDMM_SAMPLE_EXPORT, a diagnostics-only hook of
 	   mdPageEditor.cpp, set by scripts/mdmm-e2e.sh); the session's sampleExport message tells what was written: how many files and
@@ -3003,8 +3048,17 @@ const MdJourneys = (() => {
 				sendParam(c.r, "syn", "LEN", 32); await until(idle, 4000); await sleep(1500);	/* 8 steps, as the firmware test (mdDeskFirmwareTest): the recorder ends inside the pattern */
 				tele.steps = []; u.click("#play"); },
 				machine: c => ok(kit().tracks[c.r].machine === "RAM-R" + c.n && trigsOf(c.r).includes(0) && !!tele.last?.playing, `track ${kit().tracks[c.r].machine}, trigs ${trigsOf(c.r)}, playing ${tele.last?.playing}`), within: 12000 },
-			{ say: "STOP after a few seconds: the take shows in the RAM slot, the machine holds samples in it", act: async u => { await sleep(4000); if (V.playing) u.click("#play"); await until(() => !V.playing, 4000); },
-				machine: c => { const t = smpSlotOf("ram", c.n - 1); if (t && !t.empty && t.length > 0) c.len = t.length; return ok(!!c.len, "RAM " + c.n + " " + JSON.stringify(t && { empty: t.empty, length: t.length })); }, within: 60000 },
+			/* STOP once the machine has played the take's 8 steps (its own steps, not wall time: CI run 41351441000 stopped after 4 s inside
+			   the take on a slow runner; the bank showed 0.09 s, the copy sent that, and the whole take, 0.96 s, came after) */
+			{ say: "STOP once the take's steps have played: the take shows in the RAM slot, the machine holds samples in it", act: async u => {
+				const past = () => { const s = tele.steps, i = s.indexOf(0); return i >= 0 && s.slice(i).some(x => x >= 9); };
+				await sleep(1000); await until(past, 30000); if (V.playing) u.click("#play"); await until(() => !V.playing, 4000); },
+				/* the take is the length that holds still for 3 s after STOP: the bank read in the middle of the take gives a shorter one
+				   (CI run 41336239454: 0.21 s here, 0.57 s by step 6; main's runs read the whole take, 1.00 s) */
+				machine: c => { const t = smpSlotOf("ram", c.n - 1), len = t && !t.empty ? t.length : 0, now = performance.now();
+					if (len !== c.seenLen) { c.seenLen = len; c.seenAt = now; }
+					if (len > 0 && !V.playing && now - c.seenAt >= 3000) c.len = len;
+					return ok(!!c.len, "RAM " + c.n + " " + JSON.stringify(t && { empty: t.empty, length: t.length }) + (len ? `, the same for ${Math.round(now - c.seenAt)} ms` : "")); }, within: 60000 },
 			{ say: "click STOP, select the RAM slot and click Keep as ROM…: the dialog offers a ROM slot", act: async (u, c) => {
 				if (V.playing) { u.click("#play"); await until(() => !V.playing, 4000); }
 				u.click(`.slotk[data-slot="RAM${c.n}"]`); await sleep(300); u.click(`[data-ramrom="${c.n - 1}"]`); await until(() => !!$1("#ramto"), 3000); c.k = +$1("#ramto").value - 1; },
@@ -3355,7 +3409,8 @@ const MdJourneys = (() => {
 			{ say: "Arrange: pad A01, then Repeat + twice (the row plays three times), then pad A02", act: async (u, c) => {
 				u.click('[data-set="songpick"] button[data-v="song"]'); await until(() => V.songMode === true && !!$1('[data-addpat="0"]'), 8000); await sleep(300); u.click('[data-addpat="0"]'); await until(() => songRows().length === 2, 4000);
 				/* the row's inspector (with Repeat) is drawn after the machine's song comes back: wait for it */
-				for (let i = 0; i < 2; i++) { await until(() => !!$1('[data-step="rep"][data-d="1"]'), 6000); const r = songRows()[0].repeats; u.click('[data-step="rep"][data-d="1"]'); await until(() => songRows()[0].repeats === r + 1, 4000); }
+				/* CI run 41351441000 (once; it passed in 41336239454 with the same page and journey): no Repeat key in 6 s. Say what the page held */
+				for (let i = 0; i < 2; i++) { if (!await until(() => !!$1('[data-step="rep"][data-d="1"]'), 6000)) throw new Error(`no Repeat key (+ ${i + 1}): rows ${JSON.stringify(songRows().map(r => [r.pattern, r.repeats]))}, song ${V.songSlot + 1}, songMode ${V.songMode}, reload ${V.songReload}, tx ${!!desk().tx}, loading ${desk().loading}, row picked ${!!$1("#tl .scell.sel")}`); const r = songRows()[0].repeats; u.click('[data-step="rep"][data-d="1"]'); await until(() => songRows()[0].repeats === r + 1, 4000); }
 				u.click('[data-addpat="1"]'); },
 				machine: () => ok(songRows().length === 3 && songRows()[0].repeats === 2 && songRows()[1].pattern === 1, "rows " + JSON.stringify(songRows().map(r => [r.pattern, r.repeats]))), within: 8000 },
 			{ say: "PATTERN, then SONG: the machine takes the edited song", act: async u => { u.click('[data-set="songpick"] button[data-v="pattern"]'); await until(() => V.songMode === false, 4000); await sleep(300);
@@ -3371,7 +3426,7 @@ const MdJourneys = (() => {
 		tidy: songPlayheadTidy
 	};
 	const wave12 = [clipsJ, undoKitJ, stopQueuedJ, lenRepeatJ, songRepeatsJ];
-	const slice5 = [mixHeads, modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, revertTrackJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, sampleManager, sampleExport, ramToRom, kitNameSave, songCommands, playModeJ, pageLeds, railLamps, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
+	const slice5 = [mixHeads, modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, revertTrackJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, sampleManager, sampleErase, sampleEraseAll, sampleExport, ramToRom, kitNameSave, songCommands, playModeJ, pageLeds, railLamps, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
 	/* ---------- the end-to-end pass: factory content as a person uses it (scripts/mdmm-e2e.sh, doc/release/E2E.md) ---------- */
 	/* What the machine plays, as the page can see it: the transport and the step from the telemetry, the song row, the output's
 	   peaks (the plug-in's outputLevel, every 250 ms, since the last one). Not silent where sound is the point. */
@@ -4313,8 +4368,11 @@ const MdJourneys = (() => {
 		/* PATTERN mode: a journey that left the machine in SONG mode made the next one that plays play a song row (and its
 		   HALT) instead of the pattern (md-song-commands, then md-seq-page-leds) */
 		if (machineState().songMode === true) await act("the machine in SONG mode", async () => { cmd("seqMode", { song: false }); await until(() => machineState().songMode === false && V.songMode === false, 4000); });
-		await until(idle, 4000); await sleep(500);
-		return left.length ? `left ${left.join(", ")}${fix ? " (after a failure: put right)" : ""}` : "";
+		/* the journey before's late answers in (Journey.settle): nothing on its way (tx) and no read pending (loading: a kit load's
+		   read-back, B-193; the TEMPO nudge's read of the global, which answered after the next drag's tempo on a slow runner, B-200) */
+		const calm = await Journey.settle(() => idle() && !(desk().loading > 0), 500, Journey.pageTier() ? 4000 : 15000);
+		const busy = calm ? "" : `the machine still busy (tx ${!!desk().tx}, loading ${desk().loading})`;
+		return [left.length ? `left ${left.join(", ")}${fix ? " (after a failure: put right)" : ""}` : "", busy].filter(Boolean).join("; ");
 	}
 	/* what the guard compares before and after each journey (shared/deskJourney.js, page.state): the machine's documents and modes.
 	   A document is its JSON (a slot loaded only in one of the two is not compared; the log says where one differs) */

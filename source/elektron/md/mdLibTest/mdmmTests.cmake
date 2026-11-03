@@ -59,6 +59,15 @@ function(mdmm_add_lib_tests _dir)
 	target_link_libraries(mdEditorProbeFirmwareTest PRIVATE mdLib elektronData)
 	set_property(TARGET mdEditorProbeFirmwareTest PROPERTY FOLDER "Elektron/test")
 
+	# 0.9 MD Sample Manager erase probe (MD-194, MD-198; doc/release/0.9/md-sample-manager.md "The erase probe: plan"):
+	# the machine's own SAMPLE MGR driven from its panel, the LCD dumped at every key, the sample memory compared. Logs;
+	# needs the MD ROM (GEARMULATOR_MD_FIRMWARE_BIN). Runs on main or release/* only (the ROM Worker).
+	add_executable(mdSampleManagerProbeFirmwareTest ${_dir}/mdSampleManagerProbeFirmwareTest.cpp ${_dir}/mdFirmwareSession.h)
+	target_link_libraries(mdSampleManagerProbeFirmwareTest PRIVATE mdLib elektronData)
+	set_property(TARGET mdSampleManagerProbeFirmwareTest PROPERTY FOLDER "Elektron/test")
+	add_test(NAME mdSampleManagerProbeFirmwareTest COMMAND mdSampleManagerProbeFirmwareTest)
+	set_tests_properties(mdSampleManagerProbeFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
+
 	# Beta report 2026-10-16: stacked LFOs on a kick's PTCH, every hit measured (peak, zero crossings, difference
 	# from the median hit) with the speed-ups on and off, L3 on and off, at several host block sizes; the test registered
 	# here plays the case that missed (scenario stack3, about 4 min); --matrix alone plays every scenario. Needs the MD ROM.

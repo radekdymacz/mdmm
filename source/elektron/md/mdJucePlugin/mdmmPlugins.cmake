@@ -873,6 +873,21 @@ function(mdmm_plugin_targets)
 		set_tests_properties(mdSessionNoRomInstallFirmwareTest_${m} PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 300)
 	endforeach()
 
+	# What a DAW can map (Ableton Configure, a Rack macro, Push): the host parameter list and a page edit as
+	# begin / value / end on the message thread. No ROM.
+	add_executable(mdAutomationHostGestureTest mdAutomationHostGestureTest.cpp)
+	target_link_libraries(mdAutomationHostGestureTest PRIVATE
+		mdJucePlugin jucePluginEditorLib mdLib juce_plugin_modules
+		juce::juce_opengl)
+	target_include_directories(mdAutomationHostGestureTest PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/../../..)
+	target_compile_definitions(mdAutomationHostGestureTest PRIVATE JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
+	set_property(TARGET mdAutomationHostGestureTest PROPERTY FOLDER "Elektron/test")
+	foreach(m md mm)
+		add_test(NAME mdAutomationHostGestureTest_${m} COMMAND mdAutomationHostGestureTest ${m})
+		set_tests_properties(mdAutomationHostGestureTest_${m} PROPERTIES LABELS "Integration" TIMEOUT 120)
+	endforeach()
+
 	# 0.8 (MIDI Learn L2): a learned CC on the firmware (DESIGN-learn-0.8.md "Tests" 4): the learned parameter and the machine
 	# follow it, the firmware's own target of that (channel, CC) does not move, learning consumes its CCs. In ctest; each skips
 	# (77) without its ROM in the environment.

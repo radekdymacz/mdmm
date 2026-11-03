@@ -7,6 +7,7 @@
 #include <future>
 #include <iostream>
 #include <mutex>
+#include <string>
 #include <thread>
 
 namespace
@@ -240,6 +241,77 @@ int main()
 	if(olderResult || !newerResult
 		|| !plugin.getState(saved, synthLib::StateTypeGlobal) || saved != newer)
 		return fail("an interrupted restore superseded the newer request");
+
+	// B-203: a block-end job runs on the audio thread at a block's end while blocks run, and in a hold of the caller's
+	// own when none do; the caller then never holds the lock while blocks run
+	{
+		TestDevice jobDevice(std::make_shared<Control>());
+		synthLib::Plugin jobPlugin(&jobDevice, [](synthLib::Device*) {});
+		jobPlugin.setHostSamplerate(48000.0f, 48000.0f);
+		jobPlugin.setBlockSize(64);
+		jobPlugin.getRealtimeInstrumentation().setEnabled(true);
+		const auto holdsAt = [&](const uint32_t _line)
+		{
+			const auto snap = jobPlugin.getRealtimeInstrumentation().snapshot();
+			for(size_t i = 0; i < snap.lockHoldCount; ++i)
+				if(snap.lockHolds[i].line == _line && snap.lockHolds[i].file && std::string(snap.lockHolds[i].file) == __FILE__)
+					return snap.lockHolds[i].waits;
+			return uint64_t{0};
+		};
+
+		// no audio: the job runs here, under the lock, named by its caller's site
+		std::thread::id ranOn;
+		synthLib::Device* ranWith = nullptr;
+		const auto job = [&](synthLib::Device* const _device)
+		{
+			ranOn = std::this_thread::get_id();
+			ranWith = _device;
+		};
+		const uint32_t idleLine = __LINE__ + 1;
+		const bool idleAtBlockEnd = jobPlugin.withDeviceAtBlockEnd(job, 20ms);
+		if(idleAtBlockEnd || ranOn != std::this_thread::get_id() || ranWith != &jobDevice || holdsAt(idleLine) != 1)
+			return fail("a block-end job with no audio did not run in a hold of its caller's own");
+
+		// blocks run: the job runs on the audio thread, and the caller holds no lock
+		std::atomic<bool> run{true};
+		std::atomic<uint32_t> blocks{0};
+		std::thread::id audioThread;
+		std::thread audio([&]
+		{
+			audioThread = std::this_thread::get_id();
+			const synthLib::TAudioInputs inputs{};
+			const synthLib::TAudioOutputs outputs{};
+			while(run)
+			{
+				jobPlugin.process(inputs, outputs, 64, 120.0, 0.0, false);
+				++blocks;
+				std::this_thread::sleep_for(1ms);
+			}
+		});
+		// until a block has ended, a job runs at once in a hold of its own (no block since the last found none)
+		while(!blocks)
+			std::this_thread::sleep_for(1ms);
+		bool allAtBlockEnd = true;
+		bool allOnAudio = true;
+		const uint32_t blockLine = __LINE__ + 4;
+		for(int i = 0; i < 20; ++i)
+		{
+			ranOn = {};
+			if(!jobPlugin.withDeviceAtBlockEnd(job, 2000ms))
+				allAtBlockEnd = false;
+			if(ranOn != audioThread)
+				allOnAudio = false;
+		}
+		run = false;
+		audio.join();
+		if(!allAtBlockEnd || !allOnAudio || holdsAt(blockLine) != 0)
+			return fail("a block-end job did not run on the audio thread at a block's end while blocks ran");
+
+		// the audio stopped: back to a hold of its own
+		ranOn = {};
+		if(jobPlugin.withDeviceAtBlockEnd(job, 20ms) || ranOn != std::this_thread::get_id())
+			return fail("a block-end job after the audio stopped did not run in a hold of its own");
+	}
 
 	std::cout << "synthLib state transaction tests passed\n";
 	return 0;

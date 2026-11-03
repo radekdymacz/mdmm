@@ -74,6 +74,8 @@ namespace mdDesk
 		const SdsSender::Progress& sampleProgress() const override { return m_sds.progress(); }
 		uint64_t audition(const elektronData::AuditionClip& _clip) override { return m_port.audition ? m_port.audition(_clip) : 0; }
 		elektronData::AuditionStatus auditionStatus() const override { return m_port.auditionStatus ? m_port.auditionStatus() : elektronData::AuditionStatus{}; }
+		bool pressPanel(const std::string& _key) override { return m_port.pressKey && m_profile.panel && m_port.pressKey(_key); }
+		bool readScreen(Bytes& _lcd) override { return m_port.lcd && m_port.lcd(_lcd); }
 		// The protocol facts (not MdAdapter's: the desk reads them for tests and diagnostics).
 		const mdDataLink::Session::State& linkState() const { return m_session.state(); }
 		bool replied() const { return m_wire.replied; }

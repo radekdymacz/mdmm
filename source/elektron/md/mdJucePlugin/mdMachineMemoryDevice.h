@@ -1,7 +1,8 @@
 #pragma once
 
 // I-024: the machine memory's port to the machine (mdMachineMemoryService.h) over the processor's emulated machine:
-// every read and restore under the plug-in's device lock, the notices in this instance's window.
+// every read and restore under the plug-in's device lock (the reads by the audio thread at a block's end, B-203), the
+// notices in this instance's window.
 
 #include "mdMachineMemoryService.h"
 
@@ -39,9 +40,10 @@ namespace mdJucePlugin
 
 	private:
 		// A copy of the machine's memory as it was at one moment, a part per hold of the plug-in's lock
-		// (md::OneMomentCopy, DESIGN-audio-lock.md). _check: every hold, before anything is copied (false: no copy).
-		// _last: in the hold the copy is of. _heldMs: the longest hold. False: no machine, another machine, or _check
-		// said no.
+		// (md::OneMomentCopy, DESIGN-audio-lock.md), each part taken by the audio thread at a block's end (B-203:
+		// synthLib::Plugin::withDeviceAtBlockEnd). _check: every hold, before anything is copied (false: no copy).
+		// _last: in the hold the copy is of. Both may run on the audio thread: no allocation, no blocking call.
+		// _heldMs: the longest hold. False: no machine, another machine, or _check said no.
 		bool copyAtOneMoment(std::vector<md::OneMomentCopy::Area> _areas, std::optional<MachineId>& _machine, double& _heldMs,
 			double& _copyMs, const std::function<bool(md::Device&)>& _check = {}, const std::function<void(md::Device&)>& _last = {});
 		bool copyFlashInParts(uint8_t* _to, size_t _at, size_t _size, std::optional<MachineId>& _machine, double& _copyMs,

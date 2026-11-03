@@ -26,6 +26,13 @@
 const Journey = (() => {
 	const sleep = ms => new Promise(r => setTimeout(r, ms));
 	const until = async (f, ms) => { const end = performance.now() + ms; while (performance.now() < end) { if (f()) return true; await sleep(40); } return !!f(); };
+	/* the machine's late answers are in: quiet() (the page's facts: nothing on its way to the machine, no read or read-back
+	   pending) held for holdMs in a row, waited for at most maxMs; false if it never held. What a person does before the
+	   next thing: waits until the page holds still. The pages' between() use it, so a journey does not start on the
+	   answers of the one before (B-193, B-200, B-202; B-197 in one step). Not a retry: it acts on nothing. */
+	const settle = async (quiet, holdMs = 500, maxMs = 15000) => { const end = performance.now() + maxMs; let since = -1;
+		while (performance.now() < end) { if (!quiet()) since = -1; else if (since < 0) since = performance.now(); else if (performance.now() - since >= holdMs) return true; await sleep(40); }
+		return false; };
 	/* a check's answer: true passes; anything else is what was seen */
 	const ok = (pass, seen) => pass ? true : (seen == null ? "no" : String(seen));
 	/* a log of what the page sent or heard, newest last, the oldest dropped past cap. A journey that asks "what went out
@@ -264,7 +271,7 @@ const Journey = (() => {
 	const TIERS = {
 		host: ["boot-card", "keys-space-play", "seq-os-copy-paste", "keys-os-help", "dev-speedups", "top-cpu-meter", "lcd-volume",
 			"top-editor-menu", "engine-rom-card", "song-playhead"],
-		machine: ["seq-first-beat", "seq-queue-while-playing", "seq-live-record", "seq-grid-record", "sampler-setup-undo", "sampler-audition", "sampler-rename", "sampler-manager", "sampler-export", "sampler-ram-rom",
+		machine: ["seq-first-beat", "seq-queue-while-playing", "seq-live-record", "seq-grid-record", "sampler-setup-undo", "sampler-audition", "sampler-rename", "sampler-manager", "sampler-erase", "sampler-erase-all", "sampler-export", "sampler-ram-rom",
 			"sampler-ram-view", "sampler-setup-chop", "lib-syx-import", "lib-syx-import-mute", "song-mode", "song-mode-cycle", "keys-play-notes", "keys-black-keys",
 			"perform-keyboard", "engine-hw-no-machine", "global-tempo-out", "audio-panel", "drop-syx", "drop-sample", "drop-samples", "old-webkit",
 			"sound-machine-stays", "engine-reset-factory", "real-factory-songs", "real-factory-patterns", "real-sequence-plays",
@@ -679,7 +686,10 @@ const Journey = (() => {
 							const key = id.slice("speedup-".length);
 							for (const on of [false, true]) {
 								await speed.pick(hands, id, true);
-								const machineOk = await until(() => speed.leverOff(key) === !on && speed.savedLeverOff(key) === !on, 4000);
+								/* the reading comes with the cpuLoad message, from facts the audio thread publishes; with a lever
+								   off the emulator runs slower, and on a loaded runner (CI run 41362123236: every "off" late, the
+								   reading right by the step's end) that took over 4 s */
+								const machineOk = await until(() => speed.leverOff(key) === !on && speed.savedLeverOff(key) === !on, 8000);
 								await speed.open(hands, true); const t = speed.ticked(id), en = speed.enabled(id); closeDeskMenu();
 								if (!machineOk || t !== on || !en) c.bad.push(`${key} ${on ? "on" : "off"}: tick ${t}, enabled ${en}, machine ${machineOk ? "ok" : "levers off " + (CpuMeter.last.leversOff || []).join("+") + ", saved " + ((CpuMeter.last.saved || {}).leversOff || []).join("+")}`);
 							}
@@ -1131,5 +1141,5 @@ const Journey = (() => {
 				c.n = document.querySelectorAll(".pk[data-lane]").length; },
 				screen: c => ok(c.n > 0 && Object.values(c.cut).every(x => !x), `${c.n} keys; ` + Object.entries(c.cut).map(([w, x]) => `${w}: ${x || "all fit"}`).join("; ")) }]
 	});
-	return { stateDiff, pageTier, noWire, cutText, spills, overlaps, canvasProblems, lockKeysCut, lockKeysJourney, pressOutside, modalLockJourney, boxOf, keysInside, run, demo, ok, sleep, until, recent, u, TIERS, tierOf, awayFromLine, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
+	return { stateDiff, pageTier, noWire, cutText, spills, overlaps, canvasProblems, lockKeysCut, lockKeysJourney, pressOutside, modalLockJourney, boxOf, keysInside, run, demo, ok, sleep, until, settle, recent, u, TIERS, tierOf, awayFromLine, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
 })();

@@ -9,6 +9,9 @@
 
 #include "deskCore/deskPacer.h"
 
+#include <algorithm>
+#include <cstdio>
+
 namespace mmDesk
 {
 	using namespace parts;
@@ -38,6 +41,8 @@ namespace mmDesk
 		if(!step.send)
 			return;
 		const auto& r = *step.send;
+		if(const auto t = m_readBackTrace.find(r); t != m_readBackTrace.end())
+			++t->second.requests;
 		m_port.sendSysex(r.kind == Kind::Pattern ? ed::mmPatternRequest(r.slot) : r.kind == Kind::Kit ? ed::mmKitRequest(r.slot)
 			: r.kind == Kind::Song ? ed::mmSongRequest(r.slot) : ed::mmGlobalRequest(r.slot));
 	}
@@ -114,19 +119,39 @@ namespace mmDesk
 		case Kind::WorkingKit: break;
 		}
 		m_loads.arrived(_r);
+		if(const auto t = m_readBackTrace.find(_r); t != m_readBackTrace.end())
+			++t->second.replies;
+		auto* found = m_pushes.find(_r);
+		// B-202: what became of a reply while its document's push waits (the status line's lastReply)
+		if(found && found->slot.busy() && (!doc || found->parked))
+			noteReply(_r, !doc ? "undecodable" : "while its dump waits for SYSEX RECV", _sysex.size());
 		if(!doc)
 			return;
 		if(_r.kind == Kind::Global && static_cast<int>(_r.slot) == (m_curGlobal & 7))
 			setBaseChannel(std::get<ed::MmGlobal>(*doc));
 		auto action = deskCore::ReadBackAction::Observe;
-		auto* found = m_pushes.find(_r);
 		if(found && found->slot.busy() && !found->parked)
 		{
 			auto& push = *found;
 			const auto askedMs = push.slot.asked() ? push.slot.askedMs() : push.slot.sentMs();
-			action = deskCore::readBack(push.slot, _sysex);
+			// B-202: the document, not its encoding: the firmware's run-length encoding of the same bytes may differ from
+			// the editor's (CI run 41362123236: a song reply of 1771 bytes for a dump of 1772)
+			const auto& sent = push.slot.inFlight();
+			const bool same = sent && sameDocument(*sent, _sysex);
+			action = deskCore::readBack(push.slot, same ? *sent : _sysex);
+			noteReply(_r, action == deskCore::ReadBackAction::Wait ? "older" : "confirmed", _sysex.size());
 			if(action == deskCore::ReadBackAction::Wait)
-				return;	// an older reply: the read-back at quiet confirms, or its timeout fails the push
+			{
+				// An older reply: the read-back at quiet confirms, or its timeout fails the push. B-202 (again in CI
+				// run 41336239454): the reply to the read-back itself can hold the document as it was before the dump
+				// (the machine answered before it stored it); nothing else would ask, so the push timed out with the
+				// machine holding the edit and the page went back to the older document (the next + then built on
+				// that). Asked again, a bounded number of times, while nothing newer waits.
+				noteOlderReply(_r, *push.slot.inFlight(), _sysex);
+				if(push.slot.asked() && !push.slot.next() && m_readBackAgain[_r]++ < g_readBackAgain)
+					m_loads.wantFresh(_r);
+				return;
+			}
 			m_lastRoundTripMs = now() - askedMs;
 		}
 		if(action == deskCore::ReadBackAction::Settle)
@@ -151,6 +176,86 @@ namespace mmDesk
 			if(seed)
 				observe(WorkingKit{*seed}, Source::Dump);
 		}
+	}
+
+	// B-202: two dumps hold the same document (command, slot, version, the bytes after the run-length decode), however
+	// each was encoded
+	bool MmMachine::sameDocument(const Bytes& _a, const Bytes& _b)
+	{
+		if(_a == _b)
+			return true;
+		const auto a = ed::unpackMmDump(_a);
+		const auto b = ed::unpackMmDump(_b);
+		return a && b && *a == *b;
+	}
+
+	namespace
+	{
+		// The kit field at a raw offset (mmKit.cpp's layout), for the log
+		std::string kitField(const size_t _at)
+		{
+			struct Field
+			{
+				size_t size;
+				const char* name;
+			};
+			static constexpr Field g_fields[] = {{11, "name"}, {6, "levels"}, {72 * 6, "tracks"}, {6, "machines"}, {6, "routing"},
+				{3, "x1cd"}, {1, "mirrorMask"}, {1, "x1d1"}, {72, "assignPage"}, {72, "assignDest"}, {72, "assignAdd"}, {1, "lpfMask"},
+				{1, "hpfMask"}, {1, "portamentoMask"}, {6, "trigPos"}, {1, "legatoAmp"}, {1, "legatoFilter"}, {1, "legatoLfo"},
+				{1, "multiTrigMode"}, {1, "multiTrigTiming"}, {1, "splitKey"}, {1, "splitTrack"}};
+			size_t at = 0;
+			for(const auto& f : g_fields)
+			{
+				if(_at >= at + f.size)
+				{
+					at += f.size;
+					continue;
+				}
+				const auto i = _at - at;
+				if(std::string(f.name) != "tracks")
+					return std::string(f.name) + (f.size > 1 ? " " + std::to_string(i) : std::string());
+				const auto t = i / 72, k = i % 72;
+				const auto where = k < 56 ? "page " + std::to_string(k / 8) + " value " + std::to_string(k % 8)
+					: k < 64 ? "midi " + std::to_string(k - 56) : k < 70 ? "multiEnv " + std::to_string(k - 64) : "extra " + std::to_string(k - 70);
+				return "T" + std::to_string(t + 1) + " " + where;
+			}
+			return "past the end";
+		}
+	}
+
+	// B-202: what an older reply to a push's read-back held, against the dump sent, compared after the decode: for the
+	// desk's status line (the log), so a failed read-back tells a whole older document (many bytes) from one byte the
+	// firmware keeps its own way (and, for a kit, names its field).
+	void MmMachine::noteOlderReply(const Ref& _r, const Bytes& _sent, const Bytes& _got)
+	{
+		const auto sent = ed::unpackMmDump(_sent);
+		const auto got = ed::unpackMmDump(_got);
+		std::string what;
+		if(!sent || !got)
+			what = !got ? "the reply does not decode" : "the dump sent does not decode";
+		else
+		{
+			size_t differ = 0, first = 0;
+			const auto n = std::min(sent->raw.size(), got->raw.size());
+			for(size_t i = 0; i < n; ++i)
+				if(sent->raw[i] != got->raw[i] && differ++ == 0)
+					first = i;
+			char at[96];
+			std::snprintf(at, sizeof(at), " at raw 0x%zx (sent %02x, got %02x)", first, differ ? sent->raw[first] : 0, differ ? got->raw[first] : 0);
+			what = std::to_string(differ) + " of " + std::to_string(sent->raw.size()) + " bytes differ" + (differ ? at : "")
+				+ (differ && _r.kind == Kind::Kit ? " " + kitField(first) : std::string())
+				+ (sent->raw.size() != got->raw.size() ? ", " + std::to_string(got->raw.size()) + " came" : std::string())
+				+ (sent->version != got->version || sent->revision != got->revision ? ", another version" : "");
+		}
+		m_olderReply = std::string(kindName(_r.kind)) + " " + std::to_string(_r.slot + 1) + ": " + what;
+		m_olderReplyMs = now();
+		++m_olderReplies;
+	}
+
+	void MmMachine::noteReply(const Ref& _r, const char* _outcome, const size_t _bytes)
+	{
+		m_lastReply = std::string(kindName(_r.kind)) + " " + std::to_string(_r.slot + 1) + ": " + _outcome + ", " + std::to_string(_bytes) + " bytes";
+		m_lastReplyMs = now();
 	}
 
 	void MmMachine::kitSwitched(const int _from, const int _to)

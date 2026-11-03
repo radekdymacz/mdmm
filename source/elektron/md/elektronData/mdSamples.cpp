@@ -98,6 +98,13 @@ namespace elektronData
 		return s;
 	}
 
+	uint64_t mdSampleFlashSignature(const MdSampleMemory& _m)
+	{
+		MdSampleMemory m = _m;
+		m.dspX = nullptr;
+		return mdSampleSignature(m);
+	}
+
 	uint64_t mdSampleSignature(const MdSampleMemory& _m)
 	{
 		uint64_t h = 1469598103934665603ull;
