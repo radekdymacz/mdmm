@@ -23,6 +23,11 @@ Both editors share one MIDI-in path; nothing in the editor differs between them:
 | The firmware | **MD OS 1.63 takes a kit, pattern, song or global dump on every screen** | **MM OS 1.32B takes a dump only while GLOBAL > FILE > SYSEX RECV is open; on any other screen it drops it** |
 | The page | reads what changed in the background (the working kit from memory; slots when read) | nothing changed |
 
+One editor-side flaw sat on top (found by this feature's firmware E2E): the plug-in's controller hears the MIDI that
+goes *to* the machine as well as what comes from it, and handed a host dump to the desk as if the machine had sent it.
+On the Machinedrum that shows what the machine took anyway; on the Monomachine the page showed a kit the machine had
+dropped. Fixed for the Monomachine (`Controller::parseSysexMessage`: host and port SysEx is not the machine's reply).
+
 So the difference is the firmware alone. The editor routes, filters and queues nothing differently. The hardware
 behaves the same way: a real Monomachine also ignores a dump outside SYSEX RECV.
 
