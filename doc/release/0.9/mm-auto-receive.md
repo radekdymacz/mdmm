@@ -111,6 +111,9 @@ comes back to the main screen, not to the menu. The page itself does not change 
   (the commands act on every screen, mmCommands.h; waveforms belong to the DigiPRO manager).
 - **The MD side** is unaffected: its session never sets the capture, and an MD dump sent to the MM Editor is not an
   MM dump.
+- **Off, within 3 s of an edit:** the editor's own SYSEX RECV session stays parked 3 s after it sent an edit, so a raw
+  host dump that arrives then lands (the machine is on SYSEX RECV, as the hardware would be). Not new in 0.9.0; the
+  journey waits for the session to be idle before its "off" step (seen in the first firmware E2E run).
 - **SYSEX RECV already open by hand** (switch on): the session sees the screen and parks there without pressing a key
   (RecvSession, Idle), sends, and EXITs to the main screen after its idle time, as for the editor's own edits.
 - **The standalone:** its MIDI input device reaches the processor as host MIDI, so a librarian sending to the

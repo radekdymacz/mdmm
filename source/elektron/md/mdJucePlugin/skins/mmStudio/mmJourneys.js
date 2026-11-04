@@ -2262,8 +2262,11 @@ const MmJourneys = (() => {
 		steps: [
 			{ say: "the engine menu says AUTO RECEIVE: OFF; K121 is read", act: (u, c) => { c.news = autoRxNews.length; },
 				screen: () => ok(autoRxLabel() === "AUTO RECEIVE: OFF", autoRxLabel()), machine: c => { c.was = (kitName(120) || "").trim(); return ok(I().doc("kit", 120) != null, "K121 not read yet"); }, within: 60000 },
-			{ say: "off: a kit dump for K121 arrives from MIDI in: the machine drops it (not on SYSEX RECV), the page hears nothing",
-				act: async () => { Bridge.log("hostsyx kit 120"); await sleep(6000); },
+			/* first the editor's own SYSEX RECV session is idle: parked (an edit of the journey before, for 3 s) the machine
+			   takes the raw dump, as on the hardware (seen in the first firmware E2E run) */
+			{ say: "off: with the machine on its main screen, a kit dump for K121 arrives from MIDI in: the machine drops it, the page hears nothing",
+				act: async (u, c) => { if (!await until(() => machine().recv?.state === "idle" && !machine().recv?.sending, 30000)) c.note = "SYSEX RECV " + machine().recv?.state;
+					Bridge.log("hostsyx kit 120"); await sleep(6000); },
 				screen: c => ok(autoRxNews.length === c.news && $1("#syxpop").hidden, autoRxNews.length - c.news + " hostDump messages"),
 				machine: c => ok((kitName(120) || "").trim() === c.was, `K121 "${kitName(120)}", was "${c.was}"`) },
 			{ say: "choose AUTO RECEIVE in the engine menu: it reads ON, the plug-in keeps it", act: u => u.pick("engsel", "autoReceive"),
