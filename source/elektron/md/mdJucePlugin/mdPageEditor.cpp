@@ -15,6 +15,7 @@
 
 #if MDMM_DIAGNOSTICS
 #include "mdDiagnostics.h"
+#include "elektronData/syxImport.h"
 #else
 namespace mdJucePlugin
 {
@@ -158,6 +159,33 @@ namespace mdJucePlugin
 #if MDMM_DIAGNOSTICS
 		if(m_session)
 			m_diagnostics = std::make_unique<Diagnostics>(*m_page, *m_session, *getRmlComponent(), getProcessor());
+		// I-070 (mm-auto-receive): "kit <slot>": the first kit dump of the run's .syx (GEARMULATOR_MDMM_SYX_FILE), placed at
+		// <slot>, into the processor as the host's MIDI in sends it (addMidiEvent, source Host)
+		m_page->setJourneyHostSysex([this](const juce::String& _spec)
+		{
+			namespace ed = elektronData;
+			const auto words = juce::StringArray::fromTokens(_spec, " ", {});
+			const juce::File f(juce::SystemStats::getEnvironmentVariable("GEARMULATOR_MDMM_SYX_FILE", {}));
+			juce::MemoryBlock mb;
+			if(words.size() < 2 || words[0] != "kit" || !f.existsAsFile() || !f.loadFileAsData(mb))
+			{
+				m_page->log("hostsyx (journey): " + _spec + ": no kit or no file");
+				return;
+			}
+			const auto* d = static_cast<const uint8_t*>(mb.getData());
+			const std::vector<uint8_t> bytes(d, d + mb.getSize());
+			const auto file = ed::parseSyx(bytes);
+			for(const auto& r : file.messages)
+			{
+				if(r.kind != ed::SyxKind::Kit || r.status != ed::SyxStatus::Ok)
+					continue;
+				const auto dump = ed::syxPlaced(ed::syxBytes(bytes, r), static_cast<uint8_t>(words[1].getIntValue() & 127));
+				dynamic_cast<AudioPluginAudioProcessor&>(getProcessor()).injectHostMidiForTest(dump);
+				m_page->log("hostsyx (journey): " + _spec + ": " + juce::String(static_cast<int>(dump.size())) + " bytes as host MIDI");
+				return;
+			}
+			m_page->log("hostsyx (journey): " + _spec + ": the file has no kit");
+		});
 #endif
 		startTimerHz(30);
 	}

@@ -76,6 +76,7 @@
 	const songSlot = () => songEdit ?? cur("song");
 	/* B-030: the plug-in's "host" message (a DAW's tempo); the plug-in's, so it stays when the engine changes */
 	let hostTempo = null;
+	let autoReceive = false;	/* I-070: a dump from the DAW's MIDI goes through SYSEX RECV by itself (the plug-in keeps it with the project) */
 	let follow = false;	/* I-003: the selected track follows the last track a MIDI controller played (the plug-in keeps it with the project) */
 	let memory = { keep: true, available: false, saved: false, note: "" };	/* I-024: the plug-in's machineMemory */
 	const view = () => { const v = MmView.derive(docs(), { songEdit, host: hostTempo }); return Overlay.over(Overlay.size() ? MmView.own(v) : v); };
@@ -584,6 +585,8 @@
 		removeRom(info) { askRemoveRom(info); },
 		/* I-024 (doc/modern-ux/DESIGN-machine-memory.md): KEEP MEMORY on or off; "factory": RESET MACHINE…'s Start from
 		   factory memory (the question was the panel's, shared/deskSyx.js) */
+		/* I-070: AUTO RECEIVE on or off (kept with the project; the plug-in says it with the solo) */
+		autoReceive() { send({ op: "autoReceiveSet", on: !autoReceive }, { onResult: r => { if (r.ok) { autoReceive = !autoReceive; V().setAutoReceive(autoReceive, machine?.capabilities?.engine === "hw"); } else V().toast(r.errors[0]); } }); },
 		follow() { send({ op: "followSet", on: !follow }, { onResult: r => { if (r.ok) { follow = !follow; V().setFollow(follow); } else V().toast(r.errors[0]); } }); },
 		memory(what) {
 			if (what === "keep") send({ op: "memoryKeep", on: !memory.keep }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } });
@@ -728,6 +731,9 @@
 		   page shows the notes held instead (midiHeld: a state, so a lost note off cannot leave a key lit) */
 		else if (m.type === "midiIn") followPlayed(m);
 		else if (m.type === "follow") { follow = !!m.on; V().setFollow(follow); }
+		/* I-070: AUTO RECEIVE as the plug-in keeps it, and a dump from the DAW's MIDI that went to the machine (or did not) */
+		else if (m.type === "autoReceive") { autoReceive = !!m.on; V().setAutoReceive(autoReceive, machine?.capabilities?.engine === "hw"); }
+		else if (m.type === "hostDump") { log("hostDump: " + m.text); V().toast(m.text); }
 		/* I-002, B-062: the notes a MIDI keyboard holds light the Perform keyboard's keys, those on a channel the machine
 		   plays (playedChannels) */
 		else if (m.type === "midiHeld") { const chs = playedChannels(); V().setMidiHeld((m.notes || []).filter(n => chs.has(n.ch)).map(n => n.note)); }

@@ -63,6 +63,9 @@ namespace mmDesk
 		// MIDI Learn (0.8): the learned CCs, part of the setup (the same contract as the Machinedrum desk's). setMappings keeps
 		// them with the project.
 		const std::vector<deskCore::LearnMapping>& mappings() const { return m_mappings; }
+		// I-070: AUTO RECEIVE (part of the setup): a user-data dump from the host's MIDI in goes to the machine the way
+		// IMPORT SYSEX sends it (SYSEX RECV). The session captures those dumps while this is on and the engine is the emulator.
+		bool autoReceive() const { return m_autoReceive; }
 		void setMappings(std::vector<deskCore::LearnMapping> _mappings);
 
 		// MIDI Learn's global targets (B-169), by id (append-only: a saved project names them): the tempo (0), the
@@ -108,6 +111,7 @@ namespace mmDesk
 		void publishModulators();
 		void setSolo(const Value& _message);
 		void publishSolo();
+		void publishAutoReceive();
 		// The setup the project keeps (g_mmSetupSpec): the modulators and the page's solo.
 		Value setupDoc() const;
 		void runModulators();
@@ -115,6 +119,7 @@ namespace mmDesk
 		std::function<void(const Value&)> m_saveSetup;
 		deskCore::ModEngine m_mods;
 		bool m_follow = false;	// I-003: the selected track follows the last played
+		bool m_autoReceive = deskCore::g_autoReceiveDefault;	// I-070
 		deskCore::SoloMemo m_solo;	// the page's solo and the mutes the person had before it
 		std::vector<deskCore::LearnMapping> m_mappings;	// MIDI Learn
 		bool m_mappingsKept = false;	// the member is written even when empty (deskSetup.h, mappingsKept)

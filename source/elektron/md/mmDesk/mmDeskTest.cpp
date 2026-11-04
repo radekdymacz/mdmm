@@ -2102,6 +2102,30 @@ void modulators()
 	msg(R"({"op":"followSet","id":7,"on":true})");
 	msg(R"({"op":"followSet","id":8,"on":false})");
 	check(saved.find("followPlayed") == nullptr, "followSet off: the setup says nothing");
+
+	// I-070: AUTO RECEIVE is kept beside the modulators as FOLLOW PLAYED TRACK is, off by default (the hardware's way)
+	const auto autoRx = [&]() { const auto* m = last("autoReceive"); return m && m->find("on")->asBool(); };
+	check(!deskCore::g_autoReceiveDefault && !d.autoReceive() && saved.find("autoReceive") == nullptr, "auto receive: off by default, not written");
+	page.clear();
+	msg(R"({"op":"autoReceiveSet","id":9,"on":true})");
+	check(last("result")->find("ok")->asBool() && d.autoReceive() && saved.find("autoReceive") && saved.find("autoReceive")->asBool()
+		&& saved.find("schema")->asString() == "mm-desk/modulators", "autoReceiveSet on: kept with the project, in the bare shape");
+	check(last("autoReceive") == nullptr, "autoReceiveSet: no echo (the page sets it from the result)");
+	const auto autoProject = saved;
+	page.clear();
+	check(d.loadSetup(deskCore::modSetupToJson({}, mmDesk::g_mmModLimits)).empty() && !d.autoReceive() && last("autoReceive") && !autoRx(),
+		"a project without it: off, and the page is told");
+	page.clear();
+	check(d.loadSetup(autoProject).empty() && d.autoReceive() && autoRx(), "a project that has it: on, and the page is told");
+	page.clear();
+	msg(R"({"op":"ready"})");
+	check(autoRx(), "a page made again gets it");
+	check(d.loadSetup(*ed::json::parse(R"({"schema":"mm-desk/setup","version":1,"autoReceive":true})")).empty() && d.autoReceive(), "the wrapper has it too");
+	check(d.loadSetup(*ed::json::parse(R"({"schema":"mm-desk/modulators","version":1,"sources":[],"links":[],"autoReceive":"yes"})")).size() == 1
+		&& !d.autoReceive(), "a value that is not a boolean is off, and said");
+	msg(R"({"op":"autoReceiveSet","id":10,"on":true})");
+	msg(R"({"op":"autoReceiveSet","id":11,"on":false})");
+	check(!d.autoReceive() && saved.find("autoReceive") == nullptr, "autoReceiveSet off: the setup says nothing");
 }
 
 // P6: the questions, errors, the machine's own screen and a restart, as the page gets them.

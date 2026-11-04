@@ -477,6 +477,14 @@ namespace mdJucePlugin
 				});
 #endif
 #if MDMM_DIAGNOSTICS
+			// I-070: a journey's "hostsyx kit <slot> [raw]" (mmJourneys.js, mm-auto-receive): a dump of the run's .syx as if the
+			// host's MIDI in sent it (the owner's)
+			if(line.startsWith("hostsyx ") && m_journeyHostSysex)
+				juce::MessageManager::callAsync([this, alive = std::weak_ptr<int>(m_alive), spec = line.fromFirstOccurrenceOf(" ", false, false)]
+				{
+					if(!alive.expired() && m_journeyHostSysex)
+						m_journeyHostSysex(spec);
+				});
 			// A journey's drop ("dropfiles <x> <y> syx wav", mdDeskJourneys.js): the files the run names in its
 			// environment (GEARMULATOR_MDMM_SYX_FILE, GEARMULATOR_MDMM_WAV_FILE), dropped at x, y (the page's CSS
 			// pixels) as if from the Finder: from here on the same way as a real drop (the owner's FileDrop). The

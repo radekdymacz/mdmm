@@ -1072,6 +1072,16 @@ namespace mdJucePlugin
 
 	bool AudioPluginAudioProcessor::consumeMidiIn(const synthLib::SMidiEvent& _ev)
 	{
+		// I-070 (AUTO RECEIVE): a Monomachine user-data dump from the host, while the session captures them, goes to the
+		// session (it sends it the way IMPORT SYSEX does: SYSEX RECV), not raw to the firmware, which drops it outside
+		// SYSEX RECV. An inbox that is full or busy lets it go raw, as with the switch off.
+		if(_ev.source == synthLib::MidiEventSource::Host && !_ev.sysex.empty() && m_hostDumpCapture.load(std::memory_order_relaxed)
+			&& isMmUserDump(_ev.sysex.data(), _ev.sysex.size()))
+		{
+			if(m_hostDumps.push(_ev.sysex.data(), _ev.sysex.size()))
+				return true;
+			m_hostDumpsPassed.fetch_add(1, std::memory_order_relaxed);
+		}
 		if constexpr (deskHost::midiMappingEnabled)
 		{
 			// the host's MIDI only (the audio thread); the page's own (Editor), the device's and a port's (Physical) never go
@@ -1084,6 +1094,13 @@ namespace mdJucePlugin
 			return false;
 		}
 		return jucePluginEditorLib::Processor::consumeMidiIn(_ev);
+	}
+
+	void AudioPluginAudioProcessor::injectHostMidiForTest(const std::vector<uint8_t>& _message)
+	{
+		synthLib::SMidiEvent ev(synthLib::MidiEventSource::Host);
+		if(ev.assignRawData(_message.data(), _message.size(), synthLib::MidiEventSource::Host, 0))
+			addMidiEvent(ev);
 	}
 
 	bool AudioPluginAudioProcessor::applyLearnedCc(pluginLib::Parameter& _param, const LearnTarget& _target, const uint8_t _value)

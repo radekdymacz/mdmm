@@ -611,13 +611,13 @@ const MM_SEAM={
   "selectPattern","kit","tempo","mutes","keyMode","record","chain","chainClear","seqMode","loadSong","saveSong","waiting",
   "sendNow","playKey","keyUp","transport","noteOn","noteOff","joy","learning","learnTarget","learnBind","learnAdd","learnInvert","learnRemove","modulators",
   "engine","chooseRom","removeRom","romManage","syxChoose","syxExport","syxStart","syxStop","syxPlace","syxExportInfo","machineReset","revealRom",
-  "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","mixMeters","globalSlot","memory","follow",
+  "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","mixMeters","globalSlot","memory","follow","autoReceive",
   "waveList","waveChoose","waveLoad","waveRename","waveCopy","waveErase","waveUndo","waveSendNow"],
  "view":[
   "audible","soloed","engReady","asgT","noteName","pname","machName","kitName","gated","busy","sel","mode",
   "playing","step","tempo","engineState","kitState","learnTarget","learning","ctlSetup","show","startEmpty",
   "setPatternSlot","setKitSlot","setReading","setTempo","setSolo","setInput","setPlaying","setStep","setPausedStep","setSongRow","setSongSteps","setEng","dlgOpen",
-  "setEngineLabel","setEngineTip","setEngines","setAudioEntry","setMemory","setFollow","selectTrack","clearLearnTarget","setMapping","setLearn","setModulation",
+  "setEngineLabel","setEngineTip","setEngines","setAudioEntry","setMemory","setFollow","setAutoReceive","selectTrack","clearLearnTarget","setMapping","setLearn","setModulation",
   "setCtlSetup","disable","setRecord","setRecLock","setLcd","setKeyDown","setMidiHeld","setPst","closeFirmwareDialog","bootRom",
   "bootInstalled","syxPreview","syxProgress","syxExported","syxExportInfo","render","renderTop","drawLib","toast","ask","redraw","movePH",
   "setPos","flashTracks","goWs","clickStep","autoRange","kitSave","redrawAudio","audioLevel","audioStats","openAudio","mixLevels","mixMeterState","setWaves","setWaveFile"]};
@@ -679,6 +679,7 @@ const MM_SEAM={
      romManage()   LOAD ROM in the engine menu (a host shows which firmware runs, REPLACE and REMOVE; none: the start-up card)
      follow()       I-003: the engine menu's FOLLOW PLAYED TRACK on / off; the state comes back with MMView.setFollow, and the
                                       host selects the track a MIDI controller played with MMView.selectTrack
+     autoReceive()  I-070: the engine menu's AUTO RECEIVE on / off; the state comes back with MMView.setAutoReceive
      memory(what)   I-024: "keep" (the engine menu's KEEP MEMORY on / off) or "factory" (RESET MACHINE…'s Start from
                                       factory memory, asked by the panel); the state comes back with MMView.setMemory
      chooseRom(), revealRom(), recheck()   the start-up card's keys (P7): the native file chooser for the
@@ -6748,6 +6749,7 @@ document.addEventListener("change",e=>{const id=e.target.id,v=e.target.value,tr=
   if(v==="memoryKeep"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.memory)HOST.memory("keep");return}
   if(v==="plate"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;setPlate(S.plate==="mk1"?"mk2":"mk1");return}
   if(v==="followPlayed"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.follow)HOST.follow();return}
+  if(v==="autoReceive"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.autoReceive)HOST.autoReceive();return}
   S.engine=v;S.pend=0;renderPst();if(HOST.engine)HOST.engine(v);else startEngine(v);return}
  let m=id.match(/^lp(\d)$/);if(m){editTrack(S.sel,()=>{const l=V("LF"+m[1]);l[0]=+v;l[1]=0});render();return}
  m=id.match(/^ld(\d)$/);if(m){editTrack(S.sel,()=>{V("LF"+m[1])[1]=+v});render();return}
@@ -7030,7 +7032,7 @@ function setRecord(mode,at=-1){const on=mode==="grid"||mode==="live",was=S.recMo
 /* an engine state's LCD label: [text, led "on" | "blink" | "off", tooltip] */
 function setEngineLabel(st,label){ENG[st]=label;if(S.eng===st)setEng(st)}
 /* a host's engine map ([{id, label, available, reason}]) in the engine menu, before the menu's own entries */
-function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const own=["audio","global","rom","import","export","reset","memoryKeep","followPlayed","plate"];
+function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const own=["audio","global","rom","import","export","reset","memoryKeep","followPlayed","autoReceive","plate"];
  for(const o of [...sel.options])if(!own.includes(o.value)&&!list.some(e=>e.id===o.value))o.remove();
  const first=[...sel.options].find(o=>own.includes(o.value))||null;
  for(const e of list){let o=sel.querySelector(`option[value="${e.id}"]`);if(!o){o=document.createElement("option");o.value=e.id}sel.insertBefore(o,first);o.textContent=e.label;o.disabled=!e.available;o.title=e.available?"":e.reason||""}
@@ -7045,6 +7047,11 @@ function setMemory(m){S.mem=m;const k=document.querySelector('#engsel option[val
 function setFollow(on){const k=document.querySelector('#engsel option[value="followPlayed"]');if(!k)return;
  k.hidden=false;k.textContent="FOLLOW PLAYED TRACK: "+(on?"ON":"OFF");
  k.title=on?"The selected track follows the last track played from a MIDI controller. Click to turn it off.":"Click to make the selected track follow the last track played from a MIDI controller."}
+/* I-070: the engine menu's AUTO RECEIVE as the host says (on / off; shown once the host has said; hw: the real machine
+   needs its own SYSEX RECV, so the entry says it does nothing there) */
+function setAutoReceive(on,hw){const k=document.querySelector('#engsel option[value="autoReceive"]');if(!k)return;
+ k.hidden=false;k.textContent="AUTO RECEIVE: "+(on?"ON":"OFF");
+ k.title=(hw?"Hardware MIDI: open SYSEX RECV on the machine yourself; this switch acts on the emulator. ":"")+(on?"A kit, pattern, song or global dump from the DAW's MIDI goes to the machine through SYSEX RECV, as IMPORT SYSEX sends it. Click to turn it off.":"Off: as on the hardware, the Monomachine takes a dump from MIDI only on GLOBAL › FILE › SYSEX RECV. Click so that a kit, pattern, song or global dump from the DAW lands by itself.")}
 /* I-003: the host's selectTrack: at most one selection per frame (the last note's track); a question open or LEARN
    waiting for its note leaves the selection where it is */
 const FOLLOW={t:0,raf:0};
@@ -7112,7 +7119,7 @@ window.MMView={
  setSongSteps:n=>{S.songSteps=n;const st=document.getElementById("arrstate");if(st&&st.textContent!==arrState())st.textContent=arrState()},
  setEng,dlgOpen:()=>!$("#dlg").hidden,setEngineLabel,setEngineTip,setEngines,setAudioEntry,setMemory,clearLearnTarget:()=>{S.learnT=null},setMapping,setLearn,setModulation,setCtlSetup,disable,
  setRecord,setRecLock,
- setFollow,selectTrack:followSelect,setLcd,setKeyDown,setMidiHeld,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
+ setFollow,setAutoReceive,selectTrack:followSelect,setLcd,setKeyDown,setMidiHeld,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
  /* calls */
  render,renderTop,drawLib,toast,ask,redraw,movePH,setPos,flashTracks,goWs,clickStep,autoRange,kitSave,
  redrawAudio:()=>{if(AP.open)drawAudio()},audioLevel,audioStats,openAudio,mixLevels,mixMeterState,setWaves,setWaveFile};

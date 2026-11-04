@@ -17,6 +17,10 @@ namespace deskCore
 	// modulators, the CC numbers of the Control workspace's eight knob rows (a model with them) and the solo (the
 	// tracks soloed and the person's mutes, B-123). As the "<model>-desk/setup" document it is stored with the plug-in
 	// state (the "MDSK" chunk: the host keeps the text, it never looks inside) and restored with the project.
+	// I-070: AUTO RECEIVE's default (off: the Monomachine drops a dump outside SYSEX RECV, as the hardware does). A project
+	// that never set it reads this; the member is written only when it differs.
+	constexpr bool g_autoReceiveDefault = false;
+
 	struct DeskSetup
 	{
 		static constexpr std::array<uint8_t, 8> g_defaultKnobCcs{21, 22, 23, 24, 25, 26, 27, 28};
@@ -27,6 +31,9 @@ namespace deskCore
 		// I-003: the selected track follows the last one played from a MIDI controller (off by default; written only when on,
 		// read leniently: anything but a boolean is off)
 		bool followPlayed = false;
+		// I-070 (MM): a user-data dump from the host's MIDI in goes to the machine the way IMPORT SYSEX sends (SYSEX RECV)
+		// (written only when it differs from g_autoReceiveDefault, read leniently: anything but a boolean is the default)
+		bool autoReceive = g_autoReceiveDefault;
 		// MIDI Learn (0.8): the learned CCs and what they drive, at most g_learnMaxMappings; written only when there are any
 		// (a missing member is none), read leniently (deskLearn.h). Owned by the message thread; the audio thread sees a table
 		// derived from this, never this.
@@ -37,7 +44,7 @@ namespace deskCore
 
 		bool operator==(const DeskSetup& _o) const
 		{
-			return modulators == _o.modulators && knobCcs == _o.knobCcs && solo == _o.solo && followPlayed == _o.followPlayed
+			return modulators == _o.modulators && knobCcs == _o.knobCcs && solo == _o.solo && followPlayed == _o.followPlayed && autoReceive == _o.autoReceive
 				&& mappings == _o.mappings && mappingsKept == _o.mappingsKept;
 		}
 		bool operator!=(const DeskSetup& _o) const { return !(*this == _o); }

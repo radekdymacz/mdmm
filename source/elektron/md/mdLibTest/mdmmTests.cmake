@@ -171,6 +171,9 @@ function(mdmm_add_lib_tests _dir)
 	set_tests_properties(mmDeskFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
 	add_test(NAME mmEmptyResetFirmwareTest COMMAND mmDeskFirmwareTest --env emptyreset)
 	set_tests_properties(mmEmptyResetFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
+	# I-070 (doc/release/0.9/mm-auto-receive.md): AUTO RECEIVE: a kit dump from MIDI in, dropped raw, landed through SYSEX RECV
+	add_test(NAME mmAutoReceiveFirmwareTest COMMAND mmDeskFirmwareTest --env autoreceive)
+	set_tests_properties(mmAutoReceiveFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 900)
 	# 0.9 wave 2 (doc/release/0.9/mm-digipro.md): the DigiPRO manager through the desk and the session's manager on the ROM
 	add_test(NAME mmDigiproManagerFirmwareTest COMMAND mmDeskFirmwareTest --env digipro)
 	set_tests_properties(mmDigiproManagerFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)

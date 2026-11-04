@@ -83,6 +83,9 @@ namespace mdJucePlugin
 			std::function<void(const std::vector<std::string>&, double, double)> dropped;
 		};
 		void setFileDrop(FileDrop _drop);
+		// Diagnostics builds: a journey's "hostsyx <words>" log line (I-070: a dump as if from the host's MIDI in), for the
+		// owner, on the message thread. Release builds never call it.
+		void setJourneyHostSysex(std::function<void(const juce::String&)> _hook) { m_journeyHostSysex = std::move(_hook); }
 
 	private:
 		void onBridge(const std::string& _url);
@@ -125,6 +128,7 @@ namespace mdJucePlugin
 		juce::String m_pageUrl;		// what load() went to: a page that lost batches is loaded again (FileOutbox resync)
 		double m_nextResyncTry = 0;	// when to try that reload (again)
 		std::function<void()> m_onRestart;	// setOnRestart
+		std::function<void(const juce::String&)> m_journeyHostSysex;	// setJourneyHostSysex (diagnostics)
 		FileDrop m_fileDrop;	// setFileDrop: the owner's, in the page's CSS pixels
 		double m_userZoom = 1.0;	// the user's page zoom (the editor's menu, Cmd - / Cmd + / Cmd 0)
 		double m_cssZoom = 1.0;		// the CSS zoom sent (a zoom message), where the web view has no native page zoom

@@ -525,6 +525,13 @@ function(mdmm_plugin_targets)
 	set_tests_properties(mdMidiInTest PROPERTIES LABELS "UnitTest")
 	set_property(TARGET mdMidiInTest PROPERTY FOLDER "Elektron/test")
 
+	# I-070 (0.9.0, AUTO RECEIVE): which host SysEx is a Monomachine dump, and the audio thread's inbox for them (mdHostDumps.h, pure)
+	add_executable(mdHostDumpsTest mdHostDumpsTest.cpp mdHostDumps.h)
+	target_link_libraries(mdHostDumpsTest PRIVATE Threads::Threads)
+	add_test(NAME mdHostDumpsTest COMMAND mdHostDumpsTest)
+	set_tests_properties(mdHostDumpsTest PROPERTIES LABELS "UnitTest")
+	set_property(TARGET mdHostDumpsTest PROPERTY FOLDER "Elektron/test")
+
 	# I-032 (0.8, WP9): the Mix page's output meters (mdMixMeters.h, pure: peak and RMS per channel of the three pairs; no allocation; no ROM)
 	add_executable(mdMixMetersTest mdMixMetersTest.cpp mdMixMeters.h)
 	target_link_libraries(mdMixMetersTest PRIVATE Threads::Threads)
