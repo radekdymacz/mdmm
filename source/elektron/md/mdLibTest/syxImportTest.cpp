@@ -374,6 +374,7 @@ namespace
 		{
 			size_t queued = 0;
 			bool busy = false;
+			bool reads = false;
 			std::string waitsFor;
 		};
 		std::map<uint8_t, ed::MdKit> kits;
@@ -752,7 +753,7 @@ namespace
 		std::printf("0.6: the DigiPRO waveforms read for an export\n");
 		struct Waves
 		{
-			struct AsIs { size_t queued = 0; bool busy = false; std::string waitsFor; };
+			struct AsIs { size_t queued = 0; bool busy = false; std::string waitsFor; bool reads = false; };
 			std::map<uint8_t, Bytes> used;
 			std::vector<Bytes> wire, replies;
 			std::string sendAsIs(const Bytes& _m, bool) { wire.push_back(_m); if(_m.size() == 9 && _m[6] == 0x5e && used.count(_m[7])) replies.push_back(used[_m[7]]); return {}; }
