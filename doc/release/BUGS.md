@@ -4,6 +4,33 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-209 · Machinedrum: single journey failures seen once on 0.9.0 (flakes, logged)
+
+- **`md-sound-revert-track`:** failed once during the 0.9.0 release runs (reported by the session that ran them). Its run is not among the release/0.9.0 and main reports read on 2026-11-05 (41838310348, 41838458425, 41895129624, 41916302331, 41937709263, 41967458126, nightlies 41761322366 and 41955803792), and it passed in every one of them. Not reproduced; logged as a flake.
+- **`md-lane-tools`** step 8 (full CI 41916302331, 3fe146c05): "click Inv: the machine holds 127; then undo the toolbox edits: the lane is as at the start": the locks were still 0 after the undo. Passed in 41937709263 and 41967458126.
+- **`md-mix-heads-trigs`** step 7 (nightly 41761322366, main): the muted track's square flashed once at step 0 (B-171's signature).
+- **Status:** none of these touches a file changed in 0.9.0 since the last green MD run; each is open as a flake. If one fails again, it gets its own entry with the trace.
+
+## B-208 · Machinedrum: the RAM to ROM journey copied a take read mid-way again (flake, logged; B-204's RAM to ROM thread)
+
+- **From:** full CI run 41838310348 (`release/0.9.0`, b12f2d212), MD firmware E2E, `md-sampler-ram-rom` step 6 "the RAM take is still there": "RAM 1 {"empty":false,"length":11259}"; the Keep toast said "Sent to ROM-01: RAM1, 0.18 s at 11267 Hz". So step 3 saw a short take (0.18 s) hold still for 3 s after STOP, the copy sent that, and the bank showed the whole take (11259 samples, 1.00 s) only later. The same signature as B-204's RAM to ROM runs; its source fix (a RAM-entry change copied without waiting for the flash) did not hold this once.
+- **Status:** a flake, seen once on `release/0.9.0`; it passed in the full runs after it (41895129624, 41916302331, 41937709263, 41967458126). Not a 0.9.0 blocker. If it comes back, measure when the bank's RAM length changes against the take's end (the device's `scanSamples` log) before touching the journey.
+
+## B-207 · Both: the OS Cmd+C / Cmd+V journey passed its copy step before the key arrived (fixed in the journey)
+
+- **From:** full CI run 41967458126 (`release/0.9.0`, 73d9e72b6), MD firmware E2E, `md-seq-os-copy-paste` step 6 "press Cmd+V on the keyboard: the trig lands there": "screen: not lit; machine: pattern 0,16; page: toast "Pasted into track 1, steps 3-3"". New; it passed in every full run before.
+- **Not a regression:** the commits since the last green MD run (I-070 auto-receive, 375c33736..73d9e72b6) touch the Machinedrum path nowhere (the controller's change is gated on the Monomachine, the host-dump capture is set by the MM session only); round 6 changed no key or clipboard code.
+- **Cause (read from page.log):** step 4 checks that "cmd+C" is among the keys the page has seen and that the clipboard holds one step. Both were already true from the journeys before (`Keys.seen()` keeps the last 24 keys; `md-seq-step-menu` had just copied one step by its menu), so the step passed after the 350 ms of `u.osKey` while the native side had not yet sent the key: the plug-in's "oskeys cmd+c" and "cmd+v" lines came after the page had logged step 5 (the empty step 3 selected). The late Cmd+C then copied the empty step 3, Cmd+V pasted it onto itself: the toast, no trig.
+- **Fix (journey only):** the Cmd+C step remembers the key history before it presses and waits for a new newest key "cmd+C" (and the toast on the MM, which already checked it), so step 5 never runs before the copy. The same change in `mm-seq-os-copy-paste`. The product is unchanged.
+- **Status:** fixed in the journey, awaiting the full MD and MM firmware E2E.
+
+## B-206 · Monomachine: the song counter journey started the song from row 2 (fixed in the journey)
+
+- **From:** full CI runs on `release/0.9.0` (MM-271, `mm-song-counter` step 4 "a bar later the counter reads bar 002": "header Playing · 028:04", run 41967458126). Focused runs proved the order: 41889264296 (`mm-real-factory-songs` then `mm-song-counter`) fails, 41889283075 (`mm-song-counter` alone) passes.
+- **Cause:** `mm-real-factory-songs` stops each song with one STOP. On the Monomachine one STOP holds the song's position; a second STOP rewinds (the manual). The counter journey then pressed PLAY, and the song went on from row 2 with the count it had.
+- **Fix (journey only, Radek 2026-11-05: no product change):** before PLAY the journey presses ⌘. (Panic), which is STOP STOP on the MM, and waits for its result, so the song starts on row 1. The expectation (bar 002 a bar later) is unchanged.
+- **Status:** fixed in the journey, awaiting the full MM firmware E2E.
+
 ## B-205 · Ableton Live and Push 2: a Control page knob row cannot be mapped to a Rack macro (open, a design gap; deferred to 0.9.1 by Radek, 2026-11-04)
 
 - **From:** a user report, 2026-11-02 (Ableton Live with Push 2, AU on macOS): "I can't get the new Control matrix to map a knob lane to a macro in Ableton for my Push 2." Whether it fails silently is not known.
