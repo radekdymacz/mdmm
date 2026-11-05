@@ -76,7 +76,7 @@
 	const songSlot = () => songEdit ?? cur("song");
 	/* B-030: the plug-in's "host" message (a DAW's tempo); the plug-in's, so it stays when the engine changes */
 	let hostTempo = null;
-	let autoReceive = false;	/* I-070: a dump from the DAW's MIDI goes through SYSEX RECV by itself (the plug-in keeps it with the project) */
+	let autoReceive = true;	/* I-070 (on by default, deskSetup.h g_autoReceiveDefault; the plug-in says the project's value): a dump from the DAW's MIDI goes through SYSEX RECV by itself (the plug-in keeps it with the project) */
 	let follow = false;	/* I-003: the selected track follows the last track a MIDI controller played (the plug-in keeps it with the project) */
 	let memory = { keep: true, available: false, saved: false, note: "" };	/* I-024: the plug-in's machineMemory */
 	const view = () => { const v = MmView.derive(docs(), { songEdit, host: hostTempo }); return Overlay.over(Overlay.size() ? MmView.own(v) : v); };

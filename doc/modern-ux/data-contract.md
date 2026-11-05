@@ -531,7 +531,8 @@ synth track's channel (base + t inside CHANNEL SPAN), selects that track while t
 
 AUTO RECEIVE (I-070, the Monomachine, doc/release/0.9/mm-auto-receive.md) is the setup's `autoReceive` boolean: the page
 says `{"op":"autoReceiveSet","on":true|false}` (the engine menu's entry), the desk keeps it beside `solo` (written only
-when it differs from the default, off; anything but a boolean is the default, said as an error) and does not echo it; it
+when it differs from the default, on since 0.9.0 (Radek, 2026-11-05), so off is written as `false` and a project
+without the member, as every 0.8.x project, reads on; anything but a boolean is the default, said as an error) and does not echo it; it
 says `{"type":"autoReceive","on"}` with its solo (restore, `reset`, `ready`). While it is on and the engine is the emulator,
 a kit, pattern, song or global dump on the host's MIDI in goes to the machine the IMPORT SYSEX way (SYSEX RECV, no preview,
 no read-back, one undo step) instead of raw; when that is over the page hears `{"type":"hostDump","ok","text"}` (a toast).

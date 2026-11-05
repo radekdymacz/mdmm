@@ -2,7 +2,8 @@
 
 Branch `feat/0.9.0-mm-auto-receive`, from `release/0.9.0`. Monomachine Editor. Source: a user request (2026-11-04,
 Ableton Live 12, both editors as VST3, a Max for Live device that makes songs, patterns and kits as SysEx and sends
-them to the editors from a MIDI track). Radek moved it into 0.9.0 the same day.
+them to the editors from a MIDI track). Radek moved it into 0.9.0 the same day, and on 2026-11-05 made it **on by
+default** (see "Default").
 
 ## Problem
 
@@ -53,8 +54,8 @@ case: the dump still has to be saved as a file and opened. Not built.
 
 ```
 DAW MIDI track --SysEx--> processBlock --> addMidiEvent --> consumeMidiIn
-     autoReceive off (default) or not an MM user dump: return false --> midiToFirmware (raw, as today)
-     autoReceive on and an MM user dump (F0 00 20 3C 03 00 {50,52,67,69} .. F7):
+     autoReceive off or not an MM user dump: return false --> midiToFirmware (raw, as before 0.9.0)
+     autoReceive on (default) and an MM user dump (F0 00 20 3C 03 00 {50,52,67,69} .. F7):
          HostDumpInbox.tryPush (audio thread, no allocation, no lock; full -> false: raw, as today) and return true
 session step (message thread) --> MmSession::stepModel: takeHostDump() --> SyxWork::fromHost(bytes)
 SyxWork::step, no job running --> SyxJob over the collected dumps ("from MIDI in"), kinds kit/pattern/song/global,
@@ -64,14 +65,16 @@ SyxWork::step, no job running --> SyxJob over the collected dumps ("from MIDI in
 
 ### Hardware-true when off
 
-Off is the default and writes nothing to the project. Off, `consumeMidiIn` returns what it returned before: the dump
-goes to the firmware raw and the MM drops it outside SYSEX RECV, exactly as the hardware does. A person who opens
-SYSEX RECV on the emulated panel by hand and sends from the DAW gets what they got before.
+Off is a choice in the engine menu, kept with the project (`"autoReceive": false`). Off, `consumeMidiIn` returns what
+it returned before 0.9.0: the dump goes to the firmware raw and the MM drops it outside SYSEX RECV, exactly as the
+hardware does. A person who opens SYSEX RECV on the emulated panel by hand and sends from the DAW gets what they got
+before.
 
 ### The setting
 
-- `DeskSetup::autoReceive` (bool), kept with the project in the editor's setup document (`"autoReceive": true`,
-  written only when on, read leniently: anything but `true` is off), as FOLLOW PLAYED TRACK (I-003).
+- `DeskSetup::autoReceive` (bool), kept with the project in the editor's setup document, as FOLLOW PLAYED TRACK
+  (I-003): written only when it differs from the default (so `"autoReceive": false`), read leniently (a missing member
+  or anything but a boolean is the default, on).
 - Command `autoReceiveSet {on}` (Owner::Setup), echo `{"type":"autoReceive","on"}`.
 - The engine menu's `AUTO RECEIVE: ON / OFF` (beside FOLLOW PLAYED TRACK). Not a host parameter: it is a setup of
   the editor, not of the sound, and an automatable switch for it would make no sense.
@@ -80,11 +83,18 @@ SYSEX RECV on the emulated panel by hand and sends from the DAW gets what they g
   (`externalMidi` takes it before `consumeMidiIn`), so the switch does nothing there and the menu says so.
 - The Machinedrum Editor never sets the capture: its firmware takes the dump raw.
 
-### Default: off (a decision for Radek)
+### Default: on (Radek, 2026-11-05)
 
-The user asked for off by default "so normal behaviour stays authentic". "Same as the MD" would argue on by default:
-from the user's view the MD Editor takes a host dump with no switch. Built off; flipping it is one constant
-(`g_autoReceiveDefault` in deskSetup.h; a project that never set it then reads on). Radek decides.
+The user asked for off by default "so normal behaviour stays authentic". "Same as the MD" argues on: from the user's
+view the MD Editor takes a host dump with no switch. Built off first; Radek decided on (2026-11-05):
+`g_autoReceiveDefault` in deskSetup.h is `true`.
+
+**Projects saved before the switch existed** (every 0.8.x project, and a project without an editor setup at all) have
+no `autoReceive` member, so they read the default and come up **on**: the setup is read member by member over the
+default (`setupFromJson`), and a project with no setup gets the model's default setup (`setupToJson({})`, no member).
+A 0.9.0 test build's project saved with the switch off (the old default, not written then) also reads on; one that
+turned it on reads on. From now on off is written as `false`. Tests: mmDeskTest ("a project without it (as every
+0.8.x project ...): on", "a 0.8.x project with a solo and no autoReceive: on", "a project that turned it off: off").
 
 ### While the machine is busy
 
@@ -126,14 +136,16 @@ comes back to the main screen, not to the menu. The page itself does not change 
 
 ## Tests
 
-- deskCoreTest / setup: `autoReceive` off by default and not written; on kept; lenient read.
-- mmDeskTest: `autoReceiveSet` saves the setup and echoes `autoReceive`; a loaded project publishes it.
+- mmDeskTest: on by default and not written; `autoReceiveSet` off is kept as `false`, on writes nothing; a 0.8.x
+  project (no member) reads on; a project that turned it off reads off; lenient read (not a boolean: on); a loaded
+  project and a page made again are told.
 - mdHostDumpsTest (new, ROM-free): `isMmUserDump` (the four kinds, other SysEx, MD dumps, truncated); the inbox
   (order, capacity, a message that does not fit, empty pop).
 - syxImportTest (the SyxWork test doubles): `fromHost` runs one job with `readBack` off, no preview or progress to the
   page, one toast, the slots read again; dumps that arrive while a job runs wait and go together; an import asked
   meanwhile is refused.
-- Journey `mm-auto-receive` (machine tier, firmware E2E): kit 120's name is read; with AUTO RECEIVE off a kit dump
-  of the run's fixture placed at kit 120 sent as host MIDI changes nothing; on, the same dump lands (the library
-  shows its name); Undo puts the kit back; the switch is turned off again. Host MIDI in the standalone is injected
+- Journey `mm-auto-receive` (machine tier, firmware E2E): the engine menu reads AUTO RECEIVE: ON (the default) and
+  kit 120's name is read; a kit dump of the run's fixture placed at kit 120 sent as host MIDI lands (the library
+  shows its name); Undo puts the kit back; the switch is turned off explicitly and the same dump changes nothing; the
+  switch is turned on again. Host MIDI in the standalone is injected
   by the diagnostics build's page-log hook `hostsyx kit <slot>` (as `dropfiles`).

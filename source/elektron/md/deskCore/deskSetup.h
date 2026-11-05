@@ -17,9 +17,10 @@ namespace deskCore
 	// modulators, the CC numbers of the Control workspace's eight knob rows (a model with them) and the solo (the
 	// tracks soloed and the person's mutes, B-123). As the "<model>-desk/setup" document it is stored with the plug-in
 	// state (the "MDSK" chunk: the host keeps the text, it never looks inside) and restored with the project.
-	// I-070: AUTO RECEIVE's default (off: the Monomachine drops a dump outside SYSEX RECV, as the hardware does). A project
-	// that never set it reads this; the member is written only when it differs.
-	constexpr bool g_autoReceiveDefault = false;
+	// I-070: AUTO RECEIVE's default (on, Radek 2026-11-05: a dump from the host lands on the Monomachine as on the
+	// Machinedrum). A project that never set it (every 0.8.x project) reads this; the member is written only when it
+	// differs, so turning it off is kept as "autoReceive": false.
+	constexpr bool g_autoReceiveDefault = true;
 
 	struct DeskSetup
 	{

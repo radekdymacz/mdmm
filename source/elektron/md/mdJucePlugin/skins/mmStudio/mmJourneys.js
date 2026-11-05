@@ -2250,9 +2250,10 @@ const MmJourneys = (() => {
 	};
 	/* I-070: AUTO RECEIVE (doc/release/0.9/mm-auto-receive.md). A kit dump of the run's .syx placed at K121 reaches the
 	   plug-in as the host's MIDI in sends it ("hostsyx kit 120" in the page's log, diagnostics builds: the processor's
-	   addMidiEvent, source Host). Off (the default): it goes to the firmware raw, which drops it outside SYSEX RECV, as the
-	   hardware does: nothing changes and the page hears nothing. On: the editor sends it the IMPORT SYSEX way (SYSEX RECV,
-	   no panel), the library shows the kit, one toast says so; Cmd+Z puts the kit back (one undo step). */
+	   addMidiEvent, source Host). On (the default since 2026-11-05): the editor sends it the IMPORT SYSEX way (SYSEX RECV,
+	   no panel), the library shows the kit, one toast says so; Cmd+Z puts the kit back (one undo step). Turned off: it
+	   goes to the firmware raw, which drops it outside SYSEX RECV, as the hardware does: nothing changes and the page hears
+	   nothing. The tidy turns it on again (the default). */
 	const autoRxNews = [];
 	Bridge.onMessage(m => { if (m.type === "hostDump") { autoRxNews.push(m); if (autoRxNews.length > 20) autoRxNews.shift(); } });
 	const autoRxLabel = () => $1('#engsel option[value="autoReceive"]')?.textContent;
@@ -2260,27 +2261,27 @@ const MmJourneys = (() => {
 		name: "mm-auto-receive", proves: ["MM-X28"],
 		needs: () => new URLSearchParams(location.search).get("syxfile") ? null : "no .syx for the run (GEARMULATOR_MDMM_SYX_FILE)",
 		steps: [
-			{ say: "the engine menu says AUTO RECEIVE: OFF; K121 is read", act: (u, c) => { c.news = autoRxNews.length; },
-				screen: () => ok(autoRxLabel() === "AUTO RECEIVE: OFF", autoRxLabel()), machine: c => { c.was = (kitName(120) || "").trim(); return ok(I().doc("kit", 120) != null, "K121 not read yet"); }, within: 60000 },
-			/* first the editor's own SYSEX RECV session is idle: parked (an edit of the journey before, for 3 s) the machine
-			   takes the raw dump, as on the hardware (seen in the first firmware E2E run) */
-			{ say: "off: with the machine on its main screen, a kit dump for K121 arrives from MIDI in: the machine drops it, the page hears nothing",
-				act: async (u, c) => { if (!await until(() => machine().recv?.state === "idle" && !machine().recv?.sending, 30000)) c.note = "SYSEX RECV " + machine().recv?.state;
-					Bridge.log("hostsyx kit 120"); await sleep(6000); },
-				screen: c => ok(autoRxNews.length === c.news && $1("#syxpop").hidden, autoRxNews.length - c.news + " hostDump messages"),
-				machine: c => ok((kitName(120) || "").trim() === c.was, `K121 "${kitName(120)}", was "${c.was}"`) },
-			{ say: "choose AUTO RECEIVE in the engine menu: it reads ON, the plug-in keeps it", act: u => u.pick("engsel", "autoReceive"),
-				screen: () => ok(autoRxLabel() === "AUTO RECEIVE: ON", autoRxLabel()), within: 4000 },
-			{ say: "on: the same dump from MIDI in lands through SYSEX RECV: K121 is the file's kit, one toast, no import panel",
+			{ say: "the engine menu says AUTO RECEIVE: ON (the default); K121 is read", act: (u, c) => { c.news = autoRxNews.length; },
+				screen: () => ok(autoRxLabel() === "AUTO RECEIVE: ON" && !$1('#engsel option[value="autoReceive"]').hidden, autoRxLabel()), machine: c => { c.was = (kitName(120) || "").trim(); return ok(I().doc("kit", 120) != null, "K121 not read yet"); }, within: 60000 },
+			{ say: "on: a kit dump for K121 arrives from MIDI in and lands through SYSEX RECV: K121 is the file's kit, one toast, no import panel",
 				act: () => Bridge.log("hostsyx kit 120"),
 				screen: c => { const m = autoRxNews.slice(c.news); return ok(m.length === 1 && m[0].ok && $1("#syxpop").hidden, m.map(x => x.text).join(" | ") || "no hostDump yet"); },
 				machine: c => { c.now = (kitName(120) || "").trim(); return ok(c.now !== c.was && c.now !== "", `K121 "${c.now}", was "${c.was}"`); }, within: 120000 },
 			{ ...undoKey, say: "press Cmd+Z: the dump from MIDI in is one undo step, K121 is back",
 				machine: c => ok((kitName(120) || "").trim() === c.was, `K121 "${kitName(120)}", want "${c.was}"`), within: 120000 },
-			{ say: "choose AUTO RECEIVE again: OFF", act: u => u.pick("engsel", "autoReceive"),
-				screen: () => ok(autoRxLabel() === "AUTO RECEIVE: OFF", autoRxLabel()), within: 4000 }
+			{ say: "choose AUTO RECEIVE in the engine menu: it reads OFF, the plug-in keeps it", act: u => u.pick("engsel", "autoReceive"),
+				screen: () => ok(autoRxLabel() === "AUTO RECEIVE: OFF", autoRxLabel()), within: 4000 },
+			/* first the editor's own SYSEX RECV session is idle (the undo above sent the kit through it): parked, the machine
+			   takes the raw dump, as on the hardware (seen in the first firmware E2E run) */
+			{ say: "off: with the machine on its main screen, the same dump arrives from MIDI in: the machine drops it, the page hears nothing",
+				act: async (u, c) => { if (!await until(() => machine().recv?.state === "idle" && !machine().recv?.sending, 30000)) c.note = "SYSEX RECV " + machine().recv?.state;
+					c.news = autoRxNews.length; Bridge.log("hostsyx kit 120"); await sleep(6000); },
+				screen: c => ok(autoRxNews.length === c.news && $1("#syxpop").hidden, autoRxNews.length - c.news + " hostDump messages"),
+				machine: c => ok((kitName(120) || "").trim() === c.was, `K121 "${kitName(120)}", was "${c.was}"`) },
+			{ say: "choose AUTO RECEIVE again: ON", act: u => u.pick("engsel", "autoReceive"),
+				screen: () => ok(autoRxLabel() === "AUTO RECEIVE: ON", autoRxLabel()), within: 4000 }
 		],
-		async tidy(u) { if (autoRxLabel() === "AUTO RECEIVE: ON") await u.pick("engsel", "autoReceive"); }
+		async tidy(u) { if (autoRxLabel() === "AUTO RECEIVE: OFF") await u.pick("engsel", "autoReceive"); }
 	};
 	const syxImportJ = {
 		name: "mm-lib-syx-import", alone: true, proves: ["MM-308", "MM-309", "MM-X13"],
