@@ -1,4 +1,5 @@
 #include "mdController.h"
+#include "mdHostDumps.h"
 
 #include "mdPluginProcessor.h"
 #include "mdLib/mdautomation.h"
@@ -789,13 +790,15 @@ namespace mdJucePlugin
 		const synthLib::MidiEventSource _source)
 	{
 		// I-070 (found by the mm-auto-receive journey's firmware E2E): the controller hears the MIDI that goes to the machine
-		// too, not only what the machine sends. A Monomachine dump from the host or a port that the machine dropped (not on
-		// SYSEX RECV) reached the desk as the machine's reply, and the page showed a kit the machine does not hold. The
-		// Machinedrum takes such a dump on any screen, so its desk keeps seeing it (what it shows is what the machine took).
-		if(m_model == md::MachineModel::Monomachine
-			&& (_source == synthLib::MidiEventSource::Host || _source == synthLib::MidiEventSource::Physical))
-			return false;
-		evDeviceSysex(_message);
+		// too, not only what the machine sends. A Monomachine user-data dump from the host or a port that the machine dropped
+		// (not on SYSEX RECV) reached the desk as the machine's reply, and the page showed a kit the machine does not hold.
+		// Such a dump is not the machine's: the desk does not hear it (the rest below, an external SET STATUS, still counts).
+		// The Machinedrum takes a dump on any screen, so its desk keeps hearing it (what it shows is what the machine took).
+		const bool foreignDump = m_model == md::MachineModel::Monomachine
+			&& (_source == synthLib::MidiEventSource::Host || _source == synthLib::MidiEventSource::Physical)
+			&& isMmUserDump(_message.data(), _message.size());
+		if(!foreignDump)
+			evDeviceSysex(_message);
 		const std::lock_guard synchronizationLock(m_synchronizationLock);
 		if(const auto status = md::automation::sysex::parseStatusResponse(
 			m_model, _message))
