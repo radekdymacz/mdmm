@@ -4218,7 +4218,10 @@ const MmJourneys = (() => {
 		],
 		async tidy(u, c) { if (dlgShown()) u.key("Escape"); if (!$1("#libpop").hidden) u.key("Escape"); await sleep(200); if (c.u1 != null) await undoUntil(u, () => (machine().history?.undoCount || 0) <= c.u1, 6); }
 	};
-	/* MM-271: the arrangement header counts the bars and beats the song has played (the EDIT SONG header's counter) */
+	/* MM-271: the arrangement header counts the bars and beats the song has played (the EDIT SONG header's counter).
+	   The song starts from row 1: a single STOP on the MM holds the song's position (a journey before, as
+	   mm-real-factory-songs, stops once), PLAY then goes on from there with the count it had; a second STOP rewinds
+	   (the manual). Panic (⌘.) is STOP STOP on the MM, so it puts the song back on row 1 before PLAY. */
 	const barBeat = n => String((n >> 4) + 1).padStart(3, "0") + ":" + String(((n & 15) >> 2) + 1).padStart(2, "0");
 	const songCounterJ = {
 		name: "mm-song-counter", proves: ["MM-271"],
@@ -4226,6 +4229,8 @@ const MmJourneys = (() => {
 			go("song"),
 			{ say: "stop, click SONG over the palette: song mode", act: async (u, c) => { if (S().playing) { u.click("#play"); await until(() => !S().playing, 3000); } c.m0 = machine().song?.songMode === true; u.click('[data-set="songpick"] button[data-v="song"]'); },
 				machine: () => ok(machine().song?.songMode === true, "songMode " + machine().song?.songMode), within: 8000 },
+			{ say: "press ⌘. (Panic: STOP STOP on the machine): the song goes back to row 1", act: u => { results.length = 0; blur(); u.key(".", { cmd: true }); },
+				machine: () => ok(!playing() && results.some(r => r.op === "panic" && r.ok), "panic " + JSON.stringify(results.filter(r => r.op === "panic"))), within: 15000 },
 			{ say: "press PLAY: the header reads Playing and the bars and beats played", act: async (u, c) => { results.length = 0; u.click("#play");
 				for (let i = 0; i < 5 && await until(() => results.some(r => r.op === "play" && r.ok === false), 1500); i++) { results.length = 0; await sleep(1500); u.click("#play"); } },
 				screen: () => { const n = tele.last?.songSteps, h = $1("#arrstate")?.textContent || ""; return ok(n != null && h === "Playing · " + barBeat(n), `header "${h}", steps ${n}`); },
