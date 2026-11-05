@@ -16,20 +16,20 @@ where it came from, the setup, what happens, what should happen, status.*
 - **From:** full CI run 41838310348 (`release/0.9.0`, b12f2d212), MD firmware E2E, `md-sampler-ram-rom` step 6 "the RAM take is still there": "RAM 1 {"empty":false,"length":11259}"; the Keep toast said "Sent to ROM-01: RAM1, 0.18 s at 11267 Hz". So step 3 saw a short take (0.18 s) hold still for 3 s after STOP, the copy sent that, and the bank showed the whole take (11259 samples, 1.00 s) only later. The same signature as B-204's RAM to ROM runs; its source fix (a RAM-entry change copied without waiting for the flash) did not hold this once.
 - **Status:** a flake, seen once on `release/0.9.0`; it passed in the full runs after it (41895129624, 41916302331, 41937709263, 41967458126). Not a 0.9.0 blocker. If it comes back, measure when the bank's RAM length changes against the take's end (the device's `scanSamples` log) before touching the journey.
 
-## B-207 · Both: the OS Cmd+C / Cmd+V journey passed its copy step before the key arrived (fixed in the journey)
+## B-207 · Both: the OS Cmd+C / Cmd+V journey passed its copy step before the key arrived (fixed in the journey, closed)
 
 - **From:** full CI run 41967458126 (`release/0.9.0`, 73d9e72b6), MD firmware E2E, `md-seq-os-copy-paste` step 6 "press Cmd+V on the keyboard: the trig lands there": "screen: not lit; machine: pattern 0,16; page: toast "Pasted into track 1, steps 3-3"". New; it passed in every full run before.
 - **Not a regression:** the commits since the last green MD run (I-070 auto-receive, 375c33736..73d9e72b6) touch the Machinedrum path nowhere (the controller's change is gated on the Monomachine, the host-dump capture is set by the MM session only); round 6 changed no key or clipboard code.
 - **Cause (read from page.log):** step 4 checks that "cmd+C" is among the keys the page has seen and that the clipboard holds one step. Both were already true from the journeys before (`Keys.seen()` keeps the last 24 keys; `md-seq-step-menu` had just copied one step by its menu), so the step passed after the 350 ms of `u.osKey` while the native side had not yet sent the key: the plug-in's "oskeys cmd+c" and "cmd+v" lines came after the page had logged step 5 (the empty step 3 selected). The late Cmd+C then copied the empty step 3, Cmd+V pasted it onto itself: the toast, no trig.
 - **Fix (journey only):** the Cmd+C step remembers the key history before it presses and waits for a new newest key "cmd+C" (and the toast on the MM, which already checked it), so step 5 never runs before the copy. The same change in `mm-seq-os-copy-paste`. The product is unchanged.
-- **Status:** fixed in the journey, awaiting the full MD and MM firmware E2E.
+- **Status:** closed. Full CI 42029982429 (`release/0.9.0`, 0ec527ad1, 2026-11-05) is green: MD firmware E2E 193 pass, 0 fail; MM 225 pass, 0 fail; every firmware ctest passes.
 
-## B-206 · Monomachine: the song counter journey started the song from row 2 (fixed in the journey)
+## B-206 · Monomachine: the song counter journey started the song from row 2 (fixed in the journey, closed)
 
 - **From:** full CI runs on `release/0.9.0` (MM-271, `mm-song-counter` step 4 "a bar later the counter reads bar 002": "header Playing · 028:04", run 41967458126). Focused runs proved the order: 41889264296 (`mm-real-factory-songs` then `mm-song-counter`) fails, 41889283075 (`mm-song-counter` alone) passes.
 - **Cause:** `mm-real-factory-songs` stops each song with one STOP. On the Monomachine one STOP holds the song's position; a second STOP rewinds (the manual). The counter journey then pressed PLAY, and the song went on from row 2 with the count it had.
 - **Fix (journey only, Radek 2026-11-05: no product change):** before PLAY the journey presses ⌘. (Panic), which is STOP STOP on the MM, and waits for its result, so the song starts on row 1. The expectation (bar 002 a bar later) is unchanged.
-- **Status:** fixed in the journey, awaiting the full MM firmware E2E.
+- **Status:** closed. Full CI 42029982429 (`release/0.9.0`, 0ec527ad1, 2026-11-05) is green: MD firmware E2E 193 pass, 0 fail; MM 225 pass, 0 fail; every firmware ctest passes. `mm-song-counter` passed after `mm-real-factory-songs`.
 
 ## B-205 · Ableton Live and Push 2: a Control page knob row cannot be mapped to a Rack macro (open, a design gap; deferred to 0.9.1 by Radek, 2026-11-04)
 
@@ -70,7 +70,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Focused runs 2 to 4 (c4a1f82ab: 41555397505, 41561303100, 41566801892):** `mdMachineMemoryFirmwareTest_md` and `_mm` passed in all three, every lock-hold check under 10 ms (ctest prints a passing test's holds only on failure). Branch CI 41545997728 green.
 - **Status:** merged to main (b4542a386). Its full CI run 41572548038 failed two journeys (B-193 step 3, B-202 step 3); neither is fed by the machine-memory look (the working kit image is the audio thread's one-block copy, the song read-back the desk's load queue), and the B-202 pattern was already in the green run before it: both are desk bugs that the slightly slower emulator met (branch `fix/0.9-round6`).
 
-## B-202 · Monomachine: the song row transpose journey saw no read-back of the song (fixed on branch fix/0.9-round6, awaiting CI)
+## B-202 · Monomachine: the song row transpose journey saw no read-back of the song (fixed in 0.9.0, closed)
 
 - **From:** full CI run 41305887640 (`release/0.0.0-ci-test`, ed56c4105), journey `mm-song-row-settings` step 3: "Transpose + twice on the row": the cell showed +1, the machine held 1, and the toast said "The machine did not read back the song that was sent. Showing what it holds." The branch changed no song code (B-189 arpeggiator bits, B-201 Linux web view, journey order). Not reported by a tester.
 - **Cause (read from the report and the code, 2026-11-01):** the song's read-back was never asked. The row added in step 2 is a song dump with its read-back (a read of song 1 through the load queue); step 3's first + sent the next dump while that read was still on its way. When that dump was on the wire the push asked for its read-back (`MmMachine::pumpPushes`, AskBack: `request` -> `LoadQueue::want`), and `want` drops a request for a document already in flight. The read in flight was asked before the dump: its reply held the song before the +, the push took it as an older reply and waited (`ReadBackAction::Wait`) for a read-back that was never sent, and after 8 s gave up with the toast; the machine held transpose 1 (the dump had landed). The desk's status lines show no read-back answered between 13:22:00 and 13:22:19 (`roundTripMs` unchanged). A product bug: a person who edits a song row twice quickly meets it too.
@@ -93,6 +93,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Eighth time, cause found (full CI run 41613472074, 3e192833c):** step 3 passed; step 5 (Part: Offset + and Length −) failed with the same toast. `readsHeld` at 10:37:08: "wave dump coming (2743 ms more) for 3843 ms, loads pumped 9262 ms ago"; at 10:37:20 "... for 16357 ms". **Cause:** the GLOBAL page's DigiPRO card reads the 64 waveform positions when it is first drawn (`waveList`, `mdSyxWaves.h`), one request after another (on the emulator 700 ms a factory position, which answers nothing). Each request sets `MmMachine::m_waveDumpUntilMs` (B-195: no request while a 7 KB dump may come, 2.8 s at cable speed), and `tick` skips `pumpLoads` meanwhile: the next request renewed it before it ran out, so the desk's own reads (a push's read-back) waited for the whole read of the 64, longer than the read-back's 8 s. The same in run 41593074249 (no `readsHeld` then: `readsQueued` 1 for 14 s) and in the green runs' "0 requests ... in 4250 ms".
 - **Fix (branch `fix/0.9-round6`):** `deskCore::Adapter::AsIs::reads` (MM: the desk's load queue is not idle); a waveform request (the card's read, `mdSyxWaves.h`, and the export's, `mdSyxSession.h`) waits while it is set, so the desk's reads go between two waveform requests. B-195's gate stays.
 - **Status:** fixed on the branch, awaiting the focused and full MM firmware E2E.
+- **Closed (2026-11-05):** the round 6 fixes are on `release/0.9.0`; `mm-song-row-settings` passed in the full runs since (41895129624, 41916302331, 41937709263, 41967458126) and in the green full CI 42029982429 (`release/0.9.0`, 0ec527ad1, 2026-11-05) is green: MD firmware E2E 193 pass, 0 fail; MM 225 pass, 0 fail; every firmware ctest passes.
 
 ## B-201 · Linux: Machinedrum Editor on Fedora KDE shows an empty window, no page (open)
 
@@ -166,7 +167,9 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Fix (journey, branch `fix/0.9-e2e-flakes`):** the HW document and the note go in one batch (`gm.recv` handles a batch in order, at once), so nothing comes between them.
 - **Status:** fixed on the branch, awaiting CI.
 
-## B-193 · Machinedrum: the knob steps journey lost a page edit (a late image; a value equal to the parameter's cache) (fixed on branch fix/0.9-round6, awaiting CI)
+## B-193 · Machinedrum: the knob steps journey lost a page edit (a late image; a value equal to the parameter's cache) (fixed in 0.9.0, closed)
+
+- **Closed (2026-11-05):** the round 6 fix is on `release/0.9.0`. Step 3 failed once more in full CI 41967458126 (73d9e72b6, "screen 61, expected 62"), after passing in 41895129624, 41916302331 and 41937709263; per Radek's rule it was treated as a flake and retried once: full CI 42029982429 (`release/0.9.0`, 0ec527ad1, 2026-11-05) is green: MD firmware E2E 193 pass, 0 fail; MM 225 pass, 0 fail; every firmware ctest passes. `md-sound-knob-steps` passed. If it fails again, reopen with the step 3 trace.
 
 - **Full CI run 41475648487 (2026-11-02), trace of step 5:** the kit's value 72, 76, 80 (the drag, as it should), then 61 at 947 ms, with `tx` false, `loading` 0 and the same toast all through. 61 is the value from before the two wheel edits of steps 3 and 4, so it is a memory image older than the edits, not a kit load (nothing loaded) and not a drag of the wrong length.
 - **Cause (real bug, read from the code):** the working kit follows the machine's memory (`deskCore::fromImage`). An image that did not show the pending edits waited in `region` and was taken once the expectation ran out (1 s after the latest edit, the machine "wins") or while knob turns held it (observed over the edit), however old it was. An image that came in before the latest edit was sent is older than the page's value and must never win.
