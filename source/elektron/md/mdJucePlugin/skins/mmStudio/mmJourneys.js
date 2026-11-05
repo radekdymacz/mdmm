@@ -2498,8 +2498,9 @@ const MmJourneys = (() => {
 				if (c.d == null) throw new Error("no free step to paste to");
 				if (S().stepSel) clearSel(); const p = rollCell(c.t, c.s); u.click(p.c, { cmd: true }, p.fx, p.fy); },
 				screen: c => ok(same(S().stepSel, { t: c.t, n: 1, from: c.s, to: c.s + 1 }), "selection " + JSON.stringify(S().stepSel)) },
-			{ say: "press Cmd+C on the keyboard (the operating system's way in)", act: async u => { blur(); await u.osKey("focus cmd+c"); },
-				screen: () => ok(Keys.seen().includes("cmd+C") && /Copied/.test($1("#toast")?.textContent || ""), "keys that reached the page: " + Keys.seen().join(" ") + "; toast " + $1("#toast")?.textContent), within: 4000 },
+			/* a new newest key, cmd+C: the last 24 keys may hold an older one (md-seq-os-copy-paste, CI 41967458126) */
+			{ say: "press Cmd+C on the keyboard (the operating system's way in)", act: async (u, c) => { c.k0 = Keys.seen().join(" "); blur(); await u.osKey("focus cmd+c"); },
+				screen: c => ok(Keys.seen().join(" ") !== c.k0 && Keys.seen().slice(-1)[0] === "cmd+C" && /Copied/.test($1("#toast")?.textContent || ""), "keys that reached the page: " + Keys.seen().join(" ") + "; toast " + $1("#toast")?.textContent), within: 4000 },
 			{ say: "Cmd-click an empty step of the same track", act: (u, c) => { const p = rollCell(c.t, c.d); u.click(p.c, { cmd: true }, p.fx, p.fy); }, screen: c => ok(same(S().stepSel, { t: c.t, n: 1, from: c.d, to: c.d + 1 }), "selection " + JSON.stringify(S().stepSel)) },
 			{ say: "press Cmd+V on the keyboard: the note lands there", act: u => u.osKey("cmd+v"), screen: c => ok(!!S().tracks[c.t].steps[c.d]?.n, "roll shows nothing there"),
 				machine: c => ok(trigsOf(c.t).includes(c.d), "pattern " + trigsOf(c.t).join(",")), within: 15000 },
