@@ -2105,7 +2105,7 @@ void modulators()
 
 	// I-070: AUTO RECEIVE is kept beside the modulators as FOLLOW PLAYED TRACK is, on by default (Radek, 2026-11-05: a dump
 	// from the host lands as on the Machinedrum); off is what is written
-	const autoRx = [&]() { const auto* m = last("autoReceive"); return m && m->find("on")->asBool(); };
+	const auto autoRx = [&]() { const auto* m = last("autoReceive"); return m && m->find("on")->asBool(); };
 	check(deskCore::g_autoReceiveDefault && d.autoReceive() && saved.find("autoReceive") == nullptr, "auto receive: on by default, not written");
 	page.clear();
 	msg(R"({"op":"autoReceiveSet","id":9,"on":false})");
