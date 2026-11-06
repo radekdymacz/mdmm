@@ -39,3 +39,4 @@ site/public/guide/*.pdf
 
 # CI packages downloaded for a hand test (gh run download); never committed
 /artifacts/
+__pycache__/
