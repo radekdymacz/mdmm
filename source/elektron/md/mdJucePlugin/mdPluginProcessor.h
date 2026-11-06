@@ -78,7 +78,6 @@ namespace mdJucePlugin
 		bool performanceDiagnosticsActive() const;
 		std::string performanceDiagnosticsStatus() const;
 		juce::File performanceDiagnosticsFolder() const;
-		juce::File performanceDiagnosticsFile() const { return m_performanceReportFile; }
 		void setRamRecordingMode(md::RamRecordingMode _mode);
 		md::RamRecordingMode getRamRecordingMode() const
 		{
@@ -130,7 +129,6 @@ namespace mdJucePlugin
 		// in is kept for the session (takeHostDump, message thread) instead of going to the firmware raw. Set once a step by
 		// the Monomachine session (on and the emulator engine); the Machinedrum's never sets it.
 		void setHostDumpCapture(const bool _on) { m_hostDumpCapture.store(_on, std::memory_order_relaxed); }
-		bool hostDumpCapture() const { return m_hostDumpCapture.load(std::memory_order_relaxed); }
 		bool takeHostDump(std::vector<uint8_t>& _out) { return m_hostDumps.pop(_out); }
 		// how many dumps went raw because the inbox was full or busy (the log says it)
 		uint32_t hostDumpsPassed() const { return m_hostDumpsPassed.load(std::memory_order_relaxed); }
@@ -186,7 +184,6 @@ namespace mdJucePlugin
 		// RESET MACHINE… > Start from factory memory: the file goes and the machine restarts from factory memory (a fresh machine's
 		// state, as on a new install). The page asked the user first. False with the reason in _note.
 		bool startFromFactoryMemory(std::string& _note) { return m_memory.startFromFactoryMemory(_note); }
-		juce::File machineMemoryFile() const { return m_memory.file(); }
 		MachineMemoryCost machineMemoryCost() const { return m_memory.cost(); }
 		// The saves this memory holds that the file lacks (the "MMEM" chunk of the standalone's state)
 		machineMemory::Mark machineMemoryMark() const { return m_memory.mark(); }

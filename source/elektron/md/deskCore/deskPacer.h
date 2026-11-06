@@ -38,15 +38,6 @@ namespace deskCore
 		}
 
 		bool idle(const double _nowMs) const { return m_queue.empty() && m_freeAtMs <= _nowMs; }
-		size_t queuedBytes() const
-		{
-			size_t n = 0;
-			for(const auto& m : m_queue)
-				n += m.size();
-			return n;
-		}
-		// When the wire is free again.
-		double freeAtMs() const { return m_freeAtMs; }
 
 	private:
 		std::deque<Bytes> m_queue;

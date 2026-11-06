@@ -41,7 +41,6 @@ namespace md::automation
 
 		Phase phase() const { return m_phase; }
 		bool ready() const { return m_phase == Phase::Ready; }
-		uint8_t currentSlot() const { return m_currentSlot; }
 
 	private:
 		const bool m_refreshSameSlot;

@@ -256,17 +256,8 @@ namespace deskCore
 		size_t held() const { return m_held.size(); }
 		// Messages waiting their turn (not the held ones).
 		size_t waiting() const { return m_queue.size(); }
-		size_t waitingBytes() const
-		{
-			size_t n = 0;
-			for(const auto& i : m_queue)
-				n += i.bytes.size() + i.cost;
-			return n;
-		}
 		// "Sending": something waits its turn, or the machine still reads or applies a dump.
 		bool sending(const double _nowMs) const { return !m_queue.empty() || _nowMs < m_settledAtMs; }
-		// When a bulk message may go next (the wire is free).
-		double bulkFreeAtMs() const { return m_bulkFreeAtMs; }
 		// How long a message sent now would wait: for what queues before it, and the dump on the wire.
 		double delayMs(const double _nowMs) const
 		{

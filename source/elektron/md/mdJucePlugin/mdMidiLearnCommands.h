@@ -116,7 +116,6 @@ namespace mdJucePlugin
 		bool enabled() const { return m_model.enabled; }
 		bool learning() const { return m_capture.target.t >= 0; }
 		const Model& model() const { return m_model; }
-		uint32_t tablesBuilt() const { return m_generation; }
 
 		// The model without the parameters that cannot be moved from the audio thread (the realtime host-automation
 		// path): a learned CC would otherwise run the non-realtime parameter path on the audio thread. _realtime(name, track)

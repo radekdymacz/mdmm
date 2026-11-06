@@ -487,8 +487,6 @@ namespace mdJucePlugin
 		// Dumps that arrive while any job runs wait and go together, in order, once it is over. The page hears no preview
 		// and no progress, only {"type":"hostDump", ok, text} when the job is over.
 		void fromHost(Bytes _dump) { m_fromHost.push_back(std::move(_dump)); }
-		size_t hostWaiting() const { return m_fromHost.size(); }
-		bool hostRunning() const { return m_host.running(); }
 
 		// One session step while the machine takes input.
 		void step(DeskT& _desk, const double _nowMs, const bool _wire, const ToPage& _toPage)

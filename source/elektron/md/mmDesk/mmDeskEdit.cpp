@@ -419,16 +419,6 @@ namespace mmDesk
 		// ---- pattern edits ----
 		int patLength(const MmPattern& _p) { return std::max<int>(2, std::min<int>(64, _p.length)); }
 
-		bool stepIn(const In& _in, const int _s, const int _from = 0, const int _to = 64)
-		{
-			if(_s < _from || _s >= _to)
-			{
-				_in.a.error("step " + std::to_string(_s + 1) + " is outside steps " + std::to_string(_from + 1) + "-" + std::to_string(_to));
-				return false;
-			}
-			return true;
-		}
-
 		std::optional<MmPattern> step(MmPattern _p, const In& _in)
 		{
 			std::string error;

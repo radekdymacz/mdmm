@@ -33,7 +33,6 @@ namespace md
 		bool empty() const { return m_bytes.empty(); }
 		size_t size() const { return m_bytes.size(); }
 		MachineModel model() const { return m_model; }
-		MidiSysexMessageKind firstKind() const { return m_messages.front().kind; }
 		bool contains(MidiSysexMessageKind _kind) const
 		{
 			return std::any_of(m_messages.begin(), m_messages.end(),
