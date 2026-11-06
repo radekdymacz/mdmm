@@ -2102,6 +2102,38 @@ void modulators()
 	msg(R"({"op":"followSet","id":7,"on":true})");
 	msg(R"({"op":"followSet","id":8,"on":false})");
 	check(saved.find("followPlayed") == nullptr, "followSet off: the setup says nothing");
+
+	// I-070: AUTO RECEIVE is kept beside the modulators as FOLLOW PLAYED TRACK is, on by default (Radek, 2026-11-05: a dump
+	// from the host lands as on the Machinedrum); off is what is written
+	const auto autoRx = [&]() { const auto* m = last("autoReceive"); return m && m->find("on")->asBool(); };
+	check(deskCore::g_autoReceiveDefault && d.autoReceive() && saved.find("autoReceive") == nullptr, "auto receive: on by default, not written");
+	page.clear();
+	msg(R"({"op":"autoReceiveSet","id":9,"on":false})");
+	check(last("result")->find("ok")->asBool() && !d.autoReceive() && saved.find("autoReceive") && !saved.find("autoReceive")->asBool()
+		&& saved.find("schema")->asString() == "mm-desk/modulators", "autoReceiveSet off: kept with the project as false, in the bare shape");
+	check(last("autoReceive") == nullptr, "autoReceiveSet: no echo (the page sets it from the result)");
+	const auto offProject = saved;
+	page.clear();
+	check(d.loadSetup(deskCore::modSetupToJson({}, mmDesk::g_mmModLimits)).empty() && d.autoReceive() && last("autoReceive") && autoRx(),
+		"a project without it (as every 0.8.x project, the bare shape): on, and the page is told");
+	page.clear();
+	check(d.loadSetup(*ed::json::parse(R"({"schema":"mm-desk/modulators","version":1,"sources":[],"links":[],"solo":{"tracks":[1],"mutes":[]}})")).empty()
+		&& d.autoReceive() && autoRx(), "a 0.8.x project with a solo and no autoReceive: on");
+	page.clear();
+	check(d.loadSetup(*ed::json::parse(R"({"schema":"mm-desk/modulators","version":1,"sources":[],"links":[],"autoReceive":true})")).empty()
+		&& d.autoReceive() && autoRx(), "a 0.9.0 test build's project that turned it on: on");
+	page.clear();
+	check(d.loadSetup(offProject).empty() && !d.autoReceive() && last("autoReceive") && !autoRx(), "a project that turned it off: off, and the page is told");
+	page.clear();
+	msg(R"({"op":"ready"})");
+	check(last("autoReceive") && !autoRx(), "a page made again gets it");
+	check(d.loadSetup(*ed::json::parse(R"({"schema":"mm-desk/setup","version":1,"autoReceive":false})")).empty() && !d.autoReceive(), "the wrapper has it too");
+	check(d.loadSetup(*ed::json::parse(R"({"schema":"mm-desk/modulators","version":1,"sources":[],"links":[],"autoReceive":"no"})")).size() == 1
+		&& d.autoReceive(), "a value that is not a boolean is the default (on), and said");
+	msg(R"({"op":"autoReceiveSet","id":10,"on":false})");
+	check(!d.autoReceive() && saved.find("autoReceive") && !saved.find("autoReceive")->asBool(), "autoReceiveSet off: written as false");
+	msg(R"({"op":"autoReceiveSet","id":11,"on":true})");
+	check(d.autoReceive() && saved.find("autoReceive") == nullptr, "autoReceiveSet on: the setup says nothing (the default)");
 }
 
 // P6: the questions, errors, the machine's own screen and a restart, as the page gets them.
@@ -2949,7 +2981,7 @@ void checkContract(const bool _write)
 	// The plug-in's host sends these; this test has no host.
 	const auto r = contract::checkMessages(*root, g_published, {"learn", "audio", "audioLevel", "openAudio",
 		"romInstall", "romInfo", "notice", "syxPreview", "syxProgress", "syxExport", "syxExportInfo", "syxReset", "host", "audioRun", "cpuLoad", "outputLevel", "machineMemory", "midiIn", "midiHeld", "midiStats", "mixLevels", "editorMenu",
-		"zoom", "drop", "dragFiles", "waveList", "waveFile"});
+		"zoom", "drop", "dragFiles", "waveList", "waveFile", "hostDump"});
 	for(const auto& p : r.off)
 		std::printf("    %s\n", p.c_str());
 	for(const auto& u : r.unseen)

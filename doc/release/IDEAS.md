@@ -3,6 +3,12 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-070 · Monomachine: take a dump from the DAW without SYSEX RECV (AUTO RECEIVE)
+
+- **From:** a user by email, 2026-11-04 (Ableton Live 12, both editors as VST3, a Max for Live device that makes songs, patterns and kits as SysEx and sends them from a MIDI track). The Machinedrum Editor takes such a dump in one go; the Monomachine Editor ignores it unless the machine is on GLOBAL > FILE > SYSEX RECV, so today it is: save a .syx, IMPORT SYSEX, confirm. Asked for an option, off by default.
+- **Why:** the firmware alone. Both editors pass the host's SysEx to the emulated machine the same way, raw; MD OS 1.63 takes a dump on any screen, MM OS 1.32B only on SYSEX RECV (as the hardware).
+- **Status:** built for **0.9.0** (branch `feat/0.9.0-mm-auto-receive`; spec [0.9/mm-auto-receive.md](0.9/mm-auto-receive.md)). Engine menu: **AUTO RECEIVE** (**on by default**, Radek 2026-11-05, as the Machinedrum Editor behaves; kept with the project, a 0.8.x project reads on). On, a kit, pattern, song or global dump from MIDI in goes the IMPORT SYSEX way: the editor opens SYSEX RECV, sends, goes back to the main screen; one undo step, the library updates, one toast. The emulator only (HW MIDI: open SYSEX RECV on the machine). Proof: `mmAutoReceiveFirmwareTest`, journey `mm-auto-receive` (firmware E2E).
+
 ## I-069 · Name the note when the pointer is on a key, on the keyboards
 
 - **From:** a tester on Discord, 2026-10-21: all the keyboards (Pattern, Perform and Multi Map) should show the note name on hover, as a DAW's keyboards do.

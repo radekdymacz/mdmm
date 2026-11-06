@@ -490,9 +490,12 @@ const MdJourneys = (() => {
 		name: "md-seq-os-copy-paste", proves: ["MD-114", "MD-X10"], needs: Journey.osKeyPath,
 		steps: [
 			go("seq"), sel(copyTrack), pickCopyStep,
-			{ say: "press Cmd+C on the keyboard (the operating system's way in)", act: async u => { document.activeElement?.blur?.(); await u.osKey("focus cmd+c"); },
+			/* this Cmd+C must have arrived before the next step selects the empty step: Keys.seen() is the last 24 keys and the
+			   clipboard may hold one step from a journey before, so the check waits for a new newest key, cmd+C (CI 41967458126:
+			   the OS key came after the empty step was selected, an empty step was copied and pasted, nothing landed) */
+			{ say: "press Cmd+C on the keyboard (the operating system's way in)", act: async (u, c) => { c.k0 = Keys.seen().join(" "); document.activeElement?.blur?.(); await u.osKey("focus cmd+c"); },
 				/* with the start tests' key probe on (GEARMULATOR_MDMM_KEYPROBE=1) its line says so too */
-				screen: () => ok(Keys.seen().includes("cmd+C") && (!$1("#keyprobe") || $1("#keyprobe").textContent.includes(" cmd+C")),
+				screen: c => ok(Keys.seen().join(" ") !== c.k0 && Keys.seen().slice(-1)[0] === "cmd+C" && (!$1("#keyprobe") || $1("#keyprobe").textContent.includes(" cmd+C")),
 					"keys that reached the page: " + Keys.seen().join(" ") + ($1("#keyprobe") ? "; probe: " + $1("#keyprobe").textContent : "")), machine: oneStepCopied },
 			pickPasteStep,
 			{ say: "press Cmd+V on the keyboard: the trig lands there", act: u => u.osKey("cmd+v"), screen: c => ok(pressed(cell(c.t, c.d)), "not lit"), machine: c => ok(trigsOf(c.t).includes(c.d), "pattern " + trigsOf(c.t).join(",")) },

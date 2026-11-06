@@ -207,6 +207,29 @@ namespace mdJucePlugin
 		}
 
 		const char* missingText() const override { return "No MM OS 1.32B ROM is running yet. After adding it, reopen the plug-in."; }
+
+		// I-070 (AUTO RECEIVE): the processor captures the host's Monomachine dumps while the switch is on and the engine is
+		// the emulator (HW MIDI: the host's MIDI in is the real machine's own MIDI out); what it captured goes to the SysEx
+		// work, which sends it the way IMPORT SYSEX does (SYSEX RECV).
+		void stepModel() override
+		{
+			auto& p = processor();
+			p.setHostDumpCapture(desk().autoReceive() && !record().profile.wire);
+			std::vector<uint8_t> dump;
+			while(p.takeHostDump(dump))
+			{
+				log("auto receive: a dump from MIDI in, " + std::to_string(dump.size()) + " bytes, id " + std::to_string(dump.size() > 6 ? dump[6] : 0));
+				syx().fromHost(std::move(dump));
+				dump = {};
+			}
+			if(const auto passed = p.hostDumpsPassed(); passed != m_hostPassedSeen)
+			{
+				log("auto receive: " + std::to_string(passed - m_hostPassedSeen) + " dump(s) went to the machine raw (the inbox was full or busy)");
+				m_hostPassedSeen = passed;
+			}
+		}
+
+		uint32_t m_hostPassedSeen = 0;
 	};
 
 	std::unique_ptr<DeskSession> makeMmSession(AudioPluginAudioProcessor& _processor)

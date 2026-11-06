@@ -372,12 +372,17 @@ namespace mdJucePlugin
 			// 0.9 wave 2: the DigiPRO manager's commands (mdSyxWaves.h), not while an import or export runs
 			if constexpr(Traits::waves)
 			{
-				if(m_manager.handle(_desk.machine(), _message, _reply, _toPage, m_job.running() || m_waves.running() ? "An import or export is running." : ""))
+				if(m_manager.handle(_desk.machine(), _message, _reply, _toPage, m_job.running() || m_host.running() || m_waves.running() ? "An import or export is running." : ""))
 					return true;
 			}
 			else if(op.rfind("wave", 0) == 0)
 			{
 				_reply(_message, false, std::string("The ") + Traits::name + " has no DigiPRO waveforms.");
+				return true;
+			}
+			if(op == "syxImport" && m_host.running())
+			{
+				_reply(_message, false, g_hostBusy);
 				return true;
 			}
 			if(op == "syxImport")
@@ -389,7 +394,7 @@ namespace mdJucePlugin
 				const auto why = m_job.start(strings(_message, "kinds"), skipOf(_message), Traits::machine(_desk), c && c->isBool() && c->asBool(),
 					!(r && r->isBool() && !r->asBool()));
 				if(why.empty())
-					begin(_desk);
+					begin(_desk, m_job);
 				_reply(_message, why.empty(), why);
 				_toPage(m_job.progress());
 				return true;
@@ -438,8 +443,8 @@ namespace mdJucePlugin
 		std::string reset(DeskT& _desk, const std::vector<Bytes>& _messages, const std::string& _label, const std::string& _word,
 			const ToPage& _toPage)
 		{
-			if(m_job.running() || m_waves.running() || m_manager.working())
-				return "An import, an export or the DigiPRO manager is running.";
+			if(m_job.running() || m_host.running() || m_waves.running() || m_manager.working())
+				return m_host.running() ? g_hostBusy : "An import, an export or the DigiPRO manager is running.";
 			Bytes file;
 			for(const auto& m : _messages)
 				file.insert(file.end(), m.begin(), m.end());
@@ -450,7 +455,7 @@ namespace mdJucePlugin
 			const auto why = m_job.start({"kit", "pattern", "song"}, {}, Traits::machine(_desk));
 			if(!why.empty())
 				return why;
-			begin(_desk);
+			begin(_desk, m_job);
 			preview.set("reset", _label);
 			preview.set("running", true);
 			_toPage(preview);
@@ -462,7 +467,7 @@ namespace mdJucePlugin
 		// False when one runs already.
 		bool exportStart(const DeskT& _desk, const ExportRequest& _r, std::function<void(const Bytes&, const std::string&)> _done)
 		{
-			if(m_waves.running() || m_job.running() || m_manager.working())
+			if(m_waves.running() || m_job.running() || m_host.running() || m_manager.working())
 				return false;
 			m_export = exportBytes(_desk, _r);
 			m_exportWords = _r;
@@ -471,9 +476,19 @@ namespace mdJucePlugin
 			return true;
 		}
 
-		bool running() const { return m_job.running() || m_waves.running() || m_manager.running(); }
-		// Work for the session's step: what runs, or the slots an import wrote that the desk is still to read again.
-		bool due() const { return running() || !m_reread.empty() || m_undoOpen; }
+		bool running() const { return m_job.running() || m_host.running() || m_waves.running() || m_manager.running(); }
+		// Work for the session's step: what runs, the slots an import wrote that the desk is still to read again, or dumps
+		// from the host that wait (I-070).
+		bool due() const { return running() || !m_reread.empty() || m_undoOpen || !m_fromHost.empty(); }
+
+		// I-070 (AUTO RECEIVE): a user-data dump from the host's MIDI in. It goes as IMPORT SYSEX sends (sendAsIs: the
+		// Monomachine's SYSEX RECV) without the preview and without the read-back, one undo step (B-130), the slots read
+		// again after (B-174): a job of its own (m_host), so a file the person has open in the import panel stays theirs.
+		// Dumps that arrive while any job runs wait and go together, in order, once it is over. The page hears no preview
+		// and no progress, only {"type":"hostDump", ok, text} when the job is over.
+		void fromHost(Bytes _dump) { m_fromHost.push_back(std::move(_dump)); }
+		size_t hostWaiting() const { return m_fromHost.size(); }
+		bool hostRunning() const { return m_host.running(); }
 
 		// One session step while the machine takes input.
 		void step(DeskT& _desk, const double _nowMs, const bool _wire, const ToPage& _toPage)
@@ -483,27 +498,35 @@ namespace mdJucePlugin
 			// the DigiPRO manager's reads wait while an import or an export uses the machine (they are asked again after)
 			if constexpr(Traits::waves)
 			{
-				if(m_job.running() || m_waves.running())
+				if(m_job.running() || m_host.running() || m_waves.running())
 					m_manager.pause();
 				else
 					m_manager.step(_desk.machine(), _nowMs, _wire, _toPage);
 			}
-			if(m_job.running())
+			for(auto* job : {&m_job, &m_host})
 			{
-				if(auto p = m_job.step(_desk.machine(), _nowMs, _wire))
+				if(!job->running())
+					continue;
+				const bool host = job == &m_host;
+				if(auto p = job->step(_desk.machine(), _nowMs, _wire); p && !host)
 					_toPage(*p);
 				// B-174: an import that did not read back what it sent (the read-back off, a slot given up) left the
 				// desk with what those slots held before (a previous import's kit names in the library): the desk reads
 				// them again once the cable has carried the dumps.
-				if(!m_job.running())
+				if(!job->running())
 				{
-					const auto unread = m_job.unread();
+					const auto unread = job->unread();
 					m_reread.insert(m_reread.end(), unread.begin(), unread.end());
-					m_rereadAtMs = std::max(_nowMs, m_job.quietAtMs());
+					m_rereadAtMs = std::max(_nowMs, job->quietAtMs());
+					if(host)
+						_toPage(hostDone());
 				}
 			}
 			end(_desk);
-			if(!m_reread.empty() && _nowMs >= m_rereadAtMs && !m_job.running())
+			// I-070: the dumps from the host, once nothing else uses the machine's SysEx
+			if(!m_fromHost.empty() && !m_job.running() && !m_host.running() && !m_waves.running() && !m_manager.working() && !m_undoOpen)
+				startHost(_desk, _toPage);
+			if(!m_reread.empty() && _nowMs >= m_rereadAtMs && !m_job.running() && !m_host.running())
 			{
 				for(const auto& i : m_reread)
 					Traits::reread(_desk, i.kind, i.slot);
@@ -539,6 +562,7 @@ namespace mdJucePlugin
 		void onMachineSysex(const Bytes& _message)
 		{
 			m_job.onMachineSysex(_message);
+			m_host.onMachineSysex(_message);
 			m_waves.onMachineSysex(_message);
 			m_manager.onMachineSysex(_message);
 		}
@@ -551,17 +575,18 @@ namespace mdJucePlugin
 		// B-130: an import or a reset starts (it was accepted, nothing has gone yet). The documents it will write are
 		// copied from the desk (only those slots, and the kit that plays: its live edits), the first of the step so
 		// that undo puts it back last; and the adapter is told an import is at work (B-045).
-		void begin(DeskT& _desk)
+		void begin(DeskT& _desk, Job& _job)
 		{
+			m_active = &_job;
 			m_undoOpen = false;
 			m_undo.clear();
-			if(m_job.checkOnly())
+			if(_job.checkOnly())
 				return;	// VERIFY ONLY sends nothing: nothing to put back, nothing stale
 			_desk.machine().importing(true);
 			m_refs = {Traits::workingRef()};
 			m_wait.clear();
 			m_waitUntilMs = -1;
-			for(const auto& i : m_job.written())
+			for(const auto& i : _job.written())
 				if(const auto r = Traits::ref(i.kind, i.slot))
 				{
 					m_refs.push_back(*r);
@@ -593,7 +618,7 @@ namespace mdJucePlugin
 				return false;
 			m_undo = _desk.core().snapshot(m_refs);
 			if(!m_wait.empty())
-				m_job.setNote(std::to_string(m_wait.size()) + (m_wait.size() == 1 ? " slot cannot" : " slots cannot")
+				m_active->setNote(std::to_string(m_wait.size()) + (m_wait.size() == 1 ? " slot cannot" : " slots cannot")
 					+ " be undone: the editor could not read " + (m_wait.size() == 1 ? "it" : "them") + " first.");
 			m_wait.clear();
 			return true;
@@ -603,11 +628,11 @@ namespace mdJucePlugin
 		// wrote (not those it never sent), and the kit that plays when any was. Nothing sent: no step.
 		void end(DeskT& _desk)
 		{
-			if(!m_undoOpen || m_job.running())
+			if(!m_undoOpen || m_active->running())
 				return;
 			m_undoOpen = false;
 			std::set<typename Traits::Ref> sent;
-			for(const auto& i : m_job.written(true))
+			for(const auto& i : m_active->written(true))
 				if(const auto r = Traits::ref(i.kind, i.slot))
 					sent.insert(*r);
 			if(sent.empty())
@@ -625,6 +650,76 @@ namespace mdJucePlugin
 			m_undo.clear();
 			_desk.core().recordBulk(keep);
 		}
+
+		// I-070: the dumps that waited, as one job: every dump of this machine sent as it is, nothing read back
+		void startHost(DeskT& _desk, const ToPage& _toPage)
+		{
+			Bytes file;
+			for(const auto& d : m_fromHost)
+				file.insert(file.end(), d.begin(), d.end());
+			m_fromHost.clear();
+			m_host.setWord("received");
+			const auto preview = m_host.open(file, "MIDI in", Traits::machine(_desk), Traits::playing(_desk));
+			std::string why = preview.find("ok")->asBool() ? std::string() : preview.find("text")->asString();
+			if(why.empty())
+			{
+				m_hostWords = itemWords(preview);
+				why = m_host.start({"kit", "pattern", "song", "global"}, {}, Traits::machine(_desk), false, false);
+			}
+			if(!why.empty())
+			{
+				_toPage(hostMessage(false, std::string("MIDI in: nothing was sent to the ") + Traits::name + ". " + why));
+				return;
+			}
+			begin(_desk, m_host);
+		}
+
+		// I-070: the job from the host is over: what went, in words
+		Value hostDone() const
+		{
+			const auto p = m_host.progress();
+			const auto* report = p.find("report");
+			const auto count = [&](const char* _k) { const auto* v = report ? report->find(_k) : nullptr; return v && v->isNumber() ? static_cast<int>(v->asNumber()) : 0; };
+			const int sent = count("sent"), partly = count("partly"), notSent = count("notSent");
+			if(!sent && !partly)
+			{
+				const auto* t = p.find("text");
+				return hostMessage(false, std::string("MIDI in: the ") + Traits::name + " did not take " + m_hostWords + ". "
+					+ (t && t->isString() ? t->asString() : std::string()));
+			}
+			std::string text = std::string("MIDI in: ") + m_hostWords + " sent to the " + Traits::name + " (SYSEX RECV).";
+			if(partly || notSent)
+				text += " " + std::to_string(partly + notSent) + " not sent in full.";
+			return hostMessage(!partly && !notSent, text);
+		}
+
+		static Value hostMessage(const bool _ok, const std::string& _text)
+		{
+			Value m = Value::object();
+			m.set("type", "hostDump");
+			m.set("ok", _ok);
+			m.set("text", _text);
+			return m;
+		}
+
+		// "1 kit, 2 patterns" from a preview's items
+		static std::string itemWords(const Value& _preview)
+		{
+			std::string t;
+			const auto* items = _preview.find("items");
+			struct Kind { const char* key; const char* many; };
+			static constexpr Kind kinds[] = {{"kit", "kits"}, {"pattern", "patterns"}, {"song", "songs"}, {"global", "globals"}};
+			for(const auto& k : kinds)
+			{
+				const auto* list = items ? items->find(k.key) : nullptr;
+				const size_t n = list && list->isArray() ? list->asArray().size() : 0;
+				if(n)
+					t += (t.empty() ? "" : ", ") + std::to_string(n) + " " + (n == 1 ? k.key : k.many);
+			}
+			return t.empty() ? std::string("nothing") : t;
+		}
+
+		static constexpr const char* g_hostBusy = "Taking a dump from MIDI in; try again in a moment.";
 
 		static std::optional<elektronData::SyxKind> kindOf(const std::string& _id)
 		{
@@ -659,6 +754,10 @@ namespace mdJucePlugin
 		}
 
 		Job m_job;
+		Job m_host;		// I-070: the dumps from the host's MIDI in (AUTO RECEIVE)
+		Job* m_active = &m_job;	// B-130: the job whose undo step is open
+		std::vector<Bytes> m_fromHost;	// I-070: the dumps that wait for m_host
+		std::string m_hostWords;	// I-070: what the host job holds, in words ("1 kit, 2 patterns")
 		Snapshot m_undo;
 		std::vector<typename Traits::Ref> m_refs;
 		std::vector<elektronData::SyxItem> m_wait;	// B-130: slots read before the job goes

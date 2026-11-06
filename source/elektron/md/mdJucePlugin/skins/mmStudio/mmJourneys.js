@@ -2248,6 +2248,41 @@ const MmJourneys = (() => {
 		],
 		async tidy(u) { if (!$1("#syxpop").hidden) u.key("Escape"); }
 	};
+	/* I-070: AUTO RECEIVE (doc/release/0.9/mm-auto-receive.md). A kit dump of the run's .syx placed at K121 reaches the
+	   plug-in as the host's MIDI in sends it ("hostsyx kit 120" in the page's log, diagnostics builds: the processor's
+	   addMidiEvent, source Host). On (the default since 2026-11-05): the editor sends it the IMPORT SYSEX way (SYSEX RECV,
+	   no panel), the library shows the kit, one toast says so; Cmd+Z puts the kit back (one undo step). Turned off: it
+	   goes to the firmware raw, which drops it outside SYSEX RECV, as the hardware does: nothing changes and the page hears
+	   nothing. The tidy turns it on again (the default). */
+	const autoRxNews = [];
+	Bridge.onMessage(m => { if (m.type === "hostDump") { autoRxNews.push(m); if (autoRxNews.length > 20) autoRxNews.shift(); } });
+	const autoRxLabel = () => $1('#engsel option[value="autoReceive"]')?.textContent;
+	const autoReceiveJ = {
+		name: "mm-auto-receive", proves: ["MM-X28"],
+		needs: () => new URLSearchParams(location.search).get("syxfile") ? null : "no .syx for the run (GEARMULATOR_MDMM_SYX_FILE)",
+		steps: [
+			{ say: "the engine menu says AUTO RECEIVE: ON (the default); K121 is read", act: (u, c) => { c.news = autoRxNews.length; },
+				screen: () => ok(autoRxLabel() === "AUTO RECEIVE: ON" && !$1('#engsel option[value="autoReceive"]').hidden, autoRxLabel()), machine: c => { c.was = (kitName(120) || "").trim(); return ok(I().doc("kit", 120) != null, "K121 not read yet"); }, within: 60000 },
+			{ say: "on: a kit dump for K121 arrives from MIDI in and lands through SYSEX RECV: K121 is the file's kit, one toast, no import panel",
+				act: () => Bridge.log("hostsyx kit 120"),
+				screen: c => { const m = autoRxNews.slice(c.news); return ok(m.length === 1 && m[0].ok && $1("#syxpop").hidden, m.map(x => x.text).join(" | ") || "no hostDump yet"); },
+				machine: c => { c.now = (kitName(120) || "").trim(); return ok(c.now !== c.was && c.now !== "", `K121 "${c.now}", was "${c.was}"`); }, within: 120000 },
+			{ ...undoKey, say: "press Cmd+Z: the dump from MIDI in is one undo step, K121 is back",
+				machine: c => ok((kitName(120) || "").trim() === c.was, `K121 "${kitName(120)}", want "${c.was}"`), within: 120000 },
+			{ say: "choose AUTO RECEIVE in the engine menu: it reads OFF, the plug-in keeps it", act: u => u.pick("engsel", "autoReceive"),
+				screen: () => ok(autoRxLabel() === "AUTO RECEIVE: OFF", autoRxLabel()), within: 4000 },
+			/* first the editor's own SYSEX RECV session is idle (the undo above sent the kit through it): parked, the machine
+			   takes the raw dump, as on the hardware (seen in the first firmware E2E run) */
+			{ say: "off: with the machine on its main screen, the same dump arrives from MIDI in: the machine drops it, the page hears nothing",
+				act: async (u, c) => { if (!await until(() => machine().recv?.state === "idle" && !machine().recv?.sending, 30000)) c.note = "SYSEX RECV " + machine().recv?.state;
+					c.news = autoRxNews.length; Bridge.log("hostsyx kit 120"); await sleep(6000); },
+				screen: c => ok(autoRxNews.length === c.news && $1("#syxpop").hidden, autoRxNews.length - c.news + " hostDump messages"),
+				machine: c => ok((kitName(120) || "").trim() === c.was, `K121 "${kitName(120)}", was "${c.was}"`) },
+			{ say: "choose AUTO RECEIVE again: ON", act: u => u.pick("engsel", "autoReceive"),
+				screen: () => ok(autoRxLabel() === "AUTO RECEIVE: ON", autoRxLabel()), within: 4000 }
+		],
+		async tidy(u) { if (autoRxLabel() === "AUTO RECEIVE: OFF") await u.pick("engsel", "autoReceive"); }
+	};
 	const syxImportJ = {
 		name: "mm-lib-syx-import", alone: true, proves: ["MM-308", "MM-309", "MM-X13"],
 		needs: () => new URLSearchParams(location.search).get("syxfile") ? null : "no .syx for the run (GEARMULATOR_MDMM_SYX_FILE)",
@@ -2463,8 +2498,9 @@ const MmJourneys = (() => {
 				if (c.d == null) throw new Error("no free step to paste to");
 				if (S().stepSel) clearSel(); const p = rollCell(c.t, c.s); u.click(p.c, { cmd: true }, p.fx, p.fy); },
 				screen: c => ok(same(S().stepSel, { t: c.t, n: 1, from: c.s, to: c.s + 1 }), "selection " + JSON.stringify(S().stepSel)) },
-			{ say: "press Cmd+C on the keyboard (the operating system's way in)", act: async u => { blur(); await u.osKey("focus cmd+c"); },
-				screen: () => ok(Keys.seen().includes("cmd+C") && /Copied/.test($1("#toast")?.textContent || ""), "keys that reached the page: " + Keys.seen().join(" ") + "; toast " + $1("#toast")?.textContent), within: 4000 },
+			/* a new newest key, cmd+C: the last 24 keys may hold an older one (md-seq-os-copy-paste, CI 41967458126) */
+			{ say: "press Cmd+C on the keyboard (the operating system's way in)", act: async (u, c) => { c.k0 = Keys.seen().join(" "); blur(); await u.osKey("focus cmd+c"); },
+				screen: c => ok(Keys.seen().join(" ") !== c.k0 && Keys.seen().slice(-1)[0] === "cmd+C" && /Copied/.test($1("#toast")?.textContent || ""), "keys that reached the page: " + Keys.seen().join(" ") + "; toast " + $1("#toast")?.textContent), within: 4000 },
 			{ say: "Cmd-click an empty step of the same track", act: (u, c) => { const p = rollCell(c.t, c.d); u.click(p.c, { cmd: true }, p.fx, p.fy); }, screen: c => ok(same(S().stepSel, { t: c.t, n: 1, from: c.d, to: c.d + 1 }), "selection " + JSON.stringify(S().stepSel)) },
 			{ say: "press Cmd+V on the keyboard: the note lands there", act: u => u.osKey("cmd+v"), screen: c => ok(!!S().tracks[c.t].steps[c.d]?.n, "roll shows nothing there"),
 				machine: c => ok(trigsOf(c.t).includes(c.d), "pattern " + trigsOf(c.t).join(",")), within: 15000 },
@@ -4183,7 +4219,10 @@ const MmJourneys = (() => {
 		],
 		async tidy(u, c) { if (dlgShown()) u.key("Escape"); if (!$1("#libpop").hidden) u.key("Escape"); await sleep(200); if (c.u1 != null) await undoUntil(u, () => (machine().history?.undoCount || 0) <= c.u1, 6); }
 	};
-	/* MM-271: the arrangement header counts the bars and beats the song has played (the EDIT SONG header's counter) */
+	/* MM-271: the arrangement header counts the bars and beats the song has played (the EDIT SONG header's counter).
+	   The song starts from row 1: a single STOP on the MM holds the song's position (a journey before, as
+	   mm-real-factory-songs, stops once), PLAY then goes on from there with the count it had; a second STOP rewinds
+	   (the manual). Panic (⌘.) is STOP STOP on the MM, so it puts the song back on row 1 before PLAY. */
 	const barBeat = n => String((n >> 4) + 1).padStart(3, "0") + ":" + String(((n & 15) >> 2) + 1).padStart(2, "0");
 	const songCounterJ = {
 		name: "mm-song-counter", proves: ["MM-271"],
@@ -4191,6 +4230,8 @@ const MmJourneys = (() => {
 			go("song"),
 			{ say: "stop, click SONG over the palette: song mode", act: async (u, c) => { if (S().playing) { u.click("#play"); await until(() => !S().playing, 3000); } c.m0 = machine().song?.songMode === true; u.click('[data-set="songpick"] button[data-v="song"]'); },
 				machine: () => ok(machine().song?.songMode === true, "songMode " + machine().song?.songMode), within: 8000 },
+			{ say: "press ⌘. (Panic: STOP STOP on the machine): the song goes back to row 1", act: u => { results.length = 0; blur(); u.key(".", { cmd: true }); },
+				machine: () => ok(!playing() && results.some(r => r.op === "panic" && r.ok), "panic " + JSON.stringify(results.filter(r => r.op === "panic"))), within: 15000 },
 			{ say: "press PLAY: the header reads Playing and the bars and beats played", act: async (u, c) => { results.length = 0; u.click("#play");
 				for (let i = 0; i < 5 && await until(() => results.some(r => r.op === "play" && r.ok === false), 1500); i++) { results.length = 0; await sleep(1500); u.click("#play"); } },
 				screen: () => { const n = tele.last?.songSteps, h = $1("#arrstate")?.textContent || ""; return ok(n != null && h === "Playing · " + barBeat(n), `header "${h}", steps ${n}`); },
@@ -4629,7 +4670,7 @@ const MmJourneys = (() => {
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, laneDrawSlide, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
 		valueKeys, soundCopy, screenDrag, filterEnv, lfoLocksJ, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
-		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportUndoJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, digiproCardJ, digiproJobsJ, digiproMk1J, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach, ...Object.values(learnJ)];
+		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportUndoJ, syxImportMute, autoReceiveJ, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, digiproCardJ, digiproJobsJ, digiproMk1J, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach, ...Object.values(learnJ)];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
 	   its guard, "left:", names what stays). What back cannot put back, the journey keeps first (keep, keepMany) or is alone: true (doc/modern-ux/JOURNEYS.md, "Independent journeys") */
 	for (const j of all) { const own = j.tidy; j.tidy = async (u, c) => { try { if (own) await own(u, c); } finally { if (c.back0?.state && Journey.stateDiff(c.back0.state, state())) await back(u, c); } }; }

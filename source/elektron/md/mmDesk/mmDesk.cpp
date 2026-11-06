@@ -57,7 +57,7 @@ namespace mmDesk
 
 	// ---- the app modulators (the same engine as the Machinedrum's) ----
 
-	std::vector<std::string> Desk::setupOps() { return {"modSet", "soloSet", "followSet"}; }
+	std::vector<std::string> Desk::setupOps() { return {"modSet", "soloSet", "followSet", "autoReceiveSet"}; }
 
 	// The table's Owner::Setup rows: modSet and soloSet.
 	void Desk::onSetup(const Value& _message)
@@ -66,6 +66,20 @@ namespace mmDesk
 		if(op == "soloSet")
 		{
 			setSolo(_message);
+			return;
+		}
+		if(op == "autoReceiveSet")
+		{
+			// I-070: kept with the project, said again as {"type":"autoReceive","on"}
+			const auto* on = _message.find("on");
+			const bool want = on && on->isBool() && on->asBool();
+			if(m_autoReceive != want)
+			{
+				m_autoReceive = want;
+				if(m_saveSetup)
+					m_saveSetup(setupDoc());
+			}
+			result(_message, {}, {});
 			return;
 		}
 		if(op == "followSet")
@@ -103,6 +117,7 @@ namespace mmDesk
 		s.modulators = m_mods.setup();
 		s.solo = m_solo;
 		s.followPlayed = m_follow;
+		s.autoReceive = m_autoReceive;
 		s.mappings = m_mappings;
 		s.mappingsKept = m_mappingsKept;
 		return deskCore::setupToJson(s, g_mmSetupSpec);
@@ -132,6 +147,15 @@ namespace mmDesk
 		f.set("type", "follow");
 		f.set("on", m_follow);
 		publish(f);
+		publishAutoReceive();
+	}
+
+	void Desk::publishAutoReceive()
+	{
+		Value a = Value::object();
+		a.set("type", "autoReceive");
+		a.set("on", m_autoReceive);
+		publish(a);
 	}
 
 	void Desk::setMappings(std::vector<deskCore::LearnMapping> _mappings)
@@ -153,6 +177,7 @@ namespace mmDesk
 		m_mods.setSetup(s.modulators);
 		m_solo = s.solo;
 		m_follow = s.followPlayed;
+		m_autoReceive = s.autoReceive;
 		m_mappings = s.mappings;
 		m_mappingsKept = s.mappingsKept;
 		publishModulators();

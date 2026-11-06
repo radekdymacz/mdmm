@@ -231,6 +231,17 @@ The machine has no such function. With it on, the track you select changes to th
 
 A track's channel is the base channel plus the track's number, inside the CHANNEL SPAN of the global. The keys of the computer keyboard never move the selection. With the HW MIDI engine it does nothing, since the port then carries the machine's own MIDI. While a question is open, or LEARN waits for its note, the selection stays where it is.
 
+## A DUMP FROM THE DAW WITHOUT SYSEX RECV
+<!-- rows: MM-X28 @42337f -->
+
+The machine takes a kit, pattern, song or global dump only on GLOBAL > FILE > SYSEX RECV. The editor's **AUTO RECEIVE** takes it on any screen, as the Machinedrum does: a dump that reaches the editor on its MIDI in (a MIDI track in the DAW, a Max for Live device, a librarian sending to the standalone) lands on the machine by itself. It is on until you turn it off, and the project keeps the choice. A project saved by 0.8 or earlier has it on.
+
+1. Send a kit, pattern, song or global dump from the DAW to the editor. The editor opens SYSEX RECV on the machine, sends the dump as **IMPORT SYSEX…** does, and goes back to the main screen a few seconds later. A message names what went.
+2. Press {key:undo} to put back what the dump replaced. A burst of dumps is one step.
+3. To have the machine's own behaviour (a dump outside SYSEX RECV is dropped), open the engine menu and choose **AUTO RECEIVE: ON**. It reads **AUTO RECEIVE: OFF**. Choose it again to turn it back on.
+
+The machine plays on while it takes the dump. A dump into the kit that plays replaces your unsaved edits of that kit, as on the machine. With the HW MIDI engine it does nothing: open SYSEX RECV on the machine yourself.
+
 ## THE CPU METER AND THE SPEED-UPS
 <!-- rows: MM-X15 @9cd295 -->
 

@@ -3,6 +3,7 @@
 #include "jucePluginEditorLib/pluginProcessor.h"
 #include "mdBootDiagnostics.h"
 #include "mdCpuLoad.h"
+#include "mdHostDumps.h"
 #include "mdLearnRouter.h"
 #include "mdMidiIn.h"
 #include "mdMidiMonitor.h"
@@ -125,6 +126,16 @@ namespace mdJucePlugin
 		void logMidiMonitor(double _nowMs);						// the 10 s log line, when due (timerCallback)
 		const std::string& lastMidiLogLine() const { return m_midiLogLine; }
 		std::optional<midiIn::Note> takeMidiIn() { midiIn::Note n; if(m_midiIn.tryPop(n)) return n; return {}; }
+		// I-070 (AUTO RECEIVE, mdHostDumps.h): while the session says so, a Monomachine user-data dump from the host's MIDI
+		// in is kept for the session (takeHostDump, message thread) instead of going to the firmware raw. Set once a step by
+		// the Monomachine session (on and the emulator engine); the Machinedrum's never sets it.
+		void setHostDumpCapture(const bool _on) { m_hostDumpCapture.store(_on, std::memory_order_relaxed); }
+		bool hostDumpCapture() const { return m_hostDumpCapture.load(std::memory_order_relaxed); }
+		bool takeHostDump(std::vector<uint8_t>& _out) { return m_hostDumps.pop(_out); }
+		// how many dumps went raw because the inbox was full or busy (the log says it)
+		uint32_t hostDumpsPassed() const { return m_hostDumpsPassed.load(std::memory_order_relaxed); }
+		// Diagnostics (the journeys' hostsyx): a message as if the host's MIDI in sent it, through addMidiEvent
+		void injectHostMidiForTest(const std::vector<uint8_t>& _message);
 		// I-002, B-062: the notes held from outside (any channel), for the session's midiHeld message (mdMidiIn.h)
 		midiIn::Notes heldMidiNotes() const { return m_midiHeld.notes(); }
 		// I-002, B-062: every held note let go (a MIDI input opened, closed or switched; the HW MIDI engine on or off;
@@ -239,6 +250,9 @@ namespace mdJucePlugin
 		std::atomic<bool> m_mixMeterWanted{false};
 		mixMeters::Meter m_mixMeter;		// I-032: written on the audio thread once a block, read by the session
 		midiIn::Queue m_midiIn;
+		std::atomic<bool> m_hostDumpCapture{false};	// I-070
+		HostDumpInbox m_hostDumps;
+		std::atomic<uint32_t> m_hostDumpsPassed{0};
 		midiMonitor::Monitor m_midiMonitor;
 		midiMonitor::LogPacer m_midiLogPacer;	// message thread
 		std::string m_midiLogLine;				// the last line logged, message thread

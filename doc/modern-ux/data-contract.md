@@ -529,6 +529,14 @@ so a setup without it is off; anything but a boolean is off, said as an error) a
 keyboard) on the Machinedrum's four base channels that the Global key map gives a track, or on a Monomachine
 synth track's channel (base + t inside CHANNEL SPAN), selects that track while the option is on.
 
+AUTO RECEIVE (I-070, the Monomachine, doc/release/0.9/mm-auto-receive.md) is the setup's `autoReceive` boolean: the page
+says `{"op":"autoReceiveSet","on":true|false}` (the engine menu's entry), the desk keeps it beside `solo` (written only
+when it differs from the default, on since 0.9.0 (Radek, 2026-11-05), so off is written as `false` and a project
+without the member, as every 0.8.x project, reads on; anything but a boolean is the default, said as an error) and does not echo it; it
+says `{"type":"autoReceive","on"}` with its solo (restore, `reset`, `ready`). While it is on and the engine is the emulator,
+a kit, pattern, song or global dump on the host's MIDI in goes to the machine the IMPORT SYSEX way (SYSEX RECV, no preview,
+no read-back, one undo step) instead of raw; when that is over the page hears `{"type":"hostDump","ok","text"}` (a toast).
+
 `revertTrack {k, t}` (a working-kit edit, both editors) puts track `t` of the kit that
 plays back as the kit's stored slot has it, in one undo step (the Sound page's Revert
 track; the kit library's Reload is the whole kit).

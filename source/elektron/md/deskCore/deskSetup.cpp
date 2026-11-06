@@ -33,6 +33,17 @@ namespace deskCore
 				_errors.emplace_back("$.followPlayed: expected true or false; off is used");
 		}
 
+		void readAutoReceive(const json::Value& _doc, DeskSetup& _s, std::vector<std::string>& _errors)
+		{
+			const auto* a = _doc.find("autoReceive");
+			if(!a)
+				return;
+			if(a->isBool())
+				_s.autoReceive = a->asBool();
+			else
+				_errors.emplace_back(std::string("$.autoReceive: expected true or false; ") + (g_autoReceiveDefault ? "on" : "off") + " is used");
+		}
+
 		void readMappings(const json::Value& _doc, const SetupSpec& _spec, DeskSetup& _s, std::vector<std::string>& _errors)
 		{
 			if(const auto* m = _doc.find("mappings"))
@@ -81,6 +92,7 @@ namespace deskCore
 			s.modulators = modSetupRead(_doc, _errors, _spec.modulators);
 			readSolo(_doc, _spec, s, _errors);
 			readFollow(_doc, s, _errors);
+			readAutoReceive(_doc, s, _errors);
 			readMappings(_doc, _spec, s, _errors);
 			return s;
 		}
@@ -119,6 +131,7 @@ namespace deskCore
 		}
 		readSolo(_doc, _spec, s, _errors);
 		readFollow(_doc, s, _errors);
+		readAutoReceive(_doc, s, _errors);
 		readMappings(_doc, _spec, s, _errors);
 		return s;
 	}
@@ -132,6 +145,8 @@ namespace deskCore
 				d.set("solo", solo::toJson(_setup.solo));
 			if(_setup.followPlayed)
 				d.set("followPlayed", true);
+			if(_setup.autoReceive != g_autoReceiveDefault)
+				d.set("autoReceive", _setup.autoReceive);
 			writeMappings(_setup, _spec, d);
 			return d;
 		}
@@ -150,6 +165,8 @@ namespace deskCore
 			d.set("solo", solo::toJson(_setup.solo));
 		if(_setup.followPlayed)
 			d.set("followPlayed", true);
+		if(_setup.autoReceive != g_autoReceiveDefault)
+			d.set("autoReceive", _setup.autoReceive);
 		writeMappings(_setup, _spec, d);
 		return d;
 	}

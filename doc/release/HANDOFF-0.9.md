@@ -3,6 +3,11 @@
 Read this first in a new session. The plan is [PLAN-0.9.md](PLAN-0.9.md); each feature's spec is in doc/release/0.9/.
 Bugs named here are in [BUGS.md](BUGS.md).
 
+## Update 2026-11-04 (release/0.9.0 at b12f2d212 = main)
+
+- **Decision (Radek, 2026-11-04):** ship 0.9.0 with B-198, B-199 and B-175 open (B-175 closed, not reproduced). B-196 (parked) and B-205 (Control matrix host parameters, branch `feat/0.9.1-control-matrix-host-params`) go to 0.9.1.
+- Round 6 (B-193, B-202) is on main; B-203 and the round 4 and 5 fixes were merged earlier. Release steps: full CI and firmware on `release/0.9.0`, dry run, Radek's hand test, then the tag.
+
 ## Update 2026-11-01 (main 29ff9e2aa)
 
 - **Merged:** B-189 fixed (OJMP is bits 3-6 of the arpeggiator's play byte; proved by the new firmware ctest `mmOjmpLayoutFirmwareTest`). B-201 Linux blank web view (WebKit DMA-BUF and compositing off in the helper, a native card when the page never paints; not yet proved on Fedora, waiting for the user). B-176 verified by `mmNewKitDefaultsFirmwareTest`. B-175 not reproduced (the reset clears K01 in `mmEmptyResetFirmwareTest`); open question for Radek: ask the reporter for the version, or close.

@@ -1587,6 +1587,71 @@ namespace
 		}
 	}
 
+	// I-070 (AUTO RECEIVE, doc/release/0.9/mm-auto-receive.md): a kit dump the host's MIDI in sends. Raw (the switch off:
+	// the processor hands it to the firmware as it is) the machine on its main screen drops it, as the hardware does;
+	// through the session's SysEx work (the switch on: SyxWork::fromHost, the IMPORT SYSEX way, SYSEX RECV) it lands, the
+	// page hears one hostDump and no import panel, and the panel is back on the main screen after.
+	void autoReceive(const Bytes& _rom)
+	{
+		std::puts("AUTO RECEIVE: a kit dump from MIDI in, raw and through SYSEX RECV (I-070)");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		const auto boot = r.ms();
+		while(r.desk->loaded() < 288 && r.ms() - boot < 60000)
+			r.run(100);
+		check(r.desk->loaded() == 288, "read every slot first");
+		if(r.desk->loaded() < 288)
+			return;
+		constexpr uint8_t slot = 120;
+		const auto stored = r.desk->kit(slot);
+		check(stored.has_value(), "K121 is known");
+		if(!stored)
+			return;
+		auto k = *stored;
+		k.position = slot;
+		k.name.fill(0);
+		std::copy_n("AUTORX", 6, k.name.begin());
+		check(stored->name != k.name, "K121 is not named AUTORX yet");
+		const auto dump = ed::encodeMmKit(k);
+		const auto named = [&] { const auto now = r.desk->kit(slot); return now && now->name == k.name; };
+
+		// off: raw to the firmware on the main screen (the reads are done and SYSEX RECV is left first)
+		r.run(5000);
+		check(!r.desk->recvParked(), "the panel is not on SYSEX RECV (" + r.desk->recvState() + ")");
+		r.m.send(dump);
+		r.run(2000);
+		r.desk->machine().reread({mmDesk::Kind::Kit, slot});
+		r.run(4000);
+		check(!named(), "off: the machine on its main screen drops the dump (read back: K121 keeps its name)");
+
+		// on: the session's SysEx work, as the processor's capture hands it over
+		mdJucePlugin::SyxWork<mmDesk::Desk> work;
+		std::vector<Value> toPage;
+		work.fromHost(dump);
+		check(work.due() && !work.running(), "a dump from the host waits for the next step");
+		const auto started = r.ms();
+		while(work.due() && r.ms() - started < 120000)
+		{
+			work.step(*r.desk, r.ms(), false, [&](const Value& _m) { g_contract(_m); toPage.push_back(_m); });
+			r.run(100);
+		}
+		check(!work.due(), "the host's job is over within two minutes of machine time");
+		const auto readStart = r.ms();
+		while(!named() && r.ms() - readStart < 20000)
+			r.run(200);
+		check(named(), "on: the dump landed (K121 is AUTORX, read again from the machine)");
+		const auto count = [&](const char* _type) { return std::count_if(toPage.begin(), toPage.end(), [&](const Value& _m) { return _m.find("type")->asString() == _type; }); };
+		const Value* done = nullptr;
+		for(const auto& m : toPage)
+			if(m.find("type")->asString() == "hostDump")
+				done = &m;
+		check(count("hostDump") == 1 && done && done->find("ok")->asBool(), "the page hears one hostDump, ok: " + (done ? done->find("text")->asString() : std::string("none")));
+		check(count("syxPreview") == 0 && count("syxProgress") == 0, "and no import panel (no preview, no progress)");
+		r.run(6000);
+		check(!r.desk->recvParked(), "the panel left SYSEX RECV after its idle time (" + r.desk->recvState() + ")");
+	}
+
 	// B-175, B-176: what the firmware itself gives a track for each machine: ASSIGN MACHINE with its init flag (0x5B, the
 	// command the machine's own machine change and NEW KIT run), read from the working kit in memory before and after.
 	// One log line per machine and page ("NEWKIT"): fw = the firmware's bytes, ed = the editor's table (mmDesk::
@@ -6428,6 +6493,8 @@ int main(const int _argc, char** _argv)
 			syxImport(rom);
 		if(only == "emptyreset")
 			emptyReset(rom);
+		if(only == "autoreceive")
+			autoReceive(rom);
 		if(only == "newkit")
 		{
 			newKitDefaults(rom);
