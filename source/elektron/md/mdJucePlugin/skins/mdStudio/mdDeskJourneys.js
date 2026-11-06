@@ -3369,7 +3369,6 @@ const MdJourneys = (() => {
 		async tidy(u, c) { if (V.playing) u.click("#play"); await until(() => !V.playing, 3000); if (c.p0 != null && currentPatternSlot() !== c.p0) { u.click("#patPrev"); await confirmIfAsked(u); } }
 	};
 	/* MD-106: a pattern made longer repeats its steps into the new ones, as the machine's SCALE SETUP (measured) */
-	const trigBits = (d, t) => (d?.tracks[t]?.trigs || []);
 	const lenRepeatJ = {
 		name: "md-seq-len-repeats", proves: ["MD-106"],
 		steps: [

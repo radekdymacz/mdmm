@@ -9,7 +9,6 @@ S.clipBlock = null;	/* the page's copy of the block it put in the core's clipboa
 
 /* the selection as a value and what moves it are both editors' (StepSel, shared/deskSelect.js); here on the 16 tracks */
 const TRACKS = 16;
-const selBetween = StepSel.between;
 function inSel(t, s, x = S.stepSel) { return StepSel.inside(x, t, s); }
 /* the selection within the pattern shown (its steps), or null when none of it is there */
 function selShown(x = S.stepSel) { return StepSel.shown(x, V.len); }

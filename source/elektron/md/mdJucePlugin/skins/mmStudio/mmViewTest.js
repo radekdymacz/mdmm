@@ -96,7 +96,6 @@ function loaded() {
 	p.sent.length = 0;
 	return p;
 }
-const lastSet = (p, kind) => [...p.sent].reverse().find(m => m.op === "set" && m.kind === kind);
 const lastOp = (p, op) => [...p.sent].reverse().find(m => m.op === op);
 const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m.op, ok, errors });
 

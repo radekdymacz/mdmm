@@ -425,8 +425,6 @@ function selCell(e, d) {
 	const st = el?.closest("#seq .st"); if (st) return { t: +st.dataset.t, s: +st.dataset.s };
 	const r = el?.closest("#seq .rul[data-s]"); return r ? { t: d.at.t, s: +r.dataset.s } : null;
 }
-/* where a dragged selection lands: moved by the drag, within the tracks and the steps shown */
-function selDropAt(d) { return StepSel.dropAt(S.stepSel, d, V.len, TRACKS); }
 main.addEventListener("pointerdown", e => {
 	if (e.button !== 0 || V.rec || S.ws !== "seq") return;
 	const st = e.target.closest("#seq .st"), ru = e.target.closest("#seq .rul[data-s]");
