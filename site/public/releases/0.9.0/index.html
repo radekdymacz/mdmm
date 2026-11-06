@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MD + MM Editor 0.9.0 release notes</title>
+<meta name="description" content="The sample release.">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/releases/0.9.0/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MD + MM Editor">
+<meta property="og:title" content="MD + MM Editor 0.9.0 release notes">
+<meta property="og:description" content="The sample release.">
+<meta property="og:url" content="https://mdmm.dev/releases/0.9.0/">
+<meta property="og:image" content="https://mdmm.dev/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Free editors for Machinedrum and Monomachine, beside a screenshot of the Machinedrum Editor's step grid and GEN bar.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MD + MM Editor 0.9.0 release notes">
+<meta name="twitter:description" content="The sample release.">
+<meta name="twitter:image" content="https://mdmm.dev/og.png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261014b">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="opt" href="/#features">Features</a>
+      <a class="keep" href="/guide/">Guide</a>
+      <a class="opt" href="/#faq">FAQ</a>
+      <a class="disc" href="https://discord.gg/8xwXwBHbtn" aria-label="Discord community"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7l-3 2.5V11.5H2.5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="5.5" cy="7.5" r="1" fill="currentColor"/><circle cx="8" cy="7.5" r="1" fill="currentColor"/><circle cx="10.5" cy="7.5" r="1" fill="currentColor"/></svg><span>Discord</span></a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-ghost btn-sm" href="https://github.com/sponsors/radekdymacz" target="_blank" rel="noopener">Sponsor</a>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="checkout legalpage guide">
+  <div class="wrap">
+    <span class="eyebrow">Release notes</span>
+    <h1>Machinedrum Editor + Monomachine Editor 0.9.0</h1>
+<p><small>Released 2026-11-06</small></p>
+<p>The sample release. The Machinedrum gets a sample manager, the Monomachine gets a DigiPRO waveform manager, and a SysEx import or an Empty Reset can be undone. Two long-standing faults are closed: the Monomachine's OJMP value and the song LOOP row.</p>
+<p>A release on top of <a href="/releases/0.8.1/">0.8.1</a>. Screenshots, features and FAQ: <b><a href="https://mdmm.dev">https://mdmm.dev</a></b> · User guide: <b><a href="https://mdmm.dev/guide/">https://mdmm.dev/guide/</a></b></p>
+<h2>New, Machinedrum</h2>
+<ul>
+<li><b>Sample manager.</b> On the Sampler workspace, on the emulated machine, every ROM and RAM slot shows its length in seconds and in KB. The card above the tiles shows the memory as the machine counts it: used, free and the percent free.
+</li>
+<li><b>Copy and Paste.</b> Copy a ROM or RAM slot, select a ROM slot, paste. The copy is taken when you press Copy, so a RAM take is kept even if the recorder overwrites it.
+</li>
+<li><b>RAM to ROM.</b> Every RAM slot with a take has <b>Keep as ROM...</b>: the take is sent to the selected ROM slot. This is FUNCTION + REC on the machine. The other RAM slots are not cleared.
+</li>
+<li><b>Rename and Load keep working</b> and are now part of the same undo.
+</li>
+<li><b>Undo sample.</b> One key brings back the sample that a Paste, a RAM to ROM copy, a Rename or a Load replaced. Sixteen steps. A step that filled an empty slot cannot be undone; erase the slot instead (see Erase).
+</li>
+<li><b>Export.</b> A ROM slot to a WAV file or to SysEx (SDS), a RAM slot to a WAV file, <b>Export all</b> for the ROM slots or the four RAM slots to a folder. The files hold the samples the machine holds, 16-bit mono at the slot's own rate.
+</li>
+<li><b>Erase one and Erase all</b> (B-194). A ROM slot can be erased, or all of them. The editor presses the machine's own keys for it (SAMPLE MGR, ERASE) and checks the bank afterwards. Undo sample brings back one erased slot. Erase all cannot be undone, as 32 slots are more than the 16 steps, and the question says so.
+</li>
+<li>A real Machinedrum on hardware MIDI keeps its limits: it does not answer sample dump requests, so these keys are off there, each with its reason.
+</li>
+</ul>
+<h2>New, Monomachine</h2>
+<ul>
+<li><b>DigiPRO manager</b> (MKII). On the GLOBAL page the DigiPRO card shows the 64 positions W01 to W64. A user waveform is marked <b>u</b> with its name and is drawn when selected. The card has <b>Read</b>, <b>Load...</b> (a <code>.syx</code>, or a WAV or AIFF of one cycle; the editor asks first), <b>Save .syx...</b> (Shift for all), <b>Rename</b>, <b>Copy</b>, <b>Paste</b>, <b>Erase</b> (Shift for all, asked first) and its own <b>Undo</b>. Factory waveforms cannot be saved, renamed or erased, as on the machine.
+</li>
+<li><b>Export SysEx &gt; Waveforms</b> puts the user waveforms into a bank file.
+</li>
+<li><b>AUTO RECEIVE</b> (I-070). A kit, pattern, song or global dump sent from the DAW (a MIDI track, a Max for Live device) now lands on the emulated Monomachine, as it does on the Machinedrum. <b>AUTO RECEIVE</b> in the engine menu is on by default: the editor opens GLOBAL &gt; FILE &gt; SYSEX RECV itself when such a dump arrives, sends it as IMPORT SYSEX does, and goes back to the main screen. One undo step per burst. Turn it off to have the hardware's behaviour (a dump outside SYSEX RECV is dropped); the project keeps the choice, and a project saved by 0.8 has it on. The emulator only: with a real Monomachine on hardware MIDI, open SYSEX RECV on the machine.
+</li>
+<li><b>A dump from the DAW that the Monomachine did not take no longer shows on the page.</b> The editor used to show it as if the machine held it.
+</li>
+<li><b>Song LOOP</b> (B-038). A LOOP row in a song now goes to the row it names. The editor wrote the target in the wrong byte, so every loop went back to row 1.
+</li>
+</ul>
+<h2>New, both editors</h2>
+<ul>
+<li><b>Undo for SysEx import and Empty Reset</b> (B-130). The kits, patterns and songs a job will write are copied first. When the job is over they are one undo step, and Redo brings the import back. Factory reset is covered the same way.
+</li>
+<li><b>No false "edits not saved" question on the Machinedrum</b> (B-045). A pattern picked while an import runs no longer asks about kit edits you never made.
+</li>
+<li><b>Save Diagnostics.</b> The editor's menu has <b>Save Diagnostics...</b>. It writes one zip with the logs, the versions, the system, the audio and MIDI setup, the settings and the last performance capture. It never holds a ROM or the machine's memory. Attach it to a report in #bugs or send it from the contact page. It is made by the program itself, so it works when the page does not show.
+</li>
+<li><b>Third-party notices.</b> <code>THIRD-PARTY-NOTICES.md</code> is in every package and named in the About box, with the licences of the code the editors are built on.
+</li>
+</ul>
+<h2>Fixes</h2>
+<ul>
+<li><b>Monomachine: OJMP</b> (B-189). The editor wrote OJMP to bits 4 to 7 of the arpeggiator's play byte, and the firmware keeps it in bits 3 to 6. The machine then read 2n+1 for a value n. A firmware test now proves the layout. See Upgrade.
+</li>
+<li><b>Monomachine: a DigiPRO job no longer leaves its position empty or hangs the machine</b> (B-195). Two causes: the emulated machine stops for good when a status poll arrives while it sends a waveform, so the editor now asks nothing until the dump is in; and the SYSEX RECV page could wait for a job that waited for it.
+</li>
+<li><b>Monomachine: a new kit starts with the machine's values</b> (B-176) is checked on the firmware.
+</li>
+<li><b>Audio thread: shorter lock holds</b> (B-203). The factory flash is copied after the device lock, and the machine-memory copy no longer holds the device lock while audio runs. A save reaches its file a look or two later at most. The sound is unchanged.
+</li>
+<li><b>Machinedrum: a tempo change right after a nudge keeps the new tempo</b> (B-200). On a slow machine a late read of GLOBAL used to put the old tempo back.
+</li>
+<li><b>Machinedrum: Erase works from any screen</b> (B-204). It looks only at the GLOBAL SLOT window, so the main screen around it no longer matters, and a RAM take is copied again once it is complete.
+</li>
+<li><b>Monomachine: two quick edits of a song row</b> (B-202) no longer wait for a read-back that is never asked.
+</li>
+<li><b>Linux: the empty window</b> (B-201, Fedora KDE). The web view's helper turns off WebKit's DMA-BUF renderer and compositing, realizes, maps and sizes its window before it is embedded, and the host maps a hidden client. If the page still never paints, the native card appears. The log names the GTK and WebKitGTK versions. Not yet proved on Fedora: please try it.
+</li>
+<li><b>Guide:</b> 22 of 25 stated facts were checked against the machine, three wrong claims are corrected, the CTR-AL limit is gone (kits with a CTR machine edit since 0.6.0), and the FN key tips say that the FN latch has been gone since 0.3.5.
+</li>
+<li><b>Release files:</b> the SHA256SUMS and other-platform jobs find the draft by the id the macOS job made.
+</li>
+</ul>
+<h2>Upgrade</h2>
+<ul>
+<li><b>Monomachine OJMP: old projects keep their sound.</b> The machine's bytes are unchanged. Only the editor's reading changes: it now shows the value the machine plays. A project saved with OJMP 3 may show another number now, and the sound is the one you always heard. Set the number you want, and it is what the machine plays.
+</li>
+<li>The JSON member <code>flag</code> of the Monomachine data contract is gone (it was OJMP's low bit).
+</li>
+</ul>
+<h2>Known</h2>
+<ul>
+<li><b>Monomachine: LIVE RECORDING can record no lock after the GLOBAL base channel was changed</b> (B-196). It is parked until after 0.9.
+</li>
+<li><b>Hardware MIDI is beta.</b> Using the editor with a real Machinedrum or Monomachine over MIDI works, but it is tested only in part. It will be tested on both machines before 1.0.
+</li>
+<li><b>Windows and Linux are community-tested.</b> They are built and run by the tests on every change, and no person has tested every release. Please send your logs with Save Diagnostics.
+</li>
+<li><b>Machinedrum: after a sample is sent by SDS, live recording records nothing until you restart the editor</b> (B-133). The machine's OS 1.63 bug; the editor keeps the hardware's behaviour.
+</li>
+<li><b>Monomachine: a GLOBAL change made while the editor is still reading the machine at project open may not reach the memory file</b> (B-192).
+</li>
+<li><b>Control matrix: the lanes are MIDI Learn routes</b> (CC 21 to 28 by default), not host parameters. Map the targets in the DAW: turn the value itself on the page and map <code>Track 1 Machine Parameter 3</code>. Host-mappable Knob 1 to 8 come in 0.9.1 (B-205).
+</li>
+<li><b>Monomachine: two factory patterns did not play in one real-factory journey</b> (B-198) and <b>one 10.4 ms device-lock hold in a test</b> (B-199). Each was seen once and is open; nothing a user reported.
+</li>
+</ul>
+<h2>Platforms</h2>
+<ul>
+<li>macOS 12 or later (Intel and Apple silicon), not signed by Apple yet: the first install needs <b>Open Anyway</b> (on macOS 12 to 14: right-click the installer &gt; <b>Open</b>).
+</li>
+<li>Windows x64 and Linux x64: community-tested. Feedback welcome: <a href="https://mdmm.dev/contact/">https://mdmm.dev/contact/</a>
+</li>
+</ul>
+    <p><a href="/releases/">All release notes</a> · <a href="/get/">Download</a></p>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="wrap grid">
+    <p><b>MD + MM Editor</b> <span data-version></span> · Machinedrum Editor and Monomachine Editor<br>A NativeKloud Consulting project — <a href="https://nativekloud.com">nativekloud.com</a></p>
+    <p><b>Free software</b> under the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3</a>. <a href="https://github.com/radekdymacz/mdmm">Source</a> · <a href="https://github.com/radekdymacz/mdmm/releases">All releases</a></p>
+    <p><b>Credits.</b> Built on <a href="https://github.com/joelanders/gearmulator-md-mm">gearmulator-md-mm</a> by joelanders (the Machinedrum and Monomachine emulation) and <a href="https://github.com/dsp56300/gearmulator">Gearmulator</a> by The Usual Suspects (dsp56300). Thanks to Elektron for the instruments.</p>
+    <p class="legal"><a href="/guide/">Guide</a> · <a href="/releases/">Release notes</a> · <a href="/terms/">Terms</a> · <a href="/privacy/">Privacy</a> · <a href="/refunds/">Refunds</a> · <a href="/contact/">Contact</a> · <a href="https://discord.gg/8xwXwBHbtn">Discord</a> · <a href="https://github.com/sponsors/radekdymacz">Sponsor</a> · <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#114;&#97;&#100;&#101;&#107;&#100;&#121;&#109;&#97;&#99;&#122;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;">&#114;&#97;&#100;&#101;&#107;&#100;&#121;&#109;&#97;&#99;&#122;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;</a></p>
+    <p><b>Trademarks.</b> Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This project is independent and not affiliated with or endorsed by Elektron, joelanders or The Usual Suspects. No firmware is included. No cookies, no analytics, no third-party scripts.</p>
+  </div>
+</footer>
+
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>
