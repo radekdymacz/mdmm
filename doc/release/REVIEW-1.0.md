@@ -172,3 +172,9 @@ F12 standalone projects and a song library (the most-asked standalone wish), F9,
 3. Windows and Linux in 1.0: "supported, community-tested" until tester reports prove the stability gate.
 4. CI lock budget: stays 10 ms; a week of nightly numbers decides the 1.0 budget (M6).
 5. GitHub issues: on at 1.0.
+
+## Decisions (Radek, 2026-11-07)
+
+6. Windows signing: not in 1.0. Windows ships as an unsigned zip, labelled "community-tested".
+7. In-app installer: removed. The app checks for updates and tells the user; it never installs (as VISION.md says).
+8. Payment: free, with optional GitHub Sponsors. No Lemon Squeezy; BRAND, LAUNCH-CHECKLIST and GTM follow this, and B-159 closes.
