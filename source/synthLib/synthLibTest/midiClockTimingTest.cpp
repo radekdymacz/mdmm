@@ -82,9 +82,17 @@ namespace
 		f.block(128, 0, 0, false);
 		require(f.device.events.size() == 1 && f.device.events[0].status == M_STOP,
 			"missing BPM prevented STOP or clocks continued while stopped");
+		require(f.plugin.hostTransportStops() == 1 && !f.plugin.hostTransportPlaying(), "B-210: the host's Stop is counted once");
 		f.device.events.clear();
 		f.block(128, 120, 0, false);
 		require(f.device.events.empty(), "stopped transport repeated STOP or emitted clocks");
+		require(f.plugin.hostTransportStops() == 1, "B-210: a stopped transport counts no further Stop");
+		f.block(128, 120, 0);
+		require(f.plugin.hostTransportPlaying(), "B-210: the host plays again");
+		f.plugin.setHostClock(false);
+		f.block(128, 120, 0, false);
+		require(f.plugin.hostTransportStops() == 1 && !f.plugin.hostTransportPlaying(),
+			"B-210: with the host's clock off nothing is counted");
 	}
 
 	void constantTempo(float rate, bool variable, double origin, uint32_t seconds)
@@ -134,6 +142,7 @@ namespace
 			&& f.device.events[1].status == M_SONGPOSITION && f.device.events[1].a == 32
 			&& f.device.events[1].b == 0 && f.device.events[2].status == M_CONTINUE
 			&& f.device.events[3].status == M_TIMINGCLOCK, "seek did not locate before restarting clocks");
+		require(f.plugin.hostTransportStops() == 0, "B-210: a relocation is no host Stop");
 		f.device.events.clear();
 		f.block(128, 120, 0.0);
 		require(f.device.events.size() == 3 && f.device.events[0].status == M_STOP

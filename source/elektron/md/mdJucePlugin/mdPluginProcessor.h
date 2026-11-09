@@ -132,6 +132,9 @@ namespace mdJucePlugin
 		bool takeHostDump(std::vector<uint8_t>& _out) { return m_hostDumps.pop(_out); }
 		// how many dumps went raw because the inbox was full or busy (the log says it)
 		uint32_t hostDumpsPassed() const { return m_hostDumpsPassed.load(std::memory_order_relaxed); }
+		// B-210: how many MIDI Stops (0xFC) came from the host's MIDI in (the audio thread counts, the session reads): on the
+		// Monomachine MIDI Stop is a pause, so its session makes it a real stop (the panel's STOP)
+		uint32_t hostMidiStops() const { return m_hostMidiStops.load(std::memory_order_acquire); }
 		// Diagnostics (the journeys' hostsyx): a message as if the host's MIDI in sent it, through addMidiEvent
 		void injectHostMidiForTest(const std::vector<uint8_t>& _message);
 		// I-002, B-062: the notes held from outside (any channel), for the session's midiHeld message (mdMidiIn.h)
@@ -250,6 +253,7 @@ namespace mdJucePlugin
 		std::atomic<bool> m_hostDumpCapture{false};	// I-070
 		HostDumpInbox m_hostDumps;
 		std::atomic<uint32_t> m_hostDumpsPassed{0};
+		std::atomic<uint32_t> m_hostMidiStops{0};	// B-210
 		midiMonitor::Monitor m_midiMonitor;
 		midiMonitor::LogPacer m_midiLogPacer;	// message thread
 		std::string m_midiLogLine;				// the last line logged, message thread

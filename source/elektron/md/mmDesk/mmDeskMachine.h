@@ -86,6 +86,8 @@ namespace mmDesk
 		bool onTelemetry(const Telemetry& _telemetry) override;
 		void onWorkingKit(const Bytes& _region) override;
 		void sendModulation(uint8_t _track, uint8_t _param, uint8_t _value, const Documents& _view) override;
+		void onHostStop(const Documents& _view) override;
+		void onHostPlay() override;
 		const Telemetry& telemetry() const override { return m_tel; }
 		bool playing() const override { return m_playing; }
 		std::string sendWaves(const std::vector<Bytes>& _dumps) override;
@@ -392,6 +394,10 @@ namespace mmDesk
 		// B-135: pause, resume and the panic's STOP wait the same way (they were refused or lost)
 		enum class TransportWait : uint8_t { Play, Stop, Pause, Resume, Panic };
 		std::optional<TransportWait> m_pendingTransport;
+		bool m_hostStopWaits = false;	// B-210: the pending STOP is the host's (dropped when the host plays again)
+		// B-210: the editor paused the emulated machine (its panel's PLAY), until it plays again or a STOP, PLAY or panic is
+		// pressed: the firmware keeps its song while paused, so LOAD SONG is refused (the RAM flag reads 0 paused or stopped)
+		bool m_paused = false;
 		void waitTransport(TransportWait _w);
 		bool pressWaiting(TransportWait _w);
 		std::optional<Value> m_pendingRecord;	// review 1 (B-092): RECORD waiting for the panel (pumpRecord)

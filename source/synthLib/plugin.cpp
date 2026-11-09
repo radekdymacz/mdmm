@@ -524,6 +524,7 @@ namespace synthLib
 		m_hostClockWas = on;
 		if(on)
 			m_midiClock.process(_bpm, _ppqPos, _isPlaying, _sampleCount, _ppqKnown);
+		m_hostTransportPlaying.store(on && _isPlaying, std::memory_order_release);
 	}
 
 	float* Plugin::getSilentInputBuffer(const size_t _minimumSize)

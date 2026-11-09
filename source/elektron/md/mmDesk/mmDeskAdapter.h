@@ -93,6 +93,12 @@ namespace mmDesk
 		// App modulation of the kit that plays: param = DATA page * 8 + index.
 		virtual void sendModulation(uint8_t _track, uint8_t _param, uint8_t _value, const Documents& _view) = 0;
 
+		// B-210, in a DAW: the host's transport stopped, or the host's MIDI in sent MIDI Stop. The firmware heard MIDI Stop,
+		// which on the Monomachine is a pause (PROBES-manual-gaps.md P1, P1b): LOAD SONG and a cued pattern wait for a real
+		// stop (W12d), the panel's STOP. onHostPlay: the host's transport runs again. Unset: nothing.
+		virtual void onHostStop(const Documents& _view) { (void)_view; }
+		virtual void onHostPlay() {}
+
 		virtual const Telemetry& telemetry() const = 0;
 		// The sequencer plays (the RAM flag, or the step byte advancing).
 		virtual bool playing() const = 0;

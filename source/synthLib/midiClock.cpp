@@ -18,7 +18,13 @@ namespace synthLib
 		// instrument; stopped transport intentionally does not generate clocks.
 		if(!_isPlaying)
 		{
-			if(m_isPlaying) stop();
+			if(m_isPlaying)
+			{
+				stop();
+				// B-210: the host's own Stop (a relocation stops and starts again, below): an editor may need more than
+				// MIDI Stop (the Monomachine: a pause), so it can tell
+				m_plugin.countHostTransportStop();
+			}
 			return;
 		}
 		if(!_sampleCount) return;

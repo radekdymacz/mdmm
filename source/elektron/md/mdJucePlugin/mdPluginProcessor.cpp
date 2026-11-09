@@ -1072,6 +1072,9 @@ namespace mdJucePlugin
 
 	bool AudioPluginAudioProcessor::consumeMidiIn(const synthLib::SMidiEvent& _ev)
 	{
+		// B-210: the host's MIDI Stop still goes to the firmware (below); the session reads the count
+		if(_ev.source == synthLib::MidiEventSource::Host && _ev.sysex.empty() && _ev.a == synthLib::M_STOP)
+			m_hostMidiStops.fetch_add(1, std::memory_order_acq_rel);
 		// I-070 (AUTO RECEIVE): a Monomachine user-data dump from the host, while the session captures them, goes to the
 		// session (it sends it the way IMPORT SYSEX does: SYSEX RECV), not raw to the firmware, which drops it outside
 		// SYSEX RECV. An inbox that is full or busy lets it go raw, as with the switch off.

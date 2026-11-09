@@ -208,6 +208,7 @@ What can be dropped, macOS only for now: a ROM (`.bin`, `.zip`), a SysEx file (`
 ## The host's clock (P7)
 
 - **In a DAW** the plug-in sends the host's transport and tempo to the firmware as MIDI clock (`synthLib::MidiClock`). Each model says what its active global must be to follow them (`hostFollowing`, pure), and the `followHost` machine command sets it without an undo step. The session sends that command every 2 s, in a DAW's plug-in only (`followsHost`).
+- **The host's Stop on the Monomachine (B-210):** MIDI Stop is a pause there (PROBES-manual-gaps.md P1, P1b), and a paused machine keeps its song when LOAD SONG comes. `synthLib::Plugin` counts the host's own Stops (`hostTransportStops`, not a relocation) and the processor the MIDI Stops from the host's MIDI in (`hostMidiStops`); the MM session (`mdSessionMm.cpp`, `stepHostTransport`) then calls `Desk::onHostStop`, which presses the panel's STOP where the active global takes MIDI transport (TRANSPORT IN = ACCEPT). The host's Play after it is Start (from the start) or the song position and Continue (the row that holds it). The Machinedrum is unchanged. Proof: `mmHostStopSongFirmwareTest`.
 - **A new machine** gets a `hostFollowing` of its own, plus the command row. See [DESIGN-P7-sync.md](DESIGN-P7-sync.md).
 
 ## MIDI mapping

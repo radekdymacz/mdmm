@@ -56,6 +56,9 @@ namespace mmDesk
 		// Device facts; what they change goes out at once, as with the MD's.
 		void onWorkingKit(const Bytes& _region) { machine().onWorkingKit(_region); flush(); }
 		void setProbe(Probe _probe) { machine().setProbe(_probe); flush(); }
+		// B-210: the host's transport stopped (or its MIDI Stop came), and runs again (MmAdapter::onHostStop)
+		void onHostStop() { machine().onHostStop(documents()); flush(); }
+		void onHostPlay() { machine().onHostPlay(); flush(); }
 		// The setup stored with the project (the bare mm-desk/modulators with its solo, or mm-desk/setup): what of it
 		// this version can use, the default for the rest (never the previous project's); errors say what was left out.
 		std::vector<std::string> loadSetup(const Value& _setup);
