@@ -1815,6 +1815,8 @@ svg.route .mtr.off{opacity:.3}
 .bootcur b{font:600 13px var(--sans);color:var(--print);flex:none}
 .bootcur .bootfile{font:500 12px var(--mono);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--print)}
 .bootcur i{font-style:normal;flex:none}
+.bootpick{margin:0;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;justify-content:center;max-width:100%;font:500 12px var(--sans);color:var(--print2)}
+.bootpick .linkkey{font:500 12px var(--mono);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* HW MIDI with no machine answering (Boot.midi): the workspace dims and takes no gesture; a card over it says why and
    what to do. The header (engine menu, AUDIO / MIDI) stays live. */

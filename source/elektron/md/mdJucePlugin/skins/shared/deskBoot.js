@@ -34,6 +34,7 @@ const Boot = (() => {
  <p class="bootline" id="bootline">Keys work when the start-up animation ends.</p>
  <div class="bootrom" id="bootrom" hidden>
   <p class="bootcur" id="bootcur" hidden></p>
+  <p class="bootpick" id="bootpick" hidden></p>
   <button class="bootzone" data-bootrom="choose" aria-describedby="bootres"><b id="bootzone"></b><span>Click here to choose the file. The editor checks it and copies it into its ROM folder.</span></button>
   <p class="bootres" id="bootres" role="status"></p>
   <p class="bootpriv">The firmware stays on this computer: the editor checks it and copies it into its ROM folder, and sends it nowhere. <button class="linkkey" data-bootrom="folder">Show the ROM folder</button> <button class="linkkey" data-bootrom="recheck">Check again</button> <button class="linkkey" data-bootrom="remove" hidden>Remove the ROM</button> <button class="linkkey" data-bootrom="close" hidden>Close</button></p>
@@ -81,17 +82,21 @@ const Boot = (() => {
 		card.querySelector('[data-bootrom="remove"]').hidden = !m;
 		card.querySelector('[data-bootrom="close"]').hidden = !m;
 	};
-	function leaveManage() { if (!manage) return; manage = null; card.classList.remove("manage"); $b("bootcur").hidden = true; links(false); }
+	function leaveManage() { if (!manage) return; manage = null; card.classList.remove("manage"); $b("bootcur").hidden = true; $b("bootpick").hidden = true; links(false); }
 	/* LOAD ROM with a firmware running: the same card, the current image on one line */
 	function showInstalled(o) {
 		machine = o.machine || machine; manage = o; shown = "manage";
 		card.classList.remove("out", "ind"); card.classList.add("rom", "manage");
 		$b("boott").textContent = `${machine} firmware`;
 		$b("bootline").hidden = true; $b("bootrom").hidden = false;
-		$b("bootzone").textContent = `Choose another ${romName(machine)} ROM (.bin or .zip) to replace it`;
+		$b("bootzone").textContent = `Choose another ${romName(machine)} ROM (.bin or .zip) to add it`;
 		const cur = $b("bootcur");
 		cur.innerHTML = `<b>${esc(o.os)}</b><span class="bootfile" title="${esc(o.name)}${o.inFolder ? "" : " (outside the editor's ROM folder)"}">${esc(o.name)}</span><i>${(o.size / 1048576).toFixed(1)} MiB</i>`;
 		cur.hidden = false;
+		/* several images in the ROM folder: this instance runs the one chosen here (kept with the project) */
+		const pick = $b("bootpick"), others = (o.roms || []).filter(n => n !== o.name);
+		pick.innerHTML = others.length ? `<span>Also in the ROM folder:</span> ` + others.map(n => `<button class="linkkey" data-bootuse="${esc(n)}" title="Run ${esc(n)} in this instance">Use ${esc(n)}</button>`).join(" ") : "";
+		pick.hidden = !others.length;
 		$b("bootres").textContent = ""; $b("bootres").className = "bootres";
 		links(true);
 		card.hidden = false;
@@ -131,6 +136,8 @@ const Boot = (() => {
 		if (r.ok) { $b("boott").textContent = `Starting the ${machine}…`; t0 = performance.now(); }
 	}
 	card.addEventListener("click", e => {
+		const u = e.target.closest("[data-bootuse]");
+		if (u && Boot.host && Boot.host.useRom) { Boot.host.useRom(u.dataset.bootuse); return; }
 		const k = e.target.closest("[data-bootrom]"); if (!k || !Boot.host) return;
 		const a = k.dataset.bootrom;
 		if (a === "choose") Boot.host.chooseRom(); else if (a === "recheck") Boot.host.recheck(); else if (a === "folder") Boot.host.revealRom();

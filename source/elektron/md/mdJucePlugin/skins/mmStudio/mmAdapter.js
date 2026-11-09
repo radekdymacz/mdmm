@@ -403,13 +403,14 @@
 	   folder is the editor's, nothing outside it is touched */
 	function onRomInfo(m) {
 		if (!m.installed) { host.firstRun(); return; }
-		V().bootInstalled({ machine: "Monomachine", os: m.os, name: m.name, size: m.size, inFolder: m.inFolder, folder: m.folder });
+		V().bootInstalled({ machine: "Monomachine", os: m.os, name: m.name, size: m.size, inFolder: m.inFolder, folder: m.folder, roms: m.roms });
 	}
 	function askRemoveRom(m) {
 		if (!m.inFolder) { V().toast("This image is outside the editor's ROM folder (" + m.folder + "); remove it there yourself."); return; }
 		const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-		V().ask(`Remove <b>${esc(m.os)}</b> from the ROM folder? The machine stops and the editor asks for a firmware again. Your project stays.`,
-			[["Remove", "danger", () => send({ op: "removeRom" }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } })], ["Cancel", "", () => {}]]);
+		const more = (m.roms || []).length > 1;
+		V().ask(`Move <b>${esc(m.name)}</b> out of the ROM folder, into its <span class="mono">removed</span> folder? Nothing is deleted. ${more ? "The machine restarts on another image in the folder." : "The machine stops and the editor asks for a firmware again."} Your project stays.`,
+			[["Remove", "danger", () => send({ op: "removeRom", name: m.name }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } })], ["Cancel", "", () => {}]]);
 	}
 	/* what the plug-in has to say to the user (a question, a warning): its modal, never a native alert. The plug-in
 	   waits for the answer, so a notice goes before the page's own questions, is never replaced by one, and is
@@ -583,6 +584,7 @@
 		   it), the ROM folder, and a new look */
 		chooseRom() { send({ op: "chooseRom" }); },
 		removeRom(info) { askRemoveRom(info); },
+		useRom(name) { send({ op: "useRom", name }, { onResult: r => V().toast(r.ok ? r.note : r.errors[0]) }); },
 		/* I-024 (doc/modern-ux/DESIGN-machine-memory.md): KEEP MEMORY on or off; "factory": RESET MACHINE…'s Start from
 		   factory memory (the question was the panel's, shared/deskSyx.js) */
 		/* I-070: AUTO RECEIVE on or off (kept with the project; the plug-in says it with the solo) */
@@ -592,7 +594,7 @@
 			if (what === "keep") send({ op: "memoryKeep", on: !memory.keep }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } });
 			else send({ op: "memoryFactory" }, { onResult: r => V().toast(r.ok ? r.note : r.errors[0]) });
 		},
-		/* LOAD ROM in the engine menu: which firmware runs, REPLACE or REMOVE it (the reply is the romInfo message) */
+		/* LOAD ROM in the engine menu: which firmware runs, ADD another, USE one of several or REMOVE it (the reply is the romInfo message) */
 		romManage() { if (machine?.lifecycle === "missing") host.firstRun(); else send({ op: "romInfo" }); },
 		/* SysEx import and export (P7): the window's file dialogs; the plug-in parses and writes */
 		syxChoose() { send({ op: "chooseSyx" }); },

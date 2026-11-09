@@ -209,6 +209,19 @@ namespace mdJucePlugin
 		void setStateInformation(const void* _data, int _size) override;
 		void restoreHeldState();
 
+		// Several ROM images may sit in the ROM folder; this instance runs the one it was told to (by its file name in
+		// the folder), saved with the project (chunk "ROMC"). Empty: the engine's own search finds one.
+		// useRom checks the name and makes the choice; the caller restarts the machine (rebootDevice).
+		bool useRom(const std::string& _fileName);
+		const std::string& romChoice() const { return m_romChoice; }
+		// the file name of the image the machine runs or would run now (the choice, else the search's first)
+		std::string activeRomName() const;
+		// the file name the machine started with (the choice, or what the search found); empty before a device exists
+		const std::string& runningRomName() const { return m_runningRom; }
+		// the project (a state as getStateInformation made it) loaded again after a restart, with the machine memory's
+		// "replaced" mark; the held state's way, for a state in hand
+		void restoreState(const void* _data, int _size);
+
 	private:
 		static BusesProperties createBusesProperties();
 		bool isBusesLayoutSupported(const BusesLayout& _layout) const override;
@@ -261,6 +274,8 @@ namespace mdJucePlugin
 		double m_lastBootRecordMs = 0;	// when recordBoot last ran
 		const double m_bootStartMs = juce::Time::getMillisecondCounterHiRes();
 		std::string m_bootRom;
+		std::string m_romChoice;	// the ROM folder's file this instance was told to run ("" = none chosen)
+		std::string m_runningRom;	// the file name the last createDevice used
 		bool m_stallLogged = false;	// the watchdog's stall was logged (recordBoot)
 		// the speed-ups as last written to the log (logSpeedUps): -1 none yet; else on | levers << 1 | L3 << 31
 		int64_t m_loggedSpeedUps = -1;

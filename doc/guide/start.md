@@ -20,7 +20,11 @@ The editors run the machine's real firmware. You bring your own: **Machinedrum O
 
 You can also copy the image into that folder yourself. On the card, the links **Show the ROM folder** and **Check again** open the folder and look again. A file that is the wrong OS or a damaged dump is refused, with the reason on the card.
 
-To replace or remove the firmware later, use **LOAD ROM** in the engine menu. Your project stays. A session that starts without a ROM keeps your saved project, and in a DAW it keeps the automation and the editor setup until the ROM arrives.
+**Several ROM files.** The ROM folder can hold as many images as you like, under any names. The editor never deletes, overwrites or renames a file in it: a file you choose is added beside the others, and a file that is already in the folder is used where it is. Each plug-in instance runs one image. **LOAD ROM** in the engine menu shows the one that runs and lists the others as **Use** links; click one and the machine restarts on it, with your project. The choice is saved with the project, so each project starts on its own image. A project that names an image you have since moved starts on the one the editor finds first. Only an exact copy of the supported OS counts as a ROM: a changed copy is not listed, and is not touched.
+
+**Where your own SysEx goes.** Dumps you send to the machine are kept in the machine memory, a separate file per editor (`memory/machine-memory.bin` in the editor's data folder), not in a ROM file. Copying a ROM does not make a second memory. Save a set of dumps as a `.syx` or in a project instead.
+
+To take an image out of use, **LOAD ROM** then **Remove**. The file is moved into a folder called `removed` inside the ROM folder; nothing is deleted, and you can move it back. If another image is in the folder the machine restarts on it, otherwise it stops and the start-up card asks for a ROM again. Your project stays. A session that starts without a ROM keeps your saved project, and in a DAW it keeps the automation and the editor setup until the ROM arrives.
 
 ## Emulator or real machine
 
