@@ -1804,7 +1804,8 @@ svg.route .mtr.off{opacity:.3}
 .bootzone:active{transform:translateY(2px);box-shadow:0 1px 0 var(--print2)}
 .bootzone:hover,.bootzone:focus-visible{border-color:var(--led);background:color-mix(in srgb,var(--led) 10%,transparent)}
 .bootzone b{font:600 15px/1.35 var(--sans);color:var(--print)}
-.bootzone span{font:500 12px var(--sans);color:var(--print2)}
+/* 0.9.1: 13 px in the full ink, not 12 px in the second ink: the Linux smoke test reads this line from a screenshot (OCR) and the shared tones made it marginal */
+.bootzone span{font:500 13px var(--sans);color:var(--print)}
 .bootpriv{margin:0;font:500 12px var(--sans);color:var(--print2);max-width:56ch}
 .bootres{margin:0;min-height:1.3em;font:600 13px var(--sans)}
 .bootres.ok{color:var(--print)}
