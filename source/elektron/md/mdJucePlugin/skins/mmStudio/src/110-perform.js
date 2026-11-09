@@ -95,13 +95,13 @@ function mapTableH(){return`<table class="mmap">`+`<thead><tr><th>Range</th><th>
    <div class="btnrow"><button data-madd="1">Split selected range</button><span class="hint">A range's lower key is the key after the one above. LEN needs an offset first. Timing waits for a bar line.</span></div>`}
 function drawMapDlg(){const pop=$("#mappop");if(!pop)return;
  if(MAPOPEN&&(S.ws!=="perform"||S.mode!=="map"))MAPOPEN=false;
- if(!MAPOPEN){if(!pop.hidden)pop.hidden=true;return}
+ if(!MAPOPEN){if(!pop.hidden)pop.hidden=true;pop.innerHTML="";return}
  const a=document.activeElement,fk=a&&pop.contains(a)?(a.id?"#"+a.id:a.dataset.g?`[data-g="${a.dataset.g}"][data-n="${a.dataset.n}"][data-i="${a.dataset.i}"]`:""):"";
  pop.innerHTML=`<div class="libhead"><span class="cap">Multi map</span><span class="note">GLOBAL › CONTROL › MULTIMAP EDIT · stored in the global slot</span><button class="libx" data-mapclose="1" title="Close (Esc)">Esc</button></div><section class="maprow">${mapTableH()}</section>`;
  enhanceSelects(pop);syncControls();pop.hidden=false;
  if(fk){const el=pop.querySelector(fk);if(el&&document.activeElement!==el)el.focus({preventScroll:true})}}
 function openMap(){if(S.mode!=="map")return;MAPOPEN=true;drawMapDlg()}
-function closeMap(){MAPOPEN=false;const pop=$("#mappop");if(pop)pop.hidden=true}
+function closeMap(){MAPOPEN=false;const pop=$("#mappop");if(pop){pop.hidden=true;pop.innerHTML=""}}
 document.addEventListener("click",e=>{if(e.target.closest?.("[data-mapopen]")){openMap();return}if(e.target.closest?.("[data-mapclose]"))closeMap()});
 let kbDown=null,lampT={};
 function flashTracks(ts){ts.forEach(i=>{const l=$(`[data-lamp="${i}"]`);if(!l)return;l.classList.add("on");clearTimeout(lampT[i]);lampT[i]=setTimeout(()=>l.classList.remove("on"),160)})}
