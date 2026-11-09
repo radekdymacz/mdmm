@@ -437,7 +437,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 |---|---|---|---|---|---|---|---|
 | Test mode 1-110 | Hardware self test, joystick calibration | Test | ➖ | – |  | – | n/a |
 | Empty reset 1-110 | Clear kits, patterns, songs, globals | Reset | ✅ | Engine menu: Reset machine… > Empty reset… (asked twice): every kit, pattern and song cleared on SYSEX RECV, read back and reported in the SysEx panel | Globals stay: a global is reset in its slot in GLOBAL. | 1 | pass (e2e-mm-engine-reset-empty) |
-| Factory reset 1-110 | Restore factory data | Reset | ❌ | Engine menu: Reset machine… says why it is not offered; Start from factory memory… restarts the machine as on a new install, with the saved machine memory deleted (I-024) |  | – | n/a |
+| Factory reset 1-110 | Restore factory data | Reset | ❌ | Engine menu: Reset machine… says why it is not offered; Start from factory memory… restarts the machine as on a new install, with the saved machine memory deleted (I-024) | Reversed by Radek, 2026-11-09: the Monomachine gets a real factory reset in 0.9.1, built like the Machinedrum's from the user's own ROM (B-211). This row changes when it ships. | – | n/a |
 | Soft reset 1-111 | Restart keeping data | Restart | ➖ | – | Reopen the editor | – | n/a |
 | MIDI upgrade, send upgrade 1-111, 1-112 | OS update over MIDI | OS update | ➖ | – | The editor loads the OS 1.32B image | – | n/a |
 | Specifications 1-113 | Data sheet | Specs | ➖ | – |  | – | n/a |

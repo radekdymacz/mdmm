@@ -57,7 +57,7 @@
 </header>
 <main id="main" class="gd-main gd-book">
 <div class="gd-page">
-<section class="gd-cover"><p class="gd-cnum">MM</p><h1>Monomachine Editor</h1><p class="gd-cover-sub">User guide · version 0.8.1</p><p class="gd-cover-note">Future Native Audio · mdmm.dev<br>The chapters follow the Monomachine manual's order. Every sentence is our own.</p></section>
+<section class="gd-cover"><p class="gd-cnum">MM</p><h1>Monomachine Editor</h1><p class="gd-cover-sub">User guide · version 0.9.0</p><p class="gd-cover-note">Future Native Audio · mdmm.dev<br>The chapters follow the Monomachine manual's order. Every sentence is our own.</p></section>
 <section class="gd-contents" style="page: contents"><div class="gd-runhead"><span>Contents</span><span>Monomachine Editor</span></div><h2>Contents</h2><ol class="gd-toc gd-toc-print">
 <li><a href="#c1"><span class="gd-tnum">1</span><span class="gd-ttitle">Introduction, philosophy, highlights</span><span class="gd-tsum">What the Monomachine is, what the Monomachine Editor adds to it, and how this guide writes about controls.</span></a></li>
 <li><a href="#c2"><span class="gd-tnum">2</span><span class="gd-ttitle">User interface and connectors</span><span class="gd-tsum">The Monomachine's panel, keyboard and sockets, and where each control is on the editor's page.</span></a></li>
@@ -2088,6 +2088,13 @@
 <p>The machine has no such function. With it on, the track you select changes to the last synth track you played from a MIDI keyboard. It is off until you turn it on, and the project keeps the choice.</p>
 <ol class="gd-steps"><li>Open the engine menu and choose <b class="gd-ui">FOLLOW PLAYED TRACK: OFF</b>. It reads <b class="gd-ui">FOLLOW PLAYED TRACK: ON</b>.</li><li>Play a MIDI keyboard on the channel of track 4. Track 4 is selected.</li><li>Play it on a channel no synth track plays. The selection stays where it was.</li><li>Choose the entry again to turn it off.</li></ol>
 <p>A track's channel is the base channel plus the track's number, inside the CHANNEL SPAN of the global. The keys of the computer keyboard never move the selection. With the HW MIDI engine it does nothing, since the port then carries the machine's own MIDI. While a question is open, or LEARN waits for its note, the selection stays where it is.</p>
+</div></section>
+<section class="gd-sec" id="a-dump-from-the-daw-without-sysex-recv">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>A DUMP FROM THE DAW WITHOUT SYSEX RECV</h2>
+<p>The machine takes a kit, pattern, song or global dump only on GLOBAL &gt; FILE &gt; SYSEX RECV. The editor's <b class="gd-ui">AUTO RECEIVE</b> takes it on any screen, as the Machinedrum does: a dump that reaches the editor on its MIDI in (a MIDI track in the DAW, a Max for Live device, a librarian sending to the standalone) lands on the machine by itself. It is on until you turn it off, and the project keeps the choice. A project saved by 0.8 or earlier has it on.</p>
+<ol class="gd-steps"><li>Send a kit, pattern, song or global dump from the DAW to the editor. The editor opens SYSEX RECV on the machine, sends the dump as <b class="gd-ui">IMPORT SYSEX…</b> does, and goes back to the main screen a few seconds later. A message names what went.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to put back what the dump replaced. A burst of dumps is one step.</li><li>To have the machine's own behaviour (a dump outside SYSEX RECV is dropped), open the engine menu and choose <b class="gd-ui">AUTO RECEIVE: ON</b>. It reads <b class="gd-ui">AUTO RECEIVE: OFF</b>. Choose it again to turn it back on.</li></ol>
+<p>The machine plays on while it takes the dump. A dump into the kit that plays replaces your unsaved edits of that kit, as on the machine. With the HW MIDI engine it does nothing: open SYSEX RECV on the machine yourself.</p>
 </div></section>
 <section class="gd-sec" id="the-cpu-meter-and-the-speed-ups">
 <aside class="gd-margin"></aside>
