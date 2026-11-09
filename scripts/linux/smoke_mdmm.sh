@@ -199,7 +199,11 @@ run() {
 	ps -eo pid,ppid,args --forest > "${out}/${name}-processes.txt"
 	import -display "${display}" -window root "${out}/${name}.png" 2>/dev/null || true
 	ocr_screen "${out}/${name}.png" "${out}/${name}-screen" 11
-	if grep -q -i -F "${visible_wanted}" "${out}/${name}-screen.txt"; then
+	# The card's instruction line sits on a hover tint (the pointer rests on it) that Tesseract reads only in part
+	# ("Click heretoc"), while the line above it in the same card ("Choose your <machine> ... ROM") reads whole. Either
+	# line proves the card is on screen.
+	if grep -q -i -F "${visible_wanted}" "${out}/${name}-screen.txt" \
+		|| grep -q -i -F "Choose your ${machine}" "${out}/${name}-screen.txt"; then
 		record "${label}" "firmware card visible in screenshot (OCR)" "yes"
 	else
 		fail "${label}: screenshot did not show '${visible_wanted}' (a live accessibility tree alone is not a visible editor)"
