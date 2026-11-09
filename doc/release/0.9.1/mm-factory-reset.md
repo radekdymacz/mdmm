@@ -72,5 +72,6 @@ reset (the sync field reads SEND and the number of waiting dumps until it is). U
   active, the production reset makes every kit, pattern and song equal the factory ones (read back) and the working
   kit the factory K01; then Empty reset with the factory K01 playing empties stored K01 and the working kit (B-175 on
   the true factory kit); Undo brings the factory K01 back; a second Undo the renamed K01.
-- Journey `mm-engine-reset-factory` (MM-318): the question offers Factory reset…, a cleared kit comes back named,
-  the panel says restored, Cmd+Z brings the cleared kit back.
+- Journey `mm-engine-reset-factory` (MM-318), independent of what the run's machine holds: Empty reset first (no kit
+  named, no trigs), then RESET MACHINE… offers Factory reset…; after it K01 is named, patterns have trigs, the global
+  is unchanged and the panel says restored; Cmd+Z empties the machine again.

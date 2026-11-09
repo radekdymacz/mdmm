@@ -2426,28 +2426,34 @@ const MmJourneys = (() => {
 		],
 		async tidy(u, c) { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; await back(u, c); }
 	};
-	/* Reset machine… > Factory reset (0.9.1, doc/release/0.9.1/mm-factory-reset.md): a second Monomachine from the run's
-	   ROM is read (seconds), then every kit, pattern and song is sent on SYSEX RECV and read back (minutes). A stored kit
-	   cleared first must come back named (the factory kits are named; the byte compare is mmFactoryResetFirmwareTest), the
-	   global stays, and one Cmd+Z puts the machine back as it was. The plug-in only (the page tier has no second machine) */
+	/* Reset machine… > Factory reset (0.9.1, doc/release/0.9.1/mm-factory-reset.md): whatever the run's machine holds,
+	   an Empty reset first (every kit unnamed, no trigs), then the factory reset: a second Monomachine from the run's ROM
+	   is read (seconds), every kit, pattern and song is sent on SYSEX RECV and read back (minutes). The factory data is
+	   back (K01 named, patterns with trigs; the slot-for-slot compare with the second machine's dumps is
+	   mmFactoryResetFirmwareTest), the global stays, and one Cmd+Z takes the factory reset back (empty again). The
+	   plug-in only (the page tier has no second machine) */
+	const namedKits = () => [...Array(128).keys()].filter(k => (kitName(k) || "").trim());
+	const trigPatterns = () => [...Array(128).keys()].filter(p => (I().doc("pattern", p)?.tracks || []).some(t => (t.trig || []).length));
 	const resetFactory = {
 		name: "mm-engine-reset-factory", alone: true, proves: ["MM-318"],
 		needs: () => window.gmDev ? "a second machine from the ROM: the plug-in only" : null,
 		steps: [
-			{ say: "clear a named stored kit (not the one that plays; the run's machine starts with the factory kits): it is empty", act: (u, c) => { const cur = machine().kit?.current; c.k = [...Array(127).keys()].map(k => k + 1).find(k => k !== cur && (kitName(k) || "").trim()) ?? (cur === 1 ? 2 : 1); Bridge.send({ op: "kitClear", k: c.k, force: true }); },
-				machine: c => ok(!(kitName(c.k) || "").trim(), `K${c.k + 1} "${kitName(c.k)}"`), within: 15000 },
+			{ say: "choose RESET MACHINE…, Empty reset…, Clear everything: the machine is empty first", act: async (u, c) => { c.g0 = JSON.stringify(I().doc("global", machine().global?.current ?? 0)); await u.pick("engsel", "reset"); await until(dlgShown, 3000); u.click(dlgButton("Empty reset…")); await until(() => !!dlgButton("Clear everything"), 3000); u.click(dlgButton("Clear everything")); },
+				screen: () => ok(/Empty reset/.test($1("#syxpop .cap")?.textContent || "") && /cleared/.test($1("#syxpop .syxsum")?.textContent || ""), "panel: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
+				machine: () => { const n = namedKits(), t = trigPatterns(); return ok(!n.length && !t.length, `${n.length} kits named, ${t.length} patterns with trigs`); }, within: 400000 },
+			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") },
 			{ say: "choose RESET MACHINE…: Empty reset and Factory reset are offered; Cancel is the default", act: u => u.pick("engsel", "reset"),
 				screen: () => ok(dlgShown() && !!dlgButton("Empty reset…") && !!dlgButton("Factory reset…") && /second Monomachine started from your own ROM/.test($1("#dlg").textContent) && $1("#dlg .btnrow button:last-child")?.textContent === "Cancel", "the question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
 			{ say: "click Factory reset…: it asks a second time", act: u => u.click(dlgButton("Factory reset…")),
 				screen: () => ok(dlgShown() && !!dlgButton("Factory reset"), "second question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
-			{ say: "click Factory reset: the factory data is prepared, then sent, read back and reported", act: (u, c) => { c.g0 = JSON.stringify(I().doc("global", machine().global?.current ?? 0)); c.named = [...Array(128).keys()].map(k => [k, (kitName(k) || "").trim()]); u.click(dlgButton("Factory reset")); },
+			{ say: "click Factory reset: the factory data is prepared, then sent, read back and reported", act: u => u.click(dlgButton("Factory reset")),
 				screen: () => ok(/Factory reset/.test($1("#syxpop .cap")?.textContent || "") && /restored/.test($1("#syxpop .syxsum")?.textContent || ""), "panel: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
-				machine: c => { const g = JSON.stringify(I().doc("global", machine().global?.current ?? 0)), back = (kitName(c.k) || "").trim(), k1 = (kitName(0) || "").trim();
-					return ok(!!back && !!k1 && g === c.g0, `K${c.k + 1} "${back}", K01 "${k1}", global ${g === c.g0 ? "kept" : "changed"}`); }, within: 600000 },
+				machine: c => { const n = namedKits(), t = trigPatterns(), g = JSON.stringify(I().doc("global", machine().global?.current ?? 0)), k1 = (kitName(0) || "").trim();
+					return ok(!!k1 && n.length > 0 && t.length > 0 && g === c.g0, `K01 "${k1}", ${n.length} kits named, ${t.length} patterns with trigs, global ${g === c.g0 ? "kept" : "changed"}`); }, within: 600000 },
 			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") },
-			/* B-130: the factory reset is one undo step: Cmd+Z puts every kit back, the cleared one empty again */
-			{ ...undoKey, say: "press Cmd+Z: the reset is one undo step, the kits are as before",
-				machine: c => { const off = c.named.filter(([k, n]) => (kitName(k) || "").trim() !== n); return ok(!off.length, off.length + " kits not back: " + off.slice(0, 3).map(([k, n]) => `K${k + 1} "${kitName(k)}" want "${n}"`).join(", ")); }, within: 400000 }
+			/* B-130: the factory reset is one undo step: Cmd+Z empties the machine again */
+			{ ...undoKey, say: "press Cmd+Z: the factory reset is one undo step, the machine is empty again",
+				machine: () => { const n = namedKits(), t = trigPatterns(); return ok(!n.length && !t.length, `${n.length} kits named, ${t.length} patterns with trigs`); }, within: 400000 }
 		],
 		async tidy() { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; }
 	};
