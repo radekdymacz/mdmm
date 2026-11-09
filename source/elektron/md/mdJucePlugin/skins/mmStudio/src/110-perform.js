@@ -53,10 +53,10 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
  const joy=S.asTab.startsWith("JOY");
  const selTrack=`<span class="seg trksel" data-set="astrk">${[0,1,2,3,4,5].map(k=>{const p=S.mode==="poly";return`<button data-v="${k}" aria-pressed="${k===t}"${p?` class="${k===t?"polyt":"polyoff"}" title="${k===t?`T${k+1} plays POLY: six voices`:`Silent in POLY. Click: T${k+1} plays POLY instead`}"`:""}><b>T${k+1}</b><small>${shortM(S.tracks[k].m)}</small>${p&&k===t?`<em class="x6">×6</em>`:""}</button>`}).join("")}</span>`;
  const tabsH=`<span class="seg" data-set="astab">${Object.keys(A.tabs).map(k=>`<button data-v="${k}" aria-pressed="${S.asTab===k}">${k}</button>`).join("")}</span>`;
- const extrasH=`${S.asTab==="JOY RL"?`<button class="lkey" data-mirr="1"${lgAttr(`T${t+1} ASSIGN MIRROR`)} aria-pressed="${A.mirr}" title="Left = −right"><i class="led"></i>MIRR (left = −right)</button>`:""}
+ const extrasH=`${joy?jxRowH():""}${S.asTab==="JOY RL"?`<button class="lkey" data-mirr="1"${lgAttr(`T${t+1} ASSIGN MIRROR`)} aria-pressed="${A.mirr}" title="Left = −right"><i class="led"></i>MIRR (left = −right)</button>`:""}
     ${S.asTab==="KEY"?`<span class="keyrow"><button class="lkey" data-ktrk="hpf"${lgAttr(`T${t+1} ASSIGN HPF`)} aria-pressed="${A.hpf}"><i class="led"></i>HPF tracks keys</button><button class="lkey" data-ktrk="lpf"${lgAttr(`T${t+1} ASSIGN LPF`)} aria-pressed="${A.lpf}"><i class="led"></i>LPF tracks keys</button></span>`:""}`;
  const hintH=`<div class="hint onel" title="${ASG_SAY[S.asTab]} ADD −64…+63.">${ASG_SAY[S.asTab]} ADD −64…+63.</div>`;
- const padH=`${joy?`<div class="joy" id="joy" title="Drag the stick. It springs back."><span class="cross"></span><span class="cross2"></span><small class="jl">L</small><small class="jr">R</small><small class="ju">U</small><small class="jd">D</small><span class="knobj" id="knobj" style="left:${50+S.joy.x*42}%;top:${50-S.joy.y*42}%"></span></div>`
+ const padH=`${joy?`<div class="joy" id="joy" title="${S.jx.edit?"Drag a rectangle: the region RANDOM moves in.":S.jx.hold?"Held: drag to move it, HOLD again lets it go.":"Drag the stick. It springs back (unless HOLD or RANDOM is on)."}"><span class="cross"></span><span class="cross2"></span><small class="jl">L</small><small class="jr">R</small><small class="ju">U</small><small class="jd">D</small>${jxRegH()}<span class="knobj" id="knobj" style="left:${50+S.joy.x*42}%;top:${50-S.joy.y*42}%"></span></div>`
      :`<div class="joy padinfo"><b>${S.asTab}</b><span>${ASG_SAY[S.asTab]}</span></div>`}`;
  const rowsH=`<div class="asrows">${rows.map(asRow).join("")}</div>`;
  const menvH=`<section class="card menvcard"><header><h3>Multi envelope</h3><span title="Both DATA PAGE keys on the machine. Its effect depends on the kit's MULTI TRIG mode">all tracks · ${MTM[S.multi.mode]}</span></header><div class="menvplot"><canvas class="ed" data-ed="menv" aria-label="Multi envelope. Drag the dots."></canvas></div>
@@ -71,7 +71,7 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
  const upper=`<div class="perf3">${menvH}
    <section class="card trkcard"><header><h3>Track</h3>${scope(shortM(tr.m),"These settings belong to the selected track")}</header>${selTrack}${tabsH}${padH}${rowsH}${extrasH}${hintH}</section>
    <div class="perfside">${mutesH}<section class="card kbcard"><header><h3>Keyboard</h3><span title="What the keys below play">plays · all keys</span></header>  <div class="perfbar kbtitle"><span class="keyrow">${PMODES.map(([k,n])=>`<button class="lkey" data-pmode="${k}" aria-pressed="${S.mode===k}"><i class="led"></i>${n}</button>`).join("")}</span>${mtCtl}
-   <span class="stepper" style="margin-left:auto"><span class="ilab">Octave</span><button data-kboct="-1" aria-label="Octave down"${S.kbOct<=KBOCT[0]?" disabled":""}>−</button><b class="mono">${noteName(kbRange()[0])}</b><button data-kboct="1" aria-label="Octave up"${S.kbOct>=KBOCT[1]?" disabled":""}>+</button></span></div>
+   <button class="lkey" style="margin-left:auto" data-kbfollow="1" aria-pressed="${S.kbFollow}" title="The keyboard moves to the octave of a note you play outside it: from a MIDI keyboard or the computer keys, never from a click on the keys, and not while another key is held."><i class="led"></i>Follow</button><span class="stepper"><span class="ilab">Octave</span><button data-kboct="-1" aria-label="Octave down"${S.kbOct<=KBOCT[0]?" disabled":""}>−</button><b class="mono">${noteName(kbRange()[0])}</b><button data-kboct="1" aria-label="Octave up"${S.kbOct>=KBOCT[1]?" disabled":""}>+</button></span></div>
   <div class="hint kbhint">${S.mode==="poly"?polyHint(t):pm[2]} ${S.mode==="multi"?{0:"Notes go to all six tracks; each keeps its own arpeggiator.",1:`Keys from ${noteName(S.multi.splitKey)} play T${S.multi.splitTrack}-T6, keys below play T1-T${S.multi.splitTrack-1}. The multi envelope is not used here.`,2:"Each note restarts the pattern, transposed from C-4.",3:"The first note starts the pattern; later notes only transpose it, so the loop never breaks."}[S.multi.mode]:""}</div></section></div></div>`;
  $("#main").innerHTML=`<div class="perf ${S.mode==="map"?"map":""}">
   ${upper}
@@ -95,7 +95,14 @@ function flashTracks(ts){ts.forEach(i=>{const l=$(`[data-lamp="${i}"]`);if(!l)re
 const KBLIT={mouse:null,midi:new Set()};
 function kbLit(n){return(KBLIT.mouse===n||[...KB.held.values()].some(h=>h.n===n)?" dn":"")+(KBLIT.midi.has(n)?" mi":"")}
 function paintKb(){$$("canvas.roll[data-big]").forEach(drawEd);$$(".kb [data-key]").forEach(k=>{const c=kbLit(+k.dataset.key);k.classList.toggle("dn",c.includes("dn"));k.classList.toggle("mi",c.includes("mi"))})}
-function setMidiHeld(notes){KBLIT.midi=new Set(notes||[]);paintKb()}
+/* I-062: the keyboard follows the octave of a played note. Rules: only a note outside the four octaves shown moves it
+   (the new range has the note's octave second, so the neighbours stay in view; a manual + / - works as before), only
+   when no other key is held (mouse, computer keys, MIDI), so the keys under the fingers never jump, and a click on
+   the keys never moves it. kbFollowOct is the pure rule. */
+function kbFollowOct(n,cur){const lo=12*(cur+1);if(n>=lo&&n<=Math.min(lo+47,KB_HI))return cur;return clamp(Math.floor(n/12)-2,KBOCT[0],KBOCT[1])}
+const kbAnyHeld=()=>KBLIT.mouse!=null||KB.held.size>0||KBLIT.midi.size>0;
+function kbFollow(n){if(!S.kbFollow)return false;const o=kbFollowOct(n,S.kbOct);if(o===S.kbOct)return false;S.kbOct=o;if(S.ws==="perform")render();return true}
+function setMidiHeld(notes){const was=kbAnyHeld();KBLIT.midi=new Set(notes||[]);if(!was&&KBLIT.midi.size)kbFollow(Math.min(...KBLIT.midi));paintKb()}
 /* a key shown held by the mouse (null: none) and the keyboard's info line (null: unchanged) */
 function setKeyDown(n,info){KBLIT.mouse=n;paintKb();const el=$("#kbinfo");if(el&&info!=null)el.textContent=info}
 function playKey(n){if(HOST.playKey)return HOST.playKey(n);setKeyDown(n,null);let ts=[],msg="";
@@ -104,3 +111,56 @@ function playKey(n){if(HOST.playKey)return HOST.playKey(n);setKeyDown(n,null);le
   else{S.mtTrn=n-60;msg=`${m===2?"Restart":"Transpose"} pattern ${S.mtTrn>=0?"+":""}${S.mtTrn}${S.multi.timing?" at the next "+TIMS[S.multi.timing]:""}`;if(!S.playing)togglePlay();else if(m===2){S.step=-1}ts=[0,1,2,3,4,5]}}
  else{const i=mapRow(n);if(i>=0){const r=S.mmap[i];S.mmapSel=i;msg=`${noteName(n)} › ${r.pat<0?"current":patName(r.pat)} from step ${r.ofs+1}${r.len?", "+r.len+" steps":""}${r.trn!==64&&r.trn?"":""}`;$$(".band").forEach(b=>b.classList.toggle("sel",+b.dataset.band===i))}}
  flashTracks(ts);setKeyDown(n,msg)}
+
+/* ===== I-061: the joystick's HOLD and RANDOM, and the prefs of Perform (per viewer, localStorage) =====
+   The stick has one way to the machine: joySet -> HOST.joy -> the adapter's MIDI (pitch bend, CC 1, CC 2, coalesced per
+   message kind like a hand drag). HOLD keeps the stick where the hand left it. RANDOM glides it to a random point of a
+   region of the field, then to the next, at the chosen speed. A timer of 33 ms runs only while one of them is on. The
+   hand wins while it drags; on release HOLD keeps the new place and RANDOM goes on from it. STOP, a machine stop and
+   PANIC end RANDOM (the stick returns to the middle unless HOLD is on); PANIC also ends HOLD. A different track in the
+   assign card ends both: the track they were on gets the middle first. */
+const JX_TICK=33;
+let jxTimer=null,jxTarget=null,jxTrack=null;
+(()=>{let v=null;try{v=JSON.parse(localStorage.getItem("mmeditor.perform")||"null")}catch(_){}
+ if(v&&typeof v==="object"){if(typeof v.follow==="boolean")S.kbFollow=v.follow;if(v.speed>=1&&v.speed<=10)S.jx.speed=Math.round(v.speed);if(v.reg)S.jx.reg=jxNormReg(v.reg)}})();
+function perfPrefs(){try{localStorage.setItem("mmeditor.perform",JSON.stringify({follow:S.kbFollow,speed:S.jx.speed,reg:S.jx.reg}))}catch(_){}}
+/* a region: ordered corners, inside the field, at least 0.1 wide and high (a point is a stick that never moves: HOLD does that) */
+function jxNormReg(r){const c=v=>clamp(+v||0,-1,1);let x0=c(r.x0),x1=c(r.x1),y0=c(r.y0),y1=c(r.y1);if(x0>x1)[x0,x1]=[x1,x0];if(y0>y1)[y0,y1]=[y1,y0];
+ if(x1-x0<.1){const m=clamp((x0+x1)/2,-.95,.95);x0=m-.05;x1=m+.05}if(y1-y0<.1){const m=clamp((y0+y1)/2,-.95,.95);y0=m-.05;y1=m+.05}return{x0,y0,x1,y1}}
+/* speed 1-10: field units a second (the field is 2 wide): 0.15 at 1, 3.1 at 10 */
+const jxUnits=s=>.15*Math.pow(1.4,clamp(s,1,10)-1);
+function jxPick(reg,rnd){return{x:reg.x0+(rnd?rnd():Math.random())*(reg.x1-reg.x0),y:reg.y0+(rnd?rnd():Math.random())*(reg.y1-reg.y0)}}
+/* one step of dt seconds from p towards tgt: the new place, and whether it arrived. Pure. */
+function jxStep(p,tgt,speed,dt){const dx=tgt.x-p.x,dy=tgt.y-p.y,d=Math.hypot(dx,dy),st=jxUnits(speed)*dt;if(d<=st)return{x:tgt.x,y:tgt.y,hit:true};return{x:p.x+dx/d*st,y:p.y+dy/d*st,hit:false}}
+const jxOn=()=>S.jx.hold||S.jx.rand;
+function jxRegH(){const r=S.jx.reg;if(!S.jx.edit&&!S.jx.rand)return"";const L=v=>50+v*42;return`<span class="jreg${S.jx.edit?" edit":""}" style="left:${L(r.x0)}%;top:${L(-r.y1)}%;width:${(r.x1-r.x0)*42}%;height:${(r.y1-r.y0)*42}%"></span>`}
+function jxRowH(){const j=S.jx;return`<div class="jxrow"><span class="keyrow"><button class="lkey" data-jx="hold" aria-pressed="${j.hold}" title="Keep the stick where it is, until you press HOLD again. Drag it to move it."><i class="led"></i>HOLD</button><button class="lkey" data-jx="rand" aria-pressed="${j.rand}" title="The stick moves by itself inside the region. STOP and PANIC end it."><i class="led"></i>RANDOM</button><button class="lkey" data-jx="reg" aria-pressed="${j.edit}" title="Drag a rectangle on the pad: the region RANDOM moves in."><i class="led"></i>REGION</button></span>
+ <span class="stepper"><span class="ilab">Speed</span><button data-jx="spd" data-d="-1"${j.speed<=1?" disabled":""} aria-label="Slower">−</button><b class="mono">${j.speed}</b><button data-jx="spd" data-d="1"${j.speed>=10?" disabled":""} aria-label="Faster">+</button></span>${j.edit?`<button data-jx="full" title="The whole field">Full field</button>`:""}</div>`}
+function jxClick(k,d){const j=S.jx;
+ if(k==="hold"){if(j.hold)jxRelease();else{j.rand=false;j.hold=true;jxTimerOn()}}
+ else if(k==="rand"){if(j.rand)jxStopRandom();else{j.hold=false;j.rand=true;j.edit=false;jxTarget=null;jxTimerOn()}}
+ else if(k==="reg"){j.edit=!j.edit}
+ else if(k==="spd"){j.speed=clamp(j.speed+d,1,10);perfPrefs()}
+ else if(k==="full"){j.reg={x0:-1,y0:-1,x1:1,y1:1};perfPrefs()}
+ render()}
+function jxTimerOn(){jxTrack=asgT();if(!jxTimer)jxTimer=setInterval(jxTick,JX_TICK)}
+function jxTimerOff(){clearInterval(jxTimer);jxTimer=null;jxTarget=null;jxTrack=null}
+/* the stick back to the middle, on track t (the one it was on) */
+function jxCentre(t){if(S.joy.x===0&&S.joy.y===0)return;joySet(0,0,t)}
+function jxTick(){if(!jxOn()){jxTimerOff();return}
+ if(asgT()!==jxTrack){const t=jxTrack;S.jx.hold=S.jx.rand=false;jxTimerOff();jxCentre(t);if(S.ws==="perform")render();return}
+ if(!S.jx.rand||joyDrag)return;
+ if(!jxTarget)jxTarget=jxPick(S.jx.reg);
+ const n=jxStep(S.joy,jxTarget,S.jx.speed,JX_TICK/1000);if(n.hit)jxTarget=jxPick(S.jx.reg);joySet(n.x,n.y)}
+/* STOP, a machine stop: RANDOM ends and the stick returns to the middle (HOLD keeps it) */
+function jxStopRandom(){if(!S.jx.rand)return;S.jx.rand=false;if(!S.jx.hold){const t=jxTrack;jxTimerOff();jxCentre(t==null?asgT():t)}else jxTimerOff(),jxTimerOn();if(S.ws==="perform")render()}
+/* HOLD off, RANDOM off, the stick to the middle (PANIC, HOLD pressed again) */
+function jxRelease(){const had=jxOn(),t=jxTrack;S.jx.hold=S.jx.rand=false;jxTimerOff();if(had)jxCentre(t==null?asgT():t);if(S.ws==="perform")render()}
+/* the hand lets go of the stick: it springs back, unless HOLD or RANDOM keeps it */
+function jxHandUp(){if(jxOn())return;jxCentre(asgT())}
+/* REGION: a rectangle dragged on the pad, in field units (the inverse of the knob's 50% ± 42% place) */
+let jxRegA=null;
+function jxPadAt(e){const r=$("#joy").getBoundingClientRect(),f=v=>clamp((v*100-50)/42,-1,1);return{x:f((e.clientX-r.left)/r.width),y:-f((e.clientY-r.top)/r.height)}}
+function jxRegStart(e){jxRegA=jxPadAt(e);jxRegMove(e)}
+function jxRegMove(e){if(!jxRegA)return;const b=jxPadAt(e);S.jx.reg=jxNormReg({x0:jxRegA.x,y0:jxRegA.y,x1:b.x,y1:b.y});const el=$("#joy .jreg"),r=S.jx.reg,L=v=>50+v*42;if(el){el.style.left=L(r.x0)+"%";el.style.top=L(-r.y1)+"%";el.style.width=(r.x1-r.x0)*42+"%";el.style.height=(r.y1-r.y0)*42+"%"}}
+function jxRegEnd(){jxRegA=null;perfPrefs()}

@@ -36,7 +36,7 @@ Notes on the multi map channel trigger patterns. The Perform keyboard sends them
 Notes on the auto channel go to the active track. The Perform workspace has an **Auto track** setting for it.
 
 ## CC: JOYSTICK UP / DOWN
-<!-- rows: MM-352 @c690eb -->
+<!-- rows: MM-352 @2b9ebe -->
 
 The joystick sends controller 1 for up and controller 2 for down. The assign pad of the Perform workspace sends them.
 
@@ -109,7 +109,7 @@ The machine releases a note or triggers the amp, the filter or the LFO of a trac
 The multi envelope has the NRPN range 0x40 to 0x45. The multi envelope of the Perform workspace sends it.
 
 ## PITCH BEND
-<!-- rows: MM-366 @6424ac -->
+<!-- rows: MM-366 @475454 -->
 
 Pitch bend works per track. The joystick pad sends it.
 

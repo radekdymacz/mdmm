@@ -78,8 +78,8 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-5 | 17 SCALE SETUP (FUNCTION + SCALE) | Length and speed | ✅ | LCD line 2 LEN, SPD |  | 1 | pass (e2e-mm-seq-scale-setup) |
 | Front panel 1-5 | 18 TRIG SELECT: AMP / FILTER / LFO / ALL | Trig track | ✅ | Step menu > Envelopes > Amp, Filter, LFO (on a selection: every trig); the roll marks a trig that fires only some (their letters on the note) | Different UI, same data | 1 | pass (mm-sequence-workspace) |
 | Front panel 1-5 | 18 MIDI SEQ mode (FUNCTION + TRIG SELECT) | Edit MIDI tracks | ✅ | SYNTH / MIDI switch |  | 1 | pass (mm-midi-roll) |
-| Keyboard SFX-6 1-6 | Joystick (real time) | Expression control | ✅ | Perform > Assign pad (springs back) | Mouse; pitch bend / CC 1 / CC 2 map | 1 | pass (e2e-mm-perform-joystick-assign) |
-| Keyboard SFX-6 1-6 | Keyboard | Real-time play and record | ✅ | Perform on-screen keyboard (keys lit while held, also from a MIDI keyboard); home row |  | 3 | pass (e2e-mm-perform-keyboard) |
+| Keyboard SFX-6 1-6 | Joystick (real time) | Expression control | ✅ | Perform > Assign pad (springs back); HOLD, RANDOM and REGION keys under it | Mouse; pitch bend / CC 1 / CC 2 map; HOLD keeps the stick, RANDOM moves it inside a region (stops on Stop and Panic) | 2 | pass (e2e-mm-perform-joystick-assign) |
+| Keyboard SFX-6 1-6 | Keyboard | Real-time play and record | ✅ | Perform on-screen keyboard (keys lit while held, also from a MIDI keyboard); home row; Follow moves the octave to a played note |  | 3 | pass (e2e-mm-perform-keyboard) |
 | Keyboard SFX-6 1-6 | MULTI TRIG key | Toggle multi trig | ✅ | Perform > Multi trig |  | 1 | pass (e2e-mm-perform-multi-trig) |
 | Keyboard SFX-6 1-6 | MULTI MAP (FUNCTION + MULTI TRIG) | Toggle multi map | ✅ | Perform > Multi map |  | 1 | pass (e2e-mm-perform-multi-map) |
 | Keyboard SFX-6 1-6 | OCTAVE keys | Keyboard octave | ✅ | Perform Octave stepper |  | 2 | pass (e2e-mm-perform-joystick-midi) |
@@ -481,7 +481,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Multi trig channel B-2 | All track, split, seq start, seq transpose | Multi trig notes | ✅ | Perform keyboard |  | 1 | pass (e2e-mm-perform-keys-channels) |
 | Multi map channel B-2 | Triggers patterns | Multi map notes | ✅ | Perform keyboard |  | 1 | pass (e2e-mm-perform-keys-channels) |
 | Auto channel B-2 | Notes go to the active track | Auto | ✅ | Perform "Auto track" |  | 1 | pass (e2e-mm-perform-keys-channels) |
-| CC: joystick up / down B-2 | CC 1, 2 | Joystick | ✅ | Assign pad |  | 1 | pass (e2e-mm-perform-joystick-midi) |
+| CC: joystick up / down B-2 | CC 1, 2 | Joystick | ✅ | Assign pad |  | 2 | pass (e2e-mm-perform-joystick-midi) |
 | CC: mute B-2 | CC 3 | Mute | ✅ | Mute keys |  | 1 | pass (e2e-mm-wire-cc) |
 | CC: level B-2 | CC 7 | Level | ✅ | LEVEL fader |  | 1 | pass (e2e-mm-wire-cc) |
 | CC: pan B-2 | CC 10 and 62 | Pan | ✅ | PAN |  | 1 | pass (e2e-mm-wire-cc) |
@@ -495,7 +495,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | NRPN pitch B-5 | Pitch for a track | Pitch | ➖ | – | Firmware in; not used by the page | – | n/a |
 | NRPN note off, trig track B-5 | Release, trig A / L / F | Extra trigs | ➖ | – | Not sent; manual bit order erratum recorded | – | n/a |
 | NRPN multi env B-5 | Range 0x40-0x45 | Multi env | ✅ | Perform multi envelope |  | 1 | pass (e2e-mm-perform-menv-nrpn) |
-| Pitch bend B-6 | Per track | Pitch bend | ✅ | Joystick pad |  | 1 | pass (e2e-mm-perform-joystick-midi) |
+| Pitch bend B-6 | Per track | Pitch bend | ✅ | Joystick pad |  | 2 | pass (e2e-mm-perform-joystick-midi) |
 | Program change B-6 | Selects pattern | Pattern by PC | ➖ | – | Firmware reacts to host MIDI | – | n/a |
 | Song pointer, clock, start, continue, stop B-6 | System messages | Sync | ➖ | – | Firmware; used by `followHost` | – | n/a |
 
