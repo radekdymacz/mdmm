@@ -13,7 +13,8 @@ namespace mdJucePlugin
 {
 	// P7: install a user's firmware from a file they chose or dropped, on this computer only (nothing is sent
 	// anywhere). A .bin, or a .zip that holds exactly one 8 MiB .bin; checked (md::checkRom) before it is
-	// copied into the ROM folder, never over another file.
+	// copied into the ROM folder, never over another file. A file already in the ROM folder is used where it is. Several
+	// images may sit in the folder; the user picks the one an instance runs (AudioPluginAudioProcessor::useRom).
 	struct RomInstall
 	{
 		bool ok = false;
@@ -26,18 +27,22 @@ namespace mdJucePlugin
 
 	RomInstall installRom(const juce::File& _file, md::MachineModel _model, const juce::File& _romFolder);
 
-	// The firmware images of this machine inside the ROM folder (any name; judged by their contents).
+	// The firmware images of this machine directly inside the ROM folder (any name; judged by their contents). A
+	// subfolder is not searched: the engine's own search does not look there either, and REMOVE puts images there.
 	std::vector<juce::File> romsInFolder(md::MachineModel _model, const juce::File& _romFolder);
 
-	// REPLACE: the chosen file is installed as above, and then every other image of this machine in the ROM
-	// folder goes (the new one stays if anything fails first). Only files inside the ROM folder are touched.
-	RomInstall replaceRom(const juce::File& _file, md::MachineModel _model, const juce::File& _romFolder);
+	// The image the user chose by its file name (no path), if it is in the folder and is this machine's. A name
+	// with a folder part is never one.
+	std::optional<juce::File> findRomByName(md::MachineModel _model, const juce::File& _romFolder, const std::string& _name);
 
-	// REMOVE: every image of this machine in the ROM folder is deleted; nothing outside the folder is.
+	// REMOVE: the named image leaves the ROM folder for its subfolder "removed" (g_removedFolder). Nothing is ever
+	// deleted: the user's file stays on the disk and can be moved back.
+	constexpr const char* g_removedFolder = "removed";
 	struct RomRemoval
 	{
 		int removed = 0;
 		std::string text;
+		juce::File movedTo;
 	};
-	RomRemoval removeRoms(md::MachineModel _model, const juce::File& _romFolder);
+	RomRemoval removeRom(md::MachineModel _model, const juce::File& _romFolder, const std::string& _name);
 }

@@ -201,9 +201,13 @@ namespace mdJucePlugin
 		void reply(const Value& _message, bool _ok, const std::string& _note) const;
 		void revealRomFolder(const Value& _message) const;
 		// LOAD ROM: {"type":"romInfo", installed, name, os, size, file, folder, inFolder} for the page's firmware
-		// dialog; REMOVE deletes the images in the ROM folder and starts the stand-in (the start-up card asks again).
+		// dialog; REMOVE moves an image out of the way (nothing is deleted).
 		void romInfo(const Value& _message) const;
+		// REMOVE moves the named (default: the running) image to the folder "removed" inside the ROM folder, nothing is
+		// deleted; USE ROM makes the named image the one this instance runs (saved with the project) and restarts it.
 		void removeRom(const Value& _message);
+		void useRom(const Value& _message);
+		bool restartOnChosenRom(bool _keepProject);
 	public:
 		// A line for the editor's log (diagnostics builds); set by the window while it is open.
 		void setLog(std::function<void(const std::string&)> _log) { m_log = std::move(_log); }
@@ -416,6 +420,7 @@ namespace mdJucePlugin
 			case Action::RevealRomFolder: revealRomFolder(_message); break;
 			case Action::RomInfo: romInfo(_message); break;
 			case Action::RemoveRom: removeRom(_message); break;
+			case Action::UseRom: useRom(_message); break;
 			case Action::MachineReset: machineReset(_message); break;
 			case Action::Midi: onMidi(_message); break;
 			case Action::OutputGain:

@@ -50,8 +50,9 @@
      syxChoose(), syxExport(request), syxStart(kinds, skip, {placeAt, checkOnly, readBack}), syxStop(), syxPlace(placeAt), syxExportInfo(),
      machineReset(how)   SysEx import and export (P7, B-019; 0.6: SPECIFIC place, VERIFY ONLY, kinds and ranges, Reset machine…): the host's file
                                       dialogs; the preview and progress come back through MMView
-     removeRom(info)   REMOVE in the LOAD ROM card
-     romManage()   LOAD ROM in the engine menu (a host shows which firmware runs, REPLACE and REMOVE; none: the start-up card)
+     removeRom(info)   REMOVE in the LOAD ROM card (moves the image to the "removed" folder; nothing is deleted)
+     useRom(name)   Use <name> in the LOAD ROM card: this instance runs that image of the ROM folder
+     romManage()   LOAD ROM in the engine menu (a host shows which firmware runs, ADD, USE and REMOVE; none: the start-up card)
      follow()       I-003: the engine menu's FOLLOW PLAYED TRACK on / off; the state comes back with MMView.setFollow, and the
                                       host selects the track a MIDI controller played with MMView.selectTrack
      autoReceive()  I-070: the engine menu's AUTO RECEIVE on / off; the state comes back with MMView.setAutoReceive

@@ -4,12 +4,13 @@
 // plug-in. The data root is an empty temp folder; the ROM (the user's own, from the environment) is
 // only read, and its copy lives in that folder until the test ends.
 //   mdSessionNoRomTest <md|mm>            no ROM: the state the page sees
-//   mdSessionNoRomTest <md|mm> manage     the same, then LOAD ROM: romInfo, REPLACE with another copy, REMOVE (the
-//                                         machine stops, the folder is empty, the page is told "missing" again), the
+//   mdSessionNoRomTest <md|mm> manage     the same, then LOAD ROM: romInfo, ADD another copy, USE one, REMOVE (nothing
+//                                         is deleted; with no image left the machine stops, the folder is empty, the page is told "missing" again), the
 //                                         ROM again (starts without a second preparation)
 //   mdSessionNoRomTest <md|mm> install    then the ROM (GEARMULATOR_MD_FIRMWARE_BIN / _MM_): exits 77 without it. A
 //                                         Machinedrum's first start in the empty folder is "loading" while it formats
 //                                         its sample flash (B-003), then starts once and keeps its factory cache
+#include <algorithm>
 #include "mdPluginProcessor.h"
 #include "mdDeskHost.h"
 #include "mdDeskSession.h"
@@ -569,7 +570,9 @@ int main(const int _argc, char** const _argv)
 		const auto* info = lastOf("romInfo");
 		check(info && info->find("installed") && info->find("installed")->asBool() && info->find("inFolder") && info->find("inFolder")->asBool()
 			&& !str(*info, "name").empty(), "romInfo names the installed image, in the editor's ROM folder");
-		// REPLACE with another copy of the image under a new name
+		// ADD another copy of the image under a new name: it joins the first (nothing is deleted) and this instance runs it
+		const auto origName = str(*info, "name");
+		const auto origFile = romFolder.getChildFile(juce::String::fromUTF8(origName.c_str()));
 		const auto other = juce::File::getSpecialLocation(juce::File::tempDirectory).getNonexistentChildFile("replacement-rom", ".bin");
 		juce::File(rom).copyFileTo(other);
 		published.clear();
@@ -577,15 +580,53 @@ int main(const int _argc, char** const _argv)
 		pump(300);
 		other.deleteFile();
 		const auto after = mdJucePlugin::romsInFolder(model2, romFolder);
-		check(after.size() == 1 && after[0].getFileName().startsWith("replacement-rom"), "REPLACE leaves one image, the new one");
+		check(after.size() == 2 && origFile.existsAsFile(), "ADD keeps the earlier image and adds the new one (no file is deleted)");
 		for(int i = 0; i < 1500 && !running(); ++i)
 			pump(40);
-		check(!stand() && running(), "the machine runs on the replaced image");
+		check(!stand() && running(), "the machine runs on the added image");
+		check(processor->runningRomName().rfind("replacement-rom", 0) == 0 && processor->romChoice() == processor->runningRomName(), "this instance runs the image it was given");
 		check(!preparing(), "the same firmware under a new name reuses the factory cache (no second preparation)");
-		// REMOVE
+		const auto addedName = processor->runningRomName();
+		// the choice is saved with the project and a fresh instance's state names it
+		{
+			juce::MemoryBlock state;
+			processor->getStateInformation(state);
+			const auto* p = static_cast<const char*>(state.getData());
+			check(state.getSize() > 0 && std::search(p, p + state.getSize(), addedName.begin(), addedName.end()) != p + state.getSize(),
+				"the project state names the chosen image (chunk ROMC)");
+		}
+		// romInfo lists both images
+		published.clear();
+		session->onPageMessage(*elektronData::json::parse(R"({"op":"romInfo","id":25})"));
+		const auto* both = lastOf("romInfo");
+		check(both && both->find("roms") && both->find("roms")->asArray().size() == 2 && str(*both, "name") == addedName, "romInfo lists both images and names the one that runs");
+		// USE the first image again
+		published.clear();
+		session->onPageMessage(*elektronData::json::parse(std::string(R"({"op":"useRom","id":26,"name":")") + origName + "\"}"));
+		for(int i = 0; i < 1500 && (!running() || processor->runningRomName() != origName); ++i)
+			pump(40);
+		check(processor->runningRomName() == origName && processor->romChoice() == origName && !stand() && running(), "USE restarts the machine on the chosen image");
+		published.clear();
+		session->onPageMessage(*elektronData::json::parse(R"({"op":"useRom","id":27,"name":"no-such-file.bin"})"));
+		bool useRefused = false;
+		for(const auto& m : published)
+			if(str(m, "type") == "result" && str(m, "op") == "useRom")
+				useRefused = m.find("ok") && !m.find("ok")->asBool();
+		check(useRefused && processor->runningRomName() == origName && origFile.existsAsFile(), "USE of a name that is not in the folder is refused and changes nothing");
+		// REMOVE the added image: it moves to "removed", the machine goes on with the other one
+		published.clear();
+		session->onPageMessage(*elektronData::json::parse(std::string(R"({"op":"removeRom","id":28,"name":")") + addedName + "\"}"));
+		for(int i = 0; i < 1500 && !running(); ++i)
+			pump(40);
+		const auto removedDir = romFolder.getChildFile(mdJucePlugin::g_removedFolder);
+		check(mdJucePlugin::romsInFolder(model2, romFolder).size() == 1 && removedDir.getChildFile(juce::String::fromUTF8(addedName.c_str())).existsAsFile(),
+			"REMOVE moves the image to the removed folder, it is not deleted");
+		check(!stand() && running(), "and the machine goes on with the other image");
+		// REMOVE the last one: the machine stops, the page asks for a ROM
 		published.clear();
 		session->onPageMessage(*elektronData::json::parse(R"({"op":"removeRom","id":22})"));
-		check(mdJucePlugin::romsInFolder(model2, romFolder).empty(), "REMOVE deletes the image from the ROM folder");
+		check(mdJucePlugin::romsInFolder(model2, romFolder).empty() && !origFile.existsAsFile(), "REMOVE of the last image takes it out of the ROM folder");
+		check(juce::File(removedDir).findChildFiles(juce::File::findFiles, false, "*.bin").size() == 2, "and both images are still on the disk, in the removed folder");
 		check(stand(), "and the machine stops (the silent stand-in runs)");
 		bool okReply = false;
 		for(const auto& m : published)

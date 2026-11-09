@@ -296,10 +296,34 @@ namespace mdJucePlugin
 		toPage(deskCore::resultMessage(_message, _ok ? std::vector<std::string>{} : std::vector<std::string>{_note}, _note));
 	}
 
+	namespace
+	{
+		bool machineUp(const DeskSession& _s)
+		{
+			const auto life = _s.lifecycleName();
+			return life != "missing" && life != "unsupported";
+		}
+	}
+
+	// The machine restarts on the image the instance was told to run, and the project goes with it (a state in hand).
+	bool DeskSession::restartOnChosenRom(const bool _keepProject)
+	{
+		juce::MemoryBlock project;
+		if(_keepProject)
+			m_processor.getStateInformation(project);
+		if(!pluginProcessorOf(m_processor).rebootDevice())
+			return false;
+		if(_keepProject && project.getSize() > 0)
+			m_processor.restoreState(project.getData(), static_cast<int>(project.getSize()));
+		return true;
+	}
+
 	void DeskSession::installRom(const juce::File& _file)
 	{
 		const juce::File folder(juce::String::fromUTF8(m_processor.getPublicRomFolder().c_str()));
-		const auto r = mdJucePlugin::replaceRom(_file, m_processor.getModel(), folder);
+		// ADD, never replace: the file joins the images in the folder (or is used where it is) and this instance runs it.
+		// Every other file stays.
+		const auto r = mdJucePlugin::installRom(_file, m_processor.getModel(), folder);
 		Value m = Value::object();
 		m.set("type", "romInstall");
 		m.set("ok", r.ok);
@@ -308,10 +332,16 @@ namespace mdJucePlugin
 		log(std::string("rom install ") + (r.ok ? "ok: " : "failed: ") + r.text);
 		if(!r.ok)
 			return;
+		const auto name = r.installed.getFileName().toStdString();
+		const bool wasUp = machineUp(*this);
+		const bool same = wasUp && m_processor.runningRomName() == name;
+		(void)m_processor.useRom(name);
+		if(same)
+			return;		// this image already runs: no restart
 		// The machine starts again with the new firmware, without reopening the plug-in; the page's boot
-		// card shows its start-up.
-		const bool restarted = pluginProcessorOf(m_processor).rebootDevice();
-		if(restarted)
+		// card shows its start-up. A running machine keeps its project; with none, the held one comes back.
+		const bool restarted = restartOnChosenRom(wasUp);
+		if(restarted && !wasUp)
 			m_processor.restoreHeldState();	// the project the app was opened with (no ROM held it)
 		if(!restarted)
 		{
@@ -323,24 +353,50 @@ namespace mdJucePlugin
 		}
 	}
 
+	void DeskSession::useRom(const Value& _message)
+	{
+		const juce::File folder(juce::String::fromUTF8(m_processor.getPublicRomFolder().c_str()));
+		const auto* n = _message.find("name");
+		const std::string name = n && n->isString() ? n->asString() : std::string();
+		if(!findRomByName(m_processor.getModel(), folder, name))
+		{
+			reply(_message, false, "That firmware image is not in the ROM folder (any more).");
+			return;
+		}
+		if(machineUp(*this) && m_processor.runningRomName() == name)
+		{
+			(void)m_processor.useRom(name);	// remembered with the project
+			reply(_message, true, name + " is the image this machine runs.");
+			return;
+		}
+		(void)m_processor.useRom(name);
+		if(!restartOnChosenRom(machineUp(*this)))
+		{
+			reply(_message, false, "The machine did not start with " + name + ": close and reopen the plug-in.");
+			return;
+		}
+		reply(_message, true, "The machine runs " + name + ".");
+	}
+
 	void DeskSession::romInfo(const Value& _message) const
 	{
 		const auto model = m_processor.getModel();
 		const juce::File folder(juce::String::fromUTF8(m_processor.getPublicRomFolder().c_str()));
-		// The image the machine would start with: the first valid one along the same search paths.
+		// The image the machine runs: the one this instance was told to, else the first valid one along the same search paths.
 		juce::File found;
+		if(const auto chosen = findRomByName(model, folder, m_processor.activeRomName()))
+			found = *chosen;
 		for(const auto& path : synthLib::RomLoader::findFiles(".bin", md::g_romSize, md::g_romSize))
 		{
+			if(found != juce::File())
+				break;
 			const juce::File f(juce::String::fromUTF8(path.c_str()));
 			juce::MemoryBlock mb;
 			if(!f.loadFileAsData(mb))
 				continue;
 			const std::vector<uint8_t> bytes(static_cast<const uint8_t*>(mb.getData()), static_cast<const uint8_t*>(mb.getData()) + mb.getSize());
 			if(md::checkRom(bytes, model).ok)
-			{
 				found = f;
-				break;
-			}
 		}
 		Value m = Value::object();
 		m.set("type", "romInfo");
@@ -350,17 +406,42 @@ namespace mdJucePlugin
 		m.set("size", static_cast<double>(found.getSize()));
 		m.set("folder", folder.getFullPathName().toStdString());
 		m.set("inFolder", found != juce::File() && found.isAChildOf(folder));
+		// every image in the folder, for the choice on the LOAD ROM card
+		auto all = Value::array();
+		for(const auto& f : romsInFolder(model, folder))
+			all.push(f.getFileName().toStdString());
+		m.set("roms", std::move(all));
 		toPage(m);
 		reply(_message, true, {});
 	}
 
 	void DeskSession::removeRom(const Value& _message)
 	{
+		const auto model = m_processor.getModel();
 		const juce::File folder(juce::String::fromUTF8(m_processor.getPublicRomFolder().c_str()));
-		const auto r = mdJucePlugin::removeRoms(m_processor.getModel(), folder);
+		const auto* n = _message.find("name");
+		std::string name = n && n->isString() ? n->asString() : std::string();
+		if(name.empty())
+			name = m_processor.runningRomName();
+		// The image moves to the folder "removed" inside the ROM folder; nothing is deleted.
+		const auto r = mdJucePlugin::removeRom(model, folder, name);
 		if(r.removed == 0)
 		{
 			reply(_message, false, r.text);
+			return;
+		}
+		if(m_processor.romChoice() == name)
+			(void)m_processor.useRom({});
+		const bool others = !romsInFolder(model, folder).empty();
+		if(others)
+		{
+			// another image is there: the machine goes on with it, the project with it
+			if(!restartOnChosenRom(true))
+			{
+				reply(_message, false, r.text + " The machine did not restart: close and reopen the plug-in.");
+				return;
+			}
+			reply(_message, true, r.text);
 			return;
 		}
 		// The machine stops (the stand-in takes its place) and the page's start-up card asks for a ROM. The
