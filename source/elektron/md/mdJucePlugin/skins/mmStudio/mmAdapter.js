@@ -362,8 +362,8 @@
 	const midi = (b, key) => send({ op: "midi", b }, key ? { key } : {});
 	let held = null;
 	function noteOff() { if (held) { midi([0x80 | held.ch, held.n, 0]); held = null; } }
-	function joySend(x, y) {
-		const ch = trackChannel(V().asgT());
+	function joySend(x, y, t) {
+		const ch = trackChannel(t == null ? V().asgT() : t);	/* t: the track a held or random stick leaves (I-061) */
 		if (ch == null) return;
 		const pb = Math.max(0, Math.min(16383, Math.round(8192 + x * 8191)));
 		midi([0xe0 | ch, pb & 0x7f, pb >> 7], "joyx");
@@ -583,7 +583,7 @@
 		globalSlot(n) { send({ op: "globalSlot", slot: n }, { onResult: r => V().toast(r.ok ? r.note : r.errors[0]) }); },
 		noteOn(t, pitch, vel) { send({ op: "noteOn", t, vel, pitch }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); },
 		noteOff(t, pitch) { send({ op: "noteOff", t, pitch }); },
-		joy(xy) { joySend(xy.x, xy.y); },
+		joy(xy, t) { joySend(xy.x, xy.y, t); },
 		learning(on) { if (!on) send({ op: "learnCancel" }); },
 		learnTarget(lt) {
 			if (!learnable(lt)) { V().toast(notLearnable); V().clearLearnTarget(); return; }

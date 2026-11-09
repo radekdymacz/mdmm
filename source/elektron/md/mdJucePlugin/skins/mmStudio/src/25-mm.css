@@ -405,3 +405,9 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
 .dpkeys button[disabled]{opacity:.45}
 .dpkeys .danger:hover:not([disabled]){background:var(--rec,var(--red));color:#fff}
 .dpnews{margin:0;font-size:12px;min-height:16px}
+
+/* I-061: the joystick's HOLD, RANDOM and REGION; I-062: the keyboard's Follow */
+.jxrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.jxrow .keyrow{display:flex;gap:4px}
+.joy .jreg{position:absolute;box-sizing:border-box;border:1px dashed var(--ink);background:color-mix(in srgb,var(--ink) 12%,transparent);pointer-events:none}
+.joy .jreg.edit{border-style:solid;background:color-mix(in srgb,var(--ink) 22%,transparent)}

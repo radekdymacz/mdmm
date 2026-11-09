@@ -3787,6 +3787,41 @@ const MmJourneys = (() => {
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 }
 		]
 	};
+	/* ---- Perform: the joystick's HOLD and RANDOM (I-061): the same MIDI as a hand drag; STOP and PANIC end them ---- */
+	const joystickHold = {
+		name: "mm-perform-joystick-hold-random", proves: ["MM-049", "MM-352", "MM-366"],
+		steps: [
+			go("perform"),
+			{ say: "track 3, JOY RL tab, HOLD on: drag the stick right and let go: it stays right (the last pitch bend is above the middle, nothing springs it back); HOLD again: the middle is sent on track 3's channel", act: async (u, c) => { c.bad = []; u.click('[data-set="astrk"] button[data-v="2"]'); await sleep(300); u.click('[data-set="astab"] button[data-v="JOY RL"]'); await sleep(250); const ch = baseCh() + 2;
+					if ($1('[data-jx="hold"]')?.getAttribute("aria-pressed") === "true") u.click('[data-jx="hold"]'); await sleep(200);
+					u.click('[data-jx="hold"]'); await sleep(250); midiSent.length = 0; await u.drag("#joy", [[20, 0], [40, 0]]); await sleep(300);
+					const pb = midiSent.filter(b => (b[0] & 0xf0) === 0xe0); if (!pb.length || !pb.every(b => (b[0] & 15) === ch) || !(pb[pb.length - 1][2] > 64)) c.bad.push("held right: " + JSON.stringify(midiSent.slice(-6)));
+					midiSent.length = 0; await sleep(500); if (midiSent.some(b => (b[0] & 0xf0) === 0xe0)) c.bad.push("a held stick keeps sending: " + JSON.stringify(midiSent.slice(0, 6)));
+					u.click('[data-jx="hold"]'); await sleep(300); const back = midiSent.filter(b => (b[0] & 0xf0) === 0xe0); if (!back.length || back[back.length - 1][1] !== 0 || back[back.length - 1][2] !== 64 || (back[back.length - 1][0] & 15) !== ch) c.bad.push("release: " + JSON.stringify(midiSent.slice(-6))); },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "REGION: drag a rectangle into the upper right part of the pad, RANDOM at speed 10: the stick moves by itself, only right and up (pitch bend at or above the middle, CC 2 stays 0), several different values", act: async (u, c) => { c.bad = []; const ch = baseCh() + 2;
+					u.click('[data-jx="reg"]'); await sleep(250); const r = $1("#joy").getBoundingClientRect(); await u.drag("#joy", [[r.width * 0.05, -r.height * 0.05], [r.width * 0.25, -r.height * 0.25]], {}, { fx: 0.6, fy: 0.4 }); await sleep(250); u.click('[data-jx="reg"]'); await sleep(200);
+					for (let i = 0; i < 9; i++) { if (!$1('[data-jx="spd"][data-d="1"]')?.disabled) u.click('[data-jx="spd"][data-d="1"]'); await sleep(40); }
+					midiSent.length = 0; u.click('[data-jx="rand"]'); await sleep(900); midiSent.length = 0; await sleep(450);
+					const pb = midiSent.filter(b => (b[0] & 0xf0) === 0xe0), up = midiSent.filter(b => (b[0] & 0xf0) === 0xb0 && b[1] === 1), dn = midiSent.filter(b => (b[0] & 0xf0) === 0xb0 && b[1] === 2);
+					if (pb.length < 4 || new Set(pb.map(b => b[1] | b[2] << 7)).size < 4) c.bad.push("it does not move: " + JSON.stringify(midiSent.slice(0, 8)));
+					if (!pb.every(b => (b[0] & 15) === ch && b[2] >= 64) || !up.every(b => (b[0] & 15) === ch) || dn.some(b => b[2] !== 0)) c.bad.push("outside the region or on another channel: " + JSON.stringify(midiSent.slice(0, 12))); },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "STOP (PLAY, PLAY again) ends RANDOM: the stick is sent back to the middle and nothing more is sent", act: async (u, c) => { c.bad = []; const ch = baseCh() + 2; u.click("#play"); await until(playing, 6000); u.click("#play"); await until(() => !playing(), 6000); await sleep(300);
+					midiSent.length = 0; await sleep(400); if (midiSent.some(b => (b[0] & 0xf0) === 0xe0)) c.bad.push("still moving after STOP: " + JSON.stringify(midiSent.slice(0, 6)));
+					if ($1('[data-jx="rand"]')?.getAttribute("aria-pressed") === "true") c.bad.push("RANDOM still lit"); },
+				machine: () => ok(!playing(), "playing"), screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 2000 },
+			{ say: "HOLD, drag right, Panic from the transport menu: HOLD ends and the middle is sent; RANDOM again, then PANIC: it ends too", act: async (u, c) => { c.bad = []; const ch = baseCh() + 2;
+					u.click('[data-jx="hold"]'); await sleep(250); await u.drag("#joy", [[20, 0], [40, 0]]); await sleep(250); midiSent.length = 0;
+					u.rightClick("#play"); await until(() => !!$1('#deskmenu [data-mid="panic"]'), 2000); u.click('#deskmenu [data-mid="panic"]'); await sleep(500);
+					const pb = midiSent.filter(b => (b[0] & 0xf0) === 0xe0); if (!pb.length || pb[pb.length - 1][2] !== 64 || pb[pb.length - 1][1] !== 0) c.bad.push("panic did not centre: " + JSON.stringify(midiSent.slice(0, 6)));
+					if ($1('[data-jx="hold"]')?.getAttribute("aria-pressed") === "true") c.bad.push("HOLD still lit");
+					u.click('[data-jx="rand"]'); await sleep(500); u.rightClick("#play"); await until(() => !!$1('#deskmenu [data-mid="panic"]'), 2000); u.click('#deskmenu [data-mid="panic"]'); await sleep(500);
+					midiSent.length = 0; await sleep(400); if (midiSent.some(b => (b[0] & 0xf0) === 0xe0)) c.bad.push("random after panic: " + JSON.stringify(midiSent.slice(0, 6))); },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 3000 }
+		],
+		async tidy(u) { for (const k of ["hold", "rand"]) if ($1(`[data-jx="${k}"]`)?.getAttribute("aria-pressed") === "true") u.click(`[data-jx="${k}"]`); }
+	};
 	/* ---- Perform: the multi envelope goes out as NRPN 0x40 to 0x44 on every track (Appendix B) ---- */
 	const menvNrpn = {
 		name: "mm-perform-menv-nrpn", proves: ["MM-365"],
@@ -4728,7 +4763,7 @@ const MmJourneys = (() => {
 			if (c.tr0 != null && c.tr0 !== 1 && tIn() !== c.tr0) { Bridge.send({ op: "globalMidi", transportIn: !!c.tr0, force: true }); await sleep(2500); }
 		}
 	};
-	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowMarks, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
+	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, joystickHold, menvNrpn, songRowSettings, songRowMarks, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixHeads, mixSolo, soloSaved, shiftMutes, routing, mixMeters, panTrim, msOff, msViews, railLamps, railLampsFwd,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, followPlayed, seqKbLit, mixLevelReset, typeValue, songRows, songPicker, songSlotsJ, hostStopSongJ, songKeysJ, songChain, modeCycle, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,

@@ -17,12 +17,12 @@ function resumeNow(){if(!S.paused)return;const at=S.paused.step;S.paused=null;
 function pauseToggle(){if(S.paused)resumeNow();else pauseNow()}
 /* the ▶ key: PLAY, STOP, or (paused) CONTINUE */
 function playButton(){if(S.paused){resumeNow();return}togglePlay()}
-function stopNow(){const was=S.paused;S.paused=null;
+function stopNow(){const was=S.paused;S.paused=null;jxStopRandom();
  if(S.playing)togglePlay();
  else if(was&&HOST.transport)transportCmd("stop");	// paused: the machine stands; STOP ends the pause
  else if(was)S.step=-1;
  renderTop();setPos()}
-function panicNow(){if(NA.panic){toast(NA.panic);return}S.paused=null;
+function panicNow(){if(NA.panic){toast(NA.panic);return}S.paused=null;jxRelease();
  if(HOST.transport)transportCmd("panic",{},()=>{});else{if(S.playing)togglePlay();toast("Panic: every note off.")}
  renderTop();setPos()}
 const TRANSPORT_HOST={recordLabel:"Live record",stepRecord:()=>stepRecord(),play:()=>playButton(),stop:()=>stopNow(),pauseToggle:()=>pauseToggle(),record:()=>liveRecord(),panic:()=>panicNow()};
