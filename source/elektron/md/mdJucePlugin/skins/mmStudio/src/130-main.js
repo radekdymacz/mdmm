@@ -596,15 +596,16 @@ const dialogOpen=()=>!$("#dlg").hidden;
    steps share its look, so the dialog is named by its key, Dlg in deskModal.js) */
 function closeFirmwareDialog(){Dlg.drop("firstRun")}
 /* SysEx import and export: the host's file dialogs and document writes; the example shows a pretend file */
-Syx.host={machine:"Monomachine",factory:false,
+Syx.host={machine:"Monomachine",factory:true,samples:false,
  choose:()=>{if(HOST.syxChoose)return HOST.syxChoose();Syx.preview({ok:true,file:"example.syx",model:"Monomachine",fullBackup:false,problemCount:0,problems:[],items:{kit:[{slot:0,name:"SUPERWAVES",overwrites:true}],pattern:[{slot:0,name:"A01",kit:0,overwrites:true}],song:[],global:[]}})},
  start:(k,s,o)=>{if(HOST.syxStart)return HOST.syxStart(k,s,o);Syx.progress({phase:"done",done:2,total:2,running:false,text:"2 imported (example).",report:{taken:2,items:[]}})},
  stop:()=>{if(HOST.syxStop)return HOST.syxStop()},
- /* 0.6 (wave 6): SPECIFIC place, the export's kinds and ranges (DigiPRO waveforms too), Reset machine… (empty) */
+ /* 0.6 (wave 6): SPECIFIC place, the export's kinds and ranges (DigiPRO waveforms too), Reset machine… (empty; factory
+    from a second Monomachine started from the ROM since 0.9.1) */
  place:p=>{if(HOST.syxPlace)return HOST.syxPlace(p);Syx.preview({ok:true,file:"example.syx",model:"Monomachine",place:p,items:{kit:[{slot:p.kit??0,from:p.kit?0:undefined,name:"SUPERWAVES",overwrites:!p.kit}],pattern:[{slot:p.pattern??0,from:p.pattern?0:undefined,name:"A01",kit:0,overwrites:!p.pattern}],song:[],global:[]}})},
  exportInfo:()=>{if(HOST.syxExportInfo)return HOST.syxExportInfo();Syx.exportInfo({type:"syxExportInfo",model:"Monomachine",kinds:{kit:{slots:128,held:128,used:8,first:0,last:7},pattern:{slots:128,held:128,used:8,first:0,last:7},song:{slots:24,held:24,used:3,first:0,last:2},global:{slots:8,held:8,used:8,first:0,last:7},wave:{slots:64}}})},
  exportSave:r=>{if(HOST.syxExport)return HOST.syxExport(r);toast("In the plug-in: a save dialog, then "+(r.kinds?r.kinds.join(", "):"every document")+" as one .syx.")},
- reset:h=>{if(HOST.machineReset)return HOST.machineReset(h);toast("In the plug-in: the empty reset runs in the SysEx panel (example).")},
+ reset:h=>{if(HOST.machineReset)return HOST.machineReset(h);toast("In the plug-in: the "+h+" reset runs in the SysEx panel (example).")},
  memory:()=>S.mem||null,factoryMemory:()=>{if(HOST.memory)HOST.memory("factory")},
  ask:(h,b)=>ask(h,b),say:t=>toast(t)};
 /* the start-up card's keys: the host's native file chooser and ROM folder (the ROM stays on this computer); the

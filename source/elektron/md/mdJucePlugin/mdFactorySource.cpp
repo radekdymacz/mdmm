@@ -15,11 +15,30 @@ namespace mdJucePlugin
 		constexpr uint32_t g_block = 64;
 		constexpr uint32_t g_rate = 44100;
 
+		// A model's dumps: its SysEx product id, the seconds its start-up animation runs on after it takes MIDI (the
+		// dumps need not wait for it on the Machinedrum; the Monomachine's ends 9.2 s after power-on, MM-P0-RESULT
+		// section 6), and per kind the dump id (the request is id + 1) and the slots.
+		struct Kind
+		{
+			uint8_t reply;
+			uint8_t slots;
+		};
+		struct Spec
+		{
+			uint8_t product;
+			uint32_t settleSeconds;
+			Kind kinds[3];
+			const char* name;
+		};
+		constexpr Spec g_md{0x02, 2, {{0x52, 64}, {0x67, 128}, {0x69, 32}}, "Machinedrum"};
+		constexpr Spec g_mm{0x03, 9, {{0x52, 128}, {0x67, 128}, {0x69, 24}}, "Monomachine"};
+		const Spec& specOf(const md::MachineModel _model) { return _model == md::MachineModel::Monomachine ? g_mm : g_md; }
+
 		// The headless machine: blocks of audio rendered and dropped, its SysEx kept.
 		class Machine
 		{
 		public:
-			Machine(const std::vector<uint8_t>& _rom, const std::string& _name) : m_hw(_rom, _name, md::MachineModel::Machinedrum, {})
+			Machine(const std::vector<uint8_t>& _rom, const std::string& _name, const md::MachineModel _model) : m_hw(_rom, _name, _model, {})
 			{
 				for(auto& o : m_out)
 					o.resize(g_block);
@@ -80,7 +99,15 @@ namespace mdJucePlugin
 			m_thread.join();
 	}
 
-	bool MdFactorySource::start(Bytes _rom, std::string _romName)
+	int MdFactorySource::total(const md::MachineModel _model)
+	{
+		int n = 0;
+		for(const auto& k : specOf(_model).kinds)
+			n += k.slots;
+		return n;
+	}
+
+	bool MdFactorySource::start(Bytes _rom, std::string _romName, const md::MachineModel _model)
 	{
 		if(m_running)
 			return false;
@@ -89,9 +116,9 @@ namespace mdJucePlugin
 		m_stop = false;
 		m_progress = 0;
 		m_running = true;
-		m_thread = std::thread([this, rom = std::move(_rom), name = std::move(_romName)]
+		m_thread = std::thread([this, rom = std::move(_rom), name = std::move(_romName), _model]
 		{
-			auto r = read(rom, name, &m_progress, &m_stop);
+			auto r = read(rom, name, _model, &m_progress, &m_stop);
 			{
 				const std::lock_guard l(m_mutex);
 				m_result = std::move(r);
@@ -111,21 +138,23 @@ namespace mdJucePlugin
 		return r;
 	}
 
-	MdFactorySource::Result MdFactorySource::read(const Bytes& _rom, const std::string& _romName, std::atomic<int>* _progress,
-		const std::atomic<bool>* _stop)
+	MdFactorySource::Result MdFactorySource::read(const Bytes& _rom, const std::string& _romName, const md::MachineModel _model,
+		std::atomic<int>* _progress, const std::atomic<bool>* _stop)
 	{
 		Result r;
+		const auto& spec = specOf(_model);
+		const std::string second = std::string("The second ") + spec.name;
 		const auto stopped = [_stop] { return _stop && _stop->load(); };
 		// on the heap: md::Hardware is far larger than a std::thread's stack (512 KB on macOS; the stack overflowed there)
-		const auto machine = std::make_unique<Machine>(_rom, _romName);
+		const auto machine = std::make_unique<Machine>(_rom, _romName, _model);
 		auto& m = *machine;
 		if(!m.valid())
 		{
-			r.error = "The ROM did not start a second Machinedrum.";
+			r.error = std::string("The ROM did not start a second ") + spec.name + ".";
 			return r;
 		}
-		// it takes MIDI after a few seconds of its start; then its start-up animation runs on (about 20 s), which the
-		// dumps do not wait for
+		// it takes MIDI after a few seconds of its start; then its start-up animation runs on (the Machinedrum's about
+		// 20 s, which the dumps do not wait for; the Monomachine's a few seconds, waited for)
 		while(!m.midiReady())
 		{
 			if(stopped())
@@ -133,23 +162,22 @@ namespace mdJucePlugin
 			m.step();
 			if(m.frames() > static_cast<uint64_t>(g_rate) * 60)
 			{
-				r.error = "The second Machinedrum did not start (60 s).";
+				r.error = second + " did not start (60 s).";
 				return r;
 			}
 		}
-		for(int i = 0; i < 2 * static_cast<int>(g_rate / g_block); ++i)
+		for(uint32_t i = 0; i < spec.settleSeconds * (g_rate / g_block); ++i)
 		{
 			if(stopped())
 				return {{}, "Stopped."};
 			m.step();
 		}
-		const std::pair<uint8_t, uint8_t> kinds[] = {{0x52, 64}, {0x67, 128}, {0x69, 32}};	// dump id, slots (the request is id + 1)
-		for(const auto& [reply, slots] : kinds)
+		for(const auto& [reply, slots] : spec.kinds)
 			for(uint8_t s = 0; s < slots; ++s)
 			{
 				if(stopped())
 					return {{}, "Stopped."};
-				const std::vector<uint8_t> request{0xf0, 0x00, 0x20, 0x3c, 0x02, 0x00, static_cast<uint8_t>(reply + 1), s, 0xf7};
+				const std::vector<uint8_t> request{0xf0, 0x00, 0x20, 0x3c, spec.product, 0x00, static_cast<uint8_t>(reply + 1), s, 0xf7};
 				std::vector<uint8_t> d;
 				for(int tries = 0; tries < 3 && d.empty() && !stopped(); ++tries)
 					d = m.request(request, reply, 3000, _stop);
@@ -157,7 +185,7 @@ namespace mdJucePlugin
 					return {{}, "Stopped."};
 				if(d.empty())
 				{
-					r.error = "The second Machinedrum did not answer a dump request (" + std::to_string(reply) + " slot "
+					r.error = second + " did not answer a dump request (" + std::to_string(reply) + " slot "
 						+ std::to_string(s + 1) + ").";
 					r.dumps.clear();
 					return r;

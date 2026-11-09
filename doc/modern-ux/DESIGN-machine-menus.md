@@ -27,7 +27,7 @@
 | LCD COPY · CLR · PASTE | a small ▾ opens Copy / Clear / Paste **what**: ticks grouped PATTERN (trigs or notes, melody on MM, accent, swing, slide, locks, arp and transpose on MM) and KIT (machine + sound, LFO on MD); Paste adds the target tracks; the ticks are remembered (the machine's SUPER COPY / SUPER CLEAR) | md-04..06, mm-03, mm-04 |
 | LCD tempo | a click (no drag) opens the TEMPO pop-up: BPM, − / +, TAP, NUDGE −10 % / +10 % (hold; also hold - / =), "change on release" (also ⌥-drag the tempo), MM sync INT / EXT | md-07, mm-05 |
 | GLOBAL key | 0.5's shared GLOBAL panel becomes a full page over the workspace (header stays; Esc or GLOBAL returns). Head on one line: slot chip, 8 slots, **Copy · Paste · Clear** (Clear is the old Reset to defaults). MD adds **LEARN** dots on the map editor's track notes and **Reset map**; MM adds an **AUDIO** card with master tune | md-08, mm-06 |
-| Engine menu | Import SysEx…, Export SysEx…, **Reset machine…** (a question: Empty reset in red, Factory reset on the MD after its probe, Cancel the default) | md-09, md-12, mm-07, mm-10 |
+| Engine menu | Import SysEx…, Export SysEx…, **Reset machine…** (a question: Empty reset in red, Factory reset on the MD after its probe and on the MM since 0.9.1, Cancel the default) | md-09, md-12, mm-07, mm-10 |
 | SysEx panel, export | ALL ticked by default; unticked shows kinds with ranges (drag, wheel or click like any value); MM DigiPRO waveforms as a kind after its probe | md-10, md-10b, mm-08, mm-08b |
 | SysEx panel, import | PLACE: ORIGINAL or SPECIFIC with a first slot per kind; the grid previews where each item lands (and must warn when it lands on a used slot); **VERIFY ONLY** key beside Import | md-11, mm-09 |
 | Sequence, MD | the legend under the grid **is** the trig type selector: Trig · Accent · Swing · Slide (Has locks stays a legend item); the chosen key is lit; swing is a new teal slant mark on the step; with Accent, Swing or Slide chosen, **All tracks · This track** (the pattern's EDIT ALL flag) and dots on the track headers (which tracks take it). ⇧-click accent and ⌥⇧-click slide stay | md-01, md-13 (+mk2) |
@@ -53,6 +53,6 @@
 
 ## 4. Not done (the firmware has no route from outside)
 
-MD: send samples to a computer, erase samples, RAM → ROM, the UNDO KIT slot. MM: factory reset (no factory data in
-the editor). Probe-gated (decided by `PROBES-manual-gaps.md`): song play-from-row and pause over HW MIDI (SPP +
+MD: send samples to a computer, erase samples, RAM → ROM, the UNDO KIT slot. (MM factory reset: built in 0.9.1 from a
+second Monomachine started from the ROM, doc/release/0.9.1/mm-factory-reset.md.) Probe-gated (decided by `PROBES-manual-gaps.md`): song play-from-row and pause over HW MIDI (SPP +
 Continue), MM CONTROL OUT 1, MD trig in A/B editing, MM DigiPRO, MD factory reset, MD panic over MIDI.

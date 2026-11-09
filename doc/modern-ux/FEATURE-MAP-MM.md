@@ -357,7 +357,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 |---|---|---|---|---|---|---|---|
 | Song mode 1-73 | Enter song mode | Mode switch | ✅ | Song > SONG key; LCD PLAY |  | 2 | pass (e2e-mm-song-playhead) |
 | Song mode 1-73 | 24 songs, 200 rows | Capacity | ✅ | Songs column (24 slots), 200 cells |  | 1 | pass (e2e-mm-song-picker-load) |
-| Load song 1-73 | Load a song slot | LOAD SONG | ✅ | Songs column: select a slot, Load (Enter) | Only while stopped | 4 | pass (e2e-mm-song-playhead) |
+| Load song 1-73 | Load a song slot | LOAD SONG | ✅ | Songs column: select a slot, Load (Enter) | Only while stopped | 3 | pass (e2e-mm-song-playhead) |
 | Save song 1-74 | Save and name a song | SAVE SONG | ✅ | Songs column: Save (SAVE SONG 0x6D), Save to… with a name, Rename (F2) | Edits still go into the slot as dumps (SYSEX RECV); a name has 14 characters. | 1 | pass (e2e-mm-song-slots) |
 | Save song 1-74 | Copy, paste, clear, undo a song slot | Song slots | ✅ | Songs column: Copy, Paste, Clear, drag a slot onto another; Cmd+Z | Library slot ops songCopy, songPaste, songCopyTo, songClear, songRename; asks before writing over a song. | 1 | pass (e2e-mm-song-slots) |
 | Song play 1-75 | Play, pause, stop | Transport | ✅ | Play key: play, pause (⇧-click, ⇧Space), stop; in SONG mode as in pattern mode |  | 2 | stub-only (e2e-mm-top-pause-fail) |
@@ -437,7 +437,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 |---|---|---|---|---|---|---|---|
 | Test mode 1-110 | Hardware self test, joystick calibration | Test | ➖ | – |  | – | n/a |
 | Empty reset 1-110 | Clear kits, patterns, songs, globals | Reset | ✅ | Engine menu: Reset machine… > Empty reset… (asked twice): every kit, pattern and song cleared on SYSEX RECV, read back and reported in the SysEx panel | Globals stay: a global is reset in its slot in GLOBAL. | 1 | pass (e2e-mm-engine-reset-empty) |
-| Factory reset 1-110 | Restore factory data | Reset | ❌ | Engine menu: Reset machine… says why it is not offered; Start from factory memory… restarts the machine as on a new install, with the saved machine memory deleted (I-024) | Reversed by Radek, 2026-11-09: the Monomachine gets a real factory reset in 0.9.1, built like the Machinedrum's from the user's own ROM (B-211). This row changes when it ships. | – | n/a |
+| Factory reset 1-110 | Restore factory data | Reset | ✅ | Engine menu: Reset machine… > Factory reset… (asked twice): a second Monomachine started from your ROM gives the factory kits, patterns and songs; sent on SYSEX RECV, read back and reported in the SysEx panel | 0.9.1. Seconds to prepare, minutes to send and read back. Globals and user waveforms stay; one Undo puts the kits, patterns and songs back. Proof: mmFactoryResetFirmwareTest (every slot equals a fresh machine's). Start from factory memory… is the other way (I-024). | 1 | n/a |
 | Soft reset 1-111 | Restart keeping data | Restart | ➖ | – | Reopen the editor | – | n/a |
 | MIDI upgrade, send upgrade 1-111, 1-112 | OS update over MIDI | OS update | ➖ | – | The editor loads the OS 1.32B image | – | n/a |
 | Specifications 1-113 | Data sheet | Specs | ➖ | – |  | – | n/a |
@@ -564,9 +564,9 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 367 |
+| ✅ | 368 |
 | 🟡 | 11 |
-| ❌ | 1 |
+| ❌ | 0 |
 | ➖ | 34 |
 | Total | 413 |
 
@@ -581,4 +581,4 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 7. **Transport details (1-5, 1-56).** No pause, no double-STOP rewind and all-notes-off, no +/-10 % tempo nudge, no delayed tempo change, no panic (CC 120).
 8. **Arpeggiator, swing and slide have no copy / clear / paste / undo of their own (1-62, 1-65, 1-66).** Page undo only.
 9. **Lock helpers (1-14, 1-57).** No key that drops only the locks of one step and keeps its note, and no "lock the current value" click.
-10. **Reset functions (1-110).** No empty reset or factory reset from the editor (GLOBAL has Clear for one slot); the page cannot show or open the UNDO KIT slot.
+10. **Reset functions (1-110).** Empty reset and factory reset (0.9.1) are in the engine menu; the page cannot show or open the UNDO KIT slot.

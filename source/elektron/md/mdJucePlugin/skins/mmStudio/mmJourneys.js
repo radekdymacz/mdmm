@@ -2426,13 +2426,44 @@ const MmJourneys = (() => {
 		],
 		async tidy(u, c) { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; await back(u, c); }
 	};
-	/* Reset machine… > Empty reset: the Monomachine has no factory reset in the editor; two questions, then every kit,
-	   pattern and song cleared on SYSEX RECV and read back. It empties the machine: the last journey of all */
+	/* Reset machine… > Factory reset (0.9.1, doc/release/0.9.1/mm-factory-reset.md): whatever the run's machine holds,
+	   an Empty reset first (every kit unnamed, no trigs), then the factory reset: a second Monomachine from the run's ROM
+	   is read (seconds), every kit, pattern and song is sent on SYSEX RECV and read back (minutes). The factory data is
+	   back (K01 named, patterns with trigs; the slot-for-slot compare with the second machine's dumps is
+	   mmFactoryResetFirmwareTest), the global stays, and one Cmd+Z takes the factory reset back (empty again). The
+	   plug-in only (the page tier has no second machine) */
+	const namedKits = () => [...Array(128).keys()].filter(k => (kitName(k) || "").trim());
+	const trigPatterns = () => [...Array(128).keys()].filter(p => (I().doc("pattern", p)?.tracks || []).some(t => (t.trig || []).length));
+	const resetFactory = {
+		name: "mm-engine-reset-factory", alone: true, proves: ["MM-318"],
+		needs: () => window.gmDev ? "a second machine from the ROM: the plug-in only" : null,
+		steps: [
+			{ say: "choose RESET MACHINE…, Empty reset…, Clear everything: the machine is empty first", act: async (u, c) => { c.g0 = JSON.stringify(I().doc("global", machine().global?.current ?? 0)); await u.pick("engsel", "reset"); await until(dlgShown, 3000); u.click(dlgButton("Empty reset…")); await until(() => !!dlgButton("Clear everything"), 3000); u.click(dlgButton("Clear everything")); },
+				screen: () => ok(/Empty reset/.test($1("#syxpop .cap")?.textContent || "") && /cleared/.test($1("#syxpop .syxsum")?.textContent || ""), "panel: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
+				machine: () => { const n = namedKits(), t = trigPatterns(); return ok(!n.length && !t.length, `${n.length} kits named, ${t.length} patterns with trigs`); }, within: 400000 },
+			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") },
+			{ say: "choose RESET MACHINE…: Empty reset and Factory reset are offered; Cancel is the default", act: u => u.pick("engsel", "reset"),
+				screen: () => ok(dlgShown() && !!dlgButton("Empty reset…") && !!dlgButton("Factory reset…") && /second Monomachine started from your own ROM/.test($1("#dlg").textContent) && $1("#dlg .btnrow button:last-child")?.textContent === "Cancel", "the question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
+			{ say: "click Factory reset…: it asks a second time", act: u => u.click(dlgButton("Factory reset…")),
+				screen: () => ok(dlgShown() && !!dlgButton("Factory reset"), "second question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
+			{ say: "click Factory reset: the factory data is prepared, then sent, read back and reported", act: u => u.click(dlgButton("Factory reset")),
+				screen: () => ok(/Factory reset/.test($1("#syxpop .cap")?.textContent || "") && /restored/.test($1("#syxpop .syxsum")?.textContent || ""), "panel: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
+				machine: c => { const n = namedKits(), t = trigPatterns(), g = JSON.stringify(I().doc("global", machine().global?.current ?? 0)), k1 = (kitName(0) || "").trim();
+					return ok(!!k1 && n.length > 0 && t.length > 0 && g === c.g0, `K01 "${k1}", ${n.length} kits named, ${t.length} patterns with trigs, global ${g === c.g0 ? "kept" : "changed"}`); }, within: 600000 },
+			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") },
+			/* B-130: the factory reset is one undo step: Cmd+Z empties the machine again */
+			{ ...undoKey, say: "press Cmd+Z: the factory reset is one undo step, the machine is empty again",
+				machine: () => { const n = namedKits(), t = trigPatterns(); return ok(!n.length && !t.length, `${n.length} kits named, ${t.length} patterns with trigs`); }, within: 400000 }
+		],
+		async tidy() { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; }
+	};
+	/* Reset machine… > Empty reset: two questions, then every kit, pattern and song cleared on SYSEX RECV and read
+	   back. It empties the machine: the last journey of all */
 	const resetEmpty = {
 		name: "mm-engine-reset-empty", alone: true, proves: ["MM-317"],
 		steps: [
-			{ say: "choose RESET MACHINE… in the engine menu: Empty reset and why no factory reset; Cancel is the default", act: u => u.pick("engsel", "reset"),
-				screen: () => ok(dlgShown() && !!dlgButton("Empty reset…") && !dlgButton("Factory reset…") && /factory data is not in the editor/.test($1("#dlg").textContent) && $1("#dlg .btnrow button:last-child")?.textContent === "Cancel", "the question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
+			{ say: "choose RESET MACHINE… in the engine menu: Empty reset and Factory reset; Cancel is the default", act: u => u.pick("engsel", "reset"),
+				screen: () => ok(dlgShown() && !!dlgButton("Empty reset…") && !!dlgButton("Factory reset…") && $1("#dlg .btnrow button:last-child")?.textContent === "Cancel", "the question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
 			{ say: "click Empty reset…: it asks a second time", act: u => u.click(dlgButton("Empty reset…")),
 				screen: () => ok(dlgShown() && !!dlgButton("Clear everything"), "second question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
 			{ say: "click Clear everything: the reset runs in the SysEx panel and reports", act: (u, c) => { c.g0 = JSON.stringify(I().doc("global", machine().global?.current ?? 0)); c.named = [...Array(128).keys()].map(k => [k, (kitName(k) || "").trim()]).filter(([, n]) => n); u.click(dlgButton("Clear everything")); },
@@ -4703,7 +4734,7 @@ const MmJourneys = (() => {
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, laneDrawSlide, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
 		valueKeys, soundCopy, screenDrag, filterEnv, lfoLocksJ, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
-		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportUndoJ, syxImportMute, autoReceiveJ, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, digiproCardJ, digiproJobsJ, digiproMk1J, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach, ...Object.values(learnJ)];
+		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportUndoJ, syxImportMute, autoReceiveJ, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, digiproCardJ, digiproJobsJ, digiproMk1J, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetFactory, resetEmpty, syxRunningReach, ...Object.values(learnJ)];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
 	   its guard, "left:", names what stays). What back cannot put back, the journey keeps first (keep, keepMany) or is alone: true (doc/modern-ux/JOURNEYS.md, "Independent journeys") */
 	for (const j of all) { const own = j.tidy; j.tidy = async (u, c) => { try { if (own) await own(u, c); } finally { if (c.back0?.state && Journey.stateDiff(c.back0.state, state())) await back(u, c); } }; }

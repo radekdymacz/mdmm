@@ -18,7 +18,8 @@
 //                                        firmware's start values of every machine against the editor's tables), ojmp (B-189:
 //                                        where OJMP lives in the arpeggiator's play byte: the knob against the editor),
 //                                        digipro (0.9 wave 2: the DigiPRO manager: send, read back, rename, copy, erase,
-//                                        undo; the name's bytes from a rename on the panel)
+//                                        undo; the name's bytes from a rename on the panel), factoryreset (0.9.1, MM-318:
+//                                        the factory data from a second machine, the Factory reset, B-175, undo)
 //
 // Exits 77 (skip) without arguments.
 
@@ -53,6 +54,7 @@
 
 #include "../mdJucePlugin/mdSyxSession.h"	// the session's .syx import, header only (B-019)
 #include "../mdJucePlugin/mdSyxWork.h"	// the production Empty Reset coordinator (B-175)
+#include "../mdJucePlugin/mdFactorySource.h"	// the factory data from a second machine (MM-318)
 
 #include <algorithm>
 #include <cmath>
@@ -1790,6 +1792,190 @@ namespace
 			const auto reloaded = workingKitInMemory(r);
 			check(reloaded && soundMatches(*reloaded, expected), "K01 stays empty after switching away and back");
 		}
+	}
+
+	// 0.9.1 (doc/release/0.9.1/mm-factory-reset.md, MM-318): the factory data from a second Monomachine started from the
+	// ROM with no patch RAM (mdFactorySource.h), read twice (the same each time), and the production Factory reset
+	// (SyxWork::reset with those dumps, as mdFactoryReset.h runs it) over a renamed K01 that plays: every kit, pattern and
+	// song reads back as the factory one and the working kit is the factory K01. Then B-175 on the true factory kit: an
+	// Empty reset with the factory K01 playing empties stored K01 and the working kit. Undo brings the factory K01 back,
+	// a second Undo the renamed one.
+	void factoryReset(const Bytes& _rom)
+	{
+		std::puts("Factory reset: the factory data from a second machine, sent, read back, undone (MM-318, B-175)");
+		const auto kitText = [](const ed::MmKit& _k)
+		{
+			std::string n;
+			for(const auto c : _k.name)
+			{
+				if(c == 0)
+					break;
+				n += c >= 0x20 && c < 0x7f ? static_cast<char>(c) : '?';
+			}
+			return n;
+		};
+		const auto first = mdJucePlugin::MdFactorySource::read(_rom, "mm", g_mm);
+		check(first.error.empty(), "the second machine gives its dumps" + (first.error.empty() ? std::string() : ": " + first.error));
+		const auto total = static_cast<size_t>(mdJucePlugin::MdFactorySource::total(g_mm));
+		check(total == 280 && first.dumps.size() == total, "128 kits, 128 patterns, 24 songs (" + std::to_string(first.dumps.size()) + ")");
+		if(first.dumps.size() != total)
+			return;
+		const auto again = mdJucePlugin::MdFactorySource::read(_rom, "mm", g_mm);
+		check(again.dumps == first.dumps, "a second fresh machine gives the same dumps byte for byte");
+
+		std::map<uint8_t, ed::MmKit> kits;
+		std::map<uint8_t, ed::MmPattern> patterns;
+		std::map<uint8_t, ed::MmSong> songs;
+		for(size_t i = 0; i < total; ++i)
+		{
+			const auto& d = first.dumps[i];
+			if(i < 128)
+			{
+				if(const auto k = ed::decodeMmKit(d))
+					kits[static_cast<uint8_t>(i)] = *k;
+			}
+			else if(i < 256)
+			{
+				if(const auto p = ed::decodeMmPattern(d))
+					patterns[static_cast<uint8_t>(i - 128)] = *p;
+			}
+			else if(const auto sg = ed::decodeMmSong(d))
+				songs[static_cast<uint8_t>(i - 256)] = *sg;
+		}
+		check(kits.size() == 128 && patterns.size() == 128 && songs.size() == 24, "every factory dump decodes");
+		if(kits.size() != 128)
+			return;
+		int named = 0;
+		for(const auto& [slot, k] : kits)
+			named += k.name[0] != 0xff && !kitText(k).empty();
+		std::printf("  factory kits 1-4: \"%s\", \"%s\", \"%s\", \"%s\"; %d of 128 named\n", kitText(kits[0]).c_str(), kitText(kits[1]).c_str(),
+			kitText(kits[2]).c_str(), kitText(kits[3]).c_str(), named);
+		const auto empty = mmDesk::emptyKit(kits[0], 0);
+		check(!kitText(kits[0]).empty() && !(kits[0].machines == empty.machines && kits[0].tracks[0].pages == empty.tracks[0].pages),
+			"the factory K01 is a named kit, not the empty one");
+
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		const auto boot = r.ms();
+		while(r.desk->loaded() < 288 && r.ms() - boot < 60000)
+			r.run(100);
+		check(r.desk->loaded() == 288, "read every slot first");
+		if(r.desk->loaded() < 288)
+			return;
+		const auto compare = [&](const char* _when)
+		{
+			std::vector<std::string> off;
+			for(uint8_t s = 0; s < 128; ++s)
+			{
+				const auto k = r.desk->kit(s);
+				if(!k || !(*k == kits[s]))
+					off.push_back("K" + std::to_string(s + 1));
+				const auto p = r.desk->pattern(s);
+				if(!p || !(*p == patterns[s]))
+					off.push_back("P" + std::to_string(s + 1));
+			}
+			for(uint8_t s = 0; s < 24; ++s)
+			{
+				const auto sg = r.desk->song(s);
+				if(!sg || !(*sg == songs[s]))
+					off.push_back("S" + std::to_string(s + 1));
+			}
+			std::string list;
+			for(size_t i = 0; i < off.size() && i < 8; ++i)
+				list += " " + off[i];
+			check(off.empty(), std::string(_when) + ": every kit, pattern and song is the factory one (" + std::to_string(off.size()) + " differ" + list + ")");
+		};
+		compare("a machine started with no patch RAM");
+
+		const auto soundMatches = [](const ed::MmKit& a, const ed::MmKit& b)
+		{
+			bool same = a.machines == b.machines && a.levels == b.levels && a.routing == b.routing;
+			for(size_t t = 0; t < 6; ++t)
+				same = same && a.tracks[t].pages == b.tracks[t].pages;
+			return same;
+		};
+		// K01 renamed and changed, and it plays
+		auto renamed = *r.desk->kit(0);
+		renamed.name.fill(0);
+		std::copy_n("RESET TEST", 10, renamed.name.begin());
+		renamed.machines.fill(3);
+		for(auto& t : renamed.tracks)
+			t.pages[1][5] = 77;
+		r.msgConfirmed(R"({"op":"set","kind":"kit","doc":)" + ed::json::write(ed::mmKitToJson(renamed)) + "}");
+		r.run(3000);
+		r.msgConfirmed(R"({"op":"loadKit","k":0})");
+		r.run(2000);
+		check(r.desk->kit(0) && r.desk->kit(0)->name == renamed.name && r.desk->currentKit() == 0, "K01 is RESET TEST and plays");
+
+		mdJucePlugin::SyxWork<mmDesk::Desk> work;
+		const auto runJob = [&](const char* _what)
+		{
+			const auto started = r.ms();
+			while(work.running() && r.ms() - started < 400000)
+			{
+				work.step(*r.desk, r.ms(), false, [](const Value&) {});
+				r.run(100);
+			}
+			check(!work.running(), std::string(_what) + " finishes within 400 s of machine time");
+			for(int i = 0; i < 20; ++i)
+			{
+				work.step(*r.desk, r.ms(), false, [](const Value&) {});
+				r.run(100);
+			}
+		};
+		{
+			const ImportTap tap(*r.desk, work.job());
+			const auto why = work.reset(*r.desk, first.dumps, "Factory reset", "restored", [](const Value&) {});
+			check(why.empty(), "the Factory reset starts" + (why.empty() ? std::string() : ": " + why));
+			runJob("the Factory reset");
+		}
+		r.run(2000);
+		compare("after the Factory reset");
+		{
+			const auto working = r.desk->workingKit(), memory = workingKitInMemory(r);
+			check(working && memory && soundMatches(*working, kits[0]) && soundMatches(*memory, kits[0]),
+				"the page's and the firmware's working kit are the factory K01");
+		}
+
+		// B-175 on the true factory kit: Empty reset with the factory K01 playing
+		{
+			const ImportTap tap(*r.desk, work.job());
+			bool accepted = false;
+			work.handle(*r.desk, *ed::json::parse(R"({"op":"machineReset","how":"empty"})"),
+				[&](const Value&, const bool ok, const std::string&) { accepted = ok; }, [](const Value&) {});
+			check(accepted, "the Empty reset starts with the factory K01 playing");
+			runJob("the Empty reset");
+		}
+		r.run(2000);
+		{
+			const auto slot = r.desk->kit(0), working = r.desk->workingKit(), memory = workingKitInMemory(r);
+			check(slot && slot->name == empty.name && soundMatches(*slot, empty), "B-175: stored K01 is empty after the Empty reset");
+			check(working && memory && soundMatches(*working, empty) && soundMatches(*memory, empty),
+				"B-175: the page's and the firmware's working kit are empty, not the factory K01");
+		}
+
+		// Undo, twice: the empty reset, then the factory reset (B-130), read back from the machine
+		const auto undoTo = [&](const ed::MmKit& _want, const std::string& _what)
+		{
+			r.msg(R"({"op":"undo"})");
+			// the working kit is written last (the first of the step): once the firmware plays it, the step is through
+			const auto started = r.ms();
+			while(r.ms() - started < 400000)
+			{
+				r.run(1000);
+				if(const auto m = workingKitInMemory(r); m && soundMatches(*m, _want))
+					break;
+			}
+			r.run(5000);
+			r.desk->machine().reread({mmDesk::Kind::Kit, 0});
+			r.run(10000);
+			const auto slot = r.desk->kit(0), memory = workingKitInMemory(r);
+			check(slot && slot->name == _want.name && soundMatches(*slot, _want), _what + ": stored K01 (read back) is \"" + (slot ? kitText(*slot) : "?") + "\"");
+			check(memory && soundMatches(*memory, _want), _what + ": the firmware's working kit too");
+		};
+		undoTo(kits[0], "Undo of the Empty reset: the factory K01 again");
+		undoTo(renamed, "Undo of the Factory reset: K01 as before it");
 	}
 
 	// I-070 (AUTO RECEIVE, doc/release/0.9/mm-auto-receive.md): a kit dump the host's MIDI in sends. Raw (the switch off:
@@ -6698,6 +6884,8 @@ int main(const int _argc, char** _argv)
 			syxImport(rom);
 		if(only == "emptyreset")
 			emptyReset(rom);
+		if(only == "factoryreset")
+			factoryReset(rom);
 		if(only == "autoreceive")
 			autoReceive(rom);
 		if(only == "newkit")

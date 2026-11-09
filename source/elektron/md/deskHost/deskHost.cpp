@@ -112,8 +112,8 @@ namespace deskHost
 				"how many hold data and the first and last of those", Action::SyxExportInfo),
 			row("machineReset", {{"how", ArgType::Text, 0, 0, false, {"empty", "factory"}}},
 				"Reset machine: empty clears every kit, pattern and song (the library's Clear in each slot, sent as dumps; globals "
-				"and samples stay), factory (the Machinedrum) brings back the factory kits, patterns and songs read from a second "
-				"machine started from the user's own ROM; both read back and reported as an import (syxPreview with reset, then "
+				"and samples stay), factory brings back the factory kits, patterns and songs read from a second machine started "
+				"from the user's own ROM (globals stay); both read back and reported as an import (syxPreview with reset, then "
 				"syxProgress); one undo step puts them back; the page asks first",
 				Action::MachineReset),
 			row("midi", {bytes}, "a channel message from the page: [status 0x80-0xef, data, data]", Action::Midi),

@@ -2681,8 +2681,8 @@ const Boot = (() => {
      Syx.reset()           Reset machine…: the question (the engine menu's RESET MACHINE…)
      Syx.menu(value)       an engine menu entry of the panel's (import, export, reset): true when it was one
      Syx.host = {choose(), start(kinds, skip, {placeAt, checkOnly, readBack}), stop(), place(placeAt), exportInfo(), exportSave({kinds?, ranges?}),
-                 reset(how), ask(html, keys), say(text), machine, factory, memory(), factoryMemory()}   the app's host (machine:
-                 its name; factory: it has a factory reset; I-024: memory() the plug-in's machineMemory, factoryMemory() start
+                 reset(how), ask(html, keys), say(text), machine, factory, samples, memory(), factoryMemory()}   the app's host (machine:
+                 its name; factory: it has a factory reset; samples: it keeps samples (the reset's words); I-024: memory() the plug-in's machineMemory, factoryMemory() start
                  from factory memory, a third choice of Reset machine… where memory().available)
      Syx.model             the panel's pure part, as data (deskSyxTest.js) */
 const Syx = (() => {
@@ -3179,11 +3179,12 @@ const Syx = (() => {
 	   Esc and a click elsewhere answer the last key) */
 	function reset() {
 		if (!hostHas("ask")) return;
-		const name = esc(Syx.host.machine || "machine"), f = !!Syx.host.factory, mem = memoryHere();
-		Syx.host.ask(`<b>Reset machine</b> (the machine's start-up menu: hold FUNCTION at power on).<br><br><b>Empty reset</b> clears every kit, pattern and song; ${f ? "samples and globals stay" : "globals stay"}. It asks a second time.<br>`
-			+ (f ? `<b>Factory reset</b> brings back the factory kits, patterns and songs, read from a second ${name} started from your own ROM; globals and samples stay.<br>`
+		const name = esc(Syx.host.machine || "machine"), f = !!Syx.host.factory, smp = !!Syx.host.samples, mem = memoryHere();
+		const kept = smp ? "globals and samples stay" : "globals stay";
+		Syx.host.ask(`<b>Reset machine</b> (the machine's start-up menu: hold FUNCTION at power on).<br><br><b>Empty reset</b> clears every kit, pattern and song; ${kept}. It asks a second time.<br>`
+			+ (f ? `<b>Factory reset</b> brings back the factory kits, patterns and songs, read from a second ${name} started from your own ROM; ${kept}.<br>`
 				: `Factory reset is not offered: the ${name}'s factory data is not in the editor.<br>`)
-			+ (mem ? `<b>Start from factory memory</b> restarts the ${name} as on a new install: its whole memory (kits, patterns, songs, globals${f ? ", samples" : ""}) is the factory's, and the saved machine memory for new sessions is deleted (seconds).<br>` : "")
+			+ (mem ? `<b>Start from factory memory</b> restarts the ${name} as on a new install: its whole memory (kits, patterns, songs, globals${smp ? ", samples" : ""}) is the factory's, and the saved machine memory for new sessions is deleted (seconds).<br>` : "")
 			+ `<br>One Undo puts the kits, patterns and songs back after an empty or factory reset; starting from factory memory cannot be undone. Export SysEx… first keeps a copy in a file.`,
 			[["Empty reset…", "danger", () => resetAgain("empty")], ...(f ? [["Factory reset…", "", () => resetAgain("factory")]] : []),
 				...(mem ? [["Start from factory memory…", "", memoryAgain]] : []), ["Export SysEx…", "", openExport], ["Cancel", "cream", () => { }]]);
@@ -3200,7 +3201,7 @@ const Syx = (() => {
 		const name = esc(Syx.host.machine || "machine");
 		const what = how === "empty" ? `<b>Empty reset:</b> clear every kit, pattern and song on the ${name} now? Each slot is overwritten with an empty one and read back.`
 			: `<b>Factory reset:</b> replace every kit, pattern and song on the ${name} with the factory ones? A second ${name} starts from your ROM first (seconds), then each slot is overwritten and read back (a few minutes).`;
-		Syx.host.ask(`${what}<br><br>One Undo puts the kits, patterns and songs back (not the globals or the samples). Export SysEx… first keeps a copy in a file.`,
+		Syx.host.ask(`${what}<br><br>One Undo puts the kits, patterns and songs back (${Syx.host.samples ? "not the globals or the samples" : "not the globals"}). Export SysEx… first keeps a copy in a file.`,
 			[[how === "empty" ? "Clear everything" : "Factory reset", "danger", () => Syx.host.reset(how)], ["Export SysEx…", "", openExport], ["Cancel", "cream", () => { }]]);
 	}
 	/* an import or a reset at work, its panel hidden (Hide): the engine menu's entries show it again rather than start
@@ -7085,15 +7086,16 @@ const dialogOpen=()=>!$("#dlg").hidden;
    steps share its look, so the dialog is named by its key, Dlg in deskModal.js) */
 function closeFirmwareDialog(){Dlg.drop("firstRun")}
 /* SysEx import and export: the host's file dialogs and document writes; the example shows a pretend file */
-Syx.host={machine:"Monomachine",factory:false,
+Syx.host={machine:"Monomachine",factory:true,samples:false,
  choose:()=>{if(HOST.syxChoose)return HOST.syxChoose();Syx.preview({ok:true,file:"example.syx",model:"Monomachine",fullBackup:false,problemCount:0,problems:[],items:{kit:[{slot:0,name:"SUPERWAVES",overwrites:true}],pattern:[{slot:0,name:"A01",kit:0,overwrites:true}],song:[],global:[]}})},
  start:(k,s,o)=>{if(HOST.syxStart)return HOST.syxStart(k,s,o);Syx.progress({phase:"done",done:2,total:2,running:false,text:"2 imported (example).",report:{taken:2,items:[]}})},
  stop:()=>{if(HOST.syxStop)return HOST.syxStop()},
- /* 0.6 (wave 6): SPECIFIC place, the export's kinds and ranges (DigiPRO waveforms too), Reset machine… (empty) */
+ /* 0.6 (wave 6): SPECIFIC place, the export's kinds and ranges (DigiPRO waveforms too), Reset machine… (empty; factory
+    from a second Monomachine started from the ROM since 0.9.1) */
  place:p=>{if(HOST.syxPlace)return HOST.syxPlace(p);Syx.preview({ok:true,file:"example.syx",model:"Monomachine",place:p,items:{kit:[{slot:p.kit??0,from:p.kit?0:undefined,name:"SUPERWAVES",overwrites:!p.kit}],pattern:[{slot:p.pattern??0,from:p.pattern?0:undefined,name:"A01",kit:0,overwrites:!p.pattern}],song:[],global:[]}})},
  exportInfo:()=>{if(HOST.syxExportInfo)return HOST.syxExportInfo();Syx.exportInfo({type:"syxExportInfo",model:"Monomachine",kinds:{kit:{slots:128,held:128,used:8,first:0,last:7},pattern:{slots:128,held:128,used:8,first:0,last:7},song:{slots:24,held:24,used:3,first:0,last:2},global:{slots:8,held:8,used:8,first:0,last:7},wave:{slots:64}}})},
  exportSave:r=>{if(HOST.syxExport)return HOST.syxExport(r);toast("In the plug-in: a save dialog, then "+(r.kinds?r.kinds.join(", "):"every document")+" as one .syx.")},
- reset:h=>{if(HOST.machineReset)return HOST.machineReset(h);toast("In the plug-in: the empty reset runs in the SysEx panel (example).")},
+ reset:h=>{if(HOST.machineReset)return HOST.machineReset(h);toast("In the plug-in: the "+h+" reset runs in the SysEx panel (example).")},
  memory:()=>S.mem||null,factoryMemory:()=>{if(HOST.memory)HOST.memory("factory")},
  ask:(h,b)=>ask(h,b),say:t=>toast(t)};
 /* the start-up card's keys: the host's native file chooser and ROM folder (the ROM stays on this computer); the
