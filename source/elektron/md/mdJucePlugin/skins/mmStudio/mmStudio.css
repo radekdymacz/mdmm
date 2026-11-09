@@ -1815,6 +1815,8 @@ svg.route .mtr.off{opacity:.3}
 .bootcur b{font:600 13px var(--sans);color:var(--print);flex:none}
 .bootcur .bootfile{font:500 12px var(--mono);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--print)}
 .bootcur i{font-style:normal;flex:none}
+.bootpick{margin:0;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;justify-content:center;max-width:100%;font:500 12px var(--sans);color:var(--print2)}
+.bootpick .linkkey{font:500 12px var(--mono);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* HW MIDI with no machine answering (Boot.midi): the workspace dims and takes no gesture; a card over it says why and
    what to do. The header (engine menu, AUDIO / MIDI) stays live. */
@@ -2875,6 +2877,12 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
 .dpkeys button[disabled]{opacity:.45}
 .dpkeys .danger:hover:not([disabled]){background:var(--rec,var(--red));color:#fff}
 .dpnews{margin:0;font-size:12px;min-height:16px}
+
+/* I-061: the joystick's HOLD, RANDOM and REGION; I-062: the keyboard's Follow */
+.jxrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.jxrow .keyrow{display:flex;gap:4px}
+.joy .jreg{position:absolute;box-sizing:border-box;border:1px dashed var(--ink);background:color-mix(in srgb,var(--ink) 12%,transparent);pointer-events:none}
+.joy .jreg.edit{border-style:solid;background:color-mix(in srgb,var(--ink) 22%,transparent)}
 
 /* ===== The real machine's states (not in the mockup) ===== */
 .statusline,.errline{margin:6px 0 0;padding:6px 10px;border-radius:3px;font:12px var(--pix);text-transform:uppercase}

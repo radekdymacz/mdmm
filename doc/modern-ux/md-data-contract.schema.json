@@ -7004,7 +7004,7 @@
         },
         {
           "type": "object",
-          "description": "host: delete the firmware from the editor's ROM folder (never outside it); the machine stops and the start-up card asks for a ROM again",
+          "description": "host: move a firmware image (name; default: the one that runs) out of the editor's ROM folder into its \"removed\" folder: nothing is deleted, never outside the folder; without another image the machine stops and the start-up card asks for a ROM again",
           "required": ["op"],
           "properties": {
             "op": {
@@ -7019,6 +7019,33 @@
             },
             "force": {
               "type": ["boolean", "integer"]
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: run the image name of the ROM folder in this instance (several may sit there); remembered with the project; the machine restarts",
+          "required": ["op", "name"],
+          "properties": {
+            "op": {
+              "const": "useRom"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "name": {
+              "type": "string"
             }
           },
           "additionalProperties": false
@@ -7269,7 +7296,7 @@
         },
         {
           "type": "object",
-          "description": "host: Reset machine: empty clears every kit, pattern and song (the library's Clear in each slot, sent as dumps; globals and samples stay), factory (the Machinedrum) brings back the factory kits, patterns and songs read from a second machine started from the user's own ROM; both read back and reported as an import (syxPreview with reset, then syxProgress); one undo step puts them back; the page asks first",
+          "description": "host: Reset machine: empty clears every kit, pattern and song (the library's Clear in each slot, sent as dumps; globals and samples stay), factory brings back the factory kits, patterns and songs read from a second machine started from the user's own ROM (globals stay); both read back and reported as an import (syxPreview with reset, then syxProgress); one undo step puts them back; the page asks first",
           "required": ["op", "how"],
           "properties": {
             "op": {

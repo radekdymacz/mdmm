@@ -78,8 +78,8 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-5 | 17 SCALE SETUP (FUNCTION + SCALE) | Length and speed | ✅ | LCD line 2 LEN, SPD |  | 1 | pass (e2e-mm-seq-scale-setup) |
 | Front panel 1-5 | 18 TRIG SELECT: AMP / FILTER / LFO / ALL | Trig track | ✅ | Step menu > Envelopes > Amp, Filter, LFO (on a selection: every trig); the roll marks a trig that fires only some (their letters on the note) | Different UI, same data | 1 | pass (mm-sequence-workspace) |
 | Front panel 1-5 | 18 MIDI SEQ mode (FUNCTION + TRIG SELECT) | Edit MIDI tracks | ✅ | SYNTH / MIDI switch |  | 1 | pass (mm-midi-roll) |
-| Keyboard SFX-6 1-6 | Joystick (real time) | Expression control | ✅ | Perform > Assign pad (springs back) | Mouse; pitch bend / CC 1 / CC 2 map | 1 | pass (e2e-mm-perform-joystick-assign) |
-| Keyboard SFX-6 1-6 | Keyboard | Real-time play and record | ✅ | Perform on-screen keyboard (keys lit while held, also from a MIDI keyboard); home row |  | 3 | pass (e2e-mm-perform-keyboard) |
+| Keyboard SFX-6 1-6 | Joystick (real time) | Expression control | ✅ | Perform > Assign pad (springs back); HOLD, RANDOM and REGION keys under it | Mouse; pitch bend / CC 1 / CC 2 map; HOLD keeps the stick, RANDOM moves it inside a region (stops on Stop and Panic) | 2 | pass (e2e-mm-perform-joystick-assign) |
+| Keyboard SFX-6 1-6 | Keyboard | Real-time play and record | ✅ | Perform on-screen keyboard (keys lit while held, also from a MIDI keyboard); home row; Follow moves the octave to a played note |  | 3 | pass (e2e-mm-perform-keyboard) |
 | Keyboard SFX-6 1-6 | MULTI TRIG key | Toggle multi trig | ✅ | Perform > Multi trig |  | 1 | pass (e2e-mm-perform-multi-trig) |
 | Keyboard SFX-6 1-6 | MULTI MAP (FUNCTION + MULTI TRIG) | Toggle multi map | ✅ | Perform > Multi map |  | 1 | pass (e2e-mm-perform-multi-map) |
 | Keyboard SFX-6 1-6 | OCTAVE keys | Keyboard octave | ✅ | Perform Octave stepper |  | 2 | pass (e2e-mm-perform-joystick-midi) |
@@ -437,7 +437,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 |---|---|---|---|---|---|---|---|
 | Test mode 1-110 | Hardware self test, joystick calibration | Test | ➖ | – |  | – | n/a |
 | Empty reset 1-110 | Clear kits, patterns, songs, globals | Reset | ✅ | Engine menu: Reset machine… > Empty reset… (asked twice): every kit, pattern and song cleared on SYSEX RECV, read back and reported in the SysEx panel | Globals stay: a global is reset in its slot in GLOBAL. | 1 | pass (e2e-mm-engine-reset-empty) |
-| Factory reset 1-110 | Restore factory data | Reset | ❌ | Engine menu: Reset machine… says why it is not offered; Start from factory memory… restarts the machine as on a new install, with the saved machine memory deleted (I-024) |  | – | n/a |
+| Factory reset 1-110 | Restore factory data | Reset | ✅ | Engine menu: Reset machine… > Factory reset… (asked twice): a second Monomachine started from your ROM gives the factory kits, patterns and songs; sent on SYSEX RECV, read back and reported in the SysEx panel | 0.9.1. Seconds to prepare, minutes to send and read back. Globals and user waveforms stay; one Undo puts the kits, patterns and songs back. Proof: mmFactoryResetFirmwareTest (every slot equals a fresh machine's). Start from factory memory… is the other way (I-024). | 1 | n/a |
 | Soft reset 1-111 | Restart keeping data | Restart | ➖ | – | Reopen the editor | – | n/a |
 | MIDI upgrade, send upgrade 1-111, 1-112 | OS update over MIDI | OS update | ➖ | – | The editor loads the OS 1.32B image | – | n/a |
 | Specifications 1-113 | Data sheet | Specs | ➖ | – |  | – | n/a |
@@ -481,7 +481,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Multi trig channel B-2 | All track, split, seq start, seq transpose | Multi trig notes | ✅ | Perform keyboard |  | 1 | pass (e2e-mm-perform-keys-channels) |
 | Multi map channel B-2 | Triggers patterns | Multi map notes | ✅ | Perform keyboard |  | 1 | pass (e2e-mm-perform-keys-channels) |
 | Auto channel B-2 | Notes go to the active track | Auto | ✅ | Perform "Auto track" |  | 1 | pass (e2e-mm-perform-keys-channels) |
-| CC: joystick up / down B-2 | CC 1, 2 | Joystick | ✅ | Assign pad |  | 1 | pass (e2e-mm-perform-joystick-midi) |
+| CC: joystick up / down B-2 | CC 1, 2 | Joystick | ✅ | Assign pad |  | 2 | pass (e2e-mm-perform-joystick-midi) |
 | CC: mute B-2 | CC 3 | Mute | ✅ | Mute keys |  | 1 | pass (e2e-mm-wire-cc) |
 | CC: level B-2 | CC 7 | Level | ✅ | LEVEL fader |  | 1 | pass (e2e-mm-wire-cc) |
 | CC: pan B-2 | CC 10 and 62 | Pan | ✅ | PAN |  | 1 | pass (e2e-mm-wire-cc) |
@@ -495,7 +495,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | NRPN pitch B-5 | Pitch for a track | Pitch | ➖ | – | Firmware in; not used by the page | – | n/a |
 | NRPN note off, trig track B-5 | Release, trig A / L / F | Extra trigs | ➖ | – | Not sent; manual bit order erratum recorded | – | n/a |
 | NRPN multi env B-5 | Range 0x40-0x45 | Multi env | ✅ | Perform multi envelope |  | 1 | pass (e2e-mm-perform-menv-nrpn) |
-| Pitch bend B-6 | Per track | Pitch bend | ✅ | Joystick pad |  | 1 | pass (e2e-mm-perform-joystick-midi) |
+| Pitch bend B-6 | Per track | Pitch bend | ✅ | Joystick pad |  | 2 | pass (e2e-mm-perform-joystick-midi) |
 | Program change B-6 | Selects pattern | Pattern by PC | ➖ | – | Firmware reacts to host MIDI | – | n/a |
 | Song pointer, clock, start, continue, stop B-6 | System messages | Sync | ➖ | – | Firmware; used by `followHost` | – | n/a |
 
@@ -564,9 +564,9 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 367 |
+| ✅ | 368 |
 | 🟡 | 11 |
-| ❌ | 1 |
+| ❌ | 0 |
 | ➖ | 34 |
 | Total | 413 |
 
@@ -581,4 +581,4 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 7. **Transport details (1-5, 1-56).** No pause, no double-STOP rewind and all-notes-off, no +/-10 % tempo nudge, no delayed tempo change, no panic (CC 120).
 8. **Arpeggiator, swing and slide have no copy / clear / paste / undo of their own (1-62, 1-65, 1-66).** Page undo only.
 9. **Lock helpers (1-14, 1-57).** No key that drops only the locks of one step and keeps its note, and no "lock the current value" click.
-10. **Reset functions (1-110).** No empty reset or factory reset from the editor (GLOBAL has Clear for one slot); the page cannot show or open the UNDO KIT slot.
+10. **Reset functions (1-110).** Empty reset and factory reset (0.9.1) are in the engine menu; the page cannot show or open the UNDO KIT slot.

@@ -96,7 +96,7 @@ int main()
 		r = mdJucePlugin::installRom(zipped, model, roms.getChildFile("z"));
 		check(r.ok, "the image inside a .zip is accepted", r.text);
 
-		// REPLACE and REMOVE act inside the ROM folder only
+		// Several images sit in the folder; nothing is ever deleted (I-071)
 		const auto mine = dir.getChildFile("manage");
 		const auto folder = mine.getChildFile("roms");
 		folder.createDirectory();
@@ -110,16 +110,35 @@ int main()
 		check(mdJucePlugin::romsInFolder(other, folder).empty(), "and none of the other machine's");
 		const auto fresh = dir.getChildFile("new-dump.bin");
 		fresh.replaceWithData(img.getData(), img.getSize());
-		r = mdJucePlugin::replaceRom(fresh, model, folder);
-		const auto now = mdJucePlugin::romsInFolder(model, folder);
-		check(r.ok && now.size() == 1 && now[0].getFileName() == "new-dump.bin" && !oldName.existsAsFile() && fresh.existsAsFile(),
-			"REPLACE installs the new image and drops the earlier one (the chosen file itself stays where it was)", r.text);
-		r = mdJucePlugin::replaceRom(dir.getChildFile("nothing.bin"), model, folder);
-		check(!r.ok && mdJucePlugin::romsInFolder(model, folder).size() == 1, "a failed REPLACE leaves the installed image");
-		const auto gone = mdJucePlugin::removeRoms(model, folder);
-		check(gone.removed == 1 && mdJucePlugin::romsInFolder(model, folder).empty(), "REMOVE deletes the image", gone.text);
-		check(decoy.existsAsFile() && fresh.existsAsFile() && note.existsAsFile(), "REMOVE touched nothing outside the folder and no other file");
-		check(mdJucePlugin::removeRoms(model, folder).removed == 0, "REMOVE with nothing to remove says so");
+		r = mdJucePlugin::installRom(fresh, model, folder);
+		auto now = mdJucePlugin::romsInFolder(model, folder);
+		check(r.ok && now.size() == 2 && oldName.existsAsFile() && fresh.existsAsFile() && r.installed.getFileName() == "new-dump.bin",
+			"a second image joins the first: the earlier one is not deleted, the chosen file stays where it was", r.text);
+		// the user's own copy made in the folder (the report): choosing it deletes nothing
+		const auto copy = folder.getChildFile("my-copy.bin");
+		oldName.copyFileTo(copy);
+		r = mdJucePlugin::installRom(copy, model, folder);
+		check(r.ok && r.installed == copy && mdJucePlugin::romsInFolder(model, folder).size() == 3 && oldName.existsAsFile() && copy.existsAsFile(),
+			"a copy the user made in the folder is used where it is and every other file stays", r.text);
+		const auto chosen = mdJucePlugin::findRomByName(model, folder, "my-copy.bin");
+		check(chosen && *chosen == copy, "an image is found by its file name");
+		check(!mdJucePlugin::findRomByName(model, folder, "../outside.bin") && !mdJucePlugin::findRomByName(model, folder, "readme.txt")
+			&& !mdJucePlugin::findRomByName(model, folder, "") && !mdJucePlugin::findRomByName(other, folder, "my-copy.bin"),
+			"a name with a path, a file that is no image, an empty name and the other machine's are never found");
+		r = mdJucePlugin::installRom(dir.getChildFile("nothing.bin"), model, folder);
+		check(!r.ok && mdJucePlugin::romsInFolder(model, folder).size() == 3, "a failed install leaves the images");
+		// REMOVE moves the named image into the folder "removed"; nothing is deleted
+		const auto gone = mdJucePlugin::removeRom(model, folder, "my-copy.bin");
+		check(gone.removed == 1 && !copy.existsAsFile() && gone.movedTo.existsAsFile() && gone.movedTo.getParentDirectory().getFileName() == mdJucePlugin::g_removedFolder
+			&& mdJucePlugin::romsInFolder(model, folder).size() == 2, "REMOVE moves the image aside, it is not deleted", gone.text);
+		check(gone.movedTo.getSize() == static_cast<juce::int64>(img.getSize()), "and the moved file is whole");
+		check(decoy.existsAsFile() && fresh.existsAsFile() && note.existsAsFile() && oldName.existsAsFile(), "REMOVE touched nothing else");
+		check(mdJucePlugin::removeRom(model, folder, "my-copy.bin").removed == 0, "REMOVE of a name that is not there says so");
+		check(mdJucePlugin::removeRom(model, folder, "../outside.bin").removed == 0 && decoy.existsAsFile(), "REMOVE never reaches outside the folder");
+		// the same name removed twice keeps both files
+		oldName.copyFileTo(copy);
+		const auto again = mdJucePlugin::removeRom(model, folder, "my-copy.bin");
+		check(again.removed == 1 && again.movedTo != gone.movedTo && again.movedTo.existsAsFile() && gone.movedTo.existsAsFile(), "a second image of the same name does not overwrite the first");
 	}
 	dir.deleteRecursively();
 	std::printf("mdRomInstallTest: %s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);

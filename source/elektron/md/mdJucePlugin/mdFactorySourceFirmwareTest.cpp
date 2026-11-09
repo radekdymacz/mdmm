@@ -64,8 +64,8 @@ int main()
 	std::puts("the factory data, read on the source's own thread:");
 	mdJucePlugin::MdFactorySource source;
 	const auto t0 = std::chrono::steady_clock::now();
-	check(source.start(rom, name), "it starts");
-	check(!source.start(rom, name), "a second start while it runs is refused");
+	check(source.start(rom, name, md::MachineModel::Machinedrum), "it starts");
+	check(!source.start(rom, name, md::MachineModel::Machinedrum), "a second start while it runs is refused");
 	// the machine the editor plays runs beside it, as in the editor (MD_FACTORY_ALONE=1: the source alone)
 	std::unique_ptr<md::Hardware> playing;
 	if(!std::getenv("MD_FACTORY_ALONE"))
@@ -94,21 +94,21 @@ int main()
 	const auto s = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
 	std::printf("  read in %.1f s: %zu dumps%s%s\n", s, r->dumps.size(), r->error.empty() ? "" : ", error: ", r->error.c_str());
 	check(r->error.empty(), "no error");
-	check(r->dumps.size() == static_cast<size_t>(mdJucePlugin::MdFactorySource::g_total), "64 kits, 128 patterns, 32 songs");
+	check(r->dumps.size() == static_cast<size_t>(mdJucePlugin::MdFactorySource::total(md::MachineModel::Machinedrum)), "64 kits, 128 patterns, 32 songs");
 	if(r->dumps.size() >= 4)
 	{
 		const auto names = kitName(r->dumps[0]) + ", " + kitName(r->dumps[1]) + ", " + kitName(r->dumps[2]) + ", " + kitName(r->dumps[3]);
 		std::printf("  kits 1-4: %s\n", names.c_str());
 		check(names == "TRX UW, EFM UW, E12 UW, P-I UW", "the factory kits first: " + names);
 	}
-	check(source.progress() == mdJucePlugin::MdFactorySource::g_total, "the progress counts every dump");
+	check(source.progress() == mdJucePlugin::MdFactorySource::total(md::MachineModel::Machinedrum), "the progress counts every dump");
 
 	// the editor closes while the source reads: its destructor stops the thread, it does not wait for the dumps (at 0:
 	// while the second machine starts; at 40: between dump requests)
 	for(const int at : {0, 40})
 	{
 		auto early = std::make_unique<mdJucePlugin::MdFactorySource>();
-		early->start(rom, name);
+		early->start(rom, name, md::MachineModel::Machinedrum);
 		const auto t1 = std::chrono::steady_clock::now();
 		if(at)
 			while(early->running() && early->progress() < at && std::chrono::steady_clock::now() - t1 < std::chrono::seconds(60))

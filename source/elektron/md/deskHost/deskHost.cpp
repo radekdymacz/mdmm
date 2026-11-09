@@ -67,8 +67,12 @@ namespace deskHost
 			row("chooseRom", {}, "choose the firmware file (.bin, or a .zip with it): the window's native file chooser; the file stays on this computer",
 				Action::ChooseRom, Actor::Window),
 			row("romInfo", {}, "which firmware is installed (answered with a romInfo message): the LOAD ROM dialog", Action::RomInfo),
-			row("removeRom", {}, "delete the firmware from the editor's ROM folder (never outside it); the machine stops and the start-up card asks for a ROM again",
+			row("removeRom", {{"name", ArgType::Text, 0, 0, true}},
+				"move a firmware image (name; default: the one that runs) out of the editor's ROM folder into its \"removed\" folder: nothing is deleted, never outside the folder; "
+				"without another image the machine stops and the start-up card asks for a ROM again",
 				Action::RemoveRom),
+			row("useRom", {{"name", ArgType::Text}}, "run the image name of the ROM folder in this instance (several may sit there); remembered with the project; the machine restarts",
+				Action::UseRom),
 			// "notice" names the notice (its message's id); the request's own "id" is the result's, as for
 			// every command (the page's bridge numbers every request, so a notice number sent as "id" never arrived)
 			row("noticeAnswer", {{"notice", ArgType::Integer, 1, 1e9}, {"button", ArgType::Integer, 0, 8}},
@@ -112,8 +116,8 @@ namespace deskHost
 				"how many hold data and the first and last of those", Action::SyxExportInfo),
 			row("machineReset", {{"how", ArgType::Text, 0, 0, false, {"empty", "factory"}}},
 				"Reset machine: empty clears every kit, pattern and song (the library's Clear in each slot, sent as dumps; globals "
-				"and samples stay), factory (the Machinedrum) brings back the factory kits, patterns and songs read from a second "
-				"machine started from the user's own ROM; both read back and reported as an import (syxPreview with reset, then "
+				"and samples stay), factory brings back the factory kits, patterns and songs read from a second machine started "
+				"from the user's own ROM (globals stay); both read back and reported as an import (syxPreview with reset, then "
 				"syxProgress); one undo step puts them back; the page asks first",
 				Action::MachineReset),
 			row("midi", {bytes}, "a channel message from the page: [status 0x80-0xef, data, data]", Action::Midi),

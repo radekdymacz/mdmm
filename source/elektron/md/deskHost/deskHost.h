@@ -39,9 +39,10 @@ namespace deskHost
 		SyxExport,			// P7: the native save dialog, then the documents the editor holds as one .syx (0.6: kinds and ranges)
 		SyxPlace,			// 0.6: the open .syx's preview again, its items placed from a first slot per kind (SPECIFIC)
 		SyxExportInfo,		// 0.6: the export panel's facts (per kind: slots, held, used)
-		MachineReset,		// 0.6: Reset machine… (empty; the Machinedrum's factory reset from its own ROM)
+		MachineReset,		// 0.6: Reset machine… (empty; factory from the machine's own ROM: the MD, the MM since 0.9.1)
 		RomInfo,			// the installed firmware: name, OS, size, where (answered with a romInfo message)
-		RemoveRom,			// delete the firmware from the editor's ROM folder (the page asked the user first)
+		RemoveRom,			// move a firmware image out of the editor's ROM folder into its "removed" folder (the page asked the user first); nothing is deleted
+		UseRom,				// run this image of the ROM folder in this instance (remembered with the project)
 		NoticeAnswer,		// the button the user pressed on a notice (a message the plug-in has for the user)
 		ChooseSample,		// P9: the native file chooser for a sample (WAV, AIFF) for a UW ROM slot
 		SampleExport,		// 0.9: a UW slot's samples (or all of a bank's) as WAV files: the native save dialog, or a folder for all

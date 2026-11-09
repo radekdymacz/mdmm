@@ -2426,13 +2426,44 @@ const MmJourneys = (() => {
 		],
 		async tidy(u, c) { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; await back(u, c); }
 	};
-	/* Reset machine… > Empty reset: the Monomachine has no factory reset in the editor; two questions, then every kit,
-	   pattern and song cleared on SYSEX RECV and read back. It empties the machine: the last journey of all */
+	/* Reset machine… > Factory reset (0.9.1, doc/release/0.9.1/mm-factory-reset.md): whatever the run's machine holds,
+	   an Empty reset first (every kit unnamed, no trigs), then the factory reset: a second Monomachine from the run's ROM
+	   is read (seconds), every kit, pattern and song is sent on SYSEX RECV and read back (minutes). The factory data is
+	   back (K01 named, patterns with trigs; the slot-for-slot compare with the second machine's dumps is
+	   mmFactoryResetFirmwareTest), the global stays, and one Cmd+Z takes the factory reset back (empty again). The
+	   plug-in only (the page tier has no second machine) */
+	const namedKits = () => [...Array(128).keys()].filter(k => (kitName(k) || "").trim());
+	const trigPatterns = () => [...Array(128).keys()].filter(p => (I().doc("pattern", p)?.tracks || []).some(t => (t.trig || []).length));
+	const resetFactory = {
+		name: "mm-engine-reset-factory", alone: true, proves: ["MM-318"],
+		needs: () => window.gmDev ? "a second machine from the ROM: the plug-in only" : null,
+		steps: [
+			{ say: "choose RESET MACHINE…, Empty reset…, Clear everything: the machine is empty first", act: async (u, c) => { c.g0 = JSON.stringify(I().doc("global", machine().global?.current ?? 0)); await u.pick("engsel", "reset"); await until(dlgShown, 3000); u.click(dlgButton("Empty reset…")); await until(() => !!dlgButton("Clear everything"), 3000); u.click(dlgButton("Clear everything")); },
+				screen: () => ok(/Empty reset/.test($1("#syxpop .cap")?.textContent || "") && /cleared/.test($1("#syxpop .syxsum")?.textContent || ""), "panel: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
+				machine: () => { const n = namedKits(), t = trigPatterns(); return ok(!n.length && !t.length, `${n.length} kits named, ${t.length} patterns with trigs`); }, within: 400000 },
+			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") },
+			{ say: "choose RESET MACHINE…: Empty reset and Factory reset are offered; Cancel is the default", act: u => u.pick("engsel", "reset"),
+				screen: () => ok(dlgShown() && !!dlgButton("Empty reset…") && !!dlgButton("Factory reset…") && /second Monomachine started from your own ROM/.test($1("#dlg").textContent) && $1("#dlg .btnrow button:last-child")?.textContent === "Cancel", "the question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
+			{ say: "click Factory reset…: it asks a second time", act: u => u.click(dlgButton("Factory reset…")),
+				screen: () => ok(dlgShown() && !!dlgButton("Factory reset"), "second question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
+			{ say: "click Factory reset: the factory data is prepared, then sent, read back and reported", act: u => u.click(dlgButton("Factory reset")),
+				screen: () => ok(/Factory reset/.test($1("#syxpop .cap")?.textContent || "") && /restored/.test($1("#syxpop .syxsum")?.textContent || ""), "panel: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
+				machine: c => { const n = namedKits(), t = trigPatterns(), g = JSON.stringify(I().doc("global", machine().global?.current ?? 0)), k1 = (kitName(0) || "").trim();
+					return ok(!!k1 && n.length > 0 && t.length > 0 && g === c.g0, `K01 "${k1}", ${n.length} kits named, ${t.length} patterns with trigs, global ${g === c.g0 ? "kept" : "changed"}`); }, within: 600000 },
+			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") },
+			/* B-130: the factory reset is one undo step: Cmd+Z empties the machine again */
+			{ ...undoKey, say: "press Cmd+Z: the factory reset is one undo step, the machine is empty again",
+				machine: () => { const n = namedKits(), t = trigPatterns(); return ok(!n.length && !t.length, `${n.length} kits named, ${t.length} patterns with trigs`); }, within: 400000 }
+		],
+		async tidy() { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; }
+	};
+	/* Reset machine… > Empty reset: two questions, then every kit, pattern and song cleared on SYSEX RECV and read
+	   back. It empties the machine: the last journey of all */
 	const resetEmpty = {
 		name: "mm-engine-reset-empty", alone: true, proves: ["MM-317"],
 		steps: [
-			{ say: "choose RESET MACHINE… in the engine menu: Empty reset and why no factory reset; Cancel is the default", act: u => u.pick("engsel", "reset"),
-				screen: () => ok(dlgShown() && !!dlgButton("Empty reset…") && !dlgButton("Factory reset…") && /factory data is not in the editor/.test($1("#dlg").textContent) && $1("#dlg .btnrow button:last-child")?.textContent === "Cancel", "the question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
+			{ say: "choose RESET MACHINE… in the engine menu: Empty reset and Factory reset; Cancel is the default", act: u => u.pick("engsel", "reset"),
+				screen: () => ok(dlgShown() && !!dlgButton("Empty reset…") && !!dlgButton("Factory reset…") && $1("#dlg .btnrow button:last-child")?.textContent === "Cancel", "the question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
 			{ say: "click Empty reset…: it asks a second time", act: u => u.click(dlgButton("Empty reset…")),
 				screen: () => ok(dlgShown() && !!dlgButton("Clear everything"), "second question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
 			{ say: "click Clear everything: the reset runs in the SysEx panel and reports", act: (u, c) => { c.g0 = JSON.stringify(I().doc("global", machine().global?.current ?? 0)); c.named = [...Array(128).keys()].map(k => [k, (kitName(k) || "").trim()]).filter(([, n]) => n); u.click(dlgButton("Clear everything")); },
@@ -3756,6 +3787,41 @@ const MmJourneys = (() => {
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 }
 		]
 	};
+	/* ---- Perform: the joystick's HOLD and RANDOM (I-061): the same MIDI as a hand drag; STOP and PANIC end them ---- */
+	const joystickHold = {
+		name: "mm-perform-joystick-hold-random", proves: ["MM-049", "MM-352", "MM-366"],
+		steps: [
+			go("perform"),
+			{ say: "track 3, JOY RL tab, HOLD on: drag the stick right and let go: it stays right (the last pitch bend is above the middle, nothing springs it back); HOLD again: the middle is sent on track 3's channel", act: async (u, c) => { c.bad = []; u.click('[data-set="astrk"] button[data-v="2"]'); await sleep(300); u.click('[data-set="astab"] button[data-v="JOY RL"]'); await sleep(250); const ch = baseCh() + 2;
+					if ($1('[data-jx="hold"]')?.getAttribute("aria-pressed") === "true") u.click('[data-jx="hold"]'); await sleep(200);
+					u.click('[data-jx="hold"]'); await sleep(250); midiSent.length = 0; await u.drag("#joy", [[20, 0], [40, 0]]); await sleep(300);
+					const pb = midiSent.filter(b => (b[0] & 0xf0) === 0xe0); if (!pb.length || !pb.every(b => (b[0] & 15) === ch) || !(pb[pb.length - 1][2] > 64)) c.bad.push("held right: " + JSON.stringify(midiSent.slice(-6)));
+					midiSent.length = 0; await sleep(500); if (midiSent.some(b => (b[0] & 0xf0) === 0xe0)) c.bad.push("a held stick keeps sending: " + JSON.stringify(midiSent.slice(0, 6)));
+					u.click('[data-jx="hold"]'); await sleep(300); const back = midiSent.filter(b => (b[0] & 0xf0) === 0xe0); if (!back.length || back[back.length - 1][1] !== 0 || back[back.length - 1][2] !== 64 || (back[back.length - 1][0] & 15) !== ch) c.bad.push("release: " + JSON.stringify(midiSent.slice(-6))); },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "REGION: drag a rectangle into the upper right part of the pad, RANDOM at speed 10: the stick moves by itself, only right and up (pitch bend at or above the middle, CC 2 stays 0), several different values", act: async (u, c) => { c.bad = []; const ch = baseCh() + 2;
+					u.click('[data-jx="reg"]'); await sleep(250); const r = $1("#joy").getBoundingClientRect(); await u.drag("#joy", [[r.width * 0.05, -r.height * 0.05], [r.width * 0.25, -r.height * 0.25]], {}, { fx: 0.6, fy: 0.4 }); await sleep(250); u.click('[data-jx="reg"]'); await sleep(200);
+					for (let i = 0; i < 9; i++) { if (!$1('[data-jx="spd"][data-d="1"]')?.disabled) u.click('[data-jx="spd"][data-d="1"]'); await sleep(40); }
+					midiSent.length = 0; u.click('[data-jx="rand"]'); await sleep(900); midiSent.length = 0; await sleep(450);
+					const pb = midiSent.filter(b => (b[0] & 0xf0) === 0xe0), up = midiSent.filter(b => (b[0] & 0xf0) === 0xb0 && b[1] === 1), dn = midiSent.filter(b => (b[0] & 0xf0) === 0xb0 && b[1] === 2);
+					if (pb.length < 4 || new Set(pb.map(b => b[1] | b[2] << 7)).size < 4) c.bad.push("it does not move: " + JSON.stringify(midiSent.slice(0, 8)));
+					if (!pb.every(b => (b[0] & 15) === ch && b[2] >= 64) || !up.every(b => (b[0] & 15) === ch) || dn.some(b => b[2] !== 0)) c.bad.push("outside the region or on another channel: " + JSON.stringify(midiSent.slice(0, 12))); },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "STOP (PLAY, PLAY again) ends RANDOM: the stick is sent back to the middle and nothing more is sent", act: async (u, c) => { c.bad = []; const ch = baseCh() + 2; u.click("#play"); await until(playing, 6000); u.click("#play"); await until(() => !playing(), 6000); await sleep(300);
+					midiSent.length = 0; await sleep(400); if (midiSent.some(b => (b[0] & 0xf0) === 0xe0)) c.bad.push("still moving after STOP: " + JSON.stringify(midiSent.slice(0, 6)));
+					if ($1('[data-jx="rand"]')?.getAttribute("aria-pressed") === "true") c.bad.push("RANDOM still lit"); },
+				machine: () => ok(!playing(), "playing"), screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 2000 },
+			{ say: "HOLD, drag right, Panic from the transport menu: HOLD ends and the middle is sent; RANDOM again, then PANIC: it ends too", act: async (u, c) => { c.bad = []; const ch = baseCh() + 2;
+					u.click('[data-jx="hold"]'); await sleep(250); await u.drag("#joy", [[20, 0], [40, 0]]); await sleep(250); midiSent.length = 0;
+					u.rightClick("#play"); await until(() => !!$1('#deskmenu [data-mid="panic"]'), 2000); u.click('#deskmenu [data-mid="panic"]'); await sleep(500);
+					const pb = midiSent.filter(b => (b[0] & 0xf0) === 0xe0); if (!pb.length || pb[pb.length - 1][2] !== 64 || pb[pb.length - 1][1] !== 0) c.bad.push("panic did not centre: " + JSON.stringify(midiSent.slice(0, 6)));
+					if ($1('[data-jx="hold"]')?.getAttribute("aria-pressed") === "true") c.bad.push("HOLD still lit");
+					u.click('[data-jx="rand"]'); await sleep(500); u.rightClick("#play"); await until(() => !!$1('#deskmenu [data-mid="panic"]'), 2000); u.click('#deskmenu [data-mid="panic"]'); await sleep(500);
+					midiSent.length = 0; await sleep(400); if (midiSent.some(b => (b[0] & 0xf0) === 0xe0)) c.bad.push("random after panic: " + JSON.stringify(midiSent.slice(0, 6))); },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 3000 }
+		],
+		async tidy(u) { for (const k of ["hold", "rand"]) if ($1(`[data-jx="${k}"]`)?.getAttribute("aria-pressed") === "true") u.click(`[data-jx="${k}"]`); }
+	};
 	/* ---- Perform: the multi envelope goes out as NRPN 0x40 to 0x44 on every track (Appendix B) ---- */
 	const menvNrpn = {
 		name: "mm-perform-menv-nrpn", proves: ["MM-365"],
@@ -4697,13 +4763,13 @@ const MmJourneys = (() => {
 			if (c.tr0 != null && c.tr0 !== 1 && tIn() !== c.tr0) { Bridge.send({ op: "globalMidi", transportIn: !!c.tr0, force: true }); await sleep(2500); }
 		}
 	};
-	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowMarks, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
+	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, joystickHold, menvNrpn, songRowSettings, songRowMarks, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixHeads, mixSolo, soloSaved, shiftMutes, routing, mixMeters, panTrim, msOff, msViews, railLamps, railLampsFwd,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, followPlayed, seqKbLit, mixLevelReset, typeValue, songRows, songPicker, songSlotsJ, hostStopSongJ, songKeysJ, songChain, modeCycle, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, laneDrawSlide, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
 		valueKeys, soundCopy, screenDrag, filterEnv, lfoLocksJ, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
-		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportUndoJ, syxImportMute, autoReceiveJ, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, digiproCardJ, digiproJobsJ, digiproMk1J, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach, ...Object.values(learnJ)];
+		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportUndoJ, syxImportMute, autoReceiveJ, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, digiproCardJ, digiproJobsJ, digiproMk1J, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetFactory, resetEmpty, syxRunningReach, ...Object.values(learnJ)];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
 	   its guard, "left:", names what stays). What back cannot put back, the journey keeps first (keep, keepMany) or is alone: true (doc/modern-ux/JOURNEYS.md, "Independent journeys") */
 	for (const j of all) { const own = j.tidy; j.tidy = async (u, c) => { try { if (own) await own(u, c); } finally { if (c.back0?.state && Journey.stateDiff(c.back0.state, state())) await back(u, c); } }; }

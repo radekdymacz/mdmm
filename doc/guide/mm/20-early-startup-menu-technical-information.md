@@ -25,11 +25,22 @@ NOTE: **Undo** takes the Empty reset back in one step. Every kit, pattern and so
 NOTE: With a real Monomachine over MIDI, the machine must be on its SYSEX RECV screen. The sync field reads SEND and the number of waiting dumps until it is.
 
 ## FACTORY RESET
-<!-- rows: MM-318 @dc2556 -->
+<!-- rows: MM-318 @550a35 -->
 
-The editor holds no factory data of the Monomachine, so it offers no factory reset. The **RESET MACHINE…** question says so. To get the factory kits and patterns back, import a factory .syx file. See "FILE" in chapter 19.
+The factory reset brings back the factory kits, patterns and songs. The editor reads them from a second Monomachine that it starts from your own ROM, unheard. Your machine does not change until that data is read.
 
-**Start from factory memory…** in the same question restarts the machine as on a new install and deletes the saved machine memory. Its kits and patterns are those the emulated machine starts with, which are the factory ones only when the editor has the Monomachine's factory memory image. See "MACHINE MEMORY" in chapter 24.
+1. Choose **RESET MACHINE…** in the engine menu. **Cancel** is the default.
+2. Click **Factory reset…**. The editor asks a second time.
+3. Click **Factory reset**. The editor prepares the factory data, which takes a few seconds. Then the **Factory reset** panel opens. The editor writes every kit, pattern and song through the SYSEX RECV screen and reads each one back. This takes a few minutes.
+4. Read the report and click **Done**.
+
+The globals and the user waveforms stay. To reset a global, use Clear in its own slot in GLOBAL (chapter 19).
+
+NOTE: **Undo** takes the Factory reset back in one step. **Redo** writes the factory data again. **Export SysEx…** in the question keeps a copy in a file.
+
+NOTE: With a real Monomachine over MIDI, the editor still needs the Monomachine ROM on the computer, because the factory data comes from it. The machine must be on its SYSEX RECV screen, as for the empty reset.
+
+**Start from factory memory…** in the same question restarts the emulated machine as on a new install and deletes the saved machine memory. The globals are reset too, and it cannot be undone. See "MACHINE MEMORY" in chapter 24.
 
 ## SOFT RESET
 <!-- rows: MM-319 @836f00 -->

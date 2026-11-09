@@ -21,17 +21,18 @@ function drawFirstRun(mode) {
 	d.hidden = false; d.dataset.first = mode;
 }
 
-/* LOAD ROM with a firmware installed: which one, and REPLACE or REMOVE it (the ROM folder is the editor's:
+/* LOAD ROM with a firmware installed: which one, ADD another, USE one of several or REMOVE it (the ROM folder is the editor's:
    nothing outside it is touched). Without one, the start-up card's own words. */
 function romMenu() { if (V.lifecycle === "missing") { firstRun(true); return; } cmd("romInfo"); }
 function showRomInfo(m) {
 	if (!m.installed) { firstRun(true); return; }
-	Boot.showInstalled({ machine: "Machinedrum", os: m.os, name: m.name, size: m.size, inFolder: m.inFolder, folder: m.folder });
+	Boot.showInstalled({ machine: "Machinedrum", os: m.os, name: m.name, size: m.size, inFolder: m.inFolder, folder: m.folder, roms: m.roms });
 }
 function askRemoveRom(m) {
 	if (!m.inFolder) { toast("This image is outside the editor's ROM folder (" + m.folder + "); remove it there yourself."); return; }
-	ask(`Remove <b>${escH(m.os)}</b> from the ROM folder? The machine stops and the editor asks for a firmware again. Your project stays.`,
-		[["Remove", "danger", () => cmd("removeRom")], ["Cancel", "", () => {}]]);
+	const more = (m.roms || []).length > 1;
+	ask(`Move <b>${escH(m.name)}</b> out of the ROM folder, into its <span class="mono">removed</span> folder? Nothing is deleted. ${more ? "The machine restarts on another image in the folder." : "The machine stops and the editor asks for a firmware again."} Your project stays.`,
+		[["Remove", "danger", () => cmd("removeRom", { name: m.name })], ["Cancel", "", () => {}]]);
 }
 /* what the plug-in has to say to the user (a question, a warning): its modal, never a native alert. The plug-in
    waits for the answer, so a notice goes before the page's own questions, is never replaced by one, and is
@@ -51,7 +52,7 @@ Bridge.onMessage(m => { if (m.type === "romInfo") showRomInfo(m); else if (m.typ
 
 /* the start-up card's keys: the host's native file chooser, the ROM folder, a new look (the ROM stays on this computer) */
 Boot.host = { chooseRom: () => cmd("chooseRom"), revealRom: () => cmd("revealRomFolder"), recheck: () => cmd("recheckFirmware"),
-	removeRom: askRemoveRom, say: toast };
+	removeRom: askRemoveRom, useRom: name => cmd("useRom", { name }), say: toast };
 Bridge.onMessage(m => { if (m.type === "romInstall") { Boot.rom(m); toast(m.text); } });
 /* files dropped on the window (shared/deskDrop.js): the page's question and toast (called late: a test may replace
    them), the start-up card asking for a firmware, and the Sampler for samples (mdDeskSampler.js) */
@@ -62,7 +63,7 @@ Drop.host = { send: c => { const { op, ...args } = c; cmd(op, args); }, ask: (ht
 	hint: "Drop a ROM (.bin, .zip), a SysEx file (.syx), or samples (.wav, .aif) for the Sampler's ROM slots" };
 /* SysEx import and export: the host's file dialogs and document writes (the page never reads the file); 0.6: the
    import's place and VERIFY ONLY, the export's kinds and ranges, Reset machine… (empty, and factory from the ROM) */
-Syx.host = { machine: "Machinedrum", factory: true, choose: () => cmd("chooseSyx"),
+Syx.host = { machine: "Machinedrum", factory: true, samples: true, choose: () => cmd("chooseSyx"),
 	start: (kinds, skip, o = {}) => cmd("syxImport", Object.assign({ kinds, skip: skip || [] }, o.placeAt ? { placeAt: o.placeAt } : {}, o.checkOnly ? { checkOnly: true } : {}, o.readBack === false ? { readBack: false } : {})),
 	stop: () => cmd("syxCancel"), place: placeAt => cmd("syxPlace", { placeAt }), exportInfo: () => cmd("syxExportInfo"),
 	exportSave: req => cmd("syxExport", req), reset: how => cmd("machineReset", { how }),

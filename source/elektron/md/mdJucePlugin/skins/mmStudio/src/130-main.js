@@ -111,7 +111,7 @@ main.addEventListener("pointerdown",e=>{
  if(el){const t=el.dataset.t!=null?+el.dataset.t:S.sel;drag={el,x:e.clientX,y:e.clientY,v:getV(el),vert:el.classList.contains("fader"),hz:el.classList.contains("hz")&&el.getBoundingClientRect().width,mx:maxOf(ref(el)[2]),all:e.altKey&&!isMidiT(t)&&PAGES.includes(el.dataset.g)};if(drag.all)allTip();el.setPointerCapture(e.pointerId);el.classList.add("act");e.preventDefault();return}
  if(laneDown(e))return;
  const ac=e.target.closest(".ac");if(ac){if(e.button!==0||e.ctrlKey||e.metaKey)return;const k=+ac.dataset.ac,a=trk(S.sel).arp;if(k>=a.len){a.len=k+1;edit("arp",{t:S.sel,field:"length",v:a.len});renderArp();return}arpDrag={k,y:e.clientY,moved:false};$("#arptrack").setPointerCapture(e.pointerId);e.preventDefault();return}
- if(e.target.closest("#joy")){joyDrag=true;$("#joy").setPointerCapture(e.pointerId);joyAt(e);e.preventDefault();return}
+ if(e.target.closest("#joy")){joyDrag=S.jx.edit?"reg":true;$("#joy").setPointerCapture(e.pointerId);if(joyDrag==="reg")jxRegStart(e);else joyAt(e);e.preventDefault();return}
  if(e.target.closest("#splitm")){splitDrag=true;$("#splitm").setPointerCapture(e.pointerId);e.preventDefault();return}
  const key=e.target.closest(".kb [data-key]");if(key){kbDown=true;$("#kb").setPointerCapture(e.pointerId);playKey(+key.dataset.key);e.preventDefault()}});
 main.addEventListener("pointermove",e=>{
@@ -125,7 +125,7 @@ main.addEventListener("pointermove",e=>{
   const d=drag.vert?(drag.y-e.clientY)*127/150:drag.hz?(e.clientX-drag.x)*drag.mx/drag.hz:((e.clientX-drag.x)+(drag.y-e.clientY))/2;setV(drag.el,drag.v+d*fine*scale);return}
  if(laneDraw){laneAt(e);return}
  if(arpDrag){const a=trk(S.sel).arp,dd=Math.round((arpDrag.y-e.clientY)/4);if(Math.abs(dd)>0||arpDrag.moved){arpDrag.moved=true;a.ofs[arpDrag.k]=clamp((arpDrag.v0??(arpDrag.v0=a.ofs[arpDrag.k]))+dd,-24,24);renderArp()}return}
- if(joyDrag){joyAt(e);return}
+ if(joyDrag){if(joyDrag==="reg")jxRegMove(e);else joyAt(e);return}
  if(splitDrag){const kb=$("#kb").getBoundingClientRect(),[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const i=clamp(Math.round((e.clientX-kb.left)/kb.width*KB_WHITE_COUNT),1,whites.length-1);if(S.multi.splitKey!==whites[i]){S.multi.splitKey=whites[i];$("#kb").innerHTML=renderKb();$("#splitm").setPointerCapture?.(e.pointerId)}return}
  if(kbDown){const k=document.elementFromPoint(e.clientX,e.clientY)?.closest(".kb [data-key]");if(k&&KBLIT.mouse!==+k.dataset.key)playKey(+k.dataset.key);return}
  const c=e.target.closest?.("canvas.ed");if(c)c.style.cursor=ED[c.dataset.ed]?.cursor?.(c,e)||(nearest(c,e)?"grab":"default");
@@ -135,7 +135,7 @@ function allTip(){if(S.allTold)return;S.allTold=1;toast("Control All: this value
 function endDrag(e){trnUp();if(cord){cordEnd(e);return}if(rollDrag)rollUp();if(active){active=null;redraw()}if(drag){drag.el.classList.remove("act");drag=null}endLaneDraw();
  if(kbDown&&HOST.keyUp)HOST.keyUp();
  if(arpDrag){const a=trk(S.sel).arp,k=arpDrag.k;if(!arpDrag.moved){a.rhy[k]=!a.rhy[k];renderArp()}edit("arp",{t:S.sel,field:"step",i:k,v:a.rhy[k]?clamp(64+a.ofs[k]):255});arpDrag=null}
- if(joyDrag){joyDrag=false;S.joy={x:0,y:0};const k=$("#knobj");if(k){k.style.left="50%";k.style.top="50%"}if(HOST.joy)HOST.joy(S.joy)}
+ if(joyDrag){const reg=joyDrag==="reg";joyDrag=false;if(reg)jxRegEnd();else jxHandUp()}
  if(splitDrag){splitDrag=false;edit("multiTrig",{splitKey:S.multi.splitKey});render()}if(kbDown){kbDown=false;setKeyDown(null,null)}}
 /* P7: a gesture ends wherever the button comes up. A render during a drag (a pattern load, the machine's
    documents) removes the element that held the pointer, and its pointerup then lands outside #main: the drag
@@ -144,9 +144,12 @@ function endDrag(e){trnUp();if(cord){cordEnd(e);return}if(rollDrag)rollUp();if(a
 document.addEventListener("pointerup",endDrag);document.addEventListener("pointercancel",endDrag);
 window.addEventListener("blur",()=>{if(dragging())endDrag({clientX:-1,clientY:-1})});
 const dragging=()=>!!(drag||active||laneDraw||arpDrag||joyDrag||splitDrag||rollDrag||selDrag||kbDown||cord||trnHeld);
-function joyAt(e){const r=$("#joy").getBoundingClientRect();S.joy={x:clamp((e.clientX-r.left)/r.width*2-1,-1,1),y:clamp(1-(e.clientY-r.top)/r.height*2,-1,1)};const k=$("#knobj");k.style.left=(50+S.joy.x*42)+"%";k.style.top=(50-S.joy.y*42)+"%";
- const tr=S.tracks[asgT()],A=tr.assign,rows=A.tabs[S.asTab];const amt=S.asTab==="JOY U"?Math.max(0,S.joy.y):S.asTab==="JOY D"?Math.max(0,-S.joy.y):A.mirr?S.joy.x:Math.max(0,S.joy.x);
- $("#kbinfo")&&($("#kbinfo").textContent=rows.map(r=>`${LPAGES[r.pg]} ${destNames(asgT(),r.pg)[r.d]} ${Math.round((r.add-64)*amt)>=0?"+":""}${Math.round((r.add-64)*amt)}`).join(" · "));tx();if(HOST.joy)HOST.joy(S.joy)}
+function joyAt(e){const r=$("#joy").getBoundingClientRect();joySet(clamp((e.clientX-r.left)/r.width*2-1,-1,1),clamp(1-(e.clientY-r.top)/r.height*2,-1,1))}
+/* the stick at (x, y), one way in for the hand, HOLD and RANDOM (I-061): the knob, the info line and HOST.joy, which
+   sends it to the machine as it always did (the adapter's rate-limited, coalesced MIDI) */
+function joySet(x,y,t){S.joy={x,y};const k=$("#knobj");if(k){k.style.left=(50+S.joy.x*42)+"%";k.style.top=(50-S.joy.y*42)+"%"}
+ const tr=S.tracks[asgT()],A=tr.assign,rows=A.tabs[S.asTab];if(!S.asTab.startsWith("JOY")){if(HOST.joy)HOST.joy(S.joy,t);return}const amt=S.asTab==="JOY U"?Math.max(0,S.joy.y):S.asTab==="JOY D"?Math.max(0,-S.joy.y):A.mirr?S.joy.x:Math.max(0,S.joy.x);
+ $("#kbinfo")&&($("#kbinfo").textContent=rows.map(r=>`${LPAGES[r.pg]} ${destNames(asgT(),r.pg)[r.d]} ${Math.round((r.add-64)*amt)>=0?"+":""}${Math.round((r.add-64)*amt)}`).join(" · "));tx();if(HOST.joy)HOST.joy(S.joy,t)}
 function renderArp(){const el=$("#arptrack");if(!el)return;const a=trk(S.sel).arp;el.innerHTML=arpCells(a);el.style.gridTemplateColumns=arpCols(a);const c2=$("#arpcap");if(c2)c2.textContent="Rhythm + offset · "+a.len+" steps";$$(".mrowg .rowst").length&&0;redraw()}
 main.addEventListener("keydown",e=>{if(kitNudge(e))return;const ac=e.target.closest?.(".ac[data-ac]");if(!ac||!["Enter"," "].includes(e.key)||e.ctrlKey||e.metaKey||e.altKey)return;e.preventDefault();e.stopPropagation();if(e.repeat||S.learn)return;const k=+ac.dataset.ac,a=trk(S.sel).arp;commit();a.rhy[k]=!a.rhy[k];edit("arp",{t:S.sel,field:"step",i:k,v:a.rhy[k]?clamp(64+a.ofs[k]):255});commit();renderArp();$(`#arptrack [data-ac="${k}"]`)?.focus()});
 /* I-022: a value typed (shared/deskValueEdit.js): ⌘-click a value box or fader, or Enter on one that has the focus. What
@@ -208,6 +211,8 @@ document.addEventListener("click",e=>{
  const pmk=e.target.closest("[data-pmode]");if(pmk){S.mode=pmk.dataset.pmode;S.polyT=S.mode==="poly"?asgT():null;if(HOST.keyMode)HOST.keyMode(S.mode,asgT());if(S.mode==="poly")toast("POLY: T"+(asgT()+1)+" now plays six voices. The other five tracks are silent until you leave POLY.");render();return}
  const so2=e.target.closest("[data-strk]");if(so2){S.multi.splitTrack=clamp(S.multi.splitTrack+ +so2.dataset.strk,2,6);edit("multiTrig",{splitTrack:S.multi.splitTrack-1});render();return}
  const tm=e.target.closest("[data-tim]");if(tm){S.multi.timing=clamp(S.multi.timing+ +tm.dataset.tim,0,6);edit("multiTrig",{timing:S.multi.timing});render();return}
+ const kf=e.target.closest("[data-kbfollow]");if(kf){S.kbFollow=!S.kbFollow;perfPrefs();render();return}
+ const jx=e.target.closest("[data-jx]");if(jx){jxClick(jx.dataset.jx,+(jx.dataset.d||0));return}
  const ko=e.target.closest("[data-kboct]");if(ko){S.kbOct=clamp(S.kbOct+ +ko.dataset.kboct,KBOCT[0],KBOCT[1]);render();return}
  const bd=e.target.closest("[data-band]");if(bd){S.mmapSel=+bd.dataset.band;render();return}
  const mr=e.target.closest("tr[data-mrow]");if(mr&&!e.target.closest("button,.pc,.kselbtn")){S.mmapSel=+mr.dataset.mrow;render();return}
@@ -415,7 +420,7 @@ function setPos(){const at=S.playing&&S.step>=0?S.step:S.paused&&S.paused.step>=
 function setStep(step){if(step===S.step)return;const prev=S.step;S.step=step;stepShown(prev)}
 /* B-104: paused, the step the machine holds (the key reaches it a moment after the click): POSITION and CONTINUE's step */
 function setPausedStep(step){if(!S.paused||step<0||S.paused.step===step)return;S.paused.step=step;setPos()}
-function setPlaying(on){if(S.playing===on)return;S.playing=on;if(on)S.paused=null;if(!on){$$(".pl").forEach(b=>b.classList.remove("play"));$("#tempoled").classList.remove("on");$$(".ph").forEach(c=>c.classList.remove("ph"));S.step=-1}setPos();renderTop();redraw();movePH(false);markSongRow()}
+function setPlaying(on){if(S.playing===on)return;if(!on)jxStopRandom();S.playing=on;if(on)S.paused=null;if(!on){$$(".pl").forEach(b=>b.classList.remove("play"));$("#tempoled").classList.remove("on");$$(".ph").forEach(c=>c.classList.remove("ph"));S.step=-1}setPos();renderTop();redraw();movePH(false);markSongRow()}
 function togglePlay(){if(HOST.togglePlay)return HOST.togglePlay();if(!S.playing&&S.eng&&!engReady())return;S.playing=!S.playing;clearInterval(clock);$$(".pl").forEach(b=>b.classList.remove("play"));$("#tempoled").classList.remove("on");$$(".ph").forEach(c=>c.classList.remove("ph"));if(S.playing){S.step=-1;tick();restartClock()}else S.queued=null;setPos();renderTop();redraw();movePH(false)}
 
 /* ===== Render ===== */
@@ -596,15 +601,16 @@ const dialogOpen=()=>!$("#dlg").hidden;
    steps share its look, so the dialog is named by its key, Dlg in deskModal.js) */
 function closeFirmwareDialog(){Dlg.drop("firstRun")}
 /* SysEx import and export: the host's file dialogs and document writes; the example shows a pretend file */
-Syx.host={machine:"Monomachine",factory:false,
+Syx.host={machine:"Monomachine",factory:true,samples:false,
  choose:()=>{if(HOST.syxChoose)return HOST.syxChoose();Syx.preview({ok:true,file:"example.syx",model:"Monomachine",fullBackup:false,problemCount:0,problems:[],items:{kit:[{slot:0,name:"SUPERWAVES",overwrites:true}],pattern:[{slot:0,name:"A01",kit:0,overwrites:true}],song:[],global:[]}})},
  start:(k,s,o)=>{if(HOST.syxStart)return HOST.syxStart(k,s,o);Syx.progress({phase:"done",done:2,total:2,running:false,text:"2 imported (example).",report:{taken:2,items:[]}})},
  stop:()=>{if(HOST.syxStop)return HOST.syxStop()},
- /* 0.6 (wave 6): SPECIFIC place, the export's kinds and ranges (DigiPRO waveforms too), Reset machine… (empty) */
+ /* 0.6 (wave 6): SPECIFIC place, the export's kinds and ranges (DigiPRO waveforms too), Reset machine… (empty; factory
+    from a second Monomachine started from the ROM since 0.9.1) */
  place:p=>{if(HOST.syxPlace)return HOST.syxPlace(p);Syx.preview({ok:true,file:"example.syx",model:"Monomachine",place:p,items:{kit:[{slot:p.kit??0,from:p.kit?0:undefined,name:"SUPERWAVES",overwrites:!p.kit}],pattern:[{slot:p.pattern??0,from:p.pattern?0:undefined,name:"A01",kit:0,overwrites:!p.pattern}],song:[],global:[]}})},
  exportInfo:()=>{if(HOST.syxExportInfo)return HOST.syxExportInfo();Syx.exportInfo({type:"syxExportInfo",model:"Monomachine",kinds:{kit:{slots:128,held:128,used:8,first:0,last:7},pattern:{slots:128,held:128,used:8,first:0,last:7},song:{slots:24,held:24,used:3,first:0,last:2},global:{slots:8,held:8,used:8,first:0,last:7},wave:{slots:64}}})},
  exportSave:r=>{if(HOST.syxExport)return HOST.syxExport(r);toast("In the plug-in: a save dialog, then "+(r.kinds?r.kinds.join(", "):"every document")+" as one .syx.")},
- reset:h=>{if(HOST.machineReset)return HOST.machineReset(h);toast("In the plug-in: the empty reset runs in the SysEx panel (example).")},
+ reset:h=>{if(HOST.machineReset)return HOST.machineReset(h);toast("In the plug-in: the "+h+" reset runs in the SysEx panel (example).")},
  memory:()=>S.mem||null,factoryMemory:()=>{if(HOST.memory)HOST.memory("factory")},
  ask:(h,b)=>ask(h,b),say:t=>toast(t)};
 /* the start-up card's keys: the host's native file chooser and ROM folder (the ROM stays on this computer); the
@@ -612,7 +618,7 @@ Syx.host={machine:"Monomachine",factory:false,
 Boot.host={chooseRom:()=>{if(HOST.chooseRom)return HOST.chooseRom();Boot.rom({ok:true,text:"\u2713 Monomachine OS 1.32B found (example)"});setTimeout(()=>startEngine("emu"),900)},
  revealRom:()=>{if(HOST.revealRom)return HOST.revealRom();toast("In the plug-in: the ROM folder opens in Finder.")},
  recheck:()=>{if(HOST.recheck)return HOST.recheck();startEngine("emu")},
- removeRom:i=>{if(HOST.removeRom)return HOST.removeRom(i)},say:t=>toast(t)};
+ removeRom:i=>{if(HOST.removeRom)return HOST.removeRom(i)},useRom:n=>{if(HOST.useRom)return HOST.useRom(n)},say:t=>toast(t)};
 /* the editor's menu (a host's): right-click anywhere the page has no menu of its own (DeskMenu.wantsEditor, I-008) */
 document.addEventListener("contextmenu",e=>{if(!HOST.menu||!DeskMenu.wantsEditor(e))return;e.preventDefault();HOST.menu(e.clientX,e.clientY)});
 window.MMView={
