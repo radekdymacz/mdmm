@@ -1446,12 +1446,15 @@ namespace
 		const int kept = r.desk->currentSong();
 		std::printf("  after the host's Stop (MIDI Stop, twice): step %d held (now %d), LOAD SONG 24 -> the machine's song %d\n", held + 1,
 			r.tel.step.load() + 1, kept + 1);
-		check(r.tel.step.load() == held, "the cause: MIDI Stop holds the step (a pause, not a stop)");
-		check(kept == 22, "the cause: paused, the machine does not take LOAD SONG (song 23 stays), also after a second MIDI Stop");
+		check(r.tel.step.load() == held, "MIDI Stop holds the step (a pause, not a stop)");
+		// measured on CI (run 42628062025): this rig's paused machine DID take LOAD SONG (song 24) and the Continue played it from
+		// the song position's row, so the report's cause is not reproduced here: a measurement, not a check
+		std::printf("  MEASURE paused by MIDI Stop, LOAD SONG 24 taken: %s\n", kept == 23 ? "yes" : "no");
 		// and the host's Play as the plug-in sent it before B-210 (the song position and Continue): the old song goes on
 		hostPlay(16, 600);
 		std::printf("  the host's Play (SPP 16 + Continue) after it: song %d row %d step %d\n", r.desk->currentSong() + 1, row() + 1, r.tel.step.load() + 1);
-		check(r.desk->currentSong() == 22 && r.tel.step.load() != held, "the cause: the host's Play goes on with the old song");
+		std::printf("  MEASURE the host's Play after the pause plays song %d (the old one: %s)\n", r.desk->currentSong() + 1,
+			r.desk->currentSong() == 22 ? "yes" : "no");
 		hostStop();
 		r.run(800);
 		// the user's way out: the editor's STOP key (the panel's STOP)
