@@ -895,7 +895,7 @@ const Journey = (() => {
 			},
 			screen: c => ok(!c.report.length, c.report.slice(0, 6).join(" | ") + (c.report.length > 6 ? ` (+${c.report.length - 6})` : "")), within: 1000 }],
 		async tidy(hands, c) { raiseFloor(0); if (typeof window.gmView === "function") window.gmView(1440, 924); hands.click(`#tabs [data-ws="${c.start || workspaces[0]}"]`); }
-	}, songFit(prefix)];
+	}, songFit(prefix), ...(prefix === "md" ? [mixFit(prefix)] : [])];
 	/* B-165: the Song page at the supported window sizes (864 x 600, 1100 x 800, 1280 x 800, 1500 x 1000), each as the page
 	   gets it: as the window's CSS size (a plain page, a user zoom above 100 % leaves this much) and as the plug-in's zoom lays it
 	   out (the window over mdPageZoom's fit: 1440 wide at least). Nothing of the page's Song workspace may run past the window's
@@ -947,6 +947,30 @@ const Journey = (() => {
 			},
 			screen: c => ok(c.n >= 1 && !c.report.length, `${c.n} sizes; ` + c.report.slice(0, 10).join(" | ") + (c.report.length > 10 ? ` (+${c.report.length - 10})` : "")), within: 1000 }],
 		async tidy(hands, c) { if (typeof window.gmView === "function") window.gmView(1440, 924); hands.click(`#tabs [data-ws="${c.start && c.start !== "song" ? c.start : "seq"}"]`); }
+	});
+	/* 0.9.1 (tester request): the Machinedrum's MIX page fits the window without scrolling at the page's supported heights
+	   (1440 x 924 the design, 811 a 1440 x 900 screen's window, 720 the least it lays itself out for). */
+	const mixViews = [[1440, 924], [1440, 811], [1440, 720], [1280, 720]];
+	const mixFit = prefix => ({
+		name: `${prefix}-fit-mix`, proves: [],
+		steps: [{ say: "the Mix page at 1440 x 924, 1440 x 811, 1440 x 720 and 1280 x 720: #main does not scroll and the master effects (ECHO, GATE BOX, MASTER, DYNAMIX) end inside the window",
+			act: async (hands, c) => {
+				const resize = typeof window.gmView === "function";
+				c.report = []; c.n = 0; c.start = $q("#tabs [aria-selected=true]")?.dataset.ws;
+				hands.click('#tabs [data-ws="mix"]'); await until(() => $q('#tabs [data-ws="mix"]').getAttribute("aria-selected") === "true", 3000);
+				for (const [w, h] of resize ? mixViews : [[innerWidth, innerHeight]]) {
+					if (resize) { window.gmView(w, h); await until(() => innerWidth === w, 3000); }
+					window.dispatchEvent(new Event("resize")); await sleep(350);
+					const main = $q("#main"), fx = $q("#main .fx4");
+					if (!main || !fx) { c.report.push(`${w} x ${h}: no Mix page`); continue; }
+					c.n++;
+					if (main.scrollHeight > main.clientHeight + 1) c.report.push(`${w} x ${h}: #main scrolls (${main.scrollHeight} in ${main.clientHeight})`);
+					const de = document.documentElement; if (de.scrollHeight > innerHeight + 1) c.report.push(`${w} x ${h}: the page scrolls (${de.scrollHeight} in ${innerHeight})`);
+					const r = fx.getBoundingClientRect(); if (r.bottom > innerHeight + 1) c.report.push(`${w} x ${h}: the master effects end at ${Math.round(r.bottom)}`);
+				}
+			},
+			screen: c => ok(c.n >= 1 && !c.report.length, `${c.n} sizes; ` + c.report.slice(0, 8).join(" | ")), within: 1000 }],
+		async tidy(hands, c) { if (typeof window.gmView === "function") window.gmView(1440, 924); hands.click(`#tabs [data-ws="${c.start && c.start !== "mix" ? c.start : "seq"}"]`); }
 	});
 	/* Screen review 2026-10-13: what a screen cuts or overlaps, measured.
 	   cutText(root): the visible elements whose words the box cuts (overflow hidden or an ellipsis, and more text than box):

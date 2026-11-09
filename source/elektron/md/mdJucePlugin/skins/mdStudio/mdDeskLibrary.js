@@ -50,7 +50,7 @@ function kitSlot(k) {
 	const tip = `K${nn(k)} ${loaded ? name || "(no name)" : "(loading)"}${cur ? " · current kit, " + (ed ? "edited: not saved on the machine" : "saved") : ""}${V.mode === "EXTENDED" && loaded && !empty ? " · " + (lp.length ? "linked to " + lp.map(patName).join(" ") : "no pattern links to it") : ""}. ${cur ? "" : "Click loads it (" + KTIP.load + "); Alt+click only selects it. "}${KTIP.drag}`;
 	const nm = LIB.renaming === k ? `<input class="lsin" id="lsin" maxlength="16" value="${escH(name)}" aria-label="Kit name, up to 16 characters" spellcheck="false" autocomplete="off">`
 		: !loaded ? "…" : kitEmpty(k) ? "EMPTY" : escH(name || "(no name)") + (V.mode === "EXTENDED" && !lp.length && !empty ? "*" : "");
-	return `<button class="ls ks${empty ? " empty" : ""}${cur ? " cur" : ""}${ed ? " edited" : ""}" data-ks="${k}" draggable="${LIB.renaming === k || !loaded ? "false" : "true"}" aria-selected="${k === LIB.sel}" title="${escH(tip)}"><span class="lsh"><b>K${nn(k)}</b>${cur ? `<em><i class="led${ed ? " on" : ""}"></i>${ed ? "edited" : "saved"}</em>` : ""}</span><span class="lsn">${nm}</span><span class="lsl">${links}</span></button>`;
+	return `<button class="ls ks${empty ? " empty" : ""}${cur ? " cur" : ""}${ed ? " edited" : ""}" data-ks="${k}" draggable="${LIB.renaming === k || !loaded ? "false" : "true"}" aria-selected="${k === LIB.sel}" title="${escH(tip)}"><span class="lsh"><b>K${nn(k)}</b>${cur ? `<em><i class="led${ed ? " on" : ""}"></i>${ed ? "ed" : "ok"}</em>` : ""}</span><span class="lsn">${nm}</span><span class="lsl">${links}</span></button>`;
 }
 function drawKitLib() {
 	const k = LIB.sel, cur = V.kit, ed = V.kitState === "edited", empty = kitEmpty(k) && k !== cur, dis = c => c ? " disabled" : "", loaded = kitLoaded(k);
@@ -184,7 +184,7 @@ document.addEventListener("keydown", e => {
 	if (!LIB.open) { if ((e.key === "Enter" || e.key === " ") && (e.target.id === "kitf" || e.target.id === "pat")) { e.preventDefault(); e.stopImmediatePropagation(); openLib(e.target.id === "kitf" ? "kit" : "pat"); } return; }
 	if (!$("#dlg").hidden) return;
 	if (e.target.id === "lsin") { if (e.key === "Enter" || e.key === "Escape") { e.preventDefault(); finishRename(e.key === "Enter"); } e.stopImmediatePropagation(); return; }
-	const mod = Modifiers.cmd(e), kit = LIB.open === "kit", n = kit ? 64 : 128, cols = kit ? 8 : 16, key = e.key; let h = true;
+	const mod = Modifiers.cmd(e), kit = LIB.open === "kit", n = kit ? 64 : 128, cols = 16, key = e.key; let h = true;
 	if (key === "Escape") closeLib(true);
 	else if (!mod && !e.altKey && /^Arrow/.test(key)) { LIB.sel = (LIB.sel + { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -cols, ArrowDown: cols }[key] + n) % n; drawLib(true); }
 	else if (key === "Enter") { if (kit) kitLoad(LIB.sel); else patGo(LIB.sel, false); }
