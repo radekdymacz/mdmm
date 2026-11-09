@@ -97,7 +97,7 @@ check(mmSrc.includes("/* ---- shared/deskValueEdit.js ---- */"), "the Monomachin
 check(/\.vedit\{/.test(fs.readFileSync(path.join(SKINS, "mdStudio/mdDesk.css"), "utf8")) && /\.vedit\{/.test(fs.readFileSync(path.join(SKINS, "mmStudio/mmStudio.css"), "utf8")), "both stylesheets have the field");
 check(/ValueEdit\.isOpenClick\(e\)/.test(md) && /ValueEdit\.isOpenClick\(e\)/.test(mmSrc), "both open it on ⌘-click of a value box");
 check(/e\.key === "Enter"[^\n]*ValueEdit\.open/.test(md) && /e\.key==="Enter"[^\n]*ValueEdit\.open/.test(mmSrc), "both open it on Enter on a focused value box");
-check(/addEventListener\("dblclick"[^\n]*setV\(el/.test(md) && /addEventListener\("dblclick"[^\n]*setV\(el/.test(mmSrc), "double-click is still the default value on both");
+check(/addEventListener\("dblclick"[^\n]*setV\(el/.test(md) && /(addEventListener|onMain)\("dblclick"[^\n]*setV\(el/.test(mmSrc), "double-click is still the default value on both");
 const css = fs.readFileSync(path.join(HERE, "deskValueEdit.css"), "utf8");
 check(!/inset:|gap:|aspect-ratio|:has\(/.test(css), "its stylesheet suits an older WebKit (no inset, gap, aspect-ratio, :has)");
 

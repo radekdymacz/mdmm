@@ -1019,18 +1019,18 @@ html,body{min-width:1280px}
    screens, the arp, routing and song grounds); the top bar's LCD, keys and label colours stay each plate's own. */
 :root,:root[data-plate="mk1"]{
   color-scheme:light;
-  --plate:#d9dad6;--plate2:#cdcec9;--plate3:#e5e6e2;--print:#2e3232;--print2:#4f5554;--print3:#6d7372;--rule:#a2a8ab;--body:#232727;
-  --key:#232b28;--key2:#323c38;--keytext:#eef0ee;--keydim:#a9b1ae;--cream:#e4e6e6;--creamtext:#232727;
+  --plate:#d9dad6;--plate2:#cdcec9;--plate3:#e5e6e2;--print:var(--ui-ink);--print2:var(--ui-ink2);--print3:var(--ui-ink3);--rule:var(--ui-rule);--body:var(--ui-ink);
+  --key:var(--ui-black);--key2:var(--ui-black2);--keytext:var(--ui-white);--keydim:var(--ui-keydim);--cream:var(--ui-cream);--creamtext:var(--ui-cream-ink);
   --led:#f0331f;--ledoff:#7b4035;--ledg:#9fc568;--ledgoff:#56604b;--ledy:#e4c45c;--rec:#e8301e;
-  --lcd:#b6d2e8;--scr:#cdcec9;--ink:#0d1626;--bezel:#060707;--labfill:#9a3820;--labtext:#f3eee9;--knob:#323d31;--rust:#9a3820;
+  --lcd:#b6d2e8;--scr:#cdcec9;--ink:#0d1626;--bezel:#060707;--labfill:#9a3820;--labtext:var(--ui-white);--knob:var(--ui-black);--rust:#9a3820;
   --trig:var(--led);--oxblood:var(--rust);--fwd:#1f6fe0;
 }
 :root[data-plate="mk2"]{
   color-scheme:light;
-  --plate:#d9dad6;--plate2:#cdcec9;--plate3:#e5e6e2;--print:#3b3a3c;--print2:#5a585a;--print3:#787577;--rule:#a8a6a1;--body:#262527;
-  --key:#1a1c22;--key2:#2a2d35;--keytext:#efeee8;--keydim:#a7a8ad;--cream:#ecebe4;--creamtext:#262527;
+  --plate:#d9dad6;--plate2:#cdcec9;--plate3:#e5e6e2;--print:var(--ui-ink);--print2:var(--ui-ink2);--print3:var(--ui-ink3);--rule:var(--ui-rule);--body:var(--ui-ink);
+  --key:var(--ui-black);--key2:var(--ui-black2);--keytext:var(--ui-white);--keydim:var(--ui-keydim);--cream:var(--ui-cream);--creamtext:var(--ui-cream-ink);
   --led:#ff3b2f;--ledoff:#7b4035;--ledg:#7fd13b;--ledgoff:#5d6656;--ledy:#e4c45c;--rec:#e2452a;
-  --lcd:#dfeaf1;--scr:#cdcec9;--ink:#121b28;--bezel:#1c1a1d;--labfill:#84434d;--labtext:#f6eff0;--knob:#141416;--rust:#b8433d;
+  --lcd:#dfeaf1;--scr:#cdcec9;--ink:#121b28;--bezel:#1c1a1d;--labfill:#84434d;--labtext:var(--ui-white);--knob:var(--ui-black);--rust:#b8433d;
   --trig:var(--led);--oxblood:var(--rust);--fwd:#3d8cff;
 }
 html{scrollbar-gutter:stable}
@@ -1804,7 +1804,8 @@ svg.route .mtr.off{opacity:.3}
 .bootzone:active{transform:translateY(2px);box-shadow:0 1px 0 var(--print2)}
 .bootzone:hover,.bootzone:focus-visible{border-color:var(--led);background:color-mix(in srgb,var(--led) 10%,transparent)}
 .bootzone b{font:600 15px/1.35 var(--sans);color:var(--print)}
-.bootzone span{font:500 12px var(--sans);color:var(--print2)}
+/* 0.9.1: 13 px in the full ink, not 12 px in the second ink: the Linux smoke test reads this line from a screenshot (OCR) and the shared tones made it marginal */
+.bootzone span{font:500 13px var(--sans);color:var(--print)}
 .bootpriv{margin:0;font:500 12px var(--sans);color:var(--print2);max-width:56ch}
 .bootres{margin:0;min-height:1.3em;font:600 13px var(--sans)}
 .bootres.ok{color:var(--print)}
@@ -2108,6 +2109,43 @@ body.deskmidi #main,body.deskmidi #rail{opacity:.3;pointer-events:none;transitio
 /* a row's note (the map editor's "16 notes play patterns …"): one line of a fixed height, so a glyph from a fallback
    font (→) cannot make the row taller while the fonts settle (md-old-webkit measured 38 px against 32) */
 .globgrid .grow2 .note{line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* The UI whites and blacks both editors share (0.9.1, tester requests I-063 and I-064): one value each, so the
+   PATTERN key, the key text, the white keys and the lettering look the same on every plate and in both editors.
+   The plates keep their own identity (panel colours, LCD, bezel, LEDs, label bars); only the neutral tones are
+   shared. Each editor's token blocks (the Machinedrum's in doc/modern-ux/mockup/index.html, the Monomachine's in
+   skins/mmStudio/src/20-mm.css) point --key, --keytext, --cream, --print and the rest at these. Neutral greys: no
+   blue, green or brown cast. Contrast (WCAG): keys text on key 14.6, print on plate 12.7, print2 9.1, print3 5.9
+   (on plate2, the darkest light ground 4.7), dark plate print on plate 14.5, print3 on plate 6.4. */
+:root{
+	/* the keys: black, white text; the white keys */
+	--ui-black:#232323;--ui-black2:#343434;--ui-white:#eeeeee;--ui-keydim:#a8a8a8;
+	--ui-cream:#e8e8e8;--ui-cream-ink:#232323;
+	/* lettering on the light plates */
+	--ui-ink:#1c1c1c;--ui-ink2:#3f3f3f;--ui-ink3:#555555;--ui-rule:#a6a6a2;
+	/* lettering on a dark plate (the Machinedrum's MKII) */
+	--ui-dink:#eeeeee;--ui-dink2:#c8c8c8;--ui-dink3:#9c9c9c;--ui-drule:#4b4b4b;--ui-dkey:#2c2c2c;--ui-dkey2:#3b3b3b;
+	/* the track lists (the rail, PATTERN and KIT workspaces, both editors) */
+	--tl-num:11px;--tl-name:12px;--tl-small:10px;
+}
+/* The track lists (0.9.1, I-063 and I-064): the rail's rows have one size set in both editors, in the PATTERN, KIT and every
+   other workspace that shows them: the number box, the name (the machine's code, the MIDI channel) and the small line. */
+.rail .th .n{font-size:var(--tl-num)}
+.rail .th .nm b{font-size:var(--tl-name)}
+.rail .th .nm small{font-size:var(--tl-small)}
+/* The PATTERN and KIT choosers (0.9.1, I-063 and I-064): one window size and 16 slots to a row in both editors and both
+   choosers (the pattern chooser was the model: 8 banks of 16). The window's width is .libpop's own; the slots have one height,
+   the grid the height of eight rows whatever the machine's kit count (64 kits on the Machinedrum, 128 on the Monomachine). A
+   kit's name takes two lines so the full name shows in a slot a sixteenth of the window wide. */
+.libgrid.kits{font:500 10px var(--mono);grid-template-columns:repeat(16,minmax(0,1fr))}
+.libgrid.kits,.libgrid.pats{grid-auto-rows:56px;align-content:start;min-height:calc(8 * 56px + 7 * 4px)}
+.ks,.ps{height:56px}
+.ks{padding:3px 4px;gap:1px}
+.ks .lsh b,.ks .lsn,.ks .lsl{font-size:10px}
+.ks .lsh b{font-weight:500}
+.ks .lsh em{font-size:8px;letter-spacing:.08em}
+.ks .lsn{white-space:normal;overflow:hidden;overflow-wrap:anywhere;word-break:break-all;height:22px;line-height:11px}
+.ks .lsl{min-height:10px;line-height:10px}
+.ks .lsin{height:20px;font-size:10px}
 /* P7: the workspace and setup keys: one minimum width each, so the rows look even (MIX was a sliver) */
 #tabs button{min-width:60px!important;justify-content:center;box-sizing:border-box}
 .setkeys button{min-width:46px!important;justify-content:center;box-sizing:border-box}
@@ -2883,6 +2921,12 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
 .jxrow .keyrow{display:flex;gap:4px}
 .joy .jreg{position:absolute;box-sizing:border-box;border:1px dashed var(--ink);background:color-mix(in srgb,var(--ink) 12%,transparent);pointer-events:none}
 .joy .jreg.edit{border-style:solid;background:color-mix(in srgb,var(--ink) 22%,transparent)}
+
+/* 0.9.1: the Multi map dialog (#mappop), centred by the modal layer like GLOBAL; the table is the page's own */
+.mappop{z-index:var(--mz,22);width:min(1000px,calc(100vw - 48px));box-sizing:border-box}
+.mappop .maprow{border-bottom:0;padding-bottom:0}
+.mappop .libx{margin-left:auto}
+.mapsum .btnrow{display:flex;align-items:center;gap:12px}
 
 /* ===== The real machine's states (not in the mockup) ===== */
 .statusline,.errline{margin:6px 0 0;padding:6px 10px;border-radius:3px;font:12px var(--pix);text-transform:uppercase}

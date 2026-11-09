@@ -321,7 +321,7 @@ To use the Perform keyboard and joystick:
    Click **REGION**, drag a rectangle on the pad and click **REGION** again. Click **RANDOM**. The stick moves by itself inside the rectangle. The **Speed** stepper sets how fast it moves, from 1 to 10. Click **RANDOM** again, press STOP or press Panic to end it. STOP and RANDOM return the stick to the middle, and Panic also ends HOLD.
    Play a note with a MIDI keyboard that lies outside the four octaves shown. With **Follow** lit, the keyboard moves to its octave.
 4. Click **Multi trig**, then SPLIT KEY. Click the first mode again, then **Auto track**.
-5. Click **Multi map**. The map table opens. Click **Split selected range** to add a range, and click **×** on the new range to take it away.
+5. Click **Multi map**, then **Edit Multi map…**. The map table opens in its own window. Click **Split selected range** to add a range, and click **×** on the new range to take it away.
 
 The computer keys play notes too: {key:piano-white} and {key:piano-black}. A key of the on-screen keyboard is lit while you hold it: with the mouse, with the computer keys, or on a MIDI keyboard connected to the editor (the MIDI input of the standalone, or the MIDI track of the plug-in in your DAW). The piano roll shows the pitches the machine plays.
 

@@ -76,18 +76,33 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
  $("#main").innerHTML=`<div class="perf ${S.mode==="map"?"map":""}">
   ${upper}
 
-  ${S.mode==="map"?`<section class="card maprow"><header><h3>Multi map</h3><span>GLOBAL › CONTROL › MULTIMAP EDIT · stored in the global slot</span></header>
-   <table class="mmap"><thead><tr><th>Range</th><th>Pattern</th><th>Offset</th><th>Length</th><th>Transpose</th><th>Timing</th><th></th></tr></thead><tbody>${(()=>{let lo=0;return S.mmap.map((r,i)=>{const a=lo;lo=r.hi+1;return`<tr class="${i===S.mmapSel?"sel":""}" data-mrow="${i}"><td class="mono">${noteName(a)} – <span class="stepper"><button data-mhi="-1" data-i="${i}" ${i===S.mmap.length-1?"disabled":""}>−</button><b class="mono">${i===S.mmap.length-1?"G-9":noteName(r.hi)}</b><button data-mhi="1" data-i="${i}" ${i===S.mmap.length-1?"disabled":""}>+</button></span></td>
-    <td><select id="mpat${i}" data-mpat="${i}" aria-label="Pattern">${opt(-1,"CUR",r.pat)}${Array.from({length:128},(_,p)=>opt(p,patName(p),r.pat)).join("")}</select></td><td style="width:90px">${pc("mmap","ofs",{extra:`data-i="${i}"`,label:"OFS"})}</td><td style="width:90px">${pc("mmap","len",{extra:`data-i="${i}"`,label:"LEN"})}</td><td style="width:90px">${pc("mmap","trn",{extra:`data-i="${i}"`,label:"TRN"})}</td><td style="width:90px">${pc("mmap","tim",{extra:`data-i="${i}"`,label:"TIM"})}</td>
-    <td><button class="iconkey" data-mdel="${i}" aria-label="Delete range" title="Delete range (FUNCTION + UP)" ${S.mmap.length<2?"disabled":""}>×</button></td></tr>`}).join("")})()}</tbody></table>
-   <div class="btnrow"><button data-madd="1">Split selected range</button><span class="hint">A range's lower key is the key after the one above. LEN needs an offset first. Timing waits for a bar line.</span></div></section>`:""}
+  ${S.mode==="map"?`<section class="card mapsum"><header><h3>Multi map</h3><span>GLOBAL › CONTROL › MULTIMAP EDIT · stored in the global slot</span></header>
+   <div class="btnrow"><button data-mapopen="1" id="mapopen">Edit Multi map…</button><span class="hint">${S.mmap.length} ranges, shown as bands above the keys. The table opens in its own window.</span></div></section>`:""}
 
   <div class="kbsec">
   <div class="kbwrap">${S.mode==="map"?`<div class="mapbands">${mapBands()}</div>`:""}<div class="kb" id="kb">${renderKb()}</div>
    <div class="trklamps" id="trklamps">${S.tracks.map((x,i)=>{const p=S.mode==="poly";return`<span${p?` class="${i===t?"polyt":"polyoff"}" title="${i===t?"Six voices in POLY":"Silent in POLY"}"`:""}><i class="led" data-lamp="${i}"></i>T${i+1} ${shortM(x.m)}${p&&i===t?`<em class="x6">×6</em>`:""}</span>`}).join("")}<span class="hint" id="kbinfo" style="margin-left:auto">Click or drag across the keys to play.</span></div></div>
   </div></div>`;
  /* the cards keep their hints in view (tipify went with the Sound page's groups) */
- syncControls();redraw()}
+ drawMapDlg();syncControls();redraw()}
+
+/* 0.9.1 (tester request): the Multi map table is a dialog of its own, like GLOBAL (#mappop, the modal layer's panel), so the
+   Perform page does not scroll. Its value boxes are the page's: #main's handlers serve it too (130-main.js onMain). */
+let MAPOPEN=false;
+function mapTableH(){return`<table class="mmap">`+`<thead><tr><th>Range</th><th>Pattern</th><th>Offset</th><th>Length</th><th>Transpose</th><th>Timing</th><th></th></tr></thead><tbody>${(()=>{let lo=0;return S.mmap.map((r,i)=>{const a=lo;lo=r.hi+1;return`<tr class="${i===S.mmapSel?"sel":""}" data-mrow="${i}"><td class="mono">${noteName(a)} – <span class="stepper"><button data-mhi="-1" data-i="${i}" ${i===S.mmap.length-1?"disabled":""}>−</button><b class="mono">${i===S.mmap.length-1?"G-9":noteName(r.hi)}</b><button data-mhi="1" data-i="${i}" ${i===S.mmap.length-1?"disabled":""}>+</button></span></td>
+    <td><select id="mpat${i}" data-mpat="${i}" aria-label="Pattern">${opt(-1,"CUR",r.pat)}${Array.from({length:128},(_,p)=>opt(p,patName(p),r.pat)).join("")}</select></td><td style="width:90px">${pc("mmap","ofs",{extra:`data-i="${i}"`,label:"OFS"})}</td><td style="width:90px">${pc("mmap","len",{extra:`data-i="${i}"`,label:"LEN"})}</td><td style="width:90px">${pc("mmap","trn",{extra:`data-i="${i}"`,label:"TRN"})}</td><td style="width:90px">${pc("mmap","tim",{extra:`data-i="${i}"`,label:"TIM"})}</td>
+    <td><button class="iconkey" data-mdel="${i}" aria-label="Delete range" title="Delete range (FUNCTION + UP)" ${S.mmap.length<2?"disabled":""}>×</button></td></tr>`}).join("")})()}</tbody></table>
+   <div class="btnrow"><button data-madd="1">Split selected range</button><span class="hint">A range's lower key is the key after the one above. LEN needs an offset first. Timing waits for a bar line.</span></div>`}
+function drawMapDlg(){const pop=$("#mappop");if(!pop)return;
+ if(MAPOPEN&&(S.ws!=="perform"||S.mode!=="map"))MAPOPEN=false;
+ if(!MAPOPEN){if(!pop.hidden)pop.hidden=true;pop.innerHTML="";return}
+ const a=document.activeElement,fk=a&&pop.contains(a)?(a.id?"#"+a.id:a.dataset.g?`[data-g="${a.dataset.g}"][data-n="${a.dataset.n}"][data-i="${a.dataset.i}"]`:""):"";
+ pop.innerHTML=`<div class="libhead"><span class="cap">Multi map</span><span class="note">GLOBAL › CONTROL › MULTIMAP EDIT · stored in the global slot</span><button class="libx" data-mapclose="1" title="Close (Esc)">Esc</button></div><section class="maprow">${mapTableH()}</section>`;
+ enhanceSelects(pop);syncControls();pop.hidden=false;
+ if(fk){const el=pop.querySelector(fk);if(el&&document.activeElement!==el)el.focus({preventScroll:true})}}
+function openMap(){if(S.mode!=="map")return;MAPOPEN=true;drawMapDlg()}
+function closeMap(){MAPOPEN=false;const pop=$("#mappop");if(pop){pop.hidden=true;pop.innerHTML=""}}
+document.addEventListener("click",e=>{if(e.target.closest?.("[data-mapopen]")){openMap();return}if(e.target.closest?.("[data-mapclose]"))closeMap()});
 let kbDown=null,lampT={};
 function flashTracks(ts){ts.forEach(i=>{const l=$(`[data-lamp="${i}"]`);if(!l)return;l.classList.add("on");clearTimeout(lampT[i]);lampT[i]=setTimeout(()=>l.classList.remove("on"),160)})}
 /* B-062, I-002: the keys lit, one state the keyboard is drawn from (so a render during a hold keeps it): dn the key the

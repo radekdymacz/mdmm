@@ -146,7 +146,7 @@ function pc(g,n,{t,label,cls="",extra=""}={}){if(n==null)return`<div class="pc e
 function page8(t,pg){const names=pnames(t,pg);return Array.from({length:8},(_,i)=>names[i]?pc(pg,i,{t,label:names[i]}):pc(0,null)).join("")}
 function modBy(t,pg,i){const out=[];if(isMidiT(t))return out;const tr=trk(t);["LF1","LF2","LF3"].forEach((l,k)=>{const v=tr.v[l];if(v[7]>0&&LPAGES[v[0]]===pg&&v[1]===i)out.push(k+1)});return out}
 function syncControls(){
- $$("#main [data-g]").forEach(el=>{if(!el.classList.contains("pc")&&!el.classList.contains("fader"))return;const r=ref(el);if(!r)return;const[o,n,m,t,g]=r,v=o[n];
+ $$("#main [data-g],#mappop:not([hidden]) [data-g]").forEach(el=>{if(!el.classList.contains("pc")&&!el.classList.contains("fader"))return;const r=ref(el);if(!r)return;const[o,n,m,t,g]=r,v=o[n];
   const mx=maxOf(m);el.style.setProperty("--f",(v==null?0:v/mx*100)+"%");el.setAttribute("aria-valuenow",v);el.setAttribute("aria-valuemax",mx);
   if(m.signed&&el.classList.contains("pc")){const q=v/mx*100;el.classList.add("bip");el.style.setProperty("--pl",Math.min(q,50.4)+"%");el.style.setProperty("--pw",Math.max(1.5,Math.abs(q-50.4))+"%")}
   /* a PAN bar reads as a mixer does: L / C / R */

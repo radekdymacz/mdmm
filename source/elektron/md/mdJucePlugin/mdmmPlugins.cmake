@@ -109,7 +109,7 @@ list(APPEND SOURCES
 	skins/shared/deskBoot.js skins/shared/deskBoot.css
 	skins/shared/deskSyx.js skins/shared/deskSyx.css skins/shared/deskSyxTest.js
 	skins/shared/deskAudio.js skins/shared/deskAudio.css skins/shared/deskAudioSelfTest.js
-	skins/shared/deskLcd.css skins/shared/deskFonts.css
+	skins/shared/deskLcd.css skins/shared/deskFonts.css skins/shared/deskTokens.css
 	skins/shared/deskBridge.js skins/shared/deskBridgeTest.js
 	skins/shared/deskDrop.js skins/shared/deskDropTest.js
 	skins/shared/deskDocs.js

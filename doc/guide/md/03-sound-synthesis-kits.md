@@ -15,7 +15,7 @@ The kit library, the Kit workspace and the Mix workspace all read and write the 
 ## LOADING A KIT
 <!-- rows: MD-039 MD-040 @960d37 -->
 
-1. Click the **Kit** field of the LCD, or focus it and press {key:lib-open}. The kit library opens with the 64 slots in rows of eight.
+1. Click the **Kit** field of the LCD, or focus it and press {key:lib-open}. The kit library opens with the 64 slots in rows of sixteen, as in the pattern chooser.
 2. Click a slot. The machine loads the kit at once. The slot you clicked becomes the current kit.
 3. Press {key:close-dialog} to close the library.
 

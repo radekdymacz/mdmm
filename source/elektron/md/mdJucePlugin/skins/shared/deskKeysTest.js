@@ -38,7 +38,7 @@ function press(key, mods = {}) {
 setTop(null);
 check(press(" ").ran === "play" && press(" ").prevented, "no dialog: Space plays (and takes the key)");
 check(press("T").ran === "tap" && Keys.free(), "no dialog: T taps, Keys.free() is true");
-for (const id of ["dlg", "globpop", "audiopop", "libpop", "machpop", "bootcard"]) {
+for (const id of ["dlg", "globpop", "mappop", "audiopop", "libpop", "machpop", "bootcard"]) {
 	setTop(id);
 	const sp = press(" "), bs = press("Backspace"), d1 = press("1"), z = press("z", { metaKey: true }), t = press("T");
 	check(!sp.ran && !sp.prevented, `${id} open: Space is the dialog's (no play, not prevented: the focused button is pressed)`);

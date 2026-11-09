@@ -1,0 +1,37 @@
+/* The UI whites and blacks both editors share (0.9.1, tester requests I-063 and I-064): one value each, so the
+   PATTERN key, the key text, the white keys and the lettering look the same on every plate and in both editors.
+   The plates keep their own identity (panel colours, LCD, bezel, LEDs, label bars); only the neutral tones are
+   shared. Each editor's token blocks (the Machinedrum's in doc/modern-ux/mockup/index.html, the Monomachine's in
+   skins/mmStudio/src/20-mm.css) point --key, --keytext, --cream, --print and the rest at these. Neutral greys: no
+   blue, green or brown cast. Contrast (WCAG): keys text on key 14.6, print on plate 12.7, print2 9.1, print3 5.9
+   (on plate2, the darkest light ground 4.7), dark plate print on plate 14.5, print3 on plate 6.4. */
+:root{
+	/* the keys: black, white text; the white keys */
+	--ui-black:#232323;--ui-black2:#343434;--ui-white:#eeeeee;--ui-keydim:#a8a8a8;
+	--ui-cream:#e8e8e8;--ui-cream-ink:#232323;
+	/* lettering on the light plates */
+	--ui-ink:#1c1c1c;--ui-ink2:#3f3f3f;--ui-ink3:#555555;--ui-rule:#a6a6a2;
+	/* lettering on a dark plate (the Machinedrum's MKII) */
+	--ui-dink:#eeeeee;--ui-dink2:#c8c8c8;--ui-dink3:#9c9c9c;--ui-drule:#4b4b4b;--ui-dkey:#2c2c2c;--ui-dkey2:#3b3b3b;
+	/* the track lists (the rail, PATTERN and KIT workspaces, both editors) */
+	--tl-num:11px;--tl-name:12px;--tl-small:10px;
+}
+/* The track lists (0.9.1, I-063 and I-064): the rail's rows have one size set in both editors, in the PATTERN, KIT and every
+   other workspace that shows them: the number box, the name (the machine's code, the MIDI channel) and the small line. */
+.rail .th .n{font-size:var(--tl-num)}
+.rail .th .nm b{font-size:var(--tl-name)}
+.rail .th .nm small{font-size:var(--tl-small)}
+/* The PATTERN and KIT choosers (0.9.1, I-063 and I-064): one window size and 16 slots to a row in both editors and both
+   choosers (the pattern chooser was the model: 8 banks of 16). The window's width is .libpop's own; the slots have one height,
+   the grid the height of eight rows whatever the machine's kit count (64 kits on the Machinedrum, 128 on the Monomachine). A
+   kit's name takes two lines so the full name shows in a slot a sixteenth of the window wide. */
+.libgrid.kits{font:500 10px var(--mono);grid-template-columns:repeat(16,minmax(0,1fr))}
+.libgrid.kits,.libgrid.pats{grid-auto-rows:56px;align-content:start;min-height:calc(8 * 56px + 7 * 4px)}
+.ks,.ps{height:56px}
+.ks{padding:3px 4px;gap:1px}
+.ks .lsh b,.ks .lsn,.ks .lsl{font-size:10px}
+.ks .lsh b{font-weight:500}
+.ks .lsh em{font-size:8px;letter-spacing:.08em}
+.ks .lsn{white-space:normal;overflow:hidden;overflow-wrap:anywhere;word-break:break-all;height:22px;line-height:11px}
+.ks .lsl{min-height:10px;line-height:10px}
+.ks .lsin{height:20px;font-size:10px}
