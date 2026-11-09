@@ -964,7 +964,13 @@ const Journey = (() => {
 					const main = $q("#main"), fx = $q("#main .fx4");
 					if (!main || !fx) { c.report.push(`${w} x ${h}: no Mix page`); continue; }
 					c.n++;
-					if (main.scrollHeight > main.clientHeight + 1) c.report.push(`${w} x ${h}: #main scrolls (${main.scrollHeight} in ${main.clientHeight})`);
+					if (main.scrollHeight > main.clientHeight + 1) {
+						/* what the layout held, so a failure on the real WebView says why (md-fit-mix, full run 42653023212: a 22 px cut of the fader changed nothing) */
+						const probe = document.createElement("div"); probe.style.cssText = "position:fixed;top:0;left:0;width:1px;height:100vh;visibility:hidden"; document.body.appendChild(probe);
+						const vh = probe.getBoundingClientRect().height; probe.remove();
+						const hh = e => e ? Math.round(e.getBoundingClientRect().height) : "-";
+						c.report.push(`${w} x ${h}: #main scrolls (${main.scrollHeight} in ${main.clientHeight}); 100vh ${vh}, inner ${innerHeight}, main top ${Math.round(main.getBoundingClientRect().top)}, fader ${hh($q("#main .fader"))}, strip ${hh($q("#main .strip"))}, flow ${hh($q("#main .flow"))}, fx4 ${hh(fx)}, fx4 card ${hh($q("#main .fx4 > .card"))}, zoom ${getComputedStyle(document.documentElement).zoom}`);
+					}
 					const de = document.documentElement; if (de.scrollHeight > innerHeight + 1) c.report.push(`${w} x ${h}: the page scrolls (${de.scrollHeight} in ${innerHeight})`);
 					const r = fx.getBoundingClientRect(); if (r.bottom > innerHeight + 1) c.report.push(`${w} x ${h}: the master effects end at ${Math.round(r.bottom)}`);
 				}
