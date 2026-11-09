@@ -1205,8 +1205,9 @@ body{box-sizing:border-box;overflow:hidden}
    0.9.1 (tester request, I-063): the whole page fits without scrolling down to the page's own minimum, 720 px tall (a window
    of 1440 x 811 points, a 1440 x 900 screen's, no longer scrolled): the strips and the four master effects (ECHO, GATE BOX,
    MASTER EQ, DYNAMIX) are compacter: tighter strips, the signal path one thin line, the effects' screens from 56 px and
-   their value boxes 26 px. What is left over is the 576 px of everything but a fader; a fader is 112 px at least. */
-.fader{height:clamp(112px,calc(100vh - 576px),240px)!important}
+   their value boxes 26 px. What is left over is the 616 px of everything but a fader (measured in the firmware E2E's WKWebView: the page's top
+   bars 128 px and 488 px of strips, path and effects; the stub's Chrome measured 40 px less); a fader is 100 px at least. */
+.fader{height:clamp(100px,calc(100vh - 616px),240px)!important}
 .strip{padding:4px 3px;gap:4px}
 .strip .pc{height:22px}
 .flow{margin-top:8px;padding:4px 12px}
