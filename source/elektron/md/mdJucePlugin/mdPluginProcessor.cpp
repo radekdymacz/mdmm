@@ -215,8 +215,38 @@ namespace mdJucePlugin
 		Processor::setStateInformation(held.data(), static_cast<int>(held.size()));
 	}
 
+	void AudioPluginAudioProcessor::restoreState(const void* _data, const int _size)
+	{
+		m_memory.willBeReplaced();
+		Processor::setStateInformation(_data, _size);
+	}
+
+	bool AudioPluginAudioProcessor::useRom(const std::string& _fileName)
+	{
+		const juce::File folder(juce::String::fromUTF8(getPublicRomFolder().c_str()));
+		if(!_fileName.empty() && !findRomByName(m_model, folder, _fileName))
+			return false;
+		m_romChoice = _fileName;
+		return true;
+	}
+
+	std::string AudioPluginAudioProcessor::activeRomName() const
+	{
+		const juce::File folder(juce::String::fromUTF8(getPublicRomFolder().c_str()));
+		if(!m_romChoice.empty() && findRomByName(m_model, folder, m_romChoice))
+			return m_romChoice;
+		return {};
+	}
+
 	void AudioPluginAudioProcessor::saveChunkData(baseLib::BinaryStream& _stream)
 	{
+		// the chosen ROM goes first: a project that names another image than the one running restarts the machine on it
+		// before the machine's own state is read
+		if(!m_romChoice.empty())
+		{
+			baseLib::ChunkWriter chunk(_stream, "ROMC", 1);
+			_stream.write(m_romChoice);
+		}
 		// I-024: a save not yet in the machine memory file is written first; what still is not (a write failed, KEEP
 		// MEMORY off) is named in the state, so the standalone's next start keeps it over the file's slots
 		flushMachineMemory(FlushMode::HostSave);
@@ -241,6 +271,16 @@ namespace mdJucePlugin
 
 	void AudioPluginAudioProcessor::loadChunkData(baseLib::ChunkReader& _reader)
 	{
+		_reader.add("ROMC", 1, [this](baseLib::BinaryStream& _stream, uint32_t)
+		{
+			const auto name = _stream.readString();
+			// a name that is no longer in the folder is ignored: the engine's search runs as before
+			if(name.empty() || !useRom(name))
+				return;
+			// no device yet: its first start uses the choice; none running (the stand-in): the ROM's arrival restarts it
+			if(!m_runningRom.empty() && m_runningRom != name)
+				(void)rebootDevice();
+		});
 		jucePluginEditorLib::Processor::loadChunkData(_reader);
 		m_desk->addChunkReaders(_reader);
 		_reader.add("MMEM", 2, [this](baseLib::BinaryStream& _stream, const uint32_t _version)
@@ -1177,7 +1217,7 @@ namespace mdJucePlugin
 		if(m_bootRom.empty())
 		{
 			const auto roms = romsInFolder(m_model, juce::File(juce::String::fromUTF8(getPublicRomFolder().c_str())));
-			m_bootRom = roms.empty() ? std::string("none") : roms.front().getFileName().toStdString();
+			m_bootRom = !m_runningRom.empty() ? m_runningRom : roms.empty() ? std::string("none") : roms.front().getFileName().toStdString();
 		}
 		s.rom = m_bootRom;
 		m_boot.record(s);
@@ -1220,6 +1260,28 @@ namespace mdJucePlugin
 	{
 		synthLib::DeviceCreateParams params;
 		params.customData = md::deviceCustomData(m_model);
+		// the image this instance was told to run (several may sit in the ROM folder); else the engine's search
+		m_runningRom.clear();
+		if(!m_romChoice.empty())
+		{
+			const juce::File folder(juce::String::fromUTF8(getPublicRomFolder().c_str()));
+			if(const auto f = findRomByName(m_model, folder, m_romChoice))
+			{
+				juce::MemoryBlock mb;
+				if(f->loadFileAsData(mb))
+				{
+					params.romData.assign(static_cast<const uint8_t*>(mb.getData()), static_cast<const uint8_t*>(mb.getData()) + mb.getSize());
+					params.romName = f->getFullPathName().toStdString();
+					m_runningRom = m_romChoice;
+				}
+			}
+		}
+		if(m_runningRom.empty())
+		{
+			const auto found = md::RomLoader::findROM(m_model);
+			if(found.isValid())
+				m_runningRom = juce::File(juce::String::fromUTF8(found.getFilename().c_str())).getFileName().toStdString();
+		}
 		params.homePath = m_deviceHomePath ? *m_deviceHomePath : getDataFolder();
 		auto d = std::make_unique<md::DeskDevice>(params, m_initialPatchRam);
 		if(!d->isValid())

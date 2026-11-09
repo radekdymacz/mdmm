@@ -131,7 +131,7 @@ const note=(n,bits=[1,1,1])=>({n:Array.isArray(n)?n:[n],a:bits[0],f:bits[1],l:bi
 
 const S={ws:"seq",sel:0,side:"int",len:16,mult:"1X",swingAmt:50,playing:false,step:-1,bpm:120,pat:0,kit:0,kitState:"clean",queued:null,trigSel:"ALL",
  lane:"FLT.1",lanePage:"FLT",locks:new Map(),patTrn:64,routing:"3xSTEREO+AB=MIX",glob:{slot:0,base:0,span:6,auto:8,multiTrig:6,multiMap:7,clockIn:false,transportIn:false},plate:"mk2",engine:"emu",pend:0,patSent:"live",rec:false,
- mode:"normal",songs:{names:Array(24).fill(""),rows:Array(24).fill(0),slot:0,current:0},multi:{mode:0,splitKey:60,splitTrack:3,timing:4},menv:{ATK:0,DEC:127,SUS:127,REL:127,PORT:0},kbOct:3,
+ mode:"normal",songs:{names:Array(24).fill(""),rows:Array(24).fill(0),slot:0,current:0},multi:{mode:0,splitKey:60,splitTrack:3,timing:4},menv:{ATK:0,DEC:127,SUS:127,REL:127,PORT:0},kbOct:3,kbFollow:true,jx:{hold:false,rand:false,edit:false,speed:5,reg:{x0:-1,y0:-1,x1:1,y1:1}},
  mmap:[{hi:47,pat:0,ofs:0,len:0,trn:64,tim:4},{hi:59,pat:1,ofs:0,len:16,trn:64,tim:4},{hi:71,pat:0,ofs:0,len:0,trn:69,tim:4},{hi:127,pat:2,ofs:8,len:8,trn:64,tim:1}],mmapSel:1,
  gmutes:null,rollLo:36,ghost:true,asTab:"JOY RL",joy:{x:0,y:0},
  /* whether the machine takes input (machine.input); null while no host has said (the standalone
@@ -610,7 +610,7 @@ const MM_SEAM={
   "ownsClock","engineLabels","notes","start","commit","intent","library","undo","redo","history","togglePlay",
   "selectPattern","kit","tempo","mutes","keyMode","record","chain","chainClear","seqMode","loadSong","saveSong","waiting",
   "sendNow","playKey","keyUp","transport","noteOn","noteOff","joy","learning","learnTarget","learnBind","learnAdd","learnInvert","learnRemove","modulators",
-  "engine","chooseRom","removeRom","romManage","syxChoose","syxExport","syxStart","syxStop","syxPlace","syxExportInfo","machineReset","revealRom",
+  "engine","chooseRom","removeRom","useRom","romManage","syxChoose","syxExport","syxStart","syxStop","syxPlace","syxExportInfo","machineReset","revealRom",
   "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","mixMeters","globalSlot","memory","follow","autoReceive",
   "waveList","waveChoose","waveLoad","waveRename","waveCopy","waveErase","waveUndo","waveSendNow"],
  "view":[
@@ -675,8 +675,9 @@ const MM_SEAM={
      syxChoose(), syxExport(request), syxStart(kinds, skip, {placeAt, checkOnly, readBack}), syxStop(), syxPlace(placeAt), syxExportInfo(),
      machineReset(how)   SysEx import and export (P7, B-019; 0.6: SPECIFIC place, VERIFY ONLY, kinds and ranges, Reset machine…): the host's file
                                       dialogs; the preview and progress come back through MMView
-     removeRom(info)   REMOVE in the LOAD ROM card
-     romManage()   LOAD ROM in the engine menu (a host shows which firmware runs, REPLACE and REMOVE; none: the start-up card)
+     removeRom(info)   REMOVE in the LOAD ROM card (moves the image to the "removed" folder; nothing is deleted)
+     useRom(name)   Use <name> in the LOAD ROM card: this instance runs that image of the ROM folder
+     romManage()   LOAD ROM in the engine menu (a host shows which firmware runs, ADD, USE and REMOVE; none: the start-up card)
      follow()       I-003: the engine menu's FOLLOW PLAYED TRACK on / off; the state comes back with MMView.setFollow, and the
                                       host selects the track a MIDI controller played with MMView.selectTrack
      autoReceive()  I-070: the engine menu's AUTO RECEIVE on / off; the state comes back with MMView.setAutoReceive
@@ -2496,6 +2497,7 @@ const Boot = (() => {
  <p class="bootline" id="bootline">Keys work when the start-up animation ends.</p>
  <div class="bootrom" id="bootrom" hidden>
   <p class="bootcur" id="bootcur" hidden></p>
+  <p class="bootpick" id="bootpick" hidden></p>
   <button class="bootzone" data-bootrom="choose" aria-describedby="bootres"><b id="bootzone"></b><span>Click here to choose the file. The editor checks it and copies it into its ROM folder.</span></button>
   <p class="bootres" id="bootres" role="status"></p>
   <p class="bootpriv">The firmware stays on this computer: the editor checks it and copies it into its ROM folder, and sends it nowhere. <button class="linkkey" data-bootrom="folder">Show the ROM folder</button> <button class="linkkey" data-bootrom="recheck">Check again</button> <button class="linkkey" data-bootrom="remove" hidden>Remove the ROM</button> <button class="linkkey" data-bootrom="close" hidden>Close</button></p>
@@ -2543,17 +2545,21 @@ const Boot = (() => {
 		card.querySelector('[data-bootrom="remove"]').hidden = !m;
 		card.querySelector('[data-bootrom="close"]').hidden = !m;
 	};
-	function leaveManage() { if (!manage) return; manage = null; card.classList.remove("manage"); $b("bootcur").hidden = true; links(false); }
+	function leaveManage() { if (!manage) return; manage = null; card.classList.remove("manage"); $b("bootcur").hidden = true; $b("bootpick").hidden = true; links(false); }
 	/* LOAD ROM with a firmware running: the same card, the current image on one line */
 	function showInstalled(o) {
 		machine = o.machine || machine; manage = o; shown = "manage";
 		card.classList.remove("out", "ind"); card.classList.add("rom", "manage");
 		$b("boott").textContent = `${machine} firmware`;
 		$b("bootline").hidden = true; $b("bootrom").hidden = false;
-		$b("bootzone").textContent = `Choose another ${romName(machine)} ROM (.bin or .zip) to replace it`;
+		$b("bootzone").textContent = `Choose another ${romName(machine)} ROM (.bin or .zip) to add it`;
 		const cur = $b("bootcur");
 		cur.innerHTML = `<b>${esc(o.os)}</b><span class="bootfile" title="${esc(o.name)}${o.inFolder ? "" : " (outside the editor's ROM folder)"}">${esc(o.name)}</span><i>${(o.size / 1048576).toFixed(1)} MiB</i>`;
 		cur.hidden = false;
+		/* several images in the ROM folder: this instance runs the one chosen here (kept with the project) */
+		const pick = $b("bootpick"), others = (o.roms || []).filter(n => n !== o.name);
+		pick.innerHTML = others.length ? `<span>Also in the ROM folder:</span> ` + others.map(n => `<button class="linkkey" data-bootuse="${esc(n)}" title="Run ${esc(n)} in this instance">Use ${esc(n)}</button>`).join(" ") : "";
+		pick.hidden = !others.length;
 		$b("bootres").textContent = ""; $b("bootres").className = "bootres";
 		links(true);
 		card.hidden = false;
@@ -2593,6 +2599,8 @@ const Boot = (() => {
 		if (r.ok) { $b("boott").textContent = `Starting the ${machine}…`; t0 = performance.now(); }
 	}
 	card.addEventListener("click", e => {
+		const u = e.target.closest("[data-bootuse]");
+		if (u && Boot.host && Boot.host.useRom) { Boot.host.useRom(u.dataset.bootuse); return; }
 		const k = e.target.closest("[data-bootrom]"); if (!k || !Boot.host) return;
 		const a = k.dataset.bootrom;
 		if (a === "choose") Boot.host.chooseRom(); else if (a === "recheck") Boot.host.recheck(); else if (a === "folder") Boot.host.revealRom();
@@ -3988,7 +3996,7 @@ function kbOn(){return Keys.free()}
 function kbTell(k,t){if(KB.told.has(k))return;KB.told.add(k);toast(t)}
 function homeDown(e){if(e.repeat||KB.held.has(e.code))return;const t=S.sel,k=KEYS_PIANO[e.code.replace(/^Key/,"")];if(k==null)return;
  if(isMidiT(t)){kbTell("midi","The keys play the synth tracks: a MIDI track's notes go to the MIDI OUT only.");return}
- const n=clamp(KEYS_BASE+12*KB.oct+k);KB.held.set(e.code,{t,n});paintKb();keyNote(t,n,KB.vel)}
+ const n=clamp(KEYS_BASE+12*KB.oct+k);if(!kbAnyHeld())kbFollow(n);KB.held.set(e.code,{t,n});paintKb();keyNote(t,n,KB.vel)}
 function homeUp(code){const h=KB.held.get(code);if(!h)return;KB.held.delete(code);paintKb();keyNote(h.t,h.n,0)}
 /* a host plays the machine (the note intent: pitch in semitones from KEYS_BASE, C3); the example only shows the track's lamp */
 function keyNote(t,n,vel){if(vel&&S.ws==="mix"&&!isMidiT(t)&&audible(t))DeskTrig.light([t]);if(HOST.noteOn){const p=n-KEYS_BASE;return vel?HOST.noteOn(t,p,vel):HOST.noteOff(t,p)}if(vel){flashTracks([t]);kbTell("eg","Example: in the plug-in the keys play the machine.")}}
@@ -5340,10 +5348,10 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
  const joy=S.asTab.startsWith("JOY");
  const selTrack=`<span class="seg trksel" data-set="astrk">${[0,1,2,3,4,5].map(k=>{const p=S.mode==="poly";return`<button data-v="${k}" aria-pressed="${k===t}"${p?` class="${k===t?"polyt":"polyoff"}" title="${k===t?`T${k+1} plays POLY: six voices`:`Silent in POLY. Click: T${k+1} plays POLY instead`}"`:""}><b>T${k+1}</b><small>${shortM(S.tracks[k].m)}</small>${p&&k===t?`<em class="x6">×6</em>`:""}</button>`}).join("")}</span>`;
  const tabsH=`<span class="seg" data-set="astab">${Object.keys(A.tabs).map(k=>`<button data-v="${k}" aria-pressed="${S.asTab===k}">${k}</button>`).join("")}</span>`;
- const extrasH=`${S.asTab==="JOY RL"?`<button class="lkey" data-mirr="1"${lgAttr(`T${t+1} ASSIGN MIRROR`)} aria-pressed="${A.mirr}" title="Left = −right"><i class="led"></i>MIRR (left = −right)</button>`:""}
+ const extrasH=`${joy?jxRowH():""}${S.asTab==="JOY RL"?`<button class="lkey" data-mirr="1"${lgAttr(`T${t+1} ASSIGN MIRROR`)} aria-pressed="${A.mirr}" title="Left = −right"><i class="led"></i>MIRR (left = −right)</button>`:""}
     ${S.asTab==="KEY"?`<span class="keyrow"><button class="lkey" data-ktrk="hpf"${lgAttr(`T${t+1} ASSIGN HPF`)} aria-pressed="${A.hpf}"><i class="led"></i>HPF tracks keys</button><button class="lkey" data-ktrk="lpf"${lgAttr(`T${t+1} ASSIGN LPF`)} aria-pressed="${A.lpf}"><i class="led"></i>LPF tracks keys</button></span>`:""}`;
  const hintH=`<div class="hint onel" title="${ASG_SAY[S.asTab]} ADD −64…+63.">${ASG_SAY[S.asTab]} ADD −64…+63.</div>`;
- const padH=`${joy?`<div class="joy" id="joy" title="Drag the stick. It springs back."><span class="cross"></span><span class="cross2"></span><small class="jl">L</small><small class="jr">R</small><small class="ju">U</small><small class="jd">D</small><span class="knobj" id="knobj" style="left:${50+S.joy.x*42}%;top:${50-S.joy.y*42}%"></span></div>`
+ const padH=`${joy?`<div class="joy" id="joy" title="${S.jx.edit?"Drag a rectangle: the region RANDOM moves in.":S.jx.hold?"Held: drag to move it, HOLD again lets it go.":"Drag the stick. It springs back (unless HOLD or RANDOM is on)."}"><span class="cross"></span><span class="cross2"></span><small class="jl">L</small><small class="jr">R</small><small class="ju">U</small><small class="jd">D</small>${jxRegH()}<span class="knobj" id="knobj" style="left:${50+S.joy.x*42}%;top:${50-S.joy.y*42}%"></span></div>`
      :`<div class="joy padinfo"><b>${S.asTab}</b><span>${ASG_SAY[S.asTab]}</span></div>`}`;
  const rowsH=`<div class="asrows">${rows.map(asRow).join("")}</div>`;
  const menvH=`<section class="card menvcard"><header><h3>Multi envelope</h3><span title="Both DATA PAGE keys on the machine. Its effect depends on the kit's MULTI TRIG mode">all tracks · ${MTM[S.multi.mode]}</span></header><div class="menvplot"><canvas class="ed" data-ed="menv" aria-label="Multi envelope. Drag the dots."></canvas></div>
@@ -5358,7 +5366,7 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
  const upper=`<div class="perf3">${menvH}
    <section class="card trkcard"><header><h3>Track</h3>${scope(shortM(tr.m),"These settings belong to the selected track")}</header>${selTrack}${tabsH}${padH}${rowsH}${extrasH}${hintH}</section>
    <div class="perfside">${mutesH}<section class="card kbcard"><header><h3>Keyboard</h3><span title="What the keys below play">plays · all keys</span></header>  <div class="perfbar kbtitle"><span class="keyrow">${PMODES.map(([k,n])=>`<button class="lkey" data-pmode="${k}" aria-pressed="${S.mode===k}"><i class="led"></i>${n}</button>`).join("")}</span>${mtCtl}
-   <span class="stepper" style="margin-left:auto"><span class="ilab">Octave</span><button data-kboct="-1" aria-label="Octave down"${S.kbOct<=KBOCT[0]?" disabled":""}>−</button><b class="mono">${noteName(kbRange()[0])}</b><button data-kboct="1" aria-label="Octave up"${S.kbOct>=KBOCT[1]?" disabled":""}>+</button></span></div>
+   <button class="lkey" style="margin-left:auto" data-kbfollow="1" aria-pressed="${S.kbFollow}" title="The keyboard moves to the octave of a note you play outside it: from a MIDI keyboard or the computer keys, never from a click on the keys, and not while another key is held."><i class="led"></i>Follow</button><span class="stepper"><span class="ilab">Octave</span><button data-kboct="-1" aria-label="Octave down"${S.kbOct<=KBOCT[0]?" disabled":""}>−</button><b class="mono">${noteName(kbRange()[0])}</b><button data-kboct="1" aria-label="Octave up"${S.kbOct>=KBOCT[1]?" disabled":""}>+</button></span></div>
   <div class="hint kbhint">${S.mode==="poly"?polyHint(t):pm[2]} ${S.mode==="multi"?{0:"Notes go to all six tracks; each keeps its own arpeggiator.",1:`Keys from ${noteName(S.multi.splitKey)} play T${S.multi.splitTrack}-T6, keys below play T1-T${S.multi.splitTrack-1}. The multi envelope is not used here.`,2:"Each note restarts the pattern, transposed from C-4.",3:"The first note starts the pattern; later notes only transpose it, so the loop never breaks."}[S.multi.mode]:""}</div></section></div></div>`;
  $("#main").innerHTML=`<div class="perf ${S.mode==="map"?"map":""}">
   ${upper}
@@ -5382,7 +5390,14 @@ function flashTracks(ts){ts.forEach(i=>{const l=$(`[data-lamp="${i}"]`);if(!l)re
 const KBLIT={mouse:null,midi:new Set()};
 function kbLit(n){return(KBLIT.mouse===n||[...KB.held.values()].some(h=>h.n===n)?" dn":"")+(KBLIT.midi.has(n)?" mi":"")}
 function paintKb(){$$("canvas.roll[data-big]").forEach(drawEd);$$(".kb [data-key]").forEach(k=>{const c=kbLit(+k.dataset.key);k.classList.toggle("dn",c.includes("dn"));k.classList.toggle("mi",c.includes("mi"))})}
-function setMidiHeld(notes){KBLIT.midi=new Set(notes||[]);paintKb()}
+/* I-062: the keyboard follows the octave of a played note. Rules: only a note outside the four octaves shown moves it
+   (the new range has the note's octave second, so the neighbours stay in view; a manual + / - works as before), only
+   when no other key is held (mouse, computer keys, MIDI), so the keys under the fingers never jump, and a click on
+   the keys never moves it. kbFollowOct is the pure rule. */
+function kbFollowOct(n,cur){const lo=12*(cur+1);if(n>=lo&&n<=Math.min(lo+47,KB_HI))return cur;return clamp(Math.floor(n/12)-2,KBOCT[0],KBOCT[1])}
+const kbAnyHeld=()=>KBLIT.mouse!=null||KB.held.size>0||KBLIT.midi.size>0;
+function kbFollow(n){if(!S.kbFollow)return false;const o=kbFollowOct(n,S.kbOct);if(o===S.kbOct)return false;S.kbOct=o;if(S.ws==="perform")render();return true}
+function setMidiHeld(notes){const was=kbAnyHeld();KBLIT.midi=new Set(notes||[]);if(!was&&KBLIT.midi.size)kbFollow(Math.min(...KBLIT.midi));paintKb()}
 /* a key shown held by the mouse (null: none) and the keyboard's info line (null: unchanged) */
 function setKeyDown(n,info){KBLIT.mouse=n;paintKb();const el=$("#kbinfo");if(el&&info!=null)el.textContent=info}
 function playKey(n){if(HOST.playKey)return HOST.playKey(n);setKeyDown(n,null);let ts=[],msg="";
@@ -5391,6 +5406,59 @@ function playKey(n){if(HOST.playKey)return HOST.playKey(n);setKeyDown(n,null);le
   else{S.mtTrn=n-60;msg=`${m===2?"Restart":"Transpose"} pattern ${S.mtTrn>=0?"+":""}${S.mtTrn}${S.multi.timing?" at the next "+TIMS[S.multi.timing]:""}`;if(!S.playing)togglePlay();else if(m===2){S.step=-1}ts=[0,1,2,3,4,5]}}
  else{const i=mapRow(n);if(i>=0){const r=S.mmap[i];S.mmapSel=i;msg=`${noteName(n)} › ${r.pat<0?"current":patName(r.pat)} from step ${r.ofs+1}${r.len?", "+r.len+" steps":""}${r.trn!==64&&r.trn?"":""}`;$$(".band").forEach(b=>b.classList.toggle("sel",+b.dataset.band===i))}}
  flashTracks(ts);setKeyDown(n,msg)}
+
+/* ===== I-061: the joystick's HOLD and RANDOM, and the prefs of Perform (per viewer, localStorage) =====
+   The stick has one way to the machine: joySet -> HOST.joy -> the adapter's MIDI (pitch bend, CC 1, CC 2, coalesced per
+   message kind like a hand drag). HOLD keeps the stick where the hand left it. RANDOM glides it to a random point of a
+   region of the field, then to the next, at the chosen speed. A timer of 33 ms runs only while one of them is on. The
+   hand wins while it drags; on release HOLD keeps the new place and RANDOM goes on from it. STOP, a machine stop and
+   PANIC end RANDOM (the stick returns to the middle unless HOLD is on); PANIC also ends HOLD. A different track in the
+   assign card ends both: the track they were on gets the middle first. */
+const JX_TICK=33;
+let jxTimer=null,jxTarget=null,jxTrack=null;
+(()=>{let v=null;try{v=JSON.parse(localStorage.getItem("mmeditor.perform")||"null")}catch(_){}
+ if(v&&typeof v==="object"){if(typeof v.follow==="boolean")S.kbFollow=v.follow;if(v.speed>=1&&v.speed<=10)S.jx.speed=Math.round(v.speed);if(v.reg)S.jx.reg=jxNormReg(v.reg)}})();
+function perfPrefs(){try{localStorage.setItem("mmeditor.perform",JSON.stringify({follow:S.kbFollow,speed:S.jx.speed,reg:S.jx.reg}))}catch(_){}}
+/* a region: ordered corners, inside the field, at least 0.1 wide and high (a point is a stick that never moves: HOLD does that) */
+function jxNormReg(r){const c=v=>clamp(+v||0,-1,1);let x0=c(r.x0),x1=c(r.x1),y0=c(r.y0),y1=c(r.y1);if(x0>x1)[x0,x1]=[x1,x0];if(y0>y1)[y0,y1]=[y1,y0];
+ if(x1-x0<.1){const m=clamp((x0+x1)/2,-.95,.95);x0=m-.05;x1=m+.05}if(y1-y0<.1){const m=clamp((y0+y1)/2,-.95,.95);y0=m-.05;y1=m+.05}return{x0,y0,x1,y1}}
+/* speed 1-10: field units a second (the field is 2 wide): 0.15 at 1, 3.1 at 10 */
+const jxUnits=s=>.15*Math.pow(1.4,clamp(s,1,10)-1);
+function jxPick(reg,rnd){return{x:reg.x0+(rnd?rnd():Math.random())*(reg.x1-reg.x0),y:reg.y0+(rnd?rnd():Math.random())*(reg.y1-reg.y0)}}
+/* one step of dt seconds from p towards tgt: the new place, and whether it arrived. Pure. */
+function jxStep(p,tgt,speed,dt){const dx=tgt.x-p.x,dy=tgt.y-p.y,d=Math.hypot(dx,dy),st=jxUnits(speed)*dt;if(d<=st)return{x:tgt.x,y:tgt.y,hit:true};return{x:p.x+dx/d*st,y:p.y+dy/d*st,hit:false}}
+const jxOn=()=>S.jx.hold||S.jx.rand;
+function jxRegH(){const r=S.jx.reg;if(!S.jx.edit&&!S.jx.rand)return"";const L=v=>50+v*42;return`<span class="jreg${S.jx.edit?" edit":""}" style="left:${L(r.x0)}%;top:${L(-r.y1)}%;width:${(r.x1-r.x0)*42}%;height:${(r.y1-r.y0)*42}%"></span>`}
+function jxRowH(){const j=S.jx;return`<div class="jxrow"><span class="keyrow"><button class="lkey" data-jx="hold" aria-pressed="${j.hold}" title="Keep the stick where it is, until you press HOLD again. Drag it to move it."><i class="led"></i>HOLD</button><button class="lkey" data-jx="rand" aria-pressed="${j.rand}" title="The stick moves by itself inside the region. STOP and PANIC end it."><i class="led"></i>RANDOM</button><button class="lkey" data-jx="reg" aria-pressed="${j.edit}" title="Drag a rectangle on the pad: the region RANDOM moves in."><i class="led"></i>REGION</button></span>
+ <span class="stepper"><span class="ilab">Speed</span><button data-jx="spd" data-d="-1"${j.speed<=1?" disabled":""} aria-label="Slower">−</button><b class="mono">${j.speed}</b><button data-jx="spd" data-d="1"${j.speed>=10?" disabled":""} aria-label="Faster">+</button></span>${j.edit?`<button data-jx="full" title="The whole field">Full field</button>`:""}</div>`}
+function jxClick(k,d){const j=S.jx;
+ if(k==="hold"){if(j.hold)jxRelease();else{j.rand=false;j.hold=true;jxTimerOn()}}
+ else if(k==="rand"){if(j.rand)jxStopRandom();else{j.hold=false;j.rand=true;j.edit=false;jxTarget=null;jxTimerOn()}}
+ else if(k==="reg"){j.edit=!j.edit}
+ else if(k==="spd"){j.speed=clamp(j.speed+d,1,10);perfPrefs()}
+ else if(k==="full"){j.reg={x0:-1,y0:-1,x1:1,y1:1};perfPrefs()}
+ render()}
+function jxTimerOn(){jxTrack=asgT();if(!jxTimer)jxTimer=setInterval(jxTick,JX_TICK)}
+function jxTimerOff(){clearInterval(jxTimer);jxTimer=null;jxTarget=null;jxTrack=null}
+/* the stick back to the middle, on track t (the one it was on) */
+function jxCentre(t){if(S.joy.x===0&&S.joy.y===0)return;joySet(0,0,t)}
+function jxTick(){if(!jxOn()){jxTimerOff();return}
+ if(asgT()!==jxTrack){const t=jxTrack;S.jx.hold=S.jx.rand=false;jxTimerOff();jxCentre(t);if(S.ws==="perform")render();return}
+ if(!S.jx.rand||joyDrag)return;
+ if(!jxTarget)jxTarget=jxPick(S.jx.reg);
+ const n=jxStep(S.joy,jxTarget,S.jx.speed,JX_TICK/1000);if(n.hit)jxTarget=jxPick(S.jx.reg);joySet(n.x,n.y)}
+/* STOP, a machine stop: RANDOM ends and the stick returns to the middle (HOLD keeps it) */
+function jxStopRandom(){if(!S.jx.rand)return;S.jx.rand=false;if(!S.jx.hold){const t=jxTrack;jxTimerOff();jxCentre(t==null?asgT():t)}else jxTimerOff(),jxTimerOn();if(S.ws==="perform")render()}
+/* HOLD off, RANDOM off, the stick to the middle (PANIC, HOLD pressed again) */
+function jxRelease(){const had=jxOn(),t=jxTrack;S.jx.hold=S.jx.rand=false;jxTimerOff();if(had)jxCentre(t==null?asgT():t);if(S.ws==="perform")render()}
+/* the hand lets go of the stick: it springs back, unless HOLD or RANDOM keeps it */
+function jxHandUp(){if(jxOn())return;jxCentre(asgT())}
+/* REGION: a rectangle dragged on the pad, in field units (the inverse of the knob's 50% ± 42% place) */
+let jxRegA=null;
+function jxPadAt(e){const r=$("#joy").getBoundingClientRect(),f=v=>clamp((v*100-50)/42,-1,1);return{x:f((e.clientX-r.left)/r.width),y:-f((e.clientY-r.top)/r.height)}}
+function jxRegStart(e){jxRegA=jxPadAt(e);jxRegMove(e)}
+function jxRegMove(e){if(!jxRegA)return;const b=jxPadAt(e);S.jx.reg=jxNormReg({x0:jxRegA.x,y0:jxRegA.y,x1:b.x,y1:b.y});const el=$("#joy .jreg"),r=S.jx.reg,L=v=>50+v*42;if(el){el.style.left=L(r.x0)+"%";el.style.top=L(-r.y1)+"%";el.style.width=(r.x1-r.x0)*42+"%";el.style.height=(r.y1-r.y0)*42+"%"}}
+function jxRegEnd(){jxRegA=null;perfPrefs()}
 
 /* ---- 115-control.js ---- */
 /* ===== Control (from the MD Editor): the plug-in's MIDI mappings against the tracks, app-only LFO / Random =====
@@ -6396,12 +6464,12 @@ function resumeNow(){if(!S.paused)return;const at=S.paused.step;S.paused=null;
 function pauseToggle(){if(S.paused)resumeNow();else pauseNow()}
 /* the ▶ key: PLAY, STOP, or (paused) CONTINUE */
 function playButton(){if(S.paused){resumeNow();return}togglePlay()}
-function stopNow(){const was=S.paused;S.paused=null;
+function stopNow(){const was=S.paused;S.paused=null;jxStopRandom();
  if(S.playing)togglePlay();
  else if(was&&HOST.transport)transportCmd("stop");	// paused: the machine stands; STOP ends the pause
  else if(was)S.step=-1;
  renderTop();setPos()}
-function panicNow(){if(NA.panic){toast(NA.panic);return}S.paused=null;
+function panicNow(){if(NA.panic){toast(NA.panic);return}S.paused=null;jxRelease();
  if(HOST.transport)transportCmd("panic",{},()=>{});else{if(S.playing)togglePlay();toast("Panic: every note off.")}
  renderTop();setPos()}
 const TRANSPORT_HOST={recordLabel:"Live record",stepRecord:()=>stepRecord(),play:()=>playButton(),stop:()=>stopNow(),pauseToggle:()=>pauseToggle(),record:()=>liveRecord(),panic:()=>panicNow()};
@@ -6601,7 +6669,7 @@ main.addEventListener("pointerdown",e=>{
  if(el){const t=el.dataset.t!=null?+el.dataset.t:S.sel;drag={el,x:e.clientX,y:e.clientY,v:getV(el),vert:el.classList.contains("fader"),hz:el.classList.contains("hz")&&el.getBoundingClientRect().width,mx:maxOf(ref(el)[2]),all:e.altKey&&!isMidiT(t)&&PAGES.includes(el.dataset.g)};if(drag.all)allTip();el.setPointerCapture(e.pointerId);el.classList.add("act");e.preventDefault();return}
  if(laneDown(e))return;
  const ac=e.target.closest(".ac");if(ac){if(e.button!==0||e.ctrlKey||e.metaKey)return;const k=+ac.dataset.ac,a=trk(S.sel).arp;if(k>=a.len){a.len=k+1;edit("arp",{t:S.sel,field:"length",v:a.len});renderArp();return}arpDrag={k,y:e.clientY,moved:false};$("#arptrack").setPointerCapture(e.pointerId);e.preventDefault();return}
- if(e.target.closest("#joy")){joyDrag=true;$("#joy").setPointerCapture(e.pointerId);joyAt(e);e.preventDefault();return}
+ if(e.target.closest("#joy")){joyDrag=S.jx.edit?"reg":true;$("#joy").setPointerCapture(e.pointerId);if(joyDrag==="reg")jxRegStart(e);else joyAt(e);e.preventDefault();return}
  if(e.target.closest("#splitm")){splitDrag=true;$("#splitm").setPointerCapture(e.pointerId);e.preventDefault();return}
  const key=e.target.closest(".kb [data-key]");if(key){kbDown=true;$("#kb").setPointerCapture(e.pointerId);playKey(+key.dataset.key);e.preventDefault()}});
 main.addEventListener("pointermove",e=>{
@@ -6615,7 +6683,7 @@ main.addEventListener("pointermove",e=>{
   const d=drag.vert?(drag.y-e.clientY)*127/150:drag.hz?(e.clientX-drag.x)*drag.mx/drag.hz:((e.clientX-drag.x)+(drag.y-e.clientY))/2;setV(drag.el,drag.v+d*fine*scale);return}
  if(laneDraw){laneAt(e);return}
  if(arpDrag){const a=trk(S.sel).arp,dd=Math.round((arpDrag.y-e.clientY)/4);if(Math.abs(dd)>0||arpDrag.moved){arpDrag.moved=true;a.ofs[arpDrag.k]=clamp((arpDrag.v0??(arpDrag.v0=a.ofs[arpDrag.k]))+dd,-24,24);renderArp()}return}
- if(joyDrag){joyAt(e);return}
+ if(joyDrag){if(joyDrag==="reg")jxRegMove(e);else joyAt(e);return}
  if(splitDrag){const kb=$("#kb").getBoundingClientRect(),[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const i=clamp(Math.round((e.clientX-kb.left)/kb.width*KB_WHITE_COUNT),1,whites.length-1);if(S.multi.splitKey!==whites[i]){S.multi.splitKey=whites[i];$("#kb").innerHTML=renderKb();$("#splitm").setPointerCapture?.(e.pointerId)}return}
  if(kbDown){const k=document.elementFromPoint(e.clientX,e.clientY)?.closest(".kb [data-key]");if(k&&KBLIT.mouse!==+k.dataset.key)playKey(+k.dataset.key);return}
  const c=e.target.closest?.("canvas.ed");if(c)c.style.cursor=ED[c.dataset.ed]?.cursor?.(c,e)||(nearest(c,e)?"grab":"default");
@@ -6625,7 +6693,7 @@ function allTip(){if(S.allTold)return;S.allTold=1;toast("Control All: this value
 function endDrag(e){trnUp();if(cord){cordEnd(e);return}if(rollDrag)rollUp();if(active){active=null;redraw()}if(drag){drag.el.classList.remove("act");drag=null}endLaneDraw();
  if(kbDown&&HOST.keyUp)HOST.keyUp();
  if(arpDrag){const a=trk(S.sel).arp,k=arpDrag.k;if(!arpDrag.moved){a.rhy[k]=!a.rhy[k];renderArp()}edit("arp",{t:S.sel,field:"step",i:k,v:a.rhy[k]?clamp(64+a.ofs[k]):255});arpDrag=null}
- if(joyDrag){joyDrag=false;S.joy={x:0,y:0};const k=$("#knobj");if(k){k.style.left="50%";k.style.top="50%"}if(HOST.joy)HOST.joy(S.joy)}
+ if(joyDrag){const reg=joyDrag==="reg";joyDrag=false;if(reg)jxRegEnd();else jxHandUp()}
  if(splitDrag){splitDrag=false;edit("multiTrig",{splitKey:S.multi.splitKey});render()}if(kbDown){kbDown=false;setKeyDown(null,null)}}
 /* P7: a gesture ends wherever the button comes up. A render during a drag (a pattern load, the machine's
    documents) removes the element that held the pointer, and its pointerup then lands outside #main: the drag
@@ -6634,9 +6702,12 @@ function endDrag(e){trnUp();if(cord){cordEnd(e);return}if(rollDrag)rollUp();if(a
 document.addEventListener("pointerup",endDrag);document.addEventListener("pointercancel",endDrag);
 window.addEventListener("blur",()=>{if(dragging())endDrag({clientX:-1,clientY:-1})});
 const dragging=()=>!!(drag||active||laneDraw||arpDrag||joyDrag||splitDrag||rollDrag||selDrag||kbDown||cord||trnHeld);
-function joyAt(e){const r=$("#joy").getBoundingClientRect();S.joy={x:clamp((e.clientX-r.left)/r.width*2-1,-1,1),y:clamp(1-(e.clientY-r.top)/r.height*2,-1,1)};const k=$("#knobj");k.style.left=(50+S.joy.x*42)+"%";k.style.top=(50-S.joy.y*42)+"%";
- const tr=S.tracks[asgT()],A=tr.assign,rows=A.tabs[S.asTab];const amt=S.asTab==="JOY U"?Math.max(0,S.joy.y):S.asTab==="JOY D"?Math.max(0,-S.joy.y):A.mirr?S.joy.x:Math.max(0,S.joy.x);
- $("#kbinfo")&&($("#kbinfo").textContent=rows.map(r=>`${LPAGES[r.pg]} ${destNames(asgT(),r.pg)[r.d]} ${Math.round((r.add-64)*amt)>=0?"+":""}${Math.round((r.add-64)*amt)}`).join(" · "));tx();if(HOST.joy)HOST.joy(S.joy)}
+function joyAt(e){const r=$("#joy").getBoundingClientRect();joySet(clamp((e.clientX-r.left)/r.width*2-1,-1,1),clamp(1-(e.clientY-r.top)/r.height*2,-1,1))}
+/* the stick at (x, y), one way in for the hand, HOLD and RANDOM (I-061): the knob, the info line and HOST.joy, which
+   sends it to the machine as it always did (the adapter's rate-limited, coalesced MIDI) */
+function joySet(x,y,t){S.joy={x,y};const k=$("#knobj");if(k){k.style.left=(50+S.joy.x*42)+"%";k.style.top=(50-S.joy.y*42)+"%"}
+ const tr=S.tracks[asgT()],A=tr.assign,rows=A.tabs[S.asTab];if(!S.asTab.startsWith("JOY")){if(HOST.joy)HOST.joy(S.joy,t);return}const amt=S.asTab==="JOY U"?Math.max(0,S.joy.y):S.asTab==="JOY D"?Math.max(0,-S.joy.y):A.mirr?S.joy.x:Math.max(0,S.joy.x);
+ $("#kbinfo")&&($("#kbinfo").textContent=rows.map(r=>`${LPAGES[r.pg]} ${destNames(asgT(),r.pg)[r.d]} ${Math.round((r.add-64)*amt)>=0?"+":""}${Math.round((r.add-64)*amt)}`).join(" · "));tx();if(HOST.joy)HOST.joy(S.joy,t)}
 function renderArp(){const el=$("#arptrack");if(!el)return;const a=trk(S.sel).arp;el.innerHTML=arpCells(a);el.style.gridTemplateColumns=arpCols(a);const c2=$("#arpcap");if(c2)c2.textContent="Rhythm + offset · "+a.len+" steps";$$(".mrowg .rowst").length&&0;redraw()}
 main.addEventListener("keydown",e=>{if(kitNudge(e))return;const ac=e.target.closest?.(".ac[data-ac]");if(!ac||!["Enter"," "].includes(e.key)||e.ctrlKey||e.metaKey||e.altKey)return;e.preventDefault();e.stopPropagation();if(e.repeat||S.learn)return;const k=+ac.dataset.ac,a=trk(S.sel).arp;commit();a.rhy[k]=!a.rhy[k];edit("arp",{t:S.sel,field:"step",i:k,v:a.rhy[k]?clamp(64+a.ofs[k]):255});commit();renderArp();$(`#arptrack [data-ac="${k}"]`)?.focus()});
 /* I-022: a value typed (shared/deskValueEdit.js): ⌘-click a value box or fader, or Enter on one that has the focus. What
@@ -6698,6 +6769,8 @@ document.addEventListener("click",e=>{
  const pmk=e.target.closest("[data-pmode]");if(pmk){S.mode=pmk.dataset.pmode;S.polyT=S.mode==="poly"?asgT():null;if(HOST.keyMode)HOST.keyMode(S.mode,asgT());if(S.mode==="poly")toast("POLY: T"+(asgT()+1)+" now plays six voices. The other five tracks are silent until you leave POLY.");render();return}
  const so2=e.target.closest("[data-strk]");if(so2){S.multi.splitTrack=clamp(S.multi.splitTrack+ +so2.dataset.strk,2,6);edit("multiTrig",{splitTrack:S.multi.splitTrack-1});render();return}
  const tm=e.target.closest("[data-tim]");if(tm){S.multi.timing=clamp(S.multi.timing+ +tm.dataset.tim,0,6);edit("multiTrig",{timing:S.multi.timing});render();return}
+ const kf=e.target.closest("[data-kbfollow]");if(kf){S.kbFollow=!S.kbFollow;perfPrefs();render();return}
+ const jx=e.target.closest("[data-jx]");if(jx){jxClick(jx.dataset.jx,+(jx.dataset.d||0));return}
  const ko=e.target.closest("[data-kboct]");if(ko){S.kbOct=clamp(S.kbOct+ +ko.dataset.kboct,KBOCT[0],KBOCT[1]);render();return}
  const bd=e.target.closest("[data-band]");if(bd){S.mmapSel=+bd.dataset.band;render();return}
  const mr=e.target.closest("tr[data-mrow]");if(mr&&!e.target.closest("button,.pc,.kselbtn")){S.mmapSel=+mr.dataset.mrow;render();return}
@@ -6905,7 +6978,7 @@ function setPos(){const at=S.playing&&S.step>=0?S.step:S.paused&&S.paused.step>=
 function setStep(step){if(step===S.step)return;const prev=S.step;S.step=step;stepShown(prev)}
 /* B-104: paused, the step the machine holds (the key reaches it a moment after the click): POSITION and CONTINUE's step */
 function setPausedStep(step){if(!S.paused||step<0||S.paused.step===step)return;S.paused.step=step;setPos()}
-function setPlaying(on){if(S.playing===on)return;S.playing=on;if(on)S.paused=null;if(!on){$$(".pl").forEach(b=>b.classList.remove("play"));$("#tempoled").classList.remove("on");$$(".ph").forEach(c=>c.classList.remove("ph"));S.step=-1}setPos();renderTop();redraw();movePH(false);markSongRow()}
+function setPlaying(on){if(S.playing===on)return;if(!on)jxStopRandom();S.playing=on;if(on)S.paused=null;if(!on){$$(".pl").forEach(b=>b.classList.remove("play"));$("#tempoled").classList.remove("on");$$(".ph").forEach(c=>c.classList.remove("ph"));S.step=-1}setPos();renderTop();redraw();movePH(false);markSongRow()}
 function togglePlay(){if(HOST.togglePlay)return HOST.togglePlay();if(!S.playing&&S.eng&&!engReady())return;S.playing=!S.playing;clearInterval(clock);$$(".pl").forEach(b=>b.classList.remove("play"));$("#tempoled").classList.remove("on");$$(".ph").forEach(c=>c.classList.remove("ph"));if(S.playing){S.step=-1;tick();restartClock()}else S.queued=null;setPos();renderTop();redraw();movePH(false)}
 
 /* ===== Render ===== */
@@ -7103,7 +7176,7 @@ Syx.host={machine:"Monomachine",factory:true,samples:false,
 Boot.host={chooseRom:()=>{if(HOST.chooseRom)return HOST.chooseRom();Boot.rom({ok:true,text:"\u2713 Monomachine OS 1.32B found (example)"});setTimeout(()=>startEngine("emu"),900)},
  revealRom:()=>{if(HOST.revealRom)return HOST.revealRom();toast("In the plug-in: the ROM folder opens in Finder.")},
  recheck:()=>{if(HOST.recheck)return HOST.recheck();startEngine("emu")},
- removeRom:i=>{if(HOST.removeRom)return HOST.removeRom(i)},say:t=>toast(t)};
+ removeRom:i=>{if(HOST.removeRom)return HOST.removeRom(i)},useRom:n=>{if(HOST.useRom)return HOST.useRom(n)},say:t=>toast(t)};
 /* the editor's menu (a host's): right-click anywhere the page has no menu of its own (DeskMenu.wantsEditor, I-008) */
 document.addEventListener("contextmenu",e=>{if(!HOST.menu||!DeskMenu.wantsEditor(e))return;e.preventDefault();HOST.menu(e.clientX,e.clientY)});
 window.MMView={

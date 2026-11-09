@@ -27,7 +27,7 @@ const scope = new Proxy({}, {
 	set: (t, k, v) => { t[k] = v; return true; } });
 const src = FILES.map(f => fs.readFileSync(path.join(__dirname, f), "utf8").replace(/^"use strict";/, ""))
 	.join("\n;\n");
-const { Keys, piano, oct, base, kbOct, S, renderKb } = new Function("scope", "with (scope) {\n" + src + "\n;return { Keys, piano: KEYS_PIANO, oct: KEYS_OCT, base: KEYS_BASE, kbOct: KBOCT, S, renderKb }; }")(scope);
+const { Keys, piano, oct, base, kbOct, S, renderKb, P } = new Function("scope", "with (scope) {\n" + src + "\n;return { Keys, piano: KEYS_PIANO, oct: KEYS_OCT, base: KEYS_BASE, kbOct: KBOCT, S, renderKb, P: { kbFollowOct, kbFollow, setMidiHeld, kbAnyHeld, KBLIT, KB, jxStep, jxPick, jxNormReg, jxUnits, jxClick, jxStopRandom, jxRelease, jxTick } }; }")(scope);
 const list = Keys.list(), does = b => { try { return typeof b.does === "function" ? String(b.does()) : String(b.does); } catch (_) { return ""; } };
 check(list.length > 40, `the scripts ran to their ends: ${list.length} entries`);
 
@@ -131,6 +131,68 @@ const rows = shown.map(b => b.group + "|" + Keys.label(b) + "|" + does(b)), twic
 check(!twice.length, "no help row twice" + (twice.length ? ": " + twice.join("; ") : ""));
 const undescribed = run.filter(b => !b.hidden && !does(b));
 check(!undescribed.length, "every visible dispatched key says what it does" + (undescribed.length ? ": " + undescribed.map(name).join(", ") : ""));
+
+/* ---- I-062: the Perform keyboard follows the octave of a played note ---- */
+{
+	const lo = k => 12 * (k + 1), hi = k => Math.min(lo(k) + 47, 119);
+	let ok = true;
+	for (let k = kbOct[0]; k <= kbOct[1]; k++) for (let n = lo(k); n <= hi(k); n++) if (P.kbFollowOct(n, k) !== k) ok = false;
+	check(ok, "follow: a note inside the four octaves shown never moves the keyboard");
+	ok = true;
+	for (let cur = kbOct[0]; cur <= kbOct[1]; cur++) for (let n = 12; n <= 119; n++) { const k = P.kbFollowOct(n, cur); if (!(k >= kbOct[0] && k <= kbOct[1] && n >= lo(k) && n <= hi(k))) ok = false; }
+	check(ok, "follow: every note C-0 to B-8 is shown after the move, and the stop stays inside the stops");
+	check(P.kbFollowOct(0, 3) === 0 && P.kbFollowOct(127, 0) === 5 && P.kbFollowOct(36, 3) === 1 && P.kbFollowOct(96, 3) === 5, "follow: the note's octave is the second shown (36 -> lowest C-1), notes beyond the range use the first or last stop");
+	/* the rules around it: a MIDI note moves it once, nothing else held; a held key, the mouse, and the off switch stop it */
+	S.ws = "control";	/* not the Perform page: only the state moves, nothing is drawn */
+	S.kbFollow = true; S.kbOct = 3; P.KBLIT.mouse = null; P.KBLIT.midi = new Set(); P.KB.held.clear();
+	P.setMidiHeld([20]);
+	check(S.kbOct === 0, "follow: the first MIDI note (20) outside the shown range moves the keyboard (stop " + S.kbOct + ")");
+	P.setMidiHeld([20, 100]);
+	check(S.kbOct === 0, "follow: no jump while a key is held (a second note, 100, leaves the keyboard)");
+	P.setMidiHeld([]); P.setMidiHeld([100]);
+	check(S.kbOct === 5 - 0 && S.kbOct === P.kbFollowOct(100, 0), "follow: after all keys are up the next note moves it again (stop " + S.kbOct + ")");
+	P.setMidiHeld([]); S.kbOct = 3; P.KBLIT.mouse = 60;
+	P.setMidiHeld([20]);
+	check(S.kbOct === 3, "follow: a key held with the mouse also keeps it still");
+	P.setMidiHeld([]); P.KBLIT.mouse = null; S.kbOct = 3;
+	P.KB.held.set("KeyA", { t: 0, n: 60 });
+	check(P.kbAnyHeld(), "follow: a held computer key counts as held");
+	P.setMidiHeld([20]);
+	check(S.kbOct === 3, "follow: a computer key held keeps it still against a MIDI note");
+	P.KB.held.clear(); P.setMidiHeld([]);
+	S.kbFollow = false; S.kbOct = 3; P.setMidiHeld([20]); P.setMidiHeld([]);
+	check(S.kbOct === 3, "follow: switched off, nothing moves it");
+	S.kbFollow = true; S.kbOct = 3;
+	check(!P.kbAnyHeld() && P.kbFollow(60) === false && S.kbOct === 3, "follow: playing inside the range returns false");
+	check(P.kbFollow(30) === true && S.kbOct === 0, "follow: the computer keys' note 30 moves it to the first stop");
+	S.kbOct = 3;
+}
+
+/* ---- I-061: the joystick's RANDOM stays in its region, at the speed set; HOLD and the region are well formed ---- */
+{
+	const reg = P.jxNormReg({ x0: 0.6, y0: -0.2, x1: -0.4, y1: 0.8 });
+	check(reg.x0 === -0.4 && reg.x1 === 0.6 && reg.y0 === -0.2 && reg.y1 === 0.8, "joystick: a region's corners are put in order");
+	const tiny = P.jxNormReg({ x0: 1, y0: 1, x1: 1, y1: 1 }), huge = P.jxNormReg({ x0: -5, y0: -5, x1: 5, y1: 5 });
+	check(tiny.x1 - tiny.x0 >= 0.1 - 1e-9 && tiny.y1 - tiny.y0 >= 0.1 - 1e-9 && tiny.x1 <= 1 + 1e-9 && tiny.y1 <= 1 + 1e-9, "joystick: a region is at least 0.1 wide and high, inside the field");
+	check(huge.x0 === -1 && huge.x1 === 1 && huge.y0 === -1 && huge.y1 === 1, "joystick: a region beyond the field is cut to it");
+	let seed = 12345; const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+	let allIn = true, hits = 0, maxStep = 0, minStep = 1e9;
+	for (const speed of [1, 5, 10]) {
+		const r = P.jxNormReg({ x0: -0.5, y0: 0.1, x1: 0.2, y1: 0.7 });
+		let p = P.jxPick(r, rnd), tgt = P.jxPick(r, rnd);
+		for (let i = 0; i < 3000; i++) {
+			const n = P.jxStep(p, tgt, speed, 0.033);
+			maxStep = Math.max(maxStep, Math.hypot(n.x - p.x, n.y - p.y)); if (!n.hit) minStep = Math.min(minStep, Math.hypot(n.x - p.x, n.y - p.y));
+			p = { x: n.x, y: n.y };
+			if (n.hit) { hits++; tgt = P.jxPick(r, rnd); }
+			if (p.x < r.x0 - 1e-9 || p.x > r.x1 + 1e-9 || p.y < r.y0 - 1e-9 || p.y > r.y1 + 1e-9) allIn = false;
+		}
+	}
+	check(allIn && hits > 50, `joystick: RANDOM never leaves its region over 9000 steps at speeds 1, 5 and 10 (${hits} targets reached)`);
+	check(P.jxUnits(10) > P.jxUnits(5) && P.jxUnits(5) > P.jxUnits(1) && Math.abs(P.jxUnits(1) * 0.033 - minStep) < 1e-6 && Math.abs(P.jxUnits(10) * 0.033 - maxStep) < 1e-6, "joystick: the speed sets the step (1 slowest, 10 fastest); a step is speed x time");
+	const one = P.jxStep({ x: 0, y: 0 }, { x: 0.01, y: 0 }, 10, 0.033);
+	check(one.hit && one.x === 0.01, "joystick: a step that reaches the target lands on it, never beyond");
+}
 
 console.log("mmKeysTest: " + (failures ? "FAIL" : "PASS") + " (" + failures + " failures)");
 process.exit(failures ? 1 : 0);

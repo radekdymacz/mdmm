@@ -302,20 +302,24 @@ On the machine [TRIG SELECT] chooses which trig track the TRIG keys edit: AMP, F
 ![The MIDI tracks](shot:mm-midi-roll)
 
 ## THE KEYBOARD (SFX-6)
-<!-- rows: MM-049 MM-050 MM-051 MM-052 MM-053 MM-054 @dc13e8 -->
+<!-- rows: MM-049 MM-050 MM-051 MM-052 MM-053 MM-054 @742a64 -->
 
 The SFX-6 has a keyboard and a joystick. The editor has the same functions on the **Perform** workspace.
 
 - The **Keyboard** card plays notes. It has four modes: **Auto track**, **Multi trig**, **Multi map** and **Poly**.
-- The **Assign** card has a joystick pad. Drag the stick. It springs back when you let go. On the machine's tabletop models the pad sends pitch bend, CC 1 and CC 2.
+- The **Assign** card has a joystick pad. Drag the stick. It springs back when you let go. On the machine's tabletop models the pad sends pitch bend, CC 1 and CC 2. **HOLD** keeps the stick where it is. **RANDOM** moves the stick by itself inside a region that you draw with **REGION**.
 - **Multi trig** and **Multi map** are keys of the card.
 - The **Octave** stepper moves the on-screen keyboard over all 128 notes, from MIDI 0 up to 127.
+- **Follow** moves the keyboard to the octave of a note you play. It moves only for a note outside the four octaves shown, and only when no other key is held. A click on the keys never moves it. Press **Follow** again to turn it off. The Octave stepper works as before.
 
 To use the Perform keyboard and joystick:
 
 1. Click **Perform**, then click a key of the keyboard. The note goes to the machine.
 2. Hold a key with the mouse. It is lit. Let go and no key is lit.
 3. Drag the joystick of the **Assign** card and let go. The moves reach the machine and the stick springs back.
+   Click **HOLD** and drag the stick again. When you let go, the stick stays where it is and the machine keeps the value. Click **HOLD** again. The stick returns to the middle.
+   Click **REGION**, drag a rectangle on the pad and click **REGION** again. Click **RANDOM**. The stick moves by itself inside the rectangle. The **Speed** stepper sets how fast it moves, from 1 to 10. Click **RANDOM** again, press STOP or press Panic to end it. STOP and RANDOM return the stick to the middle, and Panic also ends HOLD.
+   Play a note with a MIDI keyboard that lies outside the four octaves shown. With **Follow** lit, the keyboard moves to its octave.
 4. Click **Multi trig**, then SPLIT KEY. Click the first mode again, then **Auto track**.
 5. Click **Multi map**. The map table opens. Click **Split selected range** to add a range, and click **×** on the new range to take it away.
 

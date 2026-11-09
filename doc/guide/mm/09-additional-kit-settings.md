@@ -32,7 +32,7 @@ The LCD keys **Copy**, **Clr** and **Paste** act on all the assign tabs of the t
 ### JOYSTICK
 <!-- rows: MM-146 MM-147 @b29bc0 -->
 
-The tabs JOY RL, JOY U and JOY D hold the joystick's three directions: right and left together, up and down. Beside the rows the card shows a stick. Drag it with the pointer to try the assignment. It springs back to the middle when you let go. On the tabletop models JOY RL is pitch bend, JOY U the mod wheel (CC 1) and JOY D the breath controller (CC 2).
+The tabs JOY RL, JOY U and JOY D hold the joystick's three directions: right and left together, up and down. Beside the rows the card shows a stick. Drag it with the pointer to try the assignment. It springs back to the middle when you let go, unless **HOLD** or **RANDOM** under the stick is lit. **HOLD** keeps the stick where it is until you click it again. **RANDOM** moves the stick by itself inside the rectangle set with **REGION**, at the **Speed** you choose. STOP and Panic end it. The stick sends the same MIDI as your hand, so the machine receives it at the same rate. On the tabletop models JOY RL is pitch bend, JOY U the mod wheel (CC 1) and JOY D the breath controller (CC 2).
 
 **MIRR** is on the JOY RL tab. When it is lit, a move to the left acts as the same move to the right with the sign reversed. When it is dark, only the right half of the movement acts.
 
