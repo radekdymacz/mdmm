@@ -1838,7 +1838,7 @@ const MmRoll=(()=>{
 const Modal = (() => {
 	const KINDS = { confirm: { outside: false, focusLast: true, esc: true }, panel: { outside: false, focusLast: false, esc: true },
 		boot: { outside: false, focusLast: false, esc: false }, menu: { outside: true, focusLast: false, esc: true } };
-	const DIALOGS = [["#dlg", "confirm", null], ["#libpop", "panel", "closeLib"], ["#globpop", "panel", "closeGlobal"],
+	const DIALOGS = [["#dlg", "confirm", null], ["#libpop", "panel", "closeLib"], ["#globpop", "panel", "closeGlobal"], ["#mappop", "panel", "closeMap"],
 		["#keyspop", "panel", "toggleKeys"], ["#audiopop", "panel", "closeAudio"], ["#machpop", "panel", "closePicker"], ["#bootcard", "boot", null],
 		["#syxpop", "panel", null], ["#genpop", "panel", "closeGen", { drag: ".gdhead", place: "placeGen", clear: true, through: "[data-genopen],.th[data-sel] .n,.th[data-sel] .nm,.th[data-sel] .sw" }], ["#deskmenu", "menu", "closeDeskMenu"]];
 	/* A row's 4th item is its options, all opt-in: drag (a selector: the handle that moves the dialog; the place is kept for the
@@ -3371,7 +3371,7 @@ function pc(g,n,{t,label,cls="",extra=""}={}){if(n==null)return`<div class="pc e
 function page8(t,pg){const names=pnames(t,pg);return Array.from({length:8},(_,i)=>names[i]?pc(pg,i,{t,label:names[i]}):pc(0,null)).join("")}
 function modBy(t,pg,i){const out=[];if(isMidiT(t))return out;const tr=trk(t);["LF1","LF2","LF3"].forEach((l,k)=>{const v=tr.v[l];if(v[7]>0&&LPAGES[v[0]]===pg&&v[1]===i)out.push(k+1)});return out}
 function syncControls(){
- $$("#main [data-g]").forEach(el=>{if(!el.classList.contains("pc")&&!el.classList.contains("fader"))return;const r=ref(el);if(!r)return;const[o,n,m,t,g]=r,v=o[n];
+ $$("#main [data-g],#mappop [data-g]").forEach(el=>{if(!el.classList.contains("pc")&&!el.classList.contains("fader"))return;const r=ref(el);if(!r)return;const[o,n,m,t,g]=r,v=o[n];
   const mx=maxOf(m);el.style.setProperty("--f",(v==null?0:v/mx*100)+"%");el.setAttribute("aria-valuenow",v);el.setAttribute("aria-valuemax",mx);
   if(m.signed&&el.classList.contains("pc")){const q=v/mx*100;el.classList.add("bip");el.style.setProperty("--pl",Math.min(q,50.4)+"%");el.style.setProperty("--pw",Math.max(1.5,Math.abs(q-50.4))+"%")}
   /* a PAN bar reads as a mixer does: L / C / R */
@@ -5362,18 +5362,33 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
  $("#main").innerHTML=`<div class="perf ${S.mode==="map"?"map":""}">
   ${upper}
 
-  ${S.mode==="map"?`<section class="card maprow"><header><h3>Multi map</h3><span>GLOBAL › CONTROL › MULTIMAP EDIT · stored in the global slot</span></header>
-   <table class="mmap"><thead><tr><th>Range</th><th>Pattern</th><th>Offset</th><th>Length</th><th>Transpose</th><th>Timing</th><th></th></tr></thead><tbody>${(()=>{let lo=0;return S.mmap.map((r,i)=>{const a=lo;lo=r.hi+1;return`<tr class="${i===S.mmapSel?"sel":""}" data-mrow="${i}"><td class="mono">${noteName(a)} – <span class="stepper"><button data-mhi="-1" data-i="${i}" ${i===S.mmap.length-1?"disabled":""}>−</button><b class="mono">${i===S.mmap.length-1?"G-9":noteName(r.hi)}</b><button data-mhi="1" data-i="${i}" ${i===S.mmap.length-1?"disabled":""}>+</button></span></td>
-    <td><select id="mpat${i}" data-mpat="${i}" aria-label="Pattern">${opt(-1,"CUR",r.pat)}${Array.from({length:128},(_,p)=>opt(p,patName(p),r.pat)).join("")}</select></td><td style="width:90px">${pc("mmap","ofs",{extra:`data-i="${i}"`,label:"OFS"})}</td><td style="width:90px">${pc("mmap","len",{extra:`data-i="${i}"`,label:"LEN"})}</td><td style="width:90px">${pc("mmap","trn",{extra:`data-i="${i}"`,label:"TRN"})}</td><td style="width:90px">${pc("mmap","tim",{extra:`data-i="${i}"`,label:"TIM"})}</td>
-    <td><button class="iconkey" data-mdel="${i}" aria-label="Delete range" title="Delete range (FUNCTION + UP)" ${S.mmap.length<2?"disabled":""}>×</button></td></tr>`}).join("")})()}</tbody></table>
-   <div class="btnrow"><button data-madd="1">Split selected range</button><span class="hint">A range's lower key is the key after the one above. LEN needs an offset first. Timing waits for a bar line.</span></div></section>`:""}
+  ${S.mode==="map"?`<section class="card mapsum"><header><h3>Multi map</h3><span>GLOBAL › CONTROL › MULTIMAP EDIT · stored in the global slot</span></header>
+   <div class="btnrow"><button data-mapopen="1" id="mapopen">Edit Multi map…</button><span class="hint">${S.mmap.length} ranges, shown as bands above the keys. The table opens in its own window.</span></div></section>`:""}
 
   <div class="kbsec">
   <div class="kbwrap">${S.mode==="map"?`<div class="mapbands">${mapBands()}</div>`:""}<div class="kb" id="kb">${renderKb()}</div>
    <div class="trklamps" id="trklamps">${S.tracks.map((x,i)=>{const p=S.mode==="poly";return`<span${p?` class="${i===t?"polyt":"polyoff"}" title="${i===t?"Six voices in POLY":"Silent in POLY"}"`:""}><i class="led" data-lamp="${i}"></i>T${i+1} ${shortM(x.m)}${p&&i===t?`<em class="x6">×6</em>`:""}</span>`}).join("")}<span class="hint" id="kbinfo" style="margin-left:auto">Click or drag across the keys to play.</span></div></div>
   </div></div>`;
  /* the cards keep their hints in view (tipify went with the Sound page's groups) */
- syncControls();redraw()}
+ drawMapDlg();syncControls();redraw()}
+
+/* 0.9.1 (tester request): the Multi map table is a dialog of its own, like GLOBAL (#mappop, the modal layer's panel), so the
+   Perform page does not scroll. Its value boxes are the page's: #main's handlers serve it too (130-main.js onMain). */
+let MAPOPEN=false;
+function mapTableH(){return`<table class="mmap">`+`<thead><tr><th>Range</th><th>Pattern</th><th>Offset</th><th>Length</th><th>Transpose</th><th>Timing</th><th></th></tr></thead><tbody>${(()=>{let lo=0;return S.mmap.map((r,i)=>{const a=lo;lo=r.hi+1;return`<tr class="${i===S.mmapSel?"sel":""}" data-mrow="${i}"><td class="mono">${noteName(a)} – <span class="stepper"><button data-mhi="-1" data-i="${i}" ${i===S.mmap.length-1?"disabled":""}>−</button><b class="mono">${i===S.mmap.length-1?"G-9":noteName(r.hi)}</b><button data-mhi="1" data-i="${i}" ${i===S.mmap.length-1?"disabled":""}>+</button></span></td>
+    <td><select id="mpat${i}" data-mpat="${i}" aria-label="Pattern">${opt(-1,"CUR",r.pat)}${Array.from({length:128},(_,p)=>opt(p,patName(p),r.pat)).join("")}</select></td><td style="width:90px">${pc("mmap","ofs",{extra:`data-i="${i}"`,label:"OFS"})}</td><td style="width:90px">${pc("mmap","len",{extra:`data-i="${i}"`,label:"LEN"})}</td><td style="width:90px">${pc("mmap","trn",{extra:`data-i="${i}"`,label:"TRN"})}</td><td style="width:90px">${pc("mmap","tim",{extra:`data-i="${i}"`,label:"TIM"})}</td>
+    <td><button class="iconkey" data-mdel="${i}" aria-label="Delete range" title="Delete range (FUNCTION + UP)" ${S.mmap.length<2?"disabled":""}>×</button></td></tr>`}).join("")})()}</tbody></table>
+   <div class="btnrow"><button data-madd="1">Split selected range</button><span class="hint">A range's lower key is the key after the one above. LEN needs an offset first. Timing waits for a bar line.</span></div>`}
+function drawMapDlg(){const pop=$("#mappop");if(!pop)return;
+ if(MAPOPEN&&(S.ws!=="perform"||S.mode!=="map"))MAPOPEN=false;
+ if(!MAPOPEN){if(!pop.hidden)pop.hidden=true;return}
+ const a=document.activeElement,fk=a&&pop.contains(a)?(a.id?"#"+a.id:a.dataset.g?`[data-g="${a.dataset.g}"][data-n="${a.dataset.n}"][data-i="${a.dataset.i}"]`:""):"";
+ pop.innerHTML=`<div class="libhead"><span class="cap">Multi map</span><span class="note">GLOBAL › CONTROL › MULTIMAP EDIT · stored in the global slot</span><button class="libx" data-mapclose="1" title="Close (Esc)">Esc</button></div><section class="maprow">${mapTableH()}</section>`;
+ enhanceSelects(pop);syncControls();pop.hidden=false;
+ if(fk){const el=pop.querySelector(fk);if(el&&document.activeElement!==el)el.focus({preventScroll:true})}}
+function openMap(){if(S.mode!=="map")return;MAPOPEN=true;drawMapDlg()}
+function closeMap(){MAPOPEN=false;const pop=$("#mappop");if(pop)pop.hidden=true}
+document.addEventListener("click",e=>{if(e.target.closest?.("[data-mapopen]")){openMap();return}if(e.target.closest?.("[data-mapclose]"))closeMap()});
 let kbDown=null,lampT={};
 function flashTracks(ts){ts.forEach(i=>{const l=$(`[data-lamp="${i}"]`);if(!l)return;l.classList.add("on");clearTimeout(lampT[i]);lampT[i]=setTimeout(()=>l.classList.remove("on"),160)})}
 /* B-062, I-002: the keys lit, one state the keyboard is drawn from (so a render during a hold keeps it): dn the key the
@@ -6590,7 +6605,9 @@ addEventListener("click",e=>{if(!msClickEaten)return;msClickEaten=false;e.stopIm
 /* ===== Pointer input in the workspace ===== */
 let drag=null,joyDrag=null,splitDrag=null,arpDrag=null;
 const main=$("#main");
-main.addEventListener("pointerdown",e=>{
+/* the Multi map dialog (#mappop, 110-perform.js) holds value boxes of its own: the pointer, wheel and key handlers of #main serve it too */
+const onMain=(t,f,o)=>{for(const el of [main,$("#mappop")])el?.addEventListener(t,f,o)};
+onMain("pointerdown",e=>{
  if(S.learn){const el=e.target.closest(".pc[data-g]");if(el&&(PAGES.includes(el.dataset.g)||el.dataset.g==="MID")){e.preventDefault();e.stopPropagation();const t=el.dataset.t!=null?+el.dataset.t:S.sel;S.learnT={t,pid:el.dataset.g+"."+el.dataset.n};toast(`Target: ${tLabel(t)} ${pidLabel(t,S.learnT.pid)}. Now turn a knob on your controller, or press 1-8 for a knob row.`);if(HOST.learnTarget)HOST.learnTarget({...S.learnT});return}}
  const h=e.target.closest(".lfohandle");if(h){cordStart(e,h);return}
  const pk=e.button===0&&e.target.closest('canvas[data-ed="dktrn"]');if(pk){trnDown(pk,e);e.preventDefault();return}
@@ -6603,7 +6620,7 @@ main.addEventListener("pointerdown",e=>{
  if(e.target.closest("#joy")){joyDrag=true;$("#joy").setPointerCapture(e.pointerId);joyAt(e);e.preventDefault();return}
  if(e.target.closest("#splitm")){splitDrag=true;$("#splitm").setPointerCapture(e.pointerId);e.preventDefault();return}
  const key=e.target.closest(".kb [data-key]");if(key){kbDown=true;$("#kb").setPointerCapture(e.pointerId);playKey(+key.dataset.key);e.preventDefault()}});
-main.addEventListener("pointermove",e=>{
+onMain("pointermove",e=>{
  if(e.buttons===0&&e.pointerType==="mouse"&&dragging()){endDrag(e);return}
  if(cord){cordMove(e);return}
  const roll=e.target.closest?.("canvas.roll")||(rollDrag&&$("#roll"));if(roll&&(rollDrag||e.target===roll)){rollMove(roll,e);if(rollDrag)return}
@@ -6637,21 +6654,21 @@ function joyAt(e){const r=$("#joy").getBoundingClientRect();S.joy={x:clamp((e.cl
  const tr=S.tracks[asgT()],A=tr.assign,rows=A.tabs[S.asTab];const amt=S.asTab==="JOY U"?Math.max(0,S.joy.y):S.asTab==="JOY D"?Math.max(0,-S.joy.y):A.mirr?S.joy.x:Math.max(0,S.joy.x);
  $("#kbinfo")&&($("#kbinfo").textContent=rows.map(r=>`${LPAGES[r.pg]} ${destNames(asgT(),r.pg)[r.d]} ${Math.round((r.add-64)*amt)>=0?"+":""}${Math.round((r.add-64)*amt)}`).join(" · "));tx();if(HOST.joy)HOST.joy(S.joy)}
 function renderArp(){const el=$("#arptrack");if(!el)return;const a=trk(S.sel).arp;el.innerHTML=arpCells(a);el.style.gridTemplateColumns=arpCols(a);const c2=$("#arpcap");if(c2)c2.textContent="Rhythm + offset · "+a.len+" steps";$$(".mrowg .rowst").length&&0;redraw()}
-main.addEventListener("keydown",e=>{if(kitNudge(e))return;const ac=e.target.closest?.(".ac[data-ac]");if(!ac||!["Enter"," "].includes(e.key)||e.ctrlKey||e.metaKey||e.altKey)return;e.preventDefault();e.stopPropagation();if(e.repeat||S.learn)return;const k=+ac.dataset.ac,a=trk(S.sel).arp;commit();a.rhy[k]=!a.rhy[k];edit("arp",{t:S.sel,field:"step",i:k,v:a.rhy[k]?clamp(64+a.ofs[k]):255});commit();renderArp();$(`#arptrack [data-ac="${k}"]`)?.focus()});
+onMain("keydown",e=>{if(kitNudge(e))return;const ac=e.target.closest?.(".ac[data-ac]");if(!ac||!["Enter"," "].includes(e.key)||e.ctrlKey||e.metaKey||e.altKey)return;e.preventDefault();e.stopPropagation();if(e.repeat||S.learn)return;const k=+ac.dataset.ac,a=trk(S.sel).arp;commit();a.rhy[k]=!a.rhy[k];edit("arp",{t:S.sel,field:"step",i:k,v:a.rhy[k]?clamp(64+a.ofs[k]):255});commit();renderArp();$(`#arptrack [data-ac="${k}"]`)?.focus()});
 /* I-022: a value typed (shared/deskValueEdit.js): ⌘-click a value box or fader, or Enter on one that has the focus. What
    may be typed is what the box shows (a list's names, a signed value as -64 to +63, PAN as L12 / C / R5 or the number);
    one edit, its own undo step (commit before and after) */
 const ValueBox={range:el=>[0,maxOf(ref(el)[2])],
  shown(el,v){const m=ref(el)[2],own=fmt(m,v);return el.classList.contains("pan")&&m.signed?[v===64?"C":(v<64?"L":"R")+Math.abs(v-64),own]:own},
  get:el=>getV(el),set(el,v){commit();setV(el,v);commit()},
- find:el=>$("#main")?.querySelector(Object.entries(el.dataset).filter(([k])=>["g","n","t","i","src","li"].includes(k)).map(([k,v])=>`[data-${k}="${CSS.escape(v)}"]`).join(""))||null,
+ find:el=>{const q=Object.entries(el.dataset).filter(([k])=>["g","n","t","i","src","li"].includes(k)).map(([k,v])=>`[data-${k}="${CSS.escape(v)}"]`).join("");return $("#main")?.querySelector(q)||$("#mappop")?.querySelector(q)||null},
  say:t=>toast(t)};
-main.addEventListener("wheel",e=>{
+onMain("wheel",e=>{
  const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el){e.preventDefault();const d=(e.deltaY||e.deltaX)<0?1:-1;stepV(el,d*(e.shiftKey?10:1));return}
  const st=e.target.closest(".mst");if(st){const t=+st.dataset.t,s=+st.dataset.s,x=trk(t).steps[s];if(!x?.n)return;e.preventDefault();const d=((e.deltaY||e.deltaX)<0?1:-1)*(e.shiftKey?12:1);x.n=x.n.map(n=>clamp(n+d));editStep(t,s);refreshRow(t);return}
  const roll=e.target.closest("canvas.roll[data-big]");if(roll){e.preventDefault();const t=+roll.dataset.t;S.rollLoT[t]=clamp((S.rollLoT[t]??S.rollLo)+((e.deltaY)<0?1:-1)*(e.shiftKey?12:2),0,127-ROWS);redraw()}},{passive:false});
-main.addEventListener("dblclick",e=>{const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el&&!ValueEdit.isOpenClick(e)){const m=ref(el)[2];/* I-052: a Mix level goes back to the kit default, 100, as on the Machinedrum Editor */setV(el,el.dataset.g==="lev"?LEV_DEF:m.def??(m.en?0:64))}});
-main.addEventListener("keydown",e=>{const el=e.target.closest("[data-g]");if(!el)return;if(e.key==="Enter"&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&el.matches(".pc,.fader")){e.preventDefault();ValueEdit.open(el,ValueBox);return}const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1,PageUp:10,PageDown:-10}[e.key];if(d==null)return;e.preventDefault();stepV(el,d*(e.shiftKey?10:1))});
+onMain("dblclick",e=>{const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el&&!ValueEdit.isOpenClick(e)){const m=ref(el)[2];/* I-052: a Mix level goes back to the kit default, 100, as on the Machinedrum Editor */setV(el,el.dataset.g==="lev"?LEV_DEF:m.def??(m.en?0:64))}});
+onMain("keydown",e=>{const el=e.target.closest("[data-g]");if(!el)return;if(e.key==="Enter"&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&el.matches(".pc,.fader")){e.preventDefault();ValueEdit.open(el,ValueBox);return}const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1,PageUp:10,PageDown:-10}[e.key];if(d==null)return;e.preventDefault();stepV(el,d*(e.shiftKey?10:1))});
 
 /* ===== Clicks ===== */
 function autoRange(t){const ns=trk(t).steps.flatMap(x=>x?.n||[]);if(!ns.length)return;const lo=Math.min(...ns),hi=Math.max(...ns),cur=S.rollLoT[t];if(cur==null||lo<cur||hi>cur+ROWS-1)S.rollLoT[t]=clamp(Math.round((lo+hi)/2)-Math.floor(ROWS/2),0,127-ROWS)}
@@ -6915,7 +6932,7 @@ function focusedValue(){const el=document.activeElement,d=el&&el.dataset;if(!d||
 function render(){const f=focusedValue();renderPage();if(f){const el=document.querySelector("#main "+f);if(el&&document.activeElement!==el)el.focus({preventScroll:true})}}
 function renderPage(){closePicker();closeK();const sl=$("#seqscroll")?.scrollLeft||0;renderTop();{const m=(S.ws==="seq"||S.ws==="sound")&&S.side==="midi";if(!m&&S.sel>5)S.sel-=6;if(m&&S.sel<6)S.sel+=6}const full=["mix","perform","song","control"].includes(S.ws);
  $("#body").className="body "+(full?"full ":"")+"ws-"+S.ws;document.documentElement.classList.toggle("songpage",S.ws==="song");$("#rail").hidden=full;if(!full)renderRail();renderSub();
- ({control:renderControl,seq:renderSeq,sound:renderSound,mix:renderMix,perform:renderPerform,song:renderSong})[S.ws]();
+ ({control:renderControl,seq:renderSeq,sound:renderSound,mix:renderMix,perform:renderPerform,song:renderSong})[S.ws]();if(S.ws!=="perform")closeMap();
  const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));if(S.learn)document.body.classList.add("learn");movePH(false);polyFollows();mixMetersSync()}
 /* 0.6 wave 9 (B-064): POLY plays the machine's track in focus; the synth track the person selects here (rail, Assign's
    1-6) is the one that plays it: a new selection while in POLY moves it (the host presses that TRACK key) */
@@ -6942,10 +6959,10 @@ addEventListener("resize",()=>{if(S.ws==="seq"){fitLane();drawSlides();alignLock
 const NA_SEL={
  midiMutes:[6,7,8,9,10,11].flatMap(t=>[`[data-mute="${t}"]`,`[data-solo="${t}"]`,`[data-gmute="${t}"]`]).join(","),
  transport:"#play",playFrom:'[data-rowact="from"]',panic:'[data-mid="panic"]',poly:'[data-pmode="poly"]',multiTrig:'[data-set="mtmode"] button,[data-strk],[data-tim],#splitm',
- multiMap:'.maprow [data-mhi],.maprow select,.maprow .kselbtn,.maprow .pc,[data-mdel],[data-madd],[data-band]',
+ multiMap:'.maprow [data-mhi],.maprow select,.maprow .kselbtn,.maprow .pc,[data-mdel],[data-madd],[data-band],[data-mapopen]',
  portamento:'[data-set="port"] button',gridRecord:"#rec",chains:'[data-chainpad],[data-chain]',
  panelKeys:'[data-ga="dperase"]'};	/* 0.9 wave 2: the DigiPRO card's Erase is the machine's panel (HW MIDI: on the machine) */
-const NA_CARD={multiMap:".maprow"};	// a card that also says the reason in words
+const NA_CARD={multiMap:".mapsum"};	// a card that also says the reason in words
 /* capabilities with no control of their own here: they say how the machine is read */
 const NA_INFO=["recvSession","lcd","workingKitMemory","telemetry"];
 const NA={},READING={pattern:new Set(),kit:new Set()},READ_NOTE="Still reading this slot from the machine.";

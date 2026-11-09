@@ -59,7 +59,7 @@ If the pattern plays, the machine loads the new kit at once. When the kit that p
 
 The machine holds 128 kits. The kit library lists them all.
 
-1. Click the <KIT> field in the LCD. The kit library opens with the 128 slots as a grid.
+1. Click the <KIT> field in the LCD. The kit library opens with the 128 slots in rows of sixteen, as in the pattern chooser.
 2. Click a slot, or move to it with the arrow keys and press {key:lib-load}. The kit loads. If the current kit has unsaved edits, the editor asks first.
 3. To select a slot without loading it, hold [⌥] and click.
 

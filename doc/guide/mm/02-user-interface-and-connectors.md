@@ -317,7 +317,7 @@ To use the Perform keyboard and joystick:
 2. Hold a key with the mouse. It is lit. Let go and no key is lit.
 3. Drag the joystick of the **Assign** card and let go. The moves reach the machine and the stick springs back.
 4. Click **Multi trig**, then SPLIT KEY. Click the first mode again, then **Auto track**.
-5. Click **Multi map**. The map table opens. Click **Split selected range** to add a range, and click **×** on the new range to take it away.
+5. Click **Multi map**, then **Edit Multi map…**. The map table opens in its own window. Click **Split selected range** to add a range, and click **×** on the new range to take it away.
 
 The computer keys play notes too: {key:piano-white} and {key:piano-black}. A key of the on-screen keyboard is lit while you hold it: with the mouse, with the computer keys, or on a MIDI keyboard connected to the editor (the MIDI input of the standalone, or the MIDI track of the plug-in in your DAW). The piano roll shows the pitches the machine plays.
 

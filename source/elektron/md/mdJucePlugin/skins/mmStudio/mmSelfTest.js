@@ -230,10 +230,12 @@ window.MMDiagnostics = {};
 			V().goWs("perform"); await sleep(300);
 			$('[data-pmode="map"]').click(); await sleep(400);
 			try {
-				const joy = $("#joy")?.getBoundingClientRect(), tbl = $("table.mmap")?.getBoundingClientRect(), card = $(".asgcard")?.getBoundingClientRect();
-				if (!tbl || tbl.height < 40) throw new Error("the map table is not shown");
-				if (joy && joy.width > 0 && (joy.bottom > tbl.top + 1 || joy.right > card.right + 1)) throw new Error(`the stick (${Math.round(joy.width)} px, bottom ${Math.round(joy.bottom)}) covers the map table (top ${Math.round(tbl.top)}) at ${innerWidth} x ${innerHeight}`);
-				return `stick ${joy ? Math.round(joy.width) + " px" : "hidden"}, table top ${Math.round(tbl.top)}`;
+				const joy = $("#joy")?.getBoundingClientRect(), tbl = $("#main .mapsum")?.getBoundingClientRect(), card = $(".asgcard")?.getBoundingClientRect();
+				if (!tbl || tbl.height < 20) throw new Error("the map card is not shown");
+				if ($("#main table.mmap")) throw new Error("the map table is on the page (it has its own window)");
+				if (joy && joy.width > 0 && (joy.bottom > tbl.top + 1 || joy.right > card.right + 1)) throw new Error(`the stick (${Math.round(joy.width)} px, bottom ${Math.round(joy.bottom)}) covers the map card (top ${Math.round(tbl.top)}) at ${innerWidth} x ${innerHeight}`);
+				if (document.documentElement.scrollHeight > innerHeight + 1 && $("#main").scrollHeight > $("#main").clientHeight + 1) throw new Error(`the page scrolls (${$("#main").scrollHeight} in ${$("#main").clientHeight})`);
+				return `stick ${joy ? Math.round(joy.width) + " px" : "hidden"}, card top ${Math.round(tbl.top)}`;
 			} finally { $('[data-pmode="normal"]').click(); V().goWs("seq"); }
 		});
 		await check("GRID RECORDING on and off (the RECORD key)", async () => {

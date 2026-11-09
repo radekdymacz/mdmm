@@ -405,3 +405,9 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
 .dpkeys button[disabled]{opacity:.45}
 .dpkeys .danger:hover:not([disabled]){background:var(--rec,var(--red));color:#fff}
 .dpnews{margin:0;font-size:12px;min-height:16px}
+
+/* 0.9.1: the Multi map dialog (#mappop), centred by the modal layer like GLOBAL; the table is the page's own */
+.mappop{z-index:var(--mz,22);width:min(1000px,calc(100vw - 48px));box-sizing:border-box}
+.mappop .maprow{border-bottom:0;padding-bottom:0}
+.mappop .libx{margin-left:auto}
+.mapsum .btnrow{display:flex;align-items:center;gap:12px}

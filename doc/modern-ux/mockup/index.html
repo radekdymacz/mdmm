@@ -240,15 +240,15 @@ details.rules li{margin:0 0 5px;break-inside:avoid}
 
 /* ===== Hardware-true pass (from panel photos) ===== */
 :root{
-  --plate:#d9dad6;--plate2:#cdcec9;--plate3:#e5e6e2;--print:#94552b;--print2:#7a5a44;--print3:#8d7a6c;--rule:#b99a80;--body:#2f2c29;
-  --key:#3a4049;--key2:#4a525c;--keytext:#e9e4d6;--keydim:#a9aeb6;--cream:#e9e4d6;--creamtext:#2d2b27;
-  --led:#ff3b2f;--ledoff:#8a3a33;--rec:#e0472e;--lcd:#dc4a2c;--ink:#0b0403;--labfill:#b07a4a;--labtext:#f6efe3;--knob:#3a4049;
+  --plate:#d9dad6;--plate2:#cdcec9;--plate3:#e5e6e2;--print:var(--ui-ink);--print2:var(--ui-ink2);--print3:var(--ui-ink3);--rule:var(--ui-rule);--body:var(--ui-ink);
+  --key:var(--ui-black);--key2:var(--ui-black2);--keytext:var(--ui-white);--keydim:var(--ui-keydim);--cream:var(--ui-cream);--creamtext:var(--ui-cream-ink);
+  --led:#ff3b2f;--ledoff:#8a3a33;--rec:#e0472e;--lcd:#dc4a2c;--ink:#0b0403;--labfill:#b07a4a;--labtext:var(--ui-white);--knob:var(--ui-black);
   --trig:var(--led);--oxblood:var(--print);
 }
 :root[data-plate="mk2"]{
-  --plate:#161716;--plate2:#0f100f;--plate3:#232422;--print:#f1f0ea;--print2:#c9c8c1;--print3:#94938c;--rule:#5d5e59;--body:#ecebe5;
-  --key:#232423;--key2:#30312f;--keytext:#ecebe5;--keydim:#8f908b;--cream:#ece6d6;--creamtext:#1f1e1b;
-  --ledoff:#4d1714;--lcd:#ef5a39;--ink:#3a0e08;--labfill:#f1f0ea;--labtext:#111;--knob:#9a9ca0;
+  --plate:#161716;--plate2:#0f100f;--plate3:#232422;--print:var(--ui-dink);--print2:var(--ui-dink2);--print3:var(--ui-dink3);--rule:var(--ui-drule);--body:var(--ui-dink);
+  --key:var(--ui-dkey);--key2:var(--ui-dkey2);--keytext:var(--ui-white);--keydim:var(--ui-keydim);--cream:var(--ui-cream);--creamtext:var(--ui-cream-ink);
+  --ledoff:#4d1714;--lcd:#ef5a39;--ink:#3a0e08;--labfill:var(--ui-white);--labtext:var(--ui-black);--knob:#9c9c9c;
 }
 body{color:var(--body)}
 .note,.edhint,.kv,.slot .route{color:var(--print2)}
@@ -1201,11 +1201,19 @@ body{box-sizing:border-box;overflow:hidden}
 .soundgrid .lfoin{min-height:0;align-items:stretch}
 .soundgrid .lfoin canvas.ed{height:100%!important;min-height:150px}
 /* Mix: the faders take the height the page has left, up to a fader's length (B-004: a taller one looked oversized);
-   the master effects' screens take the rest, so the page ends at the window's bottom at every height */
-.fader{height:clamp(132px,calc(100vh - 690px),240px)!important}
-#main>.fx4{flex:1 1 auto;min-height:0;align-items:stretch}
-.fx4>.card{min-height:0;grid-template-rows:auto minmax(96px,1fr) auto;align-content:stretch}
-.fx4>.card>canvas.ed.sm{height:100%!important;min-height:96px}
+   the master effects' screens take the rest, so the page ends at the window's bottom at every height.
+   0.9.1 (tester request, I-063): the whole page fits without scrolling down to the page's own minimum, 720 px tall (a window
+   of 1440 x 811 points, a 1440 x 900 screen's, no longer scrolled): the strips and the four master effects (ECHO, GATE BOX,
+   MASTER EQ, DYNAMIX) are compacter: tighter strips, the signal path one thin line, the effects' screens from 56 px and
+   their value boxes 26 px. What is left over is the 576 px of everything but a fader; a fader is 112 px at least. */
+.fader{height:clamp(112px,calc(100vh - 576px),240px)!important}
+.strip{padding:4px 3px;gap:4px}
+.strip .pc{height:22px}
+.flow{margin-top:8px;padding:4px 12px}
+#main>.fx4{flex:1 1 auto;min-height:0;align-items:stretch;margin-top:8px!important;gap:16px}
+.fx4>.card{min-height:0;grid-template-rows:auto minmax(56px,1fr) auto;align-content:stretch;gap:6px;padding-top:6px}
+.fx4>.card>canvas.ed.sm{height:100%!important;min-height:56px}
+.fx4 .ctl .pc{height:26px}
 </style>
 <link rel="stylesheet" href="../../../source/elektron/md/mdJucePlugin/skins/shared/deskLcd.css">
 <link rel="stylesheet" href="../../../source/elektron/md/mdJucePlugin/skins/shared/deskModal.css">
@@ -1217,6 +1225,7 @@ body{box-sizing:border-box;overflow:hidden}
 .setkeys button{min-width:46px!important;justify-content:center;box-sizing:border-box}
 </style>
 <link rel="stylesheet" href="../../../source/elektron/md/mdJucePlugin/skins/shared/deskSyx.css">
+<link rel="stylesheet" href="../../../source/elektron/md/mdJucePlugin/skins/shared/deskTokens.css">
 
 <div class="app">
   <header class="top">

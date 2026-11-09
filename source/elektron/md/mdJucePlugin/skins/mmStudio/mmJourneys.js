@@ -897,11 +897,11 @@ const MmJourneys = (() => {
 		name: "mm-perform-multi-map", proves: ["MM-052", "MM-300"],
 		steps: [
 			go("perform"),
-			{ say: "click Multi map: the map table", act: (u, c) => { c.g = machine().global?.current ?? 0; c.m0 = JSON.stringify(I().doc("global", c.g)?.multiMap); u.click('[data-pmode="map"]'); }, screen: () => ok(!!$1("table.mmap"), "no table") },
+			{ say: "click Multi map, then Edit Multi map: the map table opens in its own window", act: async (u, c) => { c.g = machine().global?.current ?? 0; c.m0 = JSON.stringify(I().doc("global", c.g)?.multiMap); u.click('[data-pmode="map"]'); await sleep(300); u.click("[data-mapopen]"); }, screen: () => ok(!!$1("#mappop table.mmap") && !$1("#mappop").hidden && !$1("#main table.mmap"), "no table in the window") },
 			{ say: "click Split selected range", act: (u, c) => { c.n0 = $all("table.mmap tbody tr").length; u.click("[data-madd]"); }, screen: c => ok($all("table.mmap tbody tr").length === c.n0 + 1, $all("table.mmap tbody tr").length + " rows"), machine: c => ok(JSON.stringify(I().doc("global", c.g)?.multiMap) !== c.m0, "global unchanged"), within: 15000 },
 			{ say: "click × on the new range", act: (u, c) => u.click(`[data-mdel="${S().mmapSel}"]`), screen: c => ok($all("table.mmap tbody tr").length === c.n0, $all("table.mmap tbody tr").length + " rows"), machine: c => ok(JSON.stringify(I().doc("global", c.g)?.multiMap) === c.m0, "global differs"), within: 15000 }
 		],
-		async tidy(u) { if ($1('[data-pmode="normal"]')) u.click('[data-pmode="normal"]'); }
+		async tidy(u) { if (!$1("#mappop").hidden) { u.key("Escape"); await sleep(200); } if ($1('[data-pmode="normal"]')) u.click('[data-pmode="normal"]'); }
 	};
 	const kbPlay = {
 		name: "mm-perform-keyboard", proves: ["MM-050"],
@@ -3698,7 +3698,7 @@ const MmJourneys = (() => {
 					for (let k = 0; k < 7; k++) { if (k > 0) u.click('[data-tim="1"]'); if (!await until(() => wk().multiTrig.timing === k, 4000)) c.bad.push(`timing ${k}: ${wk().multiTrig.timing}`); const shown = $all(".stepper").find(s => /Timing/.test(s.textContent))?.querySelector("b")?.textContent; if (shown !== names[k]) c.bad.push(`shows ${shown} for ${names[k]}`); }
 					u.click('[data-set="mtmode"] button[data-v="3"]'); await until(() => wk().multiTrig.mode === 3, 4000); await sleep(300); c.has3 = !!$1("[data-tim]"); Journey.snapshot("mm-perform-multi-trig"); },
 				screen: c => ok(!c.bad.length && c.has3, c.bad.join(" | ") + " timing in SEQ TRNSP " + c.has3), within: 1000 },
-			{ say: "Multi map: each range's Pattern, OFS, LEN, TRN and TIM are its own columns of the global's map: a pattern chosen, OFS 4, LEN 8, TRN -5, TIM stepped", act: async (u, c) => { c.bad = []; u.click('[data-pmode="map"]'); await sleep(500); c.m0 = JSON.stringify(gDoc().multiMap); const mm = () => gDoc().multiMap;
+			{ say: "Multi map: each range's Pattern, OFS, LEN, TRN and TIM are its own columns of the global's map: a pattern chosen, OFS 4, LEN 8, TRN -5, TIM stepped", act: async (u, c) => { c.bad = []; u.click('[data-pmode="map"]'); await sleep(500); u.click("[data-mapopen]"); await sleep(300); c.m0 = JSON.stringify(gDoc().multiMap); const mm = () => gDoc().multiMap;
 					await choose(u, "mpat0", 5); if (!await until(() => mm()[1][0] === 5, 6000)) c.bad.push("pattern: " + mm()[1][0]);
 					const ofs = '.pc[data-g="mmap"][data-n="ofs"][data-i="0"]', len = '.pc[data-g="mmap"][data-n="len"][data-i="0"]', trn = '.pc[data-g="mmap"][data-n="trn"][data-i="0"]', tim = '.pc[data-g="mmap"][data-n="tim"][data-i="0"]';
 					u.click(ofs, { cmd: true }); typeIn(u, "4"); if (!await until(() => mm()[2][0] === 4, 6000)) c.bad.push("OFS: " + mm()[2][0]);
@@ -3709,11 +3709,11 @@ const MmJourneys = (() => {
 				screen: c => ok(!c.bad.length && c.other, c.bad.join(" | ") + " other ranges untouched " + c.other), within: 1000 }
 		],
 		async tidy(u, c) { await back(u, c);	/* the kit's multi trig (mode, split, timing) */
-			if (c.m0 != null) { /* the global's multi map, each column through its own box */ const m0 = JSON.parse(c.m0), mm = () => gDoc().multiMap; u.click('[data-pmode="map"]'); await sleep(500);
+			if (c.m0 != null) { /* the global's multi map, each column through its own box */ const m0 = JSON.parse(c.m0), mm = () => gDoc().multiMap; if (!$1("#mappop").hidden) u.key("Escape"); await sleep(200); u.click('[data-pmode="map"]'); await sleep(500); u.click("[data-mapopen]"); await sleep(300);
 				if (mm()[1][0] !== m0[1][0]) { await choose(u, "mpat0", m0[1][0] === 255 ? -1 : m0[1][0]); await sleep(800); }
 				for (const [r, n] of [[2, "ofs"], [3, "len"], [4, "trn"]]) if (mm()[r][0] !== m0[r][0]) { u.click(`.pc[data-g="mmap"][data-n="${n}"][data-i="0"]`, { cmd: true }); typeIn(u, String(r === 4 && m0[r][0] > 127 ? m0[r][0] - 256 : m0[r][0])); await until(() => mm()[r][0] === m0[r][0], 6000); }
 				for (let k = 0; k < 40 && mm()[5][0] !== m0[5][0]; k++) { const t = mm()[5][0]; $1('.pc[data-g="mmap"][data-n="tim"][data-i="0"]')?.focus(); u.key("ArrowDown"); await until(() => mm()[5][0] !== t, 3000); } }
-			u.click('[data-pmode="normal"]'); await sleep(300); }
+			if (!$1("#mappop").hidden) { u.key("Escape"); await sleep(200); } u.click('[data-pmode="normal"]'); await sleep(300); }
 	};
 	/* ---- Perform: the assign tabs (joystick, velocity), the joystick's own MIDI, MIRR, copy / paste / clear, the octave keys ---- */
 	const assignOf = t => wk().tracks[t].assign;
@@ -4247,13 +4247,13 @@ const MmJourneys = (() => {
 		name: "mm-perform-map-pattern", proves: ["MM-301"],
 		steps: [
 			go("perform"),
-			{ say: "click Multi map: the map table, the first range's PAT list holds CUR and all 128 patterns", act: (u, c) => { c.g = machine().global?.current ?? 0; c.p0 = I().doc("global", c.g)?.multiMap?.[1]?.[0]; u.click('[data-pmode="map"]'); },
+			{ say: "click Multi map: the map table, the first range's PAT list holds CUR and all 128 patterns", act: async (u, c) => { c.g = machine().global?.current ?? 0; c.p0 = I().doc("global", c.g)?.multiMap?.[1]?.[0]; u.click('[data-pmode="map"]'); await sleep(300); u.click("[data-mapopen]"); },
 				screen: () => ok(!!$1("#mpat0") && $1("#mpat0").options.length === 129 && $1("#mpat0").options[128].textContent === "H16", `${$1("#mpat0")?.options.length} entries, the last ${$1("#mpat0")?.options[128]?.textContent}`) },
 			{ say: "choose H16 for the first range: the global's map plays it", act: async u => { await choose(u, "mpat0", "127"); },
 				machine: c => ok(I().doc("global", c.g)?.multiMap?.[1]?.[0] === 127, "PAT " + I().doc("global", c.g)?.multiMap?.[1]?.[0]), screen: () => ok(+$1("#mpat0")?.value === 127 && $1("#mpat0").selectedOptions[0]?.textContent === "H16", "shows " + $1("#mpat0")?.value), within: 15000 },
 			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(I().doc("global", c.g)?.multiMap?.[1]?.[0] === c.p0, "PAT " + I().doc("global", c.g)?.multiMap?.[1]?.[0]), within: 15000 }
 		],
-		async tidy(u) { if ($1('[data-pmode="normal"]')) u.click('[data-pmode="normal"]'); await recvIdle(); }
+		async tidy(u) { if (!$1("#mappop").hidden) { u.key("Escape"); await sleep(200); } if ($1('[data-pmode="normal"]')) u.click('[data-pmode="normal"]'); await recvIdle(); }
 	};
 	/* ---------- the end-to-end pass: factory content as a person uses it (scripts/mdmm-e2e.sh, doc/release/E2E.md) ---------- */
 	/* What the machine plays, as the page can see it: transport, step and song row from the telemetry, the output's peaks
