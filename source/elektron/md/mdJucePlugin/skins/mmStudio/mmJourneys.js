@@ -2452,8 +2452,11 @@ const MmJourneys = (() => {
 					return ok(!!k1 && n.length > 0 && t.length > 0 && g === c.g0, `K01 "${k1}", ${n.length} kits named, ${t.length} patterns with trigs, global ${g === c.g0 ? "kept" : "changed"}`); }, within: 600000 },
 			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") },
 			/* B-130: the factory reset is one undo step: Cmd+Z empties the machine again */
-			{ ...undoKey, say: "press Cmd+Z: the factory reset is one undo step, the machine is empty again",
-				machine: () => { const n = namedKits(), t = trigPatterns(); return ok(!n.length && !t.length, `${n.length} kits named, ${t.length} patterns with trigs`); }, within: 400000 }
+			/* the page shows the undone state at once; the machine takes minutes to be sent it. The journey ends when SYSEX RECV is
+			   quiet again, or the next journey (mm-engine-reset-empty, full run 42636294236) starts on a busy machine */
+			{ ...undoKey, say: "press Cmd+Z: the factory reset is one undo step, the machine is empty again and SYSEX RECV is quiet",
+				machine: () => { const n = namedKits(), t = trigPatterns(), r = machine().recv, quiet = !r || r.state === "waitingUser" || (r.state === "idle" && !r.sending);
+					return ok(!n.length && !t.length && quiet, `${n.length} kits named, ${t.length} patterns with trigs, SYSEX RECV ${r?.state} ${r?.sending || 0} sending`); }, within: 600000 }
 		],
 		async tidy() { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; }
 	};
