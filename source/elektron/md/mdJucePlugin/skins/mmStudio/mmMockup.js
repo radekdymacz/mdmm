@@ -610,7 +610,7 @@ const MM_SEAM={
   "ownsClock","engineLabels","notes","start","commit","intent","library","undo","redo","history","togglePlay",
   "selectPattern","kit","tempo","mutes","keyMode","record","chain","chainClear","seqMode","loadSong","saveSong","waiting",
   "sendNow","playKey","keyUp","transport","noteOn","noteOff","joy","learning","learnTarget","learnBind","learnAdd","learnInvert","learnRemove","modulators",
-  "engine","chooseRom","removeRom","romManage","syxChoose","syxExport","syxStart","syxStop","syxPlace","syxExportInfo","machineReset","revealRom",
+  "engine","chooseRom","removeRom","useRom","romManage","syxChoose","syxExport","syxStart","syxStop","syxPlace","syxExportInfo","machineReset","revealRom",
   "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","mixMeters","globalSlot","memory","follow","autoReceive",
   "waveList","waveChoose","waveLoad","waveRename","waveCopy","waveErase","waveUndo","waveSendNow"],
  "view":[
@@ -675,8 +675,9 @@ const MM_SEAM={
      syxChoose(), syxExport(request), syxStart(kinds, skip, {placeAt, checkOnly, readBack}), syxStop(), syxPlace(placeAt), syxExportInfo(),
      machineReset(how)   SysEx import and export (P7, B-019; 0.6: SPECIFIC place, VERIFY ONLY, kinds and ranges, Reset machine…): the host's file
                                       dialogs; the preview and progress come back through MMView
-     removeRom(info)   REMOVE in the LOAD ROM card
-     romManage()   LOAD ROM in the engine menu (a host shows which firmware runs, REPLACE and REMOVE; none: the start-up card)
+     removeRom(info)   REMOVE in the LOAD ROM card (moves the image to the "removed" folder; nothing is deleted)
+     useRom(name)   Use <name> in the LOAD ROM card: this instance runs that image of the ROM folder
+     romManage()   LOAD ROM in the engine menu (a host shows which firmware runs, ADD, USE and REMOVE; none: the start-up card)
      follow()       I-003: the engine menu's FOLLOW PLAYED TRACK on / off; the state comes back with MMView.setFollow, and the
                                       host selects the track a MIDI controller played with MMView.selectTrack
      autoReceive()  I-070: the engine menu's AUTO RECEIVE on / off; the state comes back with MMView.setAutoReceive
@@ -2496,6 +2497,7 @@ const Boot = (() => {
  <p class="bootline" id="bootline">Keys work when the start-up animation ends.</p>
  <div class="bootrom" id="bootrom" hidden>
   <p class="bootcur" id="bootcur" hidden></p>
+  <p class="bootpick" id="bootpick" hidden></p>
   <button class="bootzone" data-bootrom="choose" aria-describedby="bootres"><b id="bootzone"></b><span>Click here to choose the file. The editor checks it and copies it into its ROM folder.</span></button>
   <p class="bootres" id="bootres" role="status"></p>
   <p class="bootpriv">The firmware stays on this computer: the editor checks it and copies it into its ROM folder, and sends it nowhere. <button class="linkkey" data-bootrom="folder">Show the ROM folder</button> <button class="linkkey" data-bootrom="recheck">Check again</button> <button class="linkkey" data-bootrom="remove" hidden>Remove the ROM</button> <button class="linkkey" data-bootrom="close" hidden>Close</button></p>
@@ -2543,17 +2545,21 @@ const Boot = (() => {
 		card.querySelector('[data-bootrom="remove"]').hidden = !m;
 		card.querySelector('[data-bootrom="close"]').hidden = !m;
 	};
-	function leaveManage() { if (!manage) return; manage = null; card.classList.remove("manage"); $b("bootcur").hidden = true; links(false); }
+	function leaveManage() { if (!manage) return; manage = null; card.classList.remove("manage"); $b("bootcur").hidden = true; $b("bootpick").hidden = true; links(false); }
 	/* LOAD ROM with a firmware running: the same card, the current image on one line */
 	function showInstalled(o) {
 		machine = o.machine || machine; manage = o; shown = "manage";
 		card.classList.remove("out", "ind"); card.classList.add("rom", "manage");
 		$b("boott").textContent = `${machine} firmware`;
 		$b("bootline").hidden = true; $b("bootrom").hidden = false;
-		$b("bootzone").textContent = `Choose another ${romName(machine)} ROM (.bin or .zip) to replace it`;
+		$b("bootzone").textContent = `Choose another ${romName(machine)} ROM (.bin or .zip) to add it`;
 		const cur = $b("bootcur");
 		cur.innerHTML = `<b>${esc(o.os)}</b><span class="bootfile" title="${esc(o.name)}${o.inFolder ? "" : " (outside the editor's ROM folder)"}">${esc(o.name)}</span><i>${(o.size / 1048576).toFixed(1)} MiB</i>`;
 		cur.hidden = false;
+		/* several images in the ROM folder: this instance runs the one chosen here (kept with the project) */
+		const pick = $b("bootpick"), others = (o.roms || []).filter(n => n !== o.name);
+		pick.innerHTML = others.length ? `<span>Also in the ROM folder:</span> ` + others.map(n => `<button class="linkkey" data-bootuse="${esc(n)}" title="Run ${esc(n)} in this instance">Use ${esc(n)}</button>`).join(" ") : "";
+		pick.hidden = !others.length;
 		$b("bootres").textContent = ""; $b("bootres").className = "bootres";
 		links(true);
 		card.hidden = false;
@@ -2593,6 +2599,8 @@ const Boot = (() => {
 		if (r.ok) { $b("boott").textContent = `Starting the ${machine}…`; t0 = performance.now(); }
 	}
 	card.addEventListener("click", e => {
+		const u = e.target.closest("[data-bootuse]");
+		if (u && Boot.host && Boot.host.useRom) { Boot.host.useRom(u.dataset.bootuse); return; }
 		const k = e.target.closest("[data-bootrom]"); if (!k || !Boot.host) return;
 		const a = k.dataset.bootrom;
 		if (a === "choose") Boot.host.chooseRom(); else if (a === "recheck") Boot.host.recheck(); else if (a === "folder") Boot.host.revealRom();
@@ -7101,7 +7109,7 @@ Syx.host={machine:"Monomachine",factory:false,
 Boot.host={chooseRom:()=>{if(HOST.chooseRom)return HOST.chooseRom();Boot.rom({ok:true,text:"\u2713 Monomachine OS 1.32B found (example)"});setTimeout(()=>startEngine("emu"),900)},
  revealRom:()=>{if(HOST.revealRom)return HOST.revealRom();toast("In the plug-in: the ROM folder opens in Finder.")},
  recheck:()=>{if(HOST.recheck)return HOST.recheck();startEngine("emu")},
- removeRom:i=>{if(HOST.removeRom)return HOST.removeRom(i)},say:t=>toast(t)};
+ removeRom:i=>{if(HOST.removeRom)return HOST.removeRom(i)},useRom:n=>{if(HOST.useRom)return HOST.useRom(n)},say:t=>toast(t)};
 /* the editor's menu (a host's): right-click anywhere the page has no menu of its own (DeskMenu.wantsEditor, I-008) */
 document.addEventListener("contextmenu",e=>{if(!HOST.menu||!DeskMenu.wantsEditor(e))return;e.preventDefault();HOST.menu(e.clientX,e.clientY)});
 window.MMView={
