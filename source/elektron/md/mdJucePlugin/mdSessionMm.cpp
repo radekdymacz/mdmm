@@ -1,4 +1,5 @@
 #include "mdDeskSession.h"
+#include "mdFactoryReset.h"
 #include "mdSessions.h"
 
 #include "mdController.h"
@@ -211,8 +212,17 @@ namespace mdJucePlugin
 		// I-070 (AUTO RECEIVE): the processor captures the host's Monomachine dumps while the switch is on and the engine is
 		// the emulator (HW MIDI: the host's MIDI in is the real machine's own MIDI out); what it captured goes to the SysEx
 		// work, which sends it the way IMPORT SYSEX does (SYSEX RECV).
+		// Reset machine… > Factory reset (doc/release/0.9.1/mm-factory-reset.md): from a second Monomachine started from
+		// the user's own ROM (mdFactoryReset.h); over a cable the dumps go to the real machine on its SYSEX RECV.
+		void machineReset(const Value& _message) override
+		{
+			m_factory.request(desk(), syx(), _message, [this](const Value& _m, const bool _ok, const std::string& _n) { reply(_m, _ok, _n); },
+				[this](const Value& _m) { toPage(_m); });
+		}
+
 		void stepModel() override
 		{
+			m_factory.step(desk(), syx(), sessionNowMs(), [this](const Value& _m) { toPage(_m); });
 			auto& p = processor();
 			p.setHostDumpCapture(desk().autoReceive() && !record().profile.wire);
 			std::vector<uint8_t> dump;
@@ -230,6 +240,7 @@ namespace mdJucePlugin
 		}
 
 		uint32_t m_hostPassedSeen = 0;
+		FactoryReset<mmDesk::Desk> m_factory{md::MachineModel::Monomachine, "Monomachine", "MM OS 1.32B"};
 	};
 
 	std::unique_ptr<DeskSession> makeMmSession(AudioPluginAudioProcessor& _processor)

@@ -311,7 +311,7 @@ journey's name: `JOURNEY <name> left: <what> (at <char>: <was> -> <now>)`. For t
 ### A journey that cannot put its change back: `alone: true`
 
 An empty reset has no undo and no copy to keep, and a SysEx import of a whole file (the e2e run's fixture holds many kits, patterns and a global) writes more
-slots than the plug-in's clipboard and one undo step can hold. These journeys are marked `alone: true`: `md-engine-reset-empty`, `mm-engine-reset-empty` (page tier too),
+slots than the plug-in's clipboard and one undo step can hold. These journeys are marked `alone: true`: `md-engine-reset-empty`, `mm-engine-reset-empty` (page tier too), `mm-engine-reset-factory`,
 and on the firmware `md-lib-syx-import`, `md-lib-syx-import-mute`, `md-shots-import` and their `mm-` twins. The runners (`mdmm-page.mjs`, `mdmm-journeys.sh`, so `mdmm-e2e.sh`) start each in a
 page or an editor of its own, and in one page they play last. A journey earns the mark only when the product offers no way back (B-130: no undo for a SysEx import or an
 empty reset; the two-slot imports of `md-lib-syx-place` and `md-syx-running-reach` are kept with `keepTwo`, the rest cannot be).

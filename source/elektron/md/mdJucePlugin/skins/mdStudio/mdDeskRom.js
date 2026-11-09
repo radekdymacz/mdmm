@@ -62,7 +62,7 @@ Drop.host = { send: c => { const { op, ...args } = c; cmd(op, args); }, ask: (ht
 	hint: "Drop a ROM (.bin, .zip), a SysEx file (.syx), or samples (.wav, .aif) for the Sampler's ROM slots" };
 /* SysEx import and export: the host's file dialogs and document writes (the page never reads the file); 0.6: the
    import's place and VERIFY ONLY, the export's kinds and ranges, Reset machine… (empty, and factory from the ROM) */
-Syx.host = { machine: "Machinedrum", factory: true, choose: () => cmd("chooseSyx"),
+Syx.host = { machine: "Machinedrum", factory: true, samples: true, choose: () => cmd("chooseSyx"),
 	start: (kinds, skip, o = {}) => cmd("syxImport", Object.assign({ kinds, skip: skip || [] }, o.placeAt ? { placeAt: o.placeAt } : {}, o.checkOnly ? { checkOnly: true } : {}, o.readBack === false ? { readBack: false } : {})),
 	stop: () => cmd("syxCancel"), place: placeAt => cmd("syxPlace", { placeAt }), exportInfo: () => cmd("syxExportInfo"),
 	exportSave: req => cmd("syxExport", req), reset: how => cmd("machineReset", { how }),

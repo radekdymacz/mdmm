@@ -160,7 +160,7 @@ function(mdmm_add_lib_tests _dir)
 
 	# MM-P2 Monomachine Editor smoke test: mmDesk::Desk against MM OS 1.32B firmware
 	# (SYSEX RECV session, pattern/kit/song delivery, queue). Manual: needs a ROM.
-	add_executable(mmDeskFirmwareTest ${_dir}/mmDeskFirmwareTest.cpp ${_dir}/mdFirmwareSession.h)
+	add_executable(mmDeskFirmwareTest ${_dir}/mmDeskFirmwareTest.cpp ${_dir}/mdFirmwareSession.h ${_dir}/../mdJucePlugin/mdFactorySource.cpp)
 	target_link_libraries(mmDeskFirmwareTest PRIVATE mdLib mmDesk deskWire)
 	target_compile_definitions(mmDeskFirmwareTest PRIVATE MMDESK_SCHEMA="${_dir}/../../../../doc/modern-ux/mm-data-contract.schema.json"
 		MMDESK_INTENT_CASES="${_dir}/../../../../doc/modern-ux/intent-cases.json")
@@ -171,6 +171,10 @@ function(mdmm_add_lib_tests _dir)
 	set_tests_properties(mmDeskFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
 	add_test(NAME mmEmptyResetFirmwareTest COMMAND mmDeskFirmwareTest --env emptyreset)
 	set_tests_properties(mmEmptyResetFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
+	# 0.9.1 (doc/release/0.9.1/mm-factory-reset.md, MM-318): the factory data from a second machine, the Factory reset,
+	# B-175 on the true factory K01, and undo
+	add_test(NAME mmFactoryResetFirmwareTest COMMAND mmDeskFirmwareTest --env factoryreset)
+	set_tests_properties(mmFactoryResetFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 2400)
 	# I-070 (doc/release/0.9/mm-auto-receive.md): AUTO RECEIVE: a kit dump from MIDI in, dropped raw, landed through SYSEX RECV
 	add_test(NAME mmAutoReceiveFirmwareTest COMMAND mmDeskFirmwareTest --env autoreceive)
 	set_tests_properties(mmAutoReceiveFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 900)
