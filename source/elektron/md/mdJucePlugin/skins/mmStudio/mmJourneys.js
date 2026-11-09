@@ -2438,7 +2438,7 @@ const MmJourneys = (() => {
 		name: "mm-engine-reset-factory", alone: true, proves: ["MM-318"],
 		needs: () => window.gmDev ? "a second machine from the ROM: the plug-in only" : null,
 		steps: [
-			{ say: "choose RESET MACHINE…, Empty reset…, Clear everything: the machine is empty first", act: async (u, c) => { c.g0 = JSON.stringify(I().doc("global", machine().global?.current ?? 0)); await u.pick("engsel", "reset"); await until(dlgShown, 3000); u.click(dlgButton("Empty reset…")); await until(() => !!dlgButton("Clear everything"), 3000); u.click(dlgButton("Clear everything")); },
+			{ say: "choose RESET MACHINE…, Empty reset…, Clear everything: the machine is empty first", act: async (u, c) => { c.g0 = JSON.stringify(I().doc("global", machine().global?.current ?? 0)); c.named0 = [...Array(128).keys()].map(k => [k, (kitName(k) || "").trim()]).filter(([, n]) => n); await u.pick("engsel", "reset"); await until(dlgShown, 3000); u.click(dlgButton("Empty reset…")); await until(() => !!dlgButton("Clear everything"), 3000); u.click(dlgButton("Clear everything")); },
 				screen: () => ok(/Empty reset/.test($1("#syxpop .cap")?.textContent || "") && /cleared/.test($1("#syxpop .syxsum")?.textContent || ""), "panel: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
 				machine: () => { const n = namedKits(), t = trigPatterns(); return ok(!n.length && !t.length, `${n.length} kits named, ${t.length} patterns with trigs`); }, within: 400000 },
 			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") },
@@ -2456,7 +2456,12 @@ const MmJourneys = (() => {
 			   quiet again, or the next journey (mm-engine-reset-empty, full run 42636294236) starts on a busy machine */
 			{ ...undoKey, say: "press Cmd+Z: the factory reset is one undo step, the machine is empty again and SYSEX RECV is quiet",
 				machine: () => { const n = namedKits(), t = trigPatterns(), r = machine().recv, quiet = !r || r.state === "waitingUser" || (r.state === "idle" && !r.sending);
-					return ok(!n.length && !t.length && quiet, `${n.length} kits named, ${t.length} patterns with trigs, SYSEX RECV ${r?.state} ${r?.sending || 0} sending`); }, within: 600000 }
+					return ok(!n.length && !t.length && quiet, `${n.length} kits named, ${t.length} patterns with trigs, SYSEX RECV ${r?.state} ${r?.sending || 0} sending`); }, within: 600000 },
+			/* the journey's own Empty reset is undone too: the machine ends as it began. Left empty, the guard's look after the
+			   journey would put the run's kits back itself (217 sends, minutes) while mm-engine-reset-empty started (full run 42653023212) */
+			{ ...undoKey, say: "press Cmd+Z again: the Empty reset is taken back, the kits the machine held are back and SYSEX RECV is quiet",
+				machine: c => { const off = (c.named0 || []).filter(([k, n]) => (kitName(k) || "").trim() !== n), r = machine().recv, quiet = !r || r.state === "waitingUser" || (r.state === "idle" && !r.sending);
+					return ok(!off.length && quiet, off.length + " of " + (c.named0 || []).length + " kits not back; SYSEX RECV " + r?.state + " " + (r?.sending || 0) + " sending"); }, within: 600000 }
 		],
 		async tidy() { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; }
 	};
