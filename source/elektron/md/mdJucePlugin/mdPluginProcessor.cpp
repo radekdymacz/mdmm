@@ -523,6 +523,9 @@ namespace mdJucePlugin
 		getController();
 		// B-121: the Monomachine holds notes (and arpeggiates them): the host's Stop lets them go too
 		getPlugin().setNotesOffOnHostStop(m_model == md::MachineModel::Monomachine);
+		// B-210: on the Monomachine the host's Stop ends in the panel's STOP (mdSessionMm.cpp): its Play after it is Start,
+		// so a song just loaded plays from row 1 (the song position would start the row that holds the host's position)
+		getPlugin().setHostPlayStartsAfterStop(m_model == md::MachineModel::Monomachine);
 		// B-037: the machine's own MIDI out to the host (mdMachineMidiOut.h)
 		machineMidiOut::route(getMidiRoutingMatrix());
 		setRamRecordingMode(getRamRecordingMode());
@@ -1072,6 +1075,9 @@ namespace mdJucePlugin
 
 	bool AudioPluginAudioProcessor::consumeMidiIn(const synthLib::SMidiEvent& _ev)
 	{
+		// B-210: the host's MIDI Stop still goes to the firmware (below); the session reads the count
+		if(_ev.source == synthLib::MidiEventSource::Host && _ev.sysex.empty() && _ev.a == synthLib::M_STOP)
+			m_hostMidiStops.fetch_add(1, std::memory_order_acq_rel);
 		// I-070 (AUTO RECEIVE): a Monomachine user-data dump from the host, while the session captures them, goes to the
 		// session (it sends it the way IMPORT SYSEX does: SYSEX RECV), not raw to the firmware, which drops it outside
 		// SYSEX RECV. An inbox that is full or busy lets it go raw, as with the switch off.

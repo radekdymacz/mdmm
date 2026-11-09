@@ -357,7 +357,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 |---|---|---|---|---|---|---|---|
 | Song mode 1-73 | Enter song mode | Mode switch | ✅ | Song > SONG key; LCD PLAY |  | 2 | pass (e2e-mm-song-playhead) |
 | Song mode 1-73 | 24 songs, 200 rows | Capacity | ✅ | Songs column (24 slots), 200 cells |  | 1 | pass (e2e-mm-song-picker-load) |
-| Load song 1-73 | Load a song slot | LOAD SONG | ✅ | Songs column: select a slot, Load (Enter) | Only while stopped | 3 | pass (e2e-mm-song-playhead) |
+| Load song 1-73 | Load a song slot | LOAD SONG | ✅ | Songs column: select a slot, Load (Enter) | Only while stopped | 4 | pass (e2e-mm-song-playhead) |
 | Save song 1-74 | Save and name a song | SAVE SONG | ✅ | Songs column: Save (SAVE SONG 0x6D), Save to… with a name, Rename (F2) | Edits still go into the slot as dumps (SYSEX RECV); a name has 14 characters. | 1 | pass (e2e-mm-song-slots) |
 | Save song 1-74 | Copy, paste, clear, undo a song slot | Song slots | ✅ | Songs column: Copy, Paste, Clear, drag a slot onto another; Cmd+Z | Library slot ops songCopy, songPaste, songCopyTo, songClear, songRename; asks before writing over a song. | 1 | pass (e2e-mm-song-slots) |
 | Song play 1-75 | Play, pause, stop | Transport | ✅ | Play key: play, pause (⇧-click, ⇧Space), stop; in SONG mode as in pattern mode |  | 2 | stub-only (e2e-mm-top-pause-fail) |

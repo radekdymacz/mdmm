@@ -392,6 +392,8 @@ namespace mmDesk
 		m_steps = seen.next;
 		const bool stepped = seen.stepped;
 		m_playing = seen.playing;
+		if(m_playing)
+			m_paused = false;	// B-210: it plays on (the host's Continue, a key)
 		if(!m_playing && m_queuedPattern >= 0)
 			m_lastStatusMs = -1e9;	// stopped: LOAD PATTERN switches at once; status will say
 		pumpSequence(t);

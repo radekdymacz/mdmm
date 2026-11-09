@@ -30,13 +30,15 @@ On **PATTERN** the machine plays patterns and a pad click queues that pattern. O
 On the machine you press [PATTERN/SONG]. In the editor you can also click <PLAY> on the second line of the LCD, on every workspace: it reads PAT in pattern mode and SONG in song mode, and each click switches.
 
 ## LOAD SONG
-<!-- rows: MM-253 @76cf01 -->
+<!-- rows: MM-253 @014545 -->
 
 Loading a song makes it the song the machine plays in song mode, and the song the **Arrangement** shows. Its slot is lit in the **Songs** column, and the chip at the top of the column reads its number and name.
 
 1. Stop the machine. Press {key:play-stop} if it plays.
 2. Click a slot in the **Songs** column. The slot is selected. The machine still holds its song.
 3. Click **Load**, or press {key:song-slot-load}. The machine loads the song, and its slot is lit.
+
+A paused machine is not stopped, and it keeps its song: the editor says so and asks you to stop it first. In a DAW, the host's Stop (or a MIDI Stop from the DAW) stops the machine, so you can load a song after it, also with LOAD SONG SysEx from the DAW. The host's Play then plays the loaded song from row 1.
 
 After you edit the song in song mode, the editor loads the edited song itself. You do not load it by hand.
 

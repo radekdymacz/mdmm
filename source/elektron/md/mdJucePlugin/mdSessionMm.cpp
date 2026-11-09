@@ -17,6 +17,7 @@
 #include "elektronData/mmValidate.h"
 
 #include <deque>
+#include <optional>
 
 namespace mdJucePlugin
 {
@@ -227,9 +228,43 @@ namespace mdJucePlugin
 				log("auto receive: " + std::to_string(passed - m_hostPassedSeen) + " dump(s) went to the machine raw (the inbox was full or busy)");
 				m_hostPassedSeen = passed;
 			}
+			stepHostTransport();
+		}
+
+		// B-210: the host's Stop (its transport, synthLib::MidiClock) or a MIDI Stop from the host's MIDI in reached the
+		// firmware as MIDI Stop, a pause on the Monomachine: the desk makes it a real stop (the panel's STOP), so LOAD SONG
+		// works after it. A transport Stop the host has already played past is moot (its STOP would stop the new play).
+		void stepHostTransport()
+		{
+			auto& p = processor();
+			const auto& plugin = p.getPlugin();
+			const auto stops = plugin.hostTransportStops(), midiStops = p.hostMidiStops();
+			const bool plays = plugin.hostTransportPlaying();
+			if(!m_stopsSeen)
+			{
+				m_stopsSeen = stops;
+				m_midiStopsSeen = midiStops;
+				m_hostPlays = plays;
+				return;
+			}
+			const bool transportStop = stops != *m_stopsSeen && !plays, midiStop = midiStops != m_midiStopsSeen;
+			m_stopsSeen = stops;
+			m_midiStopsSeen = midiStops;
+			if(plays && !m_hostPlays)
+				desk().onHostPlay();
+			m_hostPlays = plays;
+			if(transportStop || midiStop)
+			{
+				log(std::string("host stop: ") + (midiStop ? "MIDI Stop from the host's MIDI in" : "the host's transport")
+					+ ": the panel's STOP where the machine takes MIDI transport");
+				desk().onHostStop();
+			}
 		}
 
 		uint32_t m_hostPassedSeen = 0;
+		std::optional<uint32_t> m_stopsSeen;	// B-210
+		uint32_t m_midiStopsSeen = 0;
+		bool m_hostPlays = false;
 	};
 
 	std::unique_ptr<DeskSession> makeMmSession(AudioPluginAudioProcessor& _processor)

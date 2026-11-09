@@ -201,6 +201,10 @@ function(mdmm_add_lib_tests _dir)
 		# B-121: the host's Stop lets go of a note held into a track (All Notes Off after MIDI Stop), judged by the output
 		add_test(NAME mmHostStopFirmwareTest COMMAND mmDeskFirmwareTest --env hoststop)
 		set_tests_properties(mmHostStopFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+		# B-210: LOAD SONG after the host's Stop (the panel's STOP after the host's MIDI Stop, a pause on the MM), the host's
+		# Play after it, LOAD SONG (0x6C) from the host, refused while paused
+		add_test(NAME mmHostStopSongFirmwareTest COMMAND mmDeskFirmwareTest --env hoststopsong)
+		set_tests_properties(mmHostStopSongFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 900)
 	endif()
 	# B-031 on the Monomachine: the backup from MM_SYX, the ROM from GEARMULATOR_MM_FIRMWARE_BIN; skipped without them.
 	# DEV-CYCLE: the Monomachine's intent cases (doc/modern-ux/intent-cases.json, "mm") through the desk to the firmware

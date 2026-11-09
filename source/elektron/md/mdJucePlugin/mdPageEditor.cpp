@@ -15,6 +15,7 @@
 
 #if MDMM_DIAGNOSTICS
 #include "mdDiagnostics.h"
+#include "elektronData/mmCommands.h"
 #include "elektronData/syxImport.h"
 #else
 namespace mdJucePlugin
@@ -165,6 +166,22 @@ namespace mdJucePlugin
 		{
 			namespace ed = elektronData;
 			const auto words = juce::StringArray::fromTokens(_spec, " ", {});
+			auto& processor = dynamic_cast<AudioPluginAudioProcessor&>(getProcessor());
+			// B-210 (mm-host-stop-song): "stop" is a MIDI Stop (0xFC), "loadsong <slot>" a Monomachine LOAD SONG (0x6C), each
+			// as the host's MIDI in sends it
+			if(words.size() >= 1 && words[0] == "stop")
+			{
+				processor.injectHostMidiForTest({0xfc});
+				m_page->log("hostsyx (journey): stop: MIDI Stop as host MIDI");
+				return;
+			}
+			if(words.size() >= 2 && words[0] == "loadsong")
+			{
+				const auto slot = static_cast<uint8_t>(words[1].getIntValue() & 31);
+				processor.injectHostMidiForTest(ed::mmLoadSong(slot));
+				m_page->log("hostsyx (journey): loadsong " + juce::String(static_cast<int>(slot)) + ": LOAD SONG as host MIDI");
+				return;
+			}
 			const juce::File f(juce::SystemStats::getEnvironmentVariable("GEARMULATOR_MDMM_SYX_FILE", {}));
 			juce::MemoryBlock mb;
 			if(words.size() < 2 || words[0] != "kit" || !f.existsAsFile() || !f.loadFileAsData(mb))
@@ -180,7 +197,7 @@ namespace mdJucePlugin
 				if(r.kind != ed::SyxKind::Kit || r.status != ed::SyxStatus::Ok)
 					continue;
 				const auto dump = ed::syxPlaced(ed::syxBytes(bytes, r), static_cast<uint8_t>(words[1].getIntValue() & 127));
-				dynamic_cast<AudioPluginAudioProcessor&>(getProcessor()).injectHostMidiForTest(dump);
+				processor.injectHostMidiForTest(dump);
 				m_page->log("hostsyx (journey): " + _spec + ": " + juce::String(static_cast<int>(dump.size())) + " bytes as host MIDI");
 				return;
 			}

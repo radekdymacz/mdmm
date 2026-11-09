@@ -236,6 +236,40 @@ namespace mmDesk
 		return ok("Every note off (CC 123 on each track's channel) and STOP.");
 	}
 
+	// B-210 (Discord 2026-11-09, Ableton Live with the machine following the host, SONG mode): after the host's Stop a LOAD
+	// SONG (the page's, or 0x6C from the DAW) was not taken and the host's Play went on with the old song from its row. The
+	// host's Stop reaches the firmware as MIDI Stop, a pause on the Monomachine (P1, P1b); the cued LOAD waits for a real
+	// stop as a cued pattern does (W12d: the panel's STOP makes it current, MIDI Stop does not). So the panel's STOP after
+	// it, as the editor's STOP key: the machine is stopped, the host's Play starts it again (Start, or the song position
+	// and Continue, which after a real stop start the row that holds the position; P1). Only where the machine took the
+	// Stop: TRANSPORT IN = ACCEPT in the active global (IGNORE: it runs on its own transport and keeps running). The
+	// emulator only: over HW MIDI the host's MIDI is the real machine's own, and no panel key reaches it.
+	void MmMachine::onHostStop(const Documents& _view)
+	{
+		if(!panelTransport() || !ready())
+			return;
+		const auto* g = activeGlobal(_view, m_curGlobal);
+		if(!g || g->transportIn != 1)
+			return;
+		if(pressWaiting(TransportWait::Stop))
+		{
+			m_pendingTransport.reset();
+			m_hostStopWaits = false;
+			return;
+		}
+		// the panel is busy (SYSEX RECV taking a dump): STOP goes once it is free, as the STOP key's
+		waitTransport(TransportWait::Stop);
+		m_hostStopWaits = true;
+	}
+
+	// The host plays again before its STOP could be pressed: the STOP would stop what the host just started
+	void MmMachine::onHostPlay()
+	{
+		if(m_hostStopWaits && m_pendingTransport == TransportWait::Stop)
+			m_pendingTransport.reset();
+		m_hostStopWaits = false;
+	}
+
 	// TEMPO, LEFT / RIGHT held: 10 % off while held, back at the release (_pct 0).
 	Outcome MmMachine::cmdNudge(const Value& _m, const Documents&)
 	{

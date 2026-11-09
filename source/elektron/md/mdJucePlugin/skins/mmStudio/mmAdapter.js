@@ -73,6 +73,19 @@
 	const globalNow = () => docs().globals[cur("global")];
 	/* the song the Song workspace edits (MM-P4): any of the 24; null = the machine's current one */
 	let songEdit = null;
+	/* B-210: a LOAD SONG the machine has not shown yet {slot, until}: its toast waits for the machine document */
+	let songLoad = null;
+	const SONG_LOAD_MS = 3000;
+	function songLoaded() {
+		if (!songLoad) return;
+		const name = n => `S${String(n + 1).padStart(2, "0")}`;
+		if (cur("song") === songLoad.slot) V().toast(`${name(songLoad.slot)} is the machine's song now.`);
+		else if (Date.now() >= songLoad.until)
+			V().toast(`The machine kept ${cur("song") == null ? "its song" : name(cur("song"))}: it did not load ${name(songLoad.slot)}. `
+				+ "It loads a song only while stopped (paused is not stopped): press STOP, then load it again.");
+		else return;
+		songLoad = null;
+	}
 	const songSlot = () => songEdit ?? cur("song");
 	/* B-030: the plug-in's "host" message (a DAW's tempo); the plug-in's, so it stays when the engine changes */
 	let hostTempo = null;
@@ -154,6 +167,7 @@
 		const old = slotIn(prev, "pattern");
 		if (old != null && old !== cur("pattern")) setSlotPattern(old);	// the pattern that played goes back to the library
 		if (slotIn(prev, "song") !== cur("song") && songEdit === cur("song")) songEdit = null;
+		songLoaded();
 		if ((d.pattern?.queued ?? null) !== (prev?.pattern?.queued ?? null)) libDirty = true;
 		/* whether the machine takes input (as the MD page gates: machine.input, not a lifecycle
 		   guess) -- playing is telemetry's only, never the machine document's (P6) */
@@ -184,6 +198,7 @@
 		DOCS = noDocs();
 		machine = null;
 		songEdit = null;
+		songLoad = null;
 		clip = null;
 		Overlay.clear();
 		last.record = null;
@@ -532,7 +547,14 @@
 		},
 		loadSong(slot) {
 			songEdit = null;
-			send({ op: "loadSong", s: slot }, { onResult: r => V().toast(r.ok ? `S${String(slot + 1).padStart(2, "0")} is the machine's song now.` : r.errors[0]) });
+			/* B-210: the toast says the song is loaded only once the machine's status shows it (the core asks for it
+			   with LOAD SONG); a machine that kept its song (paused: MIDI Stop is a pause on the Monomachine) is said so */
+			send({ op: "loadSong", s: slot }, { onResult: r => {
+				if (!r.ok) { V().toast(r.errors[0]); return; }
+				songLoad = { slot, until: Date.now() + SONG_LOAD_MS };
+				setTimeout(songLoaded, SONG_LOAD_MS + 50);
+				songLoaded();
+			} });
 		},
 		/* 0.6: SAVE SONG, the song the machine holds into its slot (the core asks first when the desk's edits are not
 		   loaded yet, and offers to load them) */

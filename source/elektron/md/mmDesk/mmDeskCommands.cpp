@@ -152,6 +152,7 @@ namespace mmDesk
 
 	void MmMachine::waitTransport(const TransportWait _w)
 	{
+		m_hostStopWaits = false;	// the caller says when it is the host's
 		m_pendingTransport = _w;
 		m_pendingTransportMs = waitClock();
 	}
@@ -161,23 +162,27 @@ namespace mmDesk
 	// before; the step watch follows what was pressed.
 	bool MmMachine::pressWaiting(const TransportWait _w)
 	{
+		bool pressed = false;
 		switch(_w)
 		{
-		case TransportWait::Play: return pressTransportKeys({Key::Play});
-		case TransportWait::Stop: return pressTransportKeys({Key::Stop});
-		case TransportWait::Panic: return pressKeys({Key::Stop, Key::Stop});
+		case TransportWait::Play: pressed = pressTransportKeys({Key::Play}); break;
+		case TransportWait::Stop: pressed = pressTransportKeys({Key::Stop}); break;
+		case TransportWait::Panic: pressed = pressKeys({Key::Stop, Key::Stop}); break;
 		case TransportWait::Pause:
 			if(!pressKeys({Key::Play}))
 				return false;
 			m_steps = pausedByEditor(m_steps);
+			m_paused = true;
 			return true;
 		case TransportWait::Resume:
-			if(!pressKeys({Key::Play}))
-				return false;
-			m_steps = resumedByEditor(m_steps, now());
-			return true;
+			pressed = pressKeys({Key::Play});
+			if(pressed)
+				m_steps = resumedByEditor(m_steps, now());
+			break;
 		}
-		return false;
+		if(pressed)
+			m_paused = false;
+		return pressed;
 	}
 
 
@@ -213,7 +218,10 @@ namespace mmDesk
 	{
 		if(!m_profile.wire && m_pushes.anyBusyWithin(now(), g_transportSettleMs))
 			return false;
-		return pressKeys(_keys);
+		if(!pressKeys(_keys))
+			return false;
+		m_paused = false;	// B-210: PLAY goes on, STOP stops
+		return true;
 	}
 
 	// ---- machine commands ----
@@ -360,6 +368,9 @@ namespace mmDesk
 			return refuse("song 0-23");
 		if(m_playing)
 			return refuse("The machine loads a song only while stopped.");
+		// B-210: paused (the editor's pause) is not stopped: the firmware keeps its song
+		if(m_paused)
+			return refuse("The machine is paused, and it loads a song only while stopped: press STOP, then load the song.");
 		m_port.sendSysex(ed::mmLoadSong(static_cast<uint8_t>(s)));
 		if(s == m_curSong)
 			m_songReloadNeeded = false;

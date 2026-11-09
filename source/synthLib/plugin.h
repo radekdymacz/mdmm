@@ -159,6 +159,16 @@ namespace synthLib
 		// B-121: the host's Stop also sends All Notes Off on every channel (hostStopEvents, midiClock.h)
 		void setNotesOffOnHostStop(bool _on) { m_notesOffOnHostStop.store(_on, std::memory_order_release); }
 		bool notesOffOnHostStop() const { return m_notesOffOnHostStop.load(std::memory_order_acquire); }
+		// B-210: the host's transport as the clock follows it, for a reader on another thread: how often it stopped (its
+		// Stop, not a relocation: MidiClock), and whether it plays now. Counted only while the host's clock is on.
+		uint32_t hostTransportStops() const { return m_hostTransportStops.load(std::memory_order_acquire); }
+		bool hostTransportPlaying() const { return m_hostTransportPlaying.load(std::memory_order_acquire); }
+		void countHostTransportStop() { m_hostTransportStops.fetch_add(1, std::memory_order_acq_rel); }
+		// B-210: the host's Play after its Stop (or the first) is MIDI Start wherever the host stands, not the song position
+		// and Continue (the Monomachine: the song it holds plays from row 1, as after its own STOP). A relocation while
+		// playing keeps the song position. Off by default (the Machinedrum follows the host's position).
+		void setHostPlayStartsAfterStop(bool _on) { m_hostPlayStartsAfterStop.store(_on, std::memory_order_release); }
+		bool hostPlayStartsAfterStop() const { return m_hostPlayStartsAfterStop.load(std::memory_order_acquire); }
 		uint32_t getLatencyBlocks() const { return m_extraLatencyBlocks; }
 
 	private:
@@ -280,6 +290,9 @@ namespace synthLib
 		MidiClock m_midiClock;
 		std::atomic<bool> m_hostClockOn{true};
 		std::atomic<bool> m_notesOffOnHostStop{false};
+		std::atomic<uint32_t> m_hostTransportStops{0};	// B-210
+		std::atomic<bool> m_hostTransportPlaying{false};
+		std::atomic<bool> m_hostPlayStartsAfterStop{false};
 		bool m_hostClockWas = true;		// audio thread
 
 		uint32_t m_extraLatencyBlocks = 1;
