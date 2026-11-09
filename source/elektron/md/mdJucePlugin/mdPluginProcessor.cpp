@@ -523,6 +523,9 @@ namespace mdJucePlugin
 		getController();
 		// B-121: the Monomachine holds notes (and arpeggiates them): the host's Stop lets them go too
 		getPlugin().setNotesOffOnHostStop(m_model == md::MachineModel::Monomachine);
+		// B-210: on the Monomachine the host's Stop ends in the panel's STOP (mdSessionMm.cpp): its Play after it is Start,
+		// so a song just loaded plays from row 1 (the song position would start the row that holds the host's position)
+		getPlugin().setHostPlayStartsAfterStop(m_model == md::MachineModel::Monomachine);
 		// B-037: the machine's own MIDI out to the host (mdMachineMidiOut.h)
 		machineMidiOut::route(getMidiRoutingMatrix());
 		setRamRecordingMode(getRamRecordingMode());

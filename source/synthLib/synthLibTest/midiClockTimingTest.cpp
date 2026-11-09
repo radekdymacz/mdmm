@@ -95,6 +95,28 @@ namespace
 			"B-210: with the host's clock off nothing is counted");
 	}
 
+	// B-210: hostPlayStartsAfterStop (the Monomachine): the host's Play after its Stop (and the first) is Start wherever the
+	// host stands; a relocation while playing keeps the song position and Continue
+	void startsAfterStop()
+	{
+		Fixture f(48000);
+		f.plugin.setHostPlayStartsAfterStop(true);
+		f.block(128, 120, 4.0);
+		require(!f.device.events.empty() && f.device.events[0].status == M_START, "B-210: the first Play from beat 4 is Start");
+		f.device.events.clear();
+		f.block(128, 120, 8.0);
+		require(f.device.events.size() >= 3 && f.device.events[0].status == M_STOP && f.device.events[1].status == M_SONGPOSITION
+			&& f.device.events[2].status == M_CONTINUE, "B-210: a relocation while playing keeps the song position and Continue");
+		f.device.events.clear();
+		f.block(128, 120, 8.0, false);
+		f.device.events.clear();
+		f.block(128, 120, 12.0);
+		require(!f.device.events.empty() && f.device.events[0].status == M_START, "B-210: the Play after the host's Stop is Start");
+		Fixture md(48000);
+		md.block(128, 120, 4.0);
+		require(md.device.events.size() >= 2 && md.device.events[0].status == M_SONGPOSITION, "off (the Machinedrum): the song position");
+	}
+
 	void constantTempo(float rate, bool variable, double origin, uint32_t seconds)
 	{
 		Fixture f(rate);
@@ -180,6 +202,7 @@ int main()
 	bool failed = false;
 	auto run = [&](auto fn) { try { fn(); } catch(const std::exception& e) { std::cerr << e.what() << '\n'; failed = true; } };
 	run(startStop);
+	run(startsAfterStop);
 	run(seekAndTempo);
 	run(missingPositionAndFractionalStart);
 	for(float rate : {44100.0f, 48000.0f, 96000.0f})

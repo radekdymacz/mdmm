@@ -24,6 +24,7 @@ namespace synthLib
 				// B-210: the host's own Stop (a relocation stops and starts again, below): an editor may need more than
 				// MIDI Stop (the Monomachine: a pause), so it can tell
 				m_plugin.countHostTransportStop();
+				m_afterHostStop = true;
 			}
 			return;
 		}
@@ -68,7 +69,10 @@ namespace synthLib
 	{
 		m_nextClockTick = static_cast<int64_t>(std::ceil(_ppqPos * ClockTicksPerQuarter - 1e-9));
 		m_isPlaying = true;
-		if(_ppqPos <= 0)
+		// B-210: after the host's Stop a plug-in may want Start wherever the host stands (hostPlayStartsAfterStop)
+		const bool fromTop = _ppqPos <= 0 || (m_afterHostStop && m_plugin.hostPlayStartsAfterStop());
+		m_afterHostStop = false;
+		if(fromTop)
 			m_plugin.insertMidiEvent({MidiEventSource::Internal, M_START});
 		else
 		{

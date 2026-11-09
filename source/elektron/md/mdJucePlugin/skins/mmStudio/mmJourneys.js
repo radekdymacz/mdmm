@@ -4664,9 +4664,42 @@ const MmJourneys = (() => {
 			tidy: learnTidy
 		},
 	};
+	/* B-210 (Discord 2026-11-09): with the machine taking MIDI transport (TRANSPORT IN ACCEPT, as when it follows a DAW), a
+	   MIDI Stop from the DAW is a pause on the Monomachine, and the paused machine kept its song when LOAD SONG came, while the
+	   page said it was loaded. The plug-in now presses the panel's STOP after a host's MIDI Stop ("hostsyx stop": 0xFC as the
+	   host's MIDI in sends it, diagnostics builds), so LOAD SONG from the page and from the DAW ("hostsyx loadsong <slot>":
+	   0x6C) is taken, and the page's toast waits for the machine's status. */
+	const tIn = () => I().doc("global", machine().global?.current ?? 0)?.controlIn?.transport;
+	const hostStopSongJ = {
+		name: "mm-host-stop-song", tier: "machine", proves: ["MM-253"],
+		steps: [
+			go("song"),
+			{ say: "stop; TRANSPORT IN ACCEPT in the active global (the machine takes MIDI Stop, as when it follows a DAW)",
+				act: async (u, c) => { await stopAll(u); await until(() => I().slots("song").length >= 24, 20000);
+					c.cur = machine().song?.current ?? 0; c.to = (c.cur + 1) % 24; c.tr0 = tIn();
+					if (c.tr0 !== 1) Bridge.send({ op: "globalMidi", transportIn: true, force: true }); },
+				machine: () => ok(tIn() === 1, "TRANSPORT IN " + tIn()), within: 30000 },
+			{ say: "press PLAY: it plays", act: u => u.click("#play"), machine: () => ok(playing(), "not playing"), within: 10000 },
+			{ say: "the DAW sends MIDI Stop alone (its MIDI in): it stops", act: () => Bridge.log("hostsyx stop"),
+				machine: () => ok(!playing(), "still playing"), within: 10000 },
+			{ say: "select the next song slot and click Load: the machine's song is it, and the toast says so",
+				act: async (u, c) => { await sleep(1000); u.click(ssEl(c.to)); await sleep(300); u.click('[data-sa="load"]'); },
+				machine: c => ok(machine().song?.current === c.to, "machine song " + machine().song?.current + ", want " + c.to),
+				screen: () => ok(/is the machine's song now/.test($1("#toast")?.textContent || ""), "toast " + ($1("#toast")?.textContent || "")), within: 15000 },
+			{ say: "PLAY, the DAW's MIDI Stop, then LOAD SONG (0x6C) of the first song from the DAW: the machine takes it",
+				act: async (u, c) => { u.click("#play"); await until(playing, 10000); Bridge.log("hostsyx stop"); await until(() => !playing(), 10000);
+					await sleep(1000); Bridge.log("hostsyx loadsong " + c.cur); },
+				machine: c => ok(machine().song?.current === c.cur, "machine song " + machine().song?.current + ", want " + c.cur), within: 15000 }
+		],
+		async tidy(u, c) {
+			await stopAll(u);
+			if (c.cur != null && machine().song?.current !== c.cur) await loadSlot(u, c.cur);
+			if (c.tr0 != null && c.tr0 !== 1 && tIn() !== c.tr0) { Bridge.send({ op: "globalMidi", transportIn: !!c.tr0, force: true }); await sleep(2500); }
+		}
+	};
 	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowMarks, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixHeads, mixSolo, soloSaved, shiftMutes, routing, mixMeters, panTrim, msOff, msViews, railLamps, railLampsFwd,
-		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, followPlayed, seqKbLit, mixLevelReset, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, modeCycle, kitLoad, kitCopy, patGo, dialogEsc,
+		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, followPlayed, seqKbLit, mixLevelReset, typeValue, songRows, songPicker, songSlotsJ, hostStopSongJ, songKeysJ, songChain, modeCycle, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, laneDrawSlide, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
 		valueKeys, soundCopy, screenDrag, filterEnv, lfoLocksJ, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,

@@ -35,6 +35,7 @@ namespace synthLib
 		Plugin& m_plugin;
 
 		bool m_isPlaying = false;
+		bool m_afterHostStop = true;	// B-210: the next start follows the host's own Stop (or is the first)
 		int64_t m_nextClockTick = 0;
 		double m_expectedPpq = 0.0;
 		double m_lastBpm = 0.0;

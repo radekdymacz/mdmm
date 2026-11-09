@@ -1446,6 +1446,12 @@ namespace
 			r.tel.step.load() + 1, kept + 1);
 		check(r.tel.step.load() == held, "the cause: MIDI Stop holds the step (a pause, not a stop)");
 		check(kept == 22, "the cause: paused, the machine does not take LOAD SONG (song 23 stays), also after a second MIDI Stop");
+		// and the host's Play as the plug-in sent it before B-210 (the song position and Continue): the old song goes on
+		hostPlay(16, 600);
+		std::printf("  the host's Play (SPP 16 + Continue) after it: song %d row %d step %d\n", r.desk->currentSong() + 1, row() + 1, r.tel.step.load() + 1);
+		check(r.desk->currentSong() == 22 && r.tel.step.load() != held, "the cause: the host's Play goes on with the old song");
+		hostStop();
+		r.run(800);
 		// the user's way out: the editor's STOP key (the panel's STOP)
 		r.msg(R"({"op":"stop"})");
 		r.run(800);
@@ -1453,9 +1459,12 @@ namespace
 		loadSong(22);
 		check(r.desk->currentSong() == 22, "after the panel's STOP LOAD SONG is taken again (the user's way out)");
 
-		// 2. The fix: the host's Stop, then what the plug-in's session does (Desk::onHostStop: the panel's STOP)
-		hostPlay(0, 1000);
-		check(r.desk->machine().playing(), "the host plays song 23 again");
+		// 2. The fix: the host plays into row 2 and stops, then what the plug-in's session does (Desk::onHostStop: the panel's
+		// STOP); the page's LOAD SONG
+		hostPlay(0, 2600);
+		const int stoppedRow = row();
+		std::printf("  host plays song 23 to row %d step %d, then stops\n", stoppedRow + 1, r.tel.step.load() + 1);
+		check(r.desk->machine().playing() && stoppedRow == 1, "the host plays song 23 into row 2");
 		hostStop();
 		const auto keysBefore = r.keysPressed.size();
 		r.desk->onHostStop();
@@ -1464,60 +1473,56 @@ namespace
 			"onHostStop presses the panel's STOP");
 		loadSong(23);
 		check(ok() && r.desk->currentSong() == 23, "after the host's Stop LOAD SONG 24 is taken (the machine's song " + std::to_string(r.desk->currentSong() + 1) + ")");
-		// the host's Play from its start: Start, song 24 from row 1
+		// the host's Play after its Stop, wherever the host stands: Start (synthLib::Plugin::hostPlayStartsAfterStop, on for
+		// the Monomachine), the NEW song from row 1, not the old song's row 2
 		hostPlay(0, 1000);
-		std::printf("  host plays from its start: song %d row %d step %d\n", r.desk->currentSong() + 1, row() + 1, r.tel.step.load() + 1);
-		check(row() == 0 && moving(), "the host's Start after it plays song 24 from row 1");
-		// the host's Play from bar 2 (16 sixteenths): the song position and Continue start the row that holds it
-		hostStop();
-		r.desk->onHostStop();
-		r.run(800);
-		loadSong(22);
-		check(r.desk->currentSong() == 22, "LOAD SONG 23 after the next host Stop");
-		hostPlay(16, 1000);
-		std::printf("  host plays from bar 2 (SPP 16 + Continue): song %d row %d step %d\n", r.desk->currentSong() + 1, row() + 1, r.tel.step.load() + 1);
-		check(row() == 1 && moving(), "the song position and Continue after a real stop: song 23 from row 2 (where the host is)");
+		std::printf("  host plays again: song %d row %d step %d (pattern %d)\n", r.desk->currentSong() + 1, row() + 1, r.tel.step.load() + 1,
+			r.machinePattern + 1);
+		check(r.desk->currentSong() == 23 && row() == 0 && moving(), "the host's Play after it plays the new song 24 from row 1 (stopped in row "
+			+ std::to_string(stoppedRow + 1) + " of song 23)");
 
-		// 3. LOAD SONG (0x6C) from the DAW after the host's Stop, through the host's MIDI in
+		// 3. LOAD SONG (0x6C) from the DAW after the host's Stop, through the host's MIDI in: song 23
 		hostStop();
 		r.desk->onHostStop();
 		r.run(800);
 		{
 			synthLib::SMidiEvent e(synthLib::MidiEventSource::Host);
-			const auto load = ed::mmLoadSong(23);
+			const auto load = ed::mmLoadSong(22);
 			e.sysex.assign(load.begin(), load.end());
 			r.m.hardware().sendMidi(e);
 		}
-		for(int i = 0; i < 40 && r.desk->currentSong() != 23; ++i)
+		for(int i = 0; i < 40 && r.desk->currentSong() != 22; ++i)
 			r.run(100);
-		check(r.desk->currentSong() == 23, "LOAD SONG (0x6C) from the host after its Stop: song 24 (status " + std::to_string(r.desk->currentSong() + 1) + ")");
-
-		// 4. A MIDI Stop from the host's MIDI in while the host's clock plays (the plug-in counts it; the session calls
-		// onHostStop): the machine stops, the clock goes on, LOAD SONG is taken
+		check(r.desk->currentSong() == 22, "LOAD SONG (0x6C) from the host after its Stop: song 23 (status " + std::to_string(r.desk->currentSong() + 1) + ")");
 		hostPlay(0, 1000);
-		check(r.desk->machine().playing(), "the host plays song 24");
+		check(row() == 0 && moving(), "and the host's Play plays song 23 from row 1");
+
+		// 4. A MIDI Stop alone from the DAW (its MIDI in) while the host's clock runs (the plug-in counts it, the session calls
+		// onHostStop): the machine is stopped, not paused: LOAD SONG is taken, the clock alone does not start it
 		host(0xfc);
 		r.desk->onHostStop();
 		clocks(800);
-		check(!r.desk->machine().playing(), "a MIDI Stop from the host, then the panel's STOP: it stops while the clock goes on");
-		loadSong(22);
-		check(r.desk->currentSong() == 22, "LOAD SONG 23 after it");
+		check(!r.desk->machine().playing(), "a MIDI Stop from the DAW, then the panel's STOP: it stops while the clock goes on");
+		loadSong(23);
+		check(r.desk->currentSong() == 23, "LOAD SONG 24 after the DAW's MIDI Stop alone (truly stopped)");
 
 		// 5. Paused by the editor (pause: the panel's PLAY) is not stopped: LOAD SONG is refused with what to do
+		hostStop();
+		r.desk->onHostStop();
+		r.run(800);
 		hostPlay(0, 1000);
 		r.msg(R"({"op":"pause"})");
 		clocks(600);
 		const int pausedAt = r.tel.step.load();
 		clocks(400);
 		std::printf("  paused at step %d, 400 ms later %d (the host's clock running)\n", pausedAt + 1, r.tel.step.load() + 1);
-		r.msg(R"({"op":"loadSong","s":23})");
-		const auto refused = r.lastResult();
-		std::printf("  loadSong while paused: %s\n", ed::json::write(refused).c_str());
+		r.msg(R"({"op":"loadSong","s":22})");
+		std::printf("  loadSong while paused: %s\n", ed::json::write(r.lastResult()).c_str());
 		check(!ok(), "LOAD SONG while paused is refused (press STOP)");
 		r.msg(R"({"op":"stop"})");
 		clocks(800);
-		loadSong(23);
-		check(ok() && r.desk->currentSong() == 23, "after STOP it is taken");
+		loadSong(22);
+		check(ok() && r.desk->currentSong() == 22, "after STOP it is taken");
 		hostStop();
 		r.desk->onHostStop();
 		r.run(800);
