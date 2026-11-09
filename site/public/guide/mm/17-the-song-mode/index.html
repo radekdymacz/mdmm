@@ -81,6 +81,7 @@
 <p class="gd-ref">MM manual p.1-73</p>
 <p>Loading a song makes it the song the machine plays in song mode, and the song the <b class="gd-ui">Arrangement</b> shows. Its slot is lit in the <b class="gd-ui">Songs</b> column, and the chip at the top of the column reads its number and name.</p>
 <ol class="gd-steps"><li>Stop the machine. Press <kbd class="gd-key">[SPACE]</kbd> if it plays.</li><li>Click a slot in the <b class="gd-ui">Songs</b> column. The slot is selected. The machine still holds its song.</li><li>Click <b class="gd-ui">Load</b>, or press <kbd class="gd-key">[ENTER]</kbd>. The machine loads the song, and its slot is lit.</li></ol>
+<p>A paused machine is not stopped, and it keeps its song: the editor says so and asks you to stop it first. In a DAW, the host's Stop (or a MIDI Stop from the DAW) stops the machine, so you can load a song after it, also with LOAD SONG SysEx from the DAW. The host's Play then plays the loaded song from row 1.</p>
 <p>After you edit the song in song mode, the editor loads the edited song itself. You do not load it by hand.</p>
 <figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-mm-song-picker-load.webp" aria-label="Open the picture full size: The song slots"><img src="/guide/shots/e2e-mm-song-picker-load.webp" width="1440" height="924" alt="The song slots" loading="lazy"></a><figcaption>The song slots</figcaption></figure>
 <p>Each slot shows its number, its name and its rows. An empty slot reads EMPTY and is drawn faint. Press the arrow keys to move the selection while a slot has the focus.</p>
