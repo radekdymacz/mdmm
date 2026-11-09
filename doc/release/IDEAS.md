@@ -3,6 +3,18 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-072 · Shortcuts to the FX for users new to the Machinedrum and Monomachine
+
+- **From:** a user on [Discord #ideas, 2026-10-28](https://discord.com/channels/1557742798936084565/1557745223277215806/1565019086201553100): they had the hardware years ago and cannot find where to edit the FX. Users who do not know the hardware are more used to the usual layouts.
+- **Idea:** add familiar-layout shortcuts that open the kit's FX, without breaking the Machinedrum and Monomachine layout.
+- **Status:** recorded. Needs Radek's design choice. Not in 0.9.1 unless he says so.
+
+## I-071 · Several ROM files on the Mac
+
+- **From:** a user on [Discord #bugs, 2026-11-03](https://discord.com/channels/1557742798936084565/1557745221930848277/1567244133112750083). They copied the ROM file to keep a second memory to load and write their own SysEx into. The copy deleted the other file. Radek replied the same day that he will add support for several ROM files.
+- **Idea:** the editor can keep more than one ROM file in its folder, and a copy of one does not remove the other.
+- **Status:** being built for 0.9.1.
+
 ## I-070 · Monomachine: take a dump from the DAW without SYSEX RECV (AUTO RECEIVE)
 
 - **From:** a user by email, 2026-11-04 (Ableton Live 12, both editors as VST3, a Max for Live device that makes songs, patterns and kits as SysEx and sends them from a MIDI track). The Machinedrum Editor takes such a dump in one go; the Monomachine Editor ignores it unless the machine is on GLOBAL > FILE > SYSEX RECV, so today it is: save a .syx, IMPORT SYSEX, confirm. Asked for an option, off by default.
@@ -42,25 +54,25 @@
 
 - **From:** [Discord #general, 2026-10-20](https://discord.com/channels/1557742798936084565/1557742800060031060/1562211844960288821); window size and zoom not supplied.
 - **Idea:** make the MD ECHO, GATE BOX, MASTER and DYNAMIX sections more compact so Mix fits. For MM Perform > Keyboard > Multi Map, consider a separate dialog like GLOBAL so opening it does not make the whole page scroll.
-- **Status:** layout requests recorded. Need the viewport/zoom before defining a fit target; no clipping or inaccessible control was established by this report.
+- **Status:** planned for 0.9.1 (Radek, 2026-11-09); the user asked again on [2026-11-07](https://discord.com/channels/1557742798936084565/1557742800060031060/1568576159426543697). Earlier note: layout requests recorded. Need the viewport/zoom before defining a fit target; no clipping or inaccessible control was established by this report.
 
 ## I-063 · Consistent library dialogs, type sizes and skin colours
 
 - **From:** [Discord #general, 2026-10-20](https://discord.com/channels/1557742798936084565/1557742800060031060/1562211844960288821), plus the [standalone-icon follow-up, 2026-10-19](https://discord.com/channels/1557742798936084565/1557742800060031060/1561756732361933013).
 - **Requests:** give PATTERN and KIT choosers matching dimensions and 16 items per row; align track-list font sizes across Pattern/Kit and both editors; harmonise the whites/blacks across plates; on MD MKI use black rather than brown lettering and grey/black rather than blue buttons. Update the standalone icon's LED to match the changed display colour.
-- **Status:** visual requests recorded, not agreed colour values or verified layout regressions. Preserve intentional plate distinctions unless Radek chooses otherwise.
+- **Status:** planned for 0.9.1 (Radek, 2026-11-09); the user asked again on [2026-11-07](https://discord.com/channels/1557742798936084565/1557742800060031060/1568576159426543697). Earlier note: visual requests recorded, not agreed colour values or verified layout regressions. Preserve intentional plate distinctions unless Radek chooses otherwise.
 
 ## I-062 · Monomachine Perform keyboard follows the octave of played notes
 
 - **From:** [Discord #general, 2026-10-20](https://discord.com/channels/1557742798936084565/1557742800060031060/1562211802912268422).
 - **Idea:** show the octave containing a played note automatically, without repeatedly pressing the Perform keyboard's + / - buttons.
-- **Status:** request recorded. Distinguish incoming MIDI, computer keys and on-screen keys; decide how manual positioning and multiple held octaves interact. Uneven key widths are a separate bug (B-177).
+- **Status:** planned for 0.9.1 (Radek, 2026-11-09); the user asked again on [2026-11-07](https://discord.com/channels/1557742798936084565/1557742800060031060/1568576159426543697). Earlier note: request recorded. Distinguish incoming MIDI, computer keys and on-screen keys; decide how manual positioning and multiple held octaves interact. Uneven key widths are a separate bug (B-177).
 
 ## I-061 · Monomachine joystick hold and bounded random movement
 
 - **From:** [Discord #general, 2026-10-20](https://discord.com/channels/1557742798936084565/1557742800060031060/1562211802912268422).
 - **Idea:** hold the joystick at a chosen position; optionally move it randomly with adjustable speed and a chosen region of the field.
-- **Status:** feature request recorded; no implementation or persistence/automation behaviour chosen.
+- **Status:** planned for 0.9.1 (Radek, 2026-11-09); the user asked again on [2026-11-07](https://discord.com/channels/1557742798936084565/1557742800060031060/1568576159426543697). Earlier note: feature request recorded; no implementation or persistence/automation behaviour chosen.
 
 ## I-060 · Make the Monomachine plate a visual choice without hiding machines
 

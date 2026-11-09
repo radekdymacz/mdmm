@@ -4,6 +4,24 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-211 · Monomachine: RESET MACHINE has no "Factory reset…" (the Machinedrum has it) (open, being built for 0.9.1)
+
+- **From:** a user on Discord asked for a factory reset on 2026-10-19 ([#general](https://discord.com/channels/1557742798936084565/1557742800060031060/1561786927710076959)) and noted one fewer reset option on the Monomachine on 2026-10-20 ([#general](https://discord.com/channels/1557742798936084565/1557742800060031060/1562211802912268422)); asked again on 2026-11-07 ([#general](https://discord.com/channels/1557742798936084565/1557742800060031060/1568576159426543697)). First logged under I-024.
+- **What happens:** the Machinedrum Editor's RESET MACHINE menu has "Factory reset…". The Monomachine Editor's menu does not. `skins/shared/deskSyx.js` (lines 526-538) leaves the item out when `Syx.host.factory` is false, and the Monomachine page sets it false. Feature row MM-318 says "not-needed: editor holds no MM factory data".
+- **Should:** both editors can restore the factory kits, patterns and songs.
+- **Decision (Radek, 2026-11-09):** the Monomachine gets a real factory reset. It is built like the Machinedrum's factory source (`mdFactorySource.h`), from the user's own ROM. No factory data is shipped.
+- **Status:** open, being built for 0.9.1. MM-318 changes when it ships. May be what B-175 means.
+
+## B-210 · Monomachine VST3 in Ableton: Load song is ignored after the host plays and stops (open, being fixed for 0.9.1)
+
+- **From:** [Discord #bugs, 2026-11-09](https://discord.com/channels/1557742798936084565/1557745221930848277/1569284897464524941).
+- **Setup:** Monomachine Editor 0.9.0 VST3 (EMU OS 1.32B), macOS, Ableton Live 12.4.6, hosted in a Max for Live device (vst~). Monomachine GLOBAL tempo and transport follow the DAW (HOST). SONG mode.
+- **What happens:** (1) Select a song slot and press Load: it works. (2) Press Play in Live, then Stop. (3) Select another slot and press Load. The toast says "Sxx is the machine's song now", but the machine keeps the old song. The header shows the old song, and Play in Live continues it from the row where it stopped. LOAD SONG (0x6C) sent as SysEx from the DAW is ignored in the same way. Other SysEx (0x71 set status, 0x57 load pattern) works. Pressing the editor's Stop once makes Load work again. MIDI Stop (0xFC) sent to the plug-in does nothing. The Machinedrum Editor does not show this.
+- **Should:** when the host stops, the machine is really stopped. Load song works, or the toast says it did not.
+- **Code reading (not measured):** `synthLib/midiClock.cpp` (lines 19-21, 79-86): a host stop injects 0xFC (and CC 123 on the Monomachine, `mdPluginProcessor.cpp:525`). On the Monomachine, 0xFC is a pause (`doc/modern-ux/PROBES-manual-gaps.md`, P1). A host play sends Song Position Pointer and Continue (`midiClock.cpp`, lines 63-75), so the old row resumes. `mmDeskCommands.cpp` (lines 356-368), `cmdLoadSong`, checks only `m_playing` and returns ok without checking the status read-back. The toast is in `mmAdapter.js` (lines 533-535).
+- **Fix planned (0.9.1):** a host stop is a real stop; the toast appears only after the read-back confirms the song; Load song is refused while the machine is paused.
+- **Status:** open, being fixed for 0.9.1.
+
 ## B-209 · Machinedrum: single journey failures seen once on 0.9.0 (flakes, logged)
 
 - **`md-sound-revert-track`:** failed once during the 0.9.0 release runs (reported by the session that ran them). Its run is not among the release/0.9.0 and main reports read on 2026-11-05 (41838310348, 41838458425, 41895129624, 41916302331, 41937709263, 41967458126, nightlies 41761322366 and 41955803792), and it passed in every one of them. Not reproduced; logged as a flake.
@@ -310,13 +328,13 @@ where it came from, the setup, what happens, what should happen, status.*
 - **To check:** LFO page/parameter encoding and read-back, pending edits, and working-kit restoration (B-027). Do not assume these share a cause.
 - **Status:** Local B-027 read-back candidate applies to all LFO pages as well: pending live edits remain protected while queued. The mm-sound-lfo journey now checks LF3 FILTER after readback and a Kit/Pattern round trip. PAGE encoding/CC112 mapping are consistent in source. The B-027 production-port fix also resends cached LF3 values when explicitly restored; mdAutomationFirmwareTest covers that path. Exact reported setup not reproduced, CI pending.
 
-## B-177 · Monomachine Perform: keyboard key widths change at C6 (open)
+## B-177 · Monomachine Perform: keyboard key widths change at C6 (fixed in 0.9.0)
 
 - **From:** [Discord #general, 2026-10-20](https://discord.com/channels/1557742798936084565/1557742800060031060/1562211802912268422); version, OS, host, window size and zoom not stated.
 - **What happens:** changing octave with + / - reaches C6 and the keys become a different width from the other octaves.
 - **Code evidence:** `mmStudio/src/110-perform.js` clips `kbRange()` at MIDI note 127; `renderKb()` then divides the full width by the number of remaining white keys. A shortened range therefore widens its keys. Read-only inspection, not a rendered reproduction.
 - **Should:** preserve key widths at the top of the MIDI range and make unavailable space clear. Auto-following a played note's octave is a separate request (I-062).
-- **Status:** Local fix, awaiting CI: keyboard width uses the full four-octave geometry even when note 127 clips the last range. Multi-map bands and split-point dragging use the same geometry; no note above 127 is created. mmKeysTest covers equal widths at C3/C6 and the playable top range.
+- **Status:** fixed in 0.9.0 (commit e3e029428, 2026-10-21, on `main`; in tag `mdmm-v0.9.0`): keyboard width uses the full four-octave geometry even when note 127 clips the last range. Multi-map bands and split-point dragging use the same geometry; no note above 127 is created. mmKeysTest covers equal widths at C3/C6 and the playable top range.
 
 ## B-176 · Monomachine: a new kit starts AMP VOL at 100, reported hardware default is 64 (fixed in 0.9)
 
@@ -335,7 +353,7 @@ where it came from, the setup, what happens, what should happen, status.*
   - **Firmware test added (2026-10-28, awaiting CI):** `mmNewKitDefaultsFirmwareTest` (`mmDeskFirmwareTest --env newkit`, `newKitDefaults`) sends the firmware ASSIGN MACHINE with its init flag (0x5B, init 1) for every machine in the table on track 1 and reads the working kit from memory before and after. It prints one `NEWKIT <machine> (id) <PAGE> fw=... ed=... was=... marks=...` line per page (raw bytes, signed 0 shows as 64; marks: `=` the firmware left the byte alone, `.` it wrote the editor's value, `!` it wrote another value) plus a level line, and fails per machine listing each `PAGE.PARAM fw N ed M`. The editor side is `mmDesk::machineStartPages` (the `synDefaults` and `g_neutralPages` code). It decides only what the firmware writes: a byte it leaves alone (`=`) says nothing about the default, so if init 1 does not touch AMP, FLT, EFX or LFO pages, the track-page numbers of the list (AMP VOL 64 and the rest) stay unconfirmed by this route. No default was changed: nothing in the ROM data or earlier firmware logs gives these values with confidence (the passing logs print nothing, and B-166 found that a machine change leaves the AMP page as it was). Two list items already agree with measured firmware behaviour (PCH2-4 OFF = 63, B-151; BOFS and WOFS 0 shown = 64, B-148). Read the failure lines of the CI run, then change `DEFV`, `synDefaults`, `g_neutralPages` and `synDefault` and the intent cases together.
   - **Next step (CI):** extend `mmEmptyResetFirmwareTest` (or a focused firmware case) to load a kit position that was never saved and read the firmware's own defaults for all tracks and every machine, then compare with this list; change `DEFV`, `synDefaults` (`40-data.js`, `50-state.js`) and `g_neutralPages`, `synDefault` (`mmDeskEdit.cpp`) together, with the intent cases.
 
-## B-175 · Monomachine: Empty Reset leaves K01 SUPERWAVES unchanged (closed, not reproduced; stays so for 0.9.0, Radek 2026-11-04)
+## B-175 · Monomachine: Empty Reset leaves K01 SUPERWAVES unchanged (reopened 2026-11-09)
 
 - **From:** [Discord #general, 2026-10-20](https://discord.com/channels/1557742798936084565/1557742800060031060/1562211802912268422); exact version, OS and host not stated.
 - **What happens:** Empty Reset clears A01, the other patterns and the remaining kits, but K01 SUPERWAVES retains its factory machines and parameter values.
@@ -343,6 +361,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **To reproduce:** reset with K01 active and with another kit active; read back slot 0 and the working kit, switch away/back and reload the session. Distinguish a skipped slot from a stale working kit or stale display. The reporter asks for all-zero parameters; that is not accepted as the hardware default without checking (B-176 covers VOL separately).
 - **Status:** Open; no production reset change without a confirmed cause. Source includes all 128 kit slots, including K01. A new firmware case exercises the actual reset coordinator and compares stored K01, the working kit and switching away/back. CI has not run yet.
 - **Found (2026-11-01):** the editor's Empty Reset does clear K01. `mmEmptyResetFirmwareTest` runs the real reset with K01 active and with K06 active, then compares stored K01, the desk's working kit and the firmware's working kit with the empty kit, also after K02 and back. It passes on CI. So the report is not reproduced: it may come from an older version, a stale screen or another reset path. Closed (Radek, 2026-11-01): not reproduced; the reporter did not send more. Reopen if it is seen again.
+- **Reopened (2026-11-09):** the same user asked again on [Discord #general, 2026-11-07](https://discord.com/channels/1557742798936084565/1557742800060031060/1568576159426543697), after 0.9.0 ("please don't forget these things"), as a reply to the 2026-10-20 report. Ask the user for the version and the steps. The missing Monomachine Factory reset (B-211) may be what they mean.
 - **Update (2026-10-28, firmware evidence):** the new test shows the firmware's own start values (see B-176; fixed in the editor tables). The table values are no longer in doubt; the open question here is only whether Empty Reset should leave K01 as the factory SUPERWAVES kit.
 - **Earlier note:** `mmNewKitDefaultsFirmwareTest` (see B-176) reads the firmware's own machine start values; it informs the values, not whether Empty Reset should keep K01 as SUPERWAVES.
 - **Tester list (2026-10-21):** the same tester sent a list of factory defaults per machine; it is not all zeros (e.g. AMP VOL 64, DEC 64, FX MIX 127, FM+ TONE 98). Compared with the editor's tables and recorded in B-176; no default was changed. Whether the reset should leave K01 as the factory SUPERWAVES kit is still the open question here, not the values.
