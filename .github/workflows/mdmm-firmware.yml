@@ -40,8 +40,7 @@ on:
         description: "Artifact (build-tree.tar.gz holding build/ and bin/plugins/) with firmware tests and diagnostics editors; empty: build here"
         type: string
         default: ""
-  schedule:
-    - cron: "30 2 * * *"   # after the nightly full suite (02:00 UTC); main only (schedules run on the default branch)
+  # No schedule since 2026-11-10 (Radek): the firmware tests run on his Mac (scripts/mdmm-full-gate.sh); a hand run stays.
 
 permissions:
   contents: read

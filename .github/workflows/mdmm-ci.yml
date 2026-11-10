@@ -144,7 +144,8 @@ jobs:
   firmware:
     name: 3 Firmware
     needs: [editors, core-deep]
-    if: ${{ !cancelled() && needs.editors.result == 'success' && (needs.core-deep.result == 'success' || needs.core-deep.result == 'skipped') && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')) }}
+    # by hand only (2026-11-10): a push has no macOS test tree; the firmware tests run on Radek's Mac or by hand here
+    if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && needs.editors.result == 'success' && (needs.core-deep.result == 'success' || needs.core-deep.result == 'skipped') && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')) }}
     permissions:
       contents: read
       id-token: write
@@ -157,7 +158,8 @@ jobs:
   packages:
     name: 4 Release dry run (installers)
     needs: [editors, core-deep, firmware]
-    if: ${{ !cancelled() && needs.editors.result == 'success' && (needs.core-deep.result == 'success' || needs.core-deep.result == 'skipped') && (needs.firmware.result == 'success' || (needs.firmware.result == 'skipped' && github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/heads/release/'))) && (startsWith(github.ref, 'refs/heads/release/') || inputs.packages == true) }}
+    # by hand only (2026-11-10): the installers need the macOS jobs, which a push does not run
+    if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && needs.editors.result == 'success' && (needs.core-deep.result == 'success' || needs.core-deep.result == 'skipped') && (needs.firmware.result == 'success' || (needs.firmware.result == 'skipped' && github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/heads/release/'))) && (startsWith(github.ref, 'refs/heads/release/') || inputs.packages == true) }}
     permissions:
       contents: write
       actions: read

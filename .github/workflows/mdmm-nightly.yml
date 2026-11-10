@@ -43,7 +43,7 @@ jobs:
           # the Editors with ltcg: Windows builds what a release ships (/GL, /LTCG) on main, so main's sccache holds
           # those objects: a release branch reads main's cache (GitHub's cache scope), and its LTCG package found
           # 45 % of them before (doc/release/DEV-CYCLE.md). The tests job warms the plain (/GL-) objects beside it.
-          gh workflow run mdmm-editors.yml --repo "${GITHUB_REPOSITORY}" --ref main -f ltcg=true
-          echo "started mdmm-editors.yml (ltcg)"
+          gh workflow run mdmm-editors.yml --repo "${GITHUB_REPOSITORY}" --ref main -f ltcg=true -f macos=false
+          echo "started mdmm-editors.yml (ltcg, no macOS: Radek's Mac does that)"
           gh workflow run mdmm-core.yml --repo "${GITHUB_REPOSITORY}" --ref main
           echo "started mdmm-core.yml"

@@ -21,12 +21,20 @@ on:
         description: Keep the macOS test tree for the firmware stage (artifact macos-build-tree)
         type: boolean
         default: false
+      macos:
+        description: Run the macOS jobs (off on a push; macOS runs by hand or locally, doc/release/DEV-CYCLE.md)
+        type: boolean
+        default: true
   workflow_dispatch:
     inputs:
       ltcg:
         description: Windows with whole-program optimisation (/GL, /LTCG)
         type: boolean
         default: false
+      macos:
+        description: Run the macOS jobs (the nightly passes false; a hand run keeps them)
+        type: boolean
+        default: true
   push:
     branches:
       - "feat/windows-*"
@@ -76,6 +84,9 @@ concurrency:
 
 jobs:
   macos:
+    # Radek, 2026-11-10: macOS builds and tests run on his Mac (scripts/mdmm-full-gate.sh), not on every push. A push
+    # (also the feat/windows-* and feat/linux-* triggers above) and the nightly leave this job out; a hand run keeps it.
+    if: ${{ github.event_name != 'push' && inputs.macos != false }}
     uses: ./.github/workflows/mdmm-editors-macos.yml
     with:
       build_tree: ${{ inputs.build_tree || false }}

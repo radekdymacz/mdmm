@@ -6,6 +6,22 @@ Why: on 2026-10-07 and 10-08 there were 182 CI runs, and 0.3.5's Editors job ran
 same commit was tested on the release branch, again on main, again on the tag, and again in the local gate. A small
 fix paid the price of a release. This file is the rule since 0.4.0.
 
+## Since 2026-11-10: macOS runs locally, not on push
+
+Radek's decision (GitHub Actions cost). Workflow triggers after the change:
+
+| Workflow | Trigger | macOS jobs |
+|---|---|---|
+| `mdmm-ci.yml` | push to main and `release/**`; by hand | none on a push (the editors' macOS job, the firmware stage and the installer dry run need `workflow_dispatch`); a hand run does the whole chain |
+| `mdmm-editors.yml` | by hand, call from `mdmm-ci.yml`; push to `feat/windows-*`, `feat/linux-*` | `macos` job only when not a push and the `macos` input is not false |
+| `mdmm-nightly.yml` | schedule 02:00 UTC | dispatches `mdmm-editors.yml` with `macos=false` (Windows with LTCG) and `mdmm-core.yml` |
+| `mdmm-firmware.yml` | by hand, call; **no schedule** | all of it (hand only) |
+| `mdmm-editors-release.yml` | tag `mdmm-v*`, by hand, call | unchanged: tags still build the signed macOS packages; the tag needs a green hand-run `mdmm-ci.yml` on the commit, firmware included |
+
+The macOS builds, the macOS firmware ctests and the firmware E2E run on Radek's Mac: [LOCAL-GATE.md](LOCAL-GATE.md),
+`scripts/mdmm-full-gate.sh`, `scripts/mdmm-local-gate.sh`. The sections below that describe an automatic macOS or
+firmware run on push, on `main` or nightly describe the rule before this date.
+
 ## Dev loop: edit locally, validate on GitHub Actions
 
 Rule of 2026-10-18 (Radek); the short form is in [CLAUDE.md](../../CLAUDE.md) ("Development lifecycle").
