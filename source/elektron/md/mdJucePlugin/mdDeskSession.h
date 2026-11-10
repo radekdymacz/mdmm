@@ -34,6 +34,8 @@ namespace mdJucePlugin
 	class AudioPluginAudioProcessor;
 	pluginLib::Processor& pluginProcessorOf(AudioPluginAudioProcessor& _processor);
 	LearnRouter& learnRouterOf(AudioPluginAudioProcessor& _processor);
+	// B-205 (0.9.1): the host parameter Knob _index + 1 (null: none)
+	ControlKnob* controlKnobOf(AudioPluginAudioProcessor& _processor, size_t _index);
 	// MIDI Learn: the model without the parameters the audio thread cannot move (the controller's), and a track's plug-in
 	// parameter by name when it takes the realtime host-automation path (null: none, or not realtime)
 	MidiLearnCommands::Model learnModelOf(AudioPluginAudioProcessor& _processor, MidiLearnCommands::Model _model);
@@ -454,6 +456,11 @@ namespace mdJucePlugin
 			case Action::LearnCancel:
 			case Action::LearnRemove:
 			case Action::LearnInvert: m_learn.handle(row->handler.action, _message); break;
+			case Action::KnobTurn:
+				m_learn.knobTurned(static_cast<size_t>(_message.find("k")->asNumber()),
+					static_cast<uint8_t>(_message.find("v")->asNumber()));
+				reply(_message, true, "");
+				break;
 			default: break;	// the window's rows (actor Window, above)
 			}
 		}
@@ -606,7 +613,21 @@ namespace mdJucePlugin
 			};
 			h.firmwareCcMap = [this](const int _offset, const int _cc) { return firmwareCc(_offset, _cc); };
 			h.nowMs = [] { return sessionNowMs(); };
+			// B-205: the knob rows' CCs (a model without the setting: 21-28) and the host parameters Knob 1-8
+			h.knobCcs = [this] { return knobCcsOf(m_desk.get()); };
+			h.knob = [this](const size_t _index) { return controlKnobOf(processor(), _index); };
 			return h;
+		}
+
+		// The setup's knob rows' CCs when the model's desk has them (the Machinedrum's), else the default rows
+		template<typename D>
+		static auto knobCcsOf(const D* _desk) -> decltype(_desk->setup().knobCcs)
+		{
+			return _desk ? _desk->setup().knobCcs : deskCore::DeskSetup::g_defaultKnobCcs;
+		}
+		static std::array<uint8_t, LearnTable::Knobs> knobCcsOf(const void*)
+		{
+			return deskCore::DeskSetup::g_defaultKnobCcs;
 		}
 
 		// A learn target's plug-in parameter: the model's name for (page, index) on the track, when it takes the

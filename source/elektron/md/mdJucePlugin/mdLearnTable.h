@@ -35,9 +35,13 @@ namespace mdJucePlugin
 		static constexpr size_t MaxTargets = 128;
 		static constexpr size_t AnyChannel = 16;
 		static constexpr uint8_t None = 0xff;
+		static constexpr size_t Knobs = 8;
 
 		uint32_t generation = 0;		// the session's count of tables built
 		uint8_t count = 0;
+		// B-205 (0.9.1): the CC of each of the Control page's knob rows (the setup's knobCcs): a knob row is the any-channel
+		// chain of its CC. The host parameters Knob 1-8 drive it (LearnRouter::driveKnob) and follow it (takeKnobs).
+		std::array<uint8_t, Knobs> knobCc{21, 22, 23, 24, 25, 26, 27, 28};
 		std::array<std::array<uint8_t, 128>, 17> head = emptyHeads();	// [channel 0-15 or AnyChannel][cc] -> first target, None: none
 		std::array<LearnTarget, MaxTargets> targets{};
 

@@ -117,6 +117,18 @@ namespace mdJucePlugin
 		// The mapping indices (LearnTarget::mapping) moved since the last call, as two 64-bit masks
 		std::array<uint64_t, 2> takeTouched() noexcept;
 
+		// B-205: F(size_t knob, uint8_t value) for every knob row a CC on the host's MIDI in moved since the last call (the
+		// last value of each), for the host parameters Knob 1-8. A drive from those parameters (driveKnob) is not in it.
+		template<typename F> void takeKnobs(F&& _f)
+		{
+			const auto moved = m_knobTouched.exchange(0, std::memory_order_acq_rel);
+			for(size_t k = 0; k < LearnTable::Knobs; ++k)
+			{
+				if(moved >> k & 1u)
+					_f(k, m_knobValue[k].load(std::memory_order_relaxed));
+			}
+		}
+
 		Counts counts() const noexcept;
 
 		// Publishes the empty table and returns once no block that began before it can still be reading the old one: the
@@ -142,6 +154,10 @@ namespace mdJucePlugin
 		// True: consumed (a mapped CC, or a CC captured while learning); it must not reach the firmware.
 		bool translate(uint8_t _status, uint8_t _data1, uint8_t _data2) noexcept;
 		bool translate(const synthLib::SMidiEvent& _ev) noexcept;
+		// B-205: the host parameter Knob _knob + 1 moved to _value: the knob row's chain (the any-channel mappings of its CC)
+		// runs as for a CC of that number on any channel. Nothing is captured while learning, nothing reaches the firmware,
+		// and the knob is not marked for takeKnobs (the host sent the value). True: the row has mappings.
+		bool driveKnob(size_t _knob, uint8_t _value) noexcept;
 
 		// The copy translate reads (audio thread; tests and diagnostics)
 		const LearnTable& table() const noexcept { return m_table; }
@@ -178,6 +194,8 @@ namespace mdJucePlugin
 		std::atomic<uint32_t> m_globalRead{0};			// message thread
 
 		std::array<std::atomic<uint64_t>, 2> m_touched{};
+		std::array<std::atomic<uint8_t>, LearnTable::Knobs> m_knobValue{};	// audio thread writes, message thread reads
+		std::atomic<uint32_t> m_knobTouched{0};
 
 		std::atomic<uint64_t> m_applied{0};
 		std::atomic<uint64_t> m_captured{0};

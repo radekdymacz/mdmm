@@ -599,6 +599,8 @@
 		learnAdd(a) { send(Object.assign({ op: "learnAdd", cc: a.cc }, a.g != null ? { g: a.g } : { t: a.t, pg: a.pg, i: a.i }, a.ch === 255 ? {} : { ch: a.ch }), { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); },
 		learnInvert(index) { send({ op: "learnInvert", index }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); },
 		learnRemove(index) { send({ op: "learnRemove", index }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); },
+		/* B-205: a knob row dragged on the page: the plug-in's host parameter Knob k+1 follows */
+		knobTurn(k, v) { send({ op: "knobTurn", k, v }); },
 		/* the Control workspace's LFO and Random sources and their links: the plug-in runs them */
 		modulators(setup) { sendMods(setup); },
 		engine(kind) { send({ op: "engine", kind }, { onResult: r => V().toast(r.ok ? r.note : r.errors[0]) }); },
