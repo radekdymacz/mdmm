@@ -1205,10 +1205,12 @@ body{box-sizing:border-box;overflow:hidden}
    0.9.1 (tester request, I-063): the whole page fits without scrolling down to the page's own minimum, 720 px tall (a window
    of 1440 x 811 points, a 1440 x 900 screen's, no longer scrolled): the strips and the four master effects (ECHO, GATE BOX,
    MASTER EQ, DYNAMIX) are compacter: tighter strips, the signal path one thin line, the effects' screens from 56 px and
-   their value boxes 26 px. What decides it is measured in the firmware E2E's WebView (full run 42653023212, focused 42668516627): with a 240 px
-   fader the page was 22 px taller than #main at 1440 x 918 and at 1309 x 834 (the effects cannot shrink below their
-   content), so a fader is 210 px at most, 100 px at least, and shorter as the window gets lower. */
-.fader{height:clamp(100px,calc(100vh - 700px),210px)!important}
+   their value boxes 26 px. What decides it is measured in the firmware E2E's WebView (full run 42771867608): the page is the window's height minus 106 px
+   and #main is 128 px shorter than the window, because the four effects cannot shrink below their content (294 px at
+   1309 wide, 269 at 1440). A fader at 135 px (the old 700 px rule) and at 240 px both left the page 22 px over #main, since
+   the strips stayed above what the effects need. The 730 px keeps the page inside #main from 1309 x 834 up; below that the
+   fader stops at its 100 px floor and the page scrolls (the effects' own height is the limit). */
+.fader{height:clamp(100px,calc(100vh - 730px),210px)!important}
 .strip{padding:4px 3px;gap:4px}
 .strip .pc{height:22px}
 .flow{margin-top:8px;padding:4px 12px}
