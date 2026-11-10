@@ -20,7 +20,8 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Should:** when the host stops, the machine is really stopped. Load song works, or the toast says it did not.
 - **Code reading (not measured):** `synthLib/midiClock.cpp` (lines 19-21, 79-86): a host stop injects 0xFC (and CC 123 on the Monomachine, `mdPluginProcessor.cpp:525`). On the Monomachine, 0xFC is a pause (`doc/modern-ux/PROBES-manual-gaps.md`, P1). A host play sends Song Position Pointer and Continue (`midiClock.cpp`, lines 63-75), so the old row resumes. `mmDeskCommands.cpp` (lines 356-368), `cmdLoadSong`, checks only `m_playing` and returns ok without checking the status read-back. The toast is in `mmAdapter.js` (lines 533-535).
 - **Fix planned (0.9.1):** a host stop is a real stop; the toast appears only after the read-back confirms the song; Load song is refused while the machine is paused.
-- **Status:** open, being fixed for 0.9.1.
+- **Decision (Radek, 2026-11-10):** the host's Play after a host Stop is always MIDI Start, wherever the host stands. A seek then Play starts the Monomachine from the start. DAW sync after a seek is given up for a sure stop and a loaded song that plays from its first row. `mdTransportFirmwareTest_mm` section 4 ("Seek while stopped") now expects Start, no song position and no Continue; the Machinedrum is unchanged (song position and Continue). A relocation while the host plays still sends Stop, song position and Continue.
+- **Status:** fixed on integ/0.9.1; see doc/release/0.9.1/mm-host-stop.md.
 
 ## B-209 · Machinedrum: single journey failures seen once on 0.9.0 (flakes, logged)
 

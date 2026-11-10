@@ -910,9 +910,21 @@ namespace
 		if(_mm)
 			check(out.fa + out.fb == startsB && out.fc == stopsB && out.clocks == clocksB,
 				"and sends the machine no Start, Stop or clock");
+		const int startsBefore = out.fa, continuesBefore = out.fb;
 		hostPlay(120, 7.25);
 		check(until(playing, 5000), "Play from the new position starts the machine");
 		watch(1200);
+		if(_mm)
+		{
+			// B-210 (Radek, 2026-11-10): the host's Play after its Stop is Start wherever the host stands. DAW sync after a
+			// seek is given up for a sure stop and a song that starts from its first row.
+			const int now = readTel().step;
+			std::printf("  host at step %.1f of %d, machine at step %d (Start %d, Continue %d came out)\n",
+				std::fmod(host.ppq.load() * 4.0, double(patternLen)), patternLen, now, out.fa - startsBefore, out.fb - continuesBefore);
+			check(out.fa > startsBefore && out.fb == continuesBefore, "the host's Play after its Stop and a seek came out as Start (no song position, no Continue)");
+			check(now <= 20, "the machine started from the start of its pattern, not at the host's position (step " + std::to_string(now) + ")");
+		}
+		else
 		{
 			const double expected = std::fmod(host.ppq.load() * 4.0, double(patternLen));
 			const int now = readTel().step;
