@@ -24,6 +24,8 @@ namespace pluginLib
 
 namespace mdJucePlugin
 {
+	class ControlKnob;
+
 	// The page's MIDI learn commands (P6: one implementation for both editors), on the setup's mappings and the realtime
 	// LearnRouter (doc/midilearn/DESIGN-learn-0.8.md, decision C, slice L2). Message thread only.
 	//   learnStart {t, [pg,] i} or {g}, learnAdd {cc, t, [pg,] i, [ch]} or {cc, g, [ch]}, learnCancel, learnRemove {index},
@@ -81,6 +83,10 @@ namespace mdJucePlugin
 			std::function<void(const std::vector<deskCore::LearnGlobalEvent>&)> applyGlobals;
 			deskCore::FirmwareCcMap firmwareCcMap;			// what the firmware's own CC map drives (pure)
 			std::function<double()> nowMs;
+			// B-205 (0.9.1): the CCs of the Control page's eight knob rows (none: 21-28), and the host parameter Knob k + 1
+			// (none: the host is not told)
+			std::function<std::array<uint8_t, LearnTable::Knobs>()> knobCcs;
+			std::function<ControlKnob*(size_t)> knob;
 		};
 
 		// The host's gesture ends this long after the last learned CC moved a parameter (design: Values, the host)
@@ -113,6 +119,10 @@ namespace mdJucePlugin
 		// Learning ends (the page went away); the mappings stay
 		void cancelLearning();
 
+		// B-205: knob row _knob moved to _value outside the audio thread's view (the page's drag of a knob row, its knobTurn
+		// command): the host parameter Knob _knob + 1 follows, in a change gesture that ends g_gestureMs after the last move
+		void knobTurned(size_t _knob, uint8_t _value);
+
 		bool enabled() const { return m_model.enabled; }
 		bool learning() const { return m_capture.target.t >= 0; }
 		const Model& model() const { return m_model; }
@@ -138,6 +148,8 @@ namespace mdJucePlugin
 		void takeGlobals();
 		void notifyHost();
 		void closeGestures();
+		void knobMoved(size_t _knob, uint8_t _value, double _nowMs);
+		std::array<uint8_t, LearnTable::Knobs> knobCcsNow() const;
 
 		LearnRouter& m_router;
 		Model m_model;
@@ -161,5 +173,7 @@ namespace mdJucePlugin
 			bool open = false;
 		};
 		std::array<Touch, deskCore::g_learnMaxMappings> m_touch{};
+		std::array<Touch, LearnTable::Knobs> m_knobTouch{};	// B-205: the host parameters Knob 1-8
+		std::array<uint8_t, LearnTable::Knobs> m_builtKnobCcs{};	// the knob rows' CCs the router's table was built with
 	};
 }

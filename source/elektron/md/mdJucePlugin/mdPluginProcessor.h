@@ -4,6 +4,7 @@
 #include "mdBootDiagnostics.h"
 #include "mdCpuLoad.h"
 #include "mdHostDumps.h"
+#include "mdControlKnobs.h"
 #include "mdLearnRouter.h"
 #include "mdMidiIn.h"
 #include "mdMidiMonitor.h"
@@ -118,6 +119,8 @@ namespace mdJucePlugin
 		// and never reaches the firmware; while learning, CCs are captured for the session. Other sources are the base's.
 		bool consumeMidiIn(const synthLib::SMidiEvent& _ev) override;
 		LearnRouter& learnRouter() { return m_learnRouter; }
+		// B-205 (0.9.1): the host parameters Knob 1-8 (mdControlKnobs.h), the Control page's knob rows
+		ControlKnobs& controlKnobs() { return m_controlKnobs; }
 		// The router's applier: a learned CC value onto its parameter through Parameter::setValue (the realtime
 		// host-automation entry). Audio thread; no lock, no allocation.
 		static bool applyLearnedCc(pluginLib::Parameter& _param, const LearnTarget& _target, uint8_t _value);
@@ -272,6 +275,8 @@ namespace mdJucePlugin
 		std::string m_midiLogLine;				// the last line logged, message thread
 		midiIn::Held m_midiHeld;
 		LearnRouter m_learnRouter{&applyLearnedCc};
+		ControlKnobs m_controlKnobs;
+		void driveControlKnobs() noexcept;	// audio thread, at the block's start
 		uint64_t m_blockStartNs = 0;		// audio thread
 		static uint64_t cpuClockNs();
 		void recordBoot();

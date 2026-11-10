@@ -185,7 +185,7 @@ namespace
 				const auto snapshot =
 					_harness.controller.createAutomationSnapshot();
 				require(snapshot.size() == 7
-					+ _harness.audioProcessor.getParameters().size() * 5,
+					+ _harness.controller.getExposedParameters().size() * 5,	// the controller's (not Knob 1-8, B-205)
 					std::string("concurrent ") + modelName(_harness.model)
 					+ " snapshot shape was contaminated");
 				const auto afterMidi = _harness.telemetry();

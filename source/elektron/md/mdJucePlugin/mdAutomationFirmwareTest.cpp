@@ -177,10 +177,11 @@ namespace
 		harness.process(32);
 		const auto restoredWrites = controller.getTransmittedAutomationChangeCount()
 			- beforeRestoreFlush;
-		require(restoredWrites >= audioProcessor.getParameters().size(),
+		// the controller's parameters (the host's list also has Knob 1-8, B-205, which are not the firmware's)
+		require(restoredWrites >= controller.getExposedParameters().size(),
 			"DAW-state automation snapshot flushed "
 			+ std::to_string(restoredWrites) + " of "
-			+ std::to_string(audioProcessor.getParameters().size())
+			+ std::to_string(controller.getExposedParameters().size())
 			+ " values back to firmware");
 
 		if(_model == md::MachineModel::Monomachine)

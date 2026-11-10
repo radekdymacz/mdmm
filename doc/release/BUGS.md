@@ -49,7 +49,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Fix (journey only, Radek 2026-11-05: no product change):** before PLAY the journey presses ⌘. (Panic), which is STOP STOP on the MM, and waits for its result, so the song starts on row 1. The expectation (bar 002 a bar later) is unchanged.
 - **Status:** closed. Full CI 42029982429 (`release/0.9.0`, 0ec527ad1, 2026-11-05) is green: MD firmware E2E 193 pass, 0 fail; MM 225 pass, 0 fail; every firmware ctest passes. `mm-song-counter` passed after `mm-real-factory-songs`.
 
-## B-205 · Ableton Live and Push 2: a Control page knob row cannot be mapped to a Rack macro (open, a design gap; deferred to 0.9.1 by Radek, 2026-11-04)
+## B-205 · Ableton Live and Push 2: a Control page knob row cannot be mapped to a Rack macro (planned for 0.9.1, branch feat/0.9.1-control-matrix-host-params)
 
 - **From:** a user report, 2026-11-02 (Ableton Live with Push 2, AU on macOS): "I can't get the new Control matrix to map a knob lane to a macro in Ableton for my Push 2." Whether it fails silently is not known.
 - **What the Control matrix is:** MIDI Learn. Its eight knob rows are MIDI CC routes (CC 21-28 by default, any channel, the setup's `knobCcs`), not host parameters. A DAW can map only host parameters: MD 16 tracks x 26 (`Track N Machine Parameter 1` .. `Mute`, 416), MM 6 x 58 (348), all automatable, not meta, string ids (`page_track_index`, stable AU ids). The values that belong to no track (the FX column: master effects, tempo, swing, accent, LFO page, MM arp, assign, MIDI tracks) are no host parameters at all.
@@ -58,6 +58,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Workaround to tell the user:** press Configure on the plug-in device, turn the value itself on the page (for example DEC on the Kit page): it appears as `Track 1 Machine Parameter 3` and can be mapped to a macro and to Push 2. Global values cannot.
 - **Fix to decide (Radek):** eight host parameters `Knob 1`..`Knob 8` in a new parameter group (the existing ids unchanged), each driving its knob row's mappings as a CC on that row does (the learn router's realtime path). Open: names, whether the knob rows' values are saved, and a DAW in write mode then records both the knob and its targets.
 - **Test:** `mdAutomationHostGestureTest_md` / `_mm` (no ROM): the parameter list and begin, value, end of a page edit on the message thread.
+- **Status:** planned for 0.9.1, branch feat/0.9.1-control-matrix-host-params (not merged before the 0.9 release). Host parameters `Knob 1`..`Knob 8` after the tracks' (group Control, ids `control_knob_1..8`); spec doc/release/0.9.1/control-matrix-host-params.md.
 
 ## B-204 · Machinedrum: Erase stopped at GLOBAL SLOT in the editor; the RAM to ROM journey kept a take read mid-way (fixed on the branch)
 

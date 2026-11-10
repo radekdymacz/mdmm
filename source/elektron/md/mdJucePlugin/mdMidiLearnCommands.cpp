@@ -1,5 +1,7 @@
 #include "mdMidiLearnCommands.h"
 
+#include "mdControlKnobs.h"
+
 #include "deskCore/deskCommands.h"
 
 #include "jucePluginLib/controller.h"
@@ -146,6 +148,43 @@ namespace mdJucePlugin
 			if(n < m_params.size() && m_params[n])
 				m_params[n]->popChangeGesture();
 		}
+		for(size_t k = 0; k < m_knobTouch.size(); ++k)
+		{
+			if(!m_knobTouch[k].open)
+				continue;
+			m_knobTouch[k].open = false;
+			if(auto* knob = m_host.knob ? m_host.knob(k) : nullptr)
+				knob->endChangeGesture();
+		}
+	}
+
+	void MidiLearnCommands::knobMoved(const size_t _knob, const uint8_t _value, const double _nowMs)
+	{
+		if(_knob >= m_knobTouch.size())
+			return;
+		auto* knob = m_host.knob ? m_host.knob(_knob) : nullptr;
+		if(!knob)
+			return;
+		auto& t = m_knobTouch[_knob];
+		if(!t.open)
+		{
+			knob->beginChangeGesture();
+			t.open = true;
+		}
+		knob->showLaneValue(_value);
+		t.lastMs = _nowMs;
+	}
+
+	void MidiLearnCommands::knobTurned(const size_t _knob, const uint8_t _value)
+	{
+		if(!m_model.enabled)
+			return;
+		knobMoved(_knob, _value, m_host.nowMs ? m_host.nowMs() : 0);
+	}
+
+	std::array<uint8_t, LearnTable::Knobs> MidiLearnCommands::knobCcsNow() const
+	{
+		return m_host.knobCcs ? m_host.knobCcs() : LearnTable{}.knobCc;
 	}
 
 	void MidiLearnCommands::rebuild()
@@ -153,9 +192,12 @@ namespace mdJucePlugin
 		closeGestures();
 		m_built = m_host.mappings ? m_host.mappings() : std::vector<deskCore::LearnMapping>{};
 		m_builtValid = true;
+		m_builtKnobCcs = knobCcsNow();
 		// the audio thread's view; every parameter in it belongs to the controller, which outlives the session
-		const bool settled = m_router.publishAndSettle(buildLearnTable(m_built, m_host.parameter, ++m_generation, &m_params,
-			m_host.applyGlobals ? static_cast<int>(m_model.globals.size()) : 0));
+		auto table = buildLearnTable(m_built, m_host.parameter, ++m_generation, &m_params,
+			m_host.applyGlobals ? static_cast<int>(m_model.globals.size()) : 0);
+		table.knobCc = m_builtKnobCcs;	// B-205: the knob rows, for the host parameters Knob 1-8
+		const bool settled = m_router.publishAndSettle(table);
 		// the bits the old table set name its mappings, not these: none is carried over
 		(void)m_router.takeTouched();
 		// settle timed out: a block that began before the new table may still be running and set one more old bit when it
@@ -355,6 +397,17 @@ namespace mdJucePlugin
 				p->popChangeGesture();
 			}
 		}
+		// B-205: the knob rows a CC moved: the host parameters Knob 1-8 follow, in a gesture that ends as the targets' do
+		m_router.takeKnobs([&](const size_t _knob, const uint8_t _value) { knobMoved(_knob, _value, now); });
+		for(size_t k = 0; k < m_knobTouch.size(); ++k)
+		{
+			auto& t = m_knobTouch[k];
+			if(!t.open || now - t.lastMs < g_gestureMs)
+				continue;
+			t.open = false;
+			if(auto* knob = m_host.knob ? m_host.knob(k) : nullptr)
+				knob->endChangeGesture();
+		}
 	}
 
 	void MidiLearnCommands::step()
@@ -362,7 +415,7 @@ namespace mdJucePlugin
 		if(!m_model.enabled)
 			return;
 		// the list changed outside the commands (a project load, a knob row's CC): the table follows
-		if(!m_builtValid || m_host.mappings() != m_built)
+		if(!m_builtValid || m_host.mappings() != m_built || knobCcsNow() != m_builtKnobCcs)
 		{
 			rebuild();
 			publish();
