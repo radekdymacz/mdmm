@@ -4,15 +4,15 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
-## B-211 · Monomachine: RESET MACHINE has no "Factory reset…" (the Machinedrum has it) (open, being built for 0.9.1)
+## B-211 · Monomachine: RESET MACHINE has no "Factory reset…" (the Machinedrum has it) (fixed in 0.9.1)
 
 - **From:** a user on Discord asked for a factory reset on 2026-10-19 ([#general](https://discord.com/channels/1557742798936084565/1557742800060031060/1561786927710076959)) and noted one fewer reset option on the Monomachine on 2026-10-20 ([#general](https://discord.com/channels/1557742798936084565/1557742800060031060/1562211802912268422)); asked again on 2026-11-07 ([#general](https://discord.com/channels/1557742798936084565/1557742800060031060/1568576159426543697)). First logged under I-024.
 - **What happens:** the Machinedrum Editor's RESET MACHINE menu has "Factory reset…". The Monomachine Editor's menu does not. `skins/shared/deskSyx.js` (lines 526-538) leaves the item out when `Syx.host.factory` is false, and the Monomachine page sets it false. Feature row MM-318 says "not-needed: editor holds no MM factory data".
 - **Should:** both editors can restore the factory kits, patterns and songs.
 - **Decision (Radek, 2026-11-09):** the Monomachine gets a real factory reset. It is built like the Machinedrum's factory source (`mdFactorySource.h`), from the user's own ROM. No factory data is shipped.
-- **Status:** open, being built for 0.9.1. MM-318 changes when it ships. May be what B-175 means.
+- **Status:** fixed on integ/0.9.1 (db1bde55a): Reset machine… > Factory reset… restores the factory data from the user's own ROM; MM-318 is done; see doc/release/0.9.1/mm-factory-reset.md. May be what B-175 means.
 
-## B-210 · Monomachine VST3 in Ableton: Load song is ignored after the host plays and stops (open, being fixed for 0.9.1)
+## B-210 · Monomachine VST3 in Ableton: Load song is ignored after the host plays and stops (fixed in 0.9.1)
 
 - **From:** [Discord #bugs, 2026-11-09](https://discord.com/channels/1557742798936084565/1557745221930848277/1569284897464524941).
 - **Setup:** Monomachine Editor 0.9.0 VST3 (EMU OS 1.32B), macOS, Ableton Live 12.4.6, hosted in a Max for Live device (vst~). Monomachine GLOBAL tempo and transport follow the DAW (HOST). SONG mode.
@@ -21,7 +21,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Code reading (not measured):** `synthLib/midiClock.cpp` (lines 19-21, 79-86): a host stop injects 0xFC (and CC 123 on the Monomachine, `mdPluginProcessor.cpp:525`). On the Monomachine, 0xFC is a pause (`doc/modern-ux/PROBES-manual-gaps.md`, P1). A host play sends Song Position Pointer and Continue (`midiClock.cpp`, lines 63-75), so the old row resumes. `mmDeskCommands.cpp` (lines 356-368), `cmdLoadSong`, checks only `m_playing` and returns ok without checking the status read-back. The toast is in `mmAdapter.js` (lines 533-535).
 - **Fix planned (0.9.1):** a host stop is a real stop; the toast appears only after the read-back confirms the song; Load song is refused while the machine is paused.
 - **Decision (Radek, 2026-11-10):** the host's Play after a host Stop is always MIDI Start, wherever the host stands. A seek then Play starts the Monomachine from the start. DAW sync after a seek is given up for a sure stop and a loaded song that plays from its first row. `mdTransportFirmwareTest_mm` section 4 ("Seek while stopped") now expects Start, no song position and no Continue; the Machinedrum is unchanged (song position and Continue). A relocation while the host plays still sends Stop, song position and Continue.
-- **Status:** fixed on integ/0.9.1; see doc/release/0.9.1/mm-host-stop.md.
+- **Status:** fixed on integ/0.9.1; see doc/release/0.9.1/mm-host-stop.md. All three planned parts are in b25f6e141: the real stop, the refusal while paused (`cmdLoadSong`), and the toast that waits for the status read-back and says "The machine kept ..." when the song did not load (`mmAdapter.js`, `songLoaded`).
 
 ## B-209 · Machinedrum: single journey failures seen once on 0.9.0 (flakes, logged)
 
