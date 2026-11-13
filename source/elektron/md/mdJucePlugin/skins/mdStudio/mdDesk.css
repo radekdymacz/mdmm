@@ -1302,14 +1302,18 @@ body{box-sizing:border-box;overflow:hidden}
    are squeezed, the value row of a card (`.ctl.four`) hangs 22 px below its card, so #main scrolls. On CI (1309 x 834) the cards
    got 324 px and need about 346, with a 105 px fader. The fader is the part that gives: 64 px at least, 210 at most, 770 px less
    than the window between, which hands the effects about 365 px at 1309 x 834 (and 360 at 1440 x 918). Below 1280 px wide the
-   effects stack two by two and the page scrolls by design. */
+   effects stack two by two and the page scrolls by design.
+   The 22 px itself (firmware E2E 43236965505, macOS 15: lowest canvas.ed.sm, 847 with #main at 825): the card was a grid with the
+   screen in a 1fr row at height 100 %, and that WebKit made the screen 22 px taller than its row (the header and one gap), at every
+   fader length. So the card is a column flexbox and the screen takes what is left by flex: no percentage height. */
 .fader{height:clamp(64px,calc(100vh - 770px),210px)!important}
 .strip{padding:4px 3px;gap:4px}
 .strip .pc{height:22px}
 .flow{margin-top:8px;padding:4px 12px}
 #main>.fx4{flex:1 1 auto;min-height:0;align-items:stretch;margin-top:8px!important;gap:16px}
-.fx4>.card{min-height:0;grid-template-rows:auto minmax(56px,1fr) auto;align-content:stretch;gap:6px;padding-top:6px}
-.fx4>.card>canvas.ed.sm{height:100%!important;min-height:56px}
+.fx4>.card{min-height:0;display:flex;flex-direction:column;gap:6px;padding-top:6px}
+.fx4>.card>*{flex:none}
+.fx4>.card>canvas.ed.sm{flex:1 1 0;height:auto!important;min-height:56px}
 .fx4 .ctl .pc{height:26px}
 /* The header's LCD as one real display (P7), one stylesheet for both editors (skins/shared/). One dot grid: labels are 8 px Silkscreen (one dot = 1 px) and values 16 px (two
    dots), line 2's values 12 px (on the same device-pixel grid at 2x: 2, 3 and 4 pixels a dot), every

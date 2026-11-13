@@ -97,7 +97,8 @@ int main()
 		check(r.ok, "the image inside a .zip is accepted", r.text);
 
 		// Several images sit in the folder; nothing is ever deleted (I-071)
-		const auto mine = dir.getChildFile("manage");
+		// a folder per machine: the other machine's pass must not leave its images here
+		const auto mine = dir.getChildFile(std::string("manage-") + var);
 		const auto folder = mine.getChildFile("roms");
 		folder.createDirectory();
 		const auto decoy = mine.getChildFile("outside.bin");		// an image outside the folder: never touched
