@@ -1,0 +1,21 @@
+{
+  "schema": "studio.post/1",
+  "id": "md-chain-outro.youtube",
+  "brand": "mdmm",
+  "reel": "md-chain-outro",
+  "platform": "youtube",
+  "format": "9x16",
+  "title": "Chain it. Strip it back.",
+  "caption": "Chain it. Strip it back.\nChain pattern A to B, then strip the tracks back out for the outro.\nMachinedrum Editor: free, pay what you want. macOS · bring your own ROM.\nhttps://mdmm.dev/?utm_source=youtube&utm_medium=video&utm_campaign=evergreen&utm_content=md-chain-outro\n\nElektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This project is independent and not affiliated with or endorsed by Elektron.\nBuilt on joelanders' gearmulator-md-mm and The Usual Suspects' Gearmulator.",
+  "hashtags": [
+    "#machinedrum",
+    "#elektron",
+    "#shorts"
+  ],
+  "link": "https://mdmm.dev/?utm_source=youtube&utm_medium=video&utm_campaign=evergreen&utm_content=md-chain-outro",
+  "campaign": "evergreen",
+  "status": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "result": null
+}

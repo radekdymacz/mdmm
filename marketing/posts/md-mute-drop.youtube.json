@@ -1,0 +1,21 @@
+{
+  "schema": "studio.post/1",
+  "id": "md-mute-drop.youtube",
+  "brand": "mdmm",
+  "reel": "md-mute-drop",
+  "platform": "youtube",
+  "format": "9x16",
+  "title": "Breakdown and drop. By hand.",
+  "caption": "Breakdown and drop. By hand.\nHold Shift, drag five tracks out, let go on the one.\nMachinedrum Editor: free, pay what you want. macOS · bring your own ROM.\nhttps://mdmm.dev/?utm_source=youtube&utm_medium=video&utm_campaign=launch&utm_content=md-mute-drop\n\nElektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This project is independent and not affiliated with or endorsed by Elektron.\nBuilt on joelanders' gearmulator-md-mm and The Usual Suspects' Gearmulator.",
+  "hashtags": [
+    "#machinedrum",
+    "#elektron",
+    "#shorts"
+  ],
+  "link": "https://mdmm.dev/?utm_source=youtube&utm_medium=video&utm_campaign=launch&utm_content=md-mute-drop",
+  "campaign": "launch",
+  "status": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "result": null
+}

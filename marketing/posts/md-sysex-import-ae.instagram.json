@@ -1,0 +1,22 @@
+{
+  "schema": "studio.post/1",
+  "id": "md-sysex-import-ae.instagram",
+  "brand": "mdmm",
+  "reel": "md-sysex-import-ae",
+  "platform": "instagram",
+  "format": "9x16",
+  "caption": "Loading Autechre's public Machinedrum backup from their 2008 Quaristice tour (free on their store: TODO(Radek) store URL) into the Machinedrum Editor. Import SysEx, check what it overwrites, play. Their files, credited; not affiliated with Autechre, Warp or Elektron.\nMachinedrum Editor: free, pay what you want. macOS · bring your own ROM.\nLink in bio.",
+  "hashtags": [
+    "#machinedrum",
+    "#elektron",
+    "#drummachine",
+    "#sequencer",
+    "#musicproduction"
+  ],
+  "link": "https://mdmm.dev/guide/?utm_source=instagram&utm_medium=social&utm_campaign=evergreen&utm_content=md-sysex-import-ae",
+  "campaign": "evergreen",
+  "status": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "result": null
+}

@@ -1,0 +1,194 @@
+{
+  "schema": "studio.reel/2",
+  "id": "md-mute-8",
+  "brand": "mdmm",
+  "product": "Machinedrum Editor",
+  "title": "Mute 8 tracks with one drag",
+  "status": "needs-footage",
+  "fps": 30,
+  "music": {
+    "bpm": 120,
+    "downbeat": 0
+  },
+  "hook": {
+    "text": "Eight tracks. *One drag.*",
+    "seconds": 2
+  },
+  "voice": null,
+  "captions": "subtitles",
+  "sources": {
+    "fr-07-md-mute-8": {
+      "file": "fr-07-md-mute-8.mov",
+      "ui": [
+        1440,
+        810
+      ],
+      "uiScale": 2
+    }
+  },
+  "scenes": [
+    {
+      "kind": "footage",
+      "id": "busy",
+      "footage": "fr-07-md-mute-8",
+      "inBeat": 0,
+      "beats": 8,
+      "camera": [
+        {
+          "at": 0,
+          "region": [
+            0,
+            0,
+            1440,
+            810
+          ]
+        },
+        {
+          "at": 1.8,
+          "region": [
+            0,
+            115,
+            1440,
+            410
+          ],
+          "byFormat": {
+            "9x16": [
+              0,
+              120,
+              720,
+              420
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "footage",
+      "id": "breakdown",
+      "footage": "fr-07-md-mute-8",
+      "inBeat": 8,
+      "beats": 8,
+      "camera": [
+        {
+          "at": 0,
+          "region": [
+            0,
+            115,
+            1440,
+            410
+          ],
+          "byFormat": {
+            "9x16": [
+              0,
+              120,
+              720,
+              420
+            ]
+          }
+        },
+        {
+          "at": 3.5,
+          "region": [
+            380,
+            115,
+            1060,
+            410
+          ],
+          "byFormat": {
+            "9x16": [
+              380,
+              120,
+              720,
+              420
+            ]
+          }
+        }
+      ],
+      "spotlight": [
+        20,
+        462,
+        1400,
+        30
+      ],
+      "spotlightAt": 0.1,
+      "subtitles": [
+        {
+          "at": 0.1,
+          "until": 2,
+          "text": "Drag across *eight.*"
+        },
+        {
+          "at": 2.1,
+          "until": 3.9,
+          "text": "Breakdown."
+        }
+      ]
+    },
+    {
+      "kind": "footage",
+      "id": "drop",
+      "footage": "fr-07-md-mute-8",
+      "inBeat": 16,
+      "beats": 8,
+      "camera": [
+        {
+          "at": 0,
+          "region": [
+            0,
+            115,
+            1440,
+            410
+          ],
+          "byFormat": {
+            "9x16": [
+              0,
+              120,
+              720,
+              420
+            ]
+          }
+        },
+        {
+          "at": 2,
+          "region": [
+            0,
+            0,
+            1440,
+            810
+          ]
+        }
+      ],
+      "subtitles": [
+        {
+          "at": 0,
+          "until": 1.8,
+          "text": "Drag back. *Drop.*"
+        },
+        {
+          "at": 2,
+          "until": 3.9,
+          "text": "Solo works the same."
+        }
+      ]
+    }
+  ],
+  "endCard": {
+    "beats": 6,
+    "audioInBeat": 16,
+    "title": "Machinedrum Editor",
+    "line": "Free · pay what you want",
+    "status": "Coming soon",
+    "small": "macOS · VST3, AU and app · bring your own ROM"
+  },
+  "audio": {
+    "fadeOutSeconds": 0.8
+  },
+  "brief": {
+    "idea": "A performance reel: a busy 16-track pattern, then one drag across eight M keys drops the groove to kick and bass; drag back on the downbeat for the drop. Then the same with S (solo). Mix workspace, close on the M/S row. The drop on the bar line is the hook.",
+    "footageRequest": "FR-07",
+    "use": "paid-ok",
+    "openQuestions": [
+      "inBeat values assume the breakdown at bar 3 and the drop at bar 5; set from page.log."
+    ]
+  }
+}

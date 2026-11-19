@@ -40,3 +40,8 @@ site/public/guide/*.pdf
 # CI packages downloaded for a hand test (gh run download); never committed
 /artifacts/
 __pycache__/
+
+# marketing studio outputs
+marketing/out/
+marketing/footage/
+marketing/voice/

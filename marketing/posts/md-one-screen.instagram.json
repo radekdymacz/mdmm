@@ -1,0 +1,23 @@
+{
+  "schema": "studio.post/1",
+  "id": "md-one-screen.instagram",
+  "brand": "mdmm",
+  "reel": "md-one-screen",
+  "platform": "instagram",
+  "format": "9x16",
+  "caption": "Whole Machinedrum. One screen.\nAll 16 tracks, GEN rolls, mute by dragging, Alt-drag to move the whole kit: the real firmware, emulated.\nMachinedrum Editor: free, pay what you want. macOS · bring your own ROM.\nLink in bio.",
+  "hashtags": [
+    "#machinedrum",
+    "#elektron",
+    "#drummachine",
+    "#sequencer",
+    "#musicproduction"
+  ],
+  "link": "https://mdmm.dev/?utm_source=instagram&utm_medium=social&utm_campaign=launch&utm_content=md-one-screen",
+  "campaign": "launch",
+  "status": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "notes": "Per-platform links: marketing/UTM.md. Caption: copy-bank.md, 'One screen'.",
+  "result": null
+}

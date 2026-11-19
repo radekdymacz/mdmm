@@ -1,0 +1,22 @@
+{
+  "schema": "studio.post/1",
+  "id": "md-gen-roll.instagram",
+  "brand": "mdmm",
+  "reel": "md-gen-roll",
+  "platform": "instagram",
+  "format": "9x16",
+  "caption": "One click. New beat.\nAlt-click GEN: every track rolls. Didn't like it? Command-Z.\nMachinedrum Editor: free, pay what you want. macOS · bring your own ROM.\nLink in bio.",
+  "hashtags": [
+    "#machinedrum",
+    "#elektron",
+    "#drummachine",
+    "#sequencer",
+    "#musicproduction"
+  ],
+  "link": "https://mdmm.dev/?utm_source=instagram&utm_medium=social&utm_campaign=launch&utm_content=md-gen-roll",
+  "campaign": "launch",
+  "status": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "result": null
+}

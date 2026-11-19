@@ -1,0 +1,22 @@
+{
+  "schema": "studio.post/1",
+  "id": "md-sampler.instagram",
+  "brand": "mdmm",
+  "reel": "md-sampler",
+  "platform": "instagram",
+  "format": "9x16",
+  "caption": "Any WAV, into your Machinedrum.\nLoad, audition, keep: the slot shows the real waveform. (In the emulator; over MIDI there are no sample transfers.)\nMachinedrum Editor: free, pay what you want. macOS · bring your own ROM.\nLink in bio.",
+  "hashtags": [
+    "#machinedrum",
+    "#elektron",
+    "#drummachine",
+    "#sequencer",
+    "#musicproduction"
+  ],
+  "link": "https://mdmm.dev/?utm_source=instagram&utm_medium=social&utm_campaign=evergreen&utm_content=md-sampler",
+  "campaign": "evergreen",
+  "status": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "result": null
+}

@@ -1,0 +1,22 @@
+{
+  "schema": "studio.post/1",
+  "id": "md-sampler-glitch.instagram",
+  "brand": "mdmm",
+  "reel": "md-sampler-glitch",
+  "platform": "instagram",
+  "format": "9x16",
+  "caption": "Sample it. Then break it.\nSet up sampling, capture the groove, then retrigger and pitch it per step. The waveforms are real.\nMachinedrum Editor: free, pay what you want. macOS · bring your own ROM.\nLink in bio.",
+  "hashtags": [
+    "#machinedrum",
+    "#elektron",
+    "#drummachine",
+    "#sequencer",
+    "#musicproduction"
+  ],
+  "link": "https://mdmm.dev/?utm_source=instagram&utm_medium=social&utm_campaign=launch&utm_content=md-sampler-glitch",
+  "campaign": "launch",
+  "status": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "result": null
+}

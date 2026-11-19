@@ -1,0 +1,22 @@
+{
+  "schema": "studio.post/1",
+  "id": "md-sysex-import.instagram",
+  "brand": "mdmm",
+  "reel": "md-sysex-import",
+  "platform": "instagram",
+  "format": "9x16",
+  "caption": "Old .syx backups? Drop them in.\nThe preview says what it holds and what it overwrites; the import is one undo step.\nMachinedrum Editor: free, pay what you want. macOS · bring your own ROM.\nLink in bio.",
+  "hashtags": [
+    "#machinedrum",
+    "#elektron",
+    "#drummachine",
+    "#sequencer",
+    "#musicproduction"
+  ],
+  "link": "https://mdmm.dev/?utm_source=instagram&utm_medium=social&utm_campaign=launch&utm_content=md-sysex-import",
+  "campaign": "launch",
+  "status": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "result": null
+}

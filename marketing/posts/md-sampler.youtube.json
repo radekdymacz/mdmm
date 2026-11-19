@@ -1,0 +1,21 @@
+{
+  "schema": "studio.post/1",
+  "id": "md-sampler.youtube",
+  "brand": "mdmm",
+  "reel": "md-sampler",
+  "platform": "youtube",
+  "format": "9x16",
+  "title": "Any WAV. Into your Machinedrum.",
+  "caption": "Any WAV, into your Machinedrum.\nLoad, audition, keep: the slot shows the real waveform. (In the emulator; over MIDI there are no sample transfers.)\nMachinedrum Editor: free, pay what you want. macOS · bring your own ROM.\nhttps://mdmm.dev/?utm_source=youtube&utm_medium=video&utm_campaign=evergreen&utm_content=md-sampler\n\nElektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This project is independent and not affiliated with or endorsed by Elektron.\nBuilt on joelanders' gearmulator-md-mm and The Usual Suspects' Gearmulator.",
+  "hashtags": [
+    "#machinedrum",
+    "#elektron",
+    "#shorts"
+  ],
+  "link": "https://mdmm.dev/?utm_source=youtube&utm_medium=video&utm_campaign=evergreen&utm_content=md-sampler",
+  "campaign": "evergreen",
+  "status": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "result": null
+}

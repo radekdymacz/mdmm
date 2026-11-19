@@ -1,0 +1,22 @@
+{
+  "schema": "studio.post/1",
+  "id": "md-mute-drop.instagram",
+  "brand": "mdmm",
+  "reel": "md-mute-drop",
+  "platform": "instagram",
+  "format": "9x16",
+  "caption": "Breakdown and drop. By hand.\nHold Shift, drag five tracks out, let go on the one.\nMachinedrum Editor: free, pay what you want. macOS · bring your own ROM.\nLink in bio.",
+  "hashtags": [
+    "#machinedrum",
+    "#elektron",
+    "#drummachine",
+    "#sequencer",
+    "#musicproduction"
+  ],
+  "link": "https://mdmm.dev/?utm_source=instagram&utm_medium=social&utm_campaign=launch&utm_content=md-mute-drop",
+  "campaign": "launch",
+  "status": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "result": null
+}

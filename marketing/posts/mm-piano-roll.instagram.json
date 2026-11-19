@@ -1,0 +1,22 @@
+{
+  "schema": "studio.post/1",
+  "id": "mm-piano-roll.instagram",
+  "brand": "mdmm",
+  "reel": "mm-piano-roll",
+  "platform": "instagram",
+  "format": "9x16",
+  "caption": "A piano roll for the Monomachine.\nPaint notes by dragging, play the black keys on QWERTY, then perform it.\nMonomachine Editor: free, pay what you want. macOS · bring your own ROM.\nLink in bio.",
+  "hashtags": [
+    "#monomachine",
+    "#elektron",
+    "#sequencer",
+    "#synthesizer",
+    "#musicproduction"
+  ],
+  "link": "https://mdmm.dev/?utm_source=instagram&utm_medium=social&utm_campaign=launch&utm_content=mm-piano-roll",
+  "campaign": "launch",
+  "status": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "result": null
+}

@@ -1,0 +1,21 @@
+{
+  "schema": "studio.post/1",
+  "id": "md-gen-roll.youtube",
+  "brand": "mdmm",
+  "reel": "md-gen-roll",
+  "platform": "youtube",
+  "format": "9x16",
+  "title": "One click. A new rhythm.",
+  "caption": "One click. New beat.\nAlt-click GEN: every track rolls. Didn't like it? Command-Z.\nMachinedrum Editor: free, pay what you want. macOS · bring your own ROM.\nhttps://mdmm.dev/?utm_source=youtube&utm_medium=video&utm_campaign=launch&utm_content=md-gen-roll\n\nElektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This project is independent and not affiliated with or endorsed by Elektron.\nBuilt on joelanders' gearmulator-md-mm and The Usual Suspects' Gearmulator.",
+  "hashtags": [
+    "#machinedrum",
+    "#elektron",
+    "#shorts"
+  ],
+  "link": "https://mdmm.dev/?utm_source=youtube&utm_medium=video&utm_campaign=launch&utm_content=md-gen-roll",
+  "campaign": "launch",
+  "status": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "result": null
+}

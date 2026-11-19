@@ -1,0 +1,98 @@
+{
+  "schema": "studio.brand/1",
+  "id": "mdmm",
+  "name": "MD + MM Editor",
+  "site": "mdmm.dev",
+  "language": "en-GB",
+  "tokens": {
+    "accent": "#ff6a3d",
+    "bg": "#161614",
+    "fg": "#ecebe4",
+    "font": "Inter"
+  },
+  "voice": {
+    "tts": "none",
+    "style": "short, plain, confident, slightly dry; let the groove carry it"
+  },
+  "honestLines": {
+    "short": "macOS · bring your own ROM",
+    "long": [
+      "Your own ROM: Machinedrum OS 1.63 or Monomachine OS 1.32B. No firmware is included and we cannot supply it.",
+      "macOS only for now (tested on Apple silicon).",
+      "Real hardware over MIDI is beta, so far tested only against the emulator.",
+      "Free software (GPL-3). Free, pay what you want."
+    ]
+  },
+  "rules": {
+    "hookMaxWords": 7,
+    "subtitleMaxWords": 6,
+    "forbidden": [
+      "revolutionary",
+      "insane",
+      "game-changer",
+      "official",
+      "Pro version",
+      "Pro edition",
+      "go Pro",
+      "free trial",
+      "limited time",
+      "100% accurate",
+      "identical to hardware",
+      "Elektron-approved",
+      "Gearmulator MD",
+      "Gearmulator MM",
+      "Windows soon",
+      "every DAW"
+    ],
+    "mustContainOneOf": [
+      "bring your own ROM"
+    ],
+    "hashtags": {
+      "instagram": [
+        5,
+        8
+      ],
+      "youtube": [
+        2,
+        3
+      ],
+      "tiktok": [
+        3,
+        5
+      ]
+    },
+    "loudnessLUFS": -14,
+    "loudnessToleranceLU": 0.5,
+    "truePeakDBTP": -1.5,
+    "safeZones": {
+      "9x16": {
+        "top": 250,
+        "bottom": 420,
+        "left": 60,
+        "right": 150
+      }
+    }
+  },
+  "links": {
+    "utmBase": "https://mdmm.dev/?utm_source={platform}&utm_medium={medium}&utm_campaign={campaign}&utm_content={content}",
+    "mediums": {
+      "instagram": "social",
+      "tiktok": "social",
+      "youtube": "video"
+    }
+  },
+  "credits": [
+    "Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This project is independent and not affiliated with or endorsed by Elektron.",
+    "Built on joelanders' gearmulator-md-mm and The Usual Suspects' Gearmulator."
+  ],
+  "music": {
+    "source": "product-audio-only"
+  },
+  "docs": [
+    "VISION.md",
+    "marketing/BRAND.md",
+    "marketing/copy-bank.md",
+    "marketing/POSTING-CHECKLIST.md",
+    "marketing/UTM.md"
+  ]
+}

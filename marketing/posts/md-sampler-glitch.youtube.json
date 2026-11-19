@@ -1,0 +1,21 @@
+{
+  "schema": "studio.post/1",
+  "id": "md-sampler-glitch.youtube",
+  "brand": "mdmm",
+  "reel": "md-sampler-glitch",
+  "platform": "youtube",
+  "format": "9x16",
+  "title": "Sample it. Then break it.",
+  "caption": "Sample it. Then break it.\nSet up sampling, capture the groove, then retrigger and pitch it per step. The waveforms are real.\nMachinedrum Editor: free, pay what you want. macOS · bring your own ROM.\nhttps://mdmm.dev/?utm_source=youtube&utm_medium=video&utm_campaign=launch&utm_content=md-sampler-glitch\n\nElektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This project is independent and not affiliated with or endorsed by Elektron.\nBuilt on joelanders' gearmulator-md-mm and The Usual Suspects' Gearmulator.",
+  "hashtags": [
+    "#machinedrum",
+    "#elektron",
+    "#shorts"
+  ],
+  "link": "https://mdmm.dev/?utm_source=youtube&utm_medium=video&utm_campaign=launch&utm_content=md-sampler-glitch",
+  "campaign": "launch",
+  "status": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "result": null
+}

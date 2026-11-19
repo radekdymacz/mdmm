@@ -1,0 +1,22 @@
+{
+  "schema": "studio.post/1",
+  "id": "md-one-screen.youtube",
+  "brand": "mdmm",
+  "reel": "md-one-screen",
+  "platform": "youtube",
+  "format": "9x16",
+  "title": "Whole Machinedrum. One screen.",
+  "caption": "Whole Machinedrum. One screen.\nAll 16 tracks, GEN rolls, mute by dragging, Alt-drag to move the whole kit: the real firmware, emulated.\nMachinedrum Editor: free, pay what you want. macOS · bring your own ROM.\nhttps://mdmm.dev/?utm_source=youtube&utm_medium=video&utm_campaign=launch&utm_content=md-one-screen\n\nElektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This project is independent and not affiliated with or endorsed by Elektron.\nBuilt on joelanders' gearmulator-md-mm and The Usual Suspects' Gearmulator.",
+  "hashtags": [
+    "#machinedrum",
+    "#elektron",
+    "#shorts"
+  ],
+  "link": "https://mdmm.dev/?utm_source=youtube&utm_medium=video&utm_campaign=launch&utm_content=md-one-screen",
+  "campaign": "launch",
+  "status": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "notes": "Per-platform links: marketing/UTM.md. Caption: copy-bank.md, 'One screen'.",
+  "result": null
+}

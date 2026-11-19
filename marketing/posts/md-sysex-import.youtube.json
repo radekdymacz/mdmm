@@ -1,0 +1,21 @@
+{
+  "schema": "studio.post/1",
+  "id": "md-sysex-import.youtube",
+  "brand": "mdmm",
+  "reel": "md-sysex-import",
+  "platform": "youtube",
+  "format": "9x16",
+  "title": "Old .syx backups? Drop them in.",
+  "caption": "Old .syx backups? Drop them in.\nThe preview says what it holds and what it overwrites; the import is one undo step.\nMachinedrum Editor: free, pay what you want. macOS · bring your own ROM.\nhttps://mdmm.dev/?utm_source=youtube&utm_medium=video&utm_campaign=launch&utm_content=md-sysex-import\n\nElektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This project is independent and not affiliated with or endorsed by Elektron.\nBuilt on joelanders' gearmulator-md-mm and The Usual Suspects' Gearmulator.",
+  "hashtags": [
+    "#machinedrum",
+    "#elektron",
+    "#shorts"
+  ],
+  "link": "https://mdmm.dev/?utm_source=youtube&utm_medium=video&utm_campaign=launch&utm_content=md-sysex-import",
+  "campaign": "launch",
+  "status": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "result": null
+}
