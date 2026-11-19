@@ -1,0 +1,96 @@
+{
+  "schema": "studio.footage/1",
+  "id": "md-site-tour",
+  "kind": "web",
+  "url": "https://mdmm.dev",
+  "app": {
+    "ui": [
+      540,
+      960
+    ],
+    "scale": 2
+  },
+  "journey": [
+    {
+      "say": "the home page and its hero shot",
+      "do": "hold",
+      "holdSeconds": 3
+    },
+    {
+      "say": "the Monomachine tab",
+      "do": "click",
+      "args": [
+        "#tab-mm"
+      ],
+      "optional": true,
+      "holdSeconds": 2
+    },
+    {
+      "say": "the hero shot fills the frame",
+      "do": "scroll",
+      "args": [
+        420
+      ],
+      "holdSeconds": 2
+    },
+    {
+      "say": "features",
+      "do": "scroll",
+      "args": [
+        700
+      ],
+      "holdSeconds": 1.5
+    },
+    {
+      "say": "more features",
+      "do": "scroll",
+      "args": [
+        700
+      ],
+      "holdSeconds": 1.5
+    },
+    {
+      "say": "a closer look",
+      "do": "scroll",
+      "args": [
+        700
+      ],
+      "holdSeconds": 1.5
+    },
+    {
+      "say": "tour screenshot",
+      "do": "scroll",
+      "args": [
+        560
+      ],
+      "holdSeconds": 1.5
+    },
+    {
+      "say": "tour screenshot",
+      "do": "scroll",
+      "args": [
+        560
+      ],
+      "holdSeconds": 1.5
+    },
+    {
+      "say": "back to the top",
+      "do": "scroll",
+      "args": [
+        -8000
+      ],
+      "holdSeconds": 1
+    },
+    {
+      "say": "to the Get page",
+      "do": "click",
+      "args": [
+        "nav a[href=\"/get/\"]"
+      ],
+      "optional": true,
+      "holdSeconds": 4
+    }
+  ],
+  "audio": "none",
+  "status": "recorded"
+}
