@@ -1,0 +1,22 @@
+{
+  "schema": "studio.post/1",
+  "id": "md-site-tour.youtube",
+  "brand": "mdmm",
+  "reel": "md-site-tour",
+  "platform": "youtube",
+  "format": "9x16",
+  "title": "Machinedrum and Monomachine. On screen.",
+  "caption": "Machinedrum and Monomachine. On screen.\nA quick tour of MD + MM Editor: every track in view, the Machinedrum sequencer, the Monomachine perform screen. Coming soon, not out yet.\nFree, pay what you want. macOS · bring your own ROM.\nhttps://mdmm.dev/?utm_source=youtube&utm_medium=video&utm_campaign=launch&utm_content=md-site-tour\n\nElektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This project is independent and not affiliated with or endorsed by Elektron.\nBuilt on joelanders' gearmulator-md-mm and The Usual Suspects' Gearmulator.",
+  "hashtags": [
+    "#machinedrum",
+    "#elektron",
+    "#shorts"
+  ],
+  "link": "https://mdmm.dev/?utm_source=youtube&utm_medium=video&utm_campaign=launch&utm_content=md-site-tour",
+  "campaign": "launch",
+  "status": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "notes": "Unscheduled. Coming soon wording per Radek's brief (site currently says v0.7.0 is out): keep until launch. Links: marketing/UTM.md.",
+  "result": null
+}

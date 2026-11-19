@@ -65,6 +65,12 @@ Rotate: no two consecutive posts on one platform share a hook.*
 37. Chain it. *Strip it back.*
 38. A, then B. Then strip it back.
 
+**Site tour, coming soon** (`md-site-tour`)
+39. Machinedrum and Monomachine. *On screen.*
+40. Both machines. *One screen each.*
+41. Coming soon: the whole Machinedrum.
+42. Your Monomachine, *unfolded* too.
+
 **Real hardware** (`md-hw-midi`, only after FR-09 is filmed working)
 32. Same editor. Real Machinedrum.
 33. Edit the box on your desk.

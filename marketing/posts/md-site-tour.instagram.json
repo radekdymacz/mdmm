@@ -1,0 +1,24 @@
+{
+  "schema": "studio.post/1",
+  "id": "md-site-tour.instagram",
+  "brand": "mdmm",
+  "reel": "md-site-tour",
+  "platform": "instagram",
+  "format": "9x16",
+  "caption": "Machinedrum and Monomachine. On screen.\nA quick tour of MD + MM Editor: every track in view, the Machinedrum sequencer, the Monomachine perform screen. Coming soon, not out yet.\nFree, pay what you want. macOS · bring your own ROM.\nLink in bio.",
+  "hashtags": [
+    "#machinedrum",
+    "#monomachine",
+    "#elektron",
+    "#drummachine",
+    "#sequencer",
+    "#musicproduction"
+  ],
+  "link": "https://mdmm.dev/?utm_source=instagram&utm_medium=social&utm_campaign=launch&utm_content=md-site-tour",
+  "campaign": "launch",
+  "status": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "notes": "Unscheduled. Coming soon wording per Radek's brief (site currently says v0.7.0 is out): keep until launch. Links: marketing/UTM.md.",
+  "result": null
+}

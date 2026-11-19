@@ -45,3 +45,4 @@ __pycache__/
 marketing/out/
 marketing/footage/
 marketing/voice/
+!marketing/footage/requests/

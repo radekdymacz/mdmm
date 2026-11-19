@@ -1,0 +1,200 @@
+{
+  "schema": "studio.reel/2",
+  "id": "md-site-tour",
+  "brand": "mdmm",
+  "product": "MD + MM Editor",
+  "title": "Machinedrum and Monomachine, on screen",
+  "status": "rendered",
+  "fps": 30,
+  "music": null,
+  "hook": {
+    "text": "Machinedrum and Monomachine. *On screen.*",
+    "seconds": 2
+  },
+  "voice": {
+    "lines": [
+      {
+        "at": 0.6,
+        "text": "This is the Machinedrum and Monomachine, on your screen."
+      },
+      {
+        "at": 4.2,
+        "text": "Every track in view. Draw your locks. Undo anything."
+      },
+      {
+        "at": 8.2,
+        "text": "The Machinedrum. Sixteen tracks, every value, one window."
+      },
+      {
+        "at": 12.2,
+        "text": "The Monomachine. A piano roll, and perform mode."
+      },
+      {
+        "at": 16.3,
+        "text": "Free, pay what you want. Bring your own ROM."
+      }
+    ],
+    "tts": "kokoro",
+    "voiceId": "bf_emma"
+  },
+  "captions": "voice",
+  "scenes": [
+    {
+      "kind": "still",
+      "id": "hero",
+      "seconds": 3.8,
+      "file": "footage/shots/hero-editor.png",
+      "camera": [
+        {
+          "at": 0,
+          "region": [
+            0,
+            0,
+            1080,
+            710
+          ]
+        },
+        {
+          "at": 3,
+          "region": [
+            60,
+            40,
+            960,
+            640
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "footage",
+      "id": "tour",
+      "footage": "md-site-tour",
+      "inSeconds": 10.8,
+      "seconds": 4,
+      "camera": [
+        {
+          "at": 0,
+          "region": [
+            0,
+            0,
+            540,
+            960
+          ],
+          "byFormat": {
+            "1x1": [
+              0,
+              150,
+              540,
+              540
+            ],
+            "16x9": [
+              0,
+              200,
+              540,
+              304
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "still",
+      "id": "md-seq",
+      "seconds": 4,
+      "file": "footage/shots/md-seq-mk2-1440.png",
+      "camera": [
+        {
+          "at": 0,
+          "region": [
+            0,
+            0,
+            1440,
+            810
+          ]
+        },
+        {
+          "at": 3,
+          "region": [
+            0,
+            80,
+            960,
+            540
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "still",
+      "id": "mm-perform",
+      "seconds": 4,
+      "file": "footage/shots/mm-perform-1440.png",
+      "camera": [
+        {
+          "at": 0,
+          "region": [
+            0,
+            0,
+            1440,
+            810
+          ]
+        },
+        {
+          "at": 3,
+          "region": [
+            160,
+            60,
+            1120,
+            630
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "footage",
+      "id": "get",
+      "footage": "md-site-tour",
+      "inSeconds": 21.0,
+      "seconds": 3.9,
+      "camera": [
+        {
+          "at": 0,
+          "region": [
+            0,
+            0,
+            540,
+            960
+          ],
+          "byFormat": {
+            "1x1": [
+              0,
+              200,
+              540,
+              540
+            ],
+            "16x9": [
+              0,
+              410,
+              540,
+              304
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "endCard": {
+    "seconds": 4,
+    "title": "MD + MM Editor",
+    "line": "Free · pay what you want",
+    "status": "Coming soon",
+    "small": "macOS · VST3, AU and app · bring your own ROM"
+  },
+  "audio": {
+    "fadeOutSeconds": 0.8
+  },
+  "brief": {
+    "idea": "Site tour of mdmm.dev from live footage plus two real editor screenshots.",
+    "use": "paid-ok",
+    "footageRequest": "md-site-tour"
+  }
+}
